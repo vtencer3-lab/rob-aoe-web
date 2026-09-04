@@ -59,19 +59,25 @@ npm start
 false. Server se proto bez `DATABASE_URL` a bez `ADMIN_STEAM_ID` rovnou odmítne
 spustit a řekne, která chybí.
 
-**Když Robovo Steam ID nemáš** (typicky při prvním rozjezdu), nastav místo něj
-`ADMIN_BOOTSTRAP=true`. Adminem se pak stane první, kdo se přihlásí — a jenom
-dokud žádný admin neexistuje: každý další už práva nedostane a tomu prvnímu se
-při dalších přihlášeních neodeberou. Server na to při startu upozorní.
-Znamená to ale, že **kdo drží adresu, drží režii**, takže se přihlas dřív, než
-adresu komukoliv pošleš. Až budeš mít Robovo Steam ID, vyplň `ADMIN_STEAM_ID` —
-tím se dočasnému adminovi práva při jeho dalším přihlášení zase odeberou.
+**Když Robovo Steam ID nemáš**, nastav místo něj `ADMIN_BOOTSTRAP=true`.
+Adminem se pak stane první, kdo se přihlásí — a jenom dokud žádný admin
+neexistuje: každý další už práva nedostane a tomu prvnímu se při dalších
+přihlášeních neodeberou. Není to dočasný režim, může zůstat zapnutý natrvalo;
+jakmile admin existuje, nedělá nic a server na něj přestane upozorňovat.
+
+Dokud admin neexistuje, platí, že **kdo drží adresu, drží režii** — server na to
+při startu upozorní, takže se přihlas dřív, než adresu komukoliv pošleš. Stejné
+pravidlo platí, kdyby někdo někdy smazal řádek s adminem z tabulky `player`:
+další přihlášený režii převezme.
+
+Vyplněné `ADMIN_STEAM_ID` má vždycky přednost a `ADMIN_BOOTSTRAP` přebije, takže
+zapsáním Robova ID se prvnímu adminovi práva při jeho dalším přihlášení odeberou.
 
 | Proměnná | K čemu | Co se stane bez ní |
 |---|---|---|
 | `DATABASE_URL` | připojení k PostgreSQL, tvar `postgres://uzivatel:heslo@host:port/databaze` | server se nespustí — „Chybí proměnná prostředí DATABASE_URL." |
 | `ADMIN_STEAM_ID` | Steam ID (64bitové) Robova účtu | server se nespustí, dokud nezapneš `ADMIN_BOOTSTRAP`. (Kdyby se spustil, přihlašovací routa by při každém přihlášení zapsala `je_admin = false` a Robovi by uprostřed večera zmizel panel režie bez jediné chybové hlášky.) |
-| `ADMIN_BOOTSTRAP` | nouzový režim pro rozjezd bez Robova Steam ID: `true` udělá admina z prvního přihlášeného | nic — je to náhrada za `ADMIN_STEAM_ID`, ne doplněk. Když je vyplněné `ADMIN_STEAM_ID`, tahle proměnná se ignoruje |
+| `ADMIN_BOOTSTRAP` | pojistka pro provoz bez Robova Steam ID: `true` udělá admina z prvního přihlášeného, dokud žádný admin neexistuje | nic — je to náhrada za `ADMIN_STEAM_ID`, ne doplněk. Když je vyplněné `ADMIN_STEAM_ID`, tahle proměnná se ignoruje |
 | `BASE_URL` | veřejná adresa, na které web lidem běží (musí přesně sedět s tím, kam se prohlížeč skutečně dívá) | použije se `http://localhost:3000`. Steam se po ověření vrací na `BASE_URL` a návrat na jinou adresu se odmítne, takže přihlášení přes tunel bez správné hodnoty neprojde |
 | `PORT` | port, na kterém backend poslouchá (výchozí 3000) | použije se výchozí hodnota 3000 |
 | `STEAM_API_KEY` | bezplatný klíč z <https://steamcommunity.com/dev/apikey>, kterým se web ptá Steamu na odehrané hodiny v AoE2 a na profilovou přezdívku s avatarem | neukážou se odehrané hodiny ani avatary. ELO, herní přezdívka i počet odehraných her chodí ze žebříčku Worlds Edge, který žádný klíč nechce, takže zbytek funguje beze změny. Bez klíče se Steamu vůbec neptáme, takže se nikomu u jména neobjeví varování o chybě |

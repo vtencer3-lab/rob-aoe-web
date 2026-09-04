@@ -71,20 +71,29 @@ it("chybějící ADMIN_STEAM_ID poradí i nouzový režim", () => {
   expect(() => zkontrolujProstredi()).toThrow(/ADMIN_BOOTSTRAP/);
 });
 
-it("v nouzovém režimu varuje, protože kdo drží adresu, drží režii", () => {
+it("dokud admin neexistuje, varuje — v tu chvíli je režie volná pro kohokoliv", () => {
   nastav({
     DATABASE_URL: "postgres://postgres:postgres@localhost:5432/rob_aoe",
     ADMIN_STEAM_ID: undefined,
     ADMIN_BOOTSTRAP: "true",
   });
-  expect(varovaniProstredi()).toMatch(/první, kdo se přihlásí/);
+  expect(varovaniProstredi(false)).toMatch(/první, kdo se přihlásí/);
 });
 
-it("s nastaveným ADMIN_STEAM_ID nevaruje, i kdyby byl nouzový režim zapnutý", () => {
+it("jakmile admin existuje, mlčí — pojistka smí zůstat zapnutá natrvalo", () => {
+  nastav({
+    DATABASE_URL: "postgres://postgres:postgres@localhost:5432/rob_aoe",
+    ADMIN_STEAM_ID: undefined,
+    ADMIN_BOOTSTRAP: "true",
+  });
+  expect(varovaniProstredi(true)).toBeNull();
+});
+
+it("s nastaveným ADMIN_STEAM_ID nevaruje, i kdyby byla pojistka zapnutá", () => {
   nastav({
     DATABASE_URL: "postgres://postgres:postgres@localhost:5432/rob_aoe",
     ADMIN_STEAM_ID: "76561198000000070",
     ADMIN_BOOTSTRAP: "true",
   });
-  expect(varovaniProstredi()).toBeNull();
+  expect(varovaniProstredi(false)).toBeNull();
 });

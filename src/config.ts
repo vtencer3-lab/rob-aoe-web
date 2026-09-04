@@ -50,14 +50,21 @@ export function zkontrolujProstredi(): void {
 }
 
 /**
- * Varování do logu při startu v nouzovém režimu. Kdo drží adresu, drží režii,
- * dokud se první člověk nepřihlásí — proto se to nesmí dít potichu.
+ * Varování do logu při startu. Riziko trvá jen dokud admin neexistuje: v tu
+ * chvíli kdo drží adresu, drží režii. Jakmile admin je, ADMIN_BOOTSTRAP už
+ * nikomu nic nepřidá, takže může zůstat zapnutý natrvalo jako pojistka a
+ * nemá smysl na něj při každém startu upozorňovat.
+ *
+ * `adminUzExistuje` se předává zvenčí, aby tahle funkce nesahala na databázi.
+ * Když se to nedá zjistit, volající má poslat `false` — radši varovat zbytečně
+ * než mlčet, když je režie volná.
  */
-export function varovaniProstredi(): string | null {
+export function varovaniProstredi(adminUzExistuje: boolean): string | null {
   if (config.adminSteamId !== "" || !config.adminBootstrap) return null;
+  if (adminUzExistuje) return null;
   return (
-    "ADMIN_BOOTSTRAP je zapnutý: adminem se stane první, kdo se přihlásí. " +
-    "Přihlas se dřív, než adresu komukoliv pošleš, a pak nouzový režim vypni."
+    "ADMIN_BOOTSTRAP je zapnutý a admin zatím neexistuje: stane se jím první, " +
+    "kdo se přihlásí. Přihlas se dřív, než adresu komukoliv pošleš."
   );
 }
 

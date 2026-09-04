@@ -1,4 +1,5 @@
 import { config, varovaniProstredi, zkontrolujProstredi } from "./config.js";
+import { existujeAdmin } from "./db/players.js";
 import { deleteExpiredSessions } from "./db/sessions.js";
 import { buildServer } from "./http/server.js";
 
@@ -12,7 +13,17 @@ try {
   process.exit(1);
 }
 
-const varovani = varovaniProstredi();
+// Nedostupná databáze tady server neshodí — o tu se postará první požadavek.
+// Nevíme-li, jestli admin existuje, bereme to jako že ne: varovat zbytečně je
+// levnější než mlčet ve chvíli, kdy je režie volná pro kohokoliv.
+let adminUzExistuje = false;
+try {
+  adminUzExistuje = await existujeAdmin();
+} catch {
+  adminUzExistuje = false;
+}
+
+const varovani = varovaniProstredi(adminUzExistuje);
 if (varovani) console.warn(varovani);
 
 const app = buildServer();
