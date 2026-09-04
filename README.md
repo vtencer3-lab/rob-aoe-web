@@ -41,9 +41,13 @@ Backend poslouchá na `PORT` (výchozí 3000), frontend na Vite dev serveru, kte
 
 ## Proměnné prostředí
 
-Nic v projektu zatím `.env` samo nenačítá (viz sekce Testy — vědomě, kvůli
-ochraně vývojové databáze). Proměnné je potřeba mít nastavené v prostředí, ve
-kterém příkaz běží, např. v PowerShell:
+`npm run dev`, `npm start` a `npm run db:migrate` si `.env` načtou samy
+(`node --env-file-if-exists=.env`). Testy nad databází ho **záměrně nečtou** —
+kdyby ho četly, `npm run test:db` by mazal tabulky ve vývojové databázi
+z `.env` místo v testovací (viz sekce Testy).
+
+Co je v prostředí nastavené ručně, má přednost před `.env`. Pro jednorázový
+běh s jinou hodnotou tedy stačí proměnnou nastavit v shellu, např. v PowerShell:
 
 ```
 $env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/rob_aoe"
