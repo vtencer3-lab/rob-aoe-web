@@ -108,6 +108,20 @@ it("Rob smí založit akci a otevřít přihlašování", async () => {
   await app.close();
 });
 
+it("nečíselné ID akce vrátí 400 místo pádu do DB", async () => {
+  const { sid } = await prihlasenyKlient(ROB, true);
+  const app = buildServer();
+
+  const res = await app.inject({
+    method: "POST",
+    url: "/api/akce/abc/stav",
+    cookies: { sid },
+    payload: { stav: "prihlasovani" },
+  });
+  expect(res.statusCode).toBe(400);
+  await app.close();
+});
+
 it("GET /api/akce vrátí aktivní akci se seznamem", async () => {
   const akce = await createAkce("večer");
   await setAkceStav(akce.id, "prihlasovani");

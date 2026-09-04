@@ -9,7 +9,7 @@ import {
 } from "../../db/events.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
-import { HttpError, requireAdmin, requireUser } from "../guards.js";
+import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 
 const STAVY: readonly AkceStav[] = ["priprava", "prihlasovani", "zavreno", "bezi", "konec"];
 
@@ -32,7 +32,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
 
   app.post("/api/akce/:id/stav", async (request) => {
     await requireAdmin(request);
-    const akceId = Number((request.params as { id: string }).id);
+    const akceId = requireId(request);
     const { stav } = request.body as { stav?: unknown };
     if (typeof stav !== "string" || !STAVY.includes(stav as AkceStav)) {
       throw new HttpError(400, "Neznámý stav akce.");
@@ -44,7 +44,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
 
   app.post("/api/akce/:id/prihlaska", async (request) => {
     const steamId = await requireUser(request);
-    const akceId = Number((request.params as { id: string }).id);
+    const akceId = requireId(request);
     const akce = await getAktivniAkce();
     if (!akce || akce.id !== akceId || akce.stav !== "prihlasovani") {
       throw new HttpError(409, "Přihlašování do téhle akce není otevřené.");
@@ -56,7 +56,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
 
   app.delete("/api/akce/:id/prihlaska", async (request) => {
     const steamId = await requireUser(request);
-    const akceId = Number((request.params as { id: string }).id);
+    const akceId = requireId(request);
     await withdraw(akceId, steamId);
     await broadcastAkce(akceId);
     return { ok: true };
