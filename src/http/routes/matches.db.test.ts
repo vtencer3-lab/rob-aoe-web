@@ -309,40 +309,10 @@ it("kdo není host, odkaz vložit nesmí", async () => {
   await app.close();
 });
 
-it("host potvrdí nachystanou lobby", async () => {
-  const app = buildServer();
-  const zapas = await vytvorZapas(app);
-  const hostSid = await createSession(HRACI[1]!);
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/lobby`,
-    cookies: { sid: hostSid },
-    payload: { odkaz: "aoe2de://0/234230181" },
-  });
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/potvrzeni`,
-    cookies: { sid: hostSid },
-  });
-  expect((await getZapas(zapas.id))!.zapas.hostPotvrdil).toBeInstanceOf(Date);
-  await app.close();
-});
 
-it("potvrzení bez odkazu na lobby se odmítne", async () => {
-  const app = buildServer();
-  const zapas = await vytvorZapas(app);
-  const hostSid = await createSession(HRACI[1]!);
-  const res = await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/potvrzeni`,
-    cookies: { sid: hostSid },
-  });
-  expect(res.statusCode).toBe(400);
-  expect((await getZapas(zapas.id))!.zapas.hostPotvrdil).toBeNull();
-  await app.close();
-});
 
-it("nový odkaz na lobby zruší staré potvrzení hosta", async () => {
+
+it("změna hosta zahodí odkaz", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
   const hostSid = await createSession(HRACI[1]!);
@@ -358,48 +328,6 @@ it("nový odkaz na lobby zruší staré potvrzení hosta", async () => {
     cookies: { sid: hostSid },
     payload: { odkaz: "aoe2de://0/234230181" },
   });
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/potvrzeni`,
-    cookies: { sid: hostSid },
-  });
-  expect((await getZapas(zapas.id))!.zapas.hostPotvrdil).toBeInstanceOf(Date);
-
-  const res = await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/lobby`,
-    cookies: { sid: hostSid },
-    payload: { odkaz: "aoe2de://0/999999999" },
-  });
-  expect(res.statusCode).toBe(200);
-  const nacteny = (await getZapas(zapas.id))!;
-  expect(nacteny.zapas.lobbyId).toBe("999999999");
-  expect(nacteny.zapas.hostPotvrdil).toBeNull();
-  await app.close();
-});
-
-it("změna hosta zahodí odkaz i potvrzení", async () => {
-  const app = buildServer();
-  const zapas = await vytvorZapas(app);
-  const hostSid = await createSession(HRACI[1]!);
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/stav`,
-    cookies: { sid: robSid },
-    payload: { stav: "vyhlaseny" },
-  });
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/lobby`,
-    cookies: { sid: hostSid },
-    payload: { odkaz: "aoe2de://0/234230181" },
-  });
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/potvrzeni`,
-    cookies: { sid: hostSid },
-  });
-
   await app.inject({
     method: "POST",
     url: `/api/zapas/${zapas.id}/host`,
@@ -409,7 +337,6 @@ it("změna hosta zahodí odkaz i potvrzení", async () => {
 
   const nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBeNull();
-  expect(nacteny.zapas.hostPotvrdil).toBeNull();
   expect(nacteny.ucastnici.find((u) => u.jeHost)!.steamId).toBe(HRACI[0]);
   await app.close();
 });

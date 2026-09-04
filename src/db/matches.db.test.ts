@@ -6,7 +6,6 @@ import {
   listZapasy,
   oznacKliknutiPripojit,
   setHost,
-  setHostPotvrdil,
   setLobbyId,
   setVysledek,
   setZapasStav,
@@ -96,18 +95,6 @@ it("uloží číslo lobby a posune stav", async () => {
   expect(nacteny.zapas.stav).toBe("lobby_otevrena");
 });
 
-it("nový odkaz na lobby zruší dřívější potvrzení hosta", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
-  await setLobbyId(zapas.id, "234230181");
-  await setHostPotvrdil(zapas.id);
-  expect((await getZapas(zapas.id))!.zapas.hostPotvrdil).toBeInstanceOf(Date);
-
-  await setLobbyId(zapas.id, "999999999");
-
-  const nacteny = (await getZapas(zapas.id))!;
-  expect(nacteny.zapas.lobbyId).toBe("999999999");
-  expect(nacteny.zapas.hostPotvrdil).toBeNull();
-});
 
 it("host nesmí zapsat výsledek", async () => {
   const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));

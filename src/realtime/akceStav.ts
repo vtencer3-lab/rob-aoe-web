@@ -38,7 +38,6 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
     joinUri: zapas.lobbyId ? joinUri(zapas.lobbyId) : null,
     spectatorUri: zapas.lobbyId ? spectatorUri(zapas.lobbyId) : null,
     viteznyTym: zapas.viteznyTym,
-    hostPotvrdil: zapas.hostPotvrdil?.toISOString() ?? null,
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,
       alias: u.alias,

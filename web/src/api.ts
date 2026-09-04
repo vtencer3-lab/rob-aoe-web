@@ -40,8 +40,6 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ odkaz }),
     }).then((r) => json<{ ok: true }>(r)),
-  potvrdit: (zapasId: number) =>
-    fetch(`/api/zapas/${zapasId}/potvrzeni`, { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   vytvoritZapas: (akceId: number, format: Format, steamIds: string[]) =>
     fetch(`/api/akce/${akceId}/zapas`, {
       method: "POST",

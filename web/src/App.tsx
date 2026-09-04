@@ -99,7 +99,6 @@ export function App() {
                     zapas={zapas}
                     ja={me.steamId}
                     onVlozitOdkaz={(id, odkaz) => void hlidej(() => api.vlozitOdkaz(id, odkaz))}
-                    onPotvrdit={(id) => void hlidej(() => api.potvrdit(id))}
                   />
                 ) : (
                   <KartaHrace

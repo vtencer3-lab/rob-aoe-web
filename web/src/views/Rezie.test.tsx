@@ -14,7 +14,6 @@ const zapas: ZapasView = {
   joinUri: "aoe2de://0/234230181",
   spectatorUri: "aoe2de://1/234230181",
   viteznyTym: null,
-  hostPotvrdil: null,
   ucastnici: [
     { steamId: "a", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: "2026-09-03T12:00:00.000Z" },
     { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
@@ -42,41 +41,22 @@ it("stav účastníka pojmenuje jako kliknutí, ne jako přítomnost v lobby", (
   expect(screen.queryByText(/je v lobby/i)).not.toBeInTheDocument();
 });
 
-// KRITICKÉ: Spectate se odemyká podle spectatorUri (host vložil odkaz z lobby), NE podle
-// hostPotvrdil. To bylo ověřeno na živé hře — aoe2de://1/<id> funguje jak v otevřené,
-// nenaplněné lobby (Rob vidí seating a může upozornit na špatně nastavenou hru), tak
-// za běhu zápasu. Čekat na potvrzení hosta by Roba zbytečně brzdilo přesně ve chvíli,
-// kdy je nejužitečnější. Proto tenhle fixture (hostPotvrdil: null, spectatorUri vyplněný)
-// musí dát odemčený odkaz.
-it("spectate se odemkne, jakmile host vloží odkaz do lobby — nečeká na jeho potvrzení", () => {
+// KRITICKÉ: Spectate se odemyká výhradně podle spectatorUri, tedy podle toho, že host
+// vložil odkaz z lobby. Ověřeno na živé hře — aoe2de://1/<id> funguje jak v otevřené,
+// nenaplněné lobby (Rob vidí nastavení a může upozornit na špatně založenou hru), tak
+// za běhu zápasu. Jakýkoliv další zámek by Roba brzdil přesně ve chvíli, kdy je
+// nejužitečnější; proto tu žádný není.
+it("spectate se odemkne, jakmile host vloží odkaz do lobby", () => {
   render(<Rezie stav={stav} {...props} />);
   const odkaz = screen.getByTestId("spectate");
   expect(odkaz).toHaveAttribute("aria-disabled", "false");
   expect(odkaz).toHaveAttribute("href", "aoe2de://1/234230181");
 });
 
-it("potvrzení hosta spectate dál nechává odemčené a mířící na divácký odkaz", () => {
-  const potvrzeny = { ...stav, zapasy: [{ ...zapas, hostPotvrdil: "2026-09-03T12:00:00.000Z" }] };
-  render(<Rezie stav={potvrzeny} {...props} />);
-  const odkaz = screen.getByTestId("spectate");
-  expect(odkaz).toHaveAttribute("aria-disabled", "false");
-  expect(odkaz).toHaveAttribute("href", "aoe2de://1/234230181");
-});
 
 // Potvrzení hosta je jen informační stavový řádek, nikdy zámek — proto k němu neexistuje
 // žádné tlačítko na "odemčení i bez potvrzení". Spectate se nikdy na potvrzení nezamyká.
-it("potvrzení hosta je jen stavový řádek — žádné tlačítko na odemčení neexistuje", () => {
-  render(<Rezie stav={stav} {...props} />);
-  expect(screen.queryByRole("button", { name: /odemknout/i })).not.toBeInTheDocument();
-  expect(screen.getByText(/host zatím nepotvrdil/i)).toBeInTheDocument();
-});
 
-it("ukáže, jestli host nastavení už potvrdil", () => {
-  const potvrzeny = { ...stav, zapasy: [{ ...zapas, hostPotvrdil: "2026-09-03T12:00:00.000Z" }] };
-  render(<Rezie stav={potvrzeny} {...props} />);
-  expect(screen.getByText(/host potvrdil/i)).toBeInTheDocument();
-  expect(screen.queryByText(/host zatím nepotvrdil/i)).not.toBeInTheDocument();
-});
 
 it("záložní údaje jsou vidět pořád", () => {
   render(<Rezie stav={stav} {...props} />);

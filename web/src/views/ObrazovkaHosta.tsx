@@ -6,12 +6,10 @@ interface Props {
   zapas: ZapasView;
   ja: string;
   onVlozitOdkaz: (zapasId: number, odkaz: string) => void;
-  onPotvrdit: (zapasId: number) => void;
 }
 
-export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onPotvrdit }: Props) {
+export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz }: Props) {
   const [odkaz, setOdkaz] = useState("");
-  const maLobby = zapas.lobbyId !== null;
 
   return (
     <section className="host">
@@ -50,13 +48,6 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onPotvrdit }: Props) 
         ))}
       </ul>
 
-      {zapas.hostPotvrdil ? (
-        <p className="potvrzeno">Potvrzeno. Rob se může dívat.</p>
-      ) : (
-        <button disabled={!maLobby} onClick={() => onPotvrdit(zapas.id)}>
-          Sedí to — jsme nachystaní
-        </button>
-      )}
     </section>
   );
 }

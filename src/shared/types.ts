@@ -56,7 +56,6 @@ export interface ZapasView {
   joinUri: string | null;
   spectatorUri: string | null;
   viteznyTym: Tym | null;
-  hostPotvrdil: string | null;
   ucastnici: UcastnikView[];
 }
 

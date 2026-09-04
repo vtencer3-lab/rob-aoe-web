@@ -14,7 +14,6 @@ const zapas: ZapasView = {
   joinUri: "aoe2de://0/234230181",
   spectatorUri: null,
   viteznyTym: null,
-  hostPotvrdil: null,
   ucastnici: [
     { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
     { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },

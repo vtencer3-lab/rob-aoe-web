@@ -18,10 +18,8 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
       {stav.zapasy.map((zapas) => {
         // Odkaz aoe2de://1/<id> funguje jako divácký, jakmile host vloží odkaz z lobby —
         // funguje v otevřené, ještě neobsazené lobby i za běhu zápasu. Ověřeno na živé hře.
-        // Rob se tak dostane dovnitř dřív, než host cokoliv potvrdí, a stihne upozornit na
-        // špatně nastavenou lobby. Proto se spectate odemyká podle spectatorUri, nikdy podle
-        // hostPotvrdil — a nemá žádné "odemknout i bez potvrzení" tlačítko, protože žádný
-        // zámek na potvrzení není.
+        // Rob se tak dostane dovnitř hned, jak odkaz existuje, a stihne upozornit na
+        // špatně nastavenou lobby. Spectate se proto odemyká výhradně podle spectatorUri.
         const muzeSpectate = zapas.spectatorUri !== null;
 
         // Přehození hosta je správně destruktivní: setHost vynuluje lobby_id
@@ -77,10 +75,6 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
             </a>
 
             {/* Jen informační stavový řádek, ne zámek. */}
-            <p className="stavovy-radek">
-              {zapas.hostPotvrdil ? "Host potvrdil nastavení." : "Host zatím nepotvrdil nastavení."}
-            </p>
-
             <div className="zaloha">
               Kdyby to zamrzlo: lobby <strong>{zapas.nazevLobby}</strong>, heslo{" "}
               <strong>{zapas.heslo}</strong>, číslo <strong>{zapas.lobbyId ?? "—"}</strong>

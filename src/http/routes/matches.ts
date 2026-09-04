@@ -6,7 +6,6 @@ import {
   getZapas,
   oznacKliknutiPripojit,
   setHost,
-  setHostPotvrdil,
   setLobbyId,
   setVysledek,
   setZapasStav,
@@ -131,17 +130,6 @@ export function registerMatchRoutes(app: FastifyInstance): void {
         if (!(err instanceof PrechodChyba)) throw err;
       }
     }
-    await broadcastAkce();
-    return { ok: true };
-  });
-
-  app.post("/api/zapas/:id/potvrzeni", async (request) => {
-    const zapasId = requireId(request);
-    const { zapas } = await roleVZapase(request, zapasId);
-    if (zapas.lobbyId === null) {
-      throw new HttpError(400, "Lobby ještě nemá odkaz, není co potvrzovat.");
-    }
-    await setHostPotvrdil(zapasId);
     await broadcastAkce();
     return { ok: true };
   });
