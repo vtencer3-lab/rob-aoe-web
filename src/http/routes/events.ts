@@ -8,6 +8,7 @@ import {
   withdraw,
   type AkceStav,
 } from "../../db/events.js";
+import { broadcastAkce } from "../../realtime/akceStav.js";
 import { HttpError, requireAdmin, requireUser } from "../guards.js";
 
 const STAVY: readonly AkceStav[] = ["priprava", "prihlasovani", "zavreno", "bezi", "konec"];
@@ -25,7 +26,9 @@ export function registerEventRoutes(app: FastifyInstance): void {
     if (typeof nazev !== "string" || nazev.trim() === "") {
       throw new HttpError(400, "Akce musí mít název.");
     }
-    return { akce: await createAkce(nazev.trim()) };
+    const akce = await createAkce(nazev.trim());
+    await broadcastAkce(akce.id);
+    return { akce };
   });
 
   app.post("/api/akce/:id/stav", async (request) => {
@@ -35,7 +38,9 @@ export function registerEventRoutes(app: FastifyInstance): void {
     if (typeof stav !== "string" || !STAVY.includes(stav as AkceStav)) {
       throw new HttpError(400, "Neznámý stav akce.");
     }
-    return { akce: await setAkceStav(akceId, stav as AkceStav) };
+    const akce = await setAkceStav(akceId, stav as AkceStav);
+    await broadcastAkce(akceId);
+    return { akce };
   });
 
   app.post("/api/akce/:id/prihlaska", async (request) => {
@@ -46,6 +51,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
       throw new HttpError(409, "Přihlašování do téhle akce není otevřené.");
     }
     await signUp(akceId, steamId);
+    await broadcastAkce(akceId);
     return { ok: true };
   });
 
@@ -53,6 +59,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
     const steamId = await requireUser(request);
     const akceId = Number((request.params as { id: string }).id);
     await withdraw(akceId, steamId);
+    await broadcastAkce(akceId);
     return { ok: true };
   });
 }

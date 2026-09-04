@@ -9,6 +9,7 @@ import { fetchPersonalStat } from "../external/worldsEdge.js";
 import { jeCerstve, refreshPlayerStats } from "../players/refresh.js";
 import { HttpError } from "./guards.js";
 import { registerEventRoutes } from "./routes/events.js";
+import { registerStreamRoutes } from "./routes/stream.js";
 
 function vychoziDeps(): AuthDeps {
   return {
@@ -34,6 +35,7 @@ export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
   app.get("/api/health", async () => ({ ok: true }));
   registerAuthRoutes(app, deps);
   registerEventRoutes(app);
+  registerStreamRoutes(app);
 
   app.setErrorHandler((err, _request, reply) => {
     if (err instanceof HttpError) {
