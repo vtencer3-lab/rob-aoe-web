@@ -98,6 +98,28 @@ zapsáním Robova ID se prvnímu adminovi práva při jeho dalším přihlášen
   chybou dřív, než se stihne cokoliv smazat.
 - `npm run test:web` — testy frontendu (`web/`).
 
+## Zkouška večera nasucho (bez čtyř Steam účtů)
+
+Celý večer se dá projít samotný, na jednom stroji. Zapni v `.env`
+`DEV_PRISTUP=true` (na localhostu je to výchozí) a používej dvě adresy:
+
+- `http://localhost:3000/api/dev/naplnit?pocet=3` — nasype do právě běžící
+  akce zkušební hráče (Pepa, Jana, Karel, Lída, Mirek, Tonda — pořád tytéž,
+  takže opakované volání nikoho nezdvojí). S vlastním účtem jsi čtvrtý a je
+  z čeho složit 2v2.
+- `http://localhost:3000/api/dev/login?jmeno=Pepa` — přihlásí tě jako ten
+  zkušební hráč, bez Steamu. Otevři si to v anonymním okně a máš vedle sebe
+  dvě různé role naráz: v jednom okně režii, ve druhém obrazovku hráče nebo
+  hosta. Zpátky k sobě se dostaneš přes `?steamId=<tvoje Steam ID>`.
+
+Zkušební přihlášení nikomu neuděluje admina a na cizí práva nesahá.
+
+**Dveře se samy zavírají.** Zapnutá proměnná nestačí: obě routy odmítají
+obsluhovat, jakmile `BASE_URL` míří na `https`, tedy jakmile web běží přes
+tunel. Proměnná tak může v `.env` zůstat ležet zapnutá — přes veřejnou
+adresu se jimi přihlásit nedá. Při startu se do logu vypíše, v jakém stavu
+jsou.
+
 ## Vystavení ven
 
 ### Krok 1 — sestavit produkční build

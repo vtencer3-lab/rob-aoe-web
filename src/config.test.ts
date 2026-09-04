@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { varovaniProstredi, zkontrolujProstredi } from "./config.js";
+import { varovaniDevPristup, varovaniProstredi, zkontrolujProstredi } from "./config.js";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -96,4 +96,19 @@ it("s nastaveným ADMIN_STEAM_ID nevaruje, i kdyby byla pojistka zapnutá", () =
     ADMIN_BOOTSTRAP: "true",
   });
   expect(varovaniProstredi(false)).toBeNull();
+});
+
+it("mlčí o zkušebních dveřích, dokud nejsou zapnuté", () => {
+  nastav({ DEV_PRISTUP: undefined, BASE_URL: "http://localhost:3000" });
+  expect(varovaniDevPristup()).toBeNull();
+});
+
+it("na localhostu o otevřených zkušebních dveřích řekne", () => {
+  nastav({ DEV_PRISTUP: "true", BASE_URL: "http://localhost:3000" });
+  expect(varovaniDevPristup()).toContain("obcházejí Steam");
+});
+
+it("na https řekne, že jsou dveře i tak zavřené", () => {
+  nastav({ DEV_PRISTUP: "true", BASE_URL: "https://neco.trycloudflare.com" });
+  expect(varovaniDevPristup()).toContain("zavřené");
 });

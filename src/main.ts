@@ -1,4 +1,4 @@
-import { config, varovaniProstredi, zkontrolujProstredi } from "./config.js";
+import { config, varovaniDevPristup, varovaniProstredi, zkontrolujProstredi } from "./config.js";
 import { existujeAdmin } from "./db/players.js";
 import { deleteExpiredSessions } from "./db/sessions.js";
 import { buildServer } from "./http/server.js";
@@ -25,6 +25,9 @@ try {
 
 const varovani = varovaniProstredi(adminUzExistuje);
 if (varovani) console.warn(varovani);
+
+const varovaniDev = varovaniDevPristup();
+if (varovaniDev) console.warn(varovaniDev);
 
 const app = buildServer();
 await app.listen({ port: config.port, host: "127.0.0.1" });

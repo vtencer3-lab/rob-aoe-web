@@ -3,6 +3,7 @@ import fastifyStatic from "@fastify/static";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
+import { registerDevRoutes } from "../auth/devRoutes.js";
 import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
@@ -51,6 +52,9 @@ export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
   registerEventRoutes(app);
   registerMatchRoutes(app);
   registerStreamRoutes(app);
+  // Zkušební dveře se za produkčního nastavení vůbec nezaregistrují. Druhý
+  // zámek (adresa na https) sedí uvnitř nich — jeden zámek na tohle nestačí.
+  if (config.devPristup) registerDevRoutes(app);
 
   // tsconfig.json kompiluje se společným rootDir "." (kvůli scripts/**), takže
   // sestavený server.js skončí v dist/src/http, ne v dist/http — proto je tu
