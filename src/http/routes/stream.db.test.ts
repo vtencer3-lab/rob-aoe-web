@@ -1,8 +1,21 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
-import { createAkce, setAkceStav } from "../../db/events.js";
+import { createAkce, setAkceStav, signUp } from "../../db/events.js";
+import { createZapas, setLobbyId, setZapasStav } from "../../db/matches.js";
 import { closePool, getPool } from "../../db/pool.js";
+import { savePlayerStats, upsertPlayer } from "../../db/players.js";
+import { createSession } from "../../db/sessions.js";
 import { hub } from "../../realtime/hub.js";
+import type { AkceStavPayload } from "../../shared/types.js";
 import { buildServer } from "../server.js";
+
+/** Přečte první `data:` rámec ze SSE streamu a rozbalí payload. */
+async function prvniPayload(stream: NodeJS.ReadableStream): Promise<AkceStavPayload> {
+  const ramec = await new Promise<string>((resolve, reject) => {
+    stream.once("data", (chunk: Buffer) => resolve(chunk.toString()));
+    stream.once("error", reject);
+  });
+  return JSON.parse(ramec.replace(/^data: /, "")) as AkceStavPayload;
+}
 
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
@@ -210,4 +223,102 @@ it("hub o odběrateli ví a po zavření spojení ho zapomene", async () => {
   expect(hub.subscriberCount(akce.id)).toBe(1);
   odhlas();
   expect(hub.subscriberCount(akce.id)).toBe(0);
+});
+
+// Regrese k záměně redigujProDivaka(payload, divak) za holý payload v SSE routě.
+// SSE nese 100 % živého provozu — dřív ho žádný test nekontroloval a taková
+// záměna prošla celou sadou zeleně. Test proto čte to, co skutečně odteče na
+// drát, ne to, co vrací redakční funkce zavolaná zvlášť.
+it("cizímu divákovi neodteče ve streamu heslo ani číslo lobby", async () => {
+  const akce = await createAkce("večer");
+  await setAkceStav(akce.id, "prihlasovani");
+
+  const hraci = ["76561198000000081", "76561198000000082"];
+  for (const [i, steamId] of hraci.entries()) {
+    await upsertPlayer(steamId, false);
+    await savePlayerStats(steamId, { alias: `Hrac${i}`, odehranoHer: i * 10, chyba: null });
+    await signUp(akce.id, steamId);
+  }
+  const zapas = await createZapas(akce.id, "1v1", hraci);
+  await setZapasStav(zapas.id, "vyhlaseny", "admin");
+  await setLobbyId(zapas.id, "234230181");
+
+  const app = buildServer();
+  await app.ready();
+
+  const controller = new AbortController();
+  const res = await app.inject({
+    method: "GET",
+    url: "/api/stream",
+    payloadAsStream: true,
+    signal: controller.signal,
+  });
+  expect(res.statusCode).toBe(200);
+
+  const payload = await prvniPayload(res.stream());
+  const videny = payload.zapasy[0]!;
+  expect(videny.heslo).toBe("");
+  expect(videny.lobbyId).toBeNull();
+  expect(videny.joinUri).toBeNull();
+  expect(videny.spectatorUri).toBeNull();
+  // Kdyby se redakce vypnula, tenhle zápas by nesl skutečné heslo — ať je vidět,
+  // že v neredigované podobě opravdu neprázdné je.
+  expect(zapas.heslo).not.toBe("");
+
+  controller.abort();
+  await app.close();
+});
+
+// Druhá strana téhož: účastník i Rob musí ve streamu své údaje dostat, jinak by
+// "redakce" mohla být jen paušální zaslepení všeho.
+it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu divácký odkaz", async () => {
+  const akce = await createAkce("večer");
+  await setAkceStav(akce.id, "prihlasovani");
+
+  const rob = "76561198000000080";
+  await upsertPlayer(rob, true);
+  const robSid = await createSession(rob);
+
+  const hraci = ["76561198000000081", "76561198000000082"];
+  for (const [i, steamId] of hraci.entries()) {
+    await upsertPlayer(steamId, false);
+    await savePlayerStats(steamId, { alias: `Hrac${i}`, odehranoHer: i * 10, chyba: null });
+    await signUp(akce.id, steamId);
+  }
+  const zapas = await createZapas(akce.id, "1v1", hraci);
+  await setZapasStav(zapas.id, "vyhlaseny", "admin");
+  await setLobbyId(zapas.id, "234230181");
+  const hracSid = await createSession(hraci[0]!);
+
+  const app = buildServer();
+  await app.ready();
+
+  const hracCtrl = new AbortController();
+  const hracRes = await app.inject({
+    method: "GET",
+    url: "/api/stream",
+    payloadAsStream: true,
+    signal: hracCtrl.signal,
+    cookies: { sid: hracSid },
+  });
+  const hracuv = (await prvniPayload(hracRes.stream())).zapasy[0]!;
+  expect(hracuv.heslo).toBe(zapas.heslo);
+  expect(hracuv.joinUri).toBe("aoe2de://0/234230181");
+  expect(hracuv.spectatorUri).toBeNull();
+  hracCtrl.abort();
+
+  const robCtrl = new AbortController();
+  const robRes = await app.inject({
+    method: "GET",
+    url: "/api/stream",
+    payloadAsStream: true,
+    signal: robCtrl.signal,
+    cookies: { sid: robSid },
+  });
+  const robuv = (await prvniPayload(robRes.stream())).zapasy[0]!;
+  expect(robuv.heslo).toBe(zapas.heslo);
+  expect(robuv.spectatorUri).toBe("aoe2de://1/234230181");
+  robCtrl.abort();
+
+  await app.close();
 });

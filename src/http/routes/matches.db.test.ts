@@ -303,7 +303,10 @@ it("Rob zapíše vítěze", async () => {
   await app.close();
 });
 
-it("cizí divák nevidí ve streamu heslo", async () => {
+// Pozor na jméno: tenhle test kontroluje GET /api/akce, NE SSE stream — tam
+// vede vlastní test v stream.db.test.ts. Dřív se jmenoval "…ve streamu…" a
+// tvrdil tím pokrytí, které neměl.
+it("cizí divák nevidí v GET /api/akce heslo", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
   const hostSid = await createSession(HRACI[1]!);
