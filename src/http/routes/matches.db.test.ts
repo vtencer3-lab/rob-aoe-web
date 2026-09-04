@@ -54,6 +54,56 @@ it("běžný hráč nesmí vytvořit zápas", async () => {
   await app.close();
 });
 
+// Tyhle tři routy jsou admin-only stejně jako vytvoření zápasu, ale jejich
+// bránu nic nehlídalo: záměna requireAdmin za requireUser na všech třech
+// nechala 78 ze 79 db testů zelených. Kdyby to někdy zregresovalo, mohl by
+// kterýkoliv přihlášený účastník přehodit hosta (což zároveň vynuluje lobby_id
+// a zabije živý odkaz i Robův Spectate), protlačit stav zápasu nebo zapsat
+// výsledek.
+it("běžný hráč nesmí měnit stav zápasu", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/stav`,
+    cookies: { sid: hracSid },
+    payload: { stav: "vyhlaseny" },
+  });
+  expect(res.statusCode).toBe(403);
+  expect((await getZapas(zapas.id))!.zapas.stav).toBe("nachystany");
+  await app.close();
+});
+
+it("běžný hráč nesmí přehodit hosta zápasu", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  const puvodniHost = (await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.steamId;
+
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/host`,
+    cookies: { sid: hracSid },
+    payload: { steamId: HRACI[0] },
+  });
+  expect(res.statusCode).toBe(403);
+  expect((await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.steamId).toBe(puvodniHost);
+  await app.close();
+});
+
+it("běžný hráč nesmí zapsat výsledek zápasu", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/vysledek`,
+    cookies: { sid: hracSid },
+    payload: { viteznyTym: 1 },
+  });
+  expect(res.statusCode).toBe(403);
+  expect((await getZapas(zapas.id))!.zapas.viteznyTym).toBeNull();
+  await app.close();
+});
+
 it("špatný počet hráčů na formát vrátí 400 se srozumitelnou hláškou", async () => {
   const app = buildServer();
   const res = await app.inject({
