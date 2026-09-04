@@ -48,4 +48,28 @@ describe("parsePersonalStat", () => {
     expect(staty!.elo1v1).toBeNull();
     expect(staty!.odehranoHer).toBeNull();
   });
+
+  it("nevyhodí výjimku, když je prvek statGroups null", () => {
+    expect(parsePersonalStat({ statGroups: [null], leaderboardStats: [] }, "123")).toBeNull();
+  });
+
+  it("nevyhodí výjimku, když je prvek members null", () => {
+    expect(
+      parsePersonalStat({ statGroups: [{ members: [null] }], leaderboardStats: [] }, "123"),
+    ).toBeNull();
+  });
+
+  it("nevyhodí výjimku, když je prvek leaderboardStats null", () => {
+    const staty = parsePersonalStat(
+      {
+        statGroups: [
+          { members: [{ name: "/steam/123", alias: "Test", personal_statgroup_id: 1 }] },
+        ],
+        leaderboardStats: [null],
+      },
+      "123",
+    );
+    expect(staty).not.toBeNull();
+    expect(staty!.elo1v1).toBeNull();
+  });
 });

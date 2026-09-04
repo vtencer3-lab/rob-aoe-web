@@ -6,10 +6,15 @@ export interface SteamProfile {
 const AOE2_APPID = 813780;
 const ZAKLAD = "https://api.steampowered.com";
 
+/** Undocumented upstream — elementy pole nemusí být objekty. Nikdy nesahat na vlastnost bez tohoto testu. */
+function jeObjekt(hodnota: unknown): hodnota is Record<string, unknown> {
+  return typeof hodnota === "object" && hodnota !== null;
+}
+
 export function parsePlayerSummaries(json: unknown, steamId: string): SteamProfile | null {
   const hraci = (json as { response?: { players?: unknown } })?.response?.players;
   if (!Array.isArray(hraci)) return null;
-  const hrac = hraci.find((h) => (h as { steamid?: unknown }).steamid === steamId) as
+  const hrac = hraci.find((h) => jeObjekt(h) && h["steamid"] === steamId) as
     | Record<string, unknown>
     | undefined;
   if (!hrac) return null;
@@ -23,7 +28,7 @@ export function parsePlayerSummaries(json: unknown, steamId: string): SteamProfi
 export function parseOwnedGames(json: unknown): number | null {
   const hry = (json as { response?: { games?: unknown } })?.response?.games;
   if (!Array.isArray(hry)) return null;
-  const aoe = hry.find((h) => (h as { appid?: unknown }).appid === AOE2_APPID) as
+  const aoe = hry.find((h) => jeObjekt(h) && h["appid"] === AOE2_APPID) as
     | { playtime_forever?: unknown }
     | undefined;
   const minuty = aoe?.playtime_forever;

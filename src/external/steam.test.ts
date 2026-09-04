@@ -17,6 +17,10 @@ describe("parsePlayerSummaries", () => {
     expect(parsePlayerSummaries(summaries, "76561198999999999")).toBeNull();
     expect(parsePlayerSummaries({}, "76561198000635167")).toBeNull();
   });
+
+  it("nevyhodí výjimku, když je prvek players null", () => {
+    expect(parsePlayerSummaries({ response: { players: [null] } }, "1")).toBeNull();
+  });
 });
 
 describe("parseOwnedGames", () => {
@@ -34,5 +38,13 @@ describe("parseOwnedGames", () => {
 
   it("nesmyslná odpověď vrátí null", () => {
     expect(parseOwnedGames(null)).toBeNull();
+  });
+
+  it("nevyhodí výjimku, když je prvek games null", () => {
+    expect(parseOwnedGames({ response: { games: [null] } })).toBeNull();
+  });
+
+  it("hráč, který hru vlastní, ale nikdy nehrál, vrátí 0, ne null", () => {
+    expect(parseOwnedGames({ response: { games: [{ appid: 813780, playtime_forever: 0 }] } })).toBe(0);
   });
 });

@@ -23,17 +23,23 @@ function cisloNeboNull(hodnota: unknown): number | null {
   return typeof hodnota === "number" && Number.isFinite(hodnota) ? hodnota : null;
 }
 
+/** Undocumented upstream — elementy pole nemusí být objekty. Nikdy nesahat na vlastnost bez tohoto testu. */
+function jeObjekt(hodnota: unknown): hodnota is Record<string, unknown> {
+  return typeof hodnota === "object" && hodnota !== null;
+}
+
 export function parsePersonalStat(json: unknown, steamId: string): LeaderboardStats | null {
-  if (typeof json !== "object" || json === null) return null;
+  if (!jeObjekt(json)) return null;
   const data = json as { statGroups?: unknown; leaderboardStats?: unknown };
   if (!Array.isArray(data.statGroups)) return null;
 
   const hledane = `/steam/${steamId}`;
   let member: Member | undefined;
   for (const skupina of data.statGroups) {
-    const members = (skupina as { members?: unknown }).members;
+    if (!jeObjekt(skupina)) continue;
+    const members = skupina.members;
     if (!Array.isArray(members)) continue;
-    const nalezeny = members.find((m) => (m as Member).name === hledane) as Member | undefined;
+    const nalezeny = members.find((m) => jeObjekt(m) && m.name === hledane) as Member | undefined;
     if (nalezeny) {
       member = nalezeny;
       break;
@@ -44,9 +50,7 @@ export function parsePersonalStat(json: unknown, steamId: string): LeaderboardSt
   const statgroupId = member.personal_statgroup_id;
   const staty = Array.isArray(data.leaderboardStats) ? data.leaderboardStats : [];
   const radek = staty.find(
-    (s) =>
-      (s as { statgroup_id?: unknown }).statgroup_id === statgroupId &&
-      (s as { leaderboard_id?: unknown }).leaderboard_id === ZEBRICEK_1V1,
+    (s) => jeObjekt(s) && s["statgroup_id"] === statgroupId && s["leaderboard_id"] === ZEBRICEK_1V1,
   ) as Record<string, unknown> | undefined;
 
   const wins = radek ? cisloNeboNull(radek["wins"]) : null;
