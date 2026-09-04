@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { api, type Me } from "./api.js";
 import { useAkceStav } from "./useAkceStav.js";
+import { mojeZapasy, mujUcastnik } from "./zapas.js";
+import { KartaHrace } from "./views/KartaHrace.js";
+import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 
 export function App() {
@@ -20,6 +23,15 @@ export function App() {
     try {
       setChyba(null);
       await (jsemPrihlaseny ? api.odhlasit(akce.id) : api.prihlasit(akce.id));
+    } catch (err) {
+      setChyba(err instanceof Error ? err.message : "Nepovedlo se to.");
+    }
+  }
+
+  async function hlidej(akce: () => Promise<unknown>) {
+    try {
+      setChyba(null);
+      await akce();
     } catch (err) {
       setChyba(err instanceof Error ? err.message : "Nepovedlo se to.");
     }
@@ -53,6 +65,26 @@ export function App() {
             </button>
           ) : null}
           <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} />
+          {me
+            ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
+                mujUcastnik(zapas, me.steamId)?.jeHost ? (
+                  <ObrazovkaHosta
+                    key={zapas.id}
+                    zapas={zapas}
+                    ja={me.steamId}
+                    onVlozitOdkaz={(id, odkaz) => void hlidej(() => api.vlozitOdkaz(id, odkaz))}
+                    onPotvrdit={(id) => void hlidej(() => api.potvrdit(id))}
+                  />
+                ) : (
+                  <KartaHrace
+                    key={zapas.id}
+                    zapas={zapas}
+                    ja={me.steamId}
+                    onPripojit={(id) => void api.pripojeni(id)}
+                  />
+                ),
+              )
+            : null}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>
