@@ -1,10 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import { currentUser } from "../../auth/routes.js";
 import { getAktivniAkce } from "../../db/events.js";
-import { getPlayer } from "../../db/players.js";
 import { buildAkceStav } from "../../realtime/akceStav.js";
 import { hub } from "../../realtime/hub.js";
-import { redigujProDivaka } from "../../realtime/redakce.js";
+import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import type { AkceStavPayload } from "../../shared/types.js";
 
 export function registerStreamRoutes(app: FastifyInstance): void {
@@ -52,9 +50,7 @@ export function registerStreamRoutes(app: FastifyInstance): void {
         return reply;
       }
 
-      const steamId = await currentUser(request);
-      const hrac = steamId ? await getPlayer(steamId) : null;
-      const divak = { steamId, jeAdmin: hrac?.jeAdmin ?? false };
+      const divak = await zjistiDivaka(request);
 
       const posli = (payload: AkceStavPayload) =>
         reply.raw.write(`data: ${JSON.stringify(redigujProDivaka(payload, divak))}\n\n`);

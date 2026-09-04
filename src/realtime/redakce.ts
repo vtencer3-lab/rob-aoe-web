@@ -1,8 +1,21 @@
+import type { FastifyRequest } from "fastify";
+import { currentUser } from "../auth/routes.js";
+import { getPlayer } from "../db/players.js";
 import type { AkceStavPayload, ZapasView } from "../shared/types.js";
 
 export interface Divak {
   steamId: string | null;
   jeAdmin: boolean;
+}
+
+/**
+ * Jediné místo, kde se z požadavku sestavuje vstup do bezpečnostní hranice
+ * (redigujProDivaka) — ať se diváka nikde jinde neurčuje o kousek jinak.
+ */
+export async function zjistiDivaka(request: FastifyRequest): Promise<Divak> {
+  const steamId = await currentUser(request);
+  const hrac = steamId ? await getPlayer(steamId) : null;
+  return { steamId, jeAdmin: hrac?.jeAdmin ?? false };
 }
 
 /**

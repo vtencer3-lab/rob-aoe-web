@@ -1,5 +1,4 @@
 import type { FastifyInstance } from "fastify";
-import { currentUser } from "../../auth/routes.js";
 import {
   createAkce,
   getAktivniAkce,
@@ -8,18 +7,15 @@ import {
   withdraw,
   type AkceStav,
 } from "../../db/events.js";
-import { getPlayer } from "../../db/players.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
-import { redigujProDivaka } from "../../realtime/redakce.js";
+import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import { HttpError, requireAdmin, requireUser } from "../guards.js";
 
 const STAVY: readonly AkceStav[] = ["priprava", "prihlasovani", "zavreno", "bezi", "konec"];
 
 export function registerEventRoutes(app: FastifyInstance): void {
   app.get("/api/akce", async (request) => {
-    const steamId = await currentUser(request);
-    const hrac = steamId ? await getPlayer(steamId) : null;
-    const divak = { steamId, jeAdmin: hrac?.jeAdmin ?? false };
+    const divak = await zjistiDivaka(request);
     return redigujProDivaka(await buildAkceStav(), divak);
   });
 
