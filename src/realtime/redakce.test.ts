@@ -72,4 +72,33 @@ describe("redigujProDivaka", () => {
     redigujProDivaka(stav, { steamId: CIZI, jeAdmin: false });
     expect(stav.zapasy[0]!.heslo).toBe("k7rm2xq9");
   });
+
+  it("v jednom payloadu se každý zápas posuzuje zvlášť — ne podle prvního", () => {
+    const druhyZapas: ZapasView = {
+      ...zapas,
+      id: 2,
+      poradi: 2,
+      nazevLobby: "ROB-02",
+      heslo: "jinehesl1",
+      lobbyId: "999999999",
+      joinUri: "aoe2de://0/999999999",
+      spectatorUri: "aoe2de://1/999999999",
+      ucastnici: [
+        { steamId: CIZI, alias: "Jiny", tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
+        { steamId: "y", alias: "Franta", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+      ],
+    };
+    const dvaZapasy: AkceStavPayload = { ...stav, zapasy: [zapas, druhyZapas] };
+
+    // HRAC hraje v prvním zápase, ale ve druhém je jen cizí divák — kdyby se
+    // úroveň zaslepení počítala jednou za celý payload místo zápas od zápasu,
+    // tenhle test by to odhalil.
+    const videny = redigujProDivaka(dvaZapasy, { steamId: HRAC, jeAdmin: false });
+    expect(videny.zapasy[0]!.heslo).toBe("k7rm2xq9");
+    expect(videny.zapasy[0]!.lobbyId).toBe("234230181");
+    expect(videny.zapasy[1]!.heslo).toBe("");
+    expect(videny.zapasy[1]!.lobbyId).toBeNull();
+    expect(videny.zapasy[1]!.joinUri).toBeNull();
+    expect(videny.zapasy[1]!.spectatorUri).toBeNull();
+  });
 });
