@@ -109,6 +109,12 @@ export function registerMatchRoutes(app: FastifyInstance): void {
   app.post("/api/zapas/:id/lobby", async (request) => {
     const zapasId = requireId(request);
     const { zapas, actor } = await roleVZapase(request, zapasId);
+    // Do dohraného ani zrušeného zápasu odkaz nepatří: nikam by nevedl a přepsal
+    // by to, co po zápase zbylo. Podmíněný byl doteď jen přechod stavu, ne
+    // samotné uložení.
+    if (zapas.stav === "dohrano" || zapas.stav === "zruseny") {
+      throw new HttpError(409, `Zápas je ve stavu „${zapas.stav}“, odkaz do lobby už nepřijímá.`);
+    }
     const { odkaz } = request.body as { odkaz?: unknown };
     const vysledek = parseJoinUri(typeof odkaz === "string" ? odkaz : "");
     if (!vysledek.ok) throw new HttpError(400, CHYBA_ODKAZU[vysledek.error]);

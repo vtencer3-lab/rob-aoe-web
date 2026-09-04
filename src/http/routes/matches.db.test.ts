@@ -274,6 +274,28 @@ it("nesmyslný odkaz se odmítne", async () => {
   await app.close();
 });
 
+it.each(["dohrano", "zruseny"])("do zápasu ve stavu %s se odkaz vložit nedá", async (stav) => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  const hostSid = await createSession(HRACI[1]!);
+  await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/stav`,
+    cookies: { sid: robSid },
+    payload: { stav },
+  });
+
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/lobby`,
+    cookies: { sid: hostSid },
+    payload: { odkaz: "aoe2de://0/234230181" },
+  });
+  expect(res.statusCode).toBe(409);
+  expect((await getZapas(zapas.id))!.zapas.lobbyId).toBeNull();
+  await app.close();
+});
+
 it("kdo není host, odkaz vložit nesmí", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
