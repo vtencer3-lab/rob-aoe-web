@@ -64,7 +64,16 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
     // některé závislosti nebo pádu zápisu). Přihlášení tím nesmí spadnout, ale
     // na rozdíl od dílčích chyb výše bychom jinak neměli žádný záznam o tom,
     // že se obnova statistik vůbec nepovedla — zkusíme to zapsat, nejlépe.
-    await deps.uloz(steamId, { chyba: `Obnova selhala: ${popis(err)}` }).catch(() => {});
+    // try/catch, ne .catch(): `.catch` visí až na vráceném příslibu, takže
+    // závislost, která vyhodí synchronně, by unikla i tomuhle poslednímu
+    // záchytu — a to zrovna v handleru, který tu je kvůli garanci „nikdy
+    // nevyhodí výjimku“.
+    try {
+      await deps.uloz(steamId, { chyba: `Obnova selhala: ${popis(err)}` });
+    } catch {
+      // Zapsat chybu se nepovedlo. Přihlášení tím spadnout nesmí, a víc už
+      // udělat nejde.
+    }
   }
 }
 

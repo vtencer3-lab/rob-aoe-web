@@ -103,6 +103,19 @@ describe("refreshPlayerStats", () => {
     await expect(refreshPlayerStats("76561198000000001", deps)).resolves.toBeUndefined();
   });
 
+  // Test výše používá `async`, tedy odmítnutý příslib. Synchronní pád (dřív, než
+  // příslib vůbec vznikne) je jiná noha: `.catch()` na něj nedosáhne, protože
+  // visí až na vráceném příslibu. Zápis se navíc zkouší dvakrát — jednou
+  // v hlavní cestě, podruhé v záchytném handleru — a projít musí obě.
+  it("synchronní pád zápisu (ne odmítnutý příslib) nevyhodí výjimku ven", async () => {
+    const uloz = vi.fn(() => {
+      throw new Error("databáze spí");
+    });
+    const { deps } = depsSe({ uloz });
+    await expect(refreshPlayerStats("76561198000000001", deps)).resolves.toBeUndefined();
+    expect(uloz).toHaveBeenCalledTimes(2);
+  });
+
   it("neznámý hráč v žebříčku se uloží bez aliasu a bez chyby", async () => {
     const { deps, ulozeno } = depsSe({ nactiZebricek: vi.fn(async () => null) });
     await refreshPlayerStats("76561198000000001", deps);
