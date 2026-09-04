@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "node --watch --experimental-strip-types src/main.ts",
     "build": "tsc -p tsconfig.json && npm --prefix web run build",
-    "start": "node dist/main.js",
+    "start": "node dist/src/main.js",
     "test": "vitest run",
     "test:db": "vitest run --config vitest.db.config.ts",
+    "test:web": "npm --prefix web run test",
     "db:migrate": "node --experimental-strip-types scripts/migrate.ts"
   },
   "dependencies": {

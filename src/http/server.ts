@@ -1,4 +1,7 @@
 import cookie from "@fastify/cookie";
+import fastifyStatic from "@fastify/static";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
@@ -36,6 +39,18 @@ export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
   registerAuthRoutes(app, deps);
   registerEventRoutes(app);
   registerStreamRoutes(app);
+
+  // tsconfig.json kompiluje se společným rootDir "." (kvůli scripts/**), takže
+  // sestavený server.js skončí v dist/src/http, ne v dist/http — proto je tu
+  // navíc jedna úroveň ".." oproti tomu, co by čekal zrcadlený src → dist.
+  const webDist = join(import.meta.dirname, "..", "..", "..", "web", "dist");
+  if (existsSync(webDist)) {
+    app.register(fastifyStatic, { root: webDist });
+    app.setNotFoundHandler((request, reply) => {
+      if (request.url.startsWith("/api/")) return reply.code(404).send({ chyba: "Neznámá cesta." });
+      return reply.sendFile("index.html");
+    });
+  }
 
   app.setErrorHandler((err, _request, reply) => {
     if (err instanceof HttpError) {

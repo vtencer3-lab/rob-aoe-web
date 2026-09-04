@@ -1,0 +1,56 @@
+:root {
+  --pozadi: #1a1712;
+  --text: #e8e0d0;
+  --tlumene: #9a8f7a;
+  --akcent: #c8a75a;
+  --modra: #2f6fd0;
+  --cervena: #c0392b;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--pozadi);
+  color: var(--text);
+  font: 15px/1.5 system-ui, sans-serif;
+}
+
+main { max-width: 62rem; margin: 0 auto; padding: 1.5rem; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+
+a.tlacitko, .cta {
+  display: inline-block;
+  background: var(--akcent);
+  color: #241d10;
+  font-weight: 700;
+  padding: 0.7rem 1rem;
+  border-radius: 5px;
+  text-decoration: none;
+}
+.cta[aria-disabled="true"] { background: #2c2620; color: #6d6455; cursor: not-allowed; }
+
+button { background: #3a3126; color: var(--text); border: 1px solid #4a4133; border-radius: 4px; padding: 0.4rem 0.7rem; cursor: pointer; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.seznam { width: 100%; border-collapse: collapse; }
+.seznam th { text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); }
+.seznam td, .seznam th { padding: 0.5rem 0.6rem; border-bottom: 1px solid #2a241c; }
+
+.prazdno, .ceka, .spojeni { color: var(--tlumene); }
+.varovani { color: var(--akcent); margin-left: 0.35rem; cursor: help; }
+.chyba { color: #e07a6a; }
+.potvrzeno { color: #7fb96a; }
+
+.karta, .zapas, .host { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+.karta .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
+.karta .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
+.karta.barva-1 .hero { background: var(--modra); }
+.karta.barva-2 .hero { background: var(--cervena); }
+
+.swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; }
+.barva-1 .swatch { background: var(--modra); }
+.barva-2 .swatch { background: var(--cervena); }
+
+.zrcadlo { list-style: none; padding: 0; }
+.zrcadlo li { padding: 0.4rem 0; border-bottom: 1px solid #2a241c; }
+.zaloha { color: var(--tlumene); font-size: 0.85rem; margin-top: 0.6rem; }
