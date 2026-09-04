@@ -1,6 +1,19 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { MAX_ODKLAD_MS, PRVNI_ODKLAD_MS, useAkceStav } from "./useAkceStav.js";
+import { api } from "./api.js";
+import {
+  DOTAZ_INTERVAL_MS,
+  MAX_ODKLAD_MS,
+  PRVNI_ODKLAD_MS,
+  TRPELIVOST_MS,
+  useAkceStav,
+} from "./useAkceStav.js";
+
+vi.mock("./api.js", () => ({ api: { akce: vi.fn() } }));
+
+const dotaz = vi.mocked(api.akce);
+
+const PRAZDNY_STAV = { akce: null, prihlaseni: [], zapasy: [] };
 
 const otevrene: FalesnyZdroj[] = [];
 
@@ -22,6 +35,8 @@ class FalesnyZdroj {
 
 beforeEach(() => {
   otevrene.length = 0;
+  dotaz.mockReset();
+  dotaz.mockResolvedValue(PRAZDNY_STAV);
   vi.useFakeTimers();
   vi.stubGlobal("EventSource", FalesnyZdroj);
 });
@@ -124,4 +139,99 @@ it("po odpojení komponenty se nic dalšího neotevírá", () => {
 
   act(() => void vi.advanceTimersByTime(MAX_ODKLAD_MS * 4));
   expect(otevrene).toHaveLength(1);
+});
+
+// Cloudflare quick tunnel drží celé tělo odpovědi, dokud neskončí — a náš
+// stream schválně nekončí nikdy. Přes takový proxy tedy nedorazí ani úvodní
+// snímek stavu a stránka zůstane napořád prázdná, aniž by cokoliv spadlo:
+// spojení je otevřené, jen mlčí. Proto se po chvíli ticha přepneme na
+// dotazování — /api/akce vrací tentýž redigovaný payload jako stream.
+it("po trpělivosti bez jediné zprávy ze streamu se zeptá na /api/akce", async () => {
+  const { unmount } = renderHook(() => useAkceStav());
+  act(() => otevrene[0]!.onopen!());
+
+  expect(dotaz).not.toHaveBeenCalled();
+
+  await act(async () => void vi.advanceTimersByTime(TRPELIVOST_MS));
+
+  expect(dotaz).toHaveBeenCalledTimes(1);
+  unmount();
+});
+
+it("dotazování se opakuje v intervalu, dokud stream mlčí", async () => {
+  const { unmount } = renderHook(() => useAkceStav());
+  await act(async () => void vi.advanceTimersByTime(TRPELIVOST_MS));
+  expect(dotaz).toHaveBeenCalledTimes(1);
+
+  await act(async () => void vi.advanceTimersByTime(DOTAZ_INTERVAL_MS));
+  expect(dotaz).toHaveBeenCalledTimes(2);
+  await act(async () => void vi.advanceTimersByTime(DOTAZ_INTERVAL_MS * 2));
+  expect(dotaz).toHaveBeenCalledTimes(4);
+  unmount();
+});
+
+it("odpověď z dotazování naplní stav a stránka se tváří spojeně", async () => {
+  dotaz.mockResolvedValue({
+    akce: { id: 1, nazev: "večer přes tunel", stav: "prihlasovani" },
+    prihlaseni: [],
+    zapasy: [],
+  });
+  const { result, unmount } = renderHook(() => useAkceStav());
+
+  await act(async () => void vi.advanceTimersByTime(TRPELIVOST_MS));
+
+  expect(result.current.stav?.akce?.nazev).toBe("večer přes tunel");
+  expect(result.current.spojeno).toBe(true);
+  unmount();
+});
+
+it("neúspěšné dotázání stránku označí za nespojenou, ale dotazování nekončí", async () => {
+  // Nejdřív jedno úspěšné, aby `spojeno` bylo prokazatelně true — jinak by
+  // test prošel i bez ošetření chyby, protože se startuje na false.
+  const { result, unmount } = renderHook(() => useAkceStav());
+  await act(async () => void vi.advanceTimersByTime(TRPELIVOST_MS));
+  expect(result.current.spojeno).toBe(true);
+
+  dotaz.mockRejectedValue(new Error("server neodpovídá"));
+  await act(async () => void vi.advanceTimersByTime(DOTAZ_INTERVAL_MS));
+  expect(result.current.spojeno).toBe(false);
+  expect(dotaz).toHaveBeenCalledTimes(2);
+
+  // Jedno selhání dotazování neukončí.
+  await act(async () => void vi.advanceTimersByTime(DOTAZ_INTERVAL_MS));
+  expect(dotaz).toHaveBeenCalledTimes(3);
+  unmount();
+});
+
+it("když stream promluví, dotazování se zastaví", async () => {
+  const { unmount } = renderHook(() => useAkceStav());
+  await act(async () => void vi.advanceTimersByTime(TRPELIVOST_MS));
+  expect(dotaz).toHaveBeenCalledTimes(1);
+
+  act(() => otevrene[0]!.onmessage!({ data: JSON.stringify(PRAZDNY_STAV) }));
+
+  await act(async () => void vi.advanceTimersByTime(DOTAZ_INTERVAL_MS * 5));
+  expect(dotaz).toHaveBeenCalledTimes(1);
+  unmount();
+});
+
+it("stream, který doručí včas, se dotazováním vůbec nedoprovází", async () => {
+  const { unmount } = renderHook(() => useAkceStav());
+  act(() => otevrene[0]!.onmessage!({ data: JSON.stringify(PRAZDNY_STAV) }));
+
+  await act(async () => void vi.advanceTimersByTime(TRPELIVOST_MS * 4));
+
+  expect(dotaz).not.toHaveBeenCalled();
+  unmount();
+});
+
+it("po odpojení komponenty se dotazování zastaví", async () => {
+  const { unmount } = renderHook(() => useAkceStav());
+  await act(async () => void vi.advanceTimersByTime(TRPELIVOST_MS));
+  expect(dotaz).toHaveBeenCalledTimes(1);
+
+  unmount();
+
+  await act(async () => void vi.advanceTimersByTime(DOTAZ_INTERVAL_MS * 10));
+  expect(dotaz).toHaveBeenCalledTimes(1);
 });

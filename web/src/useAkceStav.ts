@@ -1,22 +1,42 @@
 import { useEffect, useState } from "react";
 import type { AkceStavPayload } from "../../src/shared/types.js";
+import { api } from "./api.js";
 
 /** První pokus o obnovu je skoro okamžitý, další se zdvojnásobují až na strop. */
 export const PRVNI_ODKLAD_MS = 1_000;
 /** Strop odkladu. Nečinná stránka se tak ptá nejvýš čtyřikrát za minutu. */
 export const MAX_ODKLAD_MS = 15_000;
+/** Jak dlouho snese otevřený, ale mlčící stream, než ho přestaneme brát vážně. */
+export const TRPELIVOST_MS = 5_000;
+/** Tempo náhradního dotazování. Dost husté na živý večer, dost řídké na server. */
+export const DOTAZ_INTERVAL_MS = 3_000;
 
 /**
  * Server posílá celý stav akce, ne přírůstky. Proto se tady nic neskládá —
  * poslední přijatá zpráva je pravda a obnova po výpadku spojení je zdarma.
+ * Tatáž vlastnost dělá z `/api/akce` plnohodnotnou náhradu streamu: vrací
+ * doslova týž redigovaný payload, jen na vyžádání.
  *
- * Spojení si obnovujeme sami, protože na vestavěné chování EventSource se tu
- * spolehnout nejde: podle specifikace SSE prohlížeč spojení po jiném stavovém
- * kódu než 200 natvrdo ukončí (readyState = CLOSED) a už nikdy ho sám
- * neotevře. `/api/stream` přitom vrací 404, dokud Rob večer nezaloží — takže
- * kdo si stránku otevře dřív, zůstal by mrtvý navždy. Vlastní obnova navíc
- * pokrývá i výpadek tunelu nebo restart serveru, což u Cloudflare Tunnelu
- * z domácího stroje není teoretická situace.
+ * Hook drží dvě zábradlí proti dvěma různým způsobům, jak stream umře:
+ *
+ * 1. **Spojení spadne.** Obnovujeme si ho sami, protože na EventSource se
+ *    spolehnout nejde — podle specifikace SSE prohlížeč po jiném stavovém
+ *    kódu než 200 spojení natvrdo ukončí (readyState = CLOSED) a sám už ho
+ *    neotevře. Pokrývá to i výpadek tunelu nebo restart serveru, což u
+ *    Cloudflare Tunnelu z domácího stroje není teoretická situace.
+ *
+ * 2. **Spojení stojí otevřené a mlčí.** Tohle je zákeřnější, protože se
+ *    nevyhodí žádná chyba a stránka jen navždy zůstane prázdná. Přesně tak se
+ *    chová Cloudflare quick tunnel (`*.trycloudflare.com`): drží celé tělo
+ *    odpovědi, dokud neskončí, a náš stream schválně nekončí nikdy — takže
+ *    přes něj nedorazí ani úvodní snímek stavu. Změřeno, hlavičkami
+ *    (`cache-control: no-cache`, `x-accel-buffering: no`) to nejde ubránit,
+ *    edge je z odpovědi zahodí. Po TRPELIVOST_MS ticha proto přepneme na
+ *    dotazování.
+ *
+ * Mlčící stream přitom **nezavíráme**. Nic nás nestojí a kdyby se cesta ven
+ * někdy pročistila (jiný tunel, jiná trasa), první doručená zpráva dotazování
+ * sama vypne a jsme zpátky na realtime bez jediného refreshe.
  */
 export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean } {
   const [stav, setStav] = useState<AkceStavPayload | null>(null);
@@ -27,6 +47,33 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
     let casovac: ReturnType<typeof setTimeout> | undefined;
     let odklad = PRVNI_ODKLAD_MS;
     let ukonceno = false;
+    let hlidka: ReturnType<typeof setTimeout> | undefined;
+    let dotazovani: ReturnType<typeof setInterval> | undefined;
+
+    const dotazSeServeru = async () => {
+      try {
+        const novy = await api.akce();
+        if (ukonceno) return;
+        setStav(novy);
+        setSpojeno(true);
+      } catch {
+        if (!ukonceno) setSpojeno(false);
+      }
+    };
+
+    // Otevřený stream, kterým nic neteče, je horší než spadlý: nic se
+    // nevyhodí, jen stránka navždy mlčí. Tuhle přesnou vadu dělá Cloudflare
+    // quick tunnel, který tělo odpovědi drží až do jejího konce.
+    const zapniDotazovani = () => {
+      if (dotazovani) return;
+      void dotazSeServeru();
+      dotazovani = setInterval(() => void dotazSeServeru(), DOTAZ_INTERVAL_MS);
+    };
+
+    const vypniDotazovani = () => {
+      clearInterval(dotazovani);
+      dotazovani = undefined;
+    };
 
     const otevri = () => {
       const aktualni = new EventSource("/api/stream");
@@ -37,6 +84,10 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
         setSpojeno(true);
       };
       aktualni.onmessage = (udalost) => {
+        // Stream mluví — náhrada už není k ničemu.
+        clearTimeout(hlidka);
+        hlidka = undefined;
+        vypniDotazovani();
         odklad = PRVNI_ODKLAD_MS;
         setStav(JSON.parse(udalost.data) as AkceStavPayload);
         setSpojeno(true);
@@ -53,10 +104,13 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
     };
 
     otevri();
+    hlidka = setTimeout(zapniDotazovani, TRPELIVOST_MS);
 
     return () => {
       ukonceno = true;
       clearTimeout(casovac);
+      clearTimeout(hlidka);
+      vypniDotazovani();
       zdroj?.close();
     };
   }, []);

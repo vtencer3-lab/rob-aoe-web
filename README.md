@@ -184,10 +184,28 @@ npm start
 ### Krok 3 — ověřit realtime přes tunel (dělá člověk, potřeba dva prohlížeče)
 
 Otevři tunelovou adresu ve dvou prohlížečích. V jednom se přihlas do akce a
-ověř, že se to ve druhém objeví **samo, bez refreshe**. Pokud by se změny
-objevovaly opožděně nebo v dávkách, chybí na SSE routě (`/api/stream`)
-hlavičky `cache-control: no-cache` a `x-accel-buffering: no` — v aktuálním
-kódu (`src/http/routes/stream.ts`) jsou obě nastavené.
+ověř, že se to ve druhém objeví **samo, bez refreshe**.
+
+**Přes `*.trycloudflare.com` to samo neteče a je to vada tunelu, ne webu.**
+Bezplatný quick tunnel drží celé tělo odpovědi, dokud odpověď neskončí — a
+SSE stream schválně nekončí nikdy. Změřeno sondou mimo aplikaci: na
+localhostu chodí události po sekundě, přes tunel nedorazí za 40 sekund ani
+bajt, a když se odpověď nechá po čtyřech sekundách skončit, spadne všechno
+najednou v okamžiku jejího konce. Nepomůže výplň (zkoušeno do 16 kB), vypnutá
+komprese, ani přepnutí `cloudflared --protocol http2` místo výchozího QUIC.
+Hlavičkami se to ubránit nedá: `x-accel-buffering: no` edge z odpovědi
+zahodí. Chová se tak i `text/plain`, takže o typ obsahu nejde.
+
+Proto se stránka po pár vteřinách ticha sama přepne na **dotazování**
+`/api/akce` (viz `web/src/useAkceStav.ts`). Vrací doslova týž redigovaný
+payload jako stream, takže se večer chová správně, jen se stav obnovuje po
+třech vteřinách místo okamžitě. Až se objeví první zpráva ze streamu,
+dotazování se samo vypne.
+
+Když chceš skutečný realtime, potřebuješ cestu ven, která nebufferuje —
+pojmenovaný Cloudflare tunel na vlastní doméně, Tailscale Funnel, ngrok nebo
+podobně. Poznáš to na první pohled: hláška „Obnovuji spojení…“ zmizí a změny
+naskakují okamžitě, ne po třívteřinových skocích.
 
 ## Jak to funguje ve zkratce
 
@@ -198,6 +216,9 @@ lobby a oba odkazy se z něj odvozují (viz `src/aoe/lobbyUri.ts`).
 
 ## Známá omezení
 
+- Bezplatný Cloudflare quick tunnel (`*.trycloudflare.com`) SSE nepropustí —
+  viz Krok 3 výše. Web na tom nespadne (přepne se na dotazování), ale realtime
+  přes něj nedostaneš.
 - Chování na verzi hry z Microsoft Store / Xbox aplikace není ověřené — nikdo
   z týmu tuhle verzi nemá k dispozici na otestování.
 - URL helper AoE2 DE (`AOEURLHelper.exe`), který odkazy `aoe2de://` zpracovává,
