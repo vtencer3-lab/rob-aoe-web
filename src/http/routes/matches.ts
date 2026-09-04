@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { parseJoinUri, type LobbyUriError } from "../../aoe/lobbyUri.js";
+import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import {
   createZapas,
   getZapas,
@@ -26,16 +27,6 @@ const CHYBA_ODKAZU: Record<LobbyUriError, string> = {
     "Tohle je divácký odkaz (aoe2de://1/…). Potřebuju ten z tlačítka Copy v lobby, který začíná aoe2de://0/.",
   spatny_tvar: "Tohle nevypadá jako odkaz na lobby. Má vypadat takhle: aoe2de://0/234230181",
 };
-
-/** Souběžné vytvoření dvou zápasů se stejným pořadím narazí na unikátní omezení v DB — skutečný konflikt, ne interní chyba. */
-function jeSoubezneVytvoreniKonflikt(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: unknown }).code === "23505"
-  );
-}
 
 async function nactiNeboSelzi(zapasId: number) {
   const zaznam = await getZapas(zapasId);
@@ -74,7 +65,9 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     } catch (err) {
       if (err instanceof UcastnikOdhlasenChyba) throw new HttpError(409, err.message);
       if (err instanceof SestavaChyba) throw new HttpError(400, err.message);
-      if (jeSoubezneVytvoreniKonflikt(err)) {
+      // Souběžné vytvoření dvou zápasů se stejným pořadím narazí na unikátní
+      // omezení (akce_id, poradi).
+      if (jeUnikatniKonflikt(err)) {
         throw new HttpError(409, "Zápas se právě vytváří někým jiným, zkus to znovu.");
       }
       throw err;

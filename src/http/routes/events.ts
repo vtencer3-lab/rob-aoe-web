@@ -7,6 +7,7 @@ import {
   withdraw,
   type AkceStav,
 } from "../../db/events.js";
+import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
@@ -25,9 +26,22 @@ export function registerEventRoutes(app: FastifyInstance): void {
     if (typeof nazev !== "string" || nazev.trim() === "") {
       throw new HttpError(400, "Akce musí mít název.");
     }
-    const akce = await createAkce(nazev.trim());
-    await broadcastAkce(akce.id);
-    return { akce };
+    try {
+      const akce = await createAkce(nazev.trim());
+      await broadcastAkce(akce.id);
+      return { akce };
+    } catch (err) {
+      // Migrace 003 drží v databázi invariant „nejvýš jedna nedokončená akce“.
+      // Bez něj by se odběratelé SSE přihlášení na starou akci tiše zasekli na
+      // posledním stavu, takže je lepší Roba zastavit hned a srozumitelně.
+      if (jeUnikatniKonflikt(err)) {
+        throw new HttpError(
+          409,
+          "Ještě běží jiná akce. Nastav jí nejdřív stav „konec“, teprve pak zakládej další.",
+        );
+      }
+      throw err;
+    }
   });
 
   app.post("/api/akce/:id/stav", async (request) => {

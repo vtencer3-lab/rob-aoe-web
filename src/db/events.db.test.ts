@@ -32,6 +32,23 @@ it("aktivní akce je ta nejnovější nedokončená", async () => {
   expect((await getAktivniAkce())?.id).toBe(nova.id);
 });
 
+// Invariant „nejvýš jedna nedokončená akce“ drží od migrace 003 databáze sama.
+// Dřív ho nedržel nikdo: getAktivniAkce si jednu jen VYBERE, ale odběratelé SSE
+// jsou přihlášení na akce.id z okamžiku připojení, takže druhá otevřená akce
+// znamená, že broadcast jde na kanál, na kterém nikdo není — všem tiše zamrzne
+// stránka.
+it("druhou nedokončenou akci databáze nepustí", async () => {
+  await createAkce("tenhle večer");
+  await expect(createAkce("příští týden")).rejects.toMatchObject({ code: "23505" });
+});
+
+it("po uzavření předchozí akce jde založit další", async () => {
+  const stara = await createAkce("tenhle večer");
+  await setAkceStav(stara.id, "konec");
+  const nova = await createAkce("příští týden");
+  expect((await getAktivniAkce())?.id).toBe(nova.id);
+});
+
 it("bez akce vrátí null", async () => {
   expect(await getAktivniAkce()).toBeNull();
 });

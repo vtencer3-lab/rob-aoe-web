@@ -13,6 +13,11 @@ it("schéma je nasazené", async () => {
 });
 
 it("transakce se při chybě vrátí zpět", async () => {
+  // Uklidit po předchozích souborech musíme sami: od migrace 003 smí být
+  // nedokončená akce nejvýš jedna, takže by vložení narazilo na unikátní index
+  // dřív, než se vůbec dostaneme k vlastní chybě, kvůli které test existuje.
+  await getPool().query("TRUNCATE akce CASCADE");
+
   await expect(
     withTransaction(async (client) => {
       await client.query("INSERT INTO akce (nazev) VALUES ('pokus')");

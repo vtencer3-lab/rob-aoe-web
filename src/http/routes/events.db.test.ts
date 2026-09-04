@@ -108,6 +108,46 @@ it("Rob smí založit akci a otevřít přihlašování", async () => {
   await app.close();
 });
 
+// Rob složí příští týden dřív, než uzavře tenhle večer — úplně běžná akce,
+// kterou nic nezakazovalo. Musí dostat srozumitelné 409, ne 500.
+it("založení druhé akce vedle běžící vrátí 409 se srozumitelnou hláškou", async () => {
+  const { sid } = await prihlasenyKlient(ROB, true);
+  const app = buildServer();
+
+  const prvni = await app.inject({
+    method: "POST",
+    url: "/api/akce",
+    cookies: { sid },
+    payload: { nazev: "tenhle večer" },
+  });
+  expect(prvni.statusCode).toBe(200);
+
+  const druha = await app.inject({
+    method: "POST",
+    url: "/api/akce",
+    cookies: { sid },
+    payload: { nazev: "příští týden" },
+  });
+  expect(druha.statusCode).toBe(409);
+  expect(druha.json().chyba).toMatch(/konec/i);
+
+  // Po uzavření té první už další projde.
+  await app.inject({
+    method: "POST",
+    url: `/api/akce/${prvni.json().akce.id}/stav`,
+    cookies: { sid },
+    payload: { stav: "konec" },
+  });
+  const potreti = await app.inject({
+    method: "POST",
+    url: "/api/akce",
+    cookies: { sid },
+    payload: { nazev: "příští týden" },
+  });
+  expect(potreti.statusCode).toBe(200);
+  await app.close();
+});
+
 it("nečíselné ID akce vrátí 400 místo pádu do DB", async () => {
   const { sid } = await prihlasenyKlient(ROB, true);
   const app = buildServer();
