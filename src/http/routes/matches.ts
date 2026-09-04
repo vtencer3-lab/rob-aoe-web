@@ -9,6 +9,7 @@ import {
   setLobbyId,
   setVysledek,
   setZapasStav,
+  UcastnikOdhlasenChyba,
 } from "../../db/matches.js";
 import { getPlayer } from "../../db/players.js";
 import { MATCH_STATES, type MatchState } from "../../matches/stateMachine.js";
@@ -24,6 +25,16 @@ const CHYBA_ODKAZU: Record<string, string> = {
     "Tohle je divácký odkaz (aoe2de://1/…). Potřebuju ten z tlačítka Copy v lobby, který začíná aoe2de://0/.",
   spatny_tvar: "Tohle nevypadá jako odkaz na lobby. Má vypadat takhle: aoe2de://0/234230181",
 };
+
+/** Souběžné vytvoření dvou zápasů se stejným pořadím narazí na unikátní omezení v DB — skutečný konflikt, ne interní chyba. */
+function jeSoubezneVytvoreniKonflikt(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === "23505"
+  );
+}
 
 async function nactiNeboSelzi(zapasId: number) {
   const zaznam = await getZapas(zapasId);
@@ -56,9 +67,15 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     try {
       const zapas = await createZapas(akceId, format as Format, steamIds as string[]);
       await broadcastAkce(akceId);
-      return { zapas };
+      // Klientovi stačí ID — heslo, číslo lobby i potvrzení hosta jsou tajemství,
+      // co proudí jen redigovaným SSE kanálem, nikdy syrová v odpovědi na admin akci.
+      return { zapas: { id: zapas.id } };
     } catch (err) {
-      throw new HttpError(409, err instanceof Error ? err.message : "Zápas se nepodařilo vytvořit.");
+      if (err instanceof UcastnikOdhlasenChyba) throw new HttpError(409, err.message);
+      if (jeSoubezneVytvoreniKonflikt(err)) {
+        throw new HttpError(409, "Zápas se právě vytváří někým jiným, zkus to znovu.");
+      }
+      throw err;
     }
   });
 

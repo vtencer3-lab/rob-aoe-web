@@ -16,6 +16,9 @@ export interface ZapasRow {
   hostPotvrdil: Date | null;
 }
 
+/** Hráč vybraný do zápasu se mezi kontrolou přihlášek a vložením zápasu odhlásil — skutečný konflikt, ne interní chyba. */
+export class UcastnikOdhlasenChyba extends Error {}
+
 export interface UcastnikRow {
   steamId: string;
   alias: string | null;
@@ -57,7 +60,7 @@ export async function createZapas(
     const podleId = new Map(prihlaseni.map((r) => [r.steam_id, r.odehrano_her]));
     for (const steamId of steamIds) {
       if (!podleId.has(steamId)) {
-        throw new Error(`Hráč ${steamId} už není přihlášený do akce.`);
+        throw new UcastnikOdhlasenChyba(`Hráč ${steamId} už není přihlášený do akce.`);
       }
     }
 
