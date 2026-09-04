@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { parseJoinUri } from "../../aoe/lobbyUri.js";
+import { parseJoinUri, type LobbyUriError } from "../../aoe/lobbyUri.js";
 import {
   createZapas,
   getZapas,
@@ -19,7 +19,7 @@ import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 
 const FORMATY: readonly Format[] = ["1v1", "coop_kings_2v2"];
 
-const CHYBA_ODKAZU: Record<string, string> = {
+const CHYBA_ODKAZU: Record<LobbyUriError, string> = {
   prazdne: "Vlož odkaz z tlačítka Copy ve hře.",
   divacky_odkaz:
     "Tohle je divácký odkaz (aoe2de://1/…). Potřebuju ten z tlačítka Copy v lobby, který začíná aoe2de://0/.",
@@ -97,7 +97,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     const { zapas, actor } = await roleVZapase(request, zapasId);
     const { odkaz } = request.body as { odkaz?: unknown };
     const vysledek = parseJoinUri(typeof odkaz === "string" ? odkaz : "");
-    if (!vysledek.ok) throw new HttpError(400, CHYBA_ODKAZU[vysledek.error]!);
+    if (!vysledek.ok) throw new HttpError(400, CHYBA_ODKAZU[vysledek.error]);
 
     await setLobbyId(zapasId, vysledek.lobbyId);
     if (zapas.stav === "vyhlaseny") await setZapasStav(zapasId, "lobby_otevrena", actor);
