@@ -14,7 +14,7 @@ import { getPlayer } from "../../db/players.js";
 import { MATCH_STATES, type MatchState } from "../../matches/stateMachine.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import type { Format, Tym } from "../../shared/types.js";
-import { HttpError, requireAdmin, requireUser } from "../guards.js";
+import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 
 const FORMATY: readonly Format[] = ["1v1", "coop_kings_2v2"];
 
@@ -45,7 +45,7 @@ async function roleVZapase(request: Parameters<typeof requireUser>[0], zapasId: 
 export function registerMatchRoutes(app: FastifyInstance): void {
   app.post("/api/akce/:id/zapas", async (request) => {
     await requireAdmin(request);
-    const akceId = Number((request.params as { id: string }).id);
+    const akceId = requireId(request);
     const { format, steamIds } = request.body as { format?: unknown; steamIds?: unknown };
     if (typeof format !== "string" || !FORMATY.includes(format as Format)) {
       throw new HttpError(400, "Neznámý formát zápasu.");
@@ -64,7 +64,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
 
   app.post("/api/zapas/:id/stav", async (request) => {
     await requireAdmin(request);
-    const zapasId = Number((request.params as { id: string }).id);
+    const zapasId = requireId(request);
     const { stav } = request.body as { stav?: unknown };
     if (typeof stav !== "string" || !MATCH_STATES.includes(stav as MatchState)) {
       throw new HttpError(400, "Neznámý stav zápasu.");
@@ -76,7 +76,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
   });
 
   app.post("/api/zapas/:id/lobby", async (request) => {
-    const zapasId = Number((request.params as { id: string }).id);
+    const zapasId = requireId(request);
     const { zapas, actor } = await roleVZapase(request, zapasId);
     const { odkaz } = request.body as { odkaz?: unknown };
     const vysledek = parseJoinUri(typeof odkaz === "string" ? odkaz : "");
@@ -89,7 +89,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
   });
 
   app.post("/api/zapas/:id/potvrzeni", async (request) => {
-    const zapasId = Number((request.params as { id: string }).id);
+    const zapasId = requireId(request);
     const { zapas } = await roleVZapase(request, zapasId);
     await setHostPotvrdil(zapasId);
     await broadcastAkce(zapas.akceId);
@@ -98,7 +98,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
 
   app.post("/api/zapas/:id/host", async (request) => {
     await requireAdmin(request);
-    const zapasId = Number((request.params as { id: string }).id);
+    const zapasId = requireId(request);
     const { steamId } = request.body as { steamId?: unknown };
     if (typeof steamId !== "string") throw new HttpError(400, "Chybí hráč, který má hostovat.");
     const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
@@ -112,7 +112,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
 
   app.post("/api/zapas/:id/pripojeni", async (request) => {
     const steamId = await requireUser(request);
-    const zapasId = Number((request.params as { id: string }).id);
+    const zapasId = requireId(request);
     const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
     if (!ucastnici.some((u) => u.steamId === steamId)) {
       throw new HttpError(403, "V tomhle zápase nehraješ.");
@@ -124,7 +124,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
 
   app.post("/api/zapas/:id/vysledek", async (request) => {
     await requireAdmin(request);
-    const zapasId = Number((request.params as { id: string }).id);
+    const zapasId = requireId(request);
     const { viteznyTym } = request.body as { viteznyTym?: unknown };
     if (viteznyTym !== 1 && viteznyTym !== 2) throw new HttpError(400, "Vítězný tým je 1 nebo 2.");
     const { zapas } = await nactiNeboSelzi(zapasId);

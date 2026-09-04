@@ -23,3 +23,13 @@ export async function requireAdmin(request: FastifyRequest): Promise<string> {
   if (!hrac?.jeAdmin) throw new HttpError(403, "Tohle smí jen Rob.");
   return steamId;
 }
+
+/** Přečte ":id" z cesty a ověří, že je to kladné celé číslo — jinak 400 místo NaN v SQL. */
+export function requireId(request: FastifyRequest): number {
+  const hodnota = (request.params as { id?: string }).id;
+  const cislo = Number(hodnota);
+  if (!Number.isInteger(cislo) || cislo <= 0) {
+    throw new HttpError(400, "Neplatné ID v adrese.");
+  }
+  return cislo;
+}
