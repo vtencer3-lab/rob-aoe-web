@@ -68,6 +68,47 @@ describe("redigujProDivaka", () => {
     expect(videny.ucastnici).toHaveLength(2);
   });
 
+  // Specifikace §7: „nachystany | Rob složil sestavu, nikdo to ještě nevidí.“
+  // Plán s tím byl v rozporu (createZapas rovnou broadcastuje), specifikace je
+  // závazná, takže vyhrává ona.
+  it("cizí divák nachystaný zápas vůbec nedostane", () => {
+    const nachystany: AkceStavPayload = {
+      ...stav,
+      zapasy: [{ ...zapas, stav: "nachystany" }],
+    };
+    expect(redigujProDivaka(nachystany, { steamId: CIZI, jeAdmin: false }).zapasy).toHaveLength(0);
+  });
+
+  it("ani účastník nachystaný zápas nedostane — nevidí ho nikdo než Rob", () => {
+    const nachystany: AkceStavPayload = {
+      ...stav,
+      zapasy: [{ ...zapas, stav: "nachystany" }],
+    };
+    expect(redigujProDivaka(nachystany, { steamId: HRAC, jeAdmin: false }).zapasy).toHaveLength(0);
+    expect(redigujProDivaka(nachystany, { steamId: null, jeAdmin: false }).zapasy).toHaveLength(0);
+  });
+
+  it("Rob nachystaný zápas vidí — je to jeho skládací pohled", () => {
+    const nachystany: AkceStavPayload = {
+      ...stav,
+      zapasy: [{ ...zapas, stav: "nachystany" }],
+    };
+    const videny = redigujProDivaka(nachystany, { steamId: "rob", jeAdmin: true }).zapasy;
+    expect(videny).toHaveLength(1);
+    expect(videny[0]!.stav).toBe("nachystany");
+    expect(videny[0]!.heslo).toBe("k7rm2xq9");
+  });
+
+  it("skrytí nachystaného zápasu neskryje ostatní zápasy téže akce", () => {
+    const dva: AkceStavPayload = {
+      ...stav,
+      zapasy: [{ ...zapas, id: 9, stav: "nachystany" }, zapas],
+    };
+    const videny = redigujProDivaka(dva, { steamId: HRAC, jeAdmin: false }).zapasy;
+    expect(videny).toHaveLength(1);
+    expect(videny[0]!.id).toBe(1);
+  });
+
   it("původní stav se nezmění", () => {
     redigujProDivaka(stav, { steamId: CIZI, jeAdmin: false });
     expect(stav.zapasy[0]!.heslo).toBe("k7rm2xq9");

@@ -21,11 +21,21 @@ export async function zjistiDivaka(request: FastifyRequest): Promise<Divak> {
 /**
  * Heslo a číslo lobby jsou tajemství. SSE kanál je jeden pro celou akci, takže
  * se zaslepují až tady — každému divákovi zvlášť, těsně před odesláním.
+ *
+ * Tady se taky rozhoduje, které zápasy divák vůbec uvidí. Podle specifikace §7
+ * znamená stav „nachystany“ doslova „Rob složil sestavu, nikdo to ještě
+ * nevidí“ — skládání dvojic naživo na streamu je celý smysl věci, a kdyby se
+ * sestava objevila lidem na obrazovce ve chvíli, kdy ji Rob klikne, přišel by
+ * o pointu. Filtruje se to na téhle hranici, ne v prohlížeči: klientský filtr
+ * by nechal dvojice viset v odpovědi, kterou si kdokoliv přečte v síťové
+ * záložce. Rob (admin) je vidí dál — to je jeho skládací pohled.
  */
 export function redigujProDivaka(payload: AkceStavPayload, divak: Divak): AkceStavPayload {
   return {
     ...payload,
-    zapasy: payload.zapasy.map((zapas) => redigujZapas(zapas, divak)),
+    zapasy: payload.zapasy
+      .filter((zapas) => divak.jeAdmin || zapas.stav !== "nachystany")
+      .map((zapas) => redigujZapas(zapas, divak)),
   };
 }
 

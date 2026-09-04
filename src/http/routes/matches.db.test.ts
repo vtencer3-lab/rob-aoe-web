@@ -356,6 +356,37 @@ it("Rob zapíše vítěze", async () => {
 // Pozor na jméno: tenhle test kontroluje GET /api/akce, NE SSE stream — tam
 // vede vlastní test v stream.db.test.ts. Dřív se jmenoval "…ve streamu…" a
 // tvrdil tím pokrytí, které neměl.
+// Specifikace §7: nachystaný zápas nikdo kromě Roba nevidí. Skládání dvojic
+// naživo na streamu je celý smysl věci — kdyby se sestava objevila lidem na
+// obrazovce ve chvíli, kdy ji Rob klikne, byla by pointa pryč. Filtruje to
+// redakční hranice na serveru, takže dvojice nejsou ani v odpovědi.
+it("nachystaný zápas nevidí ani účastník, jen Rob", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  expect((await getZapas(zapas.id))!.zapas.stav).toBe("nachystany");
+
+  const ucastnik = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } });
+  expect(ucastnik.json().zapasy).toHaveLength(0);
+
+  const anonym = await app.inject({ method: "GET", url: "/api/akce" });
+  expect(anonym.json().zapasy).toHaveLength(0);
+
+  const robuv = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: robSid } });
+  expect(robuv.json().zapasy).toHaveLength(1);
+  expect(robuv.json().zapasy[0].stav).toBe("nachystany");
+
+  // Jakmile ho Rob vyhlásí, účastník ho dostane.
+  await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/stav`,
+    cookies: { sid: robSid },
+    payload: { stav: "vyhlaseny" },
+  });
+  const po = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } });
+  expect(po.json().zapasy).toHaveLength(1);
+  await app.close();
+});
+
 it("cizí divák nevidí v GET /api/akce heslo", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
