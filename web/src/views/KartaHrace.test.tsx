@@ -16,10 +16,10 @@ const zapas: ZapasView = {
   viteznyTym: null,
   hostPotvrdil: null,
   ucastnici: [
-    { steamId: "ja", alias: "TenceR", tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
-    { steamId: "b", alias: "Pepa_CZ", tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
   ],
 };
 
@@ -71,4 +71,23 @@ it("kliknutí na připojení se ohlásí serveru", async () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={onPripojit} />);
   screen.getByRole("link", { name: /připojit/i }).click();
   expect(onPripojit).toHaveBeenCalledWith(1);
+});
+
+// Druhý Steam účet bez hodnocené hry alias nemá. Bez fallbacku na steamName
+// stojí v „Proti vám“ syrové 64bitové číslo.
+it("spoluhráče i soupeře bez aliasu pojmenuje jménem ze Steamu", () => {
+  const bezAliasu: ZapasView = {
+    ...zapas,
+    ucastnici: [
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
+      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
+      { steamId: "c", alias: null, steamName: "Marecek", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+      { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    ],
+  };
+  render(<KartaHrace zapas={bezAliasu} ja="ja" onPripojit={vi.fn()} />);
+
+  expect(screen.getByText(/TibbarZmr/)).toBeInTheDocument();
+  expect(screen.getByText(/Marecek/)).toBeInTheDocument();
+  expect(screen.queryByText(/76561199091641101/)).not.toBeInTheDocument();
 });

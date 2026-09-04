@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Me } from "./api.js";
 import { useAkceStav } from "./useAkceStav.js";
-import { mojeZapasy, mujUcastnik } from "./zapas.js";
+import { jmenoHrace, mojeZapasy, mujUcastnik } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Rezie } from "./views/Rezie.js";
@@ -46,7 +46,7 @@ export function App() {
         <h1>Komunitní hry — Robdiesalot</h1>
         {me ? (
           <span>
-            {me.alias ?? me.steamId}{" "}
+            {jmenoHrace(me)}{" "}
             <button onClick={() => void api.odhlasitSe().then(() => setMe(null))}>Odhlásit</button>
           </span>
         ) : (

@@ -18,8 +18,8 @@ const zapas: ZapasView = {
   viteznyTym: null,
   hostPotvrdil: null,
   ucastnici: [
-    { steamId: HRAC, alias: "TenceR", tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
-    { steamId: "x", alias: "Pepa", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    { steamId: HRAC, alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
+    { steamId: "x", alias: "Pepa", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
   ],
 };
 
@@ -125,8 +125,8 @@ describe("redigujProDivaka", () => {
       joinUri: "aoe2de://0/999999999",
       spectatorUri: "aoe2de://1/999999999",
       ucastnici: [
-        { steamId: CIZI, alias: "Jiny", tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
-        { steamId: "y", alias: "Franta", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+        { steamId: CIZI, alias: "Jiny", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
+        { steamId: "y", alias: "Franta", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
       ],
     };
     const dvaZapasy: AkceStavPayload = { ...stav, zapasy: [zapas, druhyZapas] };

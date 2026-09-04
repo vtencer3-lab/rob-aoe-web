@@ -1,5 +1,5 @@
 import { BARVA_NAZEV, type ZapasView } from "../../../src/shared/types.js";
-import { mujUcastnik, souperi, spoluhraci } from "../zapas.js";
+import { jmenoHrace, mujUcastnik, souperi, spoluhraci } from "../zapas.js";
 
 interface Props {
   zapas: ZapasView;
@@ -33,7 +33,7 @@ export function KartaHrace({ zapas, ja, onPripojit }: Props) {
       </p>
       {parta.length > 0 ? (
         <p>
-          Civilizaci sdílíš s <strong>{parta.map((s) => s.alias ?? s.steamId).join(", ")}</strong> —
+          Civilizaci sdílíš s <strong>{parta.map(jmenoHrace).join(", ")}</strong> —
           musíte mít oba stejnou barvu.
         </p>
       ) : null}
@@ -47,7 +47,7 @@ export function KartaHrace({ zapas, ja, onPripojit }: Props) {
       )}
 
       <footer>
-        <p>Proti vám: {proti.map((s) => s.alias ?? s.steamId).join(", ")}</p>
+        <p>Proti vám: {proti.map(jmenoHrace).join(", ")}</p>
         <p>
           Nejde odkaz? V lobby prohlížeči hledej <strong>{zapas.nazevLobby}</strong>
           {zapas.lobbyId ? (

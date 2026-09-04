@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BARVA_NAZEV, type AkceStavPayload, type Format, type Tym } from "../../../src/shared/types.js";
+import { jmenoHrace } from "../zapas.js";
 
 interface Props {
   stav: AkceStavPayload;
@@ -49,7 +50,7 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
                   {/* Text ve vlastním spanu, aby ho flex bral jako jednu položku
                       a tlačítko se mu nelepilo na poslední písmeno. */}
                   <span>
-                    {u.alias ?? u.steamId} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
+                    {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
                     {u.jeHost ? " (host)" : ""}
                     {" · "}
                     {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
@@ -57,7 +58,7 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
                   </span>
                   <button
                     onClick={() => {
-                      if (potvrdZmenuHosta(u.alias ?? u.steamId)) onHost(zapas.id, u.steamId);
+                      if (potvrdZmenuHosta(jmenoHrace(u))) onHost(zapas.id, u.steamId);
                     }}
                   >
                     Hostuje tenhle

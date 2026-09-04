@@ -42,6 +42,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,
       alias: u.alias,
+      steamName: u.steamName,
       tym: u.tym,
       barva: u.barva,
       jeHost: u.jeHost,

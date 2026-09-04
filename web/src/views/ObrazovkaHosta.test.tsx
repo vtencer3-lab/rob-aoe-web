@@ -17,10 +17,10 @@ const zaklad: ZapasView = {
   viteznyTym: null,
   hostPotvrdil: null,
   ucastnici: [
-    { steamId: "ja", alias: "TenceR", tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
-    { steamId: "b", alias: "Pepa_CZ", tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
   ],
 };
 
@@ -65,4 +65,21 @@ it("po potvrzení to dá najevo", () => {
   const potvrzeny = { ...zaklad, stav: "lobby_otevrena", lobbyId: "234230181", hostPotvrdil: "2026-09-03T12:00:00.000Z" };
   render(<ObrazovkaHosta zapas={potvrzeny} ja="ja" onVlozitOdkaz={vi.fn()} onPotvrdit={vi.fn()} />);
   expect(screen.getByText(/potvrzeno/i)).toBeInTheDocument();
+});
+
+it("v zrcadle lobby pojmenuje hráče bez aliasu jménem ze Steamu", () => {
+  const bezAliasu: ZapasView = {
+    ...zaklad,
+    ucastnici: [
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
+      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    ],
+  };
+  render(
+    <ObrazovkaHosta zapas={bezAliasu} ja="ja" onVlozitOdkaz={vi.fn()} onPotvrdit={vi.fn()} />,
+  );
+
+  const radky = screen.getAllByTestId("radek-lobby");
+  expect(radky[1]).toHaveTextContent("TibbarZmr");
+  expect(radky[1]).not.toHaveTextContent("76561199091641101");
 });

@@ -38,6 +38,7 @@ export interface AkceView {
 export interface UcastnikView {
   steamId: string;
   alias: string | null;
+  steamName: string | null;
   tym: Tym;
   barva: Barva;
   jeHost: boolean;

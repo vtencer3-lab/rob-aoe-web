@@ -207,3 +207,21 @@ it("uloží vítězný tým", async () => {
 it("neznámý zápas vrátí null", async () => {
   expect(await getZapas(9999)).toBeNull();
 });
+
+// Účet bez jediné hodnocené hry nemá ve Worlds Edge alias, takže by v sestavě
+// zápasu zbylo syrové 64bitové Steam ID — soupiska přitom vedle ukazuje jméno
+// ze Steamu. Sestava proto musí steamName nést taky.
+it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříčku", async () => {
+  const bezAliasu = "76561199091641101";
+  await upsertPlayer(bezAliasu, false);
+  await savePlayerStats(bezAliasu, { alias: null, steamName: "TibbarZmr", chyba: null });
+  await signUp(akceId, bezAliasu);
+
+  const zapas = await createZapas(akceId, "1v1", [HRACI[0]!, bezAliasu]);
+  const [zaznam] = await listZapasy(akceId);
+  const host = zaznam!.ucastnici.find((u) => u.steamId === bezAliasu)!;
+
+  expect(host.alias).toBeNull();
+  expect(host.steamName).toBe("TibbarZmr");
+  expect(zapas.poradi).toBe(1);
+});

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { UcastnikView, ZapasView } from "../../src/shared/types.js";
-import { mojeZapasy, mujUcastnik, souperi, spoluhraci } from "./zapas.js";
+import { jmenoHrace, mojeZapasy, mujUcastnik, souperi, spoluhraci } from "./zapas.js";
 
 const u = (steamId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikView => ({
   steamId,
   alias: steamId.toUpperCase(),
+  steamName: null,
   tym,
   barva,
   jeHost,
@@ -62,5 +63,31 @@ describe("mojeZapasy", () => {
   it("dohrané a zrušené vynechá", () => {
     expect(mojeZapasy([{ ...coop, stav: "dohrano" }], "a")).toHaveLength(0);
     expect(mojeZapasy([{ ...coop, stav: "zruseny" }], "a")).toHaveLength(0);
+  });
+});
+
+describe("jmenoHrace", () => {
+  const kdo = (alias: string | null, steamName: string | null): UcastnikView => ({
+    steamId: "76561199091641101",
+    alias,
+    steamName,
+    tym: 1,
+    barva: 1,
+    jeHost: false,
+    kliknulPripojit: null,
+  });
+
+  it("nejradši má alias ze žebříčku", () => {
+    expect(jmenoHrace(kdo("TibbarZmr_WE", "TibbarZmr"))).toBe("TibbarZmr_WE");
+  });
+
+  // Účet bez hodnocené hry žádný alias nemá. Bez tohohle kroku svítí v sestavě
+  // syrové 64bitové číslo, i když soupiska vedle jméno zná.
+  it("bez aliasu vezme jméno ze Steamu", () => {
+    expect(jmenoHrace(kdo(null, "TibbarZmr"))).toBe("TibbarZmr");
+  });
+
+  it("teprve když není ani jedno, ukáže Steam ID", () => {
+    expect(jmenoHrace(kdo(null, null))).toBe("76561199091641101");
   });
 });

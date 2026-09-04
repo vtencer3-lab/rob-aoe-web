@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BARVA_NAZEV, type ZapasView } from "../../../src/shared/types.js";
+import { jmenoHrace } from "../zapas.js";
 
 interface Props {
   zapas: ZapasView;
@@ -42,7 +43,7 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onPotvrdit }: Props) 
       <ul className="zrcadlo">
         {zapas.ucastnici.map((u) => (
           <li key={u.steamId} data-testid="radek-lobby" className={`barva-${u.barva}`}>
-            <span className="swatch" /> {u.alias ?? u.steamId} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
+            <span className="swatch" /> {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
             {u.steamId === ja ? " ← TY" : ""}
             {u.kliknulPripojit ? " · klikl na připojení" : ""}
           </li>

@@ -1,7 +1,7 @@
 import type { AkceStavPayload, Format } from "../../src/shared/types.js";
 
 export interface Me {
-  hrac: { steamId: string; alias: string | null; jeAdmin: boolean } | null;
+  hrac: { steamId: string; alias: string | null; steamName: string | null; jeAdmin: boolean } | null;
 }
 
 async function json<T>(res: Response): Promise<T> {

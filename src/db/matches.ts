@@ -27,6 +27,7 @@ export class UcastnikOdhlasenChyba extends Error {}
 export interface UcastnikRow {
   steamId: string;
   alias: string | null;
+  steamName: string | null;
   tym: Tym;
   barva: Barva;
   jeHost: boolean;
@@ -100,7 +101,7 @@ export async function createZapas(
 
 async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
   const { rows } = await getPool().query(
-    `SELECT u.steam_id, p.alias, u.tym, u.barva, u.je_host, u.kliknul_pripojit
+    `SELECT u.steam_id, p.alias, p.steam_name, u.tym, u.barva, u.je_host, u.kliknul_pripojit
        FROM ucastnik u JOIN player p ON p.steam_id = u.steam_id
       WHERE u.zapas_id = $1
       ORDER BY u.tym, u.steam_id`,
@@ -111,6 +112,7 @@ async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
     return {
       steamId: row["steam_id"] as string,
       alias: row["alias"] as string | null,
+      steamName: row["steam_name"] as string | null,
       tym: row["tym"] as Tym,
       barva: row["barva"] as Barva,
       jeHost: row["je_host"] as boolean,
