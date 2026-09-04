@@ -126,6 +126,17 @@ jeden — přepis běží jedním příkazem, aby mezistav neprolétl ven přes 
 Samotné zkušební přihlášení admina neuděluje a na cizí práva nesahá; režii
 mění jen ta jedna routa, která je na to určená.
 
+**Než web vystavíš ven, vezmi si režii zpátky.** Zkušební režisér je pro
+`ADMIN_BOOTSTRAP` plnohodnotný admin, takže bootstrap nikoho dalšího nepovýší
+— a tlačítko, kterým se režie vrací, žije za zkušebními dveřmi, které se přes
+`https` zavřou. Kdo si zkusí večer očima hráče a pak nastartuje tunel, přijde
+o panel režie a v UI se k němu nedostane. Cesta zpátky vede jen přes databázi,
+jedním příkazem (dvěma by mezistav bez admina stihl proletět ven přes SSE):
+
+```
+UPDATE player SET je_admin = (steam_id = '76561198xxxxxxxxx');
+```
+
 **Dveře se samy zavírají.** Zapnutá proměnná nestačí: obě routy odmítají
 obsluhovat, jakmile `BASE_URL` míří na `https`, tedy jakmile web běží přes
 tunel. Proměnná tak může v `.env` zůstat ležet zapnutá — přes veřejnou
@@ -219,6 +230,9 @@ lobby a oba odkazy se z něj odvozují (viz `src/aoe/lobbyUri.ts`).
 - Bezplatný Cloudflare quick tunnel (`*.trycloudflare.com`) SSE nepropustí —
   viz Krok 3 výše. Web na tom nespadne (přepne se na dotazování), ale realtime
   přes něj nedostaneš.
+- Předaná režie na zkušebním účtu přežije zavření zkušebních dveří, takže
+  vystavení ven tě může o panel režie připravit — viz konec sekce „Zkouška
+  večera nasucho“. Vyplněné `ADMIN_STEAM_ID` tuhle díru zavírá celou.
 - Chování na verzi hry z Microsoft Store / Xbox aplikace není ověřené — nikdo
   z týmu tuhle verzi nemá k dispozici na otestování.
 - URL helper AoE2 DE (`AOEURLHelper.exe`), který odkazy `aoe2de://` zpracovává,
