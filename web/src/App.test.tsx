@@ -31,6 +31,7 @@ vi.mock("./useAkceStav.js", () => ({
 const u = (steamId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikView => ({
   steamId,
   alias: steamId.toUpperCase(),
+  steamName: null,
   tym,
   barva,
   jeHost,
@@ -65,7 +66,7 @@ afterEach(() => {
 });
 
 it("host vidí obrazovku hosta, ne kartu hráče", async () => {
-  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "host1", alias: "Host", jeAdmin: false } });
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "host1", alias: "Host", steamName: null, jeAdmin: false } });
   nastavStav({
     akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
     prihlaseni: [],
@@ -80,7 +81,7 @@ it("host vidí obrazovku hosta, ne kartu hráče", async () => {
 
 it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async () => {
   vi.mocked(api.me).mockResolvedValue({
-    hrac: { steamId: "b", alias: "Spoluhrac", jeAdmin: false },
+    hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false },
   });
   nastavStav({
     akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
@@ -96,7 +97,7 @@ it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async ()
 
 it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
   vi.mocked(api.me).mockResolvedValue({
-    hrac: { steamId: "divak", alias: "Divak", jeAdmin: false },
+    hrac: { steamId: "divak", alias: "Divak", steamName: null, jeAdmin: false },
   });
   nastavStav({
     akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
@@ -112,7 +113,7 @@ it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
 });
 
 it("admin vidí panel režie", async () => {
-  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", jeAdmin: true } });
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
   nastavStav({
     akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
     prihlaseni: [],
@@ -125,7 +126,7 @@ it("admin vidí panel režie", async () => {
 });
 
 it("neadmin panel režie nevidí", async () => {
-  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "hrac1", alias: "Hrac", jeAdmin: false } });
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "hrac1", alias: "Hrac", steamName: null, jeAdmin: false } });
   nastavStav({
     akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
     prihlaseni: [],
@@ -143,7 +144,7 @@ it("neadmin panel režie nevidí", async () => {
 // neměl odsud jak akci založit — panel režie se vykresluje až uvnitř akce,
 // takže se z prázdné stránky nedalo dostat nikam.
 it("admin bez akce dostane formulář na její založení", async () => {
-  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", jeAdmin: true } });
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
   nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
 
   render(<App />);
@@ -152,7 +153,7 @@ it("admin bez akce dostane formulář na její založení", async () => {
 });
 
 it("běžný hráč bez akce formulář na založení nevidí", async () => {
-  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "hrac1", alias: "Hrac", jeAdmin: false } });
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "hrac1", alias: "Hrac", steamName: null, jeAdmin: false } });
   nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
 
   render(<App />);

@@ -33,8 +33,17 @@ npm run build && npm start  # produkční build a běh na :3000
 npm test                    # hermetické
 npm run test:db             # databázové — POZOR níž
 npm --prefix web test       # frontend
-npx tsc --noEmit            # typová kontrola
+npx tsc --noEmit            # typová kontrola BACKENDU — na web/ nesahá
+npm --prefix web exec tsc -- -b --force   # typová kontrola frontendu
 ```
+
+**`npx tsc --noEmit` frontend nekontroluje.** Kořenový `tsconfig.json` `web/`
+nezahrnuje; frontend má vlastní `tsc -b`, který běží až uvnitř `npm run build`.
+A protože `build` je řetěz přes `&&`, chyba v typech (klidně jen ve fixturách
+testů) tiše zastaví `vite build` — `web/dist` zůstane starý, server dál
+servíruje předchozí bundle a v prohlížeči se změna neprojeví. Po zásahu do
+sdílených typů proto vždycky doběhnout celý `npm run build` a podívat se, že
+se změnil hash souboru ve `web/dist/assets`.
 
 `.env` čtou jen `dev`, `start` a `db:migrate` (`--env-file-if-exists`).
 Testy schválně ne.
