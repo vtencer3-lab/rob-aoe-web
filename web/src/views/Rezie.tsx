@@ -23,6 +23,20 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
         // zámek na potvrzení není.
         const muzeSpectate = zapas.spectatorUri !== null;
 
+        // Přehození hosta je správně destruktivní: setHost vynuluje lobby_id
+        // i potvrzení, protože staré číslo patřilo předchozímu hostovi. Jenže
+        // to tlačítko je na každém řádku a jedno chybné kliknutí u běžícího
+        // zápasu zabije odkaz všem čtyřem hráčům i Robův Spectate uprostřed
+        // hry. Zábradlí dává smysl jen tam, kde už je co ztratit — dokud
+        // odkaz není, nic se neděje a Rob se nepotřebuje proklikávat.
+        const potvrdZmenuHosta = (jmeno: string) =>
+          zapas.lobbyId === null ||
+          window.confirm(
+            `Přehodit hostování na ${jmeno}? Zápas #${zapas.poradi} tím přijde ` +
+              `o odkaz do lobby (${zapas.lobbyId}). Nový host ho bude muset vložit znovu ` +
+              `a všichni včetně Spectate se budou muset připojit nanovo.`,
+          );
+
         return (
           <article key={zapas.id} className="zapas">
             <header>
@@ -37,7 +51,13 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
                   {" · "}
                   {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
                   {u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl"}
-                  <button onClick={() => onHost(zapas.id, u.steamId)}>Hostuje tenhle</button>
+                  <button
+                    onClick={() => {
+                      if (potvrdZmenuHosta(u.alias ?? u.steamId)) onHost(zapas.id, u.steamId);
+                    }}
+                  >
+                    Hostuje tenhle
+                  </button>
                 </li>
               ))}
             </ul>
