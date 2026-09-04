@@ -4,6 +4,7 @@ import { useAkceStav } from "./useAkceStav.js";
 import { mojeZapasy, mujUcastnik } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
+import { Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 
 export function App() {
@@ -65,6 +66,17 @@ export function App() {
             </button>
           ) : null}
           <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} />
+          {me?.jeAdmin && stav ? (
+            <Rezie
+              stav={stav}
+              onVytvoritZapas={(format, steamIds) =>
+                void hlidej(() => api.vytvoritZapas(akce.id, format, steamIds))
+              }
+              onStav={(zapasId, novyStav) => void hlidej(() => api.zapasStav(zapasId, novyStav))}
+              onVysledek={(zapasId, viteznyTym) => void hlidej(() => api.vysledek(zapasId, viteznyTym))}
+              onHost={(zapasId, steamId) => void hlidej(() => api.zmenitHosta(zapasId, steamId))}
+            />
+          ) : null}
           {me
             ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
                 mujUcastnik(zapas, me.steamId)?.jeHost ? (

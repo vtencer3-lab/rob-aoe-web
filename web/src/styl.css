@@ -54,3 +54,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .zrcadlo { list-style: none; padding: 0; }
 .zrcadlo li { padding: 0.4rem 0; border-bottom: 1px solid #2a241c; }
 .zaloha { color: var(--tlumene); font-size: 0.85rem; margin-top: 0.6rem; }
+.stavovy-radek { color: var(--tlumene); font-size: 0.85rem; margin: 0.3rem 0; }
+.rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+.skladani { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+.skladani .vyber { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
