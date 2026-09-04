@@ -1,7 +1,8 @@
 import { getPool } from "./pool.js";
 import { mapuj, PLAYER_SLOUPEC_NAZVY, type DbRow, type PlayerRow } from "./players.js";
 
-export type AkceStav = "priprava" | "prihlasovani" | "zavreno" | "bezi" | "konec";
+/** Akce buď běží, nebo skončila. Mezistavy zmizely i s tlačítky, která je nastavovala. */
+export type AkceStav = "bezi" | "konec";
 
 export interface AkceRow {
   id: number;

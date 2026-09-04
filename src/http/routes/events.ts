@@ -12,7 +12,7 @@ import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 
-const STAVY: readonly AkceStav[] = ["priprava", "prihlasovani", "zavreno", "bezi", "konec"];
+const STAVY: readonly AkceStav[] = ["bezi", "konec"];
 
 export function registerEventRoutes(app: FastifyInstance): void {
   app.get("/api/akce", async (request) => {
@@ -60,8 +60,11 @@ export function registerEventRoutes(app: FastifyInstance): void {
     const steamId = await requireUser(request);
     const akceId = requireId(request);
     const akce = await getAktivniAkce();
-    if (!akce || akce.id !== akceId || akce.stav !== "prihlasovani") {
-      throw new HttpError(409, "Přihlašování do téhle akce není otevřené.");
+    // Skončenou akci getAktivniAkce nevrací, takže „akce běží“ a „hlásit se lze“
+    // splývají v jedno. Zvláštní stav pro otevřené přihlašování neexistuje —
+    // kdo dorazí uprostřed večera, přihlásí se stejně jako ten, kdo přišel včas.
+    if (!akce || akce.id !== akceId) {
+      throw new HttpError(409, "Tahle akce neběží.");
     }
     await signUp(akceId, steamId);
     await broadcastAkce();

@@ -19,10 +19,10 @@ afterAll(async () => {
   await closePool();
 });
 
-it("nová akce začíná v přípravě", async () => {
+it("nová akce rovnou běží, na nic se nečeká", async () => {
   const akce = await createAkce("Coop Kings večer");
   expect(akce.nazev).toBe("Coop Kings večer");
-  expect(akce.stav).toBe("priprava");
+  expect(akce.stav).toBe("bezi");
 });
 
 it("aktivní akce je ta nejnovější nedokončená", async () => {

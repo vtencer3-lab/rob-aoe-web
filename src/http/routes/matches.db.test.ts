@@ -15,7 +15,6 @@ let hracSid: string;
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
   akceId = (await createAkce("večer")).id;
-  await setAkceStav(akceId, "prihlasovani");
 
   await upsertPlayer(ROB, true);
   robSid = await createSession(ROB);

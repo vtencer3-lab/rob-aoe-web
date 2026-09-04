@@ -29,19 +29,13 @@ it("prázdný název neodešle", () => {
   expect(onZalozit).not.toHaveBeenCalled();
 });
 
-it("s akcí nabídne posun stavu a současný stav nenabízí", () => {
-  const onStav = vi.fn();
+it("s běžící akcí nabídne jediné tlačítko — ukončení", () => {
   render(
-    <SpravaAkce
-      akce={{ id: 1, nazev: "Čtvrtek", stav: "prihlasovani" }}
-      onZalozit={vi.fn()}
-      onStav={onStav}
-    />,
+    <SpravaAkce akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }} onZalozit={vi.fn()} onStav={vi.fn()} />,
   );
 
-  expect(screen.getByRole("button", { name: "Otevřít přihlašování" })).toBeDisabled();
-  fireEvent.click(screen.getByRole("button", { name: "Zavřít přihlašování" }));
-  expect(onStav).toHaveBeenCalledWith("zavreno");
+  expect(screen.getByRole("button", { name: "Ukončit akci" })).toBeInTheDocument();
+  expect(screen.getAllByRole("button")).toHaveLength(1);
 });
 
 it("ukončení akce se ptá a při odmítnutí nic nepošle", () => {
