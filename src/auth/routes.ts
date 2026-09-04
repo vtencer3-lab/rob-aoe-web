@@ -3,7 +3,13 @@ import { config } from "../config.js";
 import { getPlayer, upsertPlayer } from "../db/players.js";
 import { createSession, deleteSession, getSessionUser } from "../db/sessions.js";
 import { SESSION_TTL_MS } from "../db/sessions.js";
-import { buildAuthUrl, extractSteamId, hasDuplicateOpenIdKeys } from "./steamOpenId.js";
+import {
+  buildAuthUrl,
+  extractSteamId,
+  hasDuplicateOpenIdKeys,
+  maNasNavrat,
+  maPodepsanaPovinnaPole,
+} from "./steamOpenId.js";
 
 export interface AuthDeps {
   overSteam: (params: URLSearchParams) => Promise<boolean>;
@@ -35,6 +41,21 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     // pak pro podvržený návrat vůbec neuskuteční.
     if (hasDuplicateOpenIdKeys(params)) {
       return reply.code(401).send({ chyba: "Neplatný návrat ze Steamu: zdvojený parametr." });
+    }
+
+    // Obojí se odmítá tady, před jakýmkoliv síťovým dotazem na Steam — stejně
+    // jako zdvojený parametr výše. Steam ve stateless režimu ověří podpis, ale
+    // netuší, komu assertion patřila; kdo ji nezkontroluje sám, přihlásí kohokoliv,
+    // kdo se přihlásil kdekoliv jinde.
+    if (!maPodepsanaPovinnaPole(params)) {
+      return reply
+        .code(401)
+        .send({ chyba: "Neplatný návrat ze Steamu: chybí podpis identity." });
+    }
+    if (!maNasNavrat(params, config.baseUrl)) {
+      return reply
+        .code(401)
+        .send({ chyba: "Neplatný návrat ze Steamu: přihlášení nepatří tomuhle webu." });
     }
 
     const steamId = extractSteamId(params);

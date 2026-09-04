@@ -1,13 +1,20 @@
 import { afterAll, beforeEach, expect, it, vi } from "vitest";
+import { config } from "../config.js";
 import { closePool, getPool } from "../db/pool.js";
 import { getPlayer } from "../db/players.js";
 import { buildServer } from "../http/server.js";
+import { navratovaUrl } from "./steamOpenId.js";
 
 const STEAM_ID = "76561198000000020";
+
+// Podepsaná pole v pořadí, v jakém je Steam skutečně posílá.
+const PODEPSANO = "signed,op_endpoint,claimed_id,identity,return_to,response_nonce,assoc_handle";
 
 const NAVRAT = new URLSearchParams({
   "openid.mode": "id_res",
   "openid.claimed_id": `https://steamcommunity.com/openid/id/${STEAM_ID}`,
+  "openid.signed": PODEPSANO,
+  "openid.return_to": navratovaUrl(config.baseUrl),
   "openid.sig": "xyz",
 });
 
@@ -139,5 +146,59 @@ it("synchronní pád obnovStaty nezabrání přihlášení", async () => {
   expect(res.statusCode).toBe(302);
   expect(res.cookies.find((c) => c.name === "sid")?.httpOnly).toBe(true);
   expect(await getPlayer(STEAM_ID)).not.toBeNull();
+  await app.close();
+});
+
+// OpenID 2.0 §11.1 (MUSÍ): ve stateless režimu Steam ověří podpis, ale netuší,
+// který web se ptá. Bez porovnání return_to by assertion, kterou oběť
+// vygenerovala na libovolném jiném webu s „Sign in with Steam", prošla i tady a
+// založila relaci jako oběť — a kdyby tou obětí byl Rob, rovnou jako admin.
+it("odmítne návrat vystavený pro jiný web, bez volání overSteam", async () => {
+  const overSteam = vi.fn(async () => true);
+  const app = buildServer({ overSteam, obnovStaty: async () => {} });
+
+  const cizi = new URLSearchParams(NAVRAT);
+  cizi.set("openid.return_to", "https://skiny.example.net/api/auth/steam/return");
+
+  const res = await app.inject({ method: "GET", url: `/api/auth/steam/return?${cizi.toString()}` });
+
+  expect(res.statusCode).toBe(401);
+  expect(res.json().chyba).toMatch(/nepatří tomuhle webu/i);
+  expect(overSteam).not.toHaveBeenCalled();
+  expect(await getPlayer(STEAM_ID)).toBeNull();
+  await app.close();
+});
+
+it("odmítne návrat úplně bez return_to, bez volání overSteam", async () => {
+  const overSteam = vi.fn(async () => true);
+  const app = buildServer({ overSteam, obnovStaty: async () => {} });
+
+  const bez = new URLSearchParams(NAVRAT);
+  bez.delete("openid.return_to");
+
+  const res = await app.inject({ method: "GET", url: `/api/auth/steam/return?${bez.toString()}` });
+
+  expect(res.statusCode).toBe(401);
+  expect(overSteam).not.toHaveBeenCalled();
+  expect(await getPlayer(STEAM_ID)).toBeNull();
+  await app.close();
+});
+
+it("odmítne návrat, kde claimed_id není mezi podepsanými poli", async () => {
+  const overSteam = vi.fn(async () => true);
+  const app = buildServer({ overSteam, obnovStaty: async () => {} });
+
+  const nepodepsane = new URLSearchParams(NAVRAT);
+  nepodepsane.set("openid.signed", PODEPSANO.replace("claimed_id,", ""));
+
+  const res = await app.inject({
+    method: "GET",
+    url: `/api/auth/steam/return?${nepodepsane.toString()}`,
+  });
+
+  expect(res.statusCode).toBe(401);
+  expect(res.json().chyba).toMatch(/podpis identity/i);
+  expect(overSteam).not.toHaveBeenCalled();
+  expect(await getPlayer(STEAM_ID)).toBeNull();
   await app.close();
 });

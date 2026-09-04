@@ -4,6 +4,9 @@ import {
   buildVerificationBody,
   extractSteamId,
   isVerified,
+  maNasNavrat,
+  maPodepsanaPovinnaPole,
+  navratovaUrl,
   verifyWithSteam,
 } from "./steamOpenId.js";
 
@@ -192,5 +195,69 @@ describe("verifyWithSteam", () => {
 
     expect(await verifyWithSteam(params, fetchImpl)).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("maNasNavrat", () => {
+  const NAS = "https://hry.example.com";
+
+  function navrat(returnTo: string): URLSearchParams {
+    return new URLSearchParams({ "openid.return_to": returnTo });
+  }
+
+  it("přijme návrat mířící přesně na naši návratovou adresu", () => {
+    expect(maNasNavrat(navrat(navratovaUrl(NAS)), NAS)).toBe(true);
+  });
+
+  // Tohle je jádro OpenID 2.0 §11.1: Steam ve stateless režimu podepíše, že se
+  // člověk přihlásil, ale netuší, který web se ptá. Assertion vygenerovaná na
+  // cizím webu s „Sign in with Steam" se tedy ověří i tady — pokud si return_to
+  // neporovnáme sami.
+  it("odmítne návrat vystavený pro jiný web", () => {
+    expect(maNasNavrat(navrat("https://skiny.example.net/api/auth/steam/return"), NAS)).toBe(false);
+  });
+
+  it("odmítne návrat na stejný web, ale jinou cestu", () => {
+    expect(maNasNavrat(navrat(`${NAS}/api/auth/steam/return/jinam`), NAS)).toBe(false);
+  });
+
+  it("odmítne návrat na stejnou cestu, ale jiné schéma", () => {
+    expect(maNasNavrat(navrat("http://hry.example.com/api/auth/steam/return"), NAS)).toBe(false);
+  });
+
+  it("odmítne návrat, který return_to vůbec nemá", () => {
+    expect(maNasNavrat(new URLSearchParams(), NAS)).toBe(false);
+  });
+
+  it("porovnává proti stejné adrese, jakou posílá odchozí požadavek", () => {
+    const odchozi = new URL(buildAuthUrl(NAS)).searchParams.get("openid.return_to")!;
+    expect(maNasNavrat(navrat(odchozi), NAS)).toBe(true);
+  });
+});
+
+describe("maPodepsanaPovinnaPole", () => {
+  const STEAM = "signed,op_endpoint,claimed_id,identity,return_to,response_nonce,assoc_handle";
+
+  it("přijme seznam, jaký Steam skutečně posílá", () => {
+    expect(maPodepsanaPovinnaPole(new URLSearchParams({ "openid.signed": STEAM }))).toBe(true);
+  });
+
+  it("odmítne assertion bez podepsaného claimed_id", () => {
+    const bez = STEAM.replace("claimed_id,", "");
+    expect(maPodepsanaPovinnaPole(new URLSearchParams({ "openid.signed": bez }))).toBe(false);
+  });
+
+  it("odmítne assertion bez podepsaného return_to", () => {
+    const bez = STEAM.replace("return_to,", "");
+    expect(maPodepsanaPovinnaPole(new URLSearchParams({ "openid.signed": bez }))).toBe(false);
+  });
+
+  it("odmítne assertion, která openid.signed vůbec nemá", () => {
+    expect(maPodepsanaPovinnaPole(new URLSearchParams())).toBe(false);
+  });
+
+  it("nenechá se zmást podřetězcem jiného jména pole", () => {
+    const podvod = new URLSearchParams({ "openid.signed": "signed,not_claimed_id,return_to" });
+    expect(maPodepsanaPovinnaPole(podvod)).toBe(false);
   });
 });
