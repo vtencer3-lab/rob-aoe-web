@@ -21,7 +21,7 @@ npm --prefix web install
 cp .env.example .env
 ```
 
-Vyplň v `.env` aspoň `DATABASE_URL` (viz níže) a spusť migrace:
+Vyplň v `.env` aspoň `DATABASE_URL` a `ADMIN_STEAM_ID` (viz níže) a spusť migrace:
 
 ```
 npm run db:migrate
@@ -48,16 +48,25 @@ kterém příkaz běží, např. v PowerShell:
 ```
 $env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/rob_aoe"
 $env:BASE_URL="http://localhost:3000"
+$env:ADMIN_STEAM_ID="76561198xxxxxxxxx"
+$env:STEAM_API_KEY="…"
 npm start
 ```
 
+**Nastav je vždycky všechny najednou**, ne jen tu, kterou zrovna měníš. Každý
+`npm start` čte jen to, co má v prostředí zrovna k dispozici, a chybějící
+`ADMIN_STEAM_ID` by při dalším Robově přihlášení přepsalo jeho `je_admin` na
+false. Server se proto bez `DATABASE_URL` nebo `ADMIN_STEAM_ID` rovnou odmítne
+spustit a řekne, která chybí.
+
 | Proměnná | K čemu | Co se stane bez ní |
 |---|---|---|
-| `DATABASE_URL` | připojení k PostgreSQL, tvar `postgres://uzivatel:heslo@host:port/databaze` | server hned po startu spadne s chybou „Chybí DATABASE_URL." |
-| `BASE_URL` | veřejná adresa, na které web lidem běží (musí přesně sedět s tím, kam se prohlížeč skutečně dívá) | Steam přihlášení se po ověření vrací zpátky na `BASE_URL` — pokud nesedí, návrat selže nebo skončí na špatné adrese |
+| `DATABASE_URL` | připojení k PostgreSQL, tvar `postgres://uzivatel:heslo@host:port/databaze` | server se nespustí — „Chybí proměnná prostředí DATABASE_URL." |
+| `ADMIN_STEAM_ID` | Steam ID (64bitové) Robova účtu | server se nespustí. (Kdyby se spustil, přihlašovací routa by při každém přihlášení zapsala `je_admin = false` a Robovi by uprostřed večera zmizel panel režie bez jediné chybové hlášky.) |
+| `BASE_URL` | veřejná adresa, na které web lidem běží (musí přesně sedět s tím, kam se prohlížeč skutečně dívá) | použije se `http://localhost:3000`. Steam se po ověření vrací na `BASE_URL` a návrat na jinou adresu se odmítne, takže přihlášení přes tunel bez správné hodnoty neprojde |
 | `PORT` | port, na kterém backend poslouchá (výchozí 3000) | použije se výchozí hodnota 3000 |
 | `STEAM_API_KEY` | klíč pro Steam Web API (odehrané hodiny ve hře) | hráčům se neukážou odehrané hodiny — zbytek funguje |
-| `ADMIN_STEAM_ID` | Steam ID (64bitové) Robova účtu | nikdo nedostane Robův panel (skládání dvojic/čtveřic, režie) — bez toho nemá web smysl provozovat |
+| `LOG_LEVEL` | úroveň serverového logu (výchozí `info`) | loguje se od `info` výš |
 
 ## Testy
 
@@ -88,6 +97,8 @@ procesu, bez běžícího Vite):
 ```
 $env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/rob_aoe"
 $env:BASE_URL="http://localhost:3000"
+$env:ADMIN_STEAM_ID="76561198xxxxxxxxx"
+$env:STEAM_API_KEY="…"
 npm start
 ```
 
@@ -106,7 +117,16 @@ cloudflared tunnel --url http://localhost:3000
 
 Vezmi vypsanou adresu `https://…trycloudflare.com`, nastav ji do `BASE_URL` a
 server restartuj — Steam se po přihlášení vrací právě na `BASE_URL`, takže se
-to musí shodovat.
+to musí shodovat. **Při restartu nastav znovu i všechny ostatní proměnné**
+(hlavně `ADMIN_STEAM_ID`), jinak se server odmítne spustit:
+
+```
+$env:DATABASE_URL="postgres://postgres:postgres@localhost:5432/rob_aoe"
+$env:BASE_URL="https://…trycloudflare.com"
+$env:ADMIN_STEAM_ID="76561198xxxxxxxxx"
+$env:STEAM_API_KEY="…"
+npm start
+```
 
 ### Krok 3 — ověřit realtime přes tunel (dělá člověk, potřeba dva prohlížeče)
 
