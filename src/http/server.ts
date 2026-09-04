@@ -12,6 +12,7 @@ import { fetchPersonalStat } from "../external/worldsEdge.js";
 import { jeCerstve, refreshPlayerStats } from "../players/refresh.js";
 import { HttpError } from "./guards.js";
 import { registerEventRoutes } from "./routes/events.js";
+import { registerMatchRoutes } from "./routes/matches.js";
 import { registerStreamRoutes } from "./routes/stream.js";
 
 function vychoziDeps(): AuthDeps {
@@ -38,6 +39,7 @@ export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
   app.get("/api/health", async () => ({ ok: true }));
   registerAuthRoutes(app, deps);
   registerEventRoutes(app);
+  registerMatchRoutes(app);
   registerStreamRoutes(app);
 
   // tsconfig.json kompiluje se společným rootDir "." (kvůli scripts/**), takže

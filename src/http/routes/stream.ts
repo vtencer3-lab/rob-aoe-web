@@ -1,7 +1,11 @@
 import type { FastifyInstance } from "fastify";
+import { currentUser } from "../../auth/routes.js";
 import { getAktivniAkce } from "../../db/events.js";
+import { getPlayer } from "../../db/players.js";
 import { buildAkceStav } from "../../realtime/akceStav.js";
 import { hub } from "../../realtime/hub.js";
+import { redigujProDivaka } from "../../realtime/redakce.js";
+import type { AkceStavPayload } from "../../shared/types.js";
 
 export function registerStreamRoutes(app: FastifyInstance): void {
   app.get("/api/stream", async (request, reply) => {
@@ -48,7 +52,14 @@ export function registerStreamRoutes(app: FastifyInstance): void {
         return reply;
       }
 
-      const posli = (payload: unknown) => reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
+      const steamId = await currentUser(request);
+      const hrac = steamId ? await getPlayer(steamId) : null;
+      const divak = { steamId, jeAdmin: hrac?.jeAdmin ?? false };
+
+      const posli = (payload: unknown) =>
+        reply.raw.write(
+          `data: ${JSON.stringify(redigujProDivaka(payload as AkceStavPayload, divak))}\n\n`,
+        );
 
       // Odběr musí vzniknout dřív, než začneme stavět úvodní stav — jinak by
       // broadcast, který přijde přesně v okně mezi sestavením a přihlášením,

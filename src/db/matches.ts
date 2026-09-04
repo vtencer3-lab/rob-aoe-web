@@ -13,6 +13,7 @@ export interface ZapasRow {
   heslo: string;
   lobbyId: string | null;
   viteznyTym: Tym | null;
+  hostPotvrdil: Date | null;
 }
 
 export interface UcastnikRow {
@@ -35,6 +36,7 @@ function mapujZapas(r: Record<string, unknown>): ZapasRow {
     heslo: r["heslo"] as string,
     lobbyId: r["lobby_id"] as string | null,
     viteznyTym: r["vitezny_tym"] as Tym | null,
+    hostPotvrdil: r["host_potvrdil"] as Date | null,
   };
 }
 
@@ -73,7 +75,7 @@ export async function createZapas(
     const { rows } = await client.query(
       `INSERT INTO zapas (akce_id, poradi, format, nazev_lobby, heslo)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, akce_id, poradi, format, stav, nazev_lobby, heslo, lobby_id, vitezny_tym`,
+       RETURNING id, akce_id, poradi, format, stav, nazev_lobby, heslo, lobby_id, vitezny_tym, host_potvrdil`,
       [akceId, poradi, format, lobbyName(poradi), generatePassword()],
     );
     const zapas = mapujZapas(rows[0] as Record<string, unknown>);
@@ -113,7 +115,7 @@ export async function getZapas(
   zapasId: number,
 ): Promise<{ zapas: ZapasRow; ucastnici: UcastnikRow[] } | null> {
   const { rows } = await getPool().query(
-    `SELECT id, akce_id, poradi, format, stav, nazev_lobby, heslo, lobby_id, vitezny_tym
+    `SELECT id, akce_id, poradi, format, stav, nazev_lobby, heslo, lobby_id, vitezny_tym, host_potvrdil
        FROM zapas WHERE id = $1`,
     [zapasId],
   );
@@ -128,7 +130,7 @@ export async function listZapasy(
   akceId: number,
 ): Promise<Array<{ zapas: ZapasRow; ucastnici: UcastnikRow[] }>> {
   const { rows } = await getPool().query(
-    `SELECT id, akce_id, poradi, format, stav, nazev_lobby, heslo, lobby_id, vitezny_tym
+    `SELECT id, akce_id, poradi, format, stav, nazev_lobby, heslo, lobby_id, vitezny_tym, host_potvrdil
        FROM zapas WHERE akce_id = $1 ORDER BY poradi`,
     [akceId],
   );
@@ -178,8 +180,11 @@ export async function setHost(zapasId: number, steamId: string): Promise<void> {
     if (!rows.some((r) => r.je_host)) {
       throw new Error(`Hráč ${steamId} není účastníkem zápasu ${zapasId}.`);
     }
-    // Staré číslo lobby patřilo předchozímu hostovi — nikdo se do mrtvé lobby připojovat nebude.
-    await client.query("UPDATE zapas SET lobby_id = NULL WHERE id = $1", [zapasId]);
+    // Staré číslo lobby patřilo předchozímu hostovi — nikdo se do mrtvé lobby připojovat
+    // nebude. Nový host taky ještě nic nepotvrdil.
+    await client.query("UPDATE zapas SET lobby_id = NULL, host_potvrdil = NULL WHERE id = $1", [
+      zapasId,
+    ]);
   });
 }
 
@@ -192,4 +197,12 @@ export async function oznacKliknutiPripojit(zapasId: number, steamId: string): P
 
 export async function setVysledek(zapasId: number, viteznyTym: Tym): Promise<void> {
   await getPool().query("UPDATE zapas SET vitezny_tym = $2 WHERE id = $1", [zapasId, viteznyTym]);
+}
+
+export async function setHostPotvrdil(zapasId: number): Promise<void> {
+  await getPool().query("UPDATE zapas SET host_potvrdil = now() WHERE id = $1", [zapasId]);
+}
+
+export async function zrusHostPotvrdil(zapasId: number): Promise<void> {
+  await getPool().query("UPDATE zapas SET host_potvrdil = NULL WHERE id = $1", [zapasId]);
 }

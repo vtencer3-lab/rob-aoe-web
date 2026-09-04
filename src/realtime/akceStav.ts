@@ -1,7 +1,8 @@
 import { joinUri, spectatorUri } from "../aoe/lobbyUri.js";
 import { getAktivniAkce, listSignups } from "../db/events.js";
+import { listZapasy } from "../db/matches.js";
 import type { PlayerRow } from "../db/players.js";
-import type { AkceStavPayload, PlayerView } from "../shared/types.js";
+import type { AkceStavPayload, PlayerView, ZapasView } from "../shared/types.js";
 import { hub } from "./hub.js";
 
 export function playerView(hrac: PlayerRow): PlayerView {
@@ -23,6 +24,32 @@ export function playerView(hrac: PlayerRow): PlayerView {
 
 export { joinUri, spectatorUri };
 
+function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): ZapasView {
+  const { zapas, ucastnici } = zaznam;
+  return {
+    id: zapas.id,
+    poradi: zapas.poradi,
+    format: zapas.format,
+    stav: zapas.stav,
+    nazevLobby: zapas.nazevLobby,
+    heslo: zapas.heslo,
+    lobbyId: zapas.lobbyId,
+    // Odkazy se vždy odvozují z čísla lobby, nikdy se neukládají.
+    joinUri: zapas.lobbyId ? joinUri(zapas.lobbyId) : null,
+    spectatorUri: zapas.lobbyId ? spectatorUri(zapas.lobbyId) : null,
+    viteznyTym: zapas.viteznyTym,
+    hostPotvrdil: zapas.hostPotvrdil?.toISOString() ?? null,
+    ucastnici: ucastnici.map((u) => ({
+      steamId: u.steamId,
+      alias: u.alias,
+      tym: u.tym,
+      barva: u.barva,
+      jeHost: u.jeHost,
+      kliknulPripojit: u.kliknulPripojit?.toISOString() ?? null,
+    })),
+  };
+}
+
 export async function buildAkceStav(): Promise<AkceStavPayload> {
   const akce = await getAktivniAkce();
   if (!akce) return { akce: null, prihlaseni: [], zapasy: [] };
@@ -30,7 +57,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   return {
     akce: { id: akce.id, nazev: akce.nazev, stav: akce.stav },
     prihlaseni: prihlaseni.map(playerView),
-    zapasy: [],
+    zapasy: (await listZapasy(akce.id)).map(zapasView),
   };
 }
 
