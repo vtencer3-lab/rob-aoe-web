@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, expect, it } from "vitest";
+import { afterAll, beforeEach, expect, it, vi } from "vitest";
 import { createAkce } from "./events.js";
 import {
   createZapas,
@@ -103,6 +103,26 @@ it("host nesmí zapsat výsledek", async () => {
   await expect(setZapasStav(zapas.id, "dohrano", "host")).rejects.toThrow(/nesmí/);
 });
 
+it("oprava z dohráno zpět na hraje_se zruší časovou známku konce", async () => {
+  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  await setZapasStav(zapas.id, "vyhlaseny", "admin");
+  await setZapasStav(zapas.id, "lobby_otevrena", "host");
+  await setZapasStav(zapas.id, "hraje_se", "host");
+  await setZapasStav(zapas.id, "dohrano", "admin");
+  const { rows: predOpravou } = await getPool().query<{ konec: Date | null }>(
+    "SELECT konec FROM zapas WHERE id = $1",
+    [zapas.id],
+  );
+  expect(predOpravou[0]!.konec).not.toBeNull();
+
+  await setZapasStav(zapas.id, "hraje_se", "admin");
+  const { rows: poOprave } = await getPool().query<{ konec: Date | null }>(
+    "SELECT konec FROM zapas WHERE id = $1",
+    [zapas.id],
+  );
+  expect(poOprave[0]!.konec).toBeNull();
+});
+
 it("změna hosta zahodí staré číslo lobby", async () => {
   const zapas = await createZapas(akceId, "coop_kings_2v2", HRACI);
   await setLobbyId(zapas.id, "234230181");
@@ -111,6 +131,49 @@ it("změna hosta zahodí staré číslo lobby", async () => {
   const nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBeNull();
   expect(nacteny.ucastnici.filter((u) => u.jeHost).map((u) => u.steamId)).toEqual([HRACI[0]]);
+});
+
+it("setHost odmítne hráče, který není účastníkem, a zachová hosta i lobby_id", async () => {
+  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  await setLobbyId(zapas.id, "234230181");
+  const pred = (await getZapas(zapas.id))!;
+  const puvodniHost = pred.ucastnici.find((u) => u.jeHost)!.steamId;
+
+  await expect(setHost(zapas.id, HRACI[2]!)).rejects.toThrow(/není účastníkem/);
+
+  const po = (await getZapas(zapas.id))!;
+  expect(po.zapas.lobbyId).toBe("234230181");
+  expect(po.ucastnici.find((u) => u.jeHost)!.steamId).toBe(puvodniHost);
+});
+
+it("setZapasStav odmítne zápis, pokud stav mezitím změnil jiný aktér", async () => {
+  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  await setZapasStav(zapas.id, "vyhlaseny", "admin");
+
+  const pool = getPool();
+  const puvodniQuery = pool.query.bind(pool);
+  let zasazeno = false;
+  const spy = vi
+    .spyOn(pool, "query")
+    .mockImplementation(async (text: string, params?: unknown[]) => {
+      if (!zasazeno && text.includes("UPDATE zapas SET stav")) {
+        zasazeno = true;
+        // Simulace souběhu: mezi ověřením přechodu (SELECT uvnitř getZapas) a jeho
+        // zápisem (tento UPDATE) stihne jiný aktér zápas posunout jinam.
+        await puvodniQuery("UPDATE zapas SET stav = 'zruseny' WHERE id = $1", [zapas.id]);
+      }
+      return puvodniQuery(text, params);
+    });
+
+  try {
+    await expect(setZapasStav(zapas.id, "lobby_otevrena", "host")).rejects.toThrow(
+      /mezitím změnil/,
+    );
+  } finally {
+    spy.mockRestore();
+  }
+
+  expect((await getZapas(zapas.id))!.zapas.stav).toBe("zruseny");
 });
 
 it("zaznamená kliknutí na připojení", async () => {

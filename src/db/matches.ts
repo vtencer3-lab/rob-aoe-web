@@ -149,13 +149,17 @@ export async function setZapasStav(
   if (!nacteny) throw new Error(`Zápas ${zapasId} neexistuje.`);
   assertTransition(nacteny.zapas.stav, stav, actor);
 
-  await getPool().query(
+  // Zápis je podmíněný stavem, proti kterému jsme právě ověřili přechod — pokud
+  // se mezitím stav zápasu změnil (druhý aktér byl rychlejší), UPDATE nic netrefí
+  // a přechod se odmítne, místo aby tiše přepsal cizí mezistav.
+  const { rowCount } = await getPool().query(
     `UPDATE zapas SET stav = $2,
        zacatek = CASE WHEN $2 = 'hraje_se' THEN COALESCE(zacatek, now()) ELSE zacatek END,
-       konec   = CASE WHEN $2 = 'dohrano'  THEN now() ELSE konec END
-     WHERE id = $1`,
-    [zapasId, stav],
+       konec   = CASE WHEN $2 = 'dohrano'  THEN now() ELSE NULL END
+     WHERE id = $1 AND stav = $3`,
+    [zapasId, stav, nacteny.zapas.stav],
   );
+  if (!rowCount) throw new Error(`Stav zápasu ${zapasId} se mezitím změnil.`);
 }
 
 export async function setLobbyId(zapasId: number, lobbyId: string): Promise<void> {
@@ -164,11 +168,16 @@ export async function setLobbyId(zapasId: number, lobbyId: string): Promise<void
 
 export async function setHost(zapasId: number, steamId: string): Promise<void> {
   await withTransaction(async (client) => {
-    const { rowCount } = await client.query(
-      "UPDATE ucastnik SET je_host = (steam_id = $2) WHERE zapas_id = $1",
+    // UPDATE samo o sobě trefí každého účastníka zápasu bez ohledu na to, jestli
+    // steamId mezi nimi je — u cizího steamId by tiše smazalo hosta ze všech řádků.
+    // RETURNING je_host prozradí, jestli aspoň jeden řádek skutečně hostem zůstal.
+    const { rows } = await client.query<{ je_host: boolean }>(
+      "UPDATE ucastnik SET je_host = (steam_id = $2) WHERE zapas_id = $1 RETURNING je_host",
       [zapasId, steamId],
     );
-    if (!rowCount) throw new Error(`Zápas ${zapasId} nemá účastníky.`);
+    if (!rows.some((r) => r.je_host)) {
+      throw new Error(`Hráč ${steamId} není účastníkem zápasu ${zapasId}.`);
+    }
     // Staré číslo lobby patřilo předchozímu hostovi — nikdo se do mrtvé lobby připojovat nebude.
     await client.query("UPDATE zapas SET lobby_id = NULL WHERE id = $1", [zapasId]);
   });
