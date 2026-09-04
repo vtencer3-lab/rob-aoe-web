@@ -108,6 +108,9 @@ export function registerMatchRoutes(app: FastifyInstance): void {
   app.post("/api/zapas/:id/potvrzeni", async (request) => {
     const zapasId = requireId(request);
     const { zapas } = await roleVZapase(request, zapasId);
+    if (zapas.lobbyId === null) {
+      throw new HttpError(400, "Lobby ještě nemá odkaz, není co potvrzovat.");
+    }
     await setHostPotvrdil(zapasId);
     await broadcastAkce(zapas.akceId);
     return { ok: true };

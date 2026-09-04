@@ -168,7 +168,12 @@ export async function setZapasStav(
 }
 
 export async function setLobbyId(zapasId: number, lobbyId: string): Promise<void> {
-  await getPool().query("UPDATE zapas SET lobby_id = $2 WHERE id = $1", [zapasId, lobbyId]);
+  // Nový odkaz ruší staré potvrzení hosta — dokud ho nepotvrdí znovu, nikdo se
+  // na základě starého potvrzení nesmí spoléhat na nezkontrolovanou lobby.
+  await getPool().query(
+    "UPDATE zapas SET lobby_id = $2, host_potvrdil = NULL WHERE id = $1",
+    [zapasId, lobbyId],
+  );
 }
 
 export async function setHost(zapasId: number, steamId: string): Promise<void> {
@@ -204,8 +209,4 @@ export async function setVysledek(zapasId: number, viteznyTym: Tym): Promise<voi
 
 export async function setHostPotvrdil(zapasId: number): Promise<void> {
   await getPool().query("UPDATE zapas SET host_potvrdil = now() WHERE id = $1", [zapasId]);
-}
-
-export async function zrusHostPotvrdil(zapasId: number): Promise<void> {
-  await getPool().query("UPDATE zapas SET host_potvrdil = NULL WHERE id = $1", [zapasId]);
 }
