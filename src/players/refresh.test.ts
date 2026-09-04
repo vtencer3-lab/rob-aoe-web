@@ -110,12 +110,14 @@ describe("refreshPlayerStats", () => {
     expect(ulozeno[0]!.chyba).toBeNull();
   });
 
-  it("synchronní pád závislosti (ne odmítnutý příslib) nevyhodí výjimku ven", async () => {
-    const { deps } = depsSe({
+  it("synchronní pád závislosti (ne odmítnutý příslib) nevyhodí výjimku ven a zapíše chybu", async () => {
+    const { deps, ulozeno } = depsSe({
       nactiZebricek: vi.fn(() => {
         throw new Error("selhalo dřív, než vznikl příslib");
       }),
     });
     await expect(refreshPlayerStats("76561198000000001", deps)).resolves.toBeUndefined();
+    expect(ulozeno).toHaveLength(1);
+    expect(ulozeno[0]!.chyba).toMatch(/obnova selhala/i);
   });
 });

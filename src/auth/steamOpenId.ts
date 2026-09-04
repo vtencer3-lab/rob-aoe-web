@@ -44,7 +44,7 @@ export function isVerified(responseBody: string): boolean {
   return values.length === 1 && values[0] === "true";
 }
 
-function hasDuplicateOpenIdKeys(params: URLSearchParams): boolean {
+export function hasDuplicateOpenIdKeys(params: URLSearchParams): boolean {
   const seen = new Set<string>();
   for (const key of params.keys()) {
     if (!key.startsWith("openid.")) continue;

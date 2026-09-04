@@ -100,3 +100,44 @@ it("odhlášení zneplatní relaci", async () => {
   expect(po.json()).toEqual({ hrac: null });
   await app.close();
 });
+
+it("odmítne návrat se zdvojeným openid.assoc_handle bez volání overSteam", async () => {
+  // request.query mangles repeated keys under Fastify 5's fast-querystring parser
+  // (a repeated key becomes an array, which URLSearchParams then comma-joins into
+  // one value) — build the raw query string by hand so the duplicate survives.
+  const overSteam = vi.fn(async () => true);
+  const app = buildServer({ overSteam, obnovStaty: async () => {} });
+
+  const dotaz =
+    `openid.mode=id_res` +
+    `&openid.claimed_id=${encodeURIComponent(`https://steamcommunity.com/openid/id/${STEAM_ID}`)}` +
+    `&openid.assoc_handle=aaa` +
+    `&openid.assoc_handle=bbb` +
+    `&openid.sig=xyz`;
+
+  const res = await app.inject({ method: "GET", url: `/api/auth/steam/return?${dotaz}` });
+
+  expect(res.statusCode).toBe(401);
+  expect(overSteam).not.toHaveBeenCalled();
+  expect(await getPlayer(STEAM_ID)).toBeNull();
+  await app.close();
+});
+
+it("synchronní pád obnovStaty nezabrání přihlášení", async () => {
+  const app = buildServer({
+    overSteam: async () => true,
+    // Nikoliv async: vyhodí dřív, než vznikne příslib — stejná past jako u
+    // refreshPlayerStats.
+    obnovStaty: () => {
+      throw new Error("Worlds Edge mimo provoz (synchronně)");
+    },
+  });
+  const res = await app.inject({
+    method: "GET",
+    url: `/api/auth/steam/return?${NAVRAT.toString()}`,
+  });
+  expect(res.statusCode).toBe(302);
+  expect(res.cookies.find((c) => c.name === "sid")?.httpOnly).toBe(true);
+  expect(await getPlayer(STEAM_ID)).not.toBeNull();
+  await app.close();
+});

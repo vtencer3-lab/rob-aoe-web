@@ -3,7 +3,7 @@ import { config } from "../config.js";
 import { getPlayer, upsertPlayer } from "../db/players.js";
 import { createSession, deleteSession, getSessionUser } from "../db/sessions.js";
 import { SESSION_TTL_MS } from "../db/sessions.js";
-import { buildAuthUrl, extractSteamId } from "./steamOpenId.js";
+import { buildAuthUrl, extractSteamId, hasDuplicateOpenIdKeys } from "./steamOpenId.js";
 
 export interface AuthDeps {
   overSteam: (params: URLSearchParams) => Promise<boolean>;
@@ -21,7 +21,22 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   });
 
   app.get("/api/auth/steam/return", async (request, reply) => {
-    const params = new URLSearchParams(request.query as Record<string, string>);
+    // request.query nejde použít: Fastify 5 parsuje dotaz přes fast-querystring,
+    // které zdvojený klíč vrátí jako pole, a URLSearchParams by ho spojilo čárkou
+    // do jedné hodnoty. Tím by zdvojení navždy zmizelo dřív, než ho kdokoliv
+    // stihne zkontrolovat. Dotaz proto stavíme přímo ze surového query stringu,
+    // který zdvojení, pořadí i kódování zachová beze změny.
+    const dotaz = request.raw.url?.split("?", 2)[1] ?? "";
+    const params = new URLSearchParams(dotaz);
+
+    // Zdvojený openid.* parametr odmítáme tady, na úrovni routy — nespoléháme na
+    // to, že konkrétní implementace deps.overSteam (obvykle verifyWithSteam) tuto
+    // kontrolu provede sama. Žádné volání overSteam ani síťový dotaz na Steam se
+    // pak pro podvržený návrat vůbec neuskuteční.
+    if (hasDuplicateOpenIdKeys(params)) {
+      return reply.code(401).send({ chyba: "Neplatný návrat ze Steamu: zdvojený parametr." });
+    }
+
     const steamId = extractSteamId(params);
     if (!steamId) return reply.code(401).send({ chyba: "Steam nevrátil platný identifikátor." });
     if (!(await deps.overSteam(params))) {
@@ -30,8 +45,11 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
     await upsertPlayer(steamId, steamId === config.adminSteamId);
 
-    // Statistiky se stahují mimo přihlašovací cestu. Když selžou, přihlášení platí dál.
-    void deps.obnovStaty(steamId).catch(() => {});
+    // Statistiky se stahují mimo přihlašovací cestu. Když selžou — i synchronně,
+    // dřív než vznikne příslib — přihlášení platí dál.
+    void Promise.resolve()
+      .then(() => deps.obnovStaty(steamId))
+      .catch(() => {});
 
     const sid = await createSession(steamId);
     return reply

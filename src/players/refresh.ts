@@ -59,10 +59,12 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
     if (hodiny !== undefined) staty.steamHodiny = hodiny;
 
     await deps.uloz(steamId, staty);
-  } catch {
+  } catch (err: unknown) {
     // Cokoliv selhalo mimo výše ošetřené případy (včetně synchronního pádu
-    // některé závislosti nebo pádu zápisu). Přihlášení tím nesmí spadnout;
-    // hodnoty se doplní příště.
+    // některé závislosti nebo pádu zápisu). Přihlášení tím nesmí spadnout, ale
+    // na rozdíl od dílčích chyb výše bychom jinak neměli žádný záznam o tom,
+    // že se obnova statistik vůbec nepovedla — zkusíme to zapsat, nejlépe.
+    await deps.uloz(steamId, { chyba: `Obnova selhala: ${popis(err)}` }).catch(() => {});
   }
 }
 
