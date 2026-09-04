@@ -109,4 +109,13 @@ describe("refreshPlayerStats", () => {
     expect(ulozeno[0]!.alias).toBeNull();
     expect(ulozeno[0]!.chyba).toBeNull();
   });
+
+  it("synchronní pád závislosti (ne odmítnutý příslib) nevyhodí výjimku ven", async () => {
+    const { deps } = depsSe({
+      nactiZebricek: vi.fn(() => {
+        throw new Error("selhalo dřív, než vznikl příslib");
+      }),
+    });
+    await expect(refreshPlayerStats("76561198000000001", deps)).resolves.toBeUndefined();
+  });
 });

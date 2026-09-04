@@ -166,4 +166,31 @@ describe("verifyWithSteam", () => {
     expect(await verifyWithSteam(params, fetchImpl)).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
   });
+
+  it("zdvojený openid.assoc_handle vede k false bez volání fetch", async () => {
+    // Toto je skutečný injekční vektor, proti kterému hasDuplicateOpenIdKeys chrání:
+    // druhý assoc_handle by Steam vrátil jako invalidate_handle a mohl by vedle
+    // sebe propašovat padělanou kladnou odpověď (viz isVerified výše).
+    const fetchImpl = stubFetch({ ok: true, text: async () => "is_valid:true\n" });
+    const params = new URLSearchParams();
+    params.append("openid.mode", "id_res");
+    params.append("openid.assoc_handle", "1234567890");
+    params.append("openid.assoc_handle", "utocnikuv-handle");
+    params.append("openid.sig", "xyz");
+
+    expect(await verifyWithSteam(params, fetchImpl)).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("zdvojený parametr mimo obor openid. nezabrání volání fetch", async () => {
+    const fetchImpl = stubFetch({ ok: true, text: async () => "is_valid:true\n" });
+    const params = new URLSearchParams();
+    params.append("openid.mode", "id_res");
+    params.append("openid.sig", "xyz");
+    params.append("neco_jineho", "a");
+    params.append("neco_jineho", "b");
+
+    expect(await verifyWithSteam(params, fetchImpl)).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
 });
