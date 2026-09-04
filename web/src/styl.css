@@ -58,3 +58,10 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
 .skladani { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
 .skladani .vyber { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+/* Vstupní pole nemělo do teď žádný styl — na tmavém podkladu svítilo bíle. */
+input, select { background: #241f19; color: var(--text); border: 1px solid #4a4133; border-radius: 4px; padding: 0.4rem 0.6rem; }
+
+.sprava-akce, .zalozeni-akce { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+.sprava-akce .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+.zalozeni-akce { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }

@@ -15,6 +15,8 @@ vi.mock("./api.js", () => ({
     pripojeni: vi.fn(),
     vlozitOdkaz: vi.fn(),
     potvrdit: vi.fn(),
+    vytvoritAkce: vi.fn(),
+    akceStav: vi.fn(),
     vytvoritZapas: vi.fn(),
     zapasStav: vi.fn(),
     vysledek: vi.fn(),
@@ -134,4 +136,27 @@ it("neadmin panel režie nevidí", async () => {
 
   expect(await screen.findByText("Akce 1")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /vytvořit zápas/i })).not.toBeInTheDocument();
+});
+
+// Přesně stav, ve kterém web po nasazení stojí každý den do chvíle, než Rob
+// večer začne: přihlášený admin, žádná akce. Než tahle větev existovala,
+// neměl odsud jak akci založit — panel režie se vykresluje až uvnitř akce,
+// takže se z prázdné stránky nedalo dostat nikam.
+it("admin bez akce dostane formulář na její založení", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", jeAdmin: true } });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: "Založit akci" })).toBeInTheDocument();
+});
+
+it("běžný hráč bez akce formulář na založení nevidí", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "hrac1", alias: "Hrac", jeAdmin: false } });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByText("Právě neběží žádná akce.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Založit akci" })).not.toBeInTheDocument();
 });

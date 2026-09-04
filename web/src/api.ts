@@ -15,6 +15,18 @@ async function json<T>(res: Response): Promise<T> {
 export const api = {
   me: () => fetch("/api/me").then((r) => json<Me>(r)),
   akce: () => fetch("/api/akce").then((r) => json<AkceStavPayload>(r)),
+  vytvoritAkce: (nazev: string) =>
+    fetch("/api/akce", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nazev }),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
+  akceStav: (akceId: number, stav: string) =>
+    fetch(`/api/akce/${akceId}/stav`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ stav }),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
   prihlasit: (akceId: number) =>
     fetch(`/api/akce/${akceId}/prihlaska`, { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   odhlasit: (akceId: number) =>

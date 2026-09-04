@@ -6,6 +6,7 @@ import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
+import { SpravaAkce } from "./views/SpravaAkce.js";
 
 export function App() {
   const [me, setMe] = useState<Me["hrac"]>(null);
@@ -56,6 +57,18 @@ export function App() {
 
       {!spojeno ? <p className="spojeni">Obnovuji spojení…</p> : null}
       {chyba ? <p className="chyba">{chyba}</p> : null}
+
+      {/* Mimo větev `akce ?` níže schválně: bez tohohle by Rob neměl akci jak
+          založit — dokud žádná neběží, celý panel režie se nevykresluje. */}
+      {me?.jeAdmin ? (
+        <SpravaAkce
+          akce={akce}
+          onZalozit={(nazev) => void hlidej(() => api.vytvoritAkce(nazev))}
+          onStav={(novyStav) => {
+            if (akce) void hlidej(() => api.akceStav(akce.id, novyStav));
+          }}
+        />
+      ) : null}
 
       {akce ? (
         <>
