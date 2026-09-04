@@ -61,7 +61,7 @@ afterEach(() => {
 it("host vidí obrazovku hosta, ne kartu hráče", async () => {
   vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "host1", alias: "Host", jeAdmin: false } });
   nastavStav({
-    akce: { id: 1, nazev: "Akce 1", stav: "probihaji_zapasy" },
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
     prihlaseni: [],
     zapasy: [zapas([u("host1", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)])],
   });
@@ -77,7 +77,7 @@ it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async ()
     hrac: { steamId: "b", alias: "Spoluhrac", jeAdmin: false },
   });
   nastavStav({
-    akce: { id: 1, nazev: "Akce 1", stav: "probihaji_zapasy" },
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
     prihlaseni: [],
     zapasy: [zapas([u("host1", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)])],
   });
@@ -93,7 +93,7 @@ it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
     hrac: { steamId: "divak", alias: "Divak", jeAdmin: false },
   });
   nastavStav({
-    akce: { id: 1, nazev: "Akce 1", stav: "probihaji_zapasy" },
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
     prihlaseni: [],
     zapasy: [zapas([u("host1", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)])],
   });
