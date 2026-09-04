@@ -7,6 +7,8 @@ import { getPlayer, savePlayerStats } from "../db/players.js";
 import { fetchSteamHours, fetchSteamProfile } from "../external/steam.js";
 import { fetchPersonalStat } from "../external/worldsEdge.js";
 import { jeCerstve, refreshPlayerStats } from "../players/refresh.js";
+import { HttpError } from "./guards.js";
+import { registerEventRoutes } from "./routes/events.js";
 
 function vychoziDeps(): AuthDeps {
   return {
@@ -31,5 +33,15 @@ export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
   app.register(cookie);
   app.get("/api/health", async () => ({ ok: true }));
   registerAuthRoutes(app, deps);
+  registerEventRoutes(app);
+
+  app.setErrorHandler((err, _request, reply) => {
+    if (err instanceof HttpError) {
+      return reply.code(err.statusCode).send({ chyba: err.message });
+    }
+    app.log.error(err);
+    return reply.code(500).send({ chyba: "Něco se pokazilo na serveru." });
+  });
+
   return app;
 }
