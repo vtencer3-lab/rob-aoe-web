@@ -12,6 +12,7 @@ import {
   UcastnikOdhlasenChyba,
 } from "../../db/matches.js";
 import { getPlayer } from "../../db/players.js";
+import { SestavaChyba } from "../../matches/composition.js";
 import { MATCH_STATES, type MatchState } from "../../matches/stateMachine.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import type { Format, Tym } from "../../shared/types.js";
@@ -72,6 +73,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
       return { zapas: { id: zapas.id } };
     } catch (err) {
       if (err instanceof UcastnikOdhlasenChyba) throw new HttpError(409, err.message);
+      if (err instanceof SestavaChyba) throw new HttpError(400, err.message);
       if (jeSoubezneVytvoreniKonflikt(err)) {
         throw new HttpError(409, "Zápas se právě vytváří někým jiným, zkus to znovu.");
       }

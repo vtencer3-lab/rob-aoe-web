@@ -7,6 +7,9 @@ export interface SeatInput {
   odehranoHer: number | null;
 }
 
+/** Vstup od Roba nesedí formátu zápasu — chybný počet hráčů nebo duplicita, ne interní chyba. */
+export class SestavaChyba extends Error {}
+
 const ROZLOZENI: Record<Format, ReadonlyArray<{ tym: Tym; barva: Barva }>> = {
   "1v1": [
     { tym: 1, barva: 1 },
@@ -27,11 +30,11 @@ export function seatCount(format: Format): number {
 export function assignSeats(format: Format, players: SeatInput[]): Seat[] {
   const rozlozeni = ROZLOZENI[format];
   if (players.length !== rozlozeni.length) {
-    throw new Error(`Formát ${format} potřebuje přesně ${rozlozeni.length} hráče.`);
+    throw new SestavaChyba(`Formát ${format} potřebuje přesně ${rozlozeni.length} hráče.`);
   }
   const unikatni = new Set(players.map((p) => p.steamId));
   if (unikatni.size !== players.length) {
-    throw new Error("Stejný hráč nemůže být v zápase dvakrát.");
+    throw new SestavaChyba("Stejný hráč nemůže být v zápase dvakrát.");
   }
 
   let hostIndex = 0;

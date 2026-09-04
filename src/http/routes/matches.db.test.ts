@@ -54,6 +54,32 @@ it("běžný hráč nesmí vytvořit zápas", async () => {
   await app.close();
 });
 
+it("špatný počet hráčů na formát vrátí 400 se srozumitelnou hláškou", async () => {
+  const app = buildServer();
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akceId}/zapas`,
+    cookies: { sid: robSid },
+    payload: { format: "coop_kings_2v2", steamIds: HRACI },
+  });
+  expect(res.statusCode).toBe(400);
+  expect(res.json().chyba).toMatch(/4 hráče/);
+  await app.close();
+});
+
+it("stejný hráč dvakrát v sestavě vrátí 400 se srozumitelnou hláškou", async () => {
+  const app = buildServer();
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akceId}/zapas`,
+    cookies: { sid: robSid },
+    payload: { format: "1v1", steamIds: [HRACI[0], HRACI[0]] },
+  });
+  expect(res.statusCode).toBe(400);
+  expect(res.json().chyba).toMatch(/dvakrát/);
+  await app.close();
+});
+
 it("Rob vytvoří zápas a vyhlásí ho", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
