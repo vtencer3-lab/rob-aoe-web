@@ -7,7 +7,7 @@ import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
 import { getPlayer, savePlayerStats } from "../db/players.js";
-import { fetchSteamHours, fetchSteamProfile } from "../external/steam.js";
+import { steamZdroje } from "../external/steam.js";
 import { fetchPersonalStat } from "../external/worldsEdge.js";
 import { jeCerstve, refreshPlayerStats } from "../players/refresh.js";
 import { HttpError } from "./guards.js";
@@ -25,8 +25,7 @@ function vychoziDeps(): AuthDeps {
       if (jeCerstve(hrac?.statyStazenyV ?? null)) return;
       await refreshPlayerStats(steamId, {
         nactiZebricek: (id) => fetchPersonalStat(id),
-        nactiProfil: (id) => fetchSteamProfile(id, config.steamApiKey),
-        nactiHodiny: (id) => fetchSteamHours(id, config.steamApiKey),
+        ...steamZdroje(config.steamApiKey),
         uloz: savePlayerStats,
       });
     },

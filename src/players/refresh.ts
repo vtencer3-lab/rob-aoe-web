@@ -12,7 +12,8 @@ export function jeCerstve(statyStazenyV: Date | null, ted: Date = new Date()): b
 export interface RefreshDeps {
   nactiZebricek: (steamId: string) => Promise<LeaderboardStats | null>;
   nactiProfil: (steamId: string) => Promise<SteamProfile | null>;
-  nactiHodiny: (steamId: string) => Promise<number | null>;
+  /** `undefined` = nevíme (chybí klíč), hodnotu v databázi nesaháme. `null` = skrytý profil. */
+  nactiHodiny: (steamId: string) => Promise<number | null | undefined>;
   uloz: (steamId: string, staty: PlayerStatsUpdate) => Promise<void>;
 }
 

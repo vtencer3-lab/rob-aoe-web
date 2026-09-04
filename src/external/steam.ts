@@ -36,6 +36,35 @@ export function parseOwnedGames(json: unknown): number | null {
   return Math.floor(minuty / 60);
 }
 
+/**
+ * Zdroje, které potřebují klíč ke Steam Web API. Bez klíče se Steamu neptáme
+ * vůbec — dotaz s prázdným `key=` vrací 403, což by se každému hráči zapsalo do
+ * `staty_chyba` a zobrazilo jako varování u jeho jména. Chybějící klíč není
+ * porucha, jen míň údajů: ELO, herní přezdívka i počet odehraných her chodí ze
+ * žebříčku Worlds Edge, který žádný klíč nechce.
+ *
+ * `undefined` u hodin znamená "nevíme" a hodnota v databázi se nechá být;
+ * `null` by znamenalo "profil je skrytý", což je jiná informace.
+ */
+export function steamZdroje(
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+): {
+  nactiProfil: (steamId: string) => Promise<SteamProfile | null>;
+  nactiHodiny: (steamId: string) => Promise<number | null | undefined>;
+} {
+  if (apiKey === "") {
+    return {
+      nactiProfil: async () => null,
+      nactiHodiny: async () => undefined,
+    };
+  }
+  return {
+    nactiProfil: (steamId) => fetchSteamProfile(steamId, apiKey, fetchImpl),
+    nactiHodiny: (steamId) => fetchSteamHours(steamId, apiKey, fetchImpl),
+  };
+}
+
 export async function fetchSteamProfile(
   steamId: string,
   apiKey: string,
