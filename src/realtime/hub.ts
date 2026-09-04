@@ -3,12 +3,17 @@ import type { AkceStavPayload } from "../shared/types.js";
 type Odberatel<T> = (payload: T) => void;
 
 /**
- * Kanál pro ty, kdo si stránku otevřeli dřív, než akce vůbec vznikla. Žádná
- * akce nikdy nemá id 0 (sekvence začíná jedničkou), takže je volné.
- * {@link broadcastAkce} posílá každý stav i sem, aby čekající dostal založení
- * akce živě a nemusel na ně čekat na nejbližší obnovu spojení.
+ * Jediný kanál, na kterém se rozesílá stav akce — a to schválně, ne z lenosti.
+ *
+ * Klíčovat odběr podle id akce vypadalo přirozeně, ale nic to nepřinášelo:
+ * `buildAkceStav()` žádné id nebere, vždycky staví stav té jedné otevřené akce
+ * (migrace 003 víc než jednu nepustí). Všichni odběratelé tedy stejně dostávali
+ * tentýž payload. Zato to spolehlivě rozbíjelo večer, ve kterém akce skončila
+ * a začala další: kdo měl stránku otevřenou z té první, zůstal viset na kanálu,
+ * kam už nikdy nic nepřišlo. Viděl „Právě neběží žádná akce.“ a zároveň
+ * dostával od serveru 409 „Ještě běží jiná akce.“ — dokud stránku neobnovil.
  */
-export const KANAL_CEKAJICI = 0;
+export const KANAL_AKCE = 0;
 
 /**
  * Generický, aby ho šlo testovat s libovolným payloadem (viz hub.test.ts).

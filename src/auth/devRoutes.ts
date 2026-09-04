@@ -138,7 +138,7 @@ export function registerDevRoutes(app: FastifyInstance): void {
     await getPool().query("UPDATE player SET je_admin = (steam_id = $1)", [komu]);
 
     const akce = await getAktivniAkce();
-    if (akce) await broadcastAkce(akce.id);
+    if (akce) await broadcastAkce();
     return reply.redirect("/", 302);
   });
 
@@ -165,7 +165,7 @@ export function registerDevRoutes(app: FastifyInstance): void {
       await signUp(akce.id, steamId);
     }
 
-    await broadcastAkce(akce.id);
+    await broadcastAkce();
     return reply.redirect("/", 302);
   });
 }

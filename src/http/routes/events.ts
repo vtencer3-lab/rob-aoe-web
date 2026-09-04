@@ -28,7 +28,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
     }
     try {
       const akce = await createAkce(nazev.trim());
-      await broadcastAkce(akce.id);
+      await broadcastAkce();
       return { akce };
     } catch (err) {
       // Migrace 003 drží v databázi invariant „nejvýš jedna nedokončená akce“.
@@ -52,7 +52,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
       throw new HttpError(400, "Neznámý stav akce.");
     }
     const akce = await setAkceStav(akceId, stav as AkceStav);
-    await broadcastAkce(akceId);
+    await broadcastAkce();
     return { akce };
   });
 
@@ -64,7 +64,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
       throw new HttpError(409, "Přihlašování do téhle akce není otevřené.");
     }
     await signUp(akceId, steamId);
-    await broadcastAkce(akceId);
+    await broadcastAkce();
     return { ok: true };
   });
 
@@ -72,7 +72,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
     const steamId = await requireUser(request);
     const akceId = requireId(request);
     await withdraw(akceId, steamId);
-    await broadcastAkce(akceId);
+    await broadcastAkce();
     return { ok: true };
   });
 }

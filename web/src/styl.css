@@ -74,5 +74,7 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 
 .zkusebni { border: 1px dashed #4a4133; border-radius: 8px; padding: 0.8rem 1rem; margin: 2rem 0 0; }
 .zkusebni .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-.zkusebni a { color: var(--text); border: 1px solid #4a4133; background: #3a3126; border-radius: 4px; padding: 0.4rem 0.7rem; text-decoration: none; font-size: 0.9rem; }
-.zkusebni a.tlacitko { color: #241d10; font-size: 0.9rem; padding: 0.4rem 0.7rem; }
+.zkusebni a:not(.tlacitko) { color: var(--text); border: 1px solid #4a4133; background: #3a3126; border-radius: 4px; padding: 0.4rem 0.7rem; text-decoration: none; font-size: 0.9rem; }
+/* Zlatý „hlavní“ odkaz si musí nechat svoje pozadí. Dokud ho přebíjelo
+   pravidlo výše, měl tmavé písmo na tmavém podkladu a vypadal zakázaně. */
+.zkusebni a.tlacitko { font-size: 0.9rem; padding: 0.4rem 0.7rem; }

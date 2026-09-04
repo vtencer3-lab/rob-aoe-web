@@ -5,7 +5,7 @@ import { closePool, getPool } from "../../db/pool.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
 import { createSession } from "../../db/sessions.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
-import { hub, KANAL_CEKAJICI } from "../../realtime/hub.js";
+import { hub, KANAL_AKCE } from "../../realtime/hub.js";
 import type { AkceStavPayload } from "../../shared/types.js";
 import { buildServer } from "../server.js";
 
@@ -74,13 +74,13 @@ it("bez aktivní akce stream drží a založení akce doručí živě", async ()
 
   const fronta = sberac(res.stream());
   expect((await fronta.ramec(0)).akce).toBeNull();
-  expect(hub.subscriberCount(KANAL_CEKAJICI)).toBe(1);
+  expect(hub.subscriberCount(KANAL_AKCE)).toBe(1);
 
   // Rob večer akci založí. Čekající její id znát nemůže, takže se to k němu
   // musí dostat společným kanálem — jinak by na založení čekal až do příští
   // obnovy spojení, a ta při držícím streamu nikdy nepřijde.
   const akce = await createAkce("večer");
-  await broadcastAkce(akce.id);
+  await broadcastAkce();
   expect((await fronta.ramec(1)).akce?.nazev).toBe("večer");
 
   controller.abort();
@@ -142,12 +142,12 @@ it("po odpojení klienta se odběratel odhlásí z hubu", async () => {
     stream.once("error", reject);
   });
 
-  expect(hub.subscriberCount(akce.id)).toBe(1);
+  expect(hub.subscriberCount(KANAL_AKCE)).toBe(1);
 
   controller.abort();
   await new Promise((resolve) => setTimeout(resolve, 50));
 
-  expect(hub.subscriberCount(akce.id)).toBe(0);
+  expect(hub.subscriberCount(KANAL_AKCE)).toBe(0);
   await app.close();
 });
 
@@ -176,7 +176,7 @@ it("odpojení klienta hned po hijacku (ještě během sestavování stavu) odbě
   controller.abort();
   await new Promise((resolve) => setTimeout(resolve, 50));
 
-  expect(hub.subscriberCount(akce.id)).toBe(0);
+  expect(hub.subscriberCount(KANAL_AKCE)).toBe(0);
   await app.close();
 });
 
@@ -219,7 +219,7 @@ it("odpojení klienta ještě před hijackem (během getAktivniAkce) odběratele
   await resPromise;
   await new Promise((resolve) => setTimeout(resolve, 50));
 
-  expect(hub.subscriberCount(akce.id)).toBe(0);
+  expect(hub.subscriberCount(KANAL_AKCE)).toBe(0);
   await app.close();
 });
 
@@ -249,7 +249,7 @@ it("broadcast doručený během sestavování úvodního stavu se pošle až po 
   // Zprávy teď procházejí redakcí (redigujProDivaka čte payload.zapasy) a hub
   // je typovaný na AkceStavPayload, takže testovací marker musí být platný
   // AkceStavPayload — schováme ho do `akce.nazev`, kde ho JSON výstup pozná.
-  hub.publish(akce.id, {
+  hub.publish(KANAL_AKCE, {
     akce: { id: akce.id, nazev: "broadcast-behem-snapshotu", stav: "prihlasovani" },
     prihlaseni: [],
     zapasy: [],
@@ -273,11 +273,10 @@ it("broadcast doručený během sestavování úvodního stavu se pošle až po 
 });
 
 it("hub o odběrateli ví a po zavření spojení ho zapomene", async () => {
-  const akce = await createAkce("večer");
-  const odhlas = hub.subscribe(akce.id, () => {});
-  expect(hub.subscriberCount(akce.id)).toBe(1);
+  const odhlas = hub.subscribe(KANAL_AKCE, () => {});
+  expect(hub.subscriberCount(KANAL_AKCE)).toBe(1);
   odhlas();
-  expect(hub.subscriberCount(akce.id)).toBe(0);
+  expect(hub.subscriberCount(KANAL_AKCE)).toBe(0);
 });
 
 // Regrese k záměně redigujProDivaka(payload, divak) za holý payload v SSE routě.
@@ -375,5 +374,40 @@ it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu div�
   expect(robuv.spectatorUri).toBe("aoe2de://1/234230181");
   robCtrl.abort();
 
+  await app.close();
+});
+
+// Přesně to, co se stalo naživo: stránka otevřená během první akce zůstala
+// po jejím ukončení viset a založení druhé akce se k ní nikdy nedostalo.
+// Uživatel pak četl „Právě neběží žádná akce.“ a zároveň dostával na založení
+// další 409 „Ještě běží jiná akce.“ — dvě protichůdné pravdy naráz, obě od
+// téhož serveru, a jediné východisko byl ruční refresh.
+it("stránka otevřená během první akce dostane i tu druhou, bez obnovy spojení", async () => {
+  const prvni = await createAkce("čtvrtek");
+  await setAkceStav(prvni.id, "prihlasovani");
+
+  const app = buildServer();
+  await app.ready();
+
+  const controller = new AbortController();
+  const res = await app.inject({
+    method: "GET",
+    url: "/api/stream",
+    payloadAsStream: true,
+    signal: controller.signal,
+  });
+  const fronta = sberac(res.stream());
+  expect((await fronta.ramec(0)).akce?.nazev).toBe("čtvrtek");
+
+  await setAkceStav(prvni.id, "konec");
+  await broadcastAkce();
+  expect((await fronta.ramec(1)).akce).toBeNull();
+
+  const druha = await createAkce("pátek");
+  await broadcastAkce();
+  expect((await fronta.ramec(2)).akce?.nazev).toBe("pátek");
+  expect((await fronta.ramec(2)).akce?.id).toBe(druha.id);
+
+  controller.abort();
   await app.close();
 });

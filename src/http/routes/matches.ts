@@ -77,7 +77,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     }
     try {
       const zapas = await createZapas(akceId, format as Format, steamIds as string[]);
-      await broadcastAkce(akceId);
+      await broadcastAkce();
       // Klientovi stačí ID — heslo, číslo lobby i potvrzení hosta jsou tajemství,
       // co proudí jen redigovaným SSE kanálem, nikdy syrová v odpovědi na admin akci.
       return { zapas: { id: zapas.id } };
@@ -102,7 +102,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     }
     const { zapas } = await nactiNeboSelzi(zapasId);
     await prejdi(zapasId, stav as MatchState, "admin");
-    await broadcastAkce(zapas.akceId);
+    await broadcastAkce();
     return { ok: true };
   });
 
@@ -131,7 +131,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
         if (!(err instanceof PrechodChyba)) throw err;
       }
     }
-    await broadcastAkce(zapas.akceId);
+    await broadcastAkce();
     return { ok: true };
   });
 
@@ -142,7 +142,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
       throw new HttpError(400, "Lobby ještě nemá odkaz, není co potvrzovat.");
     }
     await setHostPotvrdil(zapasId);
-    await broadcastAkce(zapas.akceId);
+    await broadcastAkce();
     return { ok: true };
   });
 
@@ -156,7 +156,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
       throw new HttpError(400, "Hostovat může jen někdo z účastníků zápasu.");
     }
     await setHost(zapasId, steamId);
-    await broadcastAkce(zapas.akceId);
+    await broadcastAkce();
     return { ok: true };
   });
 
@@ -168,7 +168,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
       throw new HttpError(403, "V tomhle zápase nehraješ.");
     }
     await oznacKliknutiPripojit(zapasId, steamId);
-    await broadcastAkce(zapas.akceId);
+    await broadcastAkce();
     return { ok: true };
   });
 
@@ -180,7 +180,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     const { zapas } = await nactiNeboSelzi(zapasId);
     await setVysledek(zapasId, viteznyTym as Tym);
     if (zapas.stav !== "dohrano") await prejdi(zapasId, "dohrano", "admin");
-    await broadcastAkce(zapas.akceId);
+    await broadcastAkce();
     return { ok: true };
   });
 }
