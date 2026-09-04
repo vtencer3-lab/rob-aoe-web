@@ -1,0 +1,68 @@
+import { getPool } from "./pool.js";
+import { mapuj, PLAYER_SLOUPEC_NAZVY, type DbRow, type PlayerRow } from "./players.js";
+
+export type AkceStav = "priprava" | "prihlasovani" | "zavreno" | "bezi" | "konec";
+
+export interface AkceRow {
+  id: number;
+  nazev: string;
+  stav: AkceStav;
+}
+
+interface AkceDbRow {
+  id: number;
+  nazev: string;
+  stav: AkceStav;
+}
+
+export async function createAkce(nazev: string): Promise<AkceRow> {
+  const { rows } = await getPool().query<AkceDbRow>(
+    "INSERT INTO akce (nazev) VALUES ($1) RETURNING id, nazev, stav",
+    [nazev],
+  );
+  return rows[0]!;
+}
+
+export async function getAktivniAkce(): Promise<AkceRow | null> {
+  const { rows } = await getPool().query<AkceDbRow>(
+    "SELECT id, nazev, stav FROM akce WHERE stav <> 'konec' ORDER BY id DESC LIMIT 1",
+  );
+  return rows[0] ?? null;
+}
+
+export async function setAkceStav(akceId: number, stav: AkceStav): Promise<AkceRow> {
+  const { rows } = await getPool().query<AkceDbRow>(
+    "UPDATE akce SET stav = $2 WHERE id = $1 RETURNING id, nazev, stav",
+    [akceId, stav],
+  );
+  if (!rows[0]) throw new Error(`Akce ${akceId} neexistuje.`);
+  return rows[0];
+}
+
+export async function signUp(akceId: number, steamId: string): Promise<void> {
+  await getPool().query(
+    `INSERT INTO prihlaska (akce_id, steam_id, stav, kdy) VALUES ($1, $2, 'prihlasen', now())
+     ON CONFLICT (akce_id, steam_id) DO UPDATE SET stav = 'prihlasen', kdy = now()`,
+    [akceId, steamId],
+  );
+}
+
+export async function withdraw(akceId: number, steamId: string): Promise<void> {
+  await getPool().query(
+    "UPDATE prihlaska SET stav = 'odhlasen' WHERE akce_id = $1 AND steam_id = $2",
+    [akceId, steamId],
+  );
+}
+
+export async function listSignups(akceId: number): Promise<PlayerRow[]> {
+  const sloupce = PLAYER_SLOUPEC_NAZVY.map((sloupec) => `p.${sloupec}`).join(", ");
+  const { rows } = await getPool().query<DbRow>(
+    `SELECT ${sloupce}
+       FROM prihlaska pr
+       JOIN player p ON p.steam_id = pr.steam_id
+      WHERE pr.akce_id = $1 AND pr.stav = 'prihlasen'
+      ORDER BY pr.kdy ASC`,
+    [akceId],
+  );
+  return rows.map(mapuj);
+}

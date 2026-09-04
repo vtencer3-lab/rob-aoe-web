@@ -1,0 +1,1 @@
+ALTER TABLE zapas ADD COLUMN host_potvrdil TIMESTAMPTZ;

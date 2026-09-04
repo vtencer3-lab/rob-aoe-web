@@ -5379,22 +5379,23 @@ it("stav účastníka pojmenuje jako kliknutí, ne jako přítomnost v lobby", (
   expect(screen.queryByText(/je v lobby/i)).not.toBeInTheDocument();
 });
 
-it("dokud host nepotvrdil, spectate je zamčené", () => {
+it("spectate je dostupné hned, jak host vloží odkaz — potvrzení se nečeká", () => {
+  // Rob se do lobby dostane jako divák ještě před startem hry, takže tam vidí
+  // rozestavení a může špatně nastavenou lobby zavčas zarazit. Zamykat mu to
+  // do potvrzení hosta by ho blokovalo přesně tam, kde je nejužitečnější.
   render(<Rezie stav={stav} {...props} />);
-  expect(screen.getByTestId("spectate")).toHaveAttribute("aria-disabled", "true");
-});
-
-it("po potvrzení hosta spectate odemkne a míří na divácký odkaz", () => {
-  const potvrzeny = { ...stav, zapasy: [{ ...zapas, hostPotvrdil: "2026-09-03T12:00:00.000Z" }] };
-  render(<Rezie stav={potvrzeny} {...props} />);
   const odkaz = screen.getByTestId("spectate");
   expect(odkaz).toHaveAttribute("aria-disabled", "false");
   expect(odkaz).toHaveAttribute("href", "aoe2de://1/234230181");
 });
 
-it("Rob může spectate odemknout i bez potvrzení", () => {
+it("ukáže, jestli host nastavení už potvrdil", () => {
   render(<Rezie stav={stav} {...props} />);
-  expect(screen.getByRole("button", { name: /odemknout/i })).toBeInTheDocument();
+  expect(screen.getByText(/host zatím nepotvrdil/i)).toBeInTheDocument();
+
+  const potvrzeny = { ...stav, zapasy: [{ ...zapas, hostPotvrdil: "2026-09-03T12:00:00.000Z" }] };
+  render(<Rezie stav={potvrzeny} {...props} />);
+  expect(screen.getByText(/host potvrdil/i)).toBeInTheDocument();
 });
 
 it("záložní údaje jsou vidět pořád", () => {
@@ -5424,6 +5425,8 @@ Expected: FAIL — komponenta neexistuje
 import { useState } from "react";
 import { BARVA_NAZEV, type AkceStavPayload, type Format, type Tym } from "../../../src/shared/types.js";
 
+// `useState` je potřeba jen ve `SkladaniZapasu` níž, ne v `Rezie`.
+
 interface Props {
   stav: AkceStavPayload;
   onVytvoritZapas: (format: Format, steamIds: string[]) => void;
@@ -5433,13 +5436,12 @@ interface Props {
 }
 
 export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Props) {
-  const [odemcene, setOdemcene] = useState<Set<number>>(new Set());
-
   return (
     <section className="rezie">
       {stav.zapasy.map((zapas) => {
-        const odemknuto = Boolean(zapas.hostPotvrdil) || odemcene.has(zapas.id);
-        const muzeSpectate = odemknuto && zapas.spectatorUri !== null;
+        // Divácký odkaz funguje i před startem hry — ověřeno na živé lobby.
+        // Jediná podmínka je, že host už vložil odkaz.
+        const muzeSpectate = zapas.spectatorUri !== null;
 
         return (
           <article key={zapas.id} className="zapas">
@@ -5466,13 +5468,11 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
               aria-disabled={muzeSpectate ? "false" : "true"}
               href={muzeSpectate ? zapas.spectatorUri! : undefined}
             >
-              {muzeSpectate ? "Spectate" : "Spectate — až host potvrdí"}
+              {muzeSpectate ? "Spectate" : "Spectate — čeká se na odkaz od hosta"}
             </a>
-            {!odemknuto ? (
-              <button onClick={() => setOdemcene(new Set(odemcene).add(zapas.id))}>
-                Odemknout spectate i bez potvrzení
-              </button>
-            ) : null}
+            <p className="potvrzeni">
+              {zapas.hostPotvrdil ? "Host potvrdil nastavení." : "Host zatím nepotvrdil nastavení."}
+            </p>
 
             <div className="zaloha">
               Kdyby to zamrzlo: lobby <strong>{zapas.nazevLobby}</strong>, heslo{" "}

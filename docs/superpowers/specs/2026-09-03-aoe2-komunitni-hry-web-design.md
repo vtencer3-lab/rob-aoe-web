@@ -72,6 +72,11 @@ Empire League spectate odkaz používá i u zápasů ve stavu „probíhá", tak
 jde napojit i na rozehranou hru. Odkazy zpracovává `Tools_Builds\AOEURLHelper.exe`,
 který je součástí instalace hry a registruje protokol `aoe2de://` v systému.
 
+**Ověřeno na živé hře (2026-09-04):** oba odkazy fungují — divák se připojí jak do
+otevřené lobby před startem, tak do už běžící hry. Divák v lobby navíc vidí
+rozestavení hráčů, takže pořadatel může špatně nastavenou lobby zarazit před
+startem.
+
 **Známá omezení:**
 
 - Je hlášeno, že URL helper funguje spolehlivě jen tehdy, když hráč v dané
@@ -276,8 +281,12 @@ lobby (kdo má mít jakou barvu a tým), a jedno tlačítko **„Sedí to — js
 nachystaní"**. Tohle je jediné místo v systému, kde někdo lobby opravdu zkontroluje.
 Kontroluje ji člověk, který na ni kouká, a je to nejzkušenější z účastníků.
 
-**Rob (režie)** — účastníci se stavem, ELO, a tlačítko Spectate, které naskočí po
-potvrzení hosta. Rob ho smí odemknout i dřív. Trvale viditelné jsou název lobby,
+**Rob (režie)** — účastníci se stavem, ELO, a tlačítko Spectate, které naskočí,
+jakmile host vloží odkaz. Nečeká se na jeho potvrzení: ověřeno na živé lobby, že
+se divák připojí i před startem hry, takže Rob vidí rozestavení a může špatně
+nastavenou lobby zavčas zarazit — zamykat mu to by ho blokovalo přesně tam, kde
+je nejužitečnější. Potvrzení hosta se vedle toho zobrazuje jako stav, ne jako
+zámek. Trvale viditelné jsou název lobby,
 heslo a číslo lobby, aby se Rob dostal dovnitř i tehdy, když technika zlobí.
 
 Stav účastníka u Roba se pojmenuje **„klikl na připojení"**, ne „je v lobby". Web
@@ -377,7 +386,7 @@ toho vznikne webová aplikace.
 
 | Otázka | Kdy se rozhodne |
 |---|---|
-| Funguje spectate odkaz na Robově stroji? | krok nula |
+| ~~Funguje spectate odkaz na Robově stroji?~~ | **zodpovězeno 2026-09-04: ano, před startem i za běhu hry** |
 | Funguje cokoliv z toho na verzi z Microsoft Store? | až se objeví někdo, kdo ji má; zatím kryje záložní cesta |
 | Doména pro pilot | před prvním ostrým večerem |
 | Chce Rob veřejnou stránku „co se právě hraje" pro diváky? | po prvním večeru |
