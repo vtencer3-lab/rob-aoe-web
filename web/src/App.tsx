@@ -80,7 +80,7 @@ export function App() {
                     key={zapas.id}
                     zapas={zapas}
                     ja={me.steamId}
-                    onPripojit={(id) => void api.pripojeni(id)}
+                    onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                   />
                 ),
               )

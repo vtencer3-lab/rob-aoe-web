@@ -20,7 +20,8 @@ export const api = {
   odhlasit: (akceId: number) =>
     fetch(`/api/akce/${akceId}/prihlaska`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   odhlasitSe: () => fetch("/api/auth/logout", { method: "POST" }),
-  pripojeni: (zapasId: number) => fetch(`/api/zapas/${zapasId}/pripojeni`, { method: "POST" }),
+  pripojeni: (zapasId: number) =>
+    fetch(`/api/zapas/${zapasId}/pripojeni`, { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   vlozitOdkaz: (zapasId: number, odkaz: string) =>
     fetch(`/api/zapas/${zapasId}/lobby`, {
       method: "POST",
