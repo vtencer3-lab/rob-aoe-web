@@ -1,9 +1,16 @@
-type Odberatel = (payload: unknown) => void;
+import type { AkceStavPayload } from "../shared/types.js";
 
-export class Hub {
-  readonly #odberatele = new Map<number, Set<Odberatel>>();
+type Odberatel<T> = (payload: T) => void;
 
-  subscribe(akceId: number, send: Odberatel): () => void {
+/**
+ * Generický, aby ho šlo testovat s libovolným payloadem (viz hub.test.ts).
+ * Skutečná instance {@link hub} je ale typovaná na {@link AkceStavPayload} —
+ * chybný publish tak spadne na kompilaci, ne až za běhu uvnitř redakce.
+ */
+export class Hub<T = unknown> {
+  readonly #odberatele = new Map<number, Set<Odberatel<T>>>();
+
+  subscribe(akceId: number, send: Odberatel<T>): () => void {
     let mnozina = this.#odberatele.get(akceId);
     if (!mnozina) {
       mnozina = new Set();
@@ -23,7 +30,7 @@ export class Hub {
     };
   }
 
-  publish(akceId: number, payload: unknown): void {
+  publish(akceId: number, payload: T): void {
     const mnozina = this.#odberatele.get(akceId);
     if (!mnozina) return;
     for (const send of mnozina) {
@@ -41,4 +48,4 @@ export class Hub {
   }
 }
 
-export const hub = new Hub();
+export const hub = new Hub<AkceStavPayload>();

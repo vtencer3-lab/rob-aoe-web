@@ -56,10 +56,8 @@ export function registerStreamRoutes(app: FastifyInstance): void {
       const hrac = steamId ? await getPlayer(steamId) : null;
       const divak = { steamId, jeAdmin: hrac?.jeAdmin ?? false };
 
-      const posli = (payload: unknown) =>
-        reply.raw.write(
-          `data: ${JSON.stringify(redigujProDivaka(payload as AkceStavPayload, divak))}\n\n`,
-        );
+      const posli = (payload: AkceStavPayload) =>
+        reply.raw.write(`data: ${JSON.stringify(redigujProDivaka(payload, divak))}\n\n`);
 
       // Odběr musí vzniknout dřív, než začneme stavět úvodní stav — jinak by
       // broadcast, který přijde přesně v okně mezi sestavením a přihlášením,
@@ -68,7 +66,7 @@ export function registerStreamRoutes(app: FastifyInstance): void {
       // poslaný až po novějším by na chvíli ukázal novější data a hned je
       // přepsal staršími.
       let zive = false;
-      let cekajici: unknown;
+      let cekajici: AkceStavPayload | undefined;
       let maCekajici = false;
       odhlas = hub.subscribe(akce.id, (payload) => {
         if (!zive) {
@@ -88,7 +86,7 @@ export function registerStreamRoutes(app: FastifyInstance): void {
       posli(stav);
       zive = true;
       if (maCekajici) {
-        posli(cekajici);
+        posli(cekajici!);
         maCekajici = false;
       }
 

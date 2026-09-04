@@ -178,9 +178,14 @@ it("broadcast doručený během sestavování úvodního stavu se pošle až po 
   // V tuhle chvíli handler určitě proběhl přes hub.subscribe (běží
   // synchronně hned po writeHead, bez await mezitím) a čeká na
   // buildAkceStav() — reálný DB round trip trvá o řády déle než jeden tick.
-  // Zprávy teď procházejí redakcí (redigujProDivaka čte payload.zapasy), takže
-  // testovací marker musí vypadat aspoň jako tvarem platný AkceStavPayload.
-  hub.publish(akce.id, { marker: "broadcast-behem-snapshotu", zapasy: [] });
+  // Zprávy teď procházejí redakcí (redigujProDivaka čte payload.zapasy) a hub
+  // je typovaný na AkceStavPayload, takže testovací marker musí být platný
+  // AkceStavPayload — schováme ho do `akce.nazev`, kde ho JSON výstup pozná.
+  hub.publish(akce.id, {
+    akce: { id: akce.id, nazev: "broadcast-behem-snapshotu", stav: "prihlasovani" },
+    prihlaseni: [],
+    zapasy: [],
+  });
 
   const zpravy = await new Promise<string[]>((resolve, reject) => {
     const prijate: string[] = [];
