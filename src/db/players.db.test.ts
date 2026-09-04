@@ -46,12 +46,18 @@ it("uloží statistiky včetně času stažení", async () => {
 
 it("zapíše chybu, ale nepřepíše dřívější hodnoty", async () => {
   await upsertPlayer("76561198000000004", false);
-  await savePlayerStats("76561198000000004", { alias: "Pepa", elo1v1: 1500, chyba: null });
+  await savePlayerStats("76561198000000004", {
+    alias: "Pepa",
+    elo1v1: 1500,
+    steamHodiny: 1230,
+    chyba: null,
+  });
   await savePlayerStats("76561198000000004", { chyba: "Worlds Edge neodpovědělo" });
 
   const hrac = await getPlayer("76561198000000004");
   expect(hrac?.alias).toBe("Pepa");
   expect(hrac?.elo1v1).toBe(1500);
+  expect(hrac?.steamHodiny).toBe(1230);
   expect(hrac?.statyChyba).toBe("Worlds Edge neodpovědělo");
 });
 
@@ -59,6 +65,12 @@ it("skryté hodiny se uloží jako null", async () => {
   await upsertPlayer("76561198000000005", false);
   await savePlayerStats("76561198000000005", { steamHodiny: null, chyba: null });
   expect((await getPlayer("76561198000000005"))?.steamHodiny).toBeNull();
+});
+
+it("nulové hodiny se uloží jako 0, ne jako null", async () => {
+  await upsertPlayer("76561198000000008", false);
+  await savePlayerStats("76561198000000008", { steamHodiny: 0, chyba: null });
+  expect((await getPlayer("76561198000000008"))?.steamHodiny).toBe(0);
 });
 
 it("vrátí null pro neznámého hráče", async () => {
