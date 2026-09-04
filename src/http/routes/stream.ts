@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { getAktivniAkce } from "../../db/events.js";
 import { buildAkceStav } from "../../realtime/akceStav.js";
-import { hub } from "../../realtime/hub.js";
+import { hub, KANAL_CEKAJICI } from "../../realtime/hub.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import type { AkceStavPayload } from "../../shared/types.js";
 
@@ -25,8 +25,13 @@ export function registerStreamRoutes(app: FastifyInstance): void {
     };
     request.raw.on("close", uklid);
 
+    // Bez akce se stream neodmítá. „Ještě nic neběží“ je normální stav, ne
+    // porucha: kdo si stránku otevře odpoledne, čeká na společném kanálu a
+    // Robovo založení akce mu dorazí živě. Dokud se sem odpovídalo 404,
+    // svítila na stránce hláška o obnovování spojení celý den a přestala tím
+    // znamenat to jediné, k čemu je — že spojení opravdu spadlo.
     const akce = await getAktivniAkce();
-    if (!akce) return reply.code(404).send({ chyba: "Žádná aktivní akce." });
+    const kanal = akce?.id ?? KANAL_CEKAJICI;
 
     // Bereme si odpověď do vlastní režie — bez tohohle by Fastify po
     // doběhnutí handleru zavolal reply.send() přes už rozjetý raw stream.
@@ -64,7 +69,7 @@ export function registerStreamRoutes(app: FastifyInstance): void {
       let zive = false;
       let cekajici: AkceStavPayload | undefined;
       let maCekajici = false;
-      odhlas = hub.subscribe(akce.id, (payload) => {
+      odhlas = hub.subscribe(kanal, (payload) => {
         if (!zive) {
           cekajici = payload;
           maCekajici = true;

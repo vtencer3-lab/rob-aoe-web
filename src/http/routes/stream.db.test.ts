@@ -4,7 +4,8 @@ import { createZapas, setLobbyId, setZapasStav } from "../../db/matches.js";
 import { closePool, getPool } from "../../db/pool.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
 import { createSession } from "../../db/sessions.js";
-import { hub } from "../../realtime/hub.js";
+import { broadcastAkce } from "../../realtime/akceStav.js";
+import { hub, KANAL_CEKAJICI } from "../../realtime/hub.js";
 import type { AkceStavPayload } from "../../shared/types.js";
 import { buildServer } from "../server.js";
 
@@ -25,10 +26,64 @@ afterAll(async () => {
   await closePool();
 });
 
-it("bez aktivní akce vrátí 404", async () => {
+/**
+ * Sbírá rámce průběžně, ne až na požádání. Číst je jednorázovým
+ * `stream.once("data")` by u druhého a dalšího rámce byla loterie: mezi
+ * odebráním posluchače a nasazením dalšího stream teče dál a to, co v tom
+ * okně přijde, zmizí.
+ */
+function sberac(stream: NodeJS.ReadableStream): { ramec(poradi: number): Promise<AkceStavPayload> } {
+  const ramce: AkceStavPayload[] = [];
+  let probud: (() => void) | undefined;
+  stream.on("data", (chunk: Buffer) => {
+    for (const cast of chunk.toString().split("\n\n")) {
+      if (!cast.startsWith("data: ")) continue; // ": puls" a prázdné konce
+      ramce.push(JSON.parse(cast.slice("data: ".length)) as AkceStavPayload);
+    }
+    probud?.();
+  });
+  return {
+    async ramec(poradi: number): Promise<AkceStavPayload> {
+      while (ramce.length <= poradi) {
+        await new Promise<void>((resolve) => {
+          probud = resolve;
+        });
+      }
+      return ramce[poradi]!;
+    },
+  };
+}
+
+// Dokud se sem bez akce odpovídalo 404, EventSource v prohlížeči spojení
+// natvrdo zavřel a na stránce svítilo „Obnovuji spojení…“ od rána do večera —
+// tedy po celou dobu, kdy je všechno v pořádku a jen ještě nic neběží. Hláška
+// o výpadku, která svítí pořád, přestane být hláškou o výpadku.
+it("bez aktivní akce stream drží a založení akce doručí živě", async () => {
   const app = buildServer();
-  const res = await app.inject({ method: "GET", url: "/api/stream" });
-  expect(res.statusCode).toBe(404);
+  await app.ready();
+
+  const controller = new AbortController();
+  const res = await app.inject({
+    method: "GET",
+    url: "/api/stream",
+    payloadAsStream: true,
+    signal: controller.signal,
+  });
+  expect(res.statusCode).toBe(200);
+  expect(res.headers["content-type"]).toContain("text/event-stream");
+
+  const fronta = sberac(res.stream());
+  expect((await fronta.ramec(0)).akce).toBeNull();
+  expect(hub.subscriberCount(KANAL_CEKAJICI)).toBe(1);
+
+  // Rob večer akci založí. Čekající její id znát nemůže, takže se to k němu
+  // musí dostat společným kanálem — jinak by na založení čekal až do příští
+  // obnovy spojení, a ta při držícím streamu nikdy nepřijde.
+  const akce = await createAkce("večer");
+  await broadcastAkce(akce.id);
+  expect((await fronta.ramec(1)).akce?.nazev).toBe("večer");
+
+  controller.abort();
   await app.close();
 });
 

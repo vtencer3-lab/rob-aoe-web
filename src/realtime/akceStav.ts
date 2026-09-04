@@ -3,7 +3,7 @@ import { getAktivniAkce, listSignups } from "../db/events.js";
 import { listZapasy } from "../db/matches.js";
 import type { PlayerRow } from "../db/players.js";
 import type { AkceStavPayload, PlayerView, ZapasView } from "../shared/types.js";
-import { hub } from "./hub.js";
+import { hub, KANAL_CEKAJICI } from "./hub.js";
 
 export function playerView(hrac: PlayerRow): PlayerView {
   return {
@@ -63,5 +63,10 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
 
 /** Rozešle celý stav akce. Nikdy neposíláme přírůstky — obnova po výpadku spojení je pak zdarma. */
 export async function broadcastAkce(akceId: number): Promise<void> {
-  hub.publish(akceId, await buildAkceStav());
+  const stav = await buildAkceStav();
+  hub.publish(akceId, stav);
+  // Navíc čekajícím: ti se přihlásili dřív, než akce vznikla, takže její id
+  // znát nemohou. Bez tohohle by jim založení akce dorazilo až s příští
+  // obnovou spojení — nebo, když stream drží, vůbec.
+  if (akceId !== KANAL_CEKAJICI) hub.publish(KANAL_CEKAJICI, stav);
 }

@@ -3,6 +3,14 @@ import type { AkceStavPayload } from "../shared/types.js";
 type Odberatel<T> = (payload: T) => void;
 
 /**
+ * Kanál pro ty, kdo si stránku otevřeli dřív, než akce vůbec vznikla. Žádná
+ * akce nikdy nemá id 0 (sekvence začíná jedničkou), takže je volné.
+ * {@link broadcastAkce} posílá každý stav i sem, aby čekající dostal založení
+ * akce živě a nemusel na ně čekat na nejbližší obnovu spojení.
+ */
+export const KANAL_CEKAJICI = 0;
+
+/**
  * Generický, aby ho šlo testovat s libovolným payloadem (viz hub.test.ts).
  * Skutečná instance {@link hub} je ale typovaná na {@link AkceStavPayload} —
  * chybný publish tak spadne na kompilaci, ne až za běhu uvnitř redakce.
