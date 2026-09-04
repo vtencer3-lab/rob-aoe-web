@@ -1,0 +1,40 @@
+{
+  "result": { "code": 0, "message": "SUCCESS" },
+  "statGroups": [
+    {
+      "id": 80031,
+      "type": 1,
+      "members": [
+        {
+          "profile_id": 271202,
+          "name": "/steam/76561198000635167",
+          "alias": "Oni.Vinchester",
+          "personal_statgroup_id": 80031,
+          "country": "ru"
+        }
+      ]
+    }
+  ],
+  "leaderboardStats": [
+    {
+      "statgroup_id": 80031,
+      "leaderboard_id": 3,
+      "wins": 1857,
+      "losses": 724,
+      "rank": 1,
+      "rating": 2992,
+      "highestrating": 3026,
+      "lastmatchdate": 1788255997
+    },
+    {
+      "statgroup_id": 80031,
+      "leaderboard_id": 4,
+      "wins": 844,
+      "losses": 262,
+      "rank": 89,
+      "rating": 1975,
+      "highestrating": 2041,
+      "lastmatchdate": 1788253644
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "response": {
+    "players": [
+      {
+        "steamid": "76561198000635167",
+        "personaname": "Vinchester",
+        "avatarfull": "https://avatars.steamstatic.com/abc_full.jpg"
+      }
+    ]
+  }
+}
