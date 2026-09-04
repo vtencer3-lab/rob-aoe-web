@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { config } from "../config.js";
 import { getAktivniAkce, signUp } from "../db/events.js";
 import { savePlayerStats, upsertPlayer } from "../db/players.js";
+import { getPool } from "../db/pool.js";
 import { createSession, SESSION_TTL_MS } from "../db/sessions.js";
 import { HttpError } from "../http/guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
@@ -29,6 +30,13 @@ export function zkusebniId(jmeno: string): string {
   return `test:${jmeno.trim().toLowerCase()}`;
 }
 
+async function steamIdAdmina(): Promise<string | null> {
+  const { rows } = await getPool().query<{ steam_id: string }>(
+    "SELECT steam_id FROM player WHERE je_admin ORDER BY steam_id LIMIT 1",
+  );
+  return rows[0]?.steam_id ?? null;
+}
+
 /**
  * Dvojitý zámek. Proměnná DEV_PRISTUP otevírá dveře, ale i kdyby ji někdo
  * nechal zapnutou (a nechá — v .env zůstane ležet), zavře je adresa: jakmile
@@ -46,6 +54,19 @@ function zkontrolujDvere(): void {
 }
 
 export function registerDevRoutes(app: FastifyInstance): void {
+  // Podklad pro zkušební lištu na stránce. Když dveře nejsou otevřené, vrací
+  // 404 stejně jako všechno ostatní pod /api/dev — frontend podle toho pozná,
+  // že lištu vůbec nemá vykreslovat, a nepotřebuje o režimu vědět předem.
+  app.get("/api/dev/hraci", async () => {
+    zkontrolujDvere();
+    return {
+      hraci: ZKUSEBNI.map((z) => z.jmeno),
+      // Aby se šlo vrátit k sobě: po přihlášení za Pepu je Robova session pryč
+      // a přes Steam se na localhostu zpátky nedostane.
+      admin: await steamIdAdmina(),
+    };
+  });
+
   // Přihlášení bez Steamu. Kdo si chce vyzkoušet celý večer sám, potřebuje
   // být postupně čtyřmi lidmi — a čtyři skutečné Steam účty nikdo nemá.
   app.get("/api/dev/login", async (request, reply) => {

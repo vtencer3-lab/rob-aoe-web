@@ -46,11 +46,15 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
             <ul>
               {zapas.ucastnici.map((u) => (
                 <li key={u.steamId} className={`barva-${u.barva}`}>
-                  {u.alias ?? u.steamId} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
-                  {u.jeHost ? " (host)" : ""}
-                  {" · "}
-                  {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
-                  {u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl"}
+                  {/* Text ve vlastním spanu, aby ho flex bral jako jednu položku
+                      a tlačítko se mu nelepilo na poslední písmeno. */}
+                  <span>
+                    {u.alias ?? u.steamId} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
+                    {u.jeHost ? " (host)" : ""}
+                    {" · "}
+                    {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
+                    {u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl"}
+                  </span>
                   <button
                     onClick={() => {
                       if (potvrdZmenuHosta(u.alias ?? u.steamId)) onHost(zapas.id, u.steamId);

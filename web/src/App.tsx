@@ -7,6 +7,7 @@ import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { SpravaAkce } from "./views/SpravaAkce.js";
+import { ZkusebniLista } from "./views/ZkusebniLista.js";
 
 export function App() {
   const [me, setMe] = useState<Me["hrac"]>(null);
@@ -114,6 +115,8 @@ export function App() {
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>
       )}
+
+      <ZkusebniLista jaSteamId={me?.steamId ?? null} />
     </main>
   );
 }

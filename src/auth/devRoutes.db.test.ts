@@ -38,7 +38,7 @@ it("na produkční adrese zůstanou dveře zavřené, i když je proměnná zapn
   zapniDvere("https://neco.trycloudflare.com");
   const app = buildServer();
 
-  for (const cesta of ["/api/dev/login?jmeno=Pepa", "/api/dev/naplnit?pocet=3"]) {
+  for (const cesta of ["/api/dev/login?jmeno=Pepa", "/api/dev/naplnit?pocet=3", "/api/dev/hraci"]) {
     const res = await app.inject({ method: "GET", url: cesta });
     expect(res.statusCode).toBe(404);
   }
@@ -118,5 +118,25 @@ it("počet mimo rozsah se osekne, ne aby spadl", async () => {
   const prihlaseni = await listSignups(akce.id);
   expect(prihlaseni.length).toBeGreaterThan(0);
   expect(prihlaseni.length).toBeLessThanOrEqual(6);
+  await app.close();
+});
+
+it("vypíše zkušební hráče a najde admina, aby bylo kam se vrátit", async () => {
+  zapniDvere();
+  await upsertPlayer("76561198000000042", true);
+  const app = buildServer();
+
+  const res = await app.inject({ method: "GET", url: "/api/dev/hraci" });
+  expect(res.statusCode).toBe(200);
+  expect(res.json().hraci).toContain("Pepa");
+  expect(res.json().admin).toBe("76561198000000042");
+  await app.close();
+});
+
+it("bez admina v databázi nic nevymýšlí", async () => {
+  zapniDvere();
+  const app = buildServer();
+  const res = await app.inject({ method: "GET", url: "/api/dev/hraci" });
+  expect(res.json().admin).toBeNull();
   await app.close();
 });

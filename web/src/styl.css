@@ -65,3 +65,14 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 .sprava-akce, .zalozeni-akce { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
 .sprava-akce .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
 .zalozeni-akce { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+
+/* Řádky účastníků v režii: text a tlačítko se dřív dotýkaly bez jediné
+   mezery, takže tmavé tlačítko opticky spolklo poslední písmeno stavu. */
+.zapas ul { list-style: none; padding: 0; margin: 0.4rem 0; }
+.zapas li { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px solid #2a241c; }
+.zapas li button { margin-left: auto; flex: none; }
+
+.zkusebni { border: 1px dashed #4a4133; border-radius: 8px; padding: 0.8rem 1rem; margin: 2rem 0 0; }
+.zkusebni .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+.zkusebni a { color: var(--text); border: 1px solid #4a4133; background: #3a3126; border-radius: 4px; padding: 0.4rem 0.7rem; text-decoration: none; font-size: 0.9rem; }
+.zkusebni a.tlacitko { color: #241d10; font-size: 0.9rem; padding: 0.4rem 0.7rem; }
