@@ -46,14 +46,14 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
               data-testid="spectate"
               className="cta"
               aria-disabled={muzeSpectate ? "false" : "true"}
-              href={muzeSpectate ? zapas.spectatorUri! : undefined}
+              href={zapas.spectatorUri !== null ? zapas.spectatorUri : undefined}
             >
               {muzeSpectate ? "Spectate" : "Spectate — čeká se na odkaz od hosta"}
             </a>
 
             {/* Jen informační stavový řádek, ne zámek. */}
             <p className="stavovy-radek">
-              {zapas.hostPotvrdil ? "Host potvrdil seating." : "Host zatím nepotvrdil seating."}
+              {zapas.hostPotvrdil ? "Host potvrdil nastavení." : "Host zatím nepotvrdil nastavení."}
             </p>
 
             <div className="zaloha">

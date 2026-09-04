@@ -71,6 +71,13 @@ it("potvrzení hosta je jen stavový řádek — žádné tlačítko na odemčen
   expect(screen.getByText(/host zatím nepotvrdil/i)).toBeInTheDocument();
 });
 
+it("ukáže, jestli host nastavení už potvrdil", () => {
+  const potvrzeny = { ...stav, zapasy: [{ ...zapas, hostPotvrdil: "2026-09-03T12:00:00.000Z" }] };
+  render(<Rezie stav={potvrzeny} {...props} />);
+  expect(screen.getByText(/host potvrdil/i)).toBeInTheDocument();
+  expect(screen.queryByText(/host zatím nepotvrdil/i)).not.toBeInTheDocument();
+});
+
 it("záložní údaje jsou vidět pořád", () => {
   render(<Rezie stav={stav} {...props} />);
   expect(screen.getByText("ROB-07")).toBeInTheDocument();

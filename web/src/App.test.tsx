@@ -15,6 +15,10 @@ vi.mock("./api.js", () => ({
     pripojeni: vi.fn(),
     vlozitOdkaz: vi.fn(),
     potvrdit: vi.fn(),
+    vytvoritZapas: vi.fn(),
+    zapasStav: vi.fn(),
+    vysledek: vi.fn(),
+    zmenitHosta: vi.fn(),
   },
 }));
 
@@ -103,4 +107,31 @@ it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
   expect(await screen.findByText("Akce 1")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /uložit odkaz/i })).not.toBeInTheDocument();
   expect(screen.queryByText(/v lobby si nastav/i)).not.toBeInTheDocument();
+});
+
+it("admin vidí panel režie", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", jeAdmin: true } });
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
+    prihlaseni: [],
+    zapasy: [],
+  });
+
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
+});
+
+it("neadmin panel režie nevidí", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "hrac1", alias: "Hrac", jeAdmin: false } });
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
+    prihlaseni: [],
+    zapasy: [],
+  });
+
+  render(<App />);
+
+  expect(await screen.findByText("Akce 1")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /vytvořit zápas/i })).not.toBeInTheDocument();
 });
