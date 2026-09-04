@@ -10,7 +10,15 @@ export const config = {
   baseUrl: process.env["BASE_URL"] ?? "http://localhost:3000",
   port: Number(process.env["PORT"] ?? 3000),
   steamApiKey: process.env["STEAM_API_KEY"] ?? "",
-  adminSteamId: process.env["ADMIN_STEAM_ID"] ?? "",
+  // Obojí se čte při každém přístupu, ne jednou při načtení modulu: startovní
+  // kontrola i přihlašovací routa se tím dají otestovat podstrčeným prostředím.
+  get adminSteamId(): string {
+    return process.env["ADMIN_STEAM_ID"] ?? "";
+  },
+  /** Nouzový režim pro rozjezd bez Roba: první přihlášený se stane adminem. */
+  get adminBootstrap(): boolean {
+    return process.env["ADMIN_BOOTSTRAP"] === "true";
+  },
   get jeProdukce(): boolean {
     return this.baseUrl.startsWith("https://");
   },
@@ -31,10 +39,25 @@ export const config = {
  */
 export function zkontrolujProstredi(): void {
   povinne("DATABASE_URL", "Bez připojení k databázi web neobslouží ani jeden požadavek.");
-  povinne(
-    "ADMIN_STEAM_ID",
-    "Je to 64bitové Steam ID Robova účtu. Bez něj by se Robovi při dalším " +
-      "přihlášení tiše odebrala práva admina a panel režie by zmizel.",
+  if (config.adminSteamId === "" && !config.adminBootstrap) {
+    throw new Error(
+      "Chybí proměnná prostředí ADMIN_STEAM_ID. Je to 64bitové Steam ID Robova " +
+        "účtu. Bez něj by se Robovi při dalším přihlášení tiše odebrala práva " +
+        "admina a panel režie by zmizel. Když Rob není po ruce, nastav místo " +
+        "toho ADMIN_BOOTSTRAP=true — adminem se stane první, kdo se přihlásí.",
+    );
+  }
+}
+
+/**
+ * Varování do logu při startu v nouzovém režimu. Kdo drží adresu, drží režii,
+ * dokud se první člověk nepřihlásí — proto se to nesmí dít potichu.
+ */
+export function varovaniProstredi(): string | null {
+  if (config.adminSteamId !== "" || !config.adminBootstrap) return null;
+  return (
+    "ADMIN_BOOTSTRAP je zapnutý: adminem se stane první, kdo se přihlásí. " +
+    "Přihlas se dřív, než adresu komukoliv pošleš, a pak nouzový režim vypni."
   );
 }
 

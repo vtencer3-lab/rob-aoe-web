@@ -1,6 +1,12 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
 import { closePool, getPool } from "./pool.js";
-import { getPlayer, getPlayers, savePlayerStats, upsertPlayer } from "./players.js";
+import {
+  existujeAdmin,
+  getPlayer,
+  getPlayers,
+  savePlayerStats,
+  upsertPlayer,
+} from "./players.js";
 
 beforeEach(async () => {
   await getPool().query("TRUNCATE player CASCADE");
@@ -82,4 +88,29 @@ it("načte víc hráčů najednou", async () => {
   await upsertPlayer("76561198000000007", false);
   const hraci = await getPlayers(["76561198000000006", "76561198000000007", "neznamy"]);
   expect(hraci.map((h) => h.steamId).sort()).toEqual(["76561198000000006", "76561198000000007"]);
+});
+
+it("upsertPlayer s null práva admina nemění", async () => {
+  await upsertPlayer("76561198000000009", true);
+  await upsertPlayer("76561198000000009", null);
+  expect((await getPlayer("76561198000000009"))?.jeAdmin).toBe(true);
+
+  await upsertPlayer("76561198000000009", false);
+  await upsertPlayer("76561198000000009", null);
+  expect((await getPlayer("76561198000000009"))?.jeAdmin).toBe(false);
+});
+
+it("upsertPlayer s null zakládá nového hráče jako neadmina", async () => {
+  await upsertPlayer("76561198000000009", null);
+  expect((await getPlayer("76561198000000009"))?.jeAdmin).toBe(false);
+});
+
+it("existujeAdmin pozná prázdnou tabulku, neadmina i admina", async () => {
+  expect(await existujeAdmin()).toBe(false);
+
+  await upsertPlayer("76561198000000009", false);
+  expect(await existujeAdmin()).toBe(false);
+
+  await upsertPlayer("76561198000000009", true);
+  expect(await existujeAdmin()).toBe(true);
 });

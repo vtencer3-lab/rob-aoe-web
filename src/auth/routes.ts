@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { config } from "../config.js";
-import { getPlayer, upsertPlayer } from "../db/players.js";
+import { existujeAdmin, getPlayer, upsertPlayer } from "../db/players.js";
 import { createSession, deleteSession, getSessionUser } from "../db/sessions.js";
 import { SESSION_TTL_MS } from "../db/sessions.js";
 import {
@@ -14,6 +14,20 @@ import {
 export interface AuthDeps {
   overSteam: (params: URLSearchParams) => Promise<boolean>;
   obnovStaty: (steamId: string) => Promise<void>;
+}
+
+/**
+ * Kdo má být po tomhle přihlášení admin. `null` znamená "nesahej na to".
+ *
+ * Když je ADMIN_STEAM_ID nastavené, rozhoduje jenom ono — a to i směrem dolů,
+ * takže přepnutím proměnné se dočasnému adminovi práva zase odeberou.
+ * V nouzovém režimu povyšujeme jen dokud žádný admin neexistuje; jakmile ho
+ * databáze má, nikomu dalšímu se nic nepřidá a nikomu nic neubere.
+ */
+export async function komuDatAdmina(steamId: string): Promise<boolean | null> {
+  if (config.adminSteamId !== "") return steamId === config.adminSteamId;
+  if (!config.adminBootstrap) return null;
+  return (await existujeAdmin()) ? null : true;
 }
 
 export async function currentUser(request: FastifyRequest): Promise<string | null> {
@@ -64,7 +78,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       return reply.code(401).send({ chyba: "Steam přihlášení se nepodařilo ověřit." });
     }
 
-    await upsertPlayer(steamId, steamId === config.adminSteamId);
+    await upsertPlayer(steamId, await komuDatAdmina(steamId));
 
     // Statistiky se stahují mimo přihlašovací cestu. Když selžou — i synchronně,
     // dřív než vznikne příslib — přihlášení platí dál.

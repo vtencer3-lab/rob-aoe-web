@@ -202,3 +202,87 @@ it("odmítne návrat, kde claimed_id není mezi podepsanými poli", async () => 
   expect(await getPlayer(STEAM_ID)).toBeNull();
   await app.close();
 });
+
+// --- nouzový režim ADMIN_BOOTSTRAP ---
+//
+// Rob nemusí být po ruce, když se web rozjíždí. Bez ADMIN_STEAM_ID by se ale
+// nikdo do režie nedostal, tak se adminem stane první přihlášený — ale jen
+// dokud žádný admin neexistuje, jinak by režii uzmul kdokoliv další.
+
+function navratPro(steamId: string): string {
+  const p = new URLSearchParams(NAVRAT);
+  p.set("openid.claimed_id", `https://steamcommunity.com/openid/id/${steamId}`);
+  return p.toString();
+}
+
+async function prihlas(steamId: string): Promise<void> {
+  const app = buildServer({ overSteam: async () => true, obnovStaty: async () => {} });
+  const res = await app.inject({ method: "GET", url: `/api/auth/steam/return?${navratPro(steamId)}` });
+  expect(res.statusCode).toBe(302);
+  await app.close();
+}
+
+const PRVNI = "76561198000000021";
+const DRUHY = "76561198000000022";
+
+it("v nouzovém režimu se první přihlášený stane adminem", async () => {
+  vi.stubEnv("ADMIN_STEAM_ID", "");
+  vi.stubEnv("ADMIN_BOOTSTRAP", "true");
+
+  await prihlas(PRVNI);
+
+  expect((await getPlayer(PRVNI))?.jeAdmin).toBe(true);
+  vi.unstubAllEnvs();
+});
+
+it("druhý přihlášený už adminem není", async () => {
+  vi.stubEnv("ADMIN_STEAM_ID", "");
+  vi.stubEnv("ADMIN_BOOTSTRAP", "true");
+
+  await prihlas(PRVNI);
+  await prihlas(DRUHY);
+
+  expect((await getPlayer(PRVNI))?.jeAdmin).toBe(true);
+  expect((await getPlayer(DRUHY))?.jeAdmin).toBe(false);
+  vi.unstubAllEnvs();
+});
+
+it("dočasnému adminovi se práva při dalším přihlášení neodeberou", async () => {
+  // Tohle je ta past: upsertPlayer původně psal je_admin = (steamId === ADMIN_STEAM_ID),
+  // takže s prázdnou proměnnou by si dočasný admin druhým přihlášením sám sebe
+  // degradoval a režie by zmizela bez hlášky.
+  vi.stubEnv("ADMIN_STEAM_ID", "");
+  vi.stubEnv("ADMIN_BOOTSTRAP", "true");
+
+  await prihlas(PRVNI);
+  await prihlas(PRVNI);
+
+  expect((await getPlayer(PRVNI))?.jeAdmin).toBe(true);
+  vi.unstubAllEnvs();
+});
+
+it("bez nouzového režimu nikoho nepovýší", async () => {
+  vi.stubEnv("ADMIN_STEAM_ID", "");
+  vi.stubEnv("ADMIN_BOOTSTRAP", "");
+
+  await prihlas(PRVNI);
+
+  expect((await getPlayer(PRVNI))?.jeAdmin).toBe(false);
+  vi.unstubAllEnvs();
+});
+
+it("nastavené ADMIN_STEAM_ID dočasnému adminovi práva zase odebere", async () => {
+  vi.stubEnv("ADMIN_STEAM_ID", "");
+  vi.stubEnv("ADMIN_BOOTSTRAP", "true");
+  await prihlas(PRVNI);
+  expect((await getPlayer(PRVNI))?.jeAdmin).toBe(true);
+
+  // Rob se vrátil a zapsal se do prostředí.
+  vi.stubEnv("ADMIN_STEAM_ID", DRUHY);
+  await prihlas(PRVNI);
+  await prihlas(DRUHY);
+
+  expect((await getPlayer(PRVNI))?.jeAdmin).toBe(false);
+  expect((await getPlayer(DRUHY))?.jeAdmin).toBe(true);
+  vi.unstubAllEnvs();
+});

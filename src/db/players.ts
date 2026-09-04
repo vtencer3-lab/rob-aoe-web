@@ -84,14 +84,28 @@ export function mapuj(row: DbRow): PlayerRow {
   };
 }
 
-export async function upsertPlayer(steamId: string, jeAdmin: boolean): Promise<PlayerRow> {
+/**
+ * `jeAdmin === null` znamená "práva nech, jak jsou". Bez toho by nouzový režim
+ * ADMIN_BOOTSTRAP nefungoval: dočasnému adminovi by se při druhém přihlášení
+ * `je_admin` přepsalo zpátky na false, protože se nerovná prázdnému
+ * ADMIN_STEAM_ID. Nový řádek při `null` vzniká vždy jako neadmin.
+ */
+export async function upsertPlayer(steamId: string, jeAdmin: boolean | null): Promise<PlayerRow> {
   const { rows } = await getPool().query<DbRow>(
-    `INSERT INTO player (steam_id, je_admin) VALUES ($1, $2)
-     ON CONFLICT (steam_id) DO UPDATE SET je_admin = EXCLUDED.je_admin
+    `INSERT INTO player (steam_id, je_admin) VALUES ($1, COALESCE($2::boolean, false))
+     ON CONFLICT (steam_id) DO UPDATE SET je_admin = COALESCE($2::boolean, player.je_admin)
      RETURNING ${SLOUPCE}`,
     [steamId, jeAdmin],
   );
   return mapuj(rows[0]!);
+}
+
+/** Podklad pro nouzový režim: povýšit prvního přihlášeného smíme jen dokud admin neexistuje. */
+export async function existujeAdmin(): Promise<boolean> {
+  const { rows } = await getPool().query<{ existuje: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM player WHERE je_admin) AS existuje`,
+  );
+  return rows[0]!.existuje;
 }
 
 export async function savePlayerStats(steamId: string, staty: PlayerStatsUpdate): Promise<void> {

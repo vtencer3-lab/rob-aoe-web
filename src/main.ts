@@ -1,4 +1,4 @@
-import { config, zkontrolujProstredi } from "./config.js";
+import { config, varovaniProstredi, zkontrolujProstredi } from "./config.js";
 import { deleteExpiredSessions } from "./db/sessions.js";
 import { buildServer } from "./http/server.js";
 
@@ -11,6 +11,9 @@ try {
   console.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
 }
+
+const varovani = varovaniProstredi();
+if (varovani) console.warn(varovani);
 
 const app = buildServer();
 await app.listen({ port: config.port, host: "127.0.0.1" });
