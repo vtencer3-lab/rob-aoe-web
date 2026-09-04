@@ -112,7 +112,19 @@ Celý večer se dá projít samotný, na jednom stroji. Zapni v `.env`
   dvě různé role naráz: v jednom okně režii, ve druhém obrazovku hráče nebo
   hosta. Zpátky k sobě se dostaneš přes `?steamId=<tvoje Steam ID>`.
 
-Zkušební přihlášení nikomu neuděluje admina a na cizí práva nesahá.
+Na stránce je k tomu dole čárkovaná lišta „Zkušební režim“, takže se adresy
+nemusí psát ručně.
+
+**Přenos režie.** Admin je natrvalo ten, kdo se přihlásil první — obvykle ty.
+Tím pádem si vlastním účtem nejde vyzkoušet, jak web vypadá očima obyčejného
+hráče: panel režie svítí i uprostřed zápasu, který zrovna hraješ. Tlačítko
+„Režii dej účtu Rezie“ ji předá zkušebnímu režisérovi (přihlásíš se za něj
+v anonymním okně), ty zůstaneš běžný hráč se svým skutečným Steam účtem a
+`Režii dej tomuhle účtu` ti ji kdykoliv vrátí. Adminů je vždycky přesně
+jeden — přepis běží jedním příkazem, aby mezistav neprolétl ven přes SSE.
+
+Samotné zkušební přihlášení admina neuděluje a na cizí práva nesahá; režii
+mění jen ta jedna routa, která je na to určená.
 
 **Dveře se samy zavírají.** Zapnutá proměnná nestačí: obě routy odmítají
 obsluhovat, jakmile `BASE_URL` míří na `https`, tedy jakmile web běží přes

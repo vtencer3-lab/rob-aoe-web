@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 interface DevInfo {
   hraci: string[];
+  reziser: { jmeno: string; steamId: string };
+  skutecni: { steamId: string; alias: string | null }[];
   admin: string | null;
 }
 
@@ -10,8 +12,8 @@ interface DevInfo {
  * dveře opravdu otevřel — na veřejné adrese vrací /api/dev/hraci 404 a lišta
  * tím zmizí, aniž by o produkčním režimu musel frontend cokoliv vědět.
  *
- * Odkazy, ne fetch: obě routy odpovídají přesměrováním na kořen, takže
- * obyčejný proklik udělá přesně to, co má, včetně nastavení cookie.
+ * Odkazy, ne fetch: všechny tyhle routy odpovídají přesměrováním na kořen,
+ * takže obyčejný proklik udělá přesně to, co má, včetně nastavení cookie.
  */
 export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
   const [info, setInfo] = useState<DevInfo | null>(null);
@@ -34,11 +36,17 @@ export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
 
   if (!info) return null;
 
+  const kdoMaRezii =
+    info.admin === null
+      ? "nikdo"
+      : (info.skutecni.find((u) => u.steamId === info.admin)?.alias ?? info.admin);
+
   return (
     <section className="zkusebni">
       <p className="zaloha">
         Zkušební režim: přihlášení bez Steamu. Přes veřejnou adresu se tyhle dveře samy zavřou.
       </p>
+
       <div className="ovladani">
         <a className="tlacitko" href="/api/dev/naplnit?pocet=3">
           Nasypat 3 hráče do akce
@@ -48,9 +56,27 @@ export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
             Jsem {jmeno}
           </a>
         ))}
-        {info.admin && info.admin !== jaSteamId ? (
-          <a href={`/api/dev/login?steamId=${encodeURIComponent(info.admin)}`}>Zpět na svůj účet</a>
-        ) : null}
+        <a href={`/api/dev/login?jmeno=${encodeURIComponent(info.reziser.jmeno)}`}>
+          Jsem {info.reziser.jmeno}
+        </a>
+        {info.skutecni
+          .filter((u) => u.steamId !== jaSteamId)
+          .map((u) => (
+            <a key={u.steamId} href={`/api/dev/login?steamId=${encodeURIComponent(u.steamId)}`}>
+              Jsem {u.alias ?? u.steamId}
+            </a>
+          ))}
+      </div>
+
+      {/* Bez přenosu režie si vlastním účtem nejde vyzkoušet pohled hráče:
+          admin je natrvalo ten, kdo se přihlásil první, a panel režie mu
+          svítí i uprostřed zápasu, který zrovna hraje. */}
+      <p className="zaloha">Režii má: {kdoMaRezii}</p>
+      <div className="ovladani">
+        <a href={`/api/dev/rezie?steamId=${encodeURIComponent(info.reziser.steamId)}`}>
+          Režii dej účtu {info.reziser.jmeno}
+        </a>
+        <a href="/api/dev/rezie">Režii dej tomuhle účtu</a>
       </div>
     </section>
   );

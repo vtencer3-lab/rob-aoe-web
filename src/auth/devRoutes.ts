@@ -5,6 +5,7 @@ import { savePlayerStats, upsertPlayer } from "../db/players.js";
 import { getPool } from "../db/pool.js";
 import { createSession, SESSION_TTL_MS } from "../db/sessions.js";
 import { HttpError } from "../http/guards.js";
+import { currentUser } from "./routes.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 
 /**
@@ -22,12 +23,27 @@ const ZKUSEBNI = [
 ] as const;
 
 /**
+ * Zkušební režisér. Není mezi hráči výše schválně: do akce se nepřihlašuje,
+ * jen řídí. Díky němu si jde vlastním, skutečným Steam účtem projít celý
+ * večer z pohledu obyčejného hráče — režii mezitím drží někdo jiný.
+ */
+export const REZISER = "Rezie";
+
+/**
  * Steam ID zkušebního hráče. Prefix „test:“ je schválně něco, co skutečné
  * 64bitové Steam ID nikdy mít nebude — zkušební účet se tak nemůže srazit
  * s opravdovým člověkem ani omylem, a v databázi je na první pohled poznat.
  */
 export function zkusebniId(jmeno: string): string {
   return `test:${jmeno.trim().toLowerCase()}`;
+}
+
+/** Účty skutečných lidí, tedy všechno, co nezaložily zkušební dveře. */
+async function skutecneUcty(): Promise<{ steamId: string; alias: string | null }[]> {
+  const { rows } = await getPool().query<{ steam_id: string; alias: string | null }>(
+    "SELECT steam_id, alias FROM player WHERE steam_id NOT LIKE 'test:%' ORDER BY steam_id",
+  );
+  return rows.map((r) => ({ steamId: r.steam_id, alias: r.alias }));
 }
 
 async function steamIdAdmina(): Promise<string | null> {
@@ -61,8 +77,11 @@ export function registerDevRoutes(app: FastifyInstance): void {
     zkontrolujDvere();
     return {
       hraci: ZKUSEBNI.map((z) => z.jmeno),
-      // Aby se šlo vrátit k sobě: po přihlášení za Pepu je Robova session pryč
-      // a přes Steam se na localhostu zpátky nedostane.
+      reziser: { jmeno: REZISER, steamId: zkusebniId(REZISER) },
+      // Aby se šlo vrátit k sobě: po přihlášení za Pepu je vlastní session
+      // pryč a Steam na localhostu zpátky nepomůže — návrat ze Steamu míří
+      // na BASE_URL, tedy sem, ale přihlašuje se přes veřejný Steam.
+      skutecni: await skutecneUcty(),
       admin: await steamIdAdmina(),
     };
   });
@@ -99,6 +118,28 @@ export function registerDevRoutes(app: FastifyInstance): void {
         maxAge: Math.floor(SESSION_TTL_MS / 1000),
       })
       .redirect("/", 302);
+  });
+
+  // Přenos režie. Bez tohohle je admin navždy ten, kdo se přihlásil první,
+  // takže si vlastním účtem nešlo vyzkoušet, jak web vypadá očima hráče —
+  // panel režie svítil pořád.
+  app.get("/api/dev/rezie", async (request, reply) => {
+    zkontrolujDvere();
+    const dotaz = request.query as { steamId?: string };
+    const komu = dotaz.steamId?.trim() || (await currentUser(request));
+    if (!komu) {
+      throw new HttpError(400, "Není komu režii dát: buď se přihlas, nebo pošli steamId.");
+    }
+
+    await upsertPlayer(komu, null);
+    // Jedním příkazem, ne dvěma: mezistav se dvěma adminy (nebo bez jediného)
+    // by přes SSE stihl proletět ven a panel by na okamžik viděl někdo, kdo
+    // ho vidět nemá.
+    await getPool().query("UPDATE player SET je_admin = (steam_id = $1)", [komu]);
+
+    const akce = await getAktivniAkce();
+    if (akce) await broadcastAkce(akce.id);
+    return reply.redirect("/", 302);
   });
 
   // Nasype do běžící akce zkušební hráče, aby bylo z čeho skládat zápas.

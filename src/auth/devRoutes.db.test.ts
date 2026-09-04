@@ -38,7 +38,7 @@ it("na produkční adrese zůstanou dveře zavřené, i když je proměnná zapn
   zapniDvere("https://neco.trycloudflare.com");
   const app = buildServer();
 
-  for (const cesta of ["/api/dev/login?jmeno=Pepa", "/api/dev/naplnit?pocet=3", "/api/dev/hraci"]) {
+  for (const cesta of ["/api/dev/login?jmeno=Pepa", "/api/dev/naplnit?pocet=3", "/api/dev/hraci", "/api/dev/rezie?steamId=test:rezie"]) {
     const res = await app.inject({ method: "GET", url: cesta });
     expect(res.statusCode).toBe(404);
   }
@@ -138,5 +138,58 @@ it("bez admina v databázi nic nevymýšlí", async () => {
   const app = buildServer();
   const res = await app.inject({ method: "GET", url: "/api/dev/hraci" });
   expect(res.json().admin).toBeNull();
+  await app.close();
+});
+
+// Tohle je celý smysl přenosu: dokud režii drží vlastní účet, nejde si jím
+// projít večer očima hráče — panel režie svítí i uprostřed vlastního zápasu.
+it("přenese režii a nenechá dva adminy vedle sebe", async () => {
+  zapniDvere();
+  await upsertPlayer("76561198000000042", true);
+  const app = buildServer();
+
+  const res = await app.inject({ method: "GET", url: "/api/dev/rezie?steamId=test:rezie" });
+  expect(res.statusCode).toBe(302);
+
+  expect((await getPlayer("test:rezie"))?.jeAdmin).toBe(true);
+  expect((await getPlayer("76561198000000042"))?.jeAdmin).toBe(false);
+
+  // A zpátky, jinak by byl přenos jednosměrka.
+  await app.inject({ method: "GET", url: "/api/dev/rezie?steamId=76561198000000042" });
+  expect((await getPlayer("test:rezie"))?.jeAdmin).toBe(false);
+  expect((await getPlayer("76561198000000042"))?.jeAdmin).toBe(true);
+  await app.close();
+});
+
+it("bez steamId dá režii tomu, kdo je přihlášený", async () => {
+  zapniDvere();
+  const app = buildServer();
+
+  const prihlaseni = await app.inject({ method: "GET", url: "/api/dev/login?jmeno=Pepa" });
+  const sid = prihlaseni.cookies.find((c) => c.name === "sid")!.value;
+
+  await app.inject({ method: "GET", url: "/api/dev/rezie", cookies: { sid } });
+  expect((await getPlayer(zkusebniId("Pepa")))?.jeAdmin).toBe(true);
+  await app.close();
+});
+
+it("bez steamId a bez přihlášení řekne proč, místo aby tiše nic neudělal", async () => {
+  zapniDvere();
+  const app = buildServer();
+  const res = await app.inject({ method: "GET", url: "/api/dev/rezie" });
+  expect(res.statusCode).toBe(400);
+  await app.close();
+});
+
+it("vypíše skutečné účty odděleně od zkušebních, aby bylo kam se vrátit", async () => {
+  zapniDvere();
+  await upsertPlayer("76561198000000042", true);
+  const app = buildServer();
+  await app.inject({ method: "GET", url: "/api/dev/login?jmeno=Pepa" });
+
+  const res = await app.inject({ method: "GET", url: "/api/dev/hraci" });
+  const telo = res.json();
+  expect(telo.skutecni).toEqual([{ steamId: "76561198000000042", alias: null }]);
+  expect(telo.reziser).toEqual({ jmeno: "Rezie", steamId: "test:rezie" });
   await app.close();
 });
