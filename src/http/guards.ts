@@ -24,11 +24,17 @@ export async function requireAdmin(request: FastifyRequest): Promise<string> {
   return steamId;
 }
 
-/** Přečte ":id" z cesty a ověří, že je to kladné celé číslo — jinak 400 místo NaN v SQL. */
+/** Největší hodnota, kterou unese sloupec typu integer v Postgresu. */
+const MAX_ID = 2147483647;
+
+/**
+ * Přečte ":id" z cesty a ověří, že je to kladné celé číslo v rozsahu, který
+ * unese sloupec typu integer — jinak 400 místo NaN nebo 22003 v SQL.
+ */
 export function requireId(request: FastifyRequest): number {
   const hodnota = (request.params as { id?: string }).id;
   const cislo = Number(hodnota);
-  if (!Number.isInteger(cislo) || cislo <= 0) {
+  if (!Number.isInteger(cislo) || cislo <= 0 || cislo > MAX_ID) {
     throw new HttpError(400, "Neplatné ID v adrese.");
   }
   return cislo;
