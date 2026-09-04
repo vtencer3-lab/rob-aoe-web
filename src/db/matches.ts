@@ -2,7 +2,6 @@ import { assignSeats, generatePassword, lobbyName } from "../matches/composition
 import {
   assertTransition,
   PrechodChyba,
-  type Actor,
   type MatchState,
 } from "../matches/stateMachine.js";
 import type { Barva, Format, Tym } from "../shared/types.js";
@@ -150,26 +149,21 @@ export async function listZapasy(
   return vysledek;
 }
 
-export async function setZapasStav(
-  zapasId: number,
-  stav: MatchState,
-  actor: Actor,
-): Promise<void> {
+export async function setZapasStav(zapasId: number, stav: MatchState): Promise<void> {
   const nacteny = await getZapas(zapasId);
   if (!nacteny) throw new Error(`Zápas ${zapasId} neexistuje.`);
-  assertTransition(nacteny.zapas.stav, stav, actor);
+  assertTransition(nacteny.zapas.stav, stav);
 
   // Zápis je podmíněný stavem, proti kterému jsme právě ověřili přechod — pokud
-  // se mezitím stav zápasu změnil (druhý aktér byl rychlejší), UPDATE nic netrefí
+  // se mezitím stav zápasu změnil (někdo byl rychlejší), UPDATE nic netrefí
   // a přechod se odmítne, místo aby tiše přepsal cizí mezistav.
   const { rowCount } = await getPool().query(
     `UPDATE zapas SET stav = $2,
-       zacatek = CASE WHEN $2 = 'hraje_se' THEN COALESCE(zacatek, now()) ELSE zacatek END,
-       konec   = CASE WHEN $2 = 'dohrano'  THEN now() ELSE NULL END
+       konec = CASE WHEN $2 = 'dohrano' THEN now() ELSE NULL END
      WHERE id = $1 AND stav = $3`,
     [zapasId, stav, nacteny.zapas.stav],
   );
-  // Taky konflikt, ne interní chyba: druhý aktér byl rychlejší. Stejný typ jako
+  // Taky konflikt, ne interní chyba: někdo byl rychlejší. Stejný typ jako
   // u odmítnutého přechodu, takže to routy překládají na jedno 409.
   if (!rowCount) {
     throw new PrechodChyba(

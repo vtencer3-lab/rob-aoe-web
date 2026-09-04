@@ -38,9 +38,7 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
 
         return (
           <article key={zapas.id} className="zapas">
-            <header>
-              Zápas #{zapas.poradi} · {zapas.stav}
-            </header>
+            <header>Zápas #{zapas.poradi}</header>
 
             <ul>
               {zapas.ucastnici.map((u) => (
@@ -81,8 +79,6 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
             </div>
 
             <div className="ovladani">
-              <button onClick={() => onStav(zapas.id, "vyhlaseny")}>Vyhlásit</button>
-              <button onClick={() => onStav(zapas.id, "hraje_se")}>Hraje se</button>
               <button onClick={() => onVysledek(zapas.id, 1)}>Vyhrál tým 1</button>
               <button onClick={() => onVysledek(zapas.id, 2)}>Vyhrál tým 2</button>
               <button onClick={() => onStav(zapas.id, "zruseny")}>Zrušit</button>

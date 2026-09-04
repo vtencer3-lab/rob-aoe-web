@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
 import { createAkce, setAkceStav, signUp } from "../../db/events.js";
-import { createZapas, setLobbyId, setZapasStav } from "../../db/matches.js";
+import { createZapas, setLobbyId } from "../../db/matches.js";
 import { closePool, getPool } from "../../db/pool.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
 import { createSession } from "../../db/sessions.js";
@@ -288,7 +288,6 @@ it("cizímu divákovi neodteče ve streamu heslo ani číslo lobby", async () =>
     await signUp(akce.id, steamId);
   }
   const zapas = await createZapas(akce.id, "1v1", hraci);
-  await setZapasStav(zapas.id, "vyhlaseny", "admin");
   await setLobbyId(zapas.id, "234230181");
 
   const app = buildServer();
@@ -333,7 +332,6 @@ it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu div�
     await signUp(akce.id, steamId);
   }
   const zapas = await createZapas(akce.id, "1v1", hraci);
-  await setZapasStav(zapas.id, "vyhlaseny", "admin");
   await setLobbyId(zapas.id, "234230181");
   const hracSid = await createSession(hraci[0]!);
 
