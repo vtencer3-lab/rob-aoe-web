@@ -10,9 +10,16 @@ export class Hub {
       this.#odberatele.set(akceId, mnozina);
     }
     mnozina.add(send);
+    // Zavřeme si nad množinou, ve které jsme opravdu byli — když odhlášení
+    // zavoláme dvakrát (např. jednou z 'close' a jednou z chybové větve),
+    // druhé volání nesmí smazat záznam v mapě, pokud mezitím vznikl nový
+    // odběratel se stejným akceId (jinak by o svůj odběr tiše přišel).
+    const tatoMnozina = mnozina;
     return () => {
-      mnozina.delete(send);
-      if (mnozina.size === 0) this.#odberatele.delete(akceId);
+      tatoMnozina.delete(send);
+      if (tatoMnozina.size === 0 && this.#odberatele.get(akceId) === tatoMnozina) {
+        this.#odberatele.delete(akceId);
+      }
     };
   }
 

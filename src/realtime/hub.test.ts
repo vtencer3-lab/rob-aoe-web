@@ -49,4 +49,22 @@ describe("Hub", () => {
   it("publikování bez odběratelů nevadí", () => {
     expect(() => new Hub().publish(99, {})).not.toThrow();
   });
+
+  it("dvojité odhlášení nepoškodí odběratele přihlášeného mezitím", () => {
+    const hub = new Hub();
+    const prvni = vi.fn();
+    const odhlasPrvni = hub.subscribe(1, prvni);
+    odhlasPrvni();
+
+    const druhy = vi.fn();
+    hub.subscribe(1, druhy);
+
+    // Druhé volání téhož odhlášení nesmí smazat záznam, do kterého mezitím
+    // přibyl nový (jiný) odběratel.
+    odhlasPrvni();
+
+    hub.publish(1, { ahoj: true });
+    expect(druhy).toHaveBeenCalledWith({ ahoj: true });
+    expect(hub.subscriberCount(1)).toBe(1);
+  });
 });

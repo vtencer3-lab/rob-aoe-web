@@ -86,7 +86,9 @@ it("po odpojení klienta se odběratel odhlásí z hubu", async () => {
 // Regrese pro únik odběratele/pulsu, když se klient odpojí, zatímco ještě
 // běží buildAkceStav() (DB round trip). Bez posluchače registrovaného před
 // prvním await by 'close' přišlo dřív, než by měl kdo naslouchat, a
-// odběratel s intervalem by pak zůstaly viset navždy.
+// odběratel s intervalem by pak zůstaly viset navždy. Status kódu ověřujeme
+// před odpojením, aby test neprošel naprázdno i kdyby routa selhala dřív,
+// než se vůbec stihla přihlásit k odběru.
 it("odpojení klienta hned po hijacku (ještě během sestavování stavu) odběratele stejně odhlásí", async () => {
   const akce = await createAkce("večer");
   await setAkceStav(akce.id, "prihlasovani");
@@ -95,17 +97,103 @@ it("odpojení klienta hned po hijacku (ještě během sestavování stavu) odbě
   await app.ready();
 
   const controller = new AbortController();
-  await app.inject({
+  const res = await app.inject({
     method: "GET",
     url: "/api/stream",
     payloadAsStream: true,
     signal: controller.signal,
   });
+  expect(res.statusCode).toBe(200);
 
   controller.abort();
   await new Promise((resolve) => setTimeout(resolve, 50));
 
   expect(hub.subscriberCount(akce.id)).toBe(0);
+  await app.close();
+});
+
+// Regrese pro tutéž věc, ale o okno dřív: klient se odpojí ještě během
+// getAktivniAkce() — tedy PŘED hijackem, kde byl posluchač na 'close'
+// registrovaný až v předchozí opravě. Bez posluchače zaregistrovaného jako
+// úplně první věc v handleru by 'close' přišlo bez naslouchajícího, a
+// bail-out větev po hijacku by (bez explicitního uklid()) nechala
+// odběratele viset, i kdyby k odběru nakonec vůbec nedošlo.
+//
+// Odpojení tu simulujeme přímým destroy() zachyceného request.raw místo
+// AbortSignalu předaného do inject() — signál totiž zruší request/response
+// dřív, než je light-my-request vůbec stihne sestavit a napojit si na ně
+// vlastní posluchače chyb, což končí nezachyceným "AbortError" mimo test.
+// Reálné destroy() request.raw navíc (stejně jako u skutečného Node http
+// serveru) strhne i injectovanou odpověď — to je v pořádku a odpovídá
+// realitě (klient zmizel dřív, než cokoli dostal), test proto na výsledek
+// inject() nespoléhá a jen ověřuje, že onRequest hook (tedy skutečné
+// zpracování requestu) doopravdy proběhl, než jsme odpojili.
+it("odpojení klienta ještě před hijackem (během getAktivniAkce) odběratele nenechá viset", async () => {
+  const akce = await createAkce("večer");
+  await setAkceStav(akce.id, "prihlasovani");
+
+  const app = buildServer();
+  let zachycenyRaw: { destroy(): void } | undefined;
+  app.addHook("onRequest", async (request) => {
+    if (request.url === "/api/stream") zachycenyRaw = request.raw;
+  });
+  await app.ready();
+
+  const resPromise = app.inject({ method: "GET", url: "/api/stream" }).catch(() => null);
+
+  // Nech Fastify doběhnout přes onRequest (request.raw už existuje), ale
+  // odpoj dřív, než handler stihne dokončit getAktivniAkce() — reálný DB
+  // round trip trvá o řády déle než jeden tick.
+  await new Promise((resolve) => setImmediate(resolve));
+  expect(zachycenyRaw).toBeDefined(); // dispatch doopravdy proběhl přes handler
+  zachycenyRaw!.destroy();
+
+  await resPromise;
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  expect(hub.subscriberCount(akce.id)).toBe(0);
+  await app.close();
+});
+
+// Odběr musí vzniknout dřív než úvodní stav (jinak broadcast v tomhle okně
+// nedorazí nikomu), ale doručení samotné musí počkat, až úvodní stav
+// odejde — jinak by prohlížeč na okamžik viděl novější data a hned nato je
+// přepsal staršími z právě dokončeného DB dotazu.
+it("broadcast doručený během sestavování úvodního stavu se pošle až po něm, ne před ním", async () => {
+  const akce = await createAkce("večer");
+  await setAkceStav(akce.id, "prihlasovani");
+
+  const app = buildServer();
+  await app.ready();
+
+  const controller = new AbortController();
+  const res = await app.inject({
+    method: "GET",
+    url: "/api/stream",
+    payloadAsStream: true,
+    signal: controller.signal,
+  });
+  expect(res.statusCode).toBe(200);
+
+  // V tuhle chvíli handler určitě proběhl přes hub.subscribe (běží
+  // synchronně hned po writeHead, bez await mezitím) a čeká na
+  // buildAkceStav() — reálný DB round trip trvá o řády déle než jeden tick.
+  hub.publish(akce.id, { marker: "broadcast-behem-snapshotu" });
+
+  const zpravy = await new Promise<string[]>((resolve, reject) => {
+    const prijate: string[] = [];
+    const stream = res.stream();
+    stream.on("data", (chunk: Buffer) => {
+      prijate.push(chunk.toString());
+      if (prijate.length === 2) resolve(prijate);
+    });
+    stream.once("error", reject);
+  });
+
+  expect(zpravy[0]).toContain(`"nazev":"večer"`);
+  expect(zpravy[1]).toContain("broadcast-behem-snapshotu");
+
+  controller.abort();
   await app.close();
 });
 
