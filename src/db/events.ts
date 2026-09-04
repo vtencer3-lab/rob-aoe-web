@@ -1,5 +1,5 @@
 import { getPool } from "./pool.js";
-import type { PlayerRow } from "./players.js";
+import { mapuj, PLAYER_SLOUPEC_NAZVY, type DbRow, type PlayerRow } from "./players.js";
 
 export type AkceStav = "priprava" | "prihlasovani" | "zavreno" | "bezi" | "konec";
 
@@ -55,32 +55,14 @@ export async function withdraw(akceId: number, steamId: string): Promise<void> {
 }
 
 export async function listSignups(akceId: number): Promise<PlayerRow[]> {
-  const { rows } = await getPool().query<Record<string, never>>(
-    `SELECT p.steam_id, p.alias, p.steam_name, p.avatar_url, p.country, p.elo_1v1,
-            p.elo_nejvyssi, p.odehrano_her, p.posledni_zapas, p.steam_hodiny,
-            p.staty_stazeny_v, p.staty_chyba, p.je_admin
+  const sloupce = PLAYER_SLOUPEC_NAZVY.map((sloupec) => `p.${sloupec}`).join(", ");
+  const { rows } = await getPool().query<DbRow>(
+    `SELECT ${sloupce}
        FROM prihlaska pr
        JOIN player p ON p.steam_id = pr.steam_id
       WHERE pr.akce_id = $1 AND pr.stav = 'prihlasen'
       ORDER BY pr.kdy ASC`,
     [akceId],
   );
-  return rows.map((r) => {
-    const row = r as unknown as Record<string, unknown>;
-    return {
-      steamId: row["steam_id"] as string,
-      alias: row["alias"] as string | null,
-      steamName: row["steam_name"] as string | null,
-      avatarUrl: row["avatar_url"] as string | null,
-      country: row["country"] as string | null,
-      elo1v1: row["elo_1v1"] as number | null,
-      eloNejvyssi: row["elo_nejvyssi"] as number | null,
-      odehranoHer: row["odehrano_her"] as number | null,
-      posledniZapas: row["posledni_zapas"] as Date | null,
-      steamHodiny: row["steam_hodiny"] as number | null,
-      statyStazenyV: row["staty_stazeny_v"] as Date | null,
-      statyChyba: row["staty_chyba"] as string | null,
-      jeAdmin: row["je_admin"] as boolean,
-    };
-  });
+  return rows.map(mapuj);
 }

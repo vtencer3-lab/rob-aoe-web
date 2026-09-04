@@ -29,12 +29,28 @@ export interface PlayerStatsUpdate {
   chyba: string | null;
 }
 
-const SLOUPCE = `
-  steam_id, alias, steam_name, avatar_url, country, elo_1v1, elo_nejvyssi,
-  odehrano_her, posledni_zapas, steam_hodiny, staty_stazeny_v, staty_chyba, je_admin
-`;
+// Sdílený seznam sloupců tabulky player — jediné místo, které zná jejich
+// jména. `listSignups` v events.ts z něj skládá stejný seznam s aliasem
+// tabulky, aby JOINy nemusely sloupce vyjmenovávat znovu a nezávisle.
+export const PLAYER_SLOUPEC_NAZVY = [
+  "steam_id",
+  "alias",
+  "steam_name",
+  "avatar_url",
+  "country",
+  "elo_1v1",
+  "elo_nejvyssi",
+  "odehrano_her",
+  "posledni_zapas",
+  "steam_hodiny",
+  "staty_stazeny_v",
+  "staty_chyba",
+  "je_admin",
+] as const;
 
-interface DbRow {
+const SLOUPCE = PLAYER_SLOUPEC_NAZVY.join(", ");
+
+export interface DbRow {
   steam_id: string;
   alias: string | null;
   steam_name: string | null;
@@ -50,7 +66,7 @@ interface DbRow {
   je_admin: boolean;
 }
 
-function mapuj(row: DbRow): PlayerRow {
+export function mapuj(row: DbRow): PlayerRow {
   return {
     steamId: row.steam_id,
     alias: row.alias,

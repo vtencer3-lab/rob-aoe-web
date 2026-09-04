@@ -63,6 +63,7 @@ it("do zavřené akce se přihlásit nejde", async () => {
 });
 
 it("běžný hráč nesmí zakládat akci ani měnit stav", async () => {
+  const akce = await createAkce("večer");
   const { sid } = await prihlasenyKlient(HRAC, false);
   const app = buildServer();
 
@@ -73,6 +74,14 @@ it("běžný hráč nesmí zakládat akci ani měnit stav", async () => {
     payload: { nazev: "moje akce" },
   });
   expect(zalozeni.statusCode).toBe(403);
+
+  const zmenaStavu = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akce.id}/stav`,
+    cookies: { sid },
+    payload: { stav: "zavreno" },
+  });
+  expect(zmenaStavu.statusCode).toBe(403);
   await app.close();
 });
 
