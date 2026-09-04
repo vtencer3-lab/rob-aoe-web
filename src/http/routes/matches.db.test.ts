@@ -145,6 +145,74 @@ it("Rob vytvoří zápas a vyhlásí ho", async () => {
   await app.close();
 });
 
+// Rob dvojklik na svoje vlastní tlačítko v přímém přenosu udělá dřív nebo
+// později. Do teď to znamenalo červený „Něco se pokazilo na serveru.“, protože
+// odmítnutý přechod padal jako holá Error na 500.
+it("druhé kliknutí na Vyhlásit dostane srozumitelné 409, ne 500", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+
+  const prvni = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/stav`,
+    cookies: { sid: robSid },
+    payload: { stav: "vyhlaseny" },
+  });
+  expect(prvni.statusCode).toBe(200);
+
+  const druhe = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/stav`,
+    cookies: { sid: robSid },
+    payload: { stav: "vyhlaseny" },
+  });
+  expect(druhe.statusCode).toBe(409);
+  expect(druhe.json().chyba).toMatch(/už ve stavu „vyhlaseny“ je/);
+  await app.close();
+});
+
+// Souběh, který se naživo opravdu stává: host odesílá odkaz z lobby a Rob
+// mezitím klikne „Hraje se“. Odkaz se uloží, jen přechod se odmítne — hlásit
+// hostovi chybu by byla lež o jeho vlastní práci. Aby byl test deterministický,
+// otevřeme přesně tohle okno dočasným triggerem, který stav přehodí uvnitř
+// téhož UPDATE, kterým se ukládá lobby_id.
+it("odkaz uložený těsně před Robovým „Hraje se“ se nehlásí jako chyba", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/stav`,
+    cookies: { sid: robSid },
+    payload: { stav: "vyhlaseny" },
+  });
+  const hostSid = await createSession(HRACI[1]!);
+
+  await getPool().query(`
+    CREATE FUNCTION pokus_prepni_stav() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN NEW.stav := 'hraje_se'; RETURN NEW; END $$;
+    CREATE TRIGGER pokus_prepni_stav BEFORE UPDATE OF lobby_id ON zapas
+      FOR EACH ROW EXECUTE FUNCTION pokus_prepni_stav();
+  `);
+  try {
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/zapas/${zapas.id}/lobby`,
+      cookies: { sid: hostSid },
+      payload: { odkaz: "aoe2de://0/234230181" },
+    });
+    expect(res.statusCode).toBe(200);
+  } finally {
+    await getPool().query(
+      "DROP TRIGGER pokus_prepni_stav ON zapas; DROP FUNCTION pokus_prepni_stav()",
+    );
+  }
+
+  const nacteny = (await getZapas(zapas.id))!;
+  expect(nacteny.zapas.lobbyId).toBe("234230181"); // odkaz opravdu uložený
+  expect(nacteny.zapas.stav).toBe("hraje_se"); // přechod odmítnutý, a to je v pořádku
+  await app.close();
+});
+
 it("host vloží odkaz a zápas se posune", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);

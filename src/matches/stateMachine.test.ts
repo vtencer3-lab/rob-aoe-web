@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertTransition, canTransition } from "./stateMachine.js";
+import { assertTransition, canTransition, PrechodChyba } from "./stateMachine.js";
 
 describe("host", () => {
   it("smí otevřít lobby a spustit hru", () => {
@@ -39,6 +39,19 @@ describe("assertTransition", () => {
   it("u zakázaného vysvětlí co a proč", () => {
     expect(() => assertTransition("hraje_se", "dohrano", "host")).toThrow(
       /host nesmí přejít z „hraje_se“ do „dohrano“/,
+    );
+  });
+
+  // Typ rozhoduje o stavovém kódu: routy z něj dělají 409, ne 500.
+  it("vyhazuje PrechodChybu, ne holou Error", () => {
+    expect(() => assertTransition("hraje_se", "dohrano", "host")).toThrow(PrechodChyba);
+  });
+
+  // Nejčastější spouštěč naživo: Rob dvakrát klikne na totéž tlačítko. Hláška
+  // musí říct, že se nic nestalo, ne strašit rolí a přechodem.
+  it("u druhého kliknutí na totéž řekne, že zápas v tom stavu už je", () => {
+    expect(() => assertTransition("hraje_se", "hraje_se", "admin")).toThrow(
+      /už ve stavu „hraje_se“ je/,
     );
   });
 });

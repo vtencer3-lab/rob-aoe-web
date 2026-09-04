@@ -33,8 +33,19 @@ function vychoziDeps(): AuthDeps {
   };
 }
 
+/**
+ * V testech zticha — každý testovací soubor staví server znovu a výpis by
+ * utopil skutečné výsledky. Jinde zapnuto: bez loggeru je `app.log.error(err)`
+ * v error handleru níže úplný no-op, takže neošetřený pád v přímém přenosu
+ * nezanechá ani řádek nikde. Úroveň jde přebít proměnnou LOG_LEVEL.
+ */
+function nastaveniLogu(): { level: string } | false {
+  if (process.env["NODE_ENV"] === "test") return false;
+  return { level: process.env["LOG_LEVEL"] ?? "info" };
+}
+
 export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
-  const app = Fastify({ logger: false });
+  const app = Fastify({ logger: nastaveniLogu() });
   app.register(cookie);
   app.get("/api/health", async () => ({ ok: true }));
   registerAuthRoutes(app, deps);

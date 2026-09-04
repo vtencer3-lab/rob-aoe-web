@@ -1,5 +1,10 @@
 import { assignSeats, generatePassword, lobbyName } from "../matches/composition.js";
-import { assertTransition, type Actor, type MatchState } from "../matches/stateMachine.js";
+import {
+  assertTransition,
+  PrechodChyba,
+  type Actor,
+  type MatchState,
+} from "../matches/stateMachine.js";
 import type { Barva, Format, Tym } from "../shared/types.js";
 import { getPool, withTransaction } from "./pool.js";
 
@@ -164,7 +169,13 @@ export async function setZapasStav(
      WHERE id = $1 AND stav = $3`,
     [zapasId, stav, nacteny.zapas.stav],
   );
-  if (!rowCount) throw new Error(`Stav zápasu ${zapasId} se mezitím změnil.`);
+  // Taky konflikt, ne interní chyba: druhý aktér byl rychlejší. Stejný typ jako
+  // u odmítnutého přechodu, takže to routy překládají na jedno 409.
+  if (!rowCount) {
+    throw new PrechodChyba(
+      `Stav zápasu ${zapasId} se mezitím změnil — někdo byl rychlejší. Načti si stránku znovu.`,
+    );
+  }
 }
 
 export async function setLobbyId(zapasId: number, lobbyId: string): Promise<void> {

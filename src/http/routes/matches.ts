@@ -14,7 +14,12 @@ import {
 } from "../../db/matches.js";
 import { getPlayer } from "../../db/players.js";
 import { SestavaChyba } from "../../matches/composition.js";
-import { MATCH_STATES, type MatchState } from "../../matches/stateMachine.js";
+import {
+  MATCH_STATES,
+  PrechodChyba,
+  type Actor,
+  type MatchState,
+} from "../../matches/stateMachine.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import type { Format, Tym } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
@@ -27,6 +32,20 @@ const CHYBA_ODKAZU: Record<LobbyUriError, string> = {
     "Tohle je divácký odkaz (aoe2de://1/…). Potřebuju ten z tlačítka Copy v lobby, který začíná aoe2de://0/.",
   spatny_tvar: "Tohle nevypadá jako odkaz na lobby. Má vypadat takhle: aoe2de://0/234230181",
 };
+
+/**
+ * Přechod stavu zápasu. Odmítnutí (zakázaný přechod nebo prohraný souběh) je
+ * konflikt se skutečností, ne interní chyba — patří na 409 se srozumitelnou
+ * hláškou, ne na 500 „Něco se pokazilo na serveru.“
+ */
+async function prejdi(zapasId: number, stav: MatchState, actor: Actor): Promise<void> {
+  try {
+    await setZapasStav(zapasId, stav, actor);
+  } catch (err) {
+    if (err instanceof PrechodChyba) throw new HttpError(409, err.message);
+    throw err;
+  }
+}
 
 async function nactiNeboSelzi(zapasId: number) {
   const zaznam = await getZapas(zapasId);
@@ -82,7 +101,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
       throw new HttpError(400, "Neznámý stav zápasu.");
     }
     const { zapas } = await nactiNeboSelzi(zapasId);
-    await setZapasStav(zapasId, stav as MatchState, "admin");
+    await prejdi(zapasId, stav as MatchState, "admin");
     await broadcastAkce(zapas.akceId);
     return { ok: true };
   });
@@ -95,7 +114,17 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     if (!vysledek.ok) throw new HttpError(400, CHYBA_ODKAZU[vysledek.error]);
 
     await setLobbyId(zapasId, vysledek.lobbyId);
-    if (zapas.stav === "vyhlaseny") await setZapasStav(zapasId, "lobby_otevrena", actor);
+    if (zapas.stav === "vyhlaseny") {
+      // Odkaz je v tuhle chvíli ULOŽENÝ. Když mezitím Rob klikne „Hraje se“,
+      // podmíněný zápis stavu netrefí nic a přechod se odmítne — ale hostovi
+      // hlásit chybu by byla lež, jeho práce se povedla a stav je stejně dál,
+      // než kam ho posouváme. Jiné než přechodové chyby propouštíme dál.
+      try {
+        await setZapasStav(zapasId, "lobby_otevrena", actor);
+      } catch (err) {
+        if (!(err instanceof PrechodChyba)) throw err;
+      }
+    }
     await broadcastAkce(zapas.akceId);
     return { ok: true };
   });
@@ -144,7 +173,7 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     if (viteznyTym !== 1 && viteznyTym !== 2) throw new HttpError(400, "Vítězný tým je 1 nebo 2.");
     const { zapas } = await nactiNeboSelzi(zapasId);
     await setVysledek(zapasId, viteznyTym as Tym);
-    if (zapas.stav !== "dohrano") await setZapasStav(zapasId, "dohrano", "admin");
+    if (zapas.stav !== "dohrano") await prejdi(zapasId, "dohrano", "admin");
     await broadcastAkce(zapas.akceId);
     return { ok: true };
   });
