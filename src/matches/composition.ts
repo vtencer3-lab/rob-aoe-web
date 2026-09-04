@@ -1,3 +1,5 @@
+import { randomInt } from "node:crypto";
+
 import type { Barva, Format, Seat, Tym } from "../shared/types.js";
 
 export interface SeatInput {
@@ -53,10 +55,19 @@ export function lobbyName(poradi: number): string {
 
 const ABECEDA = "abcdefghjkmnpqrstuvwxyz23456789";
 
-export function generatePassword(rng: () => number = Math.random): string {
+// Rozsah pro převod kryptograficky bezpečného celého čísla na float v [0, 1),
+// aby výchozí generátor nebyl uhodnutelný jako Math.random.
+const CSPRNG_ROZSAH = 4_294_967_296; // 2^32
+
+function csprngFloat(): number {
+  return randomInt(0, CSPRNG_ROZSAH) / CSPRNG_ROZSAH;
+}
+
+export function generatePassword(rng: () => number = csprngFloat): string {
   let heslo = "";
   for (let i = 0; i < 8; i++) {
-    heslo += ABECEDA[Math.floor(rng() * ABECEDA.length)];
+    const index = Math.max(0, Math.min(ABECEDA.length - 1, Math.floor(rng() * ABECEDA.length)));
+    heslo += ABECEDA[index];
   }
   return heslo;
 }

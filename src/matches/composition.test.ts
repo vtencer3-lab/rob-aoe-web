@@ -94,4 +94,16 @@ describe("generatePassword", () => {
   it("je deterministické při daném generátoru", () => {
     expect(generatePassword(() => 0)).toBe("aaaaaaaa");
   });
+
+  it("ošetří generátor vracející hraniční hodnotu 1", () => {
+    const heslo = generatePassword(() => 1);
+    expect(heslo).toHaveLength(8);
+    expect(heslo).toMatch(/^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/);
+  });
+
+  it("výchozí generátor vrací jen znaky z abecedy", () => {
+    const heslo = generatePassword();
+    expect(heslo).toHaveLength(8);
+    expect(heslo).toMatch(/^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/);
+  });
 });
