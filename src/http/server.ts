@@ -68,6 +68,17 @@ export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
     if (err instanceof HttpError) {
       return reply.code(err.statusCode).send({ chyba: err.message });
     }
+    // Vlastní chyby Fastify (vadný JSON v těle, nesedící Content-Length, moc
+    // velké tělo) nesou svůj vlastní 4xx kód. Bez tohohle by se všechny
+    // schovaly za „Něco se pokazilo na serveru.“ a Rob by uprostřed vysílání
+    // hledal poruchu na serveru, se kterým nic není — chyba je v požadavku.
+    const kod = (err as { statusCode?: number }).statusCode ?? 500;
+    if (kod >= 400 && kod < 500) {
+      return reply.code(kod).send({
+        chyba: err instanceof Error ? err.message : "Neplatný požadavek.",
+      });
+    }
+
     app.log.error(err);
     return reply.code(500).send({ chyba: "Něco se pokazilo na serveru." });
   });
