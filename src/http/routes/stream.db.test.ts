@@ -40,6 +40,7 @@ it("pošle úvodní stav a přihlásí odběratele", async () => {
     signal: controller.signal,
   });
   expect(res.headers["content-type"]).toContain("text/event-stream");
+  expect(res.headers["cache-control"]).toBe("no-cache");
   expect(res.headers["x-accel-buffering"]).toBe("no");
 
   const uvodniZprava = await new Promise<string>((resolve, reject) => {
@@ -74,6 +75,32 @@ it("po odpojení klienta se odběratel odhlásí z hubu", async () => {
   });
 
   expect(hub.subscriberCount(akce.id)).toBe(1);
+
+  controller.abort();
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  expect(hub.subscriberCount(akce.id)).toBe(0);
+  await app.close();
+});
+
+// Regrese pro únik odběratele/pulsu, když se klient odpojí, zatímco ještě
+// běží buildAkceStav() (DB round trip). Bez posluchače registrovaného před
+// prvním await by 'close' přišlo dřív, než by měl kdo naslouchat, a
+// odběratel s intervalem by pak zůstaly viset navždy.
+it("odpojení klienta hned po hijacku (ještě během sestavování stavu) odběratele stejně odhlásí", async () => {
+  const akce = await createAkce("večer");
+  await setAkceStav(akce.id, "prihlasovani");
+
+  const app = buildServer();
+  await app.ready();
+
+  const controller = new AbortController();
+  await app.inject({
+    method: "GET",
+    url: "/api/stream",
+    payloadAsStream: true,
+    signal: controller.signal,
+  });
 
   controller.abort();
   await new Promise((resolve) => setTimeout(resolve, 50));
