@@ -2,6 +2,12 @@
 
 Datum: 2026-09-03
 
+> **Částečně nahrazeno.** Stavový automat zápasu (§7) a stavový postup večerem
+> platí jen do 5. 9. 2026. Pět stavů akce se zúžilo na dva, šest stavů zápasu na
+> tři a viditelnost sestavy se otevřela hned po složení. Viz
+> [2026-09-05-zjednoduseni-stavu-design.md](2026-09-05-zjednoduseni-stavu-design.md).
+> Zbytek dokumentu platí beze změny.
+
 ## 1. Proč to vzniká
 
 Robdiesalot pořádá při streamu komunitní custom hry v Age of Empires II: Definitive

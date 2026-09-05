@@ -6,7 +6,6 @@ import {
   listZapasy,
   oznacKliknutiPripojit,
   setHost,
-  setHostPotvrdil,
   setLobbyId,
   setVysledek,
   setZapasStav,
@@ -37,7 +36,7 @@ it("vytvoří 1v1 s pořadím, názvem lobby a heslem", async () => {
   expect(zapas.poradi).toBe(1);
   expect(zapas.nazevLobby).toBe("ROB-01");
   expect(zapas.heslo).toHaveLength(8);
-  expect(zapas.stav).toBe("nachystany");
+  expect(zapas.stav).toBe("bezi");
   expect(zapas.lobbyId).toBeNull();
 });
 
@@ -85,51 +84,33 @@ it("odmítne špatný počet hráčů", async () => {
   await expect(createZapas(akceId, "coop_kings_2v2", HRACI.slice(0, 2))).rejects.toThrow(/4 hráče/);
 });
 
-it("uloží číslo lobby a posune stav", async () => {
+it("uložení čísla lobby stavem nehýbe — o založené lobby mluví sám odkaz", async () => {
   const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
-  await setZapasStav(zapas.id, "vyhlaseny", "admin");
   await setLobbyId(zapas.id, "234230181");
-  await setZapasStav(zapas.id, "lobby_otevrena", "host");
 
   const nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBe("234230181");
-  expect(nacteny.zapas.stav).toBe("lobby_otevrena");
+  expect(nacteny.zapas.stav).toBe("bezi");
 });
 
-it("nový odkaz na lobby zruší dřívější potvrzení hosta", async () => {
+
+// Hostovi po zrušení mezistavů nepatří žádný přechod — smí jedinou věc, vložit
+// odkaz do lobby, a tu hlídá routa, ne stavový automat. Že se stav zápasu
+// nedá měnit nikým než Robem, ověřuje test „běžný hráč nesmí měnit stav
+// zápasu“ v src/http/routes/matches.db.test.ts.
+
+// Rob dostane jen tři tlačítka, ale překliknuté „Vyhrál tým 1“ musí jít vrátit
+// — a s ním i časová známka konce, na které bude stát budoucí statistika.
+it("vrácení dohraného zápasu zpět do běhu zruší časovou známku konce", async () => {
   const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
-  await setLobbyId(zapas.id, "234230181");
-  await setHostPotvrdil(zapas.id);
-  expect((await getZapas(zapas.id))!.zapas.hostPotvrdil).toBeInstanceOf(Date);
-
-  await setLobbyId(zapas.id, "999999999");
-
-  const nacteny = (await getZapas(zapas.id))!;
-  expect(nacteny.zapas.lobbyId).toBe("999999999");
-  expect(nacteny.zapas.hostPotvrdil).toBeNull();
-});
-
-it("host nesmí zapsat výsledek", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
-  await setZapasStav(zapas.id, "vyhlaseny", "admin");
-  await setZapasStav(zapas.id, "lobby_otevrena", "host");
-  await setZapasStav(zapas.id, "hraje_se", "host");
-  await expect(setZapasStav(zapas.id, "dohrano", "host")).rejects.toThrow(/nesmí/);
-});
-
-it("oprava z dohráno zpět na hraje_se zruší časovou známku konce", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
-  await setZapasStav(zapas.id, "vyhlaseny", "admin");
-  await setZapasStav(zapas.id, "lobby_otevrena", "host");
-  await setZapasStav(zapas.id, "hraje_se", "host");
-  await setZapasStav(zapas.id, "dohrano", "admin");
+  await setZapasStav(zapas.id, "dohrano");
   const { rows: predOpravou } = await getPool().query<{ konec: Date | null }>(
     "SELECT konec FROM zapas WHERE id = $1",
     [zapas.id],
   );
   expect(predOpravou[0]!.konec).not.toBeNull();
 
-  await setZapasStav(zapas.id, "hraje_se", "admin");
+  await setZapasStav(zapas.id, "bezi");
   const { rows: poOprave } = await getPool().query<{ konec: Date | null }>(
     "SELECT konec FROM zapas WHERE id = $1",
     [zapas.id],
@@ -160,9 +141,8 @@ it("setHost odmítne hráče, který není účastníkem, a zachová hosta i lob
   expect(po.ucastnici.find((u) => u.jeHost)!.steamId).toBe(puvodniHost);
 });
 
-it("setZapasStav odmítne zápis, pokud stav mezitím změnil jiný aktér", async () => {
+it("setZapasStav odmítne zápis, pokud stav mezitím změnil někdo jiný", async () => {
   const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
-  await setZapasStav(zapas.id, "vyhlaseny", "admin");
 
   const pool = getPool();
   const puvodniQuery = pool.query.bind(pool);
@@ -173,16 +153,14 @@ it("setZapasStav odmítne zápis, pokud stav mezitím změnil jiný aktér", asy
       if (!zasazeno && text.includes("UPDATE zapas SET stav")) {
         zasazeno = true;
         // Simulace souběhu: mezi ověřením přechodu (SELECT uvnitř getZapas) a jeho
-        // zápisem (tento UPDATE) stihne jiný aktér zápas posunout jinam.
+        // zápisem (tento UPDATE) stihne někdo jiný zápas posunout jinam.
         await puvodniQuery("UPDATE zapas SET stav = 'zruseny' WHERE id = $1", [zapas.id]);
       }
       return puvodniQuery(text, params);
     });
 
   try {
-    await expect(setZapasStav(zapas.id, "lobby_otevrena", "host")).rejects.toThrow(
-      /mezitím změnil/,
-    );
+    await expect(setZapasStav(zapas.id, "dohrano")).rejects.toThrow(/mezitím změnil/);
   } finally {
     spy.mockRestore();
   }

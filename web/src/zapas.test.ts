@@ -23,7 +23,6 @@ const coop: ZapasView = {
   joinUri: null,
   spectatorUri: null,
   viteznyTym: null,
-  hostPotvrdil: null,
   ucastnici: [u("a", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)],
 };
 

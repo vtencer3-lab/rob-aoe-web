@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
 import { createAkce, setAkceStav, signUp } from "../../db/events.js";
-import { createZapas, setLobbyId, setZapasStav } from "../../db/matches.js";
+import { createZapas, setLobbyId } from "../../db/matches.js";
 import { closePool, getPool } from "../../db/pool.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
 import { createSession } from "../../db/sessions.js";
@@ -95,7 +95,6 @@ it("bez aktivní akce stream drží a založení akce doručí živě", async ()
 // přímo ze streamu; odpojení klienta simulujeme přes AbortSignal.
 it("pošle úvodní stav a přihlásí odběratele", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
 
   const app = buildServer();
   await app.ready();
@@ -124,7 +123,6 @@ it("pošle úvodní stav a přihlásí odběratele", async () => {
 
 it("po odpojení klienta se odběratel odhlásí z hubu", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
 
   const app = buildServer();
   await app.ready();
@@ -159,7 +157,6 @@ it("po odpojení klienta se odběratel odhlásí z hubu", async () => {
 // než se vůbec stihla přihlásit k odběru.
 it("odpojení klienta hned po hijacku (ještě během sestavování stavu) odběratele stejně odhlásí", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
 
   const app = buildServer();
   await app.ready();
@@ -198,7 +195,6 @@ it("odpojení klienta hned po hijacku (ještě během sestavování stavu) odbě
 // zpracování requestu) doopravdy proběhl, než jsme odpojili.
 it("odpojení klienta ještě před hijackem (během getAktivniAkce) odběratele nenechá viset", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
 
   const app = buildServer();
   let zachycenyRaw: { destroy(): void } | undefined;
@@ -229,7 +225,6 @@ it("odpojení klienta ještě před hijackem (během getAktivniAkce) odběratele
 // přepsal staršími z právě dokončeného DB dotazu.
 it("broadcast doručený během sestavování úvodního stavu se pošle až po něm, ne před ním", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
 
   const app = buildServer();
   await app.ready();
@@ -285,7 +280,6 @@ it("hub o odběrateli ví a po zavření spojení ho zapomene", async () => {
 // drát, ne to, co vrací redakční funkce zavolaná zvlášť.
 it("cizímu divákovi neodteče ve streamu heslo ani číslo lobby", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
 
   const hraci = ["76561198000000081", "76561198000000082"];
   for (const [i, steamId] of hraci.entries()) {
@@ -294,7 +288,6 @@ it("cizímu divákovi neodteče ve streamu heslo ani číslo lobby", async () =>
     await signUp(akce.id, steamId);
   }
   const zapas = await createZapas(akce.id, "1v1", hraci);
-  await setZapasStav(zapas.id, "vyhlaseny", "admin");
   await setLobbyId(zapas.id, "234230181");
 
   const app = buildServer();
@@ -327,7 +320,6 @@ it("cizímu divákovi neodteče ve streamu heslo ani číslo lobby", async () =>
 // "redakce" mohla být jen paušální zaslepení všeho.
 it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu divácký odkaz", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
 
   const rob = "76561198000000080";
   await upsertPlayer(rob, true);
@@ -340,7 +332,6 @@ it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu div�
     await signUp(akce.id, steamId);
   }
   const zapas = await createZapas(akce.id, "1v1", hraci);
-  await setZapasStav(zapas.id, "vyhlaseny", "admin");
   await setLobbyId(zapas.id, "234230181");
   const hracSid = await createSession(hraci[0]!);
 
@@ -384,7 +375,6 @@ it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu div�
 // téhož serveru, a jediné východisko byl ruční refresh.
 it("stránka otevřená během první akce dostane i tu druhou, bez obnovy spojení", async () => {
   const prvni = await createAkce("čtvrtek");
-  await setAkceStav(prvni.id, "prihlasovani");
 
   const app = buildServer();
   await app.ready();

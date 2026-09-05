@@ -15,7 +15,6 @@ let hracSid: string;
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
   akceId = (await createAkce("večer")).id;
-  await setAkceStav(akceId, "prihlasovani");
 
   await upsertPlayer(ROB, true);
   robSid = await createSession(ROB);
@@ -67,10 +66,10 @@ it("běžný hráč nesmí měnit stav zápasu", async () => {
     method: "POST",
     url: `/api/zapas/${zapas.id}/stav`,
     cookies: { sid: hracSid },
-    payload: { stav: "vyhlaseny" },
+    payload: { stav: "zruseny" },
   });
   expect(res.statusCode).toBe(403);
-  expect((await getZapas(zapas.id))!.zapas.stav).toBe("nachystany");
+  expect((await getZapas(zapas.id))!.zapas.stav).toBe("bezi");
   await app.close();
 });
 
@@ -130,25 +129,25 @@ it("stejný hráč dvakrát v sestavě vrátí 400 se srozumitelnou hláškou", 
   await app.close();
 });
 
-it("Rob vytvoří zápas a vyhlásí ho", async () => {
+it("Rob smí zápas zrušit", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
 
-  const vyhlaseni = await app.inject({
+  const zruseni = await app.inject({
     method: "POST",
     url: `/api/zapas/${zapas.id}/stav`,
     cookies: { sid: robSid },
-    payload: { stav: "vyhlaseny" },
+    payload: { stav: "zruseny" },
   });
-  expect(vyhlaseni.statusCode).toBe(200);
-  expect((await getZapas(zapas.id))!.zapas.stav).toBe("vyhlaseny");
+  expect(zruseni.statusCode).toBe(200);
+  expect((await getZapas(zapas.id))!.zapas.stav).toBe("zruseny");
   await app.close();
 });
 
 // Rob dvojklik na svoje vlastní tlačítko v přímém přenosu udělá dřív nebo
 // později. Do teď to znamenalo červený „Něco se pokazilo na serveru.“, protože
 // odmítnutý přechod padal jako holá Error na 500.
-it("druhé kliknutí na Vyhlásit dostane srozumitelné 409, ne 500", async () => {
+it("druhé kliknutí na totéž tlačítko dostane srozumitelné 409, ne 500", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
 
@@ -156,7 +155,7 @@ it("druhé kliknutí na Vyhlásit dostane srozumitelné 409, ne 500", async () =
     method: "POST",
     url: `/api/zapas/${zapas.id}/stav`,
     cookies: { sid: robSid },
-    payload: { stav: "vyhlaseny" },
+    payload: { stav: "zruseny" },
   });
   expect(prvni.statusCode).toBe(200);
 
@@ -164,10 +163,10 @@ it("druhé kliknutí na Vyhlásit dostane srozumitelné 409, ne 500", async () =
     method: "POST",
     url: `/api/zapas/${zapas.id}/stav`,
     cookies: { sid: robSid },
-    payload: { stav: "vyhlaseny" },
+    payload: { stav: "zruseny" },
   });
   expect(druhe.statusCode).toBe(409);
-  expect(druhe.json().chyba).toMatch(/už ve stavu „vyhlaseny“ je/);
+  expect(druhe.json().chyba).toMatch(/už ve stavu „zruseny“ je/);
   await app.close();
 });
 
@@ -213,15 +212,9 @@ it("odkaz uložený těsně před Robovým „Hraje se“ se nehlásí jako chyb
   await app.close();
 });
 
-it("host vloží odkaz a zápas se posune", async () => {
+it("host vloží odkaz a ten se uloží, stav zůstává", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/stav`,
-    cookies: { sid: robSid },
-    payload: { stav: "vyhlaseny" },
-  });
 
   const hostSid = await createSession(HRACI[1]!); // nejvíc odehraných her
   const res = await app.inject({
@@ -234,7 +227,9 @@ it("host vloží odkaz a zápas se posune", async () => {
   expect(res.statusCode).toBe(200);
   const nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBe("234230181");
-  expect(nacteny.zapas.stav).toBe("lobby_otevrena");
+  // Že je lobby založená, se pozná podle existence odkazu — zvláštní stav
+  // pro to zmizel spolu s tlačítky, která ho hýbala.
+  expect(nacteny.zapas.stav).toBe("bezi");
   await app.close();
 });
 
@@ -309,40 +304,10 @@ it("kdo není host, odkaz vložit nesmí", async () => {
   await app.close();
 });
 
-it("host potvrdí nachystanou lobby", async () => {
-  const app = buildServer();
-  const zapas = await vytvorZapas(app);
-  const hostSid = await createSession(HRACI[1]!);
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/lobby`,
-    cookies: { sid: hostSid },
-    payload: { odkaz: "aoe2de://0/234230181" },
-  });
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/potvrzeni`,
-    cookies: { sid: hostSid },
-  });
-  expect((await getZapas(zapas.id))!.zapas.hostPotvrdil).toBeInstanceOf(Date);
-  await app.close();
-});
 
-it("potvrzení bez odkazu na lobby se odmítne", async () => {
-  const app = buildServer();
-  const zapas = await vytvorZapas(app);
-  const hostSid = await createSession(HRACI[1]!);
-  const res = await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/potvrzeni`,
-    cookies: { sid: hostSid },
-  });
-  expect(res.statusCode).toBe(400);
-  expect((await getZapas(zapas.id))!.zapas.hostPotvrdil).toBeNull();
-  await app.close();
-});
 
-it("nový odkaz na lobby zruší staré potvrzení hosta", async () => {
+
+it("změna hosta zahodí odkaz", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
   const hostSid = await createSession(HRACI[1]!);
@@ -358,48 +323,6 @@ it("nový odkaz na lobby zruší staré potvrzení hosta", async () => {
     cookies: { sid: hostSid },
     payload: { odkaz: "aoe2de://0/234230181" },
   });
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/potvrzeni`,
-    cookies: { sid: hostSid },
-  });
-  expect((await getZapas(zapas.id))!.zapas.hostPotvrdil).toBeInstanceOf(Date);
-
-  const res = await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/lobby`,
-    cookies: { sid: hostSid },
-    payload: { odkaz: "aoe2de://0/999999999" },
-  });
-  expect(res.statusCode).toBe(200);
-  const nacteny = (await getZapas(zapas.id))!;
-  expect(nacteny.zapas.lobbyId).toBe("999999999");
-  expect(nacteny.zapas.hostPotvrdil).toBeNull();
-  await app.close();
-});
-
-it("změna hosta zahodí odkaz i potvrzení", async () => {
-  const app = buildServer();
-  const zapas = await vytvorZapas(app);
-  const hostSid = await createSession(HRACI[1]!);
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/stav`,
-    cookies: { sid: robSid },
-    payload: { stav: "vyhlaseny" },
-  });
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/lobby`,
-    cookies: { sid: hostSid },
-    payload: { odkaz: "aoe2de://0/234230181" },
-  });
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/potvrzeni`,
-    cookies: { sid: hostSid },
-  });
-
   await app.inject({
     method: "POST",
     url: `/api/zapas/${zapas.id}/host`,
@@ -409,7 +332,6 @@ it("změna hosta zahodí odkaz i potvrzení", async () => {
 
   const nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBeNull();
-  expect(nacteny.zapas.hostPotvrdil).toBeNull();
   expect(nacteny.ucastnici.find((u) => u.jeHost)!.steamId).toBe(HRACI[0]);
   await app.close();
 });
@@ -450,30 +372,27 @@ it("Rob zapíše vítěze", async () => {
 // naživo na streamu je celý smysl věci — kdyby se sestava objevila lidem na
 // obrazovce ve chvíli, kdy ji Rob klikne, byla by pointa pryč. Filtruje to
 // redakční hranice na serveru, takže dvojice nejsou ani v odpovědi.
-it("nachystaný zápas nevidí ani účastník, jen Rob", async () => {
+// Celá cesta, ne jen jednotka: dřív tu byl mezistav „nachystany“, který zápas
+// před ne-adminy skrýval, dokud ho Rob nevyhlásil. Ten krok je pryč — složením
+// zápasu je hotovo a všichni ho vidí okamžitě. Tenhle test hlídá právě to a
+// zároveň, že se s viditelností neotevřela i tajemství.
+it("složený zápas dostane hned účastník i anonym, každý ve své míře", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
-  expect((await getZapas(zapas.id))!.zapas.stav).toBe("nachystany");
+  expect((await getZapas(zapas.id))!.zapas.stav).toBe("bezi");
 
   const ucastnik = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } });
-  expect(ucastnik.json().zapasy).toHaveLength(0);
+  expect(ucastnik.json().zapasy).toHaveLength(1);
+  expect(ucastnik.json().zapasy[0].heslo).not.toBe("");
 
   const anonym = await app.inject({ method: "GET", url: "/api/akce" });
-  expect(anonym.json().zapasy).toHaveLength(0);
+  expect(anonym.json().zapasy).toHaveLength(1);
+  expect(anonym.json().zapasy[0].heslo).toBe("");
+  expect(anonym.json().zapasy[0].lobbyId).toBeNull();
 
   const robuv = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: robSid } });
   expect(robuv.json().zapasy).toHaveLength(1);
-  expect(robuv.json().zapasy[0].stav).toBe("nachystany");
-
-  // Jakmile ho Rob vyhlásí, účastník ho dostane.
-  await app.inject({
-    method: "POST",
-    url: `/api/zapas/${zapas.id}/stav`,
-    cookies: { sid: robSid },
-    payload: { stav: "vyhlaseny" },
-  });
-  const po = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } });
-  expect(po.json().zapasy).toHaveLength(1);
+  expect(robuv.json().zapasy[0].stav).toBe("bezi");
   await app.close();
 });
 

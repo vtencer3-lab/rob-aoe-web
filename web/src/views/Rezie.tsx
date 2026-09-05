@@ -18,10 +18,8 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
       {stav.zapasy.map((zapas) => {
         // Odkaz aoe2de://1/<id> funguje jako divácký, jakmile host vloží odkaz z lobby —
         // funguje v otevřené, ještě neobsazené lobby i za běhu zápasu. Ověřeno na živé hře.
-        // Rob se tak dostane dovnitř dřív, než host cokoliv potvrdí, a stihne upozornit na
-        // špatně nastavenou lobby. Proto se spectate odemyká podle spectatorUri, nikdy podle
-        // hostPotvrdil — a nemá žádné "odemknout i bez potvrzení" tlačítko, protože žádný
-        // zámek na potvrzení není.
+        // Rob se tak dostane dovnitř hned, jak odkaz existuje, a stihne upozornit na
+        // špatně nastavenou lobby. Spectate se proto odemyká výhradně podle spectatorUri.
         const muzeSpectate = zapas.spectatorUri !== null;
 
         // Přehození hosta je správně destruktivní: setHost vynuluje lobby_id
@@ -40,9 +38,7 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
 
         return (
           <article key={zapas.id} className="zapas">
-            <header>
-              Zápas #{zapas.poradi} · {zapas.stav}
-            </header>
+            <header>Zápas #{zapas.poradi}</header>
 
             <ul>
               {zapas.ucastnici.map((u) => (
@@ -51,18 +47,27 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
                       a tlačítko se mu nelepilo na poslední písmeno. */}
                   <span>
                     {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
-                    {u.jeHost ? " (host)" : ""}
                     {" · "}
                     {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
                     {u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl"}
                   </span>
-                  <button
-                    onClick={() => {
-                      if (potvrdZmenuHosta(jmenoHrace(u))) onHost(zapas.id, u.steamId);
-                    }}
-                  >
-                    Hostuje tenhle
-                  </button>
+                  {/* Kdo hostuje, má odznak; kdo ne, má tlačítko. Nikdy obojí a
+                      nikdy ani jedno — tlačítko u stávajícího hosta nabízelo akci,
+                      která by nic nezměnila, a vedle textového „(host)“ uprostřed
+                      věty se dvě stejná tlačítka pletla. */}
+                  {u.jeHost ? (
+                    <strong className="odznak-host" data-testid="odznak-host">
+                      HOST
+                    </strong>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (potvrdZmenuHosta(jmenoHrace(u))) onHost(zapas.id, u.steamId);
+                      }}
+                    >
+                      Udělat hostem
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -77,18 +82,12 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
             </a>
 
             {/* Jen informační stavový řádek, ne zámek. */}
-            <p className="stavovy-radek">
-              {zapas.hostPotvrdil ? "Host potvrdil nastavení." : "Host zatím nepotvrdil nastavení."}
-            </p>
-
             <div className="zaloha">
               Kdyby to zamrzlo: lobby <strong>{zapas.nazevLobby}</strong>, heslo{" "}
               <strong>{zapas.heslo}</strong>, číslo <strong>{zapas.lobbyId ?? "—"}</strong>
             </div>
 
             <div className="ovladani">
-              <button onClick={() => onStav(zapas.id, "vyhlaseny")}>Vyhlásit</button>
-              <button onClick={() => onStav(zapas.id, "hraje_se")}>Hraje se</button>
               <button onClick={() => onVysledek(zapas.id, 1)}>Vyhrál tým 1</button>
               <button onClick={() => onVysledek(zapas.id, 2)}>Vyhrál tým 2</button>
               <button onClick={() => onStav(zapas.id, "zruseny")}>Zrušit</button>

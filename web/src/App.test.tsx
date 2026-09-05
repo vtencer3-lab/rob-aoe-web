@@ -14,7 +14,6 @@ vi.mock("./api.js", () => ({
     odhlasitSe: vi.fn(),
     pripojeni: vi.fn(),
     vlozitOdkaz: vi.fn(),
-    potvrdit: vi.fn(),
     vytvoritAkce: vi.fn(),
     akceStav: vi.fn(),
     vytvoritZapas: vi.fn(),
@@ -49,7 +48,6 @@ const zapas = (ucastnici: UcastnikView[]): ZapasView => ({
   joinUri: null,
   spectatorUri: null,
   viteznyTym: null,
-  hostPotvrdil: null,
   ucastnici,
 });
 

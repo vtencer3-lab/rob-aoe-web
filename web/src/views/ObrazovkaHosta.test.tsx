@@ -15,7 +15,6 @@ const zaklad: ZapasView = {
   joinUri: null,
   spectatorUri: null,
   viteznyTym: null,
-  hostPotvrdil: null,
   ucastnici: [
     { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
     { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
@@ -25,7 +24,7 @@ const zaklad: ZapasView = {
 };
 
 it("diktuje nastavení, které jinak lidi kazí", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onPotvrdit={vi.fn()} />);
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
   expect(screen.getByText(/veřejná/i)).toBeInTheDocument();
   expect(screen.getByText(/allow spectators/i)).toBeInTheDocument();
   expect(screen.getByText("ROB-07")).toBeInTheDocument();
@@ -33,27 +32,18 @@ it("diktuje nastavení, které jinak lidi kazí", () => {
 });
 
 it("ukáže zrcadlo lobby se všemi barvami a týmy", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onPotvrdit={vi.fn()} />);
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
   const radky = screen.getAllByTestId("radek-lobby");
   expect(radky).toHaveLength(4);
   expect(radky[0]).toHaveTextContent("modrá");
   expect(radky[2]).toHaveTextContent("červená");
 });
 
-it("dokud není vložený odkaz, nejde potvrdit", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onPotvrdit={vi.fn()} />);
-  expect(screen.getByRole("button", { name: /sedí to/i })).toBeDisabled();
-});
 
-it("po vložení odkazu jde potvrdit", () => {
-  const sLobby = { ...zaklad, stav: "lobby_otevrena", lobbyId: "234230181" };
-  render(<ObrazovkaHosta zapas={sLobby} ja="ja" onVlozitOdkaz={vi.fn()} onPotvrdit={vi.fn()} />);
-  expect(screen.getByRole("button", { name: /sedí to/i })).toBeEnabled();
-});
 
 it("odešle vložený odkaz", async () => {
   const onVlozitOdkaz = vi.fn();
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} onPotvrdit={vi.fn()} />);
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} />);
 
   await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://0/234230181");
   await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
@@ -61,11 +51,6 @@ it("odešle vložený odkaz", async () => {
   expect(onVlozitOdkaz).toHaveBeenCalledWith(1, "aoe2de://0/234230181");
 });
 
-it("po potvrzení to dá najevo", () => {
-  const potvrzeny = { ...zaklad, stav: "lobby_otevrena", lobbyId: "234230181", hostPotvrdil: "2026-09-03T12:00:00.000Z" };
-  render(<ObrazovkaHosta zapas={potvrzeny} ja="ja" onVlozitOdkaz={vi.fn()} onPotvrdit={vi.fn()} />);
-  expect(screen.getByText(/potvrzeno/i)).toBeInTheDocument();
-});
 
 it("v zrcadle lobby pojmenuje hráče bez aliasu jménem ze Steamu", () => {
   const bezAliasu: ZapasView = {
@@ -76,7 +61,7 @@ it("v zrcadle lobby pojmenuje hráče bez aliasu jménem ze Steamu", () => {
     ],
   };
   render(
-    <ObrazovkaHosta zapas={bezAliasu} ja="ja" onVlozitOdkaz={vi.fn()} onPotvrdit={vi.fn()} />,
+    <ObrazovkaHosta zapas={bezAliasu} ja="ja" onVlozitOdkaz={vi.fn()} />,
   );
 
   const radky = screen.getAllByTestId("radek-lobby");

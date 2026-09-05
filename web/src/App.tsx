@@ -74,7 +74,9 @@ export function App() {
       {akce ? (
         <>
           <h2>{akce.nazev}</h2>
-          {me && akce.stav === "prihlasovani" ? (
+          {/* Existující akce sama o sobě znamená „hlásit se lze“ — skončenou
+              akci server do stavu vůbec neposílá. */}
+          {me ? (
             <button onClick={() => void prepnout()}>
               {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
             </button>
@@ -99,7 +101,6 @@ export function App() {
                     zapas={zapas}
                     ja={me.steamId}
                     onVlozitOdkaz={(id, odkaz) => void hlidej(() => api.vlozitOdkaz(id, odkaz))}
-                    onPotvrdit={(id) => void hlidej(() => api.potvrdit(id))}
                   />
                 ) : (
                   <KartaHrace

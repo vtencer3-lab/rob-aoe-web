@@ -218,6 +218,24 @@ pojmenovaný Cloudflare tunel na vlastní doméně, Tailscale Funnel, ngrok nebo
 podobně. Poznáš to na první pohled: hláška „Obnovuji spojení…“ zmizí a změny
 naskakují okamžitě, ne po třívteřinových skocích.
 
+## Jak večer probíhá
+
+Tři kroky, a mezi nimi se na nic nečeká:
+
+1. **Rob založí akci.** Přihlašování je od té chvíle otevřené a zůstane otevřené
+   celý večer — kdo dorazí pozdě, přihlásí se i mezi zápasy.
+2. **Rob naklikne zápas.** V ten okamžik ho vidí všichni: hráči svoji barvu a
+   tým, host navíc pokyny k založení lobby a pole na odkaz. Nic se nevyhlašuje.
+3. **Host vloží odkaz z tlačítka Copy v lobby.** Tím naskočí hráčům „Připojit se
+   do hry“ a Robovi Spectate — obojí se odvodí z toho jednoho čísla.
+
+Zápas končí buď zápisem vítěze („Vyhrál tým 1/2“), nebo zrušením. Večer končí
+tlačítkem „Ukončit akci“, které je nevratné a ptá se na potvrzení.
+
+Do 5. 9. 2026 byl mezi krokem 2 a 3 ještě mezikrok „Vyhlásit“ a akce měla pět
+stavů; obojí zmizelo, protože se na tom dalo v přímém přenosu jen zaseknout.
+Podrobnosti v [návrhu z 5. 9. 2026](docs/superpowers/specs/2026-09-05-zjednoduseni-stavu-design.md).
+
 ## Jak to funguje ve zkratce
 
 AoE2 DE má vlastní protokol pro odkazy do lobby. `aoe2de://0/<id>` je

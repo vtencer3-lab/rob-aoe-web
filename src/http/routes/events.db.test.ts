@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
-import { createAkce, listSignups, setAkceStav } from "../../db/events.js";
+import { createAkce, getAktivniAkce, listSignups, setAkceStav } from "../../db/events.js";
 import { closePool, getPool } from "../../db/pool.js";
 import { upsertPlayer } from "../../db/players.js";
 import { createSession } from "../../db/sessions.js";
@@ -23,7 +23,6 @@ afterAll(async () => {
 
 it("nepřihlášený se nepřihlásí do akce", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
   const app = buildServer();
   const res = await app.inject({ method: "POST", url: `/api/akce/${akce.id}/prihlaska` });
   expect(res.statusCode).toBe(401);
@@ -32,7 +31,6 @@ it("nepřihlášený se nepřihlásí do akce", async () => {
 
 it("přihlášený se přidá do seznamu", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
   const { sid } = await prihlasenyKlient(HRAC, false);
 
   const app = buildServer();
@@ -46,9 +44,9 @@ it("přihlášený se přidá do seznamu", async () => {
   await app.close();
 });
 
-it("do zavřené akce se přihlásit nejde", async () => {
+it("do skončené akce se přihlásit nejde", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "zavreno");
+  await setAkceStav(akce.id, "konec");
   const { sid } = await prihlasenyKlient(HRAC, false);
 
   const app = buildServer();
@@ -58,7 +56,7 @@ it("do zavřené akce se přihlásit nejde", async () => {
     cookies: { sid },
   });
   expect(res.statusCode).toBe(409);
-  expect(res.json().chyba).toMatch(/není otevřené/i);
+  expect(res.json().chyba).toMatch(/neběží/i);
   await app.close();
 });
 
@@ -85,7 +83,7 @@ it("běžný hráč nesmí zakládat akci ani měnit stav", async () => {
   await app.close();
 });
 
-it("Rob smí založit akci a otevřít přihlašování", async () => {
+it("Rob smí založit akci a ta rovnou běží", async () => {
   const { sid } = await prihlasenyKlient(ROB, true);
   const app = buildServer();
 
@@ -95,16 +93,26 @@ it("Rob smí založit akci a otevřít přihlašování", async () => {
     cookies: { sid },
     payload: { nazev: "Coop Kings" },
   });
+
   expect(zalozeni.statusCode).toBe(200);
-  const akceId = zalozeni.json().akce.id;
+  expect(zalozeni.json().akce.stav).toBe("bezi");
+  await app.close();
+});
+
+it("Rob smí akci ukončit", async () => {
+  const { sid } = await prihlasenyKlient(ROB, true);
+  const akce = await createAkce("Coop Kings");
+  const app = buildServer();
 
   const stav = await app.inject({
     method: "POST",
-    url: `/api/akce/${akceId}/stav`,
+    url: `/api/akce/${akce.id}/stav`,
     cookies: { sid },
-    payload: { stav: "prihlasovani" },
+    payload: { stav: "konec" },
   });
-  expect(stav.json().akce.stav).toBe("prihlasovani");
+
+  expect(stav.json().akce.stav).toBe("konec");
+  expect(await getAktivniAkce()).toBeNull();
   await app.close();
 });
 
@@ -164,7 +172,6 @@ it("nečíselné ID akce vrátí 400 místo pádu do DB", async () => {
 
 it("GET /api/akce vrátí aktivní akci se seznamem", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
   const { sid } = await prihlasenyKlient(HRAC, false);
 
   const app = buildServer();
@@ -178,12 +185,31 @@ it("GET /api/akce vrátí aktivní akci se seznamem", async () => {
 
 it("odhlášení hráče ze seznamu odebere", async () => {
   const akce = await createAkce("večer");
-  await setAkceStav(akce.id, "prihlasovani");
   const { sid } = await prihlasenyKlient(HRAC, false);
 
   const app = buildServer();
   await app.inject({ method: "POST", url: `/api/akce/${akce.id}/prihlaska`, cookies: { sid } });
   await app.inject({ method: "DELETE", url: `/api/akce/${akce.id}/prihlaska`, cookies: { sid } });
   expect(await listSignups(akce.id)).toHaveLength(0);
+  await app.close();
+});
+
+// Závora na stavu „prihlasovani“ byla to jediné, co přihlašování povolovalo.
+// Kdyby ten stav zmizel a podmínka zůstala, nepřihlásil by se do akce už nikdo
+// nikdy — a to naprosto tiše, jen 409 u každého kliknutí. Tenhle test je
+// pojistka přesně proti tomu.
+it("přihlásit se jde do každé běžící akce, i když už jsou zápasy složené", async () => {
+  const akce = await createAkce("večer");
+  const { sid } = await prihlasenyKlient(HRAC, false);
+  const app = buildServer();
+
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akce.id}/prihlaska`,
+    cookies: { sid },
+  });
+
+  expect(res.statusCode).toBe(200);
+  expect(await listSignups(akce.id)).toHaveLength(1);
   await app.close();
 });
