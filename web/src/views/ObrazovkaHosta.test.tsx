@@ -25,10 +25,10 @@ const zaklad: ZapasView = {
 
 it("diktuje nastavení, které jinak lidi kazí", () => {
   render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  expect(screen.getByText(/veřejná/i)).toBeInTheDocument();
-  expect(screen.getByText(/allow spectators/i)).toBeInTheDocument();
-  expect(screen.getByText("ROB-07")).toBeInTheDocument();
-  expect(screen.getByText("k7rm2xq9")).toBeInTheDocument();
+  expect(screen.getByTestId("pole-Visibility")).toHaveTextContent("Public");
+  expect(screen.getByTestId("pole-Allow Spectators")).toHaveTextContent("✓");
+  expect(screen.getByTestId("pole-Lobby Name")).toHaveTextContent("ROB-07");
+  expect(screen.getByTestId("pole-Set Password")).toHaveTextContent("k7rm2xq9");
 });
 
 it("ukáže zrcadlo lobby se všemi barvami a týmy", () => {
@@ -130,15 +130,27 @@ it("pruh nese barvu toho, kdo se dívá", () => {
 
 it("zrcadlí dialog Create Lobby pod jeho vlastním názvem", () => {
   render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  expect(screen.getByText("Create Lobby")).toBeInTheDocument();
+  expect(screen.getByTestId("dialog-titulek")).toHaveTextContent("Create Lobby");
 });
 
 // Anglické názvy schválně: host je očima porovnává s anglickým dialogem hry.
 // Pořadí taky — v dialogu jdou přesně takhle pod sebou.
-it("drží pořadí a názvy polí ze hry", () => {
+it("drží pořadí a názvy všech polí ze hry", () => {
   render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
   const nazvy = screen.getAllByTestId("nazev-pole").map((e) => e.textContent);
-  expect(nazvy).toEqual(["Lobby Name", "Visibility", "Players", "Set Password", "Allow Spectators"]);
+  expect(nazvy).toEqual([
+    "Lobby Name",
+    "Lobby Type",
+    "Visibility",
+    "Players",
+    "Co-Op Campaign",
+    "Set Password",
+    "Allow Spectators",
+    "Hide Civilizations",
+    "Spectator Delay",
+    "Server",
+    "Data Mod",
+  ]);
 });
 
 it("vyplní název, heslo a počet hráčů z webu", () => {
@@ -164,11 +176,36 @@ it("ukáže Allow Spectators jako zaškrtnuté", () => {
   expect(screen.getByTestId("pole-Allow Spectators")).toHaveTextContent("✓");
 });
 
-// Rozhodnutí uživatele: zrcadlo mluví jen o tom, co web řídí. O zbytku dialogu
-// mlčí, protože o něm nic neví a Rob si ho volí podle večera.
-it("mlčí o nastaveních, která web neřídí", () => {
+// Zrcadlí se celý dialog, ale web řídí jen pět polí. U zbytku ukazuje, jak to
+// v dialogu vypadá — ne příkaz. Kdyby to nešlo rozeznat, host by pro jistotu
+// nastavoval i věci, o kterých nikdo nerozhodl.
+it("pozná se, co web diktuje a co je jen podoba dialogu", () => {
   render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  for (const cizi of ["Lobby Type", "Co-Op Campaign", "Hide Civilizations", "Spectator Delay", "Server", "Data Mod"]) {
-    expect(screen.queryByText(cizi)).not.toBeInTheDocument();
+  for (const rizene of ["Lobby Name", "Visibility", "Players", "Set Password", "Allow Spectators"]) {
+    expect(screen.getByTestId(`pole-${rizene}`)).toHaveAttribute("data-diktovano", "ano");
   }
+  for (const cizi of ["Lobby Type", "Co-Op Campaign", "Hide Civilizations", "Spectator Delay", "Server", "Data Mod"]) {
+    expect(screen.getByTestId(`pole-${cizi}`)).toHaveAttribute("data-diktovano", "ne");
+  }
+});
+
+// Spodní tlačítka dialogu se dokreslují kvůli podobě. Opravdová tlačítka to
+// být nesmí: host by na Create Lobby klikl a čekal, že se něco stane.
+it("dokreslí i spodní tlačítka, ale klikatelná nejsou", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  const lista = screen.getByTestId("dialog-tlacitka");
+  expect(lista).toHaveTextContent("Create Lobby");
+  expect(lista).toHaveTextContent("Cancel");
+  expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Create Lobby" })).not.toBeInTheDocument();
+});
+
+// Uložit odkaz je jediné opravdové tlačítko poblíž dialogu a musí zůstat
+// dosažitelné i po tom, co dialog obrostl dekorací.
+it("skutečné ovládání zůstává funkční", async () => {
+  const onVlozitOdkaz = vi.fn();
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} />);
+  await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://0/1");
+  await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
+  expect(onVlozitOdkaz).toHaveBeenCalledWith(1, "aoe2de://0/1");
 });

@@ -71,66 +71,139 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz }: Props) {
 }
 
 /**
- * Zrcadlo herního dialogu Create Lobby. Anglické názvy polí jsou schválně —
- * host je očima porovnává s anglickým dialogem hry, český překlad by ho nutil
- * překládat zpátky. Pořadí je taky to ze hry.
+ * Zrcadlo herního dialogu Create Lobby, vykreslené co nejblíž tomu, co host
+ * uvidí ve hře: stejná pole, stejné pořadí, stejné anglické názvy, stejné
+ * tvary ovládacích prvků. Cílem je, aby to šlo porovnávat očima, ne číst.
  *
- * Vědomě jen pět polí, která web řídí. O Lobby Type, Co-Op Campaign, Hide
- * Civilizations, Spectator Delay, Server ani Data Mod se nemluví: web o nich
- * nic neví a Rob si je volí podle večera. Vymyslet je by znamenalo diktovat
- * hostovi nastavení, které nikdo nerozhodl.
+ * Web ale řídí jen pět z těch polí. Zbytek se kreslí proto, aby dialog seděl,
+ * a nese hodnoty, které ve hře stojí ve výchozím stavu — proto `diktovano`.
+ * Bez toho rozlišení by host nastavoval i to, o čem nikdo nerozhodl, a věřil
+ * by tomu jako pokynu.
  */
 function DialogCreateLobby({ zapas }: { zapas: ZapasView }) {
   return (
     <div className="dialog-lobby">
-      <header className="dialog-titulek">Create Lobby</header>
+      <div className="dialog-ram">
+        <header className="dialog-titulek" data-testid="dialog-titulek">
+          Create Lobby
+        </header>
 
-      <Pole nazev="Lobby Name" hodnota={zapas.nazevLobby} kopirovat="název lobby" />
-      <Pole nazev="Visibility" hodnota="Public">
-        Veřejná — u jiné volby nejde zapnout diváky.
-      </Pole>
-      <Pole nazev="Players" hodnota={String(zapas.ucastnici.length)}>
-        Tolik, kolik je hráčů v zápase. Diváci slot neberou.
-      </Pole>
+        <div className="dialog-telo">
+          <PoleText
+            nazev="Lobby Name"
+            hodnota={zapas.nazevLobby}
+            diktovano
+            kopirovat="název lobby"
+          />
+          <PoleVyber nazev="Lobby Type" hodnota="Unranked" />
+          <PoleVyber nazev="Visibility" hodnota="Public" diktovano />
+          <PoleVyber nazev="Players" hodnota={String(zapas.ucastnici.length)} diktovano />
+          <PoleZaskrtavatko nazev="Co-Op Campaign" zaskrtnuto={false} />
 
-      {/* Ta věta stojí v dialogu přesně tady a je to nejcennější řádek celého
-          zrcadla: co je nad ní, se po založení lobby už neopraví. Kdo si toho
-          nevšimne, zjistí to tím, že zakládá lobby znovu uprostřed streamu. */}
-      <p className="dialog-varovani" data-testid="varovani-neni-zpet">
-        <strong>These Settings can not be changed after game creation.</strong>
-        <br />
-        Tři pole nahoře po založení lobby už nezměníš. Heslo a diváky pod čarou
-        ano.
+          {/* Ta věta stojí v dialogu přesně tady a je to nejcennější řádek
+              celého zrcadla: co je nad ní, se po založení lobby už neopraví.
+              Kdo si toho nevšimne, zjistí to tím, že zakládá lobby znovu
+              uprostřed streamu. */}
+          <p className="dialog-varovani" data-testid="varovani-neni-zpet">
+            These Settings can not be changed after game creation.
+          </p>
+
+          <PoleText nazev="Set Password" hodnota={zapas.heslo} diktovano kopirovat="heslo" />
+
+          <div className="dialog-radek-zaskrtavatek">
+            <PoleZaskrtavatko nazev="Allow Spectators" zaskrtnuto diktovano />
+            <PoleZaskrtavatko nazev="Hide Civilizations" zaskrtnuto={false} />
+          </div>
+
+          <PoleVyber nazev="Spectator Delay" hodnota="None" />
+          <PoleVyber nazev="Server" hodnota="Default" />
+          <PoleVyber nazev="Data Mod" hodnota="Definitive Set" />
+
+          {/* Jen dokreslení, ať dialog nekončí uprostřed. Opravdová tlačítka to
+              být nesmí — host by na Create Lobby klikl a čekal, že se něco
+              stane. Proto div, ne button, a aria-hidden. */}
+          <div className="dialog-tlacitka" data-testid="dialog-tlacitka" aria-hidden="true">
+            <span className="dialog-tlacitko">Create Lobby</span>
+            <span className="dialog-tlacitko">Cancel</span>
+          </div>
+        </div>
+      </div>
+
+      <p className="dialog-legenda">
+        Zvýrazněná pole ti diktuje web — <strong>{zapas.nazevLobby}</strong>,{" "}
+        <strong>Public</strong> (jinak nejde zapnout diváky), <strong>Players</strong> podle počtu
+        hráčů, heslo a <strong>Allow Spectators</strong> (bez toho se Rob dovnitř nedostane).
+        Ostatní pole jsou tu jen kvůli podobě — nastav si je, jak chceš.{" "}
+        <strong>Tři pole nad čárou po založení lobby už nezměníš</strong>, heslo a diváky ano.
       </p>
-
-      <Pole nazev="Set Password" hodnota={zapas.heslo} kopirovat="heslo" />
-      <Pole nazev="Allow Spectators" hodnota="✓">
-        Zaškrtnout — bez toho se Rob dovnitř nedostane.
-      </Pole>
     </div>
   );
 }
 
 interface PoleProps {
   nazev: string;
-  hodnota: string;
-  /** Když je vyplněné, přibude vedle hodnoty tlačítko na zkopírování. */
-  kopirovat?: string;
+  /** Řídí to web, nebo je pole jen kvůli podobě dialogu? */
+  diktovano?: boolean;
   children?: ReactNode;
 }
 
-function Pole({ nazev, hodnota, kopirovat, children }: PoleProps) {
+function Radek({ nazev, diktovano = false, children }: PoleProps) {
   return (
-    <div className="dialog-pole" data-testid={`pole-${nazev}`}>
+    <div
+      className="dialog-pole"
+      data-testid={`pole-${nazev}`}
+      data-diktovano={diktovano ? "ano" : "ne"}
+    >
       <span className="dialog-nazev" data-testid="nazev-pole">
         {nazev}
       </span>
-      <span className="dialog-hodnota">
-        <strong>{hodnota}</strong>
-        {kopirovat !== undefined ? (
-          <KopirovaciTlacitko hodnota={hodnota} popis={kopirovat} />
-        ) : null}
-        {children !== undefined ? <em className="dialog-poznamka">{children}</em> : null}
+      {children}
+    </div>
+  );
+}
+
+/** Textové pole: ve hře tmavý obdélník se zeleným písmem. */
+function PoleText({
+  nazev,
+  hodnota,
+  diktovano,
+  kopirovat,
+}: PoleProps & { hodnota: string; kopirovat: string }) {
+  return (
+    <Radek nazev={nazev} diktovano={diktovano}>
+      <span className="dialog-vstup">{hodnota}</span>
+      <KopirovaciTlacitko hodnota={hodnota} popis={kopirovat} />
+    </Radek>
+  );
+}
+
+/** Rozbalovací seznam: světlý pruh se šipkou vpravo. */
+function PoleVyber({ nazev, hodnota, diktovano }: PoleProps & { hodnota: string }) {
+  return (
+    <Radek nazev={nazev} diktovano={diktovano}>
+      <span className="dialog-vyber">
+        {hodnota}
+        <span className="dialog-sipka" aria-hidden="true" />
+      </span>
+    </Radek>
+  );
+}
+
+/** Zaškrtávátko: čtvereček, zaškrtnutý červenou fajfkou. */
+function PoleZaskrtavatko({
+  nazev,
+  zaskrtnuto,
+  diktovano,
+}: PoleProps & { zaskrtnuto: boolean }) {
+  return (
+    <div
+      className="dialog-pole dialog-pole-zaskrtavatko"
+      data-testid={`pole-${nazev}`}
+      data-diktovano={diktovano ? "ano" : "ne"}
+    >
+      <span className="dialog-ctverecek">{zaskrtnuto ? "✓" : ""}</span>
+      <span className="dialog-nazev" data-testid="nazev-pole">
+        {nazev}
       </span>
     </div>
   );
