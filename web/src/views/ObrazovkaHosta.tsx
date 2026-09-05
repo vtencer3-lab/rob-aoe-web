@@ -1,7 +1,13 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { BARVA_NAZEV, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik } from "../zapas.js";
 import { KopirovaciTlacitko } from "./KopirovaciTlacitko.js";
+
+/**
+ * Výřez dialogu Create Lobby ze hry. Leží ve `web/public`, takže ho Vite kopíruje
+ * do kořene `dist` beze změny jména — obsah se nemění, hash by byl k ničemu.
+ */
+const dialogUrl = "/create-lobby.webp";
 
 interface Props {
   zapas: ZapasView;
@@ -71,140 +77,76 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz }: Props) {
 }
 
 /**
- * Zrcadlo herního dialogu Create Lobby, vykreslené co nejblíž tomu, co host
- * uvidí ve hře: stejná pole, stejné pořadí, stejné anglické názvy, stejné
- * tvary ovládacích prvků. Cílem je, aby to šlo porovnávat očima, ne číst.
+ * Zrcadlo dialogu Create Lobby: skutečný snímek dialogu ze hry, do kterého se
+ * na místa tří polí posadí hodnoty z webu. Kreslit dialog v CSS znamenalo
+ * pořád jen odhadovat barvy a rozestupy; takhle to sedí, protože to je ono.
  *
- * Web ale řídí jen pět z těch polí. Zbytek se kreslí proto, aby dialog seděl,
- * a nese hodnoty, které ve hře stojí ve výchozím stavu — proto `diktovano`.
- * Bez toho rozlišení by host nastavoval i to, o čem nikdo nerozhodl, a věřil
- * by tomu jako pokynu.
+ * Přepisují se **jen tři pole**. Zbytek dialogu je na snímku nastavený tak,
+ * jak má být — Public, zaškrtnuté Allow Spectators, Unranked, None, Default,
+ * Definitive Set — takže se na něj nesahá.
+ *
+ * Souřadnice jsou v procentech výřezu (1400 × 1292 px), aby držely při každé
+ * šířce. Vycházejí z pixelů změřených ve snímku: pole mají x 665–1164 a
+ * řádky jdou po 80 px.
+ *
+ * Obrázek je dekorace s prázdným alt. Všechno zadání proto musí být i v textu
+ * pod ním — kdyby se snímek nenačetl, nesmí s ním zmizet, co má host nastavit.
  */
 function DialogCreateLobby({ zapas }: { zapas: ZapasView }) {
+  const pocetHracu = String(zapas.ucastnici.length);
+
   return (
     <div className="dialog-lobby">
-      <div className="dialog-ram">
-        <header className="dialog-titulek" data-testid="dialog-titulek">
-          Create Lobby
-        </header>
+      <div className="dialog-snimek">
+        <img
+          className="dialog-obrazek"
+          data-testid="obrazek-dialogu"
+          src={dialogUrl}
+          alt=""
+          width={1400}
+          height={1292}
+        />
 
-        <div className="dialog-telo">
-          <PoleText
-            nazev="Lobby Name"
-            hodnota={zapas.nazevLobby}
-            diktovano
-            kopirovat="název lobby"
-          />
-          <PoleVyber nazev="Lobby Type" hodnota="Unranked" />
-          <PoleVyber nazev="Visibility" hodnota="Public" diktovano />
-          <PoleVyber nazev="Players" hodnota={String(zapas.ucastnici.length)} diktovano />
-          <PoleZaskrtavatko nazev="Co-Op Campaign" zaskrtnuto={false} />
+        {/* Tmavé pole se zeleným písmem — hodnotu přebíjíme celou, protože ve
+            snímku v něm stojí jméno z toho večera, kdy vznikl. */}
+        <span className="vsazeno vsazeno-vstup vsazeno-nazev" data-testid="pole-nazev-lobby">
+          {zapas.nazevLobby}
+        </span>
 
-          {/* Ta věta stojí v dialogu přesně tady a je to nejcennější řádek
-              celého zrcadla: co je nad ní, se po založení lobby už neopraví.
-              Kdo si toho nevšimne, zjistí to tím, že zakládá lobby znovu
-              uprostřed streamu. */}
-          <p className="dialog-varovani" data-testid="varovani-neni-zpet">
-            These Settings can not be changed after game creation.
-          </p>
+        {/* Rozbalovací seznam: přebíjí se jen část se jménem, šipka vpravo ve
+            snímku zůstává vidět. */}
+        <span className="vsazeno vsazeno-vyber vsazeno-players" data-testid="pole-players">
+          {pocetHracu}
+        </span>
 
-          <PoleText nazev="Set Password" hodnota={zapas.heslo} diktovano kopirovat="heslo" />
-
-          <div className="dialog-radek-zaskrtavatek">
-            <PoleZaskrtavatko nazev="Allow Spectators" zaskrtnuto diktovano />
-            <PoleZaskrtavatko nazev="Hide Civilizations" zaskrtnuto={false} />
-          </div>
-
-          <PoleVyber nazev="Spectator Delay" hodnota="None" />
-          <PoleVyber nazev="Server" hodnota="Default" />
-          <PoleVyber nazev="Data Mod" hodnota="Definitive Set" />
-
-          {/* Jen dokreslení, ať dialog nekončí uprostřed. Opravdová tlačítka to
-              být nesmí — host by na Create Lobby klikl a čekal, že se něco
-              stane. Proto div, ne button, a aria-hidden. */}
-          <div className="dialog-tlacitka" data-testid="dialog-tlacitka" aria-hidden="true">
-            <span className="dialog-tlacitko">Create Lobby</span>
-            <span className="dialog-tlacitko">Cancel</span>
-          </div>
-        </div>
+        <span className="vsazeno vsazeno-vstup vsazeno-heslo" data-testid="pole-heslo">
+          {zapas.heslo}
+        </span>
       </div>
 
-      <p className="dialog-legenda">
-        Zvýrazněná pole ti diktuje web — <strong>{zapas.nazevLobby}</strong>,{" "}
-        <strong>Public</strong> (jinak nejde zapnout diváky), <strong>Players</strong> podle počtu
-        hráčů, heslo a <strong>Allow Spectators</strong> (bez toho se Rob dovnitř nedostane).
-        Ostatní pole jsou tu jen kvůli podobě — nastav si je, jak chceš.{" "}
-        <strong>Tři pole nad čárou po založení lobby už nezměníš</strong>, heslo a diváky ano.
+      <div className="dialog-kopirovani">
+        <span>
+          Lobby Name <strong>{zapas.nazevLobby}</strong>
+        </span>
+        <KopirovaciTlacitko hodnota={zapas.nazevLobby} popis="název lobby" />
+        <span>
+          Set Password <strong>{zapas.heslo}</strong>
+        </span>
+        <KopirovaciTlacitko hodnota={zapas.heslo} popis="heslo" />
+      </div>
+
+      <p className="dialog-legenda" data-testid="dialog-legenda">
+        Nastav <strong>Lobby Name</strong> na <strong>{zapas.nazevLobby}</strong>,{" "}
+        <strong>Players</strong> na <strong>{pocetHracu}</strong>,{" "}
+        <strong>Set Password</strong> na <strong>{zapas.heslo}</strong>,{" "}
+        <strong>Visibility</strong> na <strong>Public</strong> (u jiné volby nejde zapnout
+        diváky) a zaškrtni <strong>Allow Spectators</strong> (bez toho se Rob dovnitř
+        nedostane). Zbytek dialogu si nastav, jak chceš.{" "}
+        <strong>
+          Lobby Name, Visibility a Players po založení lobby už nezměníš
+        </strong>{" "}
+        — heslo a diváky ano.
       </p>
-    </div>
-  );
-}
-
-interface PoleProps {
-  nazev: string;
-  /** Řídí to web, nebo je pole jen kvůli podobě dialogu? */
-  diktovano?: boolean;
-  children?: ReactNode;
-}
-
-function Radek({ nazev, diktovano = false, children }: PoleProps) {
-  return (
-    <div
-      className="dialog-pole"
-      data-testid={`pole-${nazev}`}
-      data-diktovano={diktovano ? "ano" : "ne"}
-    >
-      <span className="dialog-nazev" data-testid="nazev-pole">
-        {nazev}
-      </span>
-      {children}
-    </div>
-  );
-}
-
-/** Textové pole: ve hře tmavý obdélník se zeleným písmem. */
-function PoleText({
-  nazev,
-  hodnota,
-  diktovano,
-  kopirovat,
-}: PoleProps & { hodnota: string; kopirovat: string }) {
-  return (
-    <Radek nazev={nazev} diktovano={diktovano}>
-      <span className="dialog-vstup">{hodnota}</span>
-      <KopirovaciTlacitko hodnota={hodnota} popis={kopirovat} />
-    </Radek>
-  );
-}
-
-/** Rozbalovací seznam: světlý pruh se šipkou vpravo. */
-function PoleVyber({ nazev, hodnota, diktovano }: PoleProps & { hodnota: string }) {
-  return (
-    <Radek nazev={nazev} diktovano={diktovano}>
-      <span className="dialog-vyber">
-        {hodnota}
-        <span className="dialog-sipka" aria-hidden="true" />
-      </span>
-    </Radek>
-  );
-}
-
-/** Zaškrtávátko: čtvereček, zaškrtnutý červenou fajfkou. */
-function PoleZaskrtavatko({
-  nazev,
-  zaskrtnuto,
-  diktovano,
-}: PoleProps & { zaskrtnuto: boolean }) {
-  return (
-    <div
-      className="dialog-pole dialog-pole-zaskrtavatko"
-      data-testid={`pole-${nazev}`}
-      data-diktovano={diktovano ? "ano" : "ne"}
-    >
-      <span className="dialog-ctverecek">{zaskrtnuto ? "✓" : ""}</span>
-      <span className="dialog-nazev" data-testid="nazev-pole">
-        {nazev}
-      </span>
     </div>
   );
 }

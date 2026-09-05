@@ -23,14 +23,6 @@ const zaklad: ZapasView = {
   ],
 };
 
-it("diktuje nastavení, které jinak lidi kazí", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  expect(screen.getByTestId("pole-Visibility")).toHaveTextContent("Public");
-  expect(screen.getByTestId("pole-Allow Spectators")).toHaveTextContent("✓");
-  expect(screen.getByTestId("pole-Lobby Name")).toHaveTextContent("ROB-07");
-  expect(screen.getByTestId("pole-Set Password")).toHaveTextContent("k7rm2xq9");
-});
-
 it("ukáže zrcadlo lobby se všemi barvami a týmy", () => {
   render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
   const radky = screen.getAllByTestId("radek-lobby");
@@ -128,77 +120,17 @@ it("pruh nese barvu toho, kdo se dívá", () => {
   expect(screen.getByTestId("muj-tym")).toHaveTextContent("2");
 });
 
-it("zrcadlí dialog Create Lobby pod jeho vlastním názvem", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  expect(screen.getByTestId("dialog-titulek")).toHaveTextContent("Create Lobby");
-});
-
-// Anglické názvy schválně: host je očima porovnává s anglickým dialogem hry.
-// Pořadí taky — v dialogu jdou přesně takhle pod sebou.
-it("drží pořadí a názvy všech polí ze hry", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  const nazvy = screen.getAllByTestId("nazev-pole").map((e) => e.textContent);
-  expect(nazvy).toEqual([
-    "Lobby Name",
-    "Lobby Type",
-    "Visibility",
-    "Players",
-    "Co-Op Campaign",
-    "Set Password",
-    "Allow Spectators",
-    "Hide Civilizations",
-    "Spectator Delay",
-    "Server",
-    "Data Mod",
-  ]);
-});
-
-it("vyplní název, heslo a počet hráčů z webu", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  expect(screen.getByTestId("pole-Lobby Name")).toHaveTextContent("ROB-07");
-  expect(screen.getByTestId("pole-Set Password")).toHaveTextContent("k7rm2xq9");
-  expect(screen.getByTestId("pole-Players")).toHaveTextContent("4");
-  expect(screen.getByTestId("pole-Visibility")).toHaveTextContent("Public");
-});
 
 // Nejcennější řádek celého dialogu: co je nad ním, se po založení lobby už
 // opravit nedá. Heslo a diváci ano. Host to jinak zjistí až tím, že zakládá
 // znovu uprostřed streamu.
-it("varuje, že horní nastavení už po založení nezměníš", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  expect(screen.getByTestId("varovani-neni-zpet")).toHaveTextContent(
-    /can not be changed after game creation/i,
-  );
-});
-
-it("ukáže Allow Spectators jako zaškrtnuté", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  expect(screen.getByTestId("pole-Allow Spectators")).toHaveTextContent("✓");
-});
 
 // Zrcadlí se celý dialog, ale web řídí jen pět polí. U zbytku ukazuje, jak to
 // v dialogu vypadá — ne příkaz. Kdyby to nešlo rozeznat, host by pro jistotu
 // nastavoval i věci, o kterých nikdo nerozhodl.
-it("pozná se, co web diktuje a co je jen podoba dialogu", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  for (const rizene of ["Lobby Name", "Visibility", "Players", "Set Password", "Allow Spectators"]) {
-    expect(screen.getByTestId(`pole-${rizene}`)).toHaveAttribute("data-diktovano", "ano");
-  }
-  for (const cizi of ["Lobby Type", "Co-Op Campaign", "Hide Civilizations", "Spectator Delay", "Server", "Data Mod"]) {
-    expect(screen.getByTestId(`pole-${cizi}`)).toHaveAttribute("data-diktovano", "ne");
-  }
-});
 
 // Spodní tlačítka dialogu se dokreslují kvůli podobě. Opravdová tlačítka to
 // být nesmí: host by na Create Lobby klikl a čekal, že se něco stane.
-it("dokreslí i spodní tlačítka, ale klikatelná nejsou", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
-  const lista = screen.getByTestId("dialog-tlacitka");
-  expect(lista).toHaveTextContent("Create Lobby");
-  expect(lista).toHaveTextContent("Cancel");
-  expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Create Lobby" })).not.toBeInTheDocument();
-});
 
 // Uložit odkaz je jediné opravdové tlačítko poblíž dialogu a musí zůstat
 // dosažitelné i po tom, co dialog obrostl dekorací.
@@ -208,4 +140,38 @@ it("skutečné ovládání zůstává funkční", async () => {
   await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://0/1");
   await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
   expect(onVlozitOdkaz).toHaveBeenCalledWith(1, "aoe2de://0/1");
+});
+
+it("posadí do dialogu jen ty tři hodnoty, které web řídí", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  expect(screen.getByTestId("pole-nazev-lobby")).toHaveTextContent("ROB-07");
+  expect(screen.getByTestId("pole-heslo")).toHaveTextContent("k7rm2xq9");
+  expect(screen.getByTestId("pole-players")).toHaveTextContent("4");
+});
+
+// Zbytek dialogu je namalovaný v obrázku a je ve hře správně už tak: Public,
+// zaškrtnuté Allow Spectators, Unranked, None, Default, Definitive Set.
+// Přepisovat je nemá co.
+it("do ostatních polí dialogu nic nevkládá", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  expect(screen.getAllByTestId(/^pole-/)).toHaveLength(3);
+});
+
+it("obrázek dialogu je jen dekorace, čtečka na něm nic nehledá", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  const obrazek = screen.getByTestId("obrazek-dialogu");
+  expect(obrazek).toHaveAttribute("alt", "");
+  expect(obrazek.getAttribute("src")).toMatch(/create-lobby/);
+});
+
+// Kdyby se obrázek nenačetl, nebo se na něj někdo nedíval, nesmí s ním zmizet
+// zadání. Všechno podstatné proto musí být i v textu pod ním.
+it("pokyny přežijí i bez obrázku", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  const text = screen.getByTestId("dialog-legenda");
+  expect(text).toHaveTextContent("ROB-07");
+  expect(text).toHaveTextContent("k7rm2xq9");
+  expect(text).toHaveTextContent(/Public/);
+  expect(text).toHaveTextContent(/Allow Spectators/);
+  expect(text).toHaveTextContent(/po založení.*nezměníš/i);
 });

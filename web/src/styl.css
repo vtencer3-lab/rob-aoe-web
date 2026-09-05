@@ -114,129 +114,44 @@ button.kopirovat { font-size: 0.75rem; padding: 0.15rem 0.45rem; margin-left: 0.
 .host.barva-2 .hero { background: var(--cervena); }
 
 
-/* Zrcadlo herniho dialogu Create Lobby. Zamerne se nedrzi tmaveho vzhledu
-   webu: cim vic to pripomina dialog ve hre, tim min ho host musi cist a tim
-   vic ho jen porovnava okem. Vlastni ostrovek stylu, dovnitr se nic nededi. */
-.dialog-lobby { margin: 1rem 0; }
+/* Zrcadlo dialogu Create Lobby: skutecny snimek ze hry, do ktereho se vsadi
+   tri hodnoty z webu. Souradnice jsou v procentech vyrezu 1400x1292 px podle
+   pixelu zmerenych ve snimku (pole x 665-1164, radky po 80 px), takze drzi
+   pri kazde sirce. Pismo v cqw ze stejneho duvodu. */
+.dialog-lobby { margin: 1rem 0; max-width: 46rem; }
 
-.dialog-ram {
-  font-family: Georgia, "Times New Roman", serif;
-  color: #35251a;
-  background: #d9c7a7;
-  border: 3px solid #8a6f47;
-  border-radius: 4px;
-  padding: 0.9rem;
-  box-shadow: inset 0 0 0 2px #b3924f, 0 2px 10px rgba(0, 0, 0, 0.45);
-  max-width: 34rem;
-}
+.dialog-snimek { position: relative; container-type: inline-size; line-height: 1; }
+.dialog-obrazek { display: block; width: 100%; height: auto; border-radius: 3px; }
 
-.dialog-titulek {
-  text-align: center;
-  font-size: 1.45rem;
-  font-weight: 700;
-  color: #3b2a17;
-  background: #e8dcc0;
-  border: 2px solid #b3924f;
-  border-radius: 3px;
-  padding: 0.35rem 1rem;
-  margin: 0 0 0.9rem;
-}
-
-.dialog-telo { background: #c2a785; border: 2px solid #b3924f; padding: 0.9rem 1rem; }
-
-.dialog-pole {
-  display: grid;
-  grid-template-columns: 11rem 1fr auto;
-  gap: 0.6rem;
-  align-items: center;
-  padding: 0.28rem 0;
-}
-
-.dialog-nazev { font-weight: 700; font-size: 1.02rem; }
-
-/* Textove pole: ve hre tmavy obdelnik se zelenym pismem. */
-.dialog-vstup {
-  background: #4b4b4b;
-  color: #3ce03c;
-  font-weight: 700;
-  border: 2px solid #6d5a3e;
-  border-radius: 2px;
-  padding: 0.25rem 0.6rem;
-  min-height: 1.6rem;
-  overflow-wrap: anywhere;
-}
-
-/* Rozbalovaci seznam: svetly pruh se sipkou vpravo. */
-.dialog-vyber {
-  position: relative;
+.vsazeno {
+  position: absolute;
   display: flex;
   align-items: center;
-  background: #e6d3b3;
-  border: 2px solid #7d6340;
-  border-radius: 2px;
-  padding: 0.25rem 1.8rem 0.25rem 0.6rem;
+  font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
-  min-height: 1.6rem;
-}
-.dialog-sipka {
-  position: absolute;
-  right: 0.5rem;
-  width: 0;
-  height: 0;
-  border-left: 0.42rem solid transparent;
-  border-right: 0.42rem solid transparent;
-  border-top: 0.5rem solid #7d6340;
+  padding-left: 0.9cqw;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-/* Zaskrtavatko: ctverecek, zaskrtnuty cervenou fajfkou. */
-.dialog-pole-zaskrtavatko { grid-template-columns: auto 1fr; padding-left: 2.2rem; }
-.dialog-ctverecek {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  background: #e6d3b3;
-  border: 2px solid #7d6340;
-  color: #c0261f;
-  font-weight: 700;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-.dialog-radek-zaskrtavatek { display: flex; flex-wrap: wrap; gap: 1.2rem; }
-.dialog-radek-zaskrtavatek .dialog-pole { padding-left: 2.2rem; }
+/* Pole jsou ve snimku uz vyprazdnena, takze se kresli jen text. Zadne
+   podkladove barvy: tim odpada jakykoliv sev nebo netrefeny odstin.
 
-/* Veta, ktera v dialogu deli pole na nevratna a opravitelna. */
-.dialog-varovani {
-  text-align: center;
-  font-weight: 700;
-  margin: 0.8rem 0;
-  padding: 0.1rem 0;
-}
+   Dve velikosti pisma schvalne: ve hre maji rozbalovaci seznamy vyssi pismo
+   nez textova pole (zmereno na glyfech, 34 px proti 27 px). Px hodnota je
+   zaloha pro prohlizec bez cqw. */
+.vsazeno-vstup { color: rgb(0, 255, 0); font-size: 17px; font-size: 2.55cqw; }
+.vsazeno-vyber { color: #2f2114; font-size: 21px; font-size: 3.1cqw; }
 
-/* Spodni tlacitka jsou jen dokresleni, proto nic nereaguje na mysi. */
-.dialog-tlacitka { display: flex; justify-content: center; gap: 1.2rem; margin-top: 1rem; }
-.dialog-tlacitko {
-  background: linear-gradient(#a51e19, #7c1512);
-  color: #fff;
-  font-weight: 700;
-  border: 2px solid #c8a052;
-  border-radius: 3px;
-  padding: 0.35rem 2rem;
-  cursor: default;
-}
+.vsazeno-nazev { left: 47.5%; top: 17.8%; width: 35.65%; height: 3.8%; }
+/* Uzsi nez cele pole: sipka vpravo zustava ze snimku. */
+.vsazeno-players { left: 47.5%; top: 36.3%; width: 32.15%; height: 3.87%; }
+.vsazeno-heslo { left: 47.5%; top: 54.95%; width: 35.65%; height: 3.8%; }
 
-/* Co web diktuje, je obtazene zlatou. Zbytek dialogu je jen podoba. */
-.dialog-pole[data-diktovano="ano"] .dialog-vstup,
-.dialog-pole[data-diktovano="ano"] .dialog-vyber,
-.dialog-pole[data-diktovano="ano"] .dialog-ctverecek { box-shadow: 0 0 0 2px #d4af37; }
+/* Kopirovani patri pod snimek: do dialogu samotneho by nepatrilo a prekrylo
+   by ho. Hodnoty jsou tu i proto, aby sly oznacit mysi. */
+.dialog-kopirovani { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin-top: 0.6rem; }
+.dialog-kopirovani strong { color: var(--text); }
 
-.dialog-legenda { color: #9d9280; font-size: 0.9rem; max-width: 34rem; margin-top: 0.5rem; }
-
-/* Kopirovaci tlacitko uvnitr dialogu se musi vratit k pismu webu. */
-.dialog-ram button.kopirovat {
-  font-family: inherit;
-  background: #e8dcc0;
-  color: #3b2a17;
-  border: 1px solid #7d6340;
-}
+.dialog-legenda { color: #b3a68d; font-size: 0.92rem; margin-top: 0.5rem; }
+.dialog-legenda strong { color: var(--text); }
