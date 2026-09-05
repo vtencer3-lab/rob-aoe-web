@@ -68,3 +68,40 @@ it("v zrcadle lobby pojmenuje hráče bez aliasu jménem ze Steamu", () => {
   expect(radky[1]).toHaveTextContent("TibbarZmr");
   expect(radky[1]).not.toHaveTextContent("76561199091641101");
 });
+
+it("nabídne kopírování názvu lobby i hesla", async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+
+  await userEvent.click(screen.getByRole("button", { name: /kopírovat název lobby/i }));
+  expect(writeText).toHaveBeenLastCalledWith("ROB-07");
+
+  await userEvent.click(screen.getByRole("button", { name: /kopírovat heslo/i }));
+  expect(writeText).toHaveBeenLastCalledWith("k7rm2xq9");
+});
+
+// Hláška patří k poli, ne na začátek stránky. Host ji vkládá uprostřed
+// streamu a nahoru se nedívá — dvakrát to skončilo tím, že chybu nikdo neviděl.
+it("ukáže odmítnutí odkazu u pole, ne někde nahoře", async () => {
+  const onVlozitOdkaz = vi
+    .fn()
+    .mockRejectedValue(new Error("Tohle je divácký odkaz (aoe2de://1/…)."));
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} />);
+
+  await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://1/234230181");
+  await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
+
+  const hlaska = await screen.findByTestId("chyba-odkazu");
+  expect(hlaska).toHaveTextContent(/divácký odkaz/i);
+});
+
+it("po povedeném uložení žádnou chybu nedrží", async () => {
+  const onVlozitOdkaz = vi.fn().mockResolvedValue(undefined);
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} />);
+
+  await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://0/234230181");
+  await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
+
+  expect(screen.queryByTestId("chyba-odkazu")).not.toBeInTheDocument();
+});
