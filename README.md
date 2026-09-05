@@ -169,6 +169,11 @@ npm start
 Otevři `http://localhost:3000` a ověř, že se stránka načte i s CSS/JS ze
 `web/dist` — bez Vite dev serveru běžícího vedle.
 
+> **Pro ostrý provoz u Roba** je postup jinde:
+> [`docs/nasazeni-u-roba.md`](docs/nasazeni-u-roba.md) — web běží na stroji, na
+> kterém Rob streamuje, jako služby, které startují samy. Tenhle krok popisuje
+> jen dočasné vystavení z vývojového stroje.
+
 ### Krok 2 — vystavit to tunelem (dělá člověk, ne tenhle skript)
 
 **Ne port forwarding** — vystavil by domácí IP adresu. Postgres zůstává jen na
