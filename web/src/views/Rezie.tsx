@@ -47,18 +47,27 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
                       a tlačítko se mu nelepilo na poslední písmeno. */}
                   <span>
                     {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
-                    {u.jeHost ? " (host)" : ""}
                     {" · "}
                     {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
                     {u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl"}
                   </span>
-                  <button
-                    onClick={() => {
-                      if (potvrdZmenuHosta(jmenoHrace(u))) onHost(zapas.id, u.steamId);
-                    }}
-                  >
-                    Hostuje tenhle
-                  </button>
+                  {/* Kdo hostuje, má odznak; kdo ne, má tlačítko. Nikdy obojí a
+                      nikdy ani jedno — tlačítko u stávajícího hosta nabízelo akci,
+                      která by nic nezměnila, a vedle textového „(host)“ uprostřed
+                      věty se dvě stejná tlačítka pletla. */}
+                  {u.jeHost ? (
+                    <strong className="odznak-host" data-testid="odznak-host">
+                      HOST
+                    </strong>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (potvrdZmenuHosta(jmenoHrace(u))) onHost(zapas.id, u.steamId);
+                      }}
+                    >
+                      Udělat hostem
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
