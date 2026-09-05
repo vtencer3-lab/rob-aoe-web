@@ -134,3 +134,73 @@ it("hostitele označí odznak, a právě jeden", () => {
   expect(odznaky).toHaveLength(1);
   expect(odznaky[0]!.closest("li")).toHaveTextContent("TenceR");
 });
+
+const dohrany: AkceStavPayload = {
+  ...stav,
+  zapasy: [{ ...zapas, stav: "dohrano", viteznyTym: 1 }],
+};
+
+const zruseny: AkceStavPayload = {
+  ...stav,
+  zapasy: [{ ...zapas, stav: "zruseny" }],
+};
+
+it("u dohraného zápasu řekne, kdo vyhrál", () => {
+  render(<Rezie stav={dohrany} {...props} />);
+  expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhrál tým 1");
+});
+
+// Spectate, nápověda pro zamrzlou lobby i Zrušit patří běžícímu zápasu. Po
+// dohrání jen zabíraly místo a nabízely akce, které už nedávají smysl —
+// a přes večer se takhle vršil jeden odepsaný zápas za druhým.
+it("dohranému zápasu sebere ovládání běžícího", () => {
+  render(<Rezie stav={dohrany} {...props} />);
+  expect(screen.queryByTestId("spectate")).not.toBeInTheDocument();
+  expect(screen.queryByText(/kdyby to zamrzlo/i)).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /^zrušit$/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /vyhrál tým 1/i })).not.toBeInTheDocument();
+});
+
+// Přepsat výsledek jde, ale ne jedním kliknutím do prázdna: druhé kliknutí je
+// samo o sobě to potvrzení.
+it("výsledek jde změnit až na druhé kliknutí", async () => {
+  render(<Rezie stav={dohrany} {...props} />);
+
+  expect(screen.queryByRole("button", { name: /vyhrál tým 2/i })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
+
+  expect(screen.getByRole("button", { name: /vyhrál tým 2/i })).toBeInTheDocument();
+  expect(props.onVysledek).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("button", { name: /vyhrál tým 2/i }));
+  expect(props.onVysledek).toHaveBeenCalledWith(1, 2);
+});
+
+it("z rozmyšlené změny se dá couvnout, aniž se něco zapíše", () => {
+  render(<Rezie stav={dohrany} {...props} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
+  fireEvent.click(screen.getByRole("button", { name: /nechat být/i }));
+
+  expect(screen.queryByRole("button", { name: /vyhrál tým 2/i })).not.toBeInTheDocument();
+  expect(props.onVysledek).not.toHaveBeenCalled();
+});
+
+// Zrušený zápas byl slepá ulička: pořád nabízel Spectate a tlačítka výsledku,
+// ale žádnou cestu zpátky. Stavový automat návrat dovoluje.
+it("zrušený zápas jde vrátit do hry", () => {
+  render(<Rezie stav={zruseny} {...props} />);
+
+  expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("zrušeno");
+  fireEvent.click(screen.getByRole("button", { name: /vrátit do hry/i }));
+
+  expect(props.onStav).toHaveBeenCalledWith(1, "bezi");
+});
+
+it("běžícímu zápasu ovládání zůstává", () => {
+  render(<Rezie stav={stav} {...props} />);
+  expect(screen.getByTestId("spectate")).toBeInTheDocument();
+  expect(screen.getByText(/kdyby to zamrzlo/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /vyhrál tým 1/i })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /změnit výsledek/i })).not.toBeInTheDocument();
+});

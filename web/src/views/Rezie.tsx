@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { BARVA_NAZEV, type AkceStavPayload, type Format, type Tym } from "../../../src/shared/types.js";
+import {
+  BARVA_NAZEV,
+  type AkceStavPayload,
+  type Format,
+  type Tym,
+  type ZapasView,
+} from "../../../src/shared/types.js";
 import { jmenoHrace } from "../zapas.js";
 
 interface Props {
@@ -15,87 +21,163 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
     <section className="rezie">
       <SkladaniZapasu stav={stav} onVytvoritZapas={onVytvoritZapas} />
 
-      {stav.zapasy.map((zapas) => {
-        // Odkaz aoe2de://1/<id> funguje jako divácký, jakmile host vloží odkaz z lobby —
-        // funguje v otevřené, ještě neobsazené lobby i za běhu zápasu. Ověřeno na živé hře.
-        // Rob se tak dostane dovnitř hned, jak odkaz existuje, a stihne upozornit na
-        // špatně nastavenou lobby. Spectate se proto odemyká výhradně podle spectatorUri.
-        const muzeSpectate = zapas.spectatorUri !== null;
-
-        // Přehození hosta je správně destruktivní: setHost vynuluje lobby_id
-        // i potvrzení, protože staré číslo patřilo předchozímu hostovi. Jenže
-        // to tlačítko je na každém řádku a jedno chybné kliknutí u běžícího
-        // zápasu zabije odkaz všem čtyřem hráčům i Robův Spectate uprostřed
-        // hry. Zábradlí dává smysl jen tam, kde už je co ztratit — dokud
-        // odkaz není, nic se neděje a Rob se nepotřebuje proklikávat.
-        const potvrdZmenuHosta = (jmeno: string) =>
-          zapas.lobbyId === null ||
-          window.confirm(
-            `Přehodit hostování na ${jmeno}? Zápas #${zapas.poradi} tím přijde ` +
-              `o odkaz do lobby (${zapas.lobbyId}). Nový host ho bude muset vložit znovu ` +
-              `a všichni včetně Spectate se budou muset připojit nanovo.`,
-          );
-
-        return (
-          <article key={zapas.id} className="zapas">
-            <header>Zápas #{zapas.poradi}</header>
-
-            <ul>
-              {zapas.ucastnici.map((u) => (
-                <li key={u.steamId} className={`barva-${u.barva}`}>
-                  {/* Text ve vlastním spanu, aby ho flex bral jako jednu položku
-                      a tlačítko se mu nelepilo na poslední písmeno. */}
-                  <span>
-                    {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
-                    {" · "}
-                    {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
-                    {u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl"}
-                  </span>
-                  {/* Kdo hostuje, má odznak; kdo ne, má tlačítko. Nikdy obojí a
-                      nikdy ani jedno — tlačítko u stávajícího hosta nabízelo akci,
-                      která by nic nezměnila, a vedle textového „(host)“ uprostřed
-                      věty se dvě stejná tlačítka pletla. */}
-                  {u.jeHost ? (
-                    <strong className="odznak-host" data-testid="odznak-host">
-                      HOST
-                    </strong>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        if (potvrdZmenuHosta(jmenoHrace(u))) onHost(zapas.id, u.steamId);
-                      }}
-                    >
-                      Udělat hostem
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-
-            <a
-              data-testid="spectate"
-              className="cta"
-              aria-disabled={muzeSpectate ? "false" : "true"}
-              href={zapas.spectatorUri !== null ? zapas.spectatorUri : undefined}
-            >
-              {muzeSpectate ? "Spectate" : "Spectate — čeká se na odkaz od hosta"}
-            </a>
-
-            {/* Jen informační stavový řádek, ne zámek. */}
-            <div className="zaloha">
-              Kdyby to zamrzlo: lobby <strong>{zapas.nazevLobby}</strong>, heslo{" "}
-              <strong>{zapas.heslo}</strong>, číslo <strong>{zapas.lobbyId ?? "—"}</strong>
-            </div>
-
-            <div className="ovladani">
-              <button onClick={() => onVysledek(zapas.id, 1)}>Vyhrál tým 1</button>
-              <button onClick={() => onVysledek(zapas.id, 2)}>Vyhrál tým 2</button>
-              <button onClick={() => onStav(zapas.id, "zruseny")}>Zrušit</button>
-            </div>
-          </article>
-        );
-      })}
+      {stav.zapasy.map((zapas) => (
+        <ZapasVRezii
+          key={zapas.id}
+          zapas={zapas}
+          onStav={onStav}
+          onVysledek={onVysledek}
+          onHost={onHost}
+        />
+      ))}
     </section>
+  );
+}
+
+function popisStavu(zapas: ZapasView): string {
+  if (zapas.stav === "zruseny") return " · zrušeno";
+  if (zapas.stav !== "dohrano") return "";
+  return zapas.viteznyTym ? ` · dohráno — vyhrál tým ${zapas.viteznyTym}` : " · dohráno";
+}
+
+type ZapasProps = Pick<Props, "onStav" | "onVysledek" | "onHost"> & { zapas: ZapasView };
+
+function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
+  // Přepsat zapsaný výsledek jde, ale ne jedním kliknutím do prázdna: tlačítka
+  // týmů se odemknou až po „Změnit výsledek“ a to druhé kliknutí je samo o sobě
+  // to potvrzení. Potvrzovací okno navíc by se muselo odškrtávat v přenosu.
+  const [meniVysledek, setMeniVysledek] = useState(false);
+
+  const dohrano = zapas.stav === "dohrano";
+  const zruseno = zapas.stav === "zruseny";
+  const bezi = !dohrano && !zruseno;
+
+  // Odkaz aoe2de://1/<id> funguje jako divácký, jakmile host vloží odkaz z lobby —
+  // funguje v otevřené, ještě neobsazené lobby i za běhu zápasu. Ověřeno na živé hře.
+  // Rob se tak dostane dovnitř hned, jak odkaz existuje, a stihne upozornit na
+  // špatně nastavenou lobby. Spectate se proto odemyká výhradně podle spectatorUri.
+  const muzeSpectate = zapas.spectatorUri !== null;
+
+  // Přehození hosta je správně destruktivní: setHost vynuluje lobby_id
+  // i potvrzení, protože staré číslo patřilo předchozímu hostovi. Jenže
+  // to tlačítko je na každém řádku a jedno chybné kliknutí u běžícího
+  // zápasu zabije odkaz všem čtyřem hráčům i Robův Spectate uprostřed
+  // hry. Zábradlí dává smysl jen tam, kde už je co ztratit — dokud
+  // odkaz není, nic se neděje a Rob se nepotřebuje proklikávat.
+  const potvrdZmenuHosta = (jmeno: string) =>
+    zapas.lobbyId === null ||
+    window.confirm(
+      `Přehodit hostování na ${jmeno}? Zápas #${zapas.poradi} tím přijde ` +
+        `o odkaz do lobby (${zapas.lobbyId}). Nový host ho bude muset vložit znovu ` +
+        `a všichni včetně Spectate se budou muset připojit nanovo.`,
+    );
+
+  return (
+    <article className={bezi ? "zapas" : "zapas odepsany"}>
+      <header data-testid="zapas-hlavicka">
+        Zápas #{zapas.poradi}
+        {popisStavu(zapas)}
+      </header>
+
+      <ul>
+        {zapas.ucastnici.map((u) => (
+          <li key={u.steamId} className={`barva-${u.barva}`}>
+            {/* Text ve vlastním spanu, aby ho flex bral jako jednu položku
+                a tlačítko se mu nelepilo na poslední písmeno. */}
+            <span>
+              {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
+              {" · "}
+              {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
+              {u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl"}
+            </span>
+            {/* Kdo hostuje, má odznak; kdo ne, má tlačítko. Nikdy obojí a
+                nikdy ani jedno — tlačítko u stávajícího hosta nabízelo akci,
+                která by nic nezměnila, a vedle textového „(host)“ uprostřed
+                věty se dvě stejná tlačítka pletla. U odepsaného zápasu odznak
+                zůstává, protože je to záznam; tlačítko mizí, není co přehazovat. */}
+            {u.jeHost ? (
+              <strong className="odznak-host" data-testid="odznak-host">
+                HOST
+              </strong>
+            ) : bezi ? (
+              <button
+                onClick={() => {
+                  if (potvrdZmenuHosta(jmenoHrace(u))) onHost(zapas.id, u.steamId);
+                }}
+              >
+                Udělat hostem
+              </button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+
+      {/* Spectate, nápověda pro zamrzlou lobby i tlačítka výsledku patří
+          běžícímu zápasu. Po dohrání nebo zrušení jen zabíraly místo a
+          nabízely akce, které už nedávají smysl — a za večer se takhle pod
+          sebou vršil jeden odepsaný zápas za druhým s plnou výbavou. */}
+      {bezi ? (
+        <>
+          <a
+            data-testid="spectate"
+            className="cta"
+            aria-disabled={muzeSpectate ? "false" : "true"}
+            href={zapas.spectatorUri !== null ? zapas.spectatorUri : undefined}
+          >
+            {muzeSpectate ? "Spectate" : "Spectate — čeká se na odkaz od hosta"}
+          </a>
+
+          {/* Jen informační stavový řádek, ne zámek. */}
+          <div className="zaloha">
+            Kdyby to zamrzlo: lobby <strong>{zapas.nazevLobby}</strong>, heslo{" "}
+            <strong>{zapas.heslo}</strong>, číslo <strong>{zapas.lobbyId ?? "—"}</strong>
+          </div>
+
+          <div className="ovladani">
+            <button onClick={() => onVysledek(zapas.id, 1)}>Vyhrál tým 1</button>
+            <button onClick={() => onVysledek(zapas.id, 2)}>Vyhrál tým 2</button>
+            <button onClick={() => onStav(zapas.id, "zruseny")}>Zrušit</button>
+          </div>
+        </>
+      ) : null}
+
+      {dohrano ? (
+        <div className="ovladani">
+          {meniVysledek ? (
+            <>
+              <span className="zaloha">Kdo doopravdy vyhrál?</span>
+              <button
+                onClick={() => {
+                  onVysledek(zapas.id, 1);
+                  setMeniVysledek(false);
+                }}
+              >
+                Vyhrál tým 1
+              </button>
+              <button
+                onClick={() => {
+                  onVysledek(zapas.id, 2);
+                  setMeniVysledek(false);
+                }}
+              >
+                Vyhrál tým 2
+              </button>
+              <button onClick={() => setMeniVysledek(false)}>Nechat být</button>
+            </>
+          ) : (
+            <button onClick={() => setMeniVysledek(true)}>Změnit výsledek</button>
+          )}
+        </div>
+      ) : null}
+
+      {/* Zrušený zápas byl slepá ulička — pořád nabízel Spectate i výsledek,
+          ale žádnou cestu zpátky. Stavový automat návrat dovoluje schválně. */}
+      {zruseno ? (
+        <div className="ovladani">
+          <button onClick={() => onStav(zapas.id, "bezi")}>Vrátit do hry</button>
+        </div>
+      ) : null}
+    </article>
   );
 }
 
