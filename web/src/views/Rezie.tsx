@@ -40,6 +40,17 @@ function popisStavu(zapas: ZapasView): string {
   return zapas.viteznyTym ? ` · dohráno — vyhrál tým ${zapas.viteznyTym}` : " · dohráno";
 }
 
+/**
+ * Host na odkaz do lobby neklikne — on ji zakládá a odkaz z ní vkládá. Ptát se
+ * u něj na kliknutí byla otázka, která nemohla nikdy dopadnout. Jeho stav je
+ * to, na co Rob čeká: jestli už odkaz existuje.
+ */
+function popisUcastnika(zapas: ZapasView, u: ZapasView["ucastnici"][number]): string {
+  if (u.jeHost) return zapas.lobbyId === null ? "zakládá lobby" : "vložil odkaz do lobby";
+  // Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí.
+  return u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl";
+}
+
 type ZapasProps = Pick<Props, "onStav" | "onVysledek" | "onHost"> & { zapas: ZapasView };
 
 function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
@@ -87,8 +98,7 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
             <span>
               {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
               {" · "}
-              {/* Web ví jen to, že člověk klikl. Že opravdu dorazil, nevidí. */}
-              {u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl"}
+              {popisUcastnika(zapas, u)}
             </span>
             {/* Kdo hostuje, má odznak; kdo ne, má tlačítko. Nikdy obojí a
                 nikdy ani jedno — tlačítko u stávajícího hosta nabízelo akci,

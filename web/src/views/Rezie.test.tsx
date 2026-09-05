@@ -16,7 +16,7 @@ const zapas: ZapasView = {
   viteznyTym: null,
   ucastnici: [
     { steamId: "a", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: "2026-09-03T12:00:00.000Z" },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: "2026-09-03T12:01:00.000Z" },
     { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
     { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
   ],
@@ -203,4 +203,25 @@ it("běžícímu zápasu ovládání zůstává", () => {
   expect(screen.getByText(/kdyby to zamrzlo/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /vyhrál tým 1/i })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /změnit výsledek/i })).not.toBeInTheDocument();
+});
+
+// Host na žádný odkaz neklikne — lobby zakládá. Sloupeček „zatím neklikl“ u něj
+// tvrdil něco, co nemohlo nikdy nastat. Jeho skutečný stav je, jestli už vložil
+// odkaz, a to je přesně to, co Rob potřebuje vědět.
+it("u hosta nemluví o klikání, ale o lobby", () => {
+  render(<Rezie stav={stav} {...props} />);
+  const radekHosta = screen.getByTestId("odznak-host").closest("li");
+  expect(radekHosta).toHaveTextContent("vložil odkaz do lobby");
+  expect(radekHosta).not.toHaveTextContent("zatím neklikl");
+  expect(radekHosta).not.toHaveTextContent("klikl na připojení");
+});
+
+it("dokud host odkaz nevložil, je vidět, že se na něj čeká", () => {
+  const bezOdkazu: AkceStavPayload = {
+    ...stav,
+    zapasy: [{ ...zapas, lobbyId: null, joinUri: null, spectatorUri: null }],
+  };
+  render(<Rezie stav={bezOdkazu} {...props} />);
+  const radekHosta = screen.getByTestId("odznak-host").closest("li");
+  expect(radekHosta).toHaveTextContent("zakládá lobby");
 });
