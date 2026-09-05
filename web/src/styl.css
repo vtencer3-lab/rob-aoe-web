@@ -91,3 +91,17 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 /* Zlatý „hlavní“ odkaz si musí nechat svoje pozadí. Dokud ho přebíjelo
    pravidlo výše, měl tmavé písmo na tmavém podkladu a vypadal zakázaně. */
 .zkusebni a.tlacitko { font-size: 0.9rem; padding: 0.4rem 0.7rem; }
+
+/* Veřejný řádek zápasu: kdo proti komu, pro lidi, kteří se jen dívají. */
+.verejny-zapas { border: 1px solid #3d352a; border-radius: 8px; padding: 0.7rem 1rem; margin: 0.6rem 0; color: var(--text); }
+.verejny-zapas .strany { color: #cbbfa8; }
+
+/* Kopírování názvu lobby a hesla — vedle hodnoty, ať se neopisuje ručně. */
+button.kopirovat { font-size: 0.75rem; padding: 0.15rem 0.45rem; margin-left: 0.35rem; vertical-align: middle; }
+
+/* Chyba u pole, ne na začátku stránky: host se během streamu nahoru nedívá. */
+.chyba-pole { margin: 0.4rem 0 0; }
+
+/* Dohrany nebo zruseny zapas v rezii: zaznam, ne ovladaci pult. */
+.zapas.odepsany { opacity: 0.75; }
+.verejny-zapas .verdikt { color: #e0c893; }

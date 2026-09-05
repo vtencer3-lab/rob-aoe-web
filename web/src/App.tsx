@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { api, type Me } from "./api.js";
 import { useAkceStav } from "./useAkceStav.js";
-import { jmenoHrace, mojeZapasy, mujUcastnik } from "./zapas.js";
+import { jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { SpravaAkce } from "./views/SpravaAkce.js";
+import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 
 export function App() {
@@ -100,7 +101,9 @@ export function App() {
                     key={zapas.id}
                     zapas={zapas}
                     ja={me.steamId}
-                    onVlozitOdkaz={(id, odkaz) => void hlidej(() => api.vlozitOdkaz(id, odkaz))}
+                    // Chybu si obrazovka hosta ukáže sama u pole, kam se odkaz
+                    // vkládá — proto se tu nepolyká přes hlidej().
+                    onVlozitOdkaz={(id, odkaz) => api.vlozitOdkaz(id, odkaz)}
                   />
                 ) : (
                   <KartaHrace
@@ -112,6 +115,14 @@ export function App() {
                 ),
               )
             : null}
+          {/* Zápas, na který divák nemá vlastní kartu. Anonyma i nehrajícího
+              diváka do 5. 9. 2026 shodily dva filtry naráz (`me ?` a
+              mojeZapasy()), takže složený zápas neviděl nikdo kromě hráčů
+              a admina — přestože ho server posílá všem a jen zaslepí
+              tajemství. */}
+          {verejneZapasy(stav?.zapasy ?? [], me?.steamId ?? null).map((zapas) => (
+            <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.steamId ?? null} />
+          ))}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>

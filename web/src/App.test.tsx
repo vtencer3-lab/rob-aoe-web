@@ -159,3 +159,82 @@ it("běžný hráč bez akce formulář na založení nevidí", async () => {
   expect(await screen.findByText("Právě neběží žádná akce.")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Založit akci" })).not.toBeInTheDocument();
 });
+
+// Server posílá složený zápas každému a jen zaslepí heslo a číslo lobby
+// (redigujZapas). Frontend ho ale zahazoval dvěma filtry naráz — anonyma
+// vyhodilo `me ?` a neúčastníka `mojeZapasy()` — takže zápas neviděl nikdo
+// kromě hráčů a admina. Nahlášené třikrát.
+it("anonym vidí, kdo proti komu hraje", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
+    prihlaseni: [],
+    zapasy: [zapas([u("host1", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)])],
+  });
+
+  render(<App />);
+
+  const radek = await screen.findByTestId("verejny-zapas");
+  expect(radek).toHaveTextContent("HOST1 + B vs C + D");
+});
+
+it("anonymovi se přes veřejný řádek neprotečou tajemství", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
+    prihlaseni: [],
+    zapasy: [zapas([u("host1", 1, 1, true), u("c", 2, 2)])],
+  });
+
+  render(<App />);
+
+  await screen.findByTestId("verejny-zapas");
+  expect(screen.queryByText("k7rm2xq9")).not.toBeInTheDocument();
+});
+
+it("přihlášený divák mimo zápas ho taky vidí", async () => {
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "divak", alias: "Divak", steamName: null, jeAdmin: false },
+  });
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
+    prihlaseni: [],
+    zapasy: [zapas([u("host1", 1, 1, true), u("c", 2, 2)])],
+  });
+
+  render(<App />);
+
+  expect(await screen.findByTestId("verejny-zapas")).toBeInTheDocument();
+});
+
+// Účastník má plnou kartu, veřejný řádek by ji jen zdvojil.
+it("účastníkovi se jeho vlastní běžící zápas nezdvojí", async () => {
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false },
+  });
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi" },
+    prihlaseni: [],
+    zapasy: [zapas([u("host1", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)])],
+  });
+
+  render(<App />);
+
+  expect(await screen.findByText(/v lobby si nastav/i)).toBeInTheDocument();
+  expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
+});
+
+// Dohraný zápas z karty vypadne, protože mojeZapasy() filtruje `dohrano`.
+// Bez veřejného řádku by hráči po zapsání výsledku zmizel z obrazovky beze
+// stopy a nedozvěděl by se, jak zápas dopadl.
+it("hráči po zapsání výsledku zápas nezmizí", async () => {
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false },
+  });
+  const dohrany = { ...zapas([u("host1", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)]), stav: "dohrano", viteznyTym: 1 as const };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [dohrany] });
+
+  render(<App />);
+
+  expect(await screen.findByTestId("verejny-zapas")).toHaveTextContent("vyhrál tým 1");
+});

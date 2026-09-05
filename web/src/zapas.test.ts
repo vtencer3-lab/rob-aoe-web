@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UcastnikView, ZapasView } from "../../src/shared/types.js";
-import { jmenoHrace, mojeZapasy, mujUcastnik, souperi, spoluhraci } from "./zapas.js";
+import { jmenoHrace, mojeZapasy, mujUcastnik, souperi, spoluhraci, verejneZapasy } from "./zapas.js";
 
 const u = (steamId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikView => ({
   steamId,
@@ -88,5 +88,52 @@ describe("jmenoHrace", () => {
 
   it("teprve když není ani jedno, ukáže Steam ID", () => {
     expect(jmenoHrace(kdo(null, null))).toBe("76561199091641101");
+  });
+});
+
+describe("verejneZapasy", () => {
+  const zapas = (id: number, stav: string, steamIds: string[]): ZapasView => ({
+    id,
+    poradi: id,
+    format: "1v1",
+    stav,
+    nazevLobby: `ROB-0${id}`,
+    heslo: "",
+    lobbyId: null,
+    joinUri: null,
+    spectatorUri: null,
+    viteznyTym: null,
+    ucastnici: steamIds.map((steamId, i) => ({
+      steamId,
+      alias: steamId,
+      steamName: null,
+      tym: (i % 2 === 0 ? 1 : 2) as 1 | 2,
+      barva: (i % 2 === 0 ? 1 : 2) as 1 | 2,
+      jeHost: false,
+      kliknulPripojit: null,
+    })),
+  });
+
+  it("anonymovi ukáže všechny běžící zápasy", () => {
+    const zapasy = [zapas(1, "bezi", ["a", "b"]), zapas(2, "bezi", ["c", "d"])];
+    expect(verejneZapasy(zapasy, null).map((z) => z.id)).toEqual([1, 2]);
+  });
+
+  it("zrušený zápas neukáže nikomu", () => {
+    expect(verejneZapasy([zapas(1, "zruseny", ["a", "b"])], null)).toEqual([]);
+  });
+
+  // Účastník má na svůj běžící zápas plnou kartu, takže by ho řádek jen
+  // zdvojil.
+  it("vynechá zápas, na který má divák vlastní kartu", () => {
+    const zapasy = [zapas(1, "bezi", ["a", "b"]), zapas(2, "bezi", ["c", "d"])];
+    expect(verejneZapasy(zapasy, "a").map((z) => z.id)).toEqual([2]);
+  });
+
+  // Dohraný zápas z karty vypadne (mojeZapasy ho filtruje), takže by hráči po
+  // zapsání výsledku zmizel z obrazovky úplně. Tady ho zachytíme.
+  it("vlastní dohraný zápas ukáže, protože karta už pro něj není", () => {
+    const zapasy = [zapas(1, "dohrano", ["a", "b"])];
+    expect(verejneZapasy(zapasy, "a").map((z) => z.id)).toEqual([1]);
   });
 });

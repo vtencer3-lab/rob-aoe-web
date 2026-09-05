@@ -32,3 +32,14 @@ export function mojeZapasy(zapasy: ZapasView[], steamId: string): ZapasView[] {
       z.stav !== "dohrano" && z.stav !== "zruseny" && z.ucastnici.some((u) => u.steamId === steamId),
   );
 }
+
+/**
+ * Zápasy, které se divákovi ukážou jako řádek „kdo proti komu“ — všechno, co
+ * pro něj není plná karta. Tedy cizí zápasy, a taky ty vlastní dohrané, které
+ * z mojeZapasy() vypadnou; bez toho by hráči po zapsání výsledku zápas zmizel
+ * z obrazovky beze stopy.
+ */
+export function verejneZapasy(zapasy: ZapasView[], steamId: string | null): ZapasView[] {
+  const naKarte = new Set(steamId === null ? [] : mojeZapasy(zapasy, steamId).map((z) => z.id));
+  return zapasy.filter((z) => z.stav !== "zruseny" && !naKarte.has(z.id));
+}
