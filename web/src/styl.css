@@ -105,3 +105,10 @@ button.kopirovat { font-size: 0.75rem; padding: 0.15rem 0.45rem; margin-left: 0.
 /* Dohrany nebo zruseny zapas v rezii: zaznam, ne ovladaci pult. */
 .zapas.odepsany { opacity: 0.75; }
 .verejny-zapas .verdikt { color: #e0c893; }
+
+/* Host taky hraje, takze i on ma svoji barvu videt jako pruh, ne jen jako
+   radek v zrcadle. Stejny utvar jako na karte hrace. */
+.host .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
+.host .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
+.host.barva-1 .hero { background: var(--modra); }
+.host.barva-2 .hero { background: var(--cervena); }

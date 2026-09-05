@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BARVA_NAZEV, type ZapasView } from "../../../src/shared/types.js";
-import { jmenoHrace } from "../zapas.js";
+import { jmenoHrace, mujUcastnik } from "../zapas.js";
 import { KopirovaciTlacitko } from "./KopirovaciTlacitko.js";
 
 interface Props {
@@ -25,9 +25,23 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz }: Props) {
     }
   }
 
+  // Host dostane tuhle obrazovku *místo* KartaHrace, ne k ní — svoji barvu by
+  // jinak viděl jen jako řádek dole v zrcadle, zatímco každý druhý účastník má
+  // pruh přes půl obrazovky. Přitom si ji v lobby musí nastavit stejně jako oni.
+  const muj = mujUcastnik(zapas, ja);
+
   return (
-    <section className="host">
+    <section className={muj ? `host barva-${muj.barva}` : "host"}>
       <header>Jsi host zápasu #{zapas.poradi}</header>
+
+      {muj ? (
+        <div className="hero">
+          <strong data-testid="moje-barva">{BARVA_NAZEV[muj.barva]}</strong>
+          <span>
+            tým <span data-testid="muj-tym">{muj.tym}</span>
+          </span>
+        </div>
+      ) : null}
 
       <ol className="nastaveni">
         <li>

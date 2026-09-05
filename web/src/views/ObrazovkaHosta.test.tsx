@@ -105,3 +105,25 @@ it("po povedeném uložení žádnou chybu nedrží", async () => {
 
   expect(screen.queryByTestId("chyba-odkazu")).not.toBeInTheDocument();
 });
+
+// Host taky hraje. Svoji barvu ale doteď viděl jen jako jeden řádek dole
+// v zrcadle, zatímco každý druhý účastník dostal přes půl obrazovky pruh —
+// host dostane ObrazovkaHosta *místo* KartaHrace, ne k ní.
+it("ukáže hostovi jeho vlastní barvu jako pruh, ne jen řádek v zrcadle", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  expect(screen.getByTestId("moje-barva")).toHaveTextContent("modrá");
+  expect(screen.getByTestId("muj-tym")).toHaveTextContent("1");
+});
+
+it("pruh nese barvu toho, kdo se dívá", () => {
+  const cerveny = {
+    ...zaklad,
+    ucastnici: [
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 2 as const, barva: 2 as const, jeHost: true, kliknulPripojit: null },
+      { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1 as const, barva: 1 as const, jeHost: false, kliknulPripojit: null },
+    ],
+  };
+  render(<ObrazovkaHosta zapas={cerveny} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  expect(screen.getByTestId("moje-barva")).toHaveTextContent("červená");
+  expect(screen.getByTestId("muj-tym")).toHaveTextContent("2");
+});
