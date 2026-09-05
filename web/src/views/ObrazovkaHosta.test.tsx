@@ -127,3 +127,48 @@ it("pruh nese barvu toho, kdo se dívá", () => {
   expect(screen.getByTestId("moje-barva")).toHaveTextContent("červená");
   expect(screen.getByTestId("muj-tym")).toHaveTextContent("2");
 });
+
+it("zrcadlí dialog Create Lobby pod jeho vlastním názvem", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  expect(screen.getByText("Create Lobby")).toBeInTheDocument();
+});
+
+// Anglické názvy schválně: host je očima porovnává s anglickým dialogem hry.
+// Pořadí taky — v dialogu jdou přesně takhle pod sebou.
+it("drží pořadí a názvy polí ze hry", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  const nazvy = screen.getAllByTestId("nazev-pole").map((e) => e.textContent);
+  expect(nazvy).toEqual(["Lobby Name", "Visibility", "Players", "Set Password", "Allow Spectators"]);
+});
+
+it("vyplní název, heslo a počet hráčů z webu", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  expect(screen.getByTestId("pole-Lobby Name")).toHaveTextContent("ROB-07");
+  expect(screen.getByTestId("pole-Set Password")).toHaveTextContent("k7rm2xq9");
+  expect(screen.getByTestId("pole-Players")).toHaveTextContent("4");
+  expect(screen.getByTestId("pole-Visibility")).toHaveTextContent("Public");
+});
+
+// Nejcennější řádek celého dialogu: co je nad ním, se po založení lobby už
+// opravit nedá. Heslo a diváci ano. Host to jinak zjistí až tím, že zakládá
+// znovu uprostřed streamu.
+it("varuje, že horní nastavení už po založení nezměníš", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  expect(screen.getByTestId("varovani-neni-zpet")).toHaveTextContent(
+    /can not be changed after game creation/i,
+  );
+});
+
+it("ukáže Allow Spectators jako zaškrtnuté", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  expect(screen.getByTestId("pole-Allow Spectators")).toHaveTextContent("✓");
+});
+
+// Rozhodnutí uživatele: zrcadlo mluví jen o tom, co web řídí. O zbytku dialogu
+// mlčí, protože o něm nic neví a Rob si ho volí podle večera.
+it("mlčí o nastaveních, která web neřídí", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} />);
+  for (const cizi of ["Lobby Type", "Co-Op Campaign", "Hide Civilizations", "Spectator Delay", "Server", "Data Mod"]) {
+    expect(screen.queryByText(cizi)).not.toBeInTheDocument();
+  }
+});

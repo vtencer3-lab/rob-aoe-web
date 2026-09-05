@@ -112,3 +112,13 @@ button.kopirovat { font-size: 0.75rem; padding: 0.15rem 0.45rem; margin-left: 0.
 .host .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
 .host.barva-1 .hero { background: var(--modra); }
 .host.barva-2 .hero { background: var(--cervena); }
+
+/* Zrcadlo herniho dialogu Create Lobby. Ramecek a rozvrzeni po vzoru hry,
+   ale v barvach webu: parchment se nepredstira. */
+.dialog-lobby { border: 1px solid #4a4133; border-radius: 6px; padding: 0.9rem 1rem; margin: 0.9rem 0; background: #241f18; }
+.dialog-titulek { text-align: center; font-weight: 700; letter-spacing: 0.04em; padding-bottom: 0.6rem; margin-bottom: 0.6rem; border-bottom: 1px solid #3d352a; }
+.dialog-pole { display: grid; grid-template-columns: 11rem 1fr; gap: 0.6rem; align-items: baseline; padding: 0.3rem 0; }
+.dialog-nazev { color: #cbbfa8; }
+.dialog-hodnota strong { background: #15120e; border: 1px solid #3d352a; border-radius: 3px; padding: 0.1rem 0.5rem; }
+.dialog-poznamka { display: block; color: #9d9280; font-style: normal; font-size: 0.9rem; margin-top: 0.15rem; }
+.dialog-varovani { text-align: center; margin: 0.7rem 0; padding: 0.5rem; border-top: 1px solid #3d352a; border-bottom: 1px solid #3d352a; color: #e0c893; }
