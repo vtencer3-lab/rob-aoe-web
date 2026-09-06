@@ -1,0 +1,231 @@
+# Pro přispěvatele
+
+Tenhle soubor je psaný pro člověka, který repo vidí poprvé, **i pro jeho
+agenta**. Tvrzení v něm jsou schválně ověřitelná: kde píšu číslo nebo cestu,
+dá se to spustit a porovnat.
+
+Co kde hledat:
+
+| soubor | k čemu je |
+|---|---|
+| `README.md` | jak se web používá a jak probíhá večer |
+| `CLAUDE.md` | konvence, příkazy a zvyky autora (obsahuje jeho lokální cesty) |
+| **tenhle soubor** | jak to rozjet na cizím stroji, jak je to uvnitř poskládané a o co se nezakopnout |
+| `docs/nasazeni-u-roba.md` | nasazení do ostrého provozu |
+| `docs/superpowers/specs`, `docs/superpowers/plans` | proč to vzniklo takhle |
+
+## Na čem celý produkt stojí
+
+Age of Empires II DE umí dvě URI a **liší se jedinou číslicí**:
+
+```
+aoe2de://0/<id>   připojí do lobby jako hráče
+aoe2de://1/<id>   připojí do téže lobby jako diváka
+```
+
+Web proto ukládá **jenom to číslo** (`zapas.lobby_id`, textový sloupec) a obě
+URI z něj odvozuje až při čtení — `src/aoe/lobbyUri.ts`. Host jednou vloží
+odkaz z tlačítka Copy ve hře, hráči dostanou svůj odkaz a režie ten divácký.
+
+**Sestavené URI se nikdy nikam neukládá.** Kdyby ses někdy přistihl, že do
+databáze zapisuješ `aoe2de://…`, je to chyba, ne zkratka.
+
+## Rozjetí od nuly
+
+Potřebuješ **Node 24+** (`package.json` má `engines.node: ">=24"`, používá se
+`--env-file-if-exists` a `--experimental-strip-types`) a **PostgreSQL**.
+Vývoj probíhal na 17, nic verzově specifického v SQL není.
+
+```bash
+git clone https://github.com/vtencer3-lab/rob-aoe-web
+cd rob-aoe-web
+npm install
+npm --prefix web install
+```
+
+Dvě databáze — ostrá a testovací:
+
+```bash
+createdb -U postgres rob_aoe
+createdb -U postgres rob_aoe_test
+```
+
+Zkopíruj `.env.example` na `.env` a uprav `DATABASE_URL`. **`.env` je
+gitignorovaný a musí takový zůstat** — patří do něj Steam API klíč.
+
+```bash
+npm run db:migrate     # čte .env
+npm run dev            # backend s watch, port 3000
+npm --prefix web run dev   # frontend s watch, na jiném portu
+```
+
+Nebo produkčně, což servíruje i frontend z jednoho procesu:
+
+```bash
+npm run build && npm start   # http://localhost:3000
+```
+
+**Steam API klíč nepotřebuješ.** Bez `STEAM_API_KEY` se prostě netahají odehrané
+hodiny a avataři; ELO a herní přezdívka chodí ze žebříčku Worlds Edge, který
+klíč nechce. Nic se nerozbije.
+
+**Adminem se staneš sám.** S `ADMIN_BOOTSTRAP=true` a prázdným
+`ADMIN_STEAM_ID` dostane práva režie první, kdo se přihlásí. Jakmile admin
+existuje, proměnná už nedělá nic.
+
+### Přihlášení bez Steamu
+
+Se zapnutým `DEV_PRISTUP=true` a `BASE_URL` na `http` se zaregistrují zkušební
+dveře: `/api/dev/naplnit?pocet=3` nasype do akce falešné hráče a
+`/api/dev/login?jmeno=Pepa` se za jednoho přihlásí. Umožní to projít celý večer
+nasucho bez čtyř Steam účtů. Postup je v `README.md`.
+
+## Mapa kódu
+
+Backend, `src/`:
+
+| kde | co |
+|---|---|
+| `main.ts`, `http/server.ts` | složení aplikace, registrace rout, servírování `web/dist` |
+| `config.ts` | proměnné prostředí a jejich kontrola při startu |
+| `auth/` | Steam OpenID (`steamOpenId.ts`), sezení, `devRoutes.ts` |
+| `db/` | přístup k databázi, jedna tabulka = jeden modul |
+| `http/routes/` | `events.ts`, `matches.ts`, `stream.ts` (SSE) |
+| `realtime/` | `hub.ts` (jeden kanál), `akceStav.ts` (staví stav), `redakce.ts` (zaslepení) |
+| `matches/` | `composition.ts` (skládání dvojic), `stateMachine.ts` |
+| `aoe/lobbyUri.ts` | rozbor a stavba `aoe2de://` — malé a důležité |
+| `shared/types.ts` | typy sdílené s frontendem, importuje se přímo z `web/` |
+
+Frontend, `web/src/`:
+
+| kde | co |
+|---|---|
+| `App.tsx` | rozhoduje, kdo vidí kterou obrazovku |
+| `useAkceStav.ts` | SSE a záložní dotazování — **přečti si komentář nahoře** |
+| `views/Rezie.tsx` | panel režie: skládání zápasů, Spectate, výsledky |
+| `views/ObrazovkaHosta.tsx` | obrazovka hosta se zrcadlem herního dialogu |
+| `views/KartaHrace.tsx` | karta hráče s jeho barvou a odkazem |
+| `views/VerejnyZapas.tsx` | zápas očima diváka, bez tajemství |
+| `zapas.ts` | kdo co vidí — `mojeZapasy`, `verejneZapasy` |
+
+Backend a frontend sdílejí typy přímo přes relativní import, žádný balíček mezi
+tím není.
+
+## Pět pravidel, která se nesmí porušit
+
+**1. Ukládá se jen číslo lobby.** Viz výš.
+
+**2. SSE posílá vždycky celý stav, nikdy přírůstky.** Díky tomu je obnova po
+výpadku zadarmo a `/api/akce` může sloužit jako plnohodnotná náhrada streamu —
+vrací doslova týž payload. Kdyby se začaly posílat přírůstky, obojí padá.
+
+**3. O tajemstvích rozhoduje jedno místo.** `redigujProDivaka()` v
+`src/realtime/redakce.ts` je bezpečnostní hranice: neúčastníkovi vyprázdní
+heslo a vynuluje `lobbyId`, `joinUri` i `spectatorUri`. Hub má jeden kanál pro
+celou akci (`KANAL_AKCE`) a redakce běží až těsně před odesláním, každému
+divákovi zvlášť.
+
+> Pozor na druhou půlku: **server data pošle správně, ale frontend je musí
+> opravdu vykreslit.** Přesně tady vznikla vada, která se hlásila třikrát —
+> zápas viděli jen jeho hráči a admin, protože `App.tsx` ho dvěma filtry
+> zahodil, přestože ho server posílal všem zaslepený. Když měníš, kdo co vidí,
+> ověř obě strany.
+
+**4. `DATABASE_URL` nikdy nemíří na ostrou databázi, když běží `npm run
+test:db`.** Ty testy volají `TRUNCATE`. `vitest.db.setup.ts` odmítne
+nastartovat, když jméno databáze nekončí na `_test` — to je ale **druhá**
+pojistka, ne první.
+
+**5. Zkušební dveře se zavírají podle `BASE_URL`, ne podle proměnné.** Bez
+`DEV_PRISTUP=true` se routy vůbec nezaregistrují, a i se zapnutou proměnnou
+odmítnou obsluhovat, jakmile `BASE_URL` míří na `https`. Ten druhý zámek je
+ten, který drží. Nesahat na něj.
+
+## Pasti, které tenhle projekt už jednou stály čas
+
+**`npx tsc --noEmit` nekontroluje frontend.** Kořenový `tsconfig.json` `web/`
+nezahrnuje. Frontend má vlastní kontrolu:
+
+```bash
+npx tsc --noEmit                          # backend
+npm --prefix web exec tsc -- -b --force   # frontend
+```
+
+**`npm run build` je řetěz přes `&&`.** Typová chyba kdekoliv ve frontendu —
+klidně jen v testovací fixtuře — zastaví `vite build`, `web/dist` zůstane
+starý a server dál servíruje **předchozí** bundle. Vypadá to, že se změna
+neprojevila. Po zásahu do `src/shared/types.ts` proto vždycky doběhnout celý
+build a zkontrolovat, že se změnil hash souboru ve `web/dist/assets`.
+
+**Cloudflare quick tunnel (`*.trycloudflare.com`) nepropustí SSE.** Drží celé
+tělo odpovědi, dokud odpověď neskončí — a náš stream schválně nekončí nikdy,
+takže přes něj nedorazí ani úvodní snímek. Hlavičkami se to ubránit nedá, edge
+je zahodí. Stránka proto po pěti sekundách ticha přepne na dotazování po třech
+sekundách a **vypadá to, že realtime funguje**. Podrobně i s čísly v komentáři
+nad `useAkceStav()`. Jestli stejně bufferuje i pojmenovaný tunel, se zatím
+neměřilo.
+
+**Zelená sada testů není důkaz funkčního UI.** Prošly jí vady viditelné na
+první pohled: obrazovka bez jediného volajícího, tlačítko slepené s textem,
+stream zaseknutý na mrtvém kanálu. Testovaly se jednotky, ne cesta, kterou jde
+člověk.
+
+**Server drží port 3000.** Před restartem starý proces zabít, jinak nový
+spadne nebo tiše běží ten starý.
+
+## Jak se tu ověřuje práce
+
+```bash
+npm test                # hermetické, bez sítě a databáze
+npm run test:db         # proti databázi — viz pravidlo 4
+npm --prefix web test   # frontend
+```
+
+Zelené testy jsou začátek, ne konec. U změn v UI nebo v realtime chování projdi
+celou cestu **na skutečně běžícím serveru** (`curl` na běžící proces, ne jen
+`app.inject`), a hlas jen to, co jsi opravdu viděl projít.
+
+Vizuální kontrola zůstává na člověku. Prohánět GUI screenshoty přes agenta se
+v tomhle projektu nevyplatilo.
+
+## Konvence
+
+- **Identifikátory i uživatelské texty česky, commity anglicky** (rozkazovací
+  způsob v předmětu). Komentáře česky a k věci: proč, ne co.
+- TypeScript ESM: `NodeNext`, `strict`, `noUncheckedIndexedAccess`,
+  `verbatimModuleSyntax`, přípona `.js` v importech.
+- Rozdělení testů: `*.test.ts` hermetické, `*.db.test.ts` proti databázi,
+  `web/src/**/*.test.tsx` frontend.
+- Závislostí je schválně málo: backend `fastify`, `pg`, `@fastify/cookie`,
+  `@fastify/static`; frontend `react`, `react-dom`. Než nějakou přidáš,
+  zvaž, jestli to za to stojí.
+
+## Databáze
+
+Tabulky: `akce`, `zapas`, `ucastnik`, `prihlaska`, `player`, `session`,
+`schema_migrations` a `udalost`.
+
+Migrace jsou očíslované soubory v `database/`, pouštějí se `npm run db:migrate`
+a pouštěj je vždycky, i když se zdá, že se nic nezměnilo — chybějící migrace se
+pozná až tím, že server spadne na neexistujícím sloupci.
+
+Dvě věci, které nejsou z kódu zřejmé:
+
+- **Otevřená akce je vždycky nejvýš jedna.** Zajišťuje to migrace 003 a
+  `buildAkceStav()` proto žádné id nebere — staví tu jednu.
+- **Do tabulky `udalost` nikdo nepíše.** Vznikla v migraci 001 a v `src/` na ni
+  není jediný odkaz. Než se o ni opřeš, počítej s tím, že je prázdná.
+
+## Stavy
+
+Původní návrh byl dimenzovaný na turnaj o tuctu zápasů a byl schválně
+oškrtaný, protože každý stav navíc je klik, na kterém se dá v přímém přenosu
+zaseknout:
+
+- **akce**: `bezi` → `konec`
+- **zápas**: `bezi` → `dohrano` nebo `zruseny`
+
+Režie smí mezi stavy zápasu cokoliv kromě přechodu na sebe sama — schválně, aby
+jeden překliknutý „Vyhrál tým 1" nestál celý zápas. Než navrhneš další stav,
+mezistav nebo potvrzení, zvaž, jestli to unese jeden večer s jedním zápasem a
+jedním člověkem u režie.

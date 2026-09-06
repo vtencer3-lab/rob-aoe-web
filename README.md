@@ -7,6 +7,11 @@ Edition — nahrazuje ruční hlášení na Discordu ověřenými Steam údaji a
 spolehlivé tlačítko Spectate do každé lobby. Podrobný návrh a zdůvodnění je v
 [`docs/superpowers/specs/2026-09-03-aoe2-komunitni-hry-web-design.md`](docs/superpowers/specs/2026-09-03-aoe2-komunitni-hry-web-design.md).
 
+Jestli k repu přispíváš (nebo tě sem poslal někdo s Claude Code), začni
+u [`CONTRIBUTING.md`](CONTRIBUTING.md) — je tam rozjetí na cizím stroji, mapa
+kódu, pravidla, která se nesmí porušit, a pasti, které tenhle projekt už jednou
+stály čas.
+
 ## Co potřebuješ
 
 - Node.js 24 nebo novější.

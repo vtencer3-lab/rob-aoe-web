@@ -5,6 +5,10 @@ přihlásí Steamem, Rob za vysílání skládá zápasy, každý dostane instru
 míru, host jednou vloží odkaz z lobby a všem — včetně Robova Spectate — z něj
 vznikne funkční odkaz.
 
+> **Nejsi autor repa?** Tenhle soubor popisuje zvyky a **lokální prostředí
+> autora** — cesty a jména databází níž platí na jeho stroji, ne na tvém.
+> Rozjetí na cizím stroji, mapu kódu a pasti má [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 **Celý produkt stojí na jedné číslici.** `aoe2de://0/<id>` připojí do lobby jako
 hráče, `aoe2de://1/<id>` do téže lobby jako diváka. Ukládá se **jen to číslo**,
 oba odkazy se z něj odvozují. Nikdy neukládat sestavené URI.
