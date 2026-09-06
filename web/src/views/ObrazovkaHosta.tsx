@@ -2,12 +2,12 @@ import { useState } from "react";
 import { BARVA_NAZEV, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik } from "../zapas.js";
 import { KopirovaciTlacitko } from "./KopirovaciTlacitko.js";
-
 /**
- * Výřez dialogu Create Lobby ze hry. Leží ve `web/public`, takže ho Vite kopíruje
- * do kořene `dist` beze změny jména — obsah se nemění, hash by byl k ničemu.
+ * Výřez dialogu Create Lobby ze hry. Importuje se, aby mu Vite dal do jména
+ * hash: se stálým jménem by prohlížeč po každé úpravě obrázku vytáhl z
+ * mezipaměti ten starý a vypadalo by to, že se nasazení nepovedlo.
  */
-const dialogUrl = "/create-lobby.webp";
+import dialogUrl from "../assets/create-lobby.webp";
 
 interface Props {
   zapas: ZapasView;
