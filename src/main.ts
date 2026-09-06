@@ -30,7 +30,7 @@ const varovaniDev = varovaniDevPristup();
 if (varovaniDev) console.warn(varovaniDev);
 
 const app = buildServer();
-await app.listen({ port: config.port, host: "127.0.0.1" });
+await app.listen({ port: config.port, host: config.host });
 console.log(`Poslouchám na ${config.baseUrl} (port ${config.port})`);
 
 setInterval(() => {

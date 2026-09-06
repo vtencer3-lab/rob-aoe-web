@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Me } from "./api.js";
+import { cesta } from "./cesty.js";
+import { VERZE } from "../../src/shared/verze.js";
 import { useAkceStav } from "./useAkceStav.js";
 import { jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
@@ -51,7 +53,7 @@ export function App() {
             <button onClick={() => void api.odhlasitSe().then(() => setMe(null))}>Odhlásit</button>
           </span>
         ) : (
-          <a className="tlacitko" href="/api/auth/steam">
+          <a className="tlacitko" href={cesta("/api/auth/steam")}>
             Přihlásit se přes Steam
           </a>
         )}
@@ -129,6 +131,11 @@ export function App() {
       )}
 
       <ZkusebniLista jaSteamId={me?.steamId ?? null} />
+      {/* Verze v patičce: po nasazení se jedním pohledem pozná, jestli
+          prohlížeč drží nový build, nebo starý z mezipaměti. */}
+      <footer className="verze" data-testid="verze">
+        v{VERZE}
+      </footer>
     </main>
   );
 }

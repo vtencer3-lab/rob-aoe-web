@@ -30,8 +30,29 @@ export async function komuDatAdmina(steamId: string): Promise<boolean | null> {
   return (await existujeAdmin()) ? null : true;
 }
 
+/**
+ * Jedno místo pro obě přihlašovací cesty (Steam i zkušební dveře). Cesta
+ * cookie je základní cesta webu, aby se sezení z `/aoe` neposílalo na celou
+ * doménu jouki.cz.
+ */
+export function nastaveniCookie(): {
+  httpOnly: true;
+  sameSite: "lax";
+  secure: boolean;
+  path: string;
+  maxAge: number;
+} {
+  return {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: config.jeProdukce,
+    path: config.domovskaCesta,
+    maxAge: Math.floor(SESSION_TTL_MS / 1000),
+  };
+}
+
 export async function currentUser(request: FastifyRequest): Promise<string | null> {
-  const sid = request.cookies["sid"];
+  const sid = request.cookies[config.cookieNazev];
   return sid ? getSessionUser(sid) : null;
 }
 
@@ -88,20 +109,16 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
     const sid = await createSession(steamId);
     return reply
-      .setCookie("sid", sid, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: config.jeProdukce,
-        path: "/",
-        maxAge: Math.floor(SESSION_TTL_MS / 1000),
-      })
-      .redirect("/", 302);
+      .setCookie(config.cookieNazev, sid, nastaveniCookie())
+      .redirect(config.domovskaCesta, 302);
   });
 
   app.post("/api/auth/logout", async (request, reply) => {
-    const sid = request.cookies["sid"];
+    const sid = request.cookies[config.cookieNazev];
     if (sid) await deleteSession(sid);
-    return reply.clearCookie("sid", { path: "/" }).send({ ok: true });
+    return reply
+      .clearCookie(config.cookieNazev, { path: config.domovskaCesta })
+      .send({ ok: true });
   });
 
   app.get("/api/me", async (request) => {

@@ -11,7 +11,9 @@ Co kde hledat:
 | `README.md` | jak se web používá a jak probíhá večer |
 | `CLAUDE.md` | konvence, příkazy a zvyky autora (obsahuje jeho lokální cesty) |
 | **tenhle soubor** | jak to rozjet na cizím stroji, jak je to uvnitř poskládané a o co se nezakopnout |
-| `docs/nasazeni-u-roba.md` | nasazení do ostrého provozu |
+| `docs/nasazeni-jouki-cz.md` | **jak se pracuje: větev `dev`, verze, release do `main`, automatické nasazení na jouki.cz** |
+| `docs/analyza-projektu.md` | technická analýza: architektura, datový model, API, rizika |
+| `docs/nasazeni-u-roba.md` | alternativní nasazení na Robův vlastní stroj |
 | `docs/superpowers/specs`, `docs/superpowers/plans` | proč to vzniklo takhle |
 
 ## Na čem celý produkt stojí
@@ -95,6 +97,7 @@ Backend, `src/`:
 | `matches/` | `composition.ts` (skládání dvojic), `stateMachine.ts` |
 | `aoe/lobbyUri.ts` | rozbor a stavba `aoe2de://` — malé a důležité |
 | `shared/types.ts` | typy sdílené s frontendem, importuje se přímo z `web/` |
+| `shared/verze.ts` | verze webu; mění se jen přes `npm run verze` |
 
 Frontend, `web/src/`:
 
@@ -107,6 +110,7 @@ Frontend, `web/src/`:
 | `views/KartaHrace.tsx` | karta hráče s jeho barvou a odkazem |
 | `views/VerejnyZapas.tsx` | zápas očima diváka, bez tajemství |
 | `zapas.ts` | kdo co vidí — `mojeZapasy`, `verejneZapasy` |
+| `cesty.ts` | prefix `/aoe` pro všechna volání na server (z Vite `base`) |
 
 Backend a frontend sdílejí typy přímo přes relativní import, žádný balíček mezi
 tím není.
@@ -190,6 +194,8 @@ v tomhle projektu nevyplatilo.
 
 ## Konvence
 
+- **Práce jde do větve `dev`, release do `main` jen na pokyn, každá změna
+  chování zvedne verzi** (`npm run verze`). Celé v `docs/nasazeni-jouki-cz.md`.
 - **Identifikátory i uživatelské texty česky, commity anglicky** (rozkazovací
   způsob v předmětu). Komentáře česky a k věci: proč, ne co.
 - TypeScript ESM: `NodeNext`, `strict`, `noUncheckedIndexedAccess`,

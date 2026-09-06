@@ -1,5 +1,12 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { varovaniDevPristup, varovaniProstredi, zkontrolujProstredi } from "./config.js";
+import {
+  config,
+  nazevCookie,
+  varovaniDevPristup,
+  varovaniProstredi,
+  zakladniCesta,
+  zkontrolujProstredi,
+} from "./config.js";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -111,4 +118,35 @@ it("na localhostu o otevřených zkušebních dveřích řekne", () => {
 it("na https řekne, že jsou dveře i tak zavřené", () => {
   nastav({ DEV_PRISTUP: "true", BASE_URL: "https://neco.trycloudflare.com" });
   expect(varovaniDevPristup()).toContain("zavřené");
+});
+
+it("základní cesta se odvozuje z BASE_URL", () => {
+  expect(zakladniCesta("http://localhost:3000")).toBe("");
+  expect(zakladniCesta("https://jouki.cz/aoe")).toBe("/aoe");
+  expect(zakladniCesta("https://jouki.cz/aoe/")).toBe("/aoe");
+  expect(zakladniCesta("https://jouki.cz/aoe/dev")).toBe("/aoe/dev");
+  expect(zakladniCesta("neni url")).toBe("");
+});
+
+it("název cookie je pro každou cestu jiný, na kořeni zůstává sid", () => {
+  expect(nazevCookie("")).toBe("sid");
+  expect(nazevCookie("/aoe")).toBe("sid_aoe");
+  expect(nazevCookie("/aoe/dev")).toBe("sid_aoe_dev");
+});
+
+it("config skládá cestu, cookie i domov z BASE_URL", () => {
+  nastav({ BASE_URL: "https://jouki.cz/aoe/dev" });
+  expect(config.basePath).toBe("/aoe/dev");
+  expect(config.cookieNazev).toBe("sid_aoe_dev");
+  expect(config.domovskaCesta).toBe("/aoe/dev/");
+  nastav({ BASE_URL: undefined });
+  expect(config.basePath).toBe("");
+  expect(config.domovskaCesta).toBe("/");
+});
+
+it("HOST je bez proměnné loopback", () => {
+  nastav({ HOST: undefined });
+  expect(config.host).toBe("127.0.0.1");
+  nastav({ HOST: "0.0.0.0" });
+  expect(config.host).toBe("0.0.0.0");
 });
