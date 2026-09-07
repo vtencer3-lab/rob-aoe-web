@@ -115,7 +115,7 @@ Tabulka `udalost` (audit log) z migrace 001 existuje, ale **nic do ní nezapisuj
 | Hráč je v zápase nejvýš jednou | `PRIMARY KEY (zapas_id, steam_id)` |
 | Hráč má v akci jednu přihlášku | `PRIMARY KEY (akce_id, steam_id)`, upsert při opakovaném přihlášení |
 
-Invarianty, které databáze **nevynucuje** a hlídá je jen kód: povolené hodnoty `stav` (žádný `CHECK`), právě jeden host na zápas, přesně jeden admin, počet účastníků odpovídající formátu.
+Invarianty, které databáze **nevynucuje** a hlídá je jen kód: povolené hodnoty `stav` (žádný `CHECK`), právě jeden host na zápas, admin jen ze seznamu `ADMIN_STEAM_ID`, počet účastníků odpovídající formátu.
 
 ### 2.4 Stavové automaty
 
@@ -275,7 +275,7 @@ sequenceDiagram
     end
 ```
 
-Rozhodnutí o adminovi (`komuDatAdmina`): je-li `ADMIN_STEAM_ID` nastavené, rozhoduje jen ono a to i směrem dolů. Jinak s `ADMIN_BOOTSTRAP=true` dostane práva první přihlášený, dokud žádný admin neexistuje. Jinak se na `je_admin` nesahá (`null`).
+Rozhodnutí o adminovi (`komuDatAdmina`): je-li `ADMIN_STEAM_ID` nastavené (čárkou oddělený seznam, od v0.3.0), rozhoduje jen ono a to i směrem dolů. Jinak s `ADMIN_BOOTSTRAP=true` dostane práva první přihlášený, dokud žádný admin neexistuje. Jinak se na `je_admin` nesahá (`null`).
 
 ### 4.2 Večer: založení akce, zápas, odkaz
 
@@ -487,7 +487,7 @@ Slabší místa:
 | Proměnná | Povinná | Výchozí | Význam |
 |---|---|---|---|
 | `DATABASE_URL` | ano | žádné | připojení k PostgreSQL |
-| `ADMIN_STEAM_ID` | ano, pokud není `ADMIN_BOOTSTRAP` | žádné | 64bitové Steam ID admina; rozhoduje i směrem dolů |
+| `ADMIN_STEAM_ID` | ano, pokud není `ADMIN_BOOTSTRAP` | žádné | 64bitová Steam ID adminů oddělená čárkou; rozhoduje i směrem dolů |
 | `ADMIN_BOOTSTRAP` | ne | žádné | `true`: první přihlášený se stane adminem, dokud žádný neexistuje |
 | `BASE_URL` | ne | `http://localhost:3000` | musí přesně sedět s adresou v prohlížeči (Steam `return_to`); `https://` zavírá dev routy a zapíná `secure` cookie |
 | `PORT` | ne | `3000` | port backendu |
@@ -520,7 +520,7 @@ Seřazeno podle toho, co by nejspíš stálo večer.
 
 ### 9.2 Datový model
 
-4. **Chybí `CHECK` omezení na sloupcích `stav`** (`akce`, `zapas`, `prihlaska`) a na `tym`, `barva`. Invariant „přesně jeden host na zápas“ a „přesně jeden admin“ hlídá jen kód. Levné doplnit v migraci 007.
+4. **Chybí `CHECK` omezení na sloupcích `stav`** (`akce`, `zapas`, `prihlaska`) a na `tym`, `barva`. Invariant „přesně jeden host na zápas“ hlídá jen kód. Levné doplnit v migraci 007.
 5. **Tabulka `udalost`** buď začít plnit (audit toho, kdo kdy co klikl, by se hodil při řešení sporů „kdo vyhrál“), nebo ji smazat, aby nemátla.
 6. **`akce` nemá čas ukončení** (`zapas.konec` existuje, `akce.konec` ne). Pro budoucí statistiku večerů chybí.
 

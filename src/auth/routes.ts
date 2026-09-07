@@ -19,13 +19,13 @@ export interface AuthDeps {
 /**
  * Kdo má být po tomhle přihlášení admin. `null` znamená "nesahej na to".
  *
- * Když je ADMIN_STEAM_ID nastavené, rozhoduje jenom ono — a to i směrem dolů,
- * takže přepnutím proměnné se dočasnému adminovi práva zase odeberou.
+ * Když je ADMIN_STEAM_ID nastavené, rozhoduje jenom ten seznam — a to i směrem
+ * dolů, takže vyškrtnutím z proměnné se adminovi práva zase odeberou.
  * V nouzovém režimu povyšujeme jen dokud žádný admin neexistuje; jakmile ho
  * databáze má, nikomu dalšímu se nic nepřidá a nikomu nic neubere.
  */
 export async function komuDatAdmina(steamId: string): Promise<boolean | null> {
-  if (config.adminSteamId !== "") return steamId === config.adminSteamId;
+  if (config.adminSteamIds.length > 0) return config.adminSteamIds.includes(steamId);
   if (!config.adminBootstrap) return null;
   return (await existujeAdmin()) ? null : true;
 }

@@ -57,8 +57,16 @@ export const config = {
   steamApiKey: process.env["STEAM_API_KEY"] ?? "",
   // Obojí se čte při každém přístupu, ne jednou při načtení modulu: startovní
   // kontrola i přihlašovací routa se tím dají otestovat podstrčeným prostředím.
-  get adminSteamId(): string {
-    return process.env["ADMIN_STEAM_ID"] ?? "";
+  /**
+   * Steam ID účtů s režií, čárkou oddělený seznam (`id1,id2`). Dva admini
+   * jsou normální stav: Rob a ten, kdo mu web spravuje. Prázdný seznam =
+   * proměnná chybí.
+   */
+  get adminSteamIds(): string[] {
+    return (process.env["ADMIN_STEAM_ID"] ?? "")
+      .split(/[\s,;]+/)
+      .map((id) => id.trim())
+      .filter((id) => id !== "");
   },
   /** Nouzový režim pro rozjezd bez Roba: první přihlášený se stane adminem. */
   get adminBootstrap(): boolean {
@@ -83,7 +91,7 @@ export const config = {
  *
  * ADMIN_STEAM_ID je tu proto, že jeho chybějící hodnota se navenek nijak
  * neprojeví — jen tiše ublíží: přihlašovací routa volá při KAŽDÉM přihlášení
- * `upsertPlayer(steamId, steamId === config.adminSteamId)` a `upsertPlayer`
+ * `upsertPlayer(steamId, config.adminSteamIds.includes(steamId))` a `upsertPlayer`
  * dělá `ON CONFLICT DO UPDATE SET je_admin = EXCLUDED.je_admin`. Bez proměnné
  * je porovnání vždy nepravda, takže první Robovo přihlášení po restartu jeho
  * `je_admin` přepíše na false a režie zmizí bez jediné chybové hlášky.
@@ -92,10 +100,10 @@ export const config = {
  */
 export function zkontrolujProstredi(): void {
   povinne("DATABASE_URL", "Bez připojení k databázi web neobslouží ani jeden požadavek.");
-  if (config.adminSteamId === "" && !config.adminBootstrap) {
+  if (config.adminSteamIds.length === 0 && !config.adminBootstrap) {
     throw new Error(
       "Chybí proměnná prostředí ADMIN_STEAM_ID. Je to 64bitové Steam ID Robova " +
-        "účtu. Bez něj by se Robovi při dalším přihlášení tiše odebrala práva " +
+        "účtu (víc účtů oddělených čárkou). Bez něj by se Robovi při dalším přihlášení tiše odebrala práva " +
         "admina a panel režie by zmizel. Když Rob není po ruce, nastav místo " +
         "toho ADMIN_BOOTSTRAP=true — adminem se stane první, kdo se přihlásí.",
     );
@@ -113,7 +121,7 @@ export function zkontrolujProstredi(): void {
  * než mlčet, když je režie volná.
  */
 export function varovaniProstredi(adminUzExistuje: boolean): string | null {
-  if (config.adminSteamId !== "" || !config.adminBootstrap) return null;
+  if (config.adminSteamIds.length > 0 || !config.adminBootstrap) return null;
   if (adminUzExistuje) return null;
   return (
     "ADMIN_BOOTSTRAP je zapnutý a admin zatím neexistuje: stane se jím první, " +
