@@ -3,4 +3,4 @@
  * frontend (patička). Musí se rovnat `version` v kořenovém `package.json` —
  * hlídá to test `verze.test.ts` a obojí najednou mění `npm run verze`.
  */
-export const VERZE = "0.3.0";
+export const VERZE = "0.6.1";

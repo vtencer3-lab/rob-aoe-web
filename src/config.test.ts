@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import {
   config,
+  varovaniSteamKlic,
   nazevCookie,
   varovaniDevPristup,
   varovaniProstredi,
@@ -158,4 +159,9 @@ it("ADMIN_STEAM_ID může být seznam oddělený čárkou", () => {
   expect(config.adminSteamIds).toEqual([]);
   nastav({ ADMIN_STEAM_ID: undefined });
   expect(config.adminSteamIds).toEqual([]);
+});
+
+it("bez STEAM_API_KEY varuje, s klíčem mlčí", () => {
+  nastav({ STEAM_API_KEY: undefined });
+  expect(varovaniSteamKlic()).toMatch(/STEAM_API_KEY/);
 });

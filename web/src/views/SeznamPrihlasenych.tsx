@@ -32,7 +32,9 @@ export function SeznamPrihlasenych({ prihlaseni }: { prihlaseni: PlayerView[] })
             <td>{formatElo(hrac.elo1v1)}</td>
             <td>{formatElo(hrac.eloNejvyssi)}</td>
             <td>{formatOdehrano(hrac.odehranoHer)}</td>
-            <td>{formatHodiny(hrac.steamHodiny)}</td>
+            {/* Bez avataru se Steamu nikdo neptal (chybí klíč, nebo dotaz
+                selhal) — pak NULL neznamená skrytý profil, ale „nevíme“. */}
+            <td>{hrac.steamHodiny !== null || hrac.avatarUrl ? formatHodiny(hrac.steamHodiny) : "—"}</td>
           </tr>
         ))}
       </tbody>

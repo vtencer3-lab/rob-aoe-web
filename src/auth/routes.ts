@@ -124,6 +124,13 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   app.get("/api/me", async (request) => {
     const steamId = await currentUser(request);
     if (!steamId) return { hrac: null };
+    // Statistiky se dřív obnovovaly jen při přihlášení, a sezení drží měsíc:
+    // kdo se nepřihlásil znovu, měl v tabulce data z prvního dne. Načtení
+    // stránky je dost častá a dost levná příležitost; obnova sama hlídá,
+    // že se Steamu neptá častěji než jednou za patnáct minut.
+    void Promise.resolve()
+      .then(() => deps.obnovStaty(steamId))
+      .catch(() => {});
     return { hrac: await getPlayer(steamId) };
   });
 }

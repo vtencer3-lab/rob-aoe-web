@@ -5,6 +5,15 @@
   --akcent: #c8a75a;
   --modra: #2f6fd0;
   --cervena: #c0392b;
+  /* Osm barev hráčů v pořadí ze hry. */
+  --b1: #2f6fd0;
+  --b2: #c0392b;
+  --b3: #2e9e4f;
+  --b4: #d9b400;
+  --b5: #23b5b5;
+  --b6: #a05bd6;
+  --b7: #8d8d8d;
+  --b8: #e67e22;
   color-scheme: dark;
 }
 
@@ -44,12 +53,24 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .karta, .zapas, .host { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
 .karta .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
 .karta .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
-.karta.barva-1 .hero { background: var(--modra); }
-.karta.barva-2 .hero { background: var(--cervena); }
+.karta.barva-1 .hero, .host.barva-1 .hero { background: var(--b1); }
+.karta.barva-2 .hero, .host.barva-2 .hero { background: var(--b2); }
+.karta.barva-3 .hero, .host.barva-3 .hero { background: var(--b3); }
+.karta.barva-4 .hero, .host.barva-4 .hero { background: var(--b4); color: #241d10; }
+.karta.barva-5 .hero, .host.barva-5 .hero { background: var(--b5); }
+.karta.barva-6 .hero, .host.barva-6 .hero { background: var(--b6); }
+.karta.barva-7 .hero, .host.barva-7 .hero { background: var(--b7); }
+.karta.barva-8 .hero, .host.barva-8 .hero { background: var(--b8); }
 
 .swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; }
-.barva-1 .swatch { background: var(--modra); }
-.barva-2 .swatch { background: var(--cervena); }
+.barva-1 .swatch { background: var(--b1); }
+.barva-2 .swatch { background: var(--b2); }
+.barva-3 .swatch { background: var(--b3); }
+.barva-4 .swatch { background: var(--b4); }
+.barva-5 .swatch { background: var(--b5); }
+.barva-6 .swatch { background: var(--b6); }
+.barva-7 .swatch { background: var(--b7); }
+.barva-8 .swatch { background: var(--b8); }
 
 .zrcadlo { list-style: none; padding: 0; }
 .zrcadlo li { padding: 0.4rem 0; border-bottom: 1px solid #2a241c; }
@@ -57,7 +78,42 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .stavovy-radek { color: var(--tlumene); font-size: 0.85rem; margin: 0.3rem 0; }
 .rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
 .skladani { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
-.skladani .vyber { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* Skládání sestavy: vybraní nahoře pod sebou s tlačítky barvy a týmu jako
+   ve hře, nevybraní ztlumeně pod nimi. Řádky se přetahují jen v rámci skupiny. */
+.skladani .sestava { list-style: none; padding: 0; margin: 0.4rem 0; }
+.skladani .radek { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.2rem; border-bottom: 1px solid #2a241c; cursor: grab; }
+.skladani .radek:active { cursor: grabbing; }
+.skladani .uchyt { color: #5a5040; font-size: 0.9rem; letter-spacing: -0.2em; width: 1rem; }
+.skladani .nevybrani { margin-top: 0.8rem; opacity: 0.5; }
+.skladani .nevybrani:not(:empty)::before { content: "Nevybraní"; display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); padding: 0.2rem 0.2rem; }
+.skladani button.jmeno { background: none; border: none; padding: 0.2rem 0.4rem; font: inherit; color: var(--text); text-align: left; }
+.skladani button.jmeno small { color: var(--tlumene); }
+.skladani .nevybrany button.jmeno:hover { color: var(--akcent); }
+/* Čtvercová tlačítka jako ve hře: barva s číslem, tým béžový s číslem nebo „–“. */
+.skladani .volba {
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-family: Georgia, "Times New Roman", serif;
+  border: 2px solid #5b4a2e;
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 180, 0.35), 0 1px 0 #000;
+  border-radius: 3px;
+  flex: none;
+}
+.skladani .volba-barva { color: #fff; text-shadow: 0 1px 1px #000; }
+.skladani .volba-barva.barva-1 { background: var(--b1); }
+.skladani .volba-barva.barva-2 { background: var(--b2); }
+.skladani .volba-barva.barva-3 { background: var(--b3); }
+.skladani .volba-barva.barva-4 { background: var(--b4); color: #241d10; text-shadow: none; }
+.skladani .volba-barva.barva-5 { background: var(--b5); }
+.skladani .volba-barva.barva-6 { background: var(--b6); }
+.skladani .volba-barva.barva-7 { background: var(--b7); }
+.skladani .volba-barva.barva-8 { background: var(--b8); color: #241d10; text-shadow: none; }
+.skladani .volba-tym { background: linear-gradient(#e8d6b6, #c9b28a); color: #3b2a12; }
 
 /* Vstupní pole nemělo do teď žádný styl — na tmavém podkladu svítilo bíle. */
 input, select { background: #241f19; color: var(--text); border: 1px solid #4a4133; border-radius: 4px; padding: 0.4rem 0.6rem; }
@@ -96,8 +152,55 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 .verejny-zapas { border: 1px solid #3d352a; border-radius: 8px; padding: 0.7rem 1rem; margin: 0.6rem 0; color: var(--text); }
 .verejny-zapas .strany { color: #cbbfa8; }
 
-/* Kopírování názvu lobby a hesla — vedle hodnoty, ať se neopisuje ručně. */
-button.kopirovat { font-size: 0.75rem; padding: 0.15rem 0.45rem; margin-left: 0.35rem; vertical-align: middle; }
+/* Kopírování názvu lobby a hesla kliknutím na samotnou hodnotu. Tlačítko
+   vypadá jako text s ikonou, ne jako tlačítko; toast vyskočí nad ním, aby se
+   řádek při potvrzení nehnul. */
+button.kopirovatelne {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0.1rem 0.2rem;
+  margin: 0;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: 3px;
+}
+button.kopirovatelne:hover { background: #2c2620; }
+button.kopirovatelne strong { color: var(--text); }
+.ikona-kopie { color: var(--tlumene); flex: none; }
+button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.35rem);
+  transform: translateX(-50%);
+  background: var(--akcent);
+  color: #241d10;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: toast-vyskoc 1.5s ease-out forwards;
+}
+@keyframes toast-vyskoc {
+  0% { opacity: 0; transform: translate(-50%, 0.3rem); }
+  15% { opacity: 1; transform: translate(-50%, 0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Vyhledání lobby: tlačítko a hláška k němu, ne nahoře na stránce. */
+.hledani-lobby { margin: 0.5rem 0 0.8rem; }
+.hledani-lobby p { margin: 0.4rem 0 0; }
+.zaloha-odkaz { margin-top: 0.8rem; color: var(--tlumene); }
+.zaloha-odkaz summary { cursor: pointer; }
+.zaloha-odkaz label { display: block; margin: 0.5rem 0; color: var(--text); }
 
 /* Chyba u pole, ne na začátku stránky: host se během streamu nahoru nedívá. */
 .chyba-pole { margin: 0.4rem 0 0; }
@@ -110,8 +213,6 @@ button.kopirovat { font-size: 0.75rem; padding: 0.15rem 0.45rem; margin-left: 0.
    radek v zrcadle. Stejny utvar jako na karte hrace. */
 .host .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
 .host .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
-.host.barva-1 .hero { background: var(--modra); }
-.host.barva-2 .hero { background: var(--cervena); }
 
 
 /* Zrcadlo dialogu Create Lobby: skutecny snimek ze hry, do ktereho se vsadi
@@ -163,3 +264,30 @@ button.kopirovat { font-size: 0.75rem; padding: 0.15rem 0.45rem; margin-left: 0.
   font-size: 0.8rem;
   text-align: right;
 }
+
+/* Hlavní tlačítko panelu režie: zlaté a větší, aby se v přenosu našlo naslepo. */
+button.vytvorit {
+  background: var(--akcent);
+  border-color: var(--akcent);
+  color: #241d10;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.7rem 1.3rem;
+}
+button.vytvorit:disabled { background: #2c2620; border-color: #4a4133; color: #6d6455; opacity: 1; }
+
+/* Tlačítka výsledku v barvě týmu; hráči drobně pod hlavním textem. */
+button.vysledek { display: inline-flex; flex-direction: column; align-items: center; color: #fff; font-weight: 700; padding: 0.5rem 0.9rem; line-height: 1.2; }
+button.vysledek.barva-1 { background: var(--b1); border-color: var(--b1); }
+button.vysledek.barva-2 { background: var(--b2); border-color: var(--b2); }
+button.vysledek.barva-3 { background: var(--b3); border-color: var(--b3); }
+button.vysledek.barva-4 { background: var(--b4); border-color: var(--b4); color: #241d10; }
+button.vysledek.barva-5 { background: var(--b5); border-color: var(--b5); }
+button.vysledek.barva-6 { background: var(--b6); border-color: var(--b6); }
+button.vysledek.barva-7 { background: var(--b7); border-color: var(--b7); }
+button.vysledek.barva-8 { background: var(--b8); border-color: var(--b8); color: #241d10; }
+button.vysledek small { font-size: 0.68rem; font-weight: 400; opacity: 0.8; margin-top: 0.15rem; }
+
+/* Spectate se dvěma řádky: nahoře akce, dole fáze (Lobby / Hraje se). */
+.cta.spectate { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.cta.spectate small { font-size: 0.72rem; font-weight: 400; opacity: 0.85; }

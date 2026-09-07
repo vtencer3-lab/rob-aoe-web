@@ -27,7 +27,7 @@ it("ukáže jméno ve hře, ELO a hodiny", () => {
 });
 
 it("u skrytého profilu napíše nezveřejněno", () => {
-  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamHodiny: null })]} />);
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamHodiny: null, avatarUrl: "https://avatars.steamstatic.com/x_full.jpg" })]} />);
   expect(screen.getByText("nezveřejněno")).toBeInTheDocument();
 });
 

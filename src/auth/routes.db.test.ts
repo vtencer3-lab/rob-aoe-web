@@ -286,3 +286,21 @@ it("nastavené ADMIN_STEAM_ID dočasnému adminovi práva zase odebere", async (
   expect((await getPlayer(DRUHY))?.jeAdmin).toBe(true);
   vi.unstubAllEnvs();
 });
+
+// Sezení drží měsíc; bez obnovy při načtení stránky by hráč, který se
+// nepřihlásil znovu, měl v tabulce statistiky z prvního dne.
+it("/api/me spustí obnovu statistik přihlášeného", async () => {
+  const obnovStaty = vi.fn(async () => {});
+  const app = buildServer({ overSteam: async () => true, obnovStaty });
+  const prihlaseni = await app.inject({
+    method: "GET",
+    url: `/api/auth/steam/return?${NAVRAT.toString()}`,
+  });
+  const sid = prihlaseni.cookies.find((c) => c.name === "sid")!.value;
+  obnovStaty.mockClear();
+
+  await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
+  await new Promise((r) => setTimeout(r, 10));
+  expect(obnovStaty).toHaveBeenCalledWith(STEAM_ID);
+  await app.close();
+});

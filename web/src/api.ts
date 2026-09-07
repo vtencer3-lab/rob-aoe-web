@@ -1,4 +1,4 @@
-import type { AkceStavPayload, Format } from "../../src/shared/types.js";
+import type { AkceStavPayload, HledaniLobbyVysledek, SestavaVstup, Vitez } from "../../src/shared/types.js";
 import { cesta } from "./cesty.js";
 
 export interface Me {
@@ -41,11 +41,15 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ odkaz }),
     }).then((r) => json<{ ok: true }>(r)),
-  vytvoritZapas: (akceId: number, format: Format, steamIds: string[]) =>
+  hledatLobby: (zapasId: number) =>
+    fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>
+      json<HledaniLobbyVysledek>(r),
+    ),
+  vytvoritZapas: (akceId: number, sestava: SestavaVstup[]) =>
     fetch(cesta(`/api/akce/${akceId}/zapas`), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ format, steamIds }),
+      body: JSON.stringify({ sestava }),
     }).then((r) => json<{ zapas: { id: number } }>(r)),
   zapasStav: (zapasId: number, stav: string) =>
     fetch(cesta(`/api/zapas/${zapasId}/stav`), {
@@ -53,11 +57,11 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ stav }),
     }).then((r) => json<{ ok: true }>(r)),
-  vysledek: (zapasId: number, viteznyTym: number) =>
+  vysledek: (zapasId: number, vitez: Vitez) =>
     fetch(cesta(`/api/zapas/${zapasId}/vysledek`), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ viteznyTym }),
+      body: JSON.stringify({ vitez }),
     }).then((r) => json<{ ok: true }>(r)),
   zmenitHosta: (zapasId: number, steamId: string) =>
     fetch(cesta(`/api/zapas/${zapasId}/host`), {

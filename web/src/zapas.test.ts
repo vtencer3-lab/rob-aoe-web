@@ -9,20 +9,20 @@ const u = (steamId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikV
   tym,
   barva,
   jeHost,
+  poradi: 0,
   kliknulPripojit: null,
 });
 
 const coop: ZapasView = {
   id: 1,
   poradi: 1,
-  format: "coop_kings_2v2",
   stav: "vyhlaseny",
   nazevLobby: "ROB-01",
   heslo: "k7rm2xq9",
   lobbyId: null,
   joinUri: null,
   spectatorUri: null,
-  viteznyTym: null,
+  vitez: null,
   ucastnici: [u("a", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)],
 };
 
@@ -42,7 +42,7 @@ describe("spoluhraci", () => {
   });
 
   it("v 1v1 nikdo", () => {
-    const jeden: ZapasView = { ...coop, format: "1v1", ucastnici: [u("a", 1, 1), u("c", 2, 2)] };
+    const jeden: ZapasView = { ...coop, ucastnici: [u("a", 1, 1), u("c", 2, 2)] };
     expect(spoluhraci(jeden, "a")).toEqual([]);
   });
 });
@@ -73,6 +73,7 @@ describe("jmenoHrace", () => {
     tym: 1,
     barva: 1,
     jeHost: false,
+    poradi: 0,
     kliknulPripojit: null,
   });
 
@@ -95,14 +96,13 @@ describe("verejneZapasy", () => {
   const zapas = (id: number, stav: string, steamIds: string[]): ZapasView => ({
     id,
     poradi: id,
-    format: "1v1",
     stav,
     nazevLobby: `ROB-0${id}`,
     heslo: "",
     lobbyId: null,
     joinUri: null,
     spectatorUri: null,
-    viteznyTym: null,
+    vitez: null,
     ucastnici: steamIds.map((steamId, i) => ({
       steamId,
       alias: steamId,
@@ -110,6 +110,7 @@ describe("verejneZapasy", () => {
       tym: (i % 2 === 0 ? 1 : 2) as 1 | 2,
       barva: (i % 2 === 0 ? 1 : 2) as 1 | 2,
       jeHost: false,
+      poradi: 0,
       kliknulPripojit: null,
     })),
   });

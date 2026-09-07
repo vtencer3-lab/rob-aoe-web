@@ -10,15 +10,20 @@ import { config } from "../config.js";
 import { getPlayer, savePlayerStats } from "../db/players.js";
 import { steamZdroje } from "../external/steam.js";
 import { fetchPersonalStat } from "../external/worldsEdge.js";
+import { seznamLobby } from "../matches/seznamLobby.js";
 import { jeCerstve, refreshPlayerStats } from "../players/refresh.js";
 import { HttpError } from "./guards.js";
+import { broadcastAkce } from "../realtime/akceStav.js";
 import { registerEventRoutes } from "./routes/events.js";
-import { registerMatchRoutes } from "./routes/matches.js";
+import { registerMatchRoutes, type MatchDeps } from "./routes/matches.js";
 import { registerStreamRoutes } from "./routes/stream.js";
 import { VERZE } from "../shared/verze.js";
 
-function vychoziDeps(): AuthDeps {
+export type ServerDeps = AuthDeps & MatchDeps;
+
+function vychoziDeps(): ServerDeps {
   return {
+    nactiInzeraty: () => seznamLobby.aktualni(),
     overSteam: (params) => verifyWithSteam(params),
     obnovStaty: async (steamId) => {
       // Worlds Edge je nezdokumentovaný endpoint bez známých limitů, takže se
@@ -30,6 +35,9 @@ function vychoziDeps(): AuthDeps {
         ...steamZdroje(config.steamApiKey),
         uloz: savePlayerStats,
       });
+      // Nová data v tabulce přihlášených musí doputovat i těm, kdo stránku
+      // právě mají otevřenou — jinak by čekali na jiný broadcast.
+      await broadcastAkce();
     },
   };
 }
@@ -45,7 +53,10 @@ function nastaveniLogu(): { level: string } | false {
   return { level: process.env["LOG_LEVEL"] ?? "info" };
 }
 
-export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
+export function buildServer(castDeps: Partial<ServerDeps> = {}): FastifyInstance {
+  // Testy podstrkují jen to, co potřebují (Steam, statistiky, seznam lobby);
+  // zbytek zůstává skutečný.
+  const deps: ServerDeps = { ...vychoziDeps(), ...castDeps };
   const app = Fastify({ logger: nastaveniLogu() });
   app.register(cookie);
   // Verze je v odpovědi schválně: po nasazení jde jedním curl ověřit, že běží
@@ -53,7 +64,7 @@ export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
   app.get("/api/health", async () => ({ ok: true, verze: VERZE }));
   registerAuthRoutes(app, deps);
   registerEventRoutes(app);
-  registerMatchRoutes(app);
+  registerMatchRoutes(app, deps);
   registerStreamRoutes(app);
   // Zkušební dveře se za produkčního nastavení vůbec nezaregistrují. Druhý
   // zámek (adresa na https) sedí uvnitř nich — jeden zámek na tohle nestačí.

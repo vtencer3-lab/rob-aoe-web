@@ -1,54 +1,37 @@
 import { randomInt } from "node:crypto";
 
-import type { Barva, Format, Seat, Tym } from "../shared/types.js";
+import { zkontrolujSestavu } from "../shared/sestava.js";
+import type { Seat, SestavaVstup } from "../shared/types.js";
 
-export interface SeatInput {
-  steamId: string;
-  odehranoHer: number | null;
-}
-
-/** Vstup od Roba nesedí formátu zápasu — chybný počet hráčů nebo duplicita, ne interní chyba. */
+/** Vstup od Roba nesedí (počet hráčů, duplicita, barvy, týmy) — chyba požadavku, ne serveru. */
 export class SestavaChyba extends Error {}
 
-const ROZLOZENI: Record<Format, ReadonlyArray<{ tym: Tym; barva: Barva }>> = {
-  "1v1": [
-    { tym: 1, barva: 1 },
-    { tym: 2, barva: 2 },
-  ],
-  coop_kings_2v2: [
-    { tym: 1, barva: 1 },
-    { tym: 1, barva: 1 },
-    { tym: 2, barva: 2 },
-    { tym: 2, barva: 2 },
-  ],
-};
-
-export function seatCount(format: Format): number {
-  return ROZLOZENI[format].length;
-}
-
-export function assignSeats(format: Format, players: SeatInput[]): Seat[] {
-  const rozlozeni = ROZLOZENI[format];
-  if (players.length !== rozlozeni.length) {
-    throw new SestavaChyba(`Formát ${format} potřebuje přesně ${rozlozeni.length} hráče.`);
-  }
-  const unikatni = new Set(players.map((p) => p.steamId));
-  if (unikatni.size !== players.length) {
-    throw new SestavaChyba("Stejný hráč nemůže být v zápase dvakrát.");
-  }
+/**
+ * Ze sestavy, jak ji Rob naklikal, udělá sedadla: pořadí pole je pořadí slotů
+ * v lobby a hostem se stává ten, kdo má nejvíc odehraných her — má nejspíš
+ * nejstabilnější připojení a lobby už zakládal. Kdo hry nemá, počítá se jako
+ * nula; při shodě vyhrává dřívější slot.
+ */
+export function sestavSedadla(
+  sestava: SestavaVstup[],
+  odehranoHer: ReadonlyMap<string, number | null>,
+): Seat[] {
+  const chyba = zkontrolujSestavu(sestava);
+  if (chyba) throw new SestavaChyba(chyba);
 
   let hostIndex = 0;
-  for (let i = 1; i < players.length; i++) {
-    if ((players[i]!.odehranoHer ?? 0) > (players[hostIndex]!.odehranoHer ?? 0)) {
-      hostIndex = i;
-    }
+  for (let i = 1; i < sestava.length; i++) {
+    const her = odehranoHer.get(sestava[i]!.steamId) ?? 0;
+    const nejvic = odehranoHer.get(sestava[hostIndex]!.steamId) ?? 0;
+    if (her > nejvic) hostIndex = i;
   }
 
-  return players.map((hrac, i) => ({
-    steamId: hrac.steamId,
-    tym: rozlozeni[i]!.tym,
-    barva: rozlozeni[i]!.barva,
-    jeHost: i === hostIndex,
+  return sestava.map((s, poradi) => ({
+    steamId: s.steamId,
+    tym: s.tym,
+    barva: s.barva,
+    jeHost: poradi === hostIndex,
+    poradi,
   }));
 }
 

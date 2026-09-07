@@ -3,6 +3,7 @@ import { getAktivniAkce, listSignups } from "../db/events.js";
 import { listZapasy } from "../db/matches.js";
 import type { PlayerRow } from "../db/players.js";
 import type { AkceStavPayload, PlayerView, ZapasView } from "../shared/types.js";
+import { fazeLobbyPro } from "./fazeLobby.js";
 import { hub, KANAL_AKCE } from "./hub.js";
 
 export function playerView(hrac: PlayerRow): PlayerView {
@@ -29,7 +30,6 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
   return {
     id: zapas.id,
     poradi: zapas.poradi,
-    format: zapas.format,
     stav: zapas.stav,
     nazevLobby: zapas.nazevLobby,
     heslo: zapas.heslo,
@@ -37,7 +37,8 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
     // Odkazy se vždy odvozují z čísla lobby, nikdy se neukládají.
     joinUri: zapas.lobbyId ? joinUri(zapas.lobbyId) : null,
     spectatorUri: zapas.lobbyId ? spectatorUri(zapas.lobbyId) : null,
-    viteznyTym: zapas.viteznyTym,
+    fazeLobby: fazeLobbyPro(zapas.lobbyId),
+    vitez: zapas.vitez,
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,
       alias: u.alias,
@@ -45,6 +46,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
       tym: u.tym,
       barva: u.barva,
       jeHost: u.jeHost,
+      poradi: u.poradi,
       kliknulPripojit: u.kliknulPripojit?.toISOString() ?? null,
     })),
   };
