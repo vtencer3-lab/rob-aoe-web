@@ -543,12 +543,12 @@ it("kontrola lobby vrátí fajfky a křížky a nové číslo lobby si uloží",
 
   const res = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: hracSid } });
   expect(res.statusCode).toBe(200);
-  const telo = res.json() as { nalezeno: boolean; kontroly: { klic: string; ok: boolean; text: string }[] };
+  const telo = res.json() as { nalezeno: boolean; kontroly: { klic: string; stav: string; text: string }[] };
   expect(telo.nalezeno).toBe(true);
   const podle = Object.fromEntries(telo.kontroly.map((k) => [k.klic, k]));
-  expect(podle["hraci"]!.ok).toBe(false);
-  expect(podle["mapa"]).toMatchObject({ ok: false, text: /Black Forest, má být Arabia/ });
-  expect(podle["velikost"]!.ok).toBe(true);
+  expect(podle["hraci"]!.stav).toBe("spatne");
+  expect(podle["mapa"]).toMatchObject({ stav: "spatne", text: /Black Forest, má být Arabia/ });
+  expect(podle["velikost"]!.stav).toBe("ok");
   expect((await getZapas(zapas.id))!.zapas.lobbyId).toBe("504987862");
   await app.close();
 });
@@ -575,10 +575,10 @@ it("nastavení lobby smí jen Rob a ukládá jen známé klíče", async () => {
     method: "POST",
     url: `/api/akce/${akceId}/nastaveni-lobby`,
     cookies: { sid: robSid },
-    payload: { populace: 250, rychlost: 3, nesmysl: 1, mapaId: null, sadaCivilizaci: 2, rezim: 7, primeri: 15, lockTeams: false, turbo: "ano", aiObtiznost: null },
+    payload: { populace: 250, rychlost: 3, nesmysl: 1, mapaId: null, sadaCivilizaci: 2, rezim: 99, primeri: 15, lockTeams: false, turbo: "ano", aiObtiznost: null },
   });
   expect(res.statusCode).toBe(200);
-  // rezim 7 a turbo "ano" hra nezná — zahodí se; null = „je to jedno“ projde.
+  // rezim 99 a turbo "ano" hra nezná — zahodí se; null = „je to jedno“ projde.
   expect(res.json().akce.nastaveniLobby).toEqual({ populace: 250, rychlost: 3, mapaId: null, sadaCivilizaci: 2, primeri: 15, lockTeams: false, aiObtiznost: null });
   const prazdne = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { nesmysl: 1 } });
   expect(prazdne.statusCode).toBe(400);
