@@ -259,7 +259,7 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 /* Host taky hraje, takze i on ma svoji barvu videt jako pruh, ne jen jako
    radek v zrcadle. Stejny utvar jako na karte hrace. */
 .host .titulek-zapasu, .karta .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
-.host .zakladas { font-size: 1.5rem; }
+.host .zakladas, .karta .zakladas { font-size: 1.5rem; }
 .host .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
 .host .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
 
