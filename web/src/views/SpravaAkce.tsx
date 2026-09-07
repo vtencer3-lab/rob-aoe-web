@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
 import type { AkceView } from "../../../src/shared/types.js";
 import { NastaveniLobby } from "./NastaveniLobby.js";
@@ -7,17 +7,31 @@ interface Props {
   akce: AkceView | null;
   onZalozit: (nazev: string) => void;
   onStav: (stav: string) => void;
+  /** Živá změna nastavení lobby (každé kliknutí). */
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
+  /** „Uložit nastavení lobby“: snímek na serveru. */
+  onUlozitNastaveni: () => void;
   /** Jen na vývojové verzi: přidávání a odebírání zkušebních hráčů. */
   zkusebni?: { onPridat: () => void; onOdebrat: () => void };
+  /** Debug mód (přepínač u verze): ukáže tlačítka zkušebních hráčů. */
+  ladeni?: boolean;
+  /** Levá půlka panelu: rozpracovaná sestava (Skladani), jako seznam hráčů v herní lobby. */
+  children?: ReactNode;
 }
 
-export function SpravaAkce({ akce, onZalozit, onStav, onNastaveniLobby, zkusebni }: Props) {
+/**
+ * Panel akce rozložený jako herní lobby: název akce v záhlaví, vlevo
+ * vybraní hráči (sestava), vpravo Game Settings. „Ukončit akci“ je vpravo
+ * v záhlaví, ať nezavazí; tlačítka zkušebních hráčů jsou pod záhlavím a jen
+ * v debug módu.
+ */
+export function SpravaAkce({ akce, onZalozit, onStav, onNastaveniLobby, onUlozitNastaveni, zkusebni, ladeni = false, children }: Props) {
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
   return (
     <section className="sprava-akce">
-      <div className="ovladani">
+      <header className="hlavicka-akce">
+        <h2 data-testid="nazev-akce">{akce.nazev}</h2>
         <button
           onClick={() => {
             // Jediné tlačítko na úrovni akce, a nevratné: po „konec“ akce zmizí
@@ -27,20 +41,23 @@ export function SpravaAkce({ akce, onZalozit, onStav, onNastaveniLobby, zkusebni
         >
           Ukončit akci
         </button>
-        {/* Zkušební hráči: Rob si složí plnou sestavu bez čtyř lidí. Kreslí se
-            jen tam, kde to server povolil (vývojová verze). */}
-        {zkusebni ? (
-          <>
-            <button onClick={zkusebni.onPridat} title="Přihlásí do akce dalšího zkušebního hráče">
-              + Zkušební hráč
-            </button>
-            <button onClick={zkusebni.onOdebrat} title="Odhlásí z akce všechny zkušební hráče">
-              Odebrat zkušební
-            </button>
-          </>
-        ) : null}
+      </header>
+      {/* Zkušební hráči: Rob si složí plnou sestavu bez čtyř lidí. Kreslí se
+          jen tam, kde to server povolil (vývojová verze), a jen v debug módu. */}
+      {zkusebni && ladeni ? (
+        <div className="ovladani ladeni" data-testid="ladeni-tlacitka">
+          <button onClick={zkusebni.onPridat} title="Přihlásí do akce dalšího zkušebního hráče">
+            + Zkušební hráč
+          </button>
+          <button onClick={zkusebni.onOdebrat} title="Odhlásí z akce všechny zkušební hráče">
+            Odebrat zkušební
+          </button>
+        </div>
+      ) : null}
+      <div className="lobby-rozlozeni">
+        <div className="leva">{children}</div>
+        <NastaveniLobby zive={akce.nastaveniLobby} ulozene={akce.ulozeneNastaveniLobby} onZmena={onNastaveniLobby} onUlozit={onUlozitNastaveni} />
       </div>
-      <NastaveniLobby ulozene={akce.nastaveniLobby} onUlozit={onNastaveniLobby} />
     </section>
   );
 }

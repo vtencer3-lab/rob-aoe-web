@@ -33,7 +33,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
   return (
     <div className="skladani">
       <p className="zaloha">
-        Hráče přidáš tlačítkem „+“ v tabulce nahoře. Levé tlačítko myši na barvě nebo týmu jde
+        Hráče přidáš tlačítkem „+“ v tabulce přihlášených. Levé tlačítko myši na barvě nebo týmu jde
         dopředu, pravé zpátky. Pořadí přetáhni myší — je to pořadí slotů v lobby.
       </p>
 
@@ -71,10 +71,9 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
               >
                 {v.tym === 0 ? "–" : v.tym}
               </button>
-              <span className="jmeno">
-                {jmeno}
-                {hrac.elo1v1 !== null ? <small> ({hrac.elo1v1})</small> : null}
-              </span>
+              <span className="jmeno">{jmeno}</span>
+              {/* ELO ve vlastním sloupci s pevnou šířkou, ať se řádky zarovnají. */}
+              <span className="elo">{hrac.elo1v1 !== null ? <small>({hrac.elo1v1})</small> : null}</span>
               {/* Civilizace je volitelná: „libovolná“ nechá výběr na hráči, konkrétní
                   se ukáže na jeho kartě a kontrola lobby ji porovná. */}
               <VyberCivilizace

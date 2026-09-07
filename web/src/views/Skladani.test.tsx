@@ -207,3 +207,12 @@ it("vybranou civilizaci mimo sadu ze seznamu nevyhodí", () => {
   expect(within(seznam).getByRole("option", { name: /spartans/i })).toBeInTheDocument();
   expect(within(seznam).queryByRole("option", { name: /athenians/i })).not.toBeInTheDocument();
 });
+
+// ELO má vlastní sloupec s pevnou šířkou, ať se jména a erby zarovnají.
+it("ELO stojí ve vlastním sloupci vedle jména", () => {
+  render(<Panel />);
+  vyber("TenceR");
+  const radek = screen.getByRole("button", { name: /barva tencer/i }).closest("li")!;
+  expect(radek.querySelector(".jmeno")).toHaveTextContent(/^TenceR$/);
+  expect(radek.querySelector(".elo")).toHaveTextContent("(1136)");
+});

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { parseJoinUri, type LobbyUriError } from "../../aoe/lobbyUri.js";
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
+import { setSkladani } from "../../db/events.js";
 import {
   createZapas,
   getZapas,
@@ -113,6 +114,8 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     const sestava = prectiSestavu(request.body);
     try {
       const zapas = await createZapas(akceId, sestava);
+      // Rozpracovaná sestava je hotová — vyprázdnit ji všem adminům naráz.
+      await setSkladani(akceId, []);
       await broadcastAkce();
       // Klientovi stačí ID — heslo, číslo lobby i potvrzení hosta jsou tajemství,
       // co proudí jen redigovaným SSE kanálem, nikdy syrová v odpovědi na admin akci.

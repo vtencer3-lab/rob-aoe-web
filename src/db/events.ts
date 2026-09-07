@@ -1,3 +1,4 @@
+import type { SestavaVstup } from "../shared/types.js";
 import { getPool } from "./pool.js";
 import { mapuj, PLAYER_SLOUPEC_NAZVY, type DbRow, type PlayerRow } from "./players.js";
 
@@ -8,8 +9,12 @@ export interface AkceRow {
   id: number;
   nazev: string;
   stav: AkceStav;
-  /** JSON s částí NastaveniLobby; zbytek doplní kód výchozími hodnotami. */
+  /** JSON s částí NastaveniLobby; zbytek doplní kód výchozími hodnotami. Mění se každým kliknutím. */
   nastaveniLobby: Record<string, unknown>;
+  /** Snímek nastavení uložený tlačítkem; null = zatím nic neuloženo. */
+  ulozeneNastaveniLobby: Record<string, unknown> | null;
+  /** Rozpracovaná sestava zápasu, sdílená všemi adminy přes SSE. */
+  skladani: SestavaVstup[];
 }
 
 interface AkceDbRow {
@@ -17,12 +22,21 @@ interface AkceDbRow {
   nazev: string;
   stav: AkceStav;
   nastaveni_lobby: Record<string, unknown> | null;
+  ulozene_nastaveni_lobby: Record<string, unknown> | null;
+  skladani: SestavaVstup[] | null;
 }
 
-const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby";
+const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani";
 
 function mapujAkci(r: AkceDbRow): AkceRow {
-  return { id: r.id, nazev: r.nazev, stav: r.stav, nastaveniLobby: r.nastaveni_lobby ?? {} };
+  return {
+    id: r.id,
+    nazev: r.nazev,
+    stav: r.stav,
+    nastaveniLobby: r.nastaveni_lobby ?? {},
+    ulozeneNastaveniLobby: r.ulozene_nastaveni_lobby,
+    skladani: Array.isArray(r.skladani) ? r.skladani : [],
+  };
 }
 
 export async function createAkce(nazev: string): Promise<AkceRow> {
@@ -56,6 +70,25 @@ export async function setNastaveniLobby(
   const { rows } = await getPool().query<AkceDbRow>(
     `UPDATE akce SET nastaveni_lobby = $2::jsonb WHERE id = $1 RETURNING ${SLOUPCE_AKCE}`,
     [akceId, JSON.stringify(nastaveni)],
+  );
+  if (!rows[0]) throw new Error(`Akce ${akceId} neexistuje.`);
+  return mapujAkci(rows[0]);
+}
+
+/** „Uložit nastavení lobby“: živé nastavení se zkopíruje do snímku. */
+export async function ulozNastaveniLobby(akceId: number): Promise<AkceRow> {
+  const { rows } = await getPool().query<AkceDbRow>(
+    `UPDATE akce SET ulozene_nastaveni_lobby = nastaveni_lobby WHERE id = $1 RETURNING ${SLOUPCE_AKCE}`,
+    [akceId],
+  );
+  if (!rows[0]) throw new Error(`Akce ${akceId} neexistuje.`);
+  return mapujAkci(rows[0]);
+}
+
+export async function setSkladani(akceId: number, sestava: SestavaVstup[]): Promise<AkceRow> {
+  const { rows } = await getPool().query<AkceDbRow>(
+    `UPDATE akce SET skladani = $2::jsonb WHERE id = $1 RETURNING ${SLOUPCE_AKCE}`,
+    [akceId, JSON.stringify(sestava)],
   );
   if (!rows[0]) throw new Error(`Akce ${akceId} neexistuje.`);
   return mapujAkci(rows[0]);

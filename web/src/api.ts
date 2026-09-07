@@ -62,6 +62,14 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(nastaveni),
     }).then((r) => json<{ akce: { id: number } }>(r)),
+  ulozitNastaveniLobby: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby/ulozit`), { method: "POST" }).then((r) => json<{ akce: { id: number } }>(r)),
+  skladani: (akceId: number, sestava: SestavaVstup[]) =>
+    fetch(cesta(`/api/akce/${akceId}/skladani`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sestava }),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
   hledatLobby: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>
       json<HledaniLobbyVysledek>(r),

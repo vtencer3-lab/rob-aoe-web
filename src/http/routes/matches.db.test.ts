@@ -567,6 +567,48 @@ it("kontrola bez lobby v seznamu vrátí nalezeno=false, cizí hráč 403", asyn
   await app.close();
 });
 
+// Rozpracovaná sestava žije u akce: co jeden admin naklikal, druhý vidí ve
+// stavu; vytvoření zápasu ji vyprázdní. Jen Rob, jen tvarově platné řádky.
+it("rozpracovaná sestava se ukládá u akce a vytvoření zápasu ji vyprázdní", async () => {
+  const app = buildServer();
+  const sestava = [{ steamId: HRACI[0], tym: 1, barva: 1, civ: 18 }, { steamId: HRACI[1], tym: 2, barva: 2, civ: null }];
+
+  const zakazano = await app.inject({ method: "PUT", url: `/api/akce/${akceId}/skladani`, cookies: { sid: hracSid }, payload: { sestava } });
+  expect(zakazano.statusCode).toBe(403);
+  const spatne = await app.inject({ method: "PUT", url: `/api/akce/${akceId}/skladani`, cookies: { sid: robSid }, payload: { sestava: [{ steamId: "x", tym: 9, barva: 1 }] } });
+  expect(spatne.statusCode).toBe(400);
+
+  const res = await app.inject({ method: "PUT", url: `/api/akce/${akceId}/skladani`, cookies: { sid: robSid }, payload: { sestava } });
+  expect(res.statusCode).toBe(200);
+  expect(res.json().akce.skladani).toEqual(sestava);
+  const stav = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } });
+  expect(stav.json().akce.skladani).toEqual(sestava);
+
+  await vytvorZapas(app);
+  const po = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: robSid } });
+  expect(po.json().akce.skladani).toEqual([]);
+  await app.close();
+});
+
+// „Uložit nastavení lobby“ = snímek živého nastavení; živé se dál mění
+// každým kliknutím, snímek jen tímhle tlačítkem.
+it("uložení nastavení lobby udělá snímek, který živé změny nepřepíšou", async () => {
+  const app = buildServer();
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { populace: 150 } });
+  const zakazano = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby/ulozit`, cookies: { sid: hracSid } });
+  expect(zakazano.statusCode).toBe(403);
+
+  const ulozeni = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby/ulozit`, cookies: { sid: robSid } });
+  expect(ulozeni.statusCode).toBe(200);
+  expect(ulozeni.json().akce.ulozeneNastaveniLobby).toEqual({ populace: 150 });
+
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { populace: 300 } });
+  const stav = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: robSid } });
+  expect(stav.json().akce.nastaveniLobby).toEqual({ populace: 300 });
+  expect(stav.json().akce.ulozeneNastaveniLobby).toEqual({ populace: 150 });
+  await app.close();
+});
+
 it("nastavení lobby smí jen Rob a ukládá jen známé klíče", async () => {
   const app = buildServer();
   const zakazano = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: hracSid }, payload: { populace: 100 } });

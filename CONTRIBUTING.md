@@ -124,9 +124,10 @@ Frontend, `web/src/`:
 |---|---|
 | `App.tsx` | rozhoduje, kdo vidí kterou obrazovku |
 | `useAkceStav.ts` | SSE a záložní dotazování — **přečti si komentář nahoře** |
-| `views/SpravaAkce.tsx` | panel akce: ukončení, zkušební hráči, formulář `NastaveniLobby.tsx` (rozložený jako herní Game Settings, „–“ = je to jedno) |
+| `views/SpravaAkce.tsx` | panel akce jako herní lobby: název + Ukončit v záhlaví, vlevo sestava (children), vpravo `NastaveniLobby.tsx` (jako herní Game Settings, „–“ = je to jedno; každá změna se propíše hned, „Uložit“ dělá snímek) |
+| `views/Prepinac.tsx` | přepínač s knoflíkem (Admin/User View v záhlaví, Debug u verze) — jen pro adminy, stav v localStorage |
 | `views/Rezie.tsx` | panel režie: zápasy, Spectate, kontrola lobby, výsledky po stranách, odebrání zrušeného zápasu |
-| `views/Skladani.tsx`, `skladani.ts`, `tahani.ts` | skládání sestavy: barva a tým jako ve hře, civilizace přes `VyberCivilizace.tsx` (erby z `civErby.ts`), pořadí slotů přetažením |
+| `views/Skladani.tsx`, `skladani.ts`, `tahani.ts` | skládání sestavy: barva a tým jako ve hře, civilizace přes `VyberCivilizace.tsx` (erby z `civErby.ts`), pořadí slotů přetažením. Rozpracovaná sestava je **na serveru u akce** (`akce.skladani`, `PUT /api/akce/:id/skladani`) a přes SSE ji vidí všichni admini; `useSkladani` drží lokální kopii jen do potvrzení serverem |
 | `views/ObrazovkaHosta.tsx` | obrazovka hosta: kroky „Zakládáš!“ → „Kontrola lobby“ → „Výborně, můžete hrát!“, snímek herního dialogu |
 | `views/KontrolaLobby.tsx` | sekce „Kontrola lobby“, **jedna a tatáž pro hosta i režii**; sama se opakuje po 5 s, dokud se v lobby sedí |
 | `views/KartaHrace.tsx` | karta hráče s jeho barvou a odkazem |
@@ -149,6 +150,13 @@ končí ve stejném `setLobbyId()`.
 **2. SSE posílá vždycky celý stav, nikdy přírůstky.** Díky tomu je obnova po
 výpadku zadarmo a `/api/akce` může sloužit jako plnohodnotná náhrada streamu —
 vrací doslova týž payload. Kdyby se začaly posílat přírůstky, obojí padá.
+
+> Z toho plyne i pravidlo pro UI: **všechno, co má vidět víc lidí naráz,
+> žije na serveru, ne v prohlížeči.** Rozpracovaná sestava i nastavení lobby
+> se proto po každém kliknutí posílají na server a zpátky přijdou přes SSE;
+> lokální stav v komponentě je jen na dobu, než server odpoví. Nový stav
+> „jen pro mě“ v `useState` je správně jen u věcí, které opravdu nikoho
+> jiného nezajímají (sbalené sekce, přepínače pohledu).
 
 **3. O tajemstvích rozhoduje jedno místo.** `redigujProDivaka()` v
 `src/realtime/redakce.ts` je bezpečnostní hranice: neúčastníkovi vyprázdní

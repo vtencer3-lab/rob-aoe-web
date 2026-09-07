@@ -51,8 +51,12 @@ export interface AkceView {
   id: number;
   nazev: string;
   stav: string;
-  /** Očekávané nastavení lobby pro kontrolu; chybějící klíče = výchozí (lobbyKontrola.ts). */
+  /** Očekávané nastavení lobby pro kontrolu; chybějící klíče = výchozí (lobbyKontrola.ts). Mění se živě. */
   nastaveniLobby?: Record<string, unknown>;
+  /** Snímek nastavení uložený tlačítkem „Uložit nastavení lobby“; null = nic. */
+  ulozeneNastaveniLobby?: Record<string, unknown> | null;
+  /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
+  skladani?: SestavaVstup[];
 }
 
 export interface UcastnikView {

@@ -1,24 +1,13 @@
 import { useState } from "react";
-import { doplnNastaveni, type KontrolaLobbyVysledek, type NastaveniLobby } from "../../../src/shared/lobbyKontrola.js";
+import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
-import {
-  BARVA_NAZEV,
-  type AkceStavPayload,
-  type SestavaVstup,
-  type Vitez,
-  type ZapasView,
-} from "../../../src/shared/types.js";
-import type { Skladani as StavSkladani } from "../skladani.js";
+import { BARVA_NAZEV, type AkceStavPayload, type Vitez, type ZapasView } from "../../../src/shared/types.js";
 import { nazevCivilizace } from "../../../src/shared/civilizace.js";
 import { jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete } from "../zapas.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
-import { Skladani } from "./Skladani.js";
 
 interface Props {
   stav: AkceStavPayload;
-  /** Sdílený stav sestavy — nevybrané ukazuje tabulka přihlášených nad režií. */
-  skladani: StavSkladani;
-  onVytvoritZapas: (sestava: SestavaVstup[]) => void;
   onStav: (zapasId: number, stav: string) => void;
   /** Zrušený zápas úplně odebrat, ať v režii nestraší celý večer. */
   onSmazat: (zapasId: number) => void;
@@ -27,16 +16,10 @@ interface Props {
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
 }
 
-export function Rezie({ stav, skladani, onVytvoritZapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby }: Props) {
+/** Zápasy v režii. Skládání sestavy je v panelu akce (SpravaAkce), vedle nastavení lobby. */
+export function Rezie({ stav, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby }: Props) {
   return (
     <section className="rezie">
-      <div className="skladani-obal">
-        <Skladani
-          skladani={skladani}
-          onVytvoritZapas={onVytvoritZapas}
-          sadaCivilizaci={doplnNastaveni(stav.akce?.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
-        />
-      </div>
       {stav.zapasy.map((zapas) => (
         <ZapasVRezii
           key={zapas.id}

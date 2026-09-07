@@ -24,8 +24,10 @@ body {
   font: 15px/1.5 system-ui, sans-serif;
 }
 
-main { max-width: 62rem; margin: 0 auto; padding: 1.5rem; }
+main { max-width: calc(62rem + 100px); margin: 0 auto; padding: 1.5rem; }
 header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.hlavicka-vpravo { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; justify-content: flex-end; }
+.nadpis-seznamu { margin: 1rem 0 0.3rem; font-size: 1.05rem; }
 
 a.tlacitko, .cta {
   display: inline-block;
@@ -127,6 +129,15 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 
 .sprava-akce, .zalozeni-akce { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
 .sprava-akce .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+/* Panel akce jako herní lobby: název vlevo, Ukončit vpravo, pod tím vlevo
+   hráči (sestava) a vpravo Game Settings. */
+.hlavicka-akce { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
+.hlavicka-akce h2 { margin: 0; }
+.sprava-akce .ovladani.ladeni { margin: 0 0 0.6rem; }
+.lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: start; }
+.lobby-rozlozeni .leva { min-width: 0; }
+.lobby-rozlozeni .skladani { margin: 0; border: none; padding: 0; }
+@media (max-width: 60rem) { .lobby-rozlozeni { grid-template-columns: 1fr; } }
 .zalozeni-akce { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 
 /* Řádky účastníků v režii: text a tlačítko se dřív dotýkaly bez jediné
@@ -269,10 +280,14 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 /* Verze v patičce — nenápadná, ale čitelná i na streamu. */
 .verze {
   margin-top: 2rem;
-  opacity: 0.5;
   font-size: 0.8rem;
   text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
 }
+.verze > span:last-child { opacity: 0.5; }
 
 /* Hlavní tlačítko panelu režie: zlaté a větší, aby se v přenosu našlo naslepo. */
 button.vytvorit {
@@ -342,6 +357,7 @@ button.plus {
 button.plus:hover { filter: brightness(1.1); }
 .skladani .jmeno { padding: 0.2rem 0.4rem; }
 .skladani .jmeno small { color: var(--tlumene); }
+.skladani .elo { width: 4.4rem; flex: none; text-align: right; color: var(--tlumene); font-variant-numeric: tabular-nums; }
 button.odebrat { margin-left: auto; width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.1rem; line-height: 1; color: var(--tlumene); }
 button.odebrat:hover { color: #e07a6a; }
 
@@ -424,3 +440,14 @@ button.odebrat-zapas:hover { color: #e07a6a; }
 .stav-lobby { display: inline-flex; align-items: center; gap: 0.3rem; }
 button.kopirovatelne.jen-ikona { padding: 0.15rem 0.3rem; }
 button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px; height: 16px; }
+
+/* Přepínač s knoflíkem: vypnuto vlevo, zapnuto vpravo. Checkbox je jen pro
+   klávesnici a čtečky, vidět je drážka s knoflíkem. */
+.prepinac { display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; font-size: 0.85rem; color: var(--tlumene); user-select: none; }
+.prepinac input { position: absolute; opacity: 0; width: 0; height: 0; }
+.prepinac .drazka { position: relative; width: 2.2rem; height: 1.2rem; border-radius: 1rem; background: #3a3126; border: 1px solid #4a4133; transition: background 0.15s; }
+.prepinac .knoflik { position: absolute; top: 2px; left: 2px; width: calc(1.2rem - 6px); height: calc(1.2rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
+.prepinac.zapnuto .drazka { background: var(--akcent); border-color: var(--akcent); }
+.prepinac.zapnuto .knoflik { left: calc(100% - 1.2rem + 4px); background: #241d10; }
+.prepinac .aktivni { color: var(--text); font-weight: 600; }
+.prepinac input:focus-visible + .drazka { outline: 2px solid var(--akcent); outline-offset: 2px; }

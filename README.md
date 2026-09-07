@@ -270,7 +270,19 @@ Reveal Map, věky, Treaty, Lock Teams, Team Together, … Record Game), je pod
 „Další nastavení“ s počtem odchylek; sekce je rozbalená a pamatuje si, jak
 si ji kdo sbalil. Co má lobby splňovat, si Rob nastaví v panelu akce („Jak má
 vypadat lobby“), který je rozložený stejně jako herní panel Game Settings;
-AI Difficulty a Lock Teams začínají na „–“.
+AI Difficulty a Lock Teams začínají na „–“. **Každá změna v panelu se
+propíše hned** (na server a přes SSE všem, kdo mají stránku otevřenou);
+„Uložit nastavení lobby“ jen udělá snímek, ke kterému se „Načíst uložené“
+vrátí, „Reset nastavení“ nasadí výchozí hodnoty.
+
+**Panel akce je rozložený jako herní lobby:** název akce v záhlaví (vpravo
+„Ukončit akci“), vlevo rozpracovaná sestava, vpravo nastavení. Rozpracovaná
+sestava žije u akce na serveru (`PUT /api/akce/:id/skladani`), takže dva
+admini s otevřenou stránkou vidí každé kliknutí toho druhého bez refreshe;
+vytvořením zápasu se vyprázdní. Admin má navíc dva přepínače: v záhlaví
+„Admin View / User View“ (schová všechno adminské, ať vidí stránku očima
+hráče) a u verze v patičce „Debug“ (ukáže tlačítka zkušebních hráčů, pokud
+je server povolil). Oba si prohlížeč pamatuje.
 
 Civilizaci hráče vybírá Rob při skládání ze seznamu s erby (kulaté ikony z
 herních souborů `resources/_common/wpfg/resources/civ_techtree`, tytéž co
