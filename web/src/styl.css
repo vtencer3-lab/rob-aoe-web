@@ -120,6 +120,10 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   justify-content: center;
   font-weight: 800;
   font-family: Georgia, "Times New Roman", serif;
+  /* Georgia má staré číslice (3, 4, 5, 7, 9 klesají pod účaří) — verzálkové
+     sedí ve čtverečku všechny stejně. */
+  font-variant-numeric: lining-nums;
+  line-height: 1;
   border: 1px solid #2a2118;
   /* 3D zkosení jako ve hře: světlá hrana vlevo nahoře, tmavá vpravo dole,
      tenký zlatý rámeček a lesk přes horní půlku. */
