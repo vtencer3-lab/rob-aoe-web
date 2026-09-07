@@ -13,6 +13,7 @@ import { fetchPersonalStat } from "../external/worldsEdge.js";
 import { seznamLobby } from "../matches/seznamLobby.js";
 import { jeCerstve, refreshPlayerStats } from "../players/refresh.js";
 import { HttpError } from "./guards.js";
+import { broadcastAkce } from "../realtime/akceStav.js";
 import { registerEventRoutes } from "./routes/events.js";
 import { registerMatchRoutes, type MatchDeps } from "./routes/matches.js";
 import { registerStreamRoutes } from "./routes/stream.js";
@@ -34,6 +35,9 @@ function vychoziDeps(): ServerDeps {
         ...steamZdroje(config.steamApiKey),
         uloz: savePlayerStats,
       });
+      // Nová data v tabulce přihlášených musí doputovat i těm, kdo stránku
+      // právě mají otevřenou — jinak by čekali na jiný broadcast.
+      await broadcastAkce();
     },
   };
 }
