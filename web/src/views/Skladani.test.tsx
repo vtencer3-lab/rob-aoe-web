@@ -216,3 +216,12 @@ it("ELO stojí ve vlastním sloupci vedle jména", () => {
   expect(radek.querySelector(".jmeno")).toHaveTextContent(/^TenceR$/);
   expect(radek.querySelector(".elo")).toHaveTextContent("(1136)");
 });
+
+it("najetí na jméno vybraného hráče ukáže kartu se statistikami", () => {
+  render(<Panel />);
+  vyber("TenceR");
+  fireEvent.mouseEnter(screen.getByTestId("jmeno-vybraneho"));
+  expect(screen.getByTestId("staty-hrace")).toHaveTextContent("TenceR");
+  fireEvent.mouseLeave(screen.getByTestId("jmeno-vybraneho"));
+  expect(screen.queryByTestId("staty-hrace")).not.toBeInTheDocument();
+});

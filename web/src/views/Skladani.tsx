@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
 import { popisFormatu } from "../../../src/shared/strany.js";
-import { BARVA_NAZEV, BARVY, TYMY, type SestavaVstup } from "../../../src/shared/types.js";
+import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup } from "../../../src/shared/types.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
 import { useTahani } from "../tahani.js";
+import { StatistikyHrace } from "./StatistikyHrace.js";
 import { VyberCivilizace } from "./VyberCivilizace.js";
 
 interface Props {
@@ -26,6 +28,8 @@ function dalsi<T>(hodnoty: readonly T[], aktualni: T, smer: 1 | -1): T {
  */
 export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
   const tahani = useTahani(skladani.presun);
+  // Najetí na jméno ukáže tutéž kartu se statistikami jako v tabulce přihlášených.
+  const [nahled, setNahled] = useState<PlayerView | null>(null);
   const vstupy = skladani.vybrani.map((v) => v.vstup);
   const chyba = zkontrolujSestavu(vstupy);
   const format = popisFormatu(vstupy.map((v, poradi) => ({ ...v, poradi })));
@@ -68,7 +72,14 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
               >
                 {v.tym === 0 ? "–" : v.tym}
               </button>
-              <span className="jmeno">{jmeno}</span>
+              <span
+                className="jmeno jmeno-hrace"
+                data-testid="jmeno-vybraneho"
+                onMouseEnter={() => setNahled(hrac)}
+                onMouseLeave={() => setNahled(null)}
+              >
+                {jmeno}
+              </span>
               {/* ELO ve vlastním sloupci s pevnou šířkou, ať se řádky zarovnají. */}
               <span className="elo">{hrac.elo1v1 !== null ? <small>({hrac.elo1v1})</small> : null}</span>
               {/* Civilizace je volitelná: „libovolná“ nechá výběr na hráči, konkrétní
@@ -93,6 +104,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
         })}
       </ul>
 
+      {nahled ? <StatistikyHrace hrac={nahled} /> : null}
       <p className="zaloha" data-testid="souhrn-sestavy">
         {vstupy.length === 0 ? "Nikdo není vybraný." : chyba ? `${format || "Sestava"} — ${chyba}` : `Formát: ${format}`}
       </p>
