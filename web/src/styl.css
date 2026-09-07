@@ -24,9 +24,9 @@ body {
   font: 15px/1.5 system-ui, sans-serif;
 }
 
-main { max-width: calc(62rem + 100px); margin: 0 auto; padding: 1.5rem; }
+main { max-width: calc(62rem + 250px); margin: 0 auto; padding: 1.5rem; }
 header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-.hlavicka-vpravo { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; justify-content: flex-end; }
+.hlavicka-vpravo { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
 .nadpis-seznamu { margin: 1rem 0 0.3rem; font-size: 1.05rem; }
 
 a.tlacitko, .cta {
@@ -83,7 +83,15 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 /* Skládání sestavy: vybraní nahoře pod sebou s tlačítky barvy a týmu jako
    ve hře, nevybraní ztlumeně pod nimi. Řádky se přetahují jen v rámci skupiny. */
 .skladani .sestava { list-style: none; padding: 0; margin: 0.4rem 0; }
-.skladani .radek { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.2rem; border-bottom: 1px solid #2a241c; cursor: grab; }
+.skladani .radek {
+  display: grid;
+  grid-template-columns: 1rem 2.1rem 2.1rem minmax(6rem, 1fr) 4.4rem 15rem 1.9rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.2rem;
+  border-bottom: 1px solid #2a241c;
+  cursor: grab;
+}
 .skladani .radek:active { cursor: grabbing; }
 .skladani .uchyt { color: #5a5040; font-size: 0.9rem; letter-spacing: -0.2em; width: 1rem; }
 .skladani .nevybrani { margin-top: 0.8rem; opacity: 0.5; }
@@ -134,9 +142,11 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 .hlavicka-akce { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
 .hlavicka-akce h2 { margin: 0; }
 .sprava-akce .ovladani.ladeni { margin: 0 0 0.6rem; }
-.lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: start; }
-.lobby-rozlozeni .leva { min-width: 0; }
-.lobby-rozlozeni .skladani { margin: 0; border: none; padding: 0; }
+.lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: stretch; }
+.lobby-rozlozeni .leva { min-width: 0; display: flex; }
+.lobby-rozlozeni .skladani { margin: 0; border: none; padding: 0; flex: 1; display: flex; flex-direction: column; }
+.lobby-rozlozeni .skladani .sestava { flex: 1; }
+.lobby-rozlozeni .skladani .vytvorit { align-self: flex-start; }
 @media (max-width: 60rem) { .lobby-rozlozeni { grid-template-columns: 1fr; } }
 .zalozeni-akce { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 
@@ -355,10 +365,10 @@ button.plus {
   color: #241d10;
 }
 button.plus:hover { filter: brightness(1.1); }
-.skladani .jmeno { padding: 0.2rem 0.4rem; }
+.skladani .jmeno { padding: 0.2rem 0.4rem; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .skladani .jmeno small { color: var(--tlumene); }
-.skladani .elo { width: 4.4rem; flex: none; text-align: right; color: var(--tlumene); font-variant-numeric: tabular-nums; }
-button.odebrat { margin-left: auto; width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.1rem; line-height: 1; color: var(--tlumene); }
+.skladani .elo { text-align: right; color: var(--tlumene); font-variant-numeric: tabular-nums; white-space: nowrap; }
+button.odebrat { width: 1.9rem; height: 1.9rem; min-width: 1.9rem; box-sizing: border-box; padding: 0; margin: 0; font-size: 1.1rem; line-height: 1; color: var(--tlumene); justify-self: end; }
 button.odebrat:hover { color: #e07a6a; }
 
 /* Tlačítka hosta nad snímkem dialogu. */
@@ -390,7 +400,8 @@ button.odebrat:hover { color: #e07a6a; }
 
 /* Vyber civilizace s erbem (48 px) jako ve hre: tlacitko + vlastni seznam. */
 .vyber-civ { position: relative; }
-.vyber-civ-tlacitko { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; min-width: 14rem; font-size: 1rem; }
+.vyber-civ-tlacitko { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; font-size: 1rem; }
+.vyber-civ-tlacitko > span:first-of-type { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vyber-civ-tlacitko .sipka { margin-left: auto; color: var(--tlumene); }
 .vyber-civ .erb { height: 48px; width: auto; flex: none; }
 .vyber-civ-seznam {

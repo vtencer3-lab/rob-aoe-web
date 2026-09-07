@@ -92,16 +92,6 @@ export function App() {
       <header>
         <h1>Komunitní hry — RobDiesALot</h1>
         <div className="hlavicka-vpravo">
-          {me?.jeAdmin ? (
-            <Prepinac
-              popisek="Pohled uživatele"
-              vlevo="Admin View"
-              vpravo="User View"
-              zapnuto={pohledUzivatele}
-              onZmena={setPohledUzivatele}
-              testId="prepinac-pohledu"
-            />
-          ) : null}
           {me ? (
             <span>
               {jmenoHrace(me)}{" "}
@@ -112,6 +102,17 @@ export function App() {
               Přihlásit se přes Steam
             </a>
           )}
+          {/* Přepínač pohledu pod řádkem se jménem, jen pro adminy. */}
+          {me?.jeAdmin ? (
+            <Prepinac
+              popisek="Pohled uživatele"
+              vlevo="Admin View"
+              vpravo="User View"
+              zapnuto={pohledUzivatele}
+              onZmena={setPohledUzivatele}
+              testId="prepinac-pohledu"
+            />
+          ) : null}
         </div>
       </header>
 

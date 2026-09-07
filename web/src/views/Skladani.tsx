@@ -32,10 +32,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
 
   return (
     <div className="skladani">
-      <p className="zaloha">
-        Hráče přidáš tlačítkem „+“ v tabulce přihlášených. Levé tlačítko myši na barvě nebo týmu jde
-        dopředu, pravé zpátky. Pořadí přetáhni myší — je to pořadí slotů v lobby.
-      </p>
+      <p className="zaloha">Pořadí hráčů můžeš přetáhnout myší.</p>
 
       <ul className="sestava" data-testid="vybrani">
         {skladani.vybrani.map(({ vstup: v, hrac }) => {
