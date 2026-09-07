@@ -4,7 +4,7 @@ import { popisFormatu } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
 import type { VybranyHrac } from "../skladani.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
-import { useTahani } from "../tahani.js";
+import { tahneSe, useTahani } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
 import { VyberCivilizace } from "./VyberCivilizace.js";
 
@@ -92,8 +92,12 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
               <span
                 className="jmeno jmeno-hrace"
                 data-testid="jmeno-vybraneho"
-                onMouseEnter={() => setNahled(hrac)}
-                onMouseLeave={() => setNahled(null)}
+                onMouseEnter={() => {
+                  if (!tahneSe()) setNahled(hrac);
+                }}
+                onMouseLeave={() => {
+                  if (!tahneSe()) setNahled(null);
+                }}
               >
                 {jmeno}
               </span>

@@ -4,6 +4,15 @@ import type { Skupina } from "./skladani.js";
 /** Jak dlouho se ostatní řádky posouvají na nové místo. */
 export const DOBA_POSUNU_MS = 150;
 
+/**
+ * Probíhá právě tažení? Po dobu tahu se pod kurzorem střídají řádky a jejich
+ * najetí/odjetí by jinak zhasínalo a rozsvěcelo kartu se statistikami.
+ * Komponenty se ptají tady a během tahu hover ignorují.
+ */
+export function tahneSe(): boolean {
+  return typeof document !== "undefined" && document.body.classList.contains("tahne-se");
+}
+
 interface Tazeny {
   steamId: string;
   skupina: Skupina;
@@ -120,6 +129,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     const t = tazeny.current;
     if (!t) return;
     tazeny.current = null;
+    document.body.classList.remove("tahne-se");
     window.removeEventListener("pointermove", posun);
     window.removeEventListener("pointerup", poloz);
     window.removeEventListener("pointercancel", poloz);
@@ -148,6 +158,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
       tazeny.current = { steamId, skupina, el, pointerId: e.pointerId, vychoziY: e.clientY, posledniY: e.clientY };
       el.classList.add("v-ruce");
       el.style.transition = "none";
+      document.body.classList.add("tahne-se");
       window.addEventListener("pointermove", posun);
       window.addEventListener("pointerup", poloz);
       window.addEventListener("pointercancel", poloz);

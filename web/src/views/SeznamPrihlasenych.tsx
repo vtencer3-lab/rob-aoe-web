@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
-import { useTahani } from "../tahani.js";
+import { tahneSe, useTahani } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
 
 interface Props {
@@ -148,8 +148,12 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
                 <span
                   className="jmeno-hrace"
                   data-testid="jmeno-hrace"
-                  onMouseEnter={() => setNahled(hrac)}
-                  onMouseLeave={() => setNahled(null)}
+                  onMouseEnter={() => {
+                    if (!tahneSe()) setNahled(hrac);
+                  }}
+                  onMouseLeave={() => {
+                    if (!tahneSe()) setNahled(null);
+                  }}
                   onFocus={() => setNahled(hrac)}
                   onBlur={() => setNahled(null)}
                   tabIndex={0}
