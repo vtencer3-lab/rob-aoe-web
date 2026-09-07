@@ -3,6 +3,7 @@ import { getAktivniAkce, createAkce, listSignups } from "../db/events.js";
 import { closePool, getPool } from "../db/pool.js";
 import { getPlayer, upsertPlayer } from "../db/players.js";
 import { buildServer } from "../http/server.js";
+import { ZKUSEBNI_HRACI } from "../matches/zkusebniHraci.js";
 import { zkusebniId } from "./devRoutes.js";
 
 function zapniDvere(baseUrl = "http://localhost:3000"): void {
@@ -117,7 +118,7 @@ it("počet mimo rozsah se osekne, ne aby spadl", async () => {
   await app.inject({ method: "GET", url: "/api/dev/naplnit?pocet=999" });
   const prihlaseni = await listSignups(akce.id);
   expect(prihlaseni.length).toBeGreaterThan(0);
-  expect(prihlaseni.length).toBeLessThanOrEqual(6);
+  expect(prihlaseni.length).toBeLessThanOrEqual(ZKUSEBNI_HRACI.length);
   await app.close();
 });
 
