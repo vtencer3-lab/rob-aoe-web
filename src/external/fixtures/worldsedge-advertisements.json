@@ -1,0 +1,67 @@
+{
+  "result": { "code": 0, "message": "SUCCESS" },
+  "matches": [
+    {
+      "id": 504953429,
+      "steamlobbyid": 109775244820344037,
+      "goodoldgameslobbyid": 0,
+      "xboxsessionid": "0",
+      "host_profile_id": 101,
+      "state": 0,
+      "description": "Jouki in Rage's Game",
+      "visible": 1,
+      "mapname": "my map",
+      "options": "eNpFUstu3DAM",
+      "passwordprotected": 0,
+      "maxplayers": 8,
+      "slotinfo": "eNrNld1PwjAQ",
+      "matchtype_id": 0,
+      "matchmembers": [
+        { "match_id": 504953429, "profile_id": 101, "ranking": -1, "statgroup_id": 1, "civilization_id": -1, "teamid": -1 }
+      ],
+      "observernum": 0,
+      "observermax": 512,
+      "isobservable": 1,
+      "observerdelay": 0,
+      "hasobserverpassword": 0,
+      "servicetype": 0,
+      "relayserver_region": "eu"
+    },
+    {
+      "id": 504951828,
+      "steamlobbyid": 109775244819353345,
+      "host_profile_id": 202,
+      "state": 0,
+      "description": "ROB-03",
+      "visible": 1,
+      "passwordprotected": 1,
+      "maxplayers": 4,
+      "matchmembers": [
+        { "match_id": 504951828, "profile_id": 202, "teamid": 1 },
+        { "match_id": 504951828, "profile_id": 203, "teamid": 2 },
+        null,
+        { "match_id": 504951828, "profile_id": 999, "teamid": 2 }
+      ],
+      "observernum": 0,
+      "observermax": 512,
+      "isobservable": 0
+    },
+    {
+      "id": "504951802",
+      "host_profile_id": 303,
+      "description": "xbox host",
+      "passwordprotected": 0,
+      "isobservable": 0,
+      "matchmembers": []
+    },
+    { "id": null, "description": "bez id" },
+    "nesmysl"
+  ],
+  "avatars": [
+    { "profile_id": 101, "name": "/steam/76561198014056480", "alias": "Jouki in Rage", "country": "cz" },
+    { "profile_id": 202, "name": "/steam/76561198000000072", "alias": "Pepa" },
+    { "profile_id": 203, "name": "/steam/76561198000000073", "alias": "Jana" },
+    { "profile_id": 303, "name": "/xboxlive/2533274800000000", "alias": "Konzolista" },
+    null
+  ]
+}

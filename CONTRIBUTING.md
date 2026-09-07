@@ -94,7 +94,7 @@ Backend, `src/`:
 | `db/` | přístup k databázi, jedna tabulka = jeden modul |
 | `http/routes/` | `events.ts`, `matches.ts`, `stream.ts` (SSE) |
 | `realtime/` | `hub.ts` (jeden kanál), `akceStav.ts` (staví stav), `redakce.ts` (zaslepení) |
-| `matches/` | `composition.ts` (skládání dvojic), `stateMachine.ts` |
+| `matches/` | `composition.ts` (skládání dvojic), `stateMachine.ts`, `hledaniLobby.ts` (výběr lobby podle Steam ID + cache seznamu) |
 | `aoe/lobbyUri.ts` | rozbor a stavba `aoe2de://` — malé a důležité |
 | `shared/types.ts` | typy sdílené s frontendem, importuje se přímo z `web/` |
 | `shared/verze.ts` | verze webu; mění se jen přes `npm run verze` |
@@ -108,6 +108,8 @@ Frontend, `web/src/`:
 | `views/Rezie.tsx` | panel režie: skládání zápasů, Spectate, výsledky |
 | `views/ObrazovkaHosta.tsx` | obrazovka hosta se zrcadlem herního dialogu |
 | `views/KartaHrace.tsx` | karta hráče s jeho barvou a odkazem |
+| `views/HledaniLobby.tsx` | tlačítko „Vyhledat hru“ a hláška k němu |
+| `views/Kopirovatelne.tsx` | hodnota, která se zkopíruje kliknutím, s toastem |
 | `views/VerejnyZapas.tsx` | zápas očima diváka, bez tajemství |
 | `zapas.ts` | kdo co vidí — `mojeZapasy`, `verejneZapasy` |
 | `cesty.ts` | prefix `/aoe` pro všechna volání na server (z Vite `base`) |
@@ -117,7 +119,10 @@ tím není.
 
 ## Pět pravidel, která se nesmí porušit
 
-**1. Ukládá se jen číslo lobby.** Viz výš.
+**1. Ukládá se jen číslo lobby.** Viz výš. Odkud číslo přijde, je jedno:
+z ručně vloženého odkazu (`POST /api/zapas/:id/lobby`) i ze seznamu lobby ve
+hře (`POST /api/zapas/:id/hledat-lobby`, `src/external/worldsEdgeLobby.ts`)
+končí ve stejném `setLobbyId()`.
 
 **2. SSE posílá vždycky celý stav, nikdy přírůstky.** Díky tomu je obnova po
 výpadku zadarmo a `/api/akce` může sloužit jako plnohodnotná náhrada streamu —

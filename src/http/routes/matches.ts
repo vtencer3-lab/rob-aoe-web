@@ -12,10 +12,12 @@ import {
   UcastnikOdhlasenChyba,
 } from "../../db/matches.js";
 import { getPlayer } from "../../db/players.js";
+import type { LobbyInzerat } from "../../external/worldsEdgeLobby.js";
 import { SestavaChyba } from "../../matches/composition.js";
+import { najdiLobby } from "../../matches/hledaniLobby.js";
 import { MATCH_STATES, PrechodChyba, type MatchState } from "../../matches/stateMachine.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
-import type { Format, Tym } from "../../shared/types.js";
+import type { Format, HledaniLobbyVysledek, Tym } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 
 const FORMATY: readonly Format[] = ["1v1", "coop_kings_2v2"];
@@ -58,7 +60,12 @@ async function roleVZapase(request: Parameters<typeof requireUser>[0], zapasId: 
   return { steamId, zapas, ucastnici, actor: "host" as const };
 }
 
-export function registerMatchRoutes(app: FastifyInstance): void {
+export interface MatchDeps {
+  /** Aktuální seznam otevřených lobby ze hry (přes cache, viz SeznamLobby). */
+  nactiInzeraty: () => Promise<LobbyInzerat[]>;
+}
+
+export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void {
   app.post("/api/akce/:id/zapas", async (request) => {
     await requireAdmin(request);
     const akceId = requireId(request);
@@ -118,6 +125,45 @@ export function registerMatchRoutes(app: FastifyInstance): void {
     await setLobbyId(zapasId, vysledek.lobbyId);
     await broadcastAkce();
     return { ok: true };
+  });
+
+  // „Vyhledat hru“: místo aby host kopíroval odkaz, web se podívá do seznamu
+  // otevřených lobby a najde tu, ve které sedí host (nebo kdokoliv ze zápasu).
+  // Smí kliknout kdokoliv ze zápasu i Rob — čekající hráč tím nic nezkazí,
+  // uloží se totéž číslo, které by našel host.
+  app.post("/api/zapas/:id/hledat-lobby", async (request) => {
+    const steamId = await requireUser(request);
+    const zapasId = requireId(request);
+    const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
+    const hrac = await getPlayer(steamId);
+    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.steamId === steamId)) {
+      throw new HttpError(403, "V tomhle zápase nehraješ.");
+    }
+    if (zapas.stav === "dohrano" || zapas.stav === "zruseny") {
+      throw new HttpError(409, `Zápas je ve stavu „${zapas.stav}“, lobby už nehledá.`);
+    }
+
+    let inzeraty: LobbyInzerat[];
+    try {
+      inzeraty = await deps.nactiInzeraty();
+    } catch {
+      throw new HttpError(502, "Seznam lobby ze hry se nepodařilo stáhnout. Zkus to za chvíli, nebo vlož odkaz ručně.");
+    }
+
+    const nalez = najdiLobby(ucastnici, inzeraty);
+    const odpoved: HledaniLobbyVysledek = {
+      nalezeno: nalez !== null,
+      lobbyId: nalez?.lobby.lobbyId ?? null,
+      nazev: nalez?.lobby.nazev ?? null,
+      maHeslo: nalez?.lobby.maHeslo ?? null,
+      povolujeDivaky: nalez?.lobby.povolujeDivaky ?? null,
+    };
+    // Přepíše i dřív uložené číslo: host mohl lobby zrušit a založit znovu.
+    if (nalez && nalez.lobby.lobbyId !== zapas.lobbyId) {
+      await setLobbyId(zapasId, nalez.lobby.lobbyId);
+      await broadcastAkce();
+    }
+    return odpoved;
   });
 
   app.post("/api/zapas/:id/host", async (request) => {

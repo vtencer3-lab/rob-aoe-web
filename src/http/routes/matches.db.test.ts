@@ -422,3 +422,79 @@ it("cizí divák nevidí v GET /api/akce heslo", async () => {
   expect(robuv.json().zapasy[0].spectatorUri).toBe("aoe2de://1/234230181");
   await app.close();
 });
+
+// „Vyhledat hru“: seznam lobby ze hry se podstrkuje, hledá se podle Steam ID
+// hosta zápasu. Host zápasu je ten s víc odehranými hrami, tedy HRACI[1].
+function inzerat(lobbyId: string, hostSteamId: string) {
+  return {
+    lobbyId,
+    hostSteamId,
+    nazev: "cokoliv",
+    maHeslo: true,
+    povolujeDivaky: true,
+    clenoveSteamIds: [hostSteamId],
+  };
+}
+
+it("účastník vyhledá lobby hosta a číslo se uloží všem", async () => {
+  const app = buildServer({
+    nactiInzeraty: async () => [inzerat("111", "76561198999999999"), inzerat("504953429", HRACI[1]!)],
+  });
+  const zapas = await vytvorZapas(app);
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/hledat-lobby`,
+    cookies: { sid: hracSid },
+  });
+  expect(res.statusCode).toBe(200);
+  expect(res.json()).toMatchObject({ nalezeno: true, lobbyId: "504953429", povolujeDivaky: true });
+  expect((await getZapas(zapas.id))!.zapas.lobbyId).toBe("504953429");
+  await app.close();
+});
+
+it("když lobby v seznamu není, nic se nepřepíše", async () => {
+  const app = buildServer({ nactiInzeraty: async () => [inzerat("111", "76561198999999999")] });
+  const zapas = await vytvorZapas(app);
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/hledat-lobby`,
+    cookies: { sid: robSid },
+  });
+  expect(res.statusCode).toBe(200);
+  expect(res.json()).toMatchObject({ nalezeno: false, lobbyId: null });
+  expect((await getZapas(zapas.id))!.zapas.lobbyId).toBeNull();
+  await app.close();
+});
+
+it("kdo v zápase nehraje a není Rob, hledat nesmí", async () => {
+  const cizi = "76561198000000099";
+  await upsertPlayer(cizi, false);
+  const ciziSid = await createSession(cizi);
+  const app = buildServer({ nactiInzeraty: async () => [inzerat("504953429", HRACI[1]!)] });
+  const zapas = await vytvorZapas(app);
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/hledat-lobby`,
+    cookies: { sid: ciziSid },
+  });
+  expect(res.statusCode).toBe(403);
+  expect((await getZapas(zapas.id))!.zapas.lobbyId).toBeNull();
+  await app.close();
+});
+
+it("výpadek seznamu ze hry je 502 se srozumitelnou větou, ne 500", async () => {
+  const app = buildServer({
+    nactiInzeraty: async () => {
+      throw new Error("timeout");
+    },
+  });
+  const zapas = await vytvorZapas(app);
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/zapas/${zapas.id}/hledat-lobby`,
+    cookies: { sid: hracSid },
+  });
+  expect(res.statusCode).toBe(502);
+  expect(res.json().chyba).toMatch(/ručně/);
+  await app.close();
+});

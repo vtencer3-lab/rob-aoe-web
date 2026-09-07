@@ -1,13 +1,15 @@
-import { BARVA_NAZEV, type ZapasView } from "../../../src/shared/types.js";
+import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik, souperi, spoluhraci } from "../zapas.js";
+import { HledaniLobby } from "./HledaniLobby.js";
 
 interface Props {
   zapas: ZapasView;
   ja: string;
   onPripojit: (zapasId: number) => void;
+  onHledatLobby: (zapasId: number) => Promise<HledaniLobbyVysledek>;
 }
 
-export function KartaHrace({ zapas, ja, onPripojit }: Props) {
+export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
   const muj = mujUcastnik(zapas, ja);
   if (!muj) return null;
 
@@ -43,7 +45,12 @@ export function KartaHrace({ zapas, ja, onPripojit }: Props) {
           Připojit se do hry
         </a>
       ) : (
-        <p className="ceka">Čeká se na hosta, až založí lobby.</p>
+        <>
+          <p className="ceka">Čeká se na hosta, až založí lobby.</p>
+          {/* Čekající hráč si může pomoct sám: seznam otevřených lobby je
+              společný, takže najde totéž číslo, které by našel host. */}
+          <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} />
+        </>
       )}
 
       <footer>

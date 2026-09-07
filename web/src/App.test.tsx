@@ -14,6 +14,7 @@ vi.mock("./api.js", () => ({
     odhlasitSe: vi.fn(),
     pripojeni: vi.fn(),
     vlozitOdkaz: vi.fn(),
+    hledatLobby: vi.fn(),
     vytvoritAkce: vi.fn(),
     akceStav: vi.fn(),
     vytvoritZapas: vi.fn(),

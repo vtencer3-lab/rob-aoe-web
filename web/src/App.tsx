@@ -106,6 +106,7 @@ export function App() {
                     // Chybu si obrazovka hosta ukáže sama u pole, kam se odkaz
                     // vkládá — proto se tu nepolyká přes hlidej().
                     onVlozitOdkaz={(id, odkaz) => api.vlozitOdkaz(id, odkaz)}
+                    onHledatLobby={(id) => api.hledatLobby(id)}
                   />
                 ) : (
                   <KartaHrace
@@ -113,6 +114,7 @@ export function App() {
                     zapas={zapas}
                     ja={me.steamId}
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
+                    onHledatLobby={(id) => api.hledatLobby(id)}
                   />
                 ),
               )

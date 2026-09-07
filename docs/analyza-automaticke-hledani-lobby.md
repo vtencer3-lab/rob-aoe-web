@@ -20,10 +20,11 @@ Navíc to přinese něco, co dnes web neumí: **kontrolu lobby před startem**.
 Ze stejné odpovědi se pozná, jestli host zapomněl heslo nebo diváky, a kdo se
 už opravdu připojil (ne jen kdo klikl na odkaz).
 
-Jedna věc zbývá ověřit naživo: že číslo `id` ze seznamu je totéž číslo, které
-hra dává do odkazu `aoe2de://0/<id>`. Všechno nasvědčuje, že ano (viz níže),
-ale ověření je na pět minut s jednou skutečnou lobby a je potřeba ho udělat
-dřív, než se do toho dá jediný řádek kódu.
+**Ověřeno 7. 9. 2026:** založená lobby dala v odkazu `aoe2de://0/504953429`
+a v seznamu byla tatáž lobby s `id: 504953429`, hostem `/steam/76561198014056480`,
+`isobservable: 1`. Číslo ze seznamu je přesně číslo z odkazu. Implementováno
+ve verzi 0.4.0 jako tlačítko „Vyhledat hru“ (`POST /api/zapas/:id/hledat-lobby`);
+hledá se podle Steam ID hosta a účastníků, název lobby ani heslo nerozhodují.
 
 ---
 

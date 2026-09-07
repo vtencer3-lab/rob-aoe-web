@@ -23,13 +23,13 @@ const zapas: ZapasView = {
 };
 
 it("ukáže barvu a tým velkým písmem", () => {
-  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} />);
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={vi.fn()} />);
   expect(screen.getByTestId("moje-barva")).toHaveTextContent("modrá");
   expect(screen.getByTestId("muj-tym")).toHaveTextContent("1");
 });
 
 it("řekne, s kým se sdílí civilizace", () => {
-  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} />);
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={vi.fn()} />);
   expect(screen.getByText(/Pepa_CZ/)).toBeInTheDocument();
 });
 
@@ -39,12 +39,12 @@ it("v 1v1 o sdílení civilizace nemluví", () => {
     format: "1v1",
     ucastnici: [zapas.ucastnici[0]!, zapas.ucastnici[2]!],
   };
-  render(<KartaHrace zapas={jeden} ja="ja" onPripojit={vi.fn()} />);
+  render(<KartaHrace zapas={jeden} ja="ja" onPripojit={vi.fn()} onHledatLobby={vi.fn()} />);
   expect(screen.queryByText(/sdílíš/i)).not.toBeInTheDocument();
 });
 
 it("ukáže záložní cestu — název lobby, heslo i číslo", () => {
-  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} />);
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={vi.fn()} />);
   expect(screen.getByText("ROB-07")).toBeInTheDocument();
   expect(screen.getByText("k7rm2xq9")).toBeInTheDocument();
   expect(screen.getByText("234230181")).toBeInTheDocument();
@@ -52,13 +52,19 @@ it("ukáže záložní cestu — název lobby, heslo i číslo", () => {
 
 it("dokud host nevložil odkaz, čeká se", () => {
   const bezLobby: ZapasView = { ...zapas, stav: "vyhlaseny", lobbyId: null, joinUri: null };
-  render(<KartaHrace zapas={bezLobby} ja="ja" onPripojit={vi.fn()} />);
+  render(<KartaHrace zapas={bezLobby} ja="ja" onPripojit={vi.fn()} onHledatLobby={vi.fn()} />);
   expect(screen.queryByRole("link", { name: /připojit/i })).not.toBeInTheDocument();
   expect(screen.getByText(/čeká se na hosta/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /vyhledat hru/i })).toBeInTheDocument();
+});
+
+it("s odkazem už hledat nenabízí", () => {
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: /vyhledat hru/i })).not.toBeInTheDocument();
 });
 
 it("odkaz na připojení míří do hry", () => {
-  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} />);
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={vi.fn()} />);
   expect(screen.getByRole("link", { name: /připojit/i })).toHaveAttribute(
     "href",
     "aoe2de://0/234230181",
@@ -67,7 +73,7 @@ it("odkaz na připojení míří do hry", () => {
 
 it("kliknutí na připojení se ohlásí serveru", async () => {
   const onPripojit = vi.fn();
-  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={onPripojit} />);
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={onPripojit} onHledatLobby={vi.fn()} />);
   screen.getByRole("link", { name: /připojit/i }).click();
   expect(onPripojit).toHaveBeenCalledWith(1);
 });
@@ -84,7 +90,7 @@ it("spoluhráče i soupeře bez aliasu pojmenuje jménem ze Steamu", () => {
       { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
     ],
   };
-  render(<KartaHrace zapas={bezAliasu} ja="ja" onPripojit={vi.fn()} />);
+  render(<KartaHrace zapas={bezAliasu} ja="ja" onPripojit={vi.fn()} onHledatLobby={vi.fn()} />);
 
   expect(screen.getByText(/TibbarZmr/)).toBeInTheDocument();
   expect(screen.getByText(/Marecek/)).toBeInTheDocument();

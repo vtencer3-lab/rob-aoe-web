@@ -64,3 +64,17 @@ export interface AkceStavPayload {
   prihlaseni: PlayerView[];
   zapasy: ZapasView[];
 }
+
+/**
+ * Odpověď na „Vyhledat hru“: web se podíval do seznamu otevřených lobby a
+ * buď svoji našel (a rovnou uložil její číslo), nebo tam ještě není.
+ * `maHeslo` a `povolujeDivaky` jsou kontrola pro hosta: bez diváků se Rob
+ * dovnitř nedostane, bez hesla dovnitř vleze kdokoliv.
+ */
+export interface HledaniLobbyVysledek {
+  nalezeno: boolean;
+  lobbyId: string | null;
+  nazev: string | null;
+  maHeslo: boolean | null;
+  povolujeDivaky: boolean | null;
+}

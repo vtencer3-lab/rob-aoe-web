@@ -242,8 +242,12 @@ Tři kroky, a mezi nimi se na nic nečeká:
    celý večer — kdo dorazí pozdě, přihlásí se i mezi zápasy.
 2. **Rob naklikne zápas.** V ten okamžik ho vidí všichni: hráči svoji barvu a
    tým, host navíc pokyny k založení lobby a pole na odkaz. Nic se nevyhlašuje.
-3. **Host vloží odkaz z tlačítka Copy v lobby.** Tím naskočí hráčům „Připojit se
-   do hry“ a Robovi Spectate — obojí se odvodí z toho jednoho čísla.
+3. **Host založí lobby a klikne „Vyhledat moji lobby“.** Web se podívá do
+   seznamu otevřených lobby ve hře, podle Steam ID hosta tu jeho pozná a uloží
+   si její číslo. Tím naskočí hráčům „Připojit se do hry“ a Robovi Spectate —
+   obojí se odvodí z toho jednoho čísla. Kliknout může i čekající hráč
+   („Vyhledat hru“), najde totéž. Když seznam zrovna neodpovídá, host může
+   pořád vložit odkaz z tlačítka Copy ručně.
 
 Zápas končí buď zápisem vítěze („Vyhrál tým 1/2“), nebo zrušením. Večer končí
 tlačítkem „Ukončit akci“, které je nevratné a ptá se na potvrzení.
@@ -258,6 +262,14 @@ AoE2 DE má vlastní protokol pro odkazy do lobby. `aoe2de://0/<id>` je
 připojení jako hráč, `aoe2de://1/<id>` je připojení jako **divák** do téže
 lobby — liší se jen prvním číslem za `aoe2de://`. Ukládá se jen číselné ID
 lobby a oba odkazy se z něj odvozují (viz `src/aoe/lobbyUri.ts`).
+
+Číslo lobby si web umí najít sám: backend hry vydává seznam všech otevřených
+veřejných lobby včetně Steam ID hosta a sedících hráčů
+(`src/external/worldsEdgeLobby.ts`), a `id` v něm je přesně číslo z odkazu
+(ověřeno 7. 9. 2026). Web hledá podle Steam ID lidí ze zápasu, ne podle názvu
+lobby — ten si hosté často nastaví jinak. Lobby musí být **veřejná**, jinak
+v seznamu není; to je i podmínka pro diváky, takže to nic nového nevyžaduje.
+Podrobně v [`docs/analyza-automaticke-hledani-lobby.md`](docs/analyza-automaticke-hledani-lobby.md).
 
 ## Známá omezení
 

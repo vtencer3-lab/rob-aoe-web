@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { BARVA_NAZEV, type ZapasView } from "../../../src/shared/types.js";
+import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik } from "../zapas.js";
-import { KopirovaciTlacitko } from "./KopirovaciTlacitko.js";
+import { HledaniLobby } from "./HledaniLobby.js";
+import { Kopirovatelne } from "./Kopirovatelne.js";
 /**
  * Výřez dialogu Create Lobby ze hry. Importuje se, aby mu Vite dal do jména
  * hash: se stálým jménem by prohlížeč po každé úpravě obrázku vytáhl z
@@ -13,9 +14,10 @@ interface Props {
   zapas: ZapasView;
   ja: string;
   onVlozitOdkaz: (zapasId: number, odkaz: string) => Promise<unknown> | void;
+  onHledatLobby: (zapasId: number) => Promise<HledaniLobbyVysledek>;
 }
 
-export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz }: Props) {
+export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby }: Props) {
   const [odkaz, setOdkaz] = useState("");
   // Chyba se drží tady, ne v App: host ji čte uprostřed streamu a nahoru na
   // začátek stránky se nedívá. Dvakrát skončilo tím, že odmítnutý odkaz nikdo
@@ -124,15 +126,15 @@ function DialogCreateLobby({ zapas }: { zapas: ZapasView }) {
         </span>
       </div>
 
+      {/* Klik na samotnou hodnotu ji zkopíruje — ikona vedle jen říká, že
+          se dá kliknout. Toast vyskočí nad hodnotou, řádek se nehne. */}
       <div className="dialog-kopirovani">
         <span>
-          Lobby Name <strong>{zapas.nazevLobby}</strong>
+          Lobby Name <Kopirovatelne hodnota={zapas.nazevLobby} popis="název lobby" />
         </span>
-        <KopirovaciTlacitko hodnota={zapas.nazevLobby} popis="název lobby" />
         <span>
-          Set Password <strong>{zapas.heslo}</strong>
+          Set Password <Kopirovatelne hodnota={zapas.heslo} popis="heslo" />
         </span>
-        <KopirovaciTlacitko hodnota={zapas.heslo} popis="heslo" />
       </div>
 
       <p className="dialog-legenda" data-testid="dialog-legenda">

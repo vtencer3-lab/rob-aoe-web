@@ -96,8 +96,55 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 .verejny-zapas { border: 1px solid #3d352a; border-radius: 8px; padding: 0.7rem 1rem; margin: 0.6rem 0; color: var(--text); }
 .verejny-zapas .strany { color: #cbbfa8; }
 
-/* Kopírování názvu lobby a hesla — vedle hodnoty, ať se neopisuje ručně. */
-button.kopirovat { font-size: 0.75rem; padding: 0.15rem 0.45rem; margin-left: 0.35rem; vertical-align: middle; }
+/* Kopírování názvu lobby a hesla kliknutím na samotnou hodnotu. Tlačítko
+   vypadá jako text s ikonou, ne jako tlačítko; toast vyskočí nad ním, aby se
+   řádek při potvrzení nehnul. */
+button.kopirovatelne {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0.1rem 0.2rem;
+  margin: 0;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: 3px;
+}
+button.kopirovatelne:hover { background: #2c2620; }
+button.kopirovatelne strong { color: var(--text); }
+.ikona-kopie { color: var(--tlumene); flex: none; }
+button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.35rem);
+  transform: translateX(-50%);
+  background: var(--akcent);
+  color: #241d10;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: toast-vyskoc 1.5s ease-out forwards;
+}
+@keyframes toast-vyskoc {
+  0% { opacity: 0; transform: translate(-50%, 0.3rem); }
+  15% { opacity: 1; transform: translate(-50%, 0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Vyhledání lobby: tlačítko a hláška k němu, ne nahoře na stránce. */
+.hledani-lobby { margin: 0.5rem 0 0.8rem; }
+.hledani-lobby p { margin: 0.4rem 0 0; }
+.zaloha-odkaz { margin-top: 0.8rem; color: var(--tlumene); }
+.zaloha-odkaz summary { cursor: pointer; }
+.zaloha-odkaz label { display: block; margin: 0.5rem 0; color: var(--text); }
 
 /* Chyba u pole, ne na začátku stránky: host se během streamu nahoru nedívá. */
 .chyba-pole { margin: 0.4rem 0 0; }

@@ -1,4 +1,4 @@
-import type { AkceStavPayload, Format } from "../../src/shared/types.js";
+import type { AkceStavPayload, Format, HledaniLobbyVysledek } from "../../src/shared/types.js";
 import { cesta } from "./cesty.js";
 
 export interface Me {
@@ -41,6 +41,10 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ odkaz }),
     }).then((r) => json<{ ok: true }>(r)),
+  hledatLobby: (zapasId: number) =>
+    fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>
+      json<HledaniLobbyVysledek>(r),
+    ),
   vytvoritZapas: (akceId: number, format: Format, steamIds: string[]) =>
     fetch(cesta(`/api/akce/${akceId}/zapas`), {
       method: "POST",
