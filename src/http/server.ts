@@ -11,7 +11,7 @@ import { getPlayer, savePlayerStats } from "../db/players.js";
 import { steamZdroje } from "../external/steam.js";
 import { fetchPersonalStat } from "../external/worldsEdge.js";
 import { seznamLobby } from "../matches/seznamLobby.js";
-import { jeCerstve, refreshPlayerStats } from "../players/refresh.js";
+import { maCerstveStaty, refreshPlayerStats } from "../players/refresh.js";
 import { HttpError } from "./guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { registerEventRoutes } from "./routes/events.js";
@@ -31,7 +31,7 @@ function vychoziDeps(): ServerDeps {
       // Worlds Edge je nezdokumentovaný endpoint bez známých limitů, takže se
       // stahuje nejvýš jednou za patnáct minut na hráče.
       const hrac = await getPlayer(steamId);
-      if (jeCerstve(hrac?.statyStazenyV ?? null)) return;
+      if (maCerstveStaty(hrac)) return;
       await refreshPlayerStats(steamId, {
         nactiZebricek: (id) => fetchPersonalStat(id),
         ...steamZdroje(config.steamApiKey),

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PlayerStatsUpdate } from "../db/players.js";
-import { CACHE_TTL_MS, jeCerstve, refreshPlayerStats, type RefreshDeps } from "./refresh.js";
+import { CACHE_TTL_MS, jeCerstve, maCerstveStaty, refreshPlayerStats, type RefreshDeps } from "./refresh.js";
 
 const ZEBRICEK = {
   alias: "TenceR",
@@ -25,6 +25,23 @@ function depsSe(prepis: Partial<RefreshDeps> = {}) {
   };
   return { deps, ulozeno };
 }
+
+// Řádek stažený serverem, který žebříčky ještě neznal, je čerstvý jen podle
+// času. Bez žebříčků se obnovit musí, jinak karta hráče čtvrt hodiny lže.
+describe("maCerstveStaty", () => {
+  const ted = new Date("2026-09-07T22:36:00Z");
+  const pred = new Date(ted.getTime() - 60_000);
+
+  it("bez hráče nebo bez žebříčků není čerstvé ani minutu po stažení", () => {
+    expect(maCerstveStaty(null, ted)).toBe(false);
+    expect(maCerstveStaty({ statyStazenyV: pred, zebricky: null }, ted)).toBe(false);
+  });
+
+  it("se žebříčky rozhoduje stáří", () => {
+    expect(maCerstveStaty({ statyStazenyV: pred, zebricky: [] }, ted)).toBe(true);
+    expect(maCerstveStaty({ statyStazenyV: new Date(ted.getTime() - CACHE_TTL_MS - 1), zebricky: [] }, ted)).toBe(false);
+  });
+});
 
 describe("jeCerstve", () => {
   const ted = new Date("2026-09-03T12:00:00Z");
