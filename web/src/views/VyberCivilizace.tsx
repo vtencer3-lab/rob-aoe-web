@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CIVILIZACE, nazevCivilizace } from "../../../src/shared/civilizace.js";
+import { CIVILIZACE, nazevCivilizace, patriDoSady } from "../../../src/shared/civilizace.js";
 import { erbCivilizace } from "../civErby.js";
 
 interface Props {
@@ -7,15 +7,25 @@ interface Props {
   onZmena: (civ: number | null) => void;
   /** Popisek pro čtečky, např. „Civilizace Trokner“. */
   popisek: string;
+  /** Civilization Set z nastavení akce; null = je to jedno, nabídne se všechno. */
+  sada: number | null;
+  /** Jen ke čtení (karta hráče): zašedlé tlačítko, seznam se neotvírá. */
+  vypnuto?: boolean;
 }
 
-const PODLE_JMENA: Array<number | null> = [
-  null,
-  ...Object.entries(CIVILIZACE)
-    .map(([id, nazev]) => ({ id: Number(id), nazev }))
-    .sort((a, b) => a.nazev.localeCompare(b.nazev, "cs"))
-    .map((c) => c.id),
-];
+const PODLE_JMENA: number[] = Object.entries(CIVILIZACE)
+  .map(([id, nazev]) => ({ id: Number(id), nazev }))
+  .sort((a, b) => a.nazev.localeCompare(b.nazev, "cs"))
+  .map((c) => c.id);
+
+/**
+ * Nabídka podle zvolené sady. Vybraná civilizace v seznamu zůstává, i když do
+ * sady nepatří — Rob mohl sadu přepnout až po ní a mlčky ji vyhodit by
+ * znamenalo, že se z rozbaleného seznamu nedá poznat, co je nastavené.
+ */
+function nabidka(sada: number | null, hodnota: number | null): Array<number | null> {
+  return [null, ...PODLE_JMENA.filter((civ) => patriDoSady(civ, sada) || civ === hodnota)];
+}
 
 export function Erb({ civ, velikost = 48 }: { civ: number | null; velikost?: number }) {
   const url = erbCivilizace(civ);
@@ -28,8 +38,9 @@ export function Erb({ civ, velikost = 48 }: { civ: number | null; velikost?: num
  * neumí, takže je to tlačítko + vlastní seznam (role listbox). Zavírá se
  * klikem mimo, Escapem i výběrem; šipky a Enter fungují v seznamu.
  */
-export function VyberCivilizace({ hodnota, onZmena, popisek }: Props) {
+export function VyberCivilizace({ hodnota, onZmena, popisek, sada, vypnuto = false }: Props) {
   const [otevreno, setOtevreno] = useState(false);
+  const polozky = nabidka(sada, hodnota);
   const obal = useRef<HTMLDivElement>(null);
   const seznam = useRef<HTMLUListElement>(null);
 
@@ -55,10 +66,10 @@ export function VyberCivilizace({ hodnota, onZmena, popisek }: Props) {
       setOtevreno(false);
       return;
     }
-    const i = PODLE_JMENA.indexOf(hodnota);
+    const i = polozky.indexOf(hodnota);
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      const dalsi = PODLE_JMENA[Math.min(Math.max(i + (e.key === "ArrowDown" ? 1 : -1), 0), PODLE_JMENA.length - 1)];
+      const dalsi = polozky[Math.min(Math.max(i + (e.key === "ArrowDown" ? 1 : -1), 0), polozky.length - 1)];
       onZmena(dalsi ?? null);
     }
     if (e.key === "Enter") setOtevreno(false);
@@ -72,6 +83,7 @@ export function VyberCivilizace({ hodnota, onZmena, popisek }: Props) {
         aria-label={popisek}
         aria-haspopup="listbox"
         aria-expanded={otevreno}
+        disabled={vypnuto}
         onClick={() => setOtevreno((o) => !o)}
       >
         <Erb civ={hodnota} />
@@ -82,7 +94,7 @@ export function VyberCivilizace({ hodnota, onZmena, popisek }: Props) {
       </button>
       {otevreno ? (
         <ul className="vyber-civ-seznam" role="listbox" aria-label={popisek} tabIndex={-1} ref={seznam} onKeyDown={klavesa}>
-          {PODLE_JMENA.map((civ) => (
+          {polozky.map((civ) => (
             <li
               key={civ ?? "libovolna"}
               role="option"

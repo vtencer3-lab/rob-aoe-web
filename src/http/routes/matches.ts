@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { parseJoinUri, type LobbyUriError } from "../../aoe/lobbyUri.js";
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
+import { setSkladani } from "../../db/events.js";
 import {
   createZapas,
   getZapas,
@@ -9,6 +10,7 @@ import {
   setLobbyId,
   setVysledek,
   setZapasStav,
+  setZavreny,
   smazZrusenyZapas,
   UcastnikOdhlasenChyba,
 } from "../../db/matches.js";
@@ -113,6 +115,8 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     const sestava = prectiSestavu(request.body);
     try {
       const zapas = await createZapas(akceId, sestava);
+      // Rozpracovaná sestava je hotová — vyprázdnit ji všem adminům naráz.
+      await setSkladani(akceId, []);
       await broadcastAkce();
       // Klientovi stačí ID — heslo, číslo lobby i potvrzení hosta jsou tajemství,
       // co proudí jen redigovaným SSE kanálem, nikdy syrová v odpovědi na admin akci.
@@ -138,6 +142,19 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     }
     const { zapas } = await nactiNeboSelzi(zapasId);
     await prejdi(zapasId, stav as MatchState);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Dohraný zápas jde zavřít křížkem: zmizí ze stránky, výsledek zůstává.
+  // Znovu otevřít jde z debug módu. Jen dohraný — běžící má Zrušit, zrušený
+  // má Odebrat úplně.
+  app.post("/api/zapas/:id/zavrit", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const { zavreny } = request.body as { zavreny?: unknown };
+    await nactiNeboSelzi(zapasId);
+    if (!(await setZavreny(zapasId, zavreny !== false))) throw new HttpError(409, "Zavřít jde jen dohraný zápas.");
     await broadcastAkce();
     return { ok: true };
   });

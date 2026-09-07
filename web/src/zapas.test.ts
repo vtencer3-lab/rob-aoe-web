@@ -141,3 +141,10 @@ describe("verejneZapasy", () => {
     expect(verejneZapasy(zapasy, "a").map((z) => z.id)).toEqual([1]);
   });
 });
+
+it("zavřený dohraný zápas se divákům neukazuje", async () => {
+  const { verejneZapasy } = await import("./zapas.js");
+  const z = { id: 1, poradi: 1, stav: "dohrano", nazevLobby: "ROB-01", heslo: "", lobbyId: null, joinUri: null, spectatorUri: null, vitez: { tym: 1 as const }, ucastnici: [] };
+  expect(verejneZapasy([z], null)).toHaveLength(1);
+  expect(verejneZapasy([{ ...z, zavreny: true }], null)).toHaveLength(0);
+});

@@ -1,3 +1,5 @@
+import type { ZebricekRadek } from "./zebricky.js";
+
 /** Osm barev hráčů přesně v pořadí, v jakém je nabízí hra. */
 export type Barva = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export const BARVY: readonly Barva[] = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -45,14 +47,20 @@ export interface PlayerView {
   posledniZapas: string | null;
   statyStazenyV: string | null;
   statyChyba: string | null;
+  /** Všechny žebříčky pro kartu se statistikami; chybí ve starších snímcích. */
+  zebricky?: ZebricekRadek[] | null;
 }
 
 export interface AkceView {
   id: number;
   nazev: string;
   stav: string;
-  /** Očekávané nastavení lobby pro kontrolu; chybějící klíče = výchozí (lobbyKontrola.ts). */
+  /** Očekávané nastavení lobby pro kontrolu; chybějící klíče = výchozí (lobbyKontrola.ts). Mění se živě. */
   nastaveniLobby?: Record<string, unknown>;
+  /** Snímek nastavení uložený tlačítkem „Uložit nastavení lobby“; null = nic. */
+  ulozeneNastaveniLobby?: Record<string, unknown> | null;
+  /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
+  skladani?: SestavaVstup[];
 }
 
 export interface UcastnikView {
@@ -63,6 +71,8 @@ export interface UcastnikView {
   barva: Barva;
   /** Předepsaná civilizace (herní id), null = libovolná. */
   civ: number | null;
+  /** 1v1 ELO ze žebříčku; chybí ve starších snímcích a testech. */
+  elo1v1?: number | null;
   jeHost: boolean;
   /** Slot v lobby, od nuly; v tomhle pořadí Rob hráče naklikal. */
   poradi: number;
@@ -90,6 +100,8 @@ export interface ZapasView {
   /** Odvozeno ze seznamu otevřených lobby ve hře (sledovaniLobby.ts). */
   fazeLobby?: FazeLobby | null;
   vitez: Vitez | null;
+  /** Dohraný zápas zavřený křížkem: na stránce se neukazuje (v debug módu zašedlý). */
+  zavreny?: boolean;
   ucastnici: UcastnikView[];
 }
 

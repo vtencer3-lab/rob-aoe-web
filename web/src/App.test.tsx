@@ -19,6 +19,10 @@ vi.mock("./api.js", () => ({
     vlozitOdkaz: vi.fn(),
     kontrolaLobby: vi.fn().mockResolvedValue({ nalezeno: false, kontroly: [] }),
     nastaveniLobby: vi.fn(),
+    ulozitNastaveniLobby: vi.fn(),
+    skladani: vi.fn().mockResolvedValue({ akce: { id: 1 } }),
+    smazatZapas: vi.fn(),
+    zavritZapas: vi.fn(),
     hledatLobby: vi.fn().mockResolvedValue({ nalezeno: false, lobbyId: null, nazev: null, maHeslo: null, povolujeDivaky: null }),
     vytvoritAkce: vi.fn(),
     akceStav: vi.fn(),
@@ -59,11 +63,17 @@ const zapas = (ucastnici: UcastnikView[]): ZapasView => ({
 });
 
 function nastavStav(payload: AkceStavPayload) {
-  vi.mocked(useAkceStav).mockReturnValue({ stav: payload, spojeno: true });
+  vi.mocked(useAkceStav).mockReturnValue({
+    stav: payload,
+    spojeno: true,
+    obnov: vi.fn().mockResolvedValue(undefined),
+    novaVerze: null,
+  });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
 });
 
 afterEach(() => {
@@ -81,7 +91,7 @@ it("host vidí obrazovku hosta, ne kartu hráče", async () => {
   render(<App />);
 
   expect(await screen.findByTestId("spustit-hru")).toBeInTheDocument();
-  expect(screen.queryByText(/v lobby si nastav/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/připojuješ se/i)).not.toBeInTheDocument();
 });
 
 it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async () => {
@@ -96,7 +106,7 @@ it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async ()
 
   render(<App />);
 
-  expect(await screen.findByText(/v lobby si nastav/i)).toBeInTheDocument();
+  expect(await screen.findByText(/připojuješ se/i)).toBeInTheDocument();
   expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
 });
 
@@ -114,7 +124,7 @@ it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
 
   expect(await screen.findByText("Akce 1")).toBeInTheDocument();
   expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
-  expect(screen.queryByText(/v lobby si nastav/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/připojuješ se/i)).not.toBeInTheDocument();
 });
 
 it("admin vidí panel režie", async () => {
@@ -227,7 +237,7 @@ it("účastníkovi se jeho vlastní běžící zápas nezdvojí", async () => {
 
   render(<App />);
 
-  expect(await screen.findByText(/v lobby si nastav/i)).toBeInTheDocument();
+  expect(await screen.findByText(/připojuješ se/i)).toBeInTheDocument();
   expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
 });
 
@@ -244,4 +254,114 @@ it("hráči po zapsání výsledku zápas nezmizí", async () => {
   render(<App />);
 
   expect(await screen.findByTestId("verejny-zapas")).toHaveTextContent("vyhrál modrý tým");
+});
+
+// Přepínače jen pro adminy: „User View“ schová všechno adminské (panel akce,
+// režii, „+“ v tabulce), debug mód ukáže tlačítka zkušebních hráčů. Hráč
+// nevidí ani jeden přepínač.
+it("admin si přepne na pohled uživatele a adminské části zmizí", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
+  expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Akce 1");
+  expect(screen.getByRole("heading", { name: "Přihlášení hráči" })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("switch", { name: /pohled uživatele/i }));
+  expect(screen.queryByRole("button", { name: /vytvořit zápas/i })).not.toBeInTheDocument();
+  expect(screen.queryByTestId("nazev-akce")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Akce 1" })).toBeInTheDocument();
+  // Přepínač zpátky zůstává, ať se admin dostane ven.
+  expect(screen.getByRole("switch", { name: /pohled uživatele/i })).toBeInTheDocument();
+});
+
+it("debug mód ukáže tlačítka zkušebních hráčů, které server povolil", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  vi.mocked(api.nastaveni).mockResolvedValueOnce({ verze: "0.0.0", zkusebniHraci: true });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  await screen.findByRole("button", { name: /vytvořit zápas/i });
+  expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("switch", { name: /debug mód/i }));
+  expect(await screen.findByRole("button", { name: /\+ zkušební hráč/i })).toBeInTheDocument();
+});
+
+it("hráč žádný přepínač nevidí", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "hrac1", alias: "Hrac", steamName: null, jeAdmin: false } });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByText("Akce 1")).toBeInTheDocument();
+  expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+});
+
+// Rozpracovaná sestava přichází ze serveru: co druhý admin naklikal, je tu
+// bez refreshe, a vlastní kliknutí odchází na server.
+it("sestavu bere ze stavu akce a vlastní výběr posílá na server", async () => {
+  const { fireEvent, waitFor } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  const hrac = (steamId: string, alias: string) => ({ steamId, alias, steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null });
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [{ steamId: "a", tym: 1, barva: 1, civ: null }] },
+    prihlaseni: [hrac("a", "Pepa"), hrac("b", "Marek")],
+    zapasy: [],
+  });
+
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: /barva pepa/i })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Vybrat hráče Marek" }));
+  expect(screen.getByRole("button", { name: /barva marek/i })).toBeInTheDocument();
+  await waitFor(() => expect(api.skladani).toHaveBeenCalledWith(1, [
+    { steamId: "a", tym: 1, barva: 1, civ: null },
+    { steamId: "b", tym: 2, barva: 2, civ: null },
+  ]));
+});
+
+// Historie kroků: vlastní změna sestavy dostane toast se Zpět a Ctrl+Z ji
+// vrátí (pošle na server stav před změnou), Ctrl+Y ji znovu udělá.
+it("Ctrl+Z vrátí poslední změnu sestavy a Ctrl+Y ji zopakuje", async () => {
+  const { fireEvent, waitFor } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  const hrac = (steamId: string, alias: string) => ({ steamId, alias, steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [hrac("a", "Pepa")], zapasy: [] });
+
+  render(<App />);
+  await screen.findByRole("button", { name: "Vybrat hráče Pepa" });
+  fireEvent.click(screen.getByRole("button", { name: "Vybrat hráče Pepa" }));
+  await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, [{ steamId: "a", tym: 1, barva: 1, civ: null }]));
+  // Běžná změna toast nemá — ten patří až ke kroku zpět/znovu.
+  expect(screen.queryByTestId("toasty")).not.toBeInTheDocument();
+
+  fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+  expect(await screen.findByTestId("toasty")).toHaveTextContent("Zpět: Pepa přidán do sestavy");
+  await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, []));
+
+  fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+  expect(screen.getByTestId("toasty")).toHaveTextContent("Znovu: Pepa přidán do sestavy");
+  await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, [{ steamId: "a", tym: 1, barva: 1, civ: null }]));
+});
+
+// Web se nasazuje několikrát za večer. Stará stránka s novými daty tiše
+// nefunguje (8. 9. 2026: druhý admin neviděl zavření zápasu, protože jeho
+// bundle pole `zavreny` neznal). Server proto hlásí verzi a stránka nabídne
+// obnovení — sama se nenačte, aby nikomu nezmizela rozdělaná sestava.
+it("při nové verzi serveru nabídne obnovení stránky", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  vi.mocked(useAkceStav).mockReturnValue({
+    stav: { akce: null, prihlaseni: [], zapasy: [] },
+    spojeno: true,
+    obnov: vi.fn().mockResolvedValue(undefined),
+    novaVerze: "99.0.0",
+  });
+  render(<App />);
+  expect(await screen.findByRole("status")).toHaveTextContent("99.0.0");
+  expect(screen.getByRole("button", { name: "Načíst znovu" })).toBeInTheDocument();
 });

@@ -1,3 +1,5 @@
+import type { ZebricekRadek } from "../shared/zebricky.js";
+
 export interface LeaderboardStats {
   alias: string;
   country: string | null;
@@ -5,6 +7,8 @@ export interface LeaderboardStats {
   eloNejvyssi: number | null;
   odehranoHer: number | null;
   posledniZapas: Date | null;
+  /** Všechny žebříčky hráče (pro kartu se statistikami); prázdné = nikde nehrál. */
+  zebricky: ZebricekRadek[];
 }
 
 /** SOLO_RM_RANKED — 1v1 Random Map. Ostatní žebříčky se ignorují. */
@@ -57,6 +61,22 @@ export function parsePersonalStat(json: unknown, steamId: string): LeaderboardSt
   const losses = radek ? cisloNeboNull(radek["losses"]) : null;
   const lastMatch = radek ? cisloNeboNull(radek["lastmatchdate"]) : null;
 
+  // Všechny žebříčky hráče, jak je hra ukazuje po najetí na jméno v lobby.
+  const zebricky: ZebricekRadek[] = [];
+  for (const s of staty) {
+    if (!jeObjekt(s) || s["statgroup_id"] !== statgroupId) continue;
+    const id = cisloNeboNull(s["leaderboard_id"]);
+    if (id === null) continue;
+    zebricky.push({
+      id,
+      rating: cisloNeboNull(s["rating"]),
+      nejvyssi: cisloNeboNull(s["highestrating"]),
+      poradi: cisloNeboNull(s["rank"]),
+      vyhry: cisloNeboNull(s["wins"]) ?? 0,
+      prohry: cisloNeboNull(s["losses"]) ?? 0,
+    });
+  }
+
   return {
     alias: member.alias,
     country: typeof member.country === "string" ? member.country : null,
@@ -64,6 +84,7 @@ export function parsePersonalStat(json: unknown, steamId: string): LeaderboardSt
     eloNejvyssi: radek ? cisloNeboNull(radek["highestrating"]) : null,
     odehranoHer: wins !== null && losses !== null ? wins + losses : null,
     posledniZapas: lastMatch !== null ? new Date(lastMatch * 1000) : null,
+    zebricky,
   };
 }
 

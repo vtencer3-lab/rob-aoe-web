@@ -1,7 +1,9 @@
-import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
-import { nazevCivilizace } from "../../../src/shared/civilizace.js";
-import { jmenoHrace, mujUcastnik, popisFormatu, popisTymu, sdiliCivilizaci, souperi } from "../zapas.js";
+import { Fragment } from "react";
+import { strany } from "../../../src/shared/strany.js";
+import { BARVA_NAZEV, type HledaniLobbyVysledek, type UcastnikView, type ZapasView } from "../../../src/shared/types.js";
+import { jmenoHrace, mujUcastnik, popisTymu, sdiliCivilizaci } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
+import { VyberCivilizace } from "./VyberCivilizace.js";
 
 interface Props {
   zapas: ZapasView;
@@ -10,74 +12,113 @@ interface Props {
   onHledatLobby: (zapasId: number) => Promise<HledaniLobbyVysledek>;
 }
 
+/**
+ * Karta hráče, který se do lobby připojuje (host má ObrazovkaHosta). Stejný
+ * rytmus jako u hosta: velký titulek, pruh s barvou a týmem, krok
+ * „Připojuješ se!“ — dokud lobby není, čeká se na hosta a web ji hledá sám;
+ * jakmile je, je tu tlačítko do hry. Pod tím strany zápasu vedle sebe jako
+ * v lobby, s velkým VS mezi nimi.
+ */
 export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
   const muj = mujUcastnik(zapas, ja);
   if (!muj) return null;
   // Civilizaci sdílí, kdo má stejnou barvu (Coop Kings) — ne kdo je ve stejném týmu.
   const parta = sdiliCivilizaci(zapas.ucastnici, ja);
-  const proti = souperi(zapas, ja);
   const barva = BARVA_NAZEV[muj.barva];
+  const nalezena = zapas.joinUri !== null;
 
   return (
     <section className={`karta barva-${muj.barva}`}>
-      <header>
-        Zápas #{zapas.poradi} · {popisFormatu(zapas.ucastnici)}
-      </header>
+      <h2 className="titulek-zapasu" data-testid="titulek-zapasu">
+        Zápas #{zapas.poradi}
+      </h2>
       <div className="hero">
         <strong data-testid="moje-barva">{barva}</strong>
         <span>
           <span data-testid="muj-tym">{popisTymu(muj)}</span>
         </span>
       </div>
-      <p>
-        V lobby si nastav <strong>{barva} barvu</strong> a <strong>{popisTymu(muj)}</strong>
-        {muj.civ !== null ? (
-          <>
-            {" "}
-            a civilizaci <strong data-testid="moje-civ">{nazevCivilizace(muj.civ)}</strong>
-          </>
-        ) : null}
-        .
-      </p>
       {parta.length > 0 ? (
-        <p>
-          Civilizaci sdílíš s <strong>{parta.map(jmenoHrace).join(", ")}</strong> —
-          musíte mít oba stejnou barvu.
+        <p className="stred">
+          Civilizaci sdílíš s <strong>{parta.map(jmenoHrace).join(", ")}</strong> — musíte mít oba stejnou barvu.
         </p>
       ) : null}
-      {zapas.joinUri ? (
-        <a className="cta" href={zapas.joinUri} onClick={() => onPripojit(zapas.id)}>
-          Připojit se do hry
-        </a>
-      ) : (
-        <>
-          <p className="ceka">Čeká se na hosta, až založí lobby.</p>
-          {/* Čekající hráč si může pomoct sám: seznam otevřených lobby je
-              společný, takže najde totéž číslo, které by našel host. */}
-          <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} nalezena={false} automaticky />
-        </>
-      )}
-      <footer>
-        <p>Proti vám: {proti.map(jmenoHrace).join(", ")}</p>
-        {/* Bez odkazu nemá smysl ptát se, jestli nejde. Věta říká, co
-            udělat teď: bez lobby počkat, s lobby ji najít ručně ve hře. */}
-        {zapas.lobbyId ? (
-          <p>
-            Nefunguje tlačítko Připojit? V lobby prohlížeči ve hře hledej{" "}
-            <strong>{zapas.nazevLobby}</strong> nebo vlož číslo <strong>{zapas.lobbyId}</strong>.
-          </p>
+
+      <section className={nalezena ? "sekce-krok hotovo" : "sekce-krok"} data-testid="krok-pripojeni">
+        <header className="zahlavi-sekce">
+          <h3 className="zakladas">Připojuješ se!</h3>
+          {nalezena ? (
+            <span className="fajfka" data-testid="fajfka-lobby" aria-label="Lobby nalezena">
+              ✓
+            </span>
+          ) : null}
+        </header>
+        {zapas.joinUri ? (
+          <div className="ovladani hostovi">
+            <a className="cta" href={zapas.joinUri} onClick={() => onPripojit(zapas.id)}>
+              Připojit se do hry
+            </a>
+          </div>
         ) : (
-          <p>
-            Lobby se bude jmenovat <strong>{zapas.nazevLobby}</strong>; jakmile ji host založí,
-            objeví se tu tlačítko Připojit.
-          </p>
+          <>
+            <p className="ceka stred">
+              Čeká se na hosta, až založí lobby<span className="tecky" aria-hidden="true" />
+            </p>
+            {/* Čekající hráč si může pomoct sám: seznam otevřených lobby je
+                společný, takže najde totéž číslo, které by našel host. Hláška
+                „lobby není vidět“ tu není — říká totéž co věta nad tím. */}
+            <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} nalezena={false} automaticky tichy />
+          </>
         )}
         {zapas.heslo ? (
-          <p>
+          <p className="stred heslo">
             Heslo: <strong>{zapas.heslo}</strong>
           </p>
         ) : null}
-      </footer>
+      </section>
+
+      <section className="sekce-krok" data-testid="strany-zapasu">
+        <Strany ucastnici={zapas.ucastnici} ja={ja} />
+      </section>
     </section>
+  );
+}
+
+/**
+ * Strany zápasu vedle sebe, každá jako řádky ze skládání (barva, tým, jméno,
+ * civilizace), jen ke čtení. Mezi stranami velké VS. Vlastní řádek je
+ * zvýrazněný.
+ */
+function Strany({ ucastnici, ja }: { ucastnici: UcastnikView[]; ja: string }) {
+  const seznam = strany(ucastnici);
+  return (
+    <div className="vs-rozlozeni">
+      {seznam.map((strana, i) => (
+        <Fragment key={i}>
+          {i > 0 ? (
+            <div className="vs" aria-label="proti">
+              VS
+            </div>
+          ) : null}
+          <div className="skladani jen-ke-cteni">
+            <ul className="sestava">
+              {strana.clenove.map((u) => (
+                <li key={u.steamId} className={u.steamId === ja ? "radek ja" : "radek"} data-testid="radek-strany">
+                  <span className={`volba volba-barva barva-${u.barva}`} aria-label={`Barva ${BARVA_NAZEV[u.barva]}`}>
+                    {u.barva}
+                  </span>
+                  <span className="volba volba-tym" aria-label={popisTymu(u)}>
+                    {u.tym === 0 ? "–" : u.tym}
+                  </span>
+                  <span className="jmeno">{jmenoHrace(u)}</span>
+                  <span className="elo">{u.elo1v1 !== null && u.elo1v1 !== undefined ? <small>({u.elo1v1})</small> : null}</span>
+                  <VyberCivilizace popisek={`Civilizace ${jmenoHrace(u)}`} sada={null} hodnota={u.civ} onZmena={() => {}} vypnuto />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Fragment>
+      ))}
+    </div>
   );
 }

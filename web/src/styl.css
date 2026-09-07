@@ -24,8 +24,26 @@ body {
   font: 15px/1.5 system-ui, sans-serif;
 }
 
-main { max-width: 62rem; margin: 0 auto; padding: 1.5rem; }
+main { max-width: calc(62rem + 250px); margin: 0 auto; padding: 1.5rem; }
 header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+header .logo { width: 64px; height: auto; flex: none; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
+header h1 { margin-right: auto; }
+.nova-verze {
+  margin: -1.5rem -1.5rem 1.5rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--akcent);
+  color: #1a140c;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.nova-verze button { background: #1a140c; color: var(--akcent); border: 0; border-radius: 6px; padding: 0.35rem 0.9rem; cursor: pointer; font-weight: 600; }
+.nova-verze button:hover { background: #2a2116; }
+.hlavicka-vpravo { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
+.nadpis-seznamu { margin: 1rem 0 0.3rem; font-size: 1.05rem; }
 
 a.tlacitko, .cta {
   display: inline-block;
@@ -80,8 +98,27 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .skladani { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
 /* Skládání sestavy: vybraní nahoře pod sebou s tlačítky barvy a týmu jako
    ve hře, nevybraní ztlumeně pod nimi. Řádky se přetahují jen v rámci skupiny. */
-.skladani .sestava { list-style: none; padding: 0; margin: 0.4rem 0; }
-.skladani .radek { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.2rem; border-bottom: 1px solid #2a241c; cursor: grab; }
+/* Sloupce jsou na celém seznamu (subgrid), takže jméno má šířku podle
+   nejdelšího jména v sestavě a ELO i civilizace sedí zarovnané hned za ním;
+   křížek je až u pravého okraje za prázdným sloupcem. */
+.skladani .sestava {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0;
+  display: grid;
+  grid-template-columns: 1rem 2.1rem 2.1rem max-content 4.4rem 16.5rem 1fr 1.9rem;
+  column-gap: 0.5rem;
+}
+.skladani .radek {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding: 0.3rem 0.2rem;
+  border-bottom: 1px solid #2a241c;
+  cursor: grab;
+}
+.skladani .radek .odebrat { grid-column: 8; }
 .skladani .radek:active { cursor: grabbing; }
 .skladani .uchyt { color: #5a5040; font-size: 0.9rem; letter-spacing: -0.2em; width: 1rem; }
 .skladani .nevybrani { margin-top: 0.8rem; opacity: 0.5; }
@@ -99,6 +136,10 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   justify-content: center;
   font-weight: 800;
   font-family: Georgia, "Times New Roman", serif;
+  /* Georgia má staré číslice (3, 4, 5, 7, 9 klesají pod účaří) — verzálkové
+     sedí ve čtverečku všechny stejně. */
+  font-variant-numeric: lining-nums;
+  line-height: 1;
   border: 1px solid #2a2118;
   /* 3D zkosení jako ve hře: světlá hrana vlevo nahoře, tmavá vpravo dole,
      tenký zlatý rámeček a lesk přes horní půlku. */
@@ -127,6 +168,21 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 
 .sprava-akce, .zalozeni-akce { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
 .sprava-akce .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+/* Panel akce jako herní lobby: název vlevo, Ukončit vpravo, pod tím vlevo
+   hráči (sestava) a vpravo Game Settings. */
+.hlavicka-akce { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
+.hlavicka-akce h2 { margin: 0; }
+.sprava-akce .ovladani.ladeni { margin: 0 0 0.6rem; }
+.lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: stretch; }
+.lobby-rozlozeni .leva { min-width: 0; display: flex; }
+.lobby-rozlozeni .skladani { margin: 0; border: none; padding: 0; flex: 1; display: flex; flex-direction: column; }
+/* Seznam roste dolů, ale řádky se neroztahují — mřížka drží řádky nahoře. */
+/* Součet ELO týmů sedí hned pod seznamem; ke spodnímu okraji se odsouvá až
+   souhrn s tlačítkem. */
+.lobby-rozlozeni .skladani .sestava { align-content: start; }
+.lobby-rozlozeni .skladani .souhrn { margin-top: auto; }
+.lobby-rozlozeni .skladani .vytvorit { align-self: flex-start; }
+@media (max-width: 60rem) { .lobby-rozlozeni { grid-template-columns: 1fr; } }
 .zalozeni-akce { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 
 /* Řádky účastníků v režii: text a tlačítko se dřív dotýkaly bez jediné
@@ -218,8 +274,8 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 
 /* Host taky hraje, takze i on ma svoji barvu videt jako pruh, ne jen jako
    radek v zrcadle. Stejny utvar jako na karte hrace. */
-.host .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
-.host .zakladas { font-size: 1.5rem; }
+.host .titulek-zapasu, .karta .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
+.host .zakladas, .karta .zakladas { font-size: 1.5rem; }
 .host .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
 .host .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
 
@@ -269,10 +325,14 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 /* Verze v patičce — nenápadná, ale čitelná i na streamu. */
 .verze {
   margin-top: 2rem;
-  opacity: 0.5;
   font-size: 0.8rem;
   text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
 }
+.verze > span:last-child { opacity: 0.5; }
 
 /* Hlavní tlačítko panelu režie: zlaté a větší, aby se v přenosu našlo naslepo. */
 button.vytvorit {
@@ -340,9 +400,10 @@ button.plus {
   color: #241d10;
 }
 button.plus:hover { filter: brightness(1.1); }
-.skladani .jmeno { padding: 0.2rem 0.4rem; }
+.skladani .jmeno { padding: 0.2rem 0.4rem; max-width: 16rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .skladani .jmeno small { color: var(--tlumene); }
-button.odebrat { margin-left: auto; width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.1rem; line-height: 1; color: var(--tlumene); }
+.skladani .elo { text-align: right; color: var(--tlumene); font-variant-numeric: tabular-nums; white-space: nowrap; }
+button.odebrat { width: 1.9rem; height: 1.9rem; min-width: 1.9rem; box-sizing: border-box; padding: 0; margin: 0; font-size: 1.1rem; line-height: 1; color: var(--tlumene); justify-self: end; }
 button.odebrat:hover { color: #e07a6a; }
 
 /* Tlačítka hosta nad snímkem dialogu. */
@@ -374,12 +435,14 @@ button.odebrat:hover { color: #e07a6a; }
 
 /* Vyber civilizace s erbem (48 px) jako ve hre: tlacitko + vlastni seznam. */
 .vyber-civ { position: relative; }
-.vyber-civ-tlacitko { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; min-width: 14rem; font-size: 1rem; }
+.vyber-civ-tlacitko { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; font-size: 1rem; }
+.vyber-civ-tlacitko > span:first-of-type { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vyber-civ-tlacitko .sipka { margin-left: auto; color: var(--tlumene); }
 .vyber-civ .erb { height: 48px; width: auto; flex: none; }
 .vyber-civ-seznam {
   position: absolute; z-index: 20; top: calc(100% + 4px); left: 0;
-  min-width: 18rem; max-height: 26rem; overflow-y: auto;
+  /* Stejně široký jako tlačítko nad ním (sloupec 16,5 rem). */
+  width: 100%; box-sizing: border-box; max-height: 26rem; overflow-y: auto;
   margin: 0; padding: 0.3rem; list-style: none;
   background: #1f1a14; border: 1px solid #3d352a; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
@@ -393,6 +456,9 @@ button.odebrat:hover { color: #e07a6a; }
 .nastaveni-lobby .radek { display: contents; }
 .nastaveni-lobby .radek > span { color: var(--tlumene); font-size: 0.9rem; text-align: right; }
 .nastaveni-lobby .radek > select, .nastaveni-lobby .radek > input { width: 100%; box-sizing: border-box; }
+/* Text v číselném poli začíná na stejné svislici jako text v rozbalovacím
+   seznamu — prohlížeč dává selectu vnitřní odsazení navíc. */
+.nastaveni-lobby .radek > input[type="number"] { padding-left: 0.85rem; }
 .nastaveni-lobby fieldset { border: none; padding: 0; margin: 0; min-width: 0; }
 .nastaveni-lobby .prepinace { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; }
 .nastaveni-lobby .prepinace label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.9rem; }
@@ -424,3 +490,149 @@ button.odebrat-zapas:hover { color: #e07a6a; }
 .stav-lobby { display: inline-flex; align-items: center; gap: 0.3rem; }
 button.kopirovatelne.jen-ikona { padding: 0.15rem 0.3rem; }
 button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px; height: 16px; }
+
+/* Přepínač s knoflíkem: vypnuto vlevo, zapnuto vpravo. Checkbox je jen pro
+   klávesnici a čtečky, vidět je drážka s knoflíkem. */
+.prepinac { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.8rem; color: var(--tlumene); user-select: none; }
+.prepinac input { position: absolute; opacity: 0; width: 0; height: 0; }
+.prepinac .drazka { position: relative; box-sizing: border-box; width: 1.7rem; height: 0.95rem; border-radius: 1rem; background: #3a3126; border: 1px solid #4a4133; transition: background 0.15s; flex: none; }
+/* Knoflík svisle přesně uprostřed drážky (výška drážky bez rámečku), ne o
+   tloušťku rámečku výš. */
+.prepinac .knoflik { position: absolute; top: 50%; transform: translateY(-50%); left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
+.prepinac.zapnuto .drazka { background: var(--akcent); border-color: var(--akcent); }
+.prepinac.zapnuto .knoflik { left: calc(100% - 0.95rem + 4px); background: #241d10; }
+/* Oba popisky stejně těžké — jen barva říká, která poloha platí; tučný text
+   na jedné straně dělal přepínač opticky nakřivo. */
+.prepinac .aktivni { color: var(--text); }
+.prepinac input:focus-visible + .drazka { outline: 2px solid var(--akcent); outline-offset: 2px; }
+
+/* Karta hráče: krok „Připojuješ se!“ uprostřed, animované tečky, strany
+   zápasu vedle sebe s VS. */
+.stred { text-align: center; }
+.karta .ceka { margin: 0.4rem 0; }
+.karta .heslo { margin-top: 0.8rem; font-size: 1.05rem; }
+.karta .hledani-lobby .ovladani { justify-content: center; }
+.karta .hledani-lobby button { width: min(100%, 22rem); font-size: 1.1rem; padding: 0.6rem 1rem; }
+.tecky::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: tecky 1.5s steps(1) infinite; }
+@keyframes tecky {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+.vs-rozlozeni { display: flex; align-items: center; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+.vs-rozlozeni .vs { font-size: 2.2rem; font-weight: 800; color: var(--akcent); letter-spacing: 0.05em; }
+.skladani.jen-ke-cteni { border: none; padding: 0; margin: 0; }
+.skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 14rem; column-gap: 0.5rem; }
+.skladani.jen-ke-cteni .radek { cursor: default; }
+.skladani.jen-ke-cteni .radek.ja .jmeno { font-weight: 700; color: var(--akcent); }
+.skladani.jen-ke-cteni .vyber-civ-tlacitko:disabled { opacity: 0.6; cursor: default; }
+.skladani.jen-ke-cteni .vyber-civ-tlacitko .sipka { visibility: hidden; }
+
+/* Řazení tabulky přihlášených v režii: hlavička je tlačítko, šipka říká směr. */
+.seznam th button.razeni { background: none; border: none; padding: 0; margin: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
+.seznam th button.razeni:hover, .seznam th button.razeni.aktivni { color: var(--akcent); }
+.seznam th .sipka-razeni { font-size: 0.7rem; opacity: 0.6; }
+.seznam th button.razeni.aktivni .sipka-razeni { opacity: 1; }
+
+/* Zkřížené meče u hráče, který právě hraje běžící zápas. */
+.seznam td.hraje { width: 2rem; text-align: center; }
+.seznam .mece { font-size: 1.2rem; color: var(--akcent); }
+
+/* Karta se statistikami hráče v pravém dolním rohu, jako ve hře po najetí
+   na jméno v lobby. */
+.staty-hrace {
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 50;
+  min-width: 26rem; max-width: calc(100vw - 2rem);
+  background: #1f1a14; border: 1px solid var(--akcent); border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); padding: 0.8rem 1rem;
+  font-family: Georgia, "Times New Roman", serif;
+}
+/* justify-content přebíjí globální header { space-between }, jinak jméno uteče doprava. */
+.staty-hrace header { display: flex; justify-content: flex-start; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+.staty-hrace header img { border: 1px solid var(--akcent); border-radius: 3px; }
+.staty-hrace header strong { font-size: 1.25rem; font-weight: 400; letter-spacing: 0.02em; }
+.staty-hrace table { width: 100%; border-collapse: collapse; font-variant: small-caps; }
+.staty-hrace th { text-align: left; font-weight: 400; font-size: 1rem; color: var(--text); border-bottom: 1px solid var(--akcent); padding: 0.15rem 0.5rem; }
+.staty-hrace th:not(:first-child), .staty-hrace td:not(:first-child) { text-align: center; }
+.staty-hrace td { padding: 0.15rem 0.5rem; font-size: 1rem; color: var(--text); }
+.staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
+.staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
+/* Jméno s avatarem jako blok (flex), buňky zarovnané na střed — inline-flex
+   sedělo na účaří textu a jméno bylo výš než zbytek řádku. */
+.seznam td { vertical-align: middle; }
+.seznam td .jmeno-hrace { cursor: help; display: flex; align-items: center; gap: 0.5rem; }
+.seznam td .jmeno-hrace img { width: 28px; height: 28px; border-radius: 3px; flex: none; }
+
+/* Tažený řádek „v ruce“: jede s kurzorem, nad ostatními, se stínem. Ostatní
+   řádky se na nové místo posouvají animací (tahani.ts, FLIP). */
+.skladani .radek, .seznam-rezie tbody tr { touch-action: none; }
+.v-ruce { position: relative; z-index: 5; background: #2c2620; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); cursor: grabbing !important; }
+.seznam-rezie tbody tr.v-ruce td { background: #2c2620; }
+
+/* Součet ELO za tým pod seznamem vybraných. Dva týmy vedle sebe, tři a
+   čtyři se zalomí pod ně. */
+/* Týmy v jednom řádku; když se nevejdou, po dvou. */
+.elo-tymu { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.6rem 1rem; margin: 0.8rem 0 0; }
+.elo-tymu .tym { padding: 0.5rem 0.9rem; border: 1px solid #3d352a; border-radius: 6px; }
+.elo-tymu h4 { margin: 0 0 0.1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); }
+.elo-tymu strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.elo-tymu small { display: block; color: var(--tlumene); font-size: 0.75rem; }
+
+/* Robovo jméno v záhlaví je tlačítko (easter egg), ale vypadá jako text;
+   hover ho jen lehce zezlátne. */
+h1 button.jmeno-roba { all: unset; cursor: pointer; transition: color 0.2s; }
+h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible { color: var(--akcent); }
+
+/* Čtverečky barvy a týmu se neoznačují jako text (na kartě hráče jsou to
+   jen span). Tlačítka ve skládání se při stisku zamáčknou: zkosení se
+   obrátí a čtvereček trochu zmenší. */
+.skladani .volba { user-select: none; -webkit-user-select: none; transition: transform 0.08s ease, box-shadow 0.08s ease; }
+.skladani button.volba:active {
+  transform: scale(0.92) translateY(1px);
+  box-shadow:
+    inset -2px -2px 0 rgba(255, 255, 255, 0.35),
+    inset 2px 2px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 0 3px rgba(212, 175, 95, 0.55);
+}
+.skladani button.odebrat, button.plus { transition: transform 0.08s ease; }
+.skladani button.odebrat:active, button.plus:active { transform: scale(0.9); }
+
+/* Účastníci zápasu v režii: čtverečky, jméno, ELO, stav a vpravo odznak
+   HOST nebo tlačítko na přehození hosta. */
+.zapas .skladani.jen-ke-cteni { margin: 0; }
+/* Specifičtější než .skladani.jen-ke-cteni .sestava (karta hráče má 5 sloupců),
+   jinak by odznak HOST a tlačítko padaly na další řádek. */
+.zapas .skladani.jen-ke-cteni .sestava.sestava-zapasu { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 1fr auto; margin: 0.4rem 0; }
+.zapas .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
+.zapas .titulek-zapasu small { font-size: 1rem; font-weight: 400; color: var(--tlumene); }
+.zapas .skladani.jen-ke-cteni .sestava-zapasu .radek { padding: 0.35rem 0.2rem; }
+.zapas .sestava-zapasu .stav-ucastnika { color: var(--tlumene); }
+.zapas .sestava-zapasu .radek > button, .zapas .sestava-zapasu .radek > .odznak-host { justify-self: end; margin: 0; white-space: nowrap; }
+
+/* Zvýraznění změny (historie kroků): zlatý záblesk kolem řádku nebo pole. */
+.zmena { animation: zmena-blik 1.6s ease-out; }
+@keyframes zmena-blik {
+  0% { box-shadow: 0 0 0 3px var(--akcent), 0 0 18px 4px rgba(200, 167, 90, 0.7); background-color: rgba(200, 167, 90, 0.35); }
+  60% { box-shadow: 0 0 0 3px var(--akcent), 0 0 12px 2px rgba(200, 167, 90, 0.4); background-color: rgba(200, 167, 90, 0.15); }
+  100% { box-shadow: none; background-color: transparent; }
+}
+.nastaveni-lobby .radek.zmena { display: contents; }
+.nastaveni-lobby .radek.zmena > select, .nastaveni-lobby .radek.zmena > input, .nastaveni-lobby .radek.zmena > .prepinace { animation: zmena-blik 1.6s ease-out; border-radius: 4px; }
+.nastaveni-lobby label.zaskrtavaci.zmena { border-radius: 4px; }
+
+/* Toasty změn vpravo dole, nad kartou se statistikami (když je otevřená). */
+.toasty { position: fixed; right: 1rem; bottom: calc(1rem + var(--staty-vyska, 0px)); z-index: 60; display: flex; flex-direction: column; gap: 0.4rem; max-width: min(28rem, calc(100vw - 2rem)); }
+.toast-zmeny { display: flex; align-items: center; gap: 0.6rem; background: #2c2620; border: 1px solid var(--akcent); border-radius: 6px; padding: 0.5rem 0.6rem 0.5rem 0.8rem; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5); animation: toast-nahoru 0.2s ease-out; }
+.toast-zmeny > span { flex: 1; }
+.toast-zmeny button.zavrit { padding: 0 0.4rem; font-size: 1.1rem; line-height: 1; color: var(--tlumene); background: none; border: none; }
+.toast-zmeny button.zavrit:hover { color: #e07a6a; }
+@keyframes toast-nahoru { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Křížek na zavření dohraného zápasu v pravém horním rohu karty; zavřený
+   zápas (jen v debug módu) je zašedlý s tlačítkem na otevření. */
+.zapas { position: relative; }
+.zapas button.zavrit-zapas { position: absolute; top: 0.7rem; right: 0.7rem; width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; }
+.zapas button.zavrit-zapas:hover { color: #e07a6a; border-color: #4a4133; }
+.zapas button.zavrit-zapas.otevrit { width: auto; height: auto; padding: 0.3rem 0.6rem; font-size: 0.85rem; background: #3a3126; border-color: #4a4133; }
+.zapas.zavreny { opacity: 0.45; }

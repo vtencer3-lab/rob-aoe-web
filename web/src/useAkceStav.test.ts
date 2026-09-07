@@ -1,8 +1,10 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { VERZE } from "../../src/shared/verze.js";
 import { api } from "./api.js";
 import {
   DOTAZ_INTERVAL_MS,
+  HLIDKA_MS,
   MAX_ODKLAD_MS,
   PRVNI_ODKLAD_MS,
   TRPELIVOST_MS,
@@ -23,9 +25,22 @@ class FalesnyZdroj {
   onmessage: ((udalost: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
   zavreno = false;
+  posluchace = new Map<string, (udalost?: { data: string }) => void>();
 
   constructor(readonly url: string) {
     otevrene.push(this);
+  }
+
+  addEventListener(typ: string, fn: (udalost?: { data: string }) => void) {
+    this.posluchace.set(typ, fn);
+  }
+
+  puls() {
+    this.posluchace.get("puls")?.();
+  }
+
+  verze(verze: string) {
+    this.posluchace.get("verze")?.({ data: JSON.stringify({ verze }) });
   }
 
   close() {
@@ -234,4 +249,49 @@ it("po odpojení komponenty se dotazování zastaví", async () => {
 
   await act(async () => void vi.advanceTimersByTime(DOTAZ_INTERVAL_MS * 10));
   expect(dotaz).toHaveBeenCalledTimes(1);
+});
+
+// Spojení, které potichu umřelo (NAT, proxy, uspaný počítač): prohlížeč
+// nevyhodí chybu a čekal by navždy. Server pulsuje po 25 s; když za HLIDKA_MS
+// nepřijde puls ani stav, klient spojení zahodí, doptá se a otevře nové.
+it("po dlouhém tichu bez pulsu spojení obnoví a doptá se", async () => {
+  const { result, unmount } = renderHook(() => useAkceStav());
+  act(() => otevrene[0]!.onopen!());
+  act(() => otevrene[0]!.onmessage!({ data: JSON.stringify(PRAZDNY_STAV) }));
+  expect(result.current.spojeno).toBe(true);
+
+  // Pulsy hlídku natahují — dokud chodí, nic se neobnovuje.
+  for (let i = 0; i < 4; i++) {
+    act(() => void vi.advanceTimersByTime(HLIDKA_MS - 1000));
+    act(() => otevrene[0]!.puls());
+  }
+  expect(otevrene).toHaveLength(1);
+
+  await act(async () => void vi.advanceTimersByTime(HLIDKA_MS));
+  expect(otevrene[0]!.zavreno).toBe(true);
+  expect(otevrene).toHaveLength(2);
+  expect(dotaz).toHaveBeenCalled();
+  unmount();
+});
+
+it("obnov() se doptá serveru a stav převezme", async () => {
+  dotaz.mockResolvedValue({ akce: { id: 2, nazev: "po akci", stav: "bezi" }, prihlaseni: [], zapasy: [] });
+  const { result, unmount } = renderHook(() => useAkceStav());
+  await act(async () => result.current.obnov());
+  expect(result.current.stav?.akce?.nazev).toBe("po akci");
+  unmount();
+});
+
+// Po nasazení se stream znovu otevře a server pošle svou verzi. Liší-li se od
+// té zabudované do bundlu, hook ji ohlásí; stejná verze nic neznamená.
+it("ohlásí novou verzi serveru, když se liší od načtené", () => {
+  const { result, unmount } = renderHook(() => useAkceStav());
+  expect(result.current.novaVerze).toBeNull();
+
+  act(() => otevrene[0]!.verze(VERZE));
+  expect(result.current.novaVerze).toBeNull();
+
+  act(() => otevrene[0]!.verze("99.0.0"));
+  expect(result.current.novaVerze).toBe("99.0.0");
+  unmount();
 });

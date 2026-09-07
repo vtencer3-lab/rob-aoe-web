@@ -16,6 +16,8 @@ export interface ZapasRow {
   heslo: string;
   lobbyId: string | null;
   vitez: Vitez | null;
+  /** Dohraný zápas zavřený křížkem v režii; null = otevřený. */
+  zavrenyV: Date | null;
 }
 
 /** Hráč vybraný do zápasu se mezi kontrolou přihlášek a vložením zápasu odhlásil — skutečný konflikt, ne interní chyba. */
@@ -28,6 +30,8 @@ export interface UcastnikRow {
   tym: Tym;
   barva: Barva;
   civ: number | null;
+  /** 1v1 ELO ze žebříčku v době čtení — na kartě hráče vedle jména. */
+  elo1v1: number | null;
   jeHost: boolean;
   poradi: number;
   kliknulPripojit: Date | null;
@@ -50,7 +54,7 @@ export function vitezZTextu(text: string | null): Vitez | null {
   return null;
 }
 
-const SLOUPCE_ZAPASU = "id, akce_id, poradi, stav, nazev_lobby, heslo, lobby_id, vitez";
+const SLOUPCE_ZAPASU = "id, akce_id, poradi, stav, nazev_lobby, heslo, lobby_id, vitez, zavreny_v";
 
 function mapujZapas(r: Record<string, unknown>): ZapasRow {
   return {
@@ -62,6 +66,7 @@ function mapujZapas(r: Record<string, unknown>): ZapasRow {
     heslo: r["heslo"] as string,
     lobbyId: r["lobby_id"] as string | null,
     vitez: vitezZTextu(r["vitez"] as string | null),
+    zavrenyV: (r["zavreny_v"] as Date | null) ?? null,
   };
 }
 
@@ -111,7 +116,7 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
 
 async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
   const { rows } = await getPool().query(
-    `SELECT u.steam_id, p.alias, p.steam_name, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
+    `SELECT u.steam_id, p.alias, p.steam_name, p.elo_1v1, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
        FROM ucastnik u JOIN player p ON p.steam_id = u.steam_id
       WHERE u.zapas_id = $1
       ORDER BY u.poradi, u.steam_id`,
@@ -126,6 +131,7 @@ async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
       tym: row["tym"] as Tym,
       barva: row["barva"] as Barva,
       civ: (row["civ"] as number | null) ?? null,
+      elo1v1: (row["elo_1v1"] as number | null) ?? null,
       jeHost: row["je_host"] as boolean,
       poradi: row["poradi"] as number,
       kliknulPripojit: row["kliknul_pripojit"] as Date | null,
@@ -190,6 +196,15 @@ export async function setZapasStav(zapasId: number, stav: MatchState): Promise<v
  */
 export async function smazZrusenyZapas(zapasId: number): Promise<boolean> {
   const { rowCount } = await getPool().query("DELETE FROM zapas WHERE id = $1 AND stav = 'zruseny'", [zapasId]);
+  return (rowCount ?? 0) > 0;
+}
+
+/** Zavřít (zavreny = true) nebo znovu otevřít dohraný zápas. Vrací false, když zápas není dohraný. */
+export async function setZavreny(zapasId: number, zavreny: boolean): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    `UPDATE zapas SET zavreny_v = CASE WHEN $2::boolean THEN now() ELSE NULL END WHERE id = $1 AND stav = 'dohrano'`,
+    [zapasId, zavreny],
+  );
   return (rowCount ?? 0) > 0;
 }
 

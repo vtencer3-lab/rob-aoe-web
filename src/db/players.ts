@@ -1,3 +1,4 @@
+import type { ZebricekRadek } from "../shared/zebricky.js";
 import { getPool } from "./pool.js";
 
 export interface PlayerRow {
@@ -13,6 +14,8 @@ export interface PlayerRow {
   steamHodiny: number | null;
   statyStazenyV: Date | null;
   statyChyba: string | null;
+  /** Všechny žebříčky (karta se statistikami); null = ještě nestaženo. */
+  zebricky: ZebricekRadek[] | null;
   jeAdmin: boolean;
 }
 
@@ -26,6 +29,7 @@ export interface PlayerStatsUpdate {
   odehranoHer?: number | null;
   posledniZapas?: Date | null;
   steamHodiny?: number | null;
+  zebricky?: ZebricekRadek[] | null;
   chyba: string | null;
 }
 
@@ -45,6 +49,7 @@ export const PLAYER_SLOUPEC_NAZVY = [
   "steam_hodiny",
   "staty_stazeny_v",
   "staty_chyba",
+  "zebricky",
   "je_admin",
 ] as const;
 
@@ -63,6 +68,7 @@ export interface DbRow {
   steam_hodiny: number | null;
   staty_stazeny_v: Date | null;
   staty_chyba: string | null;
+  zebricky: ZebricekRadek[] | null;
   je_admin: boolean;
 }
 
@@ -80,6 +86,7 @@ export function mapuj(row: DbRow): PlayerRow {
     steamHodiny: row.steam_hodiny,
     statyStazenyV: row.staty_stazeny_v,
     statyChyba: row.staty_chyba,
+    zebricky: Array.isArray(row.zebricky) ? row.zebricky : null,
     jeAdmin: row.je_admin,
   };
 }
@@ -121,7 +128,8 @@ export async function savePlayerStats(steamId: string, staty: PlayerStatsUpdate)
        posledni_zapas  = COALESCE($9, posledni_zapas),
        steam_hodiny    = CASE WHEN $10::boolean THEN $11::integer ELSE steam_hodiny END,
        staty_stazeny_v = now(),
-       staty_chyba     = $12
+       staty_chyba     = $12,
+       zebricky        = COALESCE($13::jsonb, zebricky)
      WHERE steam_id = $1`,
     [
       steamId,
@@ -136,6 +144,7 @@ export async function savePlayerStats(steamId: string, staty: PlayerStatsUpdate)
       "steamHodiny" in staty,
       staty.steamHodiny ?? null,
       staty.chyba,
+      staty.zebricky ? JSON.stringify(staty.zebricky) : null,
     ],
   );
 }

@@ -6,12 +6,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const zaklad = { onZalozit: vi.fn(), onStav: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn() };
+
 // Dokud tahle obrazovka neexistovala, POST /api/akce neměl na webu žádného
 // volajícího: Rob se přihlásil, uviděl „Právě neběží žádná akce.“ a víc se
 // nedalo dělat — panel režie se vykresluje až uvnitř existující akce.
 it("bez akce nabídne založení a pošle název", () => {
   const onZalozit = vi.fn();
-  render(<SpravaAkce akce={null} onZalozit={onZalozit} onStav={vi.fn()} onNastaveniLobby={vi.fn()} />);
+  render(<SpravaAkce {...zaklad} akce={null} onZalozit={onZalozit} />);
 
   fireEvent.change(screen.getByLabelText(/Název akce/), { target: { value: "  Čtvrtek  " } });
   fireEvent.click(screen.getByRole("button", { name: "Založit akci" }));
@@ -21,7 +23,7 @@ it("bez akce nabídne založení a pošle název", () => {
 
 it("prázdný název neodešle", () => {
   const onZalozit = vi.fn();
-  render(<SpravaAkce akce={null} onZalozit={onZalozit} onStav={vi.fn()} onNastaveniLobby={vi.fn()} />);
+  render(<SpravaAkce {...zaklad} akce={null} onZalozit={onZalozit} />);
 
   fireEvent.change(screen.getByLabelText(/Název akce/), { target: { value: "   " } });
   fireEvent.click(screen.getByRole("button", { name: "Založit akci" }));
@@ -29,22 +31,26 @@ it("prázdný název neodešle", () => {
   expect(onZalozit).not.toHaveBeenCalled();
 });
 
-it("s běžící akcí nabídne ukončení a nastavení lobby, ne zakládání", () => {
+// Panel jako herní lobby: název akce v záhlaví, vpravo Ukončit, vlevo
+// sestava (children), vpravo nastavení.
+it("s běžící akcí ukáže název, ukončení, sestavu i nastavení lobby, ne zakládání", () => {
   render(
-    <SpravaAkce akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }} onZalozit={vi.fn()} onStav={vi.fn()} onNastaveniLobby={vi.fn()} />,
+    <SpravaAkce {...zaklad} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }}>
+      <p>SESTAVA</p>
+    </SpravaAkce>,
   );
 
+  expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Čtvrtek");
   expect(screen.getByRole("button", { name: "Ukončit akci" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /uložit nastavení lobby/i })).toBeInTheDocument();
+  expect(screen.getByText("SESTAVA")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Založit akci" })).not.toBeInTheDocument();
 });
 
 it("ukončení akce se ptá a při odmítnutí nic nepošle", () => {
   const onStav = vi.fn();
   const potvrzeni = vi.spyOn(window, "confirm").mockReturnValue(false);
-  render(
-    <SpravaAkce akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }} onZalozit={vi.fn()} onStav={onStav} onNastaveniLobby={vi.fn()} />,
-  );
+  render(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }} onStav={onStav} />);
 
   fireEvent.click(screen.getByRole("button", { name: "Ukončit akci" }));
   expect(potvrzeni).toHaveBeenCalled();
@@ -55,14 +61,19 @@ it("ukončení akce se ptá a při odmítnutí nic nepošle", () => {
   expect(onStav).toHaveBeenCalledWith("konec");
 });
 
-it("zkušební hráče nabídne jen, když je server povolil", () => {
+// Zkušební hráči: server je musí povolit a admin zapnout debug mód. Bez
+// debug módu jsou tlačítka schovaná, ať v ostrém večeru nezavazí.
+it("zkušební hráče nabídne jen se souhlasem serveru a v debug módu", () => {
   const akce = { id: 1, nazev: "večer", stav: "bezi" };
-  const { rerender } = render(<SpravaAkce akce={akce} onZalozit={vi.fn()} onStav={vi.fn()} onNastaveniLobby={vi.fn()} />);
-  expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
-
   const onPridat = vi.fn();
   const onOdebrat = vi.fn();
-  rerender(<SpravaAkce akce={akce} onZalozit={vi.fn()} onStav={vi.fn()} onNastaveniLobby={vi.fn()} zkusebni={{ onPridat, onOdebrat }} />);
+  const { rerender } = render(<SpravaAkce {...zaklad} akce={akce} ladeni />);
+  expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
+
+  rerender(<SpravaAkce {...zaklad} akce={akce} zkusebni={{ onPridat, onOdebrat }} />);
+  expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
+
+  rerender(<SpravaAkce {...zaklad} akce={akce} zkusebni={{ onPridat, onOdebrat }} ladeni />);
   fireEvent.click(screen.getByRole("button", { name: /\+ zkušební hráč/i }));
   fireEvent.click(screen.getByRole("button", { name: /odebrat zkušební/i }));
   expect(onPridat).toHaveBeenCalled();

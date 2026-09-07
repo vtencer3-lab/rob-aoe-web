@@ -20,6 +20,7 @@ export function playerView(hrac: PlayerRow): PlayerView {
     posledniZapas: hrac.posledniZapas?.toISOString() ?? null,
     statyStazenyV: hrac.statyStazenyV?.toISOString() ?? null,
     statyChyba: hrac.statyChyba,
+    zebricky: hrac.zebricky,
   };
 }
 
@@ -39,6 +40,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
     spectatorUri: zapas.lobbyId ? spectatorUri(zapas.lobbyId) : null,
     fazeLobby: fazeLobbyPro(zapas.lobbyId),
     vitez: zapas.vitez,
+    zavreny: zapas.zavrenyV !== null,
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,
       alias: u.alias,
@@ -46,6 +48,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
       tym: u.tym,
       barva: u.barva,
       civ: u.civ,
+      elo1v1: u.elo1v1,
       jeHost: u.jeHost,
       poradi: u.poradi,
       kliknulPripojit: u.kliknulPripojit?.toISOString() ?? null,
@@ -58,7 +61,14 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   if (!akce) return { akce: null, prihlaseni: [], zapasy: [] };
   const prihlaseni = await listSignups(akce.id);
   return {
-    akce: { id: akce.id, nazev: akce.nazev, stav: akce.stav, nastaveniLobby: akce.nastaveniLobby },
+    akce: {
+      id: akce.id,
+      nazev: akce.nazev,
+      stav: akce.stav,
+      nastaveniLobby: akce.nastaveniLobby,
+      ulozeneNastaveniLobby: akce.ulozeneNastaveniLobby,
+      skladani: akce.skladani,
+    },
     prihlaseni: prihlaseni.map(playerView),
     zapasy: (await listZapasy(akce.id)).map(zapasView),
   };

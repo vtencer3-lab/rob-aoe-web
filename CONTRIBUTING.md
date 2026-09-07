@@ -15,6 +15,7 @@ Co kde hledat:
 | `docs/analyza-projektu.md` | technická analýza: architektura, datový model, API, rizika |
 | `docs/analyza-automaticke-hledani-lobby.md` | seznam lobby ze hry (Worlds Edge): jak se hledá lobby, **§6 tabulka klíčů nastavení lobby a slotů** |
 | `docs/nasazeni-u-roba.md` | alternativní nasazení na Robův vlastní stroj |
+| `docs/superpowers/specs`, `docs/superpowers/plans` | proč to vzniklo takhle |
 
 ## Nejkratší možné shrnutí, jak se tu pracuje
 
@@ -29,7 +30,6 @@ Co kde hledat:
 
 Detaily v `docs/nasazeni-jouki-cz.md`; kontrolní seznam před pushem je níž
 v „Jak se tu ověřuje práce“.
-| `docs/superpowers/specs`, `docs/superpowers/plans` | proč to vzniklo takhle |
 
 ## Na čem celý produkt stojí
 
@@ -117,6 +117,7 @@ Backend, `src/`:
 | `shared/sestava.ts`, `shared/strany.ts` | pravidla sestavy (barvy, týmy, civilizace, Coop Kings) a strany zápasu — jedno místo pro server i režii |
 | `shared/lobbyKontrola.ts` | očekávané nastavení lobby, číselníky hodnot a `zkontrolujLobby()` — řádky ve čtyřech stavech (ok / spatne / varovani / jedno) |
 | `shared/mapy.ts`, `shared/civilizace.ts` | tabulky id → název vygenerované z jazykového souboru hry (viz „Data ze hry“) |
+| `shared/zebricky.ts` | seznam žebříčků hry (id, název, pořadí jako v lobby) a procento výher; data se plní při obnově statistik (`players/refresh.ts`, sloupec `player.zebricky`) |
 
 Frontend, `web/src/`:
 
@@ -124,9 +125,12 @@ Frontend, `web/src/`:
 |---|---|
 | `App.tsx` | rozhoduje, kdo vidí kterou obrazovku |
 | `useAkceStav.ts` | SSE a záložní dotazování — **přečti si komentář nahoře** |
-| `views/SpravaAkce.tsx` | panel akce: ukončení, zkušební hráči, formulář `NastaveniLobby.tsx` (rozložený jako herní Game Settings, „–“ = je to jedno) |
+| `views/SpravaAkce.tsx` | panel akce jako herní lobby: název + Ukončit v záhlaví, vlevo sestava (children), vpravo `NastaveniLobby.tsx` (jako herní Game Settings, „–“ = je to jedno; každá změna se propíše hned, „Uložit“ dělá snímek) |
+| `views/StatistikyHrace.tsx` | karta se všemi žebříčky hráče v pravém dolním rohu po najetí na jméno v tabulce přihlášených |
+| `historie.ts`, `views/Toasty.tsx` | historie kroků (Ctrl+Z / Ctrl+Y) nad sestavou a nastavením lobby: věty o změně, zvýraznění (`blikni`), toasty vpravo dole nad kartou statistik |
+| `views/Prepinac.tsx` | přepínač s knoflíkem (Admin/User View v záhlaví, Debug u verze) — jen pro adminy, stav v localStorage |
 | `views/Rezie.tsx` | panel režie: zápasy, Spectate, kontrola lobby, výsledky po stranách, odebrání zrušeného zápasu |
-| `views/Skladani.tsx`, `skladani.ts`, `tahani.ts` | skládání sestavy: barva a tým jako ve hře, civilizace přes `VyberCivilizace.tsx` (erby z `civErby.ts`), pořadí slotů přetažením |
+| `views/Skladani.tsx`, `skladani.ts`, `tahani.ts` | skládání sestavy: barva a tým jako ve hře, civilizace přes `VyberCivilizace.tsx` (erby z `civErby.ts`), pořadí slotů přetažením. Rozpracovaná sestava je **na serveru u akce** (`akce.skladani`, `PUT /api/akce/:id/skladani`) a přes SSE ji vidí všichni admini; `useSkladani` drží lokální kopii jen do potvrzení serverem |
 | `views/ObrazovkaHosta.tsx` | obrazovka hosta: kroky „Zakládáš!“ → „Kontrola lobby“ → „Výborně, můžete hrát!“, snímek herního dialogu |
 | `views/KontrolaLobby.tsx` | sekce „Kontrola lobby“, **jedna a tatáž pro hosta i režii**; sama se opakuje po 5 s, dokud se v lobby sedí |
 | `views/KartaHrace.tsx` | karta hráče s jeho barvou a odkazem |
@@ -149,6 +153,13 @@ končí ve stejném `setLobbyId()`.
 **2. SSE posílá vždycky celý stav, nikdy přírůstky.** Díky tomu je obnova po
 výpadku zadarmo a `/api/akce` může sloužit jako plnohodnotná náhrada streamu —
 vrací doslova týž payload. Kdyby se začaly posílat přírůstky, obojí padá.
+
+> Z toho plyne i pravidlo pro UI: **všechno, co má vidět víc lidí naráz,
+> žije na serveru, ne v prohlížeči.** Rozpracovaná sestava i nastavení lobby
+> se proto po každém kliknutí posílají na server a zpátky přijdou přes SSE;
+> lokální stav v komponentě je jen na dobu, než server odpoví. Nový stav
+> „jen pro mě“ v `useState` je správně jen u věcí, které opravdu nikoho
+> jiného nezajímají (sbalené sekce, přepínače pohledu).
 
 **3. O tajemstvích rozhoduje jedno místo.** `redigujProDivaka()` v
 `src/realtime/redakce.ts` je bezpečnostní hranice: neúčastníkovi vyprázdní
@@ -187,6 +198,14 @@ klidně jen v testovací fixtuře — zastaví `vite build`, `web/dist` zůstane
 starý a server dál servíruje **předchozí** bundle. Vypadá to, že se změna
 neprojevila. Po zásahu do `src/shared/types.ts` proto vždycky doběhnout celý
 build a zkontrolovat, že se změnil hash souboru ve `web/dist/assets`.
+
+**Spojení SSE umí umřít potichu.** NAT, proxy nebo uspaný počítač shodí
+TCP spojení, aniž by prohlížeč vyhodil chybu — EventSource pak čeká navždy a
+stránka vypadá živě, jen nic nepřijde (7. 9. 2026: Rob 18 s klikal na
+„Zrušit“ a nic). Proto server posílá puls jako **událost** `puls` (komentář
+by JavaScript neviděl), klient po 70 s ticha spojení zahodí, doptá se
+`/api/akce` a otevře nové; při návratu do záložky a po každé vlastní akci se
+stav dočte rovnou (`useAkceStav().obnov()`).
 
 **Cloudflare quick tunnel (`*.trycloudflare.com`) nepropustí SSE.** Drží celé
 tělo odpovědi, dokud odpověď neskončí — a náš stream schválně nekončí nikdy,
@@ -246,12 +265,13 @@ Nic z toho se nestahuje za běhu; do repa se to jednou vygeneruje a commitne.
 |---|---|---|
 | názvy map (id → název) | `resources/en/strings/key-value/key-value-strings-utf8.txt`, řetězce s id mapy tak, jak ho vydává seznam lobby (klíč `10` v `options`) | `src/shared/mapy.ts` |
 | názvy civilizací (id → název) | tentýž soubor, řetězec `10270 + id` | `src/shared/civilizace.ts` |
+| sada civilizací (Chronicles vs. Age of Empires II) | `resources/_common/dat/civilizations.json`, pole `era`: `antiquity` = Chronicles, `base` = AoE II; pořadí v `civilization_list` je herní id (index 0 je Gaia) | `CIVILIZACE_CHRONICLES` v `src/shared/civilizace.ts` |
 | erby civilizací (kulaté ikony jako v lobby) | `resources/_common/wpfg/resources/civ_techtree/menu_techtree_<slug>.png` (104 px), zmenšené na 96 px webp; slugy se liší u Maya (`mayans`), Hindustanis (`indians`), Inca (`inca`), Berbers (`berber`); `random.png` je otazník pro „libovolná civ.“ | `web/src/assets/civ/*.webp`, mapování v `web/src/civErby.ts` |
 | snímek dialogu Create Lobby | screenshot ze hry, do kterého se vsazují název, počet hráčů a PIN | `web/src/assets/create-lobby.webp` |
 | významy klíčů nastavení lobby a slotů | zmapováno naživo přepínáním voleb ve hře a porovnáváním seznamu lobby; které hodnoty jsou ověřené a které doplněné podle pořadí v jazykovém souboru, je v tabulce | `docs/analyza-automaticke-hledani-lobby.md` §6, číselníky v `src/shared/lobbyKontrola.ts` |
 
 Když hra přidá civilizaci nebo mapu: doplnit řádek do tabulky, u civilizace
-i erb (stejný postup: `menu_techtree_<slug>.png` → 96×96 webp), a
+zkontrolovat i `era` (jestli nepatří do Chronicles) a doplnit erb (stejný postup: `menu_techtree_<slug>.png` → 96×96 webp), a
 `web/src/civErby.ts` musí umět slug — test v `Skladani.test.tsx` počítá erby
 v seznamu, ale chybějící soubor se pozná jen tím, že erb u jména není.
 

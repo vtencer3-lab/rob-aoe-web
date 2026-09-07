@@ -62,6 +62,14 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(nastaveni),
     }).then((r) => json<{ akce: { id: number } }>(r)),
+  ulozitNastaveniLobby: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby/ulozit`), { method: "POST" }).then((r) => json<{ akce: { id: number } }>(r)),
+  skladani: (akceId: number, sestava: SestavaVstup[]) =>
+    fetch(cesta(`/api/akce/${akceId}/skladani`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sestava }),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
   hledatLobby: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>
       json<HledaniLobbyVysledek>(r),
@@ -77,6 +85,12 @@ export const api = {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ stav }),
+    }).then((r) => json<{ ok: true }>(r)),
+  zavritZapas: (zapasId: number, zavreny = true) =>
+    fetch(cesta(`/api/zapas/${zapasId}/zavrit`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ zavreny }),
     }).then((r) => json<{ ok: true }>(r)),
   smazatZapas: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),

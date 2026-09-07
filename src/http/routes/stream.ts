@@ -3,6 +3,10 @@ import { buildAkceStav } from "../../realtime/akceStav.js";
 import { hub, KANAL_AKCE } from "../../realtime/hub.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import type { AkceStavPayload } from "../../shared/types.js";
+import { VERZE } from "../../shared/verze.js";
+
+/** Jak často stream posílá puls; klient po ~trojnásobku ticha spojení obnoví. */
+export const PULS_MS = 25_000;
 
 export function registerStreamRoutes(app: FastifyInstance): void {
   app.get("/api/stream", async (request, reply) => {
@@ -81,6 +85,11 @@ export function registerStreamRoutes(app: FastifyInstance): void {
         return reply;
       }
 
+      // Verze serveru jako první: web se nasazuje několikrát za večer a
+      // otevřená stránka se starým bundlem by nové položky stavu tiše
+      // ignorovala. Po každém nasazení se stream znovu otevře, takže tohle
+      // stačí — puls verzi nosit nemusí.
+      reply.raw.write(`event: verze\ndata: ${JSON.stringify({ verze: VERZE })}\n\n`);
       posli(stav);
       zive = true;
       if (maCekajici) {
@@ -88,7 +97,10 @@ export function registerStreamRoutes(app: FastifyInstance): void {
         maCekajici = false;
       }
 
-      puls = setInterval(() => reply.raw.write(": puls\n\n"), 25_000);
+      // Puls jako pojmenovaná událost, ne komentář: komentář EventSource
+      // v prohlížeči nikdy neuvidí, takže by klient nepoznal spojení, které
+      // umřelo potichu (NAT, proxy) — a čekal na stav, který nikdy nepřijde.
+      puls = setInterval(() => reply.raw.write("event: puls\ndata: {}\n\n"), PULS_MS);
     } catch {
       // Reply je hijacknutá, takže by chyba jinak zmizela beze stopy — Fastify
       // ji jen zaloguje (a logger je vypnutý) a klient by zůstal viset na

@@ -15,12 +15,23 @@ import {
   type NastaveniLobby as Nastaveni,
 } from "../../../src/shared/lobbyKontrola.js";
 import { MAPY } from "../../../src/shared/mapy.js";
+import { blikni } from "../historie.js";
 
 interface Props {
-  /** Co je u akce uložené (jen část klíčů); zbytek doplní výchozí hodnoty. */
-  ulozene: Record<string, unknown> | undefined;
-  onUlozit: (nastaveni: Nastaveni) => void;
+  /** Živé nastavení u akce (jen část klíčů); zbytek doplní výchozí hodnoty. */
+  zive: Record<string, unknown> | undefined;
+  /** Snímek uložený tlačítkem; null nebo undefined = zatím nic. */
+  ulozene: Record<string, unknown> | null | undefined;
+  /** Každá změna v panelu — propíše se na server a přes SSE všem. */
+  onZmena: (nastaveni: Nastaveni) => void;
+  /** „Uložit nastavení lobby“: server si udělá snímek živého nastavení. */
+  onUlozit: () => void;
+  /** Klíč nastavení ke zvýraznění po změně / zpět / znovu. */
+  zvyraznit?: { cil: string | null; cas: number } | null;
 }
+
+/** Jak dlouho se čeká na další klik, než se změna pošle na server. */
+export const ODKLAD_ZMENY_MS = 300;
 
 const MAPY_PODLE_JMENA = Object.entries(MAPY)
   .map(([id, nazev]) => ({ id: Number(id), nazev }))
@@ -50,10 +61,10 @@ const ADVANCED_SETTINGS: ReadonlyArray<{ klic: KlicTrojstavu | "cheaty"; popis: 
 /** AI podle obtížnosti, ne podle čísla ve hře (to jde obráceně a Extreme má 5). */
 const PORADI_AI = [4, 3, 2, 1, 0, 5];
 
-function Vyber({ popis, hodnota, tabulka, jedno, poradi, onZmena }: { popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; poradi?: number[]; onZmena: (v: number | null) => void }) {
+function Vyber({ klic, popis, hodnota, tabulka, jedno, poradi, onZmena }: { klic: string; popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; poradi?: number[]; onZmena: (v: number | null) => void }) {
   const polozky = poradi ? poradi.map((id) => [String(id), tabulka[id]!] as const) : Object.entries(tabulka);
   return (
-    <label className="radek">
+    <label className="radek" data-klic={klic}>
       <span>{popis}:</span>
       <select value={hodnota ?? ""} onChange={(e) => onZmena(e.target.value === "" ? null : Number(e.target.value))}>
         {jedno ? <option value="">–</option> : null}
@@ -69,24 +80,28 @@ function Vyber({ popis, hodnota, tabulka, jedno, poradi, onZmena }: { popis: str
 
 /**
  * Zaškrtávátko se třemi stavy jako u herního panelu, jen navíc s „–“ (je to
- * jedno): kliknutí jde dokola vypnuto → zapnuto → „–“. Třetí stav kreslí
+ * jedno): levé tlačítko jde dokola vypnuto → zapnuto → „–“, pravé tlačítko
+ * stejný kruh pozpátku (zapnuto → vypnuto, „–“ → zapnuto). Třetí stav kreslí
  * prohlížeč jako neurčité (indeterminate), vedle popisku je i „–“ textem.
  * Allow Cheats „–“ nemá: cheaty patří do hlavní kontroly.
  */
-function Zaskrtavatko({ popis, hodnota, jedno, vypnuto = false, onZmena }: { popis: string; hodnota: boolean | null; jedno: boolean; vypnuto?: boolean; onZmena: (v: boolean | null) => void }) {
+function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }: { klic: string; popis: string; hodnota: boolean | null; jedno: boolean; vypnuto?: boolean; onZmena: (v: boolean | null) => void }) {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = hodnota === null;
   }, [hodnota]);
+  const dopredu = () => onZmena(hodnota === false ? true : hodnota === true && jedno ? null : false);
+  const pozpatku = () => onZmena(hodnota === true ? false : hodnota === null ? true : jedno ? null : true);
   return (
-    <label className={vypnuto ? "zaskrtavaci vypnute" : "zaskrtavaci"}>
-      <input
-        ref={ref}
-        type="checkbox"
-        disabled={vypnuto}
-        checked={hodnota === true}
-        onChange={() => onZmena(hodnota === false ? true : hodnota === true && jedno ? null : false)}
-      />
+    <label
+      className={vypnuto ? "zaskrtavaci vypnute" : "zaskrtavaci"}
+      data-klic={klic}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        if (!vypnuto) pozpatku();
+      }}
+    >
+      <input ref={ref} type="checkbox" disabled={vypnuto} checked={hodnota === true} onChange={dopredu} />
       {popis}
       {hodnota === null ? <span className="zaloha jedno-znak">–</span> : null}
     </label>
@@ -98,29 +113,54 @@ function Zaskrtavatko({ popis, hodnota, jedno, vypnuto = false, onZmena }: { pop
  * Game Settings: řádky ve stejném pořadí, pod nimi Team Settings a Advanced
  * Settings ve dvou sloupcích. Host tak srovnává jedna ku jedné. U voleb
  * mimo hlavní kontrolu jde vybrat „–“: je to jedno, kontrola hodnotu jen
- * vypíše a nikdy ji neoznačí za chybu. Rob si to nastaví jednou za večer.
+ * vypíše a nikdy ji neoznačí za chybu.
+ *
+ * Každá změna se propíše hned (s krátkým odkladem, ať psaní do čísla nepálí
+ * požadavek na každou číslici) a přes SSE ji uvidí všichni. „Uložit“ dělá
+ * snímek, ke kterému se „Načíst uložené“ vrátí; „Reset“ nasadí výchozí.
  */
-export function NastaveniLobby({ ulozene, onUlozit }: Props) {
-  const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(ulozene as Partial<Nastaveni>));
-  // Když přijde nový stav ze serveru (jiné okno uložilo), převzít ho.
+export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: Props) {
+  const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(zive as Partial<Nastaveni>));
+  const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const ceka = useRef(false);
+  const formular = useRef<HTMLFormElement>(null);
   useEffect(() => {
-    setN(doplnNastaveni(ulozene as Partial<Nastaveni>));
-  }, [ulozene]);
+    if (zvyraznit?.cil) blikni(formular.current?.querySelector(`[data-klic="${zvyraznit.cil}"]`));
+  }, [zvyraznit]);
+
+  // Když přijde nový stav ze serveru (druhý admin něco přepnul), převzít ho —
+  // pokud tu zrovna nečeká vlastní neodeslaná změna.
+  useEffect(() => {
+    if (!ceka.current) setN(doplnNastaveni(zive as Partial<Nastaveni>));
+  }, [zive]);
+
+  useEffect(() => () => clearTimeout(casovac.current), []);
+
+  const zmen = (nove: Nastaveni, hned = false) => {
+    setN(nove);
+    clearTimeout(casovac.current);
+    if (hned) {
+      ceka.current = false;
+      onZmena(nove);
+      return;
+    }
+    ceka.current = true;
+    casovac.current = setTimeout(() => {
+      ceka.current = false;
+      onZmena(nove);
+    }, ODKLAD_ZMENY_MS);
+  };
 
   const cislo = (v: string) => (v === "" ? null : Number(v));
+  const stejne = (a: Nastaveni, b: Nastaveni) => (Object.keys(a) as Array<keyof Nastaveni>).every((k) => (a[k] ?? null) === (b[k] ?? null));
+  const jakoUlozene = ulozene !== null && ulozene !== undefined && stejne(n, doplnNastaveni(ulozene as Partial<Nastaveni>));
+  const jakoVychozi = stejne(n, VYCHOZI_NASTAVENI);
 
   return (
-    <form
-      className="nastaveni-lobby"
-      data-testid="nastaveni-lobby"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onUlozit(n);
-      }}
-    >
-      <h3>Jak má vypadat lobby</h3>
+    <form className="nastaveni-lobby" data-testid="nastaveni-lobby" onSubmit={(e) => e.preventDefault()} ref={formular}>
+      <h3>Nastavení Lobby</h3>
       <div className="radky">
-        <div className="radek" role="radiogroup" aria-label="Civilization Set">
+        <div className="radek" role="radiogroup" aria-label="Civilization Set" data-klic="sadaCivilizaci">
           <span>Civilization Set:</span>
           <div className="prepinace">
             {[["", "–"], ...Object.entries(SADY_CIVILIZACI)].map(([v, nazev]) => (
@@ -130,17 +170,17 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
                   name="sadaCivilizaci"
                   value={v}
                   checked={(n.sadaCivilizaci ?? "") === (v === "" ? "" : Number(v))}
-                  onChange={() => setN({ ...n, sadaCivilizaci: cislo(v!) })}
+                  onChange={() => zmen({ ...n, sadaCivilizaci: cislo(v!) })}
                 />
                 {nazev}
               </label>
             ))}
           </div>
         </div>
-        <Vyber popis="Game Mode" hodnota={n.rezim} tabulka={REZIMY} jedno onZmena={(v) => setN({ ...n, rezim: v })} />
-        <label className="radek">
+        <Vyber klic="rezim" popis="Game Mode" hodnota={n.rezim} tabulka={REZIMY} jedno onZmena={(v) => zmen({ ...n, rezim: v })} />
+        <label className="radek" data-klic="mapaId">
           <span>Location:</span>
-          <select value={n.mapaId ?? ""} onChange={(e) => setN({ ...n, mapaId: cislo(e.target.value) })}>
+          <select value={n.mapaId ?? ""} onChange={(e) => zmen({ ...n, mapaId: cislo(e.target.value) })}>
             <option value="">libovolná</option>
             {MAPY_PODLE_JMENA.map((m) => (
               <option key={m.id} value={m.id}>
@@ -149,9 +189,9 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
             ))}
           </select>
         </label>
-        <label className="radek">
+        <label className="radek" data-klic="velikost">
           <span>Map Size:</span>
-          <select value={n.velikost ?? ""} onChange={(e) => setN({ ...n, velikost: cislo(e.target.value) })}>
+          <select value={n.velikost ?? ""} onChange={(e) => zmen({ ...n, velikost: cislo(e.target.value) })}>
             <option value="">podle počtu hráčů</option>
             {Object.entries(VELIKOSTI).map(([v, nazev]) => (
               <option key={v} value={v}>
@@ -160,21 +200,21 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
             ))}
           </select>
         </label>
-        <Vyber popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno poradi={PORADI_AI} onZmena={(v) => setN({ ...n, aiObtiznost: v })} />
-        <Vyber popis="Resources" hodnota={n.suroviny} tabulka={SUROVINY} jedno onZmena={(v) => setN({ ...n, suroviny: v })} />
-        <label className="radek">
+        <Vyber klic="aiObtiznost" popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno poradi={PORADI_AI} onZmena={(v) => zmen({ ...n, aiObtiznost: v })} />
+        <Vyber klic="suroviny" popis="Resources" hodnota={n.suroviny} tabulka={SUROVINY} jedno onZmena={(v) => zmen({ ...n, suroviny: v })} />
+        <label className="radek" data-klic="populace">
           <span>Population:</span>
-          <input type="number" min={25} max={1000} step={25} value={n.populace} onChange={(e) => setN({ ...n, populace: Number(e.target.value) })} />
+          <input type="number" min={25} max={1000} step={25} value={n.populace} onChange={(e) => zmen({ ...n, populace: Number(e.target.value) })} />
         </label>
-        <Vyber popis="Game Speed" hodnota={n.rychlost} tabulka={RYCHLOSTI} onZmena={(v) => setN({ ...n, rychlost: v as 1 | 2 | 3 })} />
-        <Vyber popis="Reveal Map" hodnota={n.odkrytiMapy} tabulka={ODKRYTI_MAPY} jedno onZmena={(v) => setN({ ...n, odkrytiMapy: v })} />
-        <Vyber popis="Starting Age" hodnota={n.pocatecniVek} tabulka={POCATECNI_VEKY} jedno onZmena={(v) => setN({ ...n, pocatecniVek: v })} />
-        <Vyber popis="Ending Age" hodnota={n.konecnyVek} tabulka={KONECNE_VEKY} jedno onZmena={(v) => setN({ ...n, konecnyVek: v })} />
-        <label className="radek">
+        <Vyber klic="rychlost" popis="Game Speed" hodnota={n.rychlost} tabulka={RYCHLOSTI} onZmena={(v) => zmen({ ...n, rychlost: v as 1 | 2 | 3 })} />
+        <Vyber klic="odkrytiMapy" popis="Reveal Map" hodnota={n.odkrytiMapy} tabulka={ODKRYTI_MAPY} jedno onZmena={(v) => zmen({ ...n, odkrytiMapy: v })} />
+        <Vyber klic="pocatecniVek" popis="Starting Age" hodnota={n.pocatecniVek} tabulka={POCATECNI_VEKY} jedno onZmena={(v) => zmen({ ...n, pocatecniVek: v })} />
+        <Vyber klic="konecnyVek" popis="Ending Age" hodnota={n.konecnyVek} tabulka={KONECNE_VEKY} jedno onZmena={(v) => zmen({ ...n, konecnyVek: v })} />
+        <label className="radek" data-klic="primeri">
           <span>Treaty Length:</span>
-          <input type="number" min={0} max={180} step={5} value={n.primeri ?? ""} placeholder="– (je to jedno)" onChange={(e) => setN({ ...n, primeri: cislo(e.target.value) })} />
+          <input type="number" min={0} max={180} step={5} value={n.primeri ?? ""} placeholder="– (je to jedno)" onChange={(e) => zmen({ ...n, primeri: cislo(e.target.value) })} />
         </label>
-        <Vyber popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} onZmena={(v) => setN({ ...n, vitezstvi: v as 1 | 9 })} />
+        <Vyber klic="vitezstvi" popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} onZmena={(v) => zmen({ ...n, vitezstvi: v as 1 | 9 })} />
       </div>
 
       <div className="sloupce">
@@ -185,11 +225,12 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
           {TEAM_SETTINGS.map(({ klic, popis }) => (
             <Zaskrtavatko
               key={klic}
+              klic={klic}
               popis={popis}
               hodnota={n[klic]}
               jedno
               vypnuto={klic === "teamPositions" && n.teamTogether === false}
-              onZmena={(v) => setN(klic === "teamTogether" && v === false ? { ...n, teamTogether: false, teamPositions: null } : { ...n, [klic]: v })}
+              onZmena={(v) => zmen(klic === "teamTogether" && v === false ? { ...n, teamTogether: false, teamPositions: null } : { ...n, [klic]: v })}
             />
           ))}
         </fieldset>
@@ -197,21 +238,28 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
           <legend>Advanced Settings</legend>
           {ADVANCED_SETTINGS.map(({ klic, popis }) =>
             klic === "cheaty" ? (
-              <Zaskrtavatko key={klic} popis={popis} hodnota={n.cheaty} jedno={false} onZmena={(v) => setN({ ...n, cheaty: v === true })} />
+              <Zaskrtavatko key={klic} klic={klic} popis={popis} hodnota={n.cheaty} jedno={false} onZmena={(v) => zmen({ ...n, cheaty: v === true })} />
             ) : (
-              <Zaskrtavatko key={klic} popis={popis} hodnota={n[klic]} jedno onZmena={(v) => setN({ ...n, [klic]: v })} />
+              <Zaskrtavatko key={klic} klic={klic} popis={popis} hodnota={n[klic]} jedno onZmena={(v) => zmen({ ...n, [klic]: v })} />
             ),
           )}
         </fieldset>
       </div>
-      {/* Reset vrátí formulář na výchozí hodnoty, Načíst na to, co je u akce
-          uložené; ani jedno samo neukládá — na to je Uložit. */}
+      {/* Uložit = snímek na serveru; Načíst uložené a Reset jen nasadí jiné
+          živé nastavení (hned, bez odkladu). */}
       <div className="ovladani">
-        <button type="submit">Uložit nastavení lobby</button>
-        <button type="button" onClick={() => setN({ ...VYCHOZI_NASTAVENI })}>
+        <button type="button" onClick={onUlozit}>
+          Uložit nastavení lobby
+        </button>
+        <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
           Reset nastavení
         </button>
-        <button type="button" onClick={() => setN(doplnNastaveni(ulozene as Partial<Nastaveni>))}>
+        <button
+          type="button"
+          disabled={ulozene === null || ulozene === undefined || jakoUlozene}
+          title={!ulozene ? "Zatím nic uloženého" : jakoUlozene ? "Nastavení je stejné jako uložené" : undefined}
+          onClick={() => zmen(doplnNastaveni(ulozene as Partial<Nastaveni>), true)}
+        >
           Načíst uložené
         </button>
       </div>

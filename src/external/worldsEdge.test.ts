@@ -21,6 +21,14 @@ describe("parsePersonalStat", () => {
     expect(parsePersonalStat(fixture, "76561198000635167")!.elo1v1).not.toBe(1975);
   });
 
+  it("vrátí všechny žebříčky hráče v pořadí ze hry (id, rating, pořadí, výhry, prohry)", () => {
+    const staty = parsePersonalStat(fixture, "76561198000635167");
+    expect(staty!.zebricky).toEqual([
+      { id: 3, rating: 2992, nejvyssi: 3026, poradi: 1, vyhry: 1857, prohry: 724 },
+      { id: 4, rating: 1975, nejvyssi: 2041, poradi: 89, vyhry: 844, prohry: 262 },
+    ]);
+  });
+
   it("převede datum posledního zápasu", () => {
     const staty = parsePersonalStat(fixture, "76561198000635167");
     expect(staty!.posledniZapas).toEqual(new Date(1788255997 * 1000));
