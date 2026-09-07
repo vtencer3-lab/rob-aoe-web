@@ -197,7 +197,8 @@ export function App() {
   }
 
   return (
-    <main>
+    <>
+      {/* Nad <main>, ať jde přes celou šířku okna, ne jen obsahu. */}
       {novaVerze ? (
         <p className="nova-verze" role="status">
           Web se aktualizoval na verzi {novaVerze}, tahle stránka má {VERZE}.{" "}
@@ -206,6 +207,7 @@ export function App() {
           </button>
         </p>
       ) : null}
+    <main>
       <header>
         <img className="logo" src={logoUrl} alt="" width={64} height={67} />
         <h1>
@@ -362,5 +364,6 @@ export function App() {
         <span data-testid="verze">v{VERZE}</span>
       </footer>
     </main>
+    </>
   );
 }

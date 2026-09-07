@@ -29,7 +29,10 @@ header { display: flex; justify-content: space-between; align-items: center; gap
 header .logo { width: 64px; height: auto; flex: none; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
 header h1 { margin-right: auto; }
 .nova-verze {
-  margin: -1.5rem -1.5rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0;
   padding: 0.6rem 1.5rem;
   background: var(--akcent);
   color: #1a140c;
