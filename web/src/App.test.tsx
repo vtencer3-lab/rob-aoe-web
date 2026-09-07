@@ -80,7 +80,7 @@ it("host vidí obrazovku hosta, ne kartu hráče", async () => {
 
   render(<App />);
 
-  expect(await screen.findByRole("button", { name: /uložit odkaz/i })).toBeInTheDocument();
+  expect(await screen.findByTestId("spustit-hru")).toBeInTheDocument();
   expect(screen.queryByText(/v lobby si nastav/i)).not.toBeInTheDocument();
 });
 
@@ -97,7 +97,7 @@ it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async ()
   render(<App />);
 
   expect(await screen.findByText(/v lobby si nastav/i)).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /uložit odkaz/i })).not.toBeInTheDocument();
+  expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
 });
 
 it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
@@ -113,7 +113,7 @@ it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
   render(<App />);
 
   expect(await screen.findByText("Akce 1")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /uložit odkaz/i })).not.toBeInTheDocument();
+  expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
   expect(screen.queryByText(/v lobby si nastav/i)).not.toBeInTheDocument();
 });
 

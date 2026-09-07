@@ -353,3 +353,11 @@ button.odebrat:hover { color: #e07a6a; }
 .nastaveni-lobby select, .nastaveni-lobby input[type="number"] { color: var(--text); }
 
 .skladani .volba-civ { font-size: 0.85rem; padding: 0.25rem 0.4rem; }
+
+/* Kontrola lobby jako vlastní sekce na obrazovce hosta. */
+.sekce-kontrola { border-top: 1px solid #3d352a; margin-top: 1rem; padding-top: 0.6rem; }
+.sekce-kontrola h3 { margin: 0 0 0.3rem; }
+.hledani-lobby .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+.stav-lobby { display: inline-flex; align-items: center; gap: 0.3rem; }
+button.kopirovatelne.jen-ikona { padding: 0.15rem 0.3rem; }
+button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px; height: 16px; }

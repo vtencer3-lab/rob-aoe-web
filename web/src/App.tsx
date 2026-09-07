@@ -123,9 +123,6 @@ export function App() {
                     key={zapas.id}
                     zapas={zapas}
                     ja={me.steamId}
-                    // Chybu si obrazovka hosta ukáže sama u pole, kam se odkaz
-                    // vkládá — proto se tu nepolyká přes hlidej().
-                    onVlozitOdkaz={(id, odkaz) => api.vlozitOdkaz(id, odkaz)}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                   />

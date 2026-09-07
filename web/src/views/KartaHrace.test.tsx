@@ -55,14 +55,14 @@ it("dokud host nevložil odkaz, čeká se", () => {
   render(<KartaHrace zapas={bezLobby} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
   expect(screen.queryByRole("link", { name: /připojit/i })).not.toBeInTheDocument();
   expect(screen.getByText(/čeká se na hosta/i)).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /vyhledat hru/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /vyhledat lobby/i })).toBeInTheDocument();
   expect(screen.queryByText(/nejde odkaz|nefunguje tlačítko/i)).not.toBeInTheDocument();
   expect(screen.getByText(/jakmile ji host založí/i)).toBeInTheDocument();
 });
 
 it("s odkazem už hledat nenabízí", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
-  expect(screen.queryByRole("button", { name: /vyhledat hru/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /vyhledat lobby/i })).not.toBeInTheDocument();
 });
 
 it("odkaz na připojení míří do hry", () => {

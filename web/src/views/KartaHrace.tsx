@@ -54,7 +54,7 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
           <p className="ceka">Čeká se na hosta, až založí lobby.</p>
           {/* Čekající hráč si může pomoct sám: seznam otevřených lobby je
               společný, takže najde totéž číslo, které by našel host. */}
-          <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} automaticky />
+          <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} nalezena={false} automaticky />
         </>
       )}
       <footer>
