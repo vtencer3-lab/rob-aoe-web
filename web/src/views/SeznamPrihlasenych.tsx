@@ -154,7 +154,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
                   onBlur={() => setNahled(null)}
                   tabIndex={0}
                 >
-                  {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={20} height={20} /> : null}
+                  {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={28} height={28} /> : null}
                   {jmeno}
                 </span>
                 {hrac.statyChyba ? (

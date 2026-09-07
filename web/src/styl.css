@@ -430,7 +430,7 @@ button.odebrat:hover { color: #e07a6a; }
 .nastaveni-lobby .radky { display: grid; grid-template-columns: max-content minmax(12rem, 24rem); gap: 0.4rem 1rem; align-items: center; }
 .nastaveni-lobby .radek { display: contents; }
 .nastaveni-lobby .radek > span { color: var(--tlumene); font-size: 0.9rem; text-align: right; }
-.nastaveni-lobby .radek > select, .nastaveni-lobby .radek > input { width: 100%; box-sizing: border-box; }
+.nastaveni-lobby .radek > select, .nastaveni-lobby .radek > input { width: 100%; box-sizing: border-box; height: 2.4rem; padding: 0.4rem 0.6rem; font: inherit; }
 .nastaveni-lobby fieldset { border: none; padding: 0; margin: 0; min-width: 0; }
 .nastaveni-lobby .prepinace { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; }
 .nastaveni-lobby .prepinace label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.9rem; }
@@ -529,4 +529,5 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .staty-hrace td { padding: 0.15rem 0.5rem; font-size: 1rem; color: var(--text); }
 .staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
 .staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
-.seznam td .jmeno-hrace { cursor: help; }
+.seznam td .jmeno-hrace { cursor: help; display: inline-flex; align-items: center; gap: 0.5rem; }
+.seznam td .jmeno-hrace img { width: 28px; height: 28px; border-radius: 3px; flex: none; }
