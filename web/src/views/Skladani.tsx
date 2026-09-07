@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { blikni } from "../historie.js";
 import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
 import { popisFormatu } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
@@ -13,6 +14,8 @@ interface Props {
   onVytvoritZapas: (sestava: SestavaVstup[]) => void;
   /** Civilization Set z nastavení akce — omezuje nabídku civilizací. */
   sadaCivilizaci: number | null;
+  /** Řádek (steamId) ke zvýraznění po změně / zpět / znovu; `cas` odliší opakování. */
+  zvyraznit?: { cil: string | null; cas: number } | null;
 }
 
 /** Další hodnota v kruhu: levé tlačítko dopředu, pravé zpátky. */
@@ -43,8 +46,12 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
  * tabulce přihlášených nad tím, odkud se berou tlačítkem „+“. Pořadí tady je
  * pořadí slotů v lobby a dá se přetahovat. Formát se odvodí, nevybírá se.
  */
-export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
+export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit }: Props) {
   const tahani = useTahani(skladani.presun);
+  const seznam = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    if (zvyraznit?.cil) blikni(seznam.current?.querySelector(`[data-tah-id="${zvyraznit.cil}"]`));
+  }, [zvyraznit]);
   // Najetí na jméno ukáže tutéž kartu se statistikami jako v tabulce přihlášených.
   const [nahled, setNahled] = useState<PlayerView | null>(null);
   const vstupy = skladani.vybrani.map((v) => v.vstup);
@@ -55,7 +62,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
     <div className="skladani">
       <p className="zaloha">Pořadí hráčů můžeš přetáhnout myší.</p>
 
-      <ul className="sestava" data-testid="vybrani">
+      <ul className="sestava" data-testid="vybrani" ref={seznam}>
         {skladani.vybrani.map(({ vstup: v, hrac }) => {
           const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
           return (

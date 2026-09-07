@@ -280,6 +280,13 @@ karta se statistikami jako ve hře: všech osm žebříčků s ratingem, pořad�
 výhrami, prohrami a procentem výher. Plní se při obnově statistik (po
 přihlášení a pak nejvýš jednou za 15 minut).
 
+**Zpět a znovu.** Vlastní změny sestavy a nastavení lobby jdou vrátit
+Ctrl+Z a zopakovat Ctrl+Y (nebo Ctrl+Shift+Z). Každá změna se zvýrazní
+zlatým zábleskem na řádku nebo poli a vpravo dole vyskočí toast s větou, co
+se stalo, tlačítkem Zpět a křížkem; sám zmizí po 6 s. Když je otevřená karta
+se statistikami, toasty sedí nad ní. Historie je jen v prohlížeči admina,
+který změnu udělal — cizí změny se nevrací.
+
 **Panel akce je rozložený jako herní lobby:** název akce v záhlaví (vpravo
 „Ukončit akci“), vlevo rozpracovaná sestava, vpravo nastavení. Rozpracovaná
 sestava žije u akce na serveru (`PUT /api/akce/:id/skladani`), takže dva

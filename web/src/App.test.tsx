@@ -318,3 +318,26 @@ it("sestavu bere ze stavu akce a vlastní výběr posílá na server", async () 
     { steamId: "b", tym: 2, barva: 2, civ: null },
   ]));
 });
+
+// Historie kroků: vlastní změna sestavy dostane toast se Zpět a Ctrl+Z ji
+// vrátí (pošle na server stav před změnou), Ctrl+Y ji znovu udělá.
+it("Ctrl+Z vrátí poslední změnu sestavy a Ctrl+Y ji zopakuje", async () => {
+  const { fireEvent, waitFor } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  const hrac = (steamId: string, alias: string) => ({ steamId, alias, steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [hrac("a", "Pepa")], zapasy: [] });
+
+  render(<App />);
+  await screen.findByRole("button", { name: "Vybrat hráče Pepa" });
+  fireEvent.click(screen.getByRole("button", { name: "Vybrat hráče Pepa" }));
+  expect(await screen.findByTestId("toasty")).toHaveTextContent("Pepa přidán do sestavy");
+  await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, [{ steamId: "a", tym: 1, barva: 1, civ: null }]));
+
+  fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+  expect(screen.getByTestId("toasty")).toHaveTextContent("Zpět: Pepa přidán do sestavy");
+  await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, []));
+
+  fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+  expect(screen.getByTestId("toasty")).toHaveTextContent("Znovu: Pepa přidán do sestavy");
+  await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, [{ steamId: "a", tym: 1, barva: 1, civ: null }]));
+});

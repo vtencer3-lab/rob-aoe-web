@@ -18,6 +18,8 @@ export interface Skladani {
   uprav: (steamId: string, zmena: (v: SestavaVstup) => SestavaVstup) => void;
   presun: (skupina: Skupina, odId: string, naId: string) => void;
   vynuluj: () => void;
+  /** Nasadí celou sestavu (zpět/znovu) — bez hlášení jako uživatelská změna. */
+  nastavCelou: (sestava: SestavaVstup[]) => void;
 }
 
 /**
@@ -28,6 +30,8 @@ export interface Skladani {
 export interface SdileneSkladani {
   hodnota: SestavaVstup[];
   odesli: (sestava: SestavaVstup[]) => Promise<unknown>;
+  /** Každá uživatelská změna (ne zpět/znovu): před a po, pro historii kroků. */
+  naZmenu?: (pred: SestavaVstup[], po: SestavaVstup[]) => void;
 }
 
 /** Jak dlouho se čeká na další klik, než se rozpracovaná sestava pošle na server. */
@@ -124,7 +128,8 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
       return (ia === -1 ? Number.MAX_SAFE_INTEGER : ia) - (ib === -1 ? Number.MAX_SAFE_INTEGER : ib);
     });
 
-  const nastav = (nove: SestavaVstup[]) => {
+  const nastav = (nove: SestavaVstup[], hlasit = true) => {
+    if (hlasit) sdilene?.naZmenu?.(platni, nove);
     setLokalni(nove);
     if (!sdilene) return;
     kOdeslani.current = nove;
@@ -167,5 +172,6 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
       else ulozNevybrane(presunout(nevybrani.map((h) => h.steamId), (id) => id, odId, naId));
     },
     vynuluj: () => nastav([]),
+    nastavCelou: (sestava) => nastav(sestava, false),
   };
 }

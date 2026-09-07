@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
 import { doplnNastaveni, type NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import { VERZE } from "../../src/shared/verze.js";
+import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.js";
+import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
 import { useSkladani } from "./skladani.js";
 import { jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
@@ -52,6 +54,20 @@ export function App() {
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
+
+  // Historie kroků pro Ctrl+Z / Ctrl+Y: jen vlastní změny sestavy a nastavení
+  // lobby. Zásobníky jsou v refech, ať je klávesová zkratka vidí aktuální.
+  const zpetZasobnik = useRef<Zaznam[]>([]);
+  const znovuZasobnik = useRef<Zaznam[]>([]);
+  const [toasty, setToasty] = useState<Toast[]>([]);
+  const dalsiToastId = useRef(1);
+  const [zvyrazneni, setZvyrazneni] = useState<{ druh: Zaznam["druh"]; cil: string | null; cas: number } | null>(null);
+  const zavriToast = useCallback((id: number) => setToasty((t) => t.filter((x) => x.id !== id)), []);
+  const pridejToast = (text: string, zpet?: () => void) => {
+    const id = dalsiToastId.current++;
+    setToasty((t) => [...t.slice(-3), { id, text, zpet }]);
+  };
+  const zvyrazni = (druh: Zaznam["druh"], cil: string | null) => setZvyrazneni({ druh, cil, cas: Date.now() });
   // Kdo je v běžícím zápase — v tabulce přihlášených dostane zkřížené meče.
   const vZapase = new Map<string, number>();
   for (const z of stav?.zapasy ?? []) {
@@ -62,8 +78,20 @@ export function App() {
   // admini; tady se jen ukazuje a každé kliknutí odchází zpátky.
   const skladani = useSkladani(
     stav?.prihlaseni ?? [],
-    akce ? { hodnota: akce.skladani ?? [], odesli: (sestava) => api.skladani(akce.id, sestava) } : undefined,
+    akce
+      ? {
+          hodnota: akce.skladani ?? [],
+          odesli: (sestava) => api.skladani(akce.id, sestava),
+          naZmenu: (pred, po) => {
+            const { text, cil } = popisZmenySestavy(pred, po, jmenoPodleIdRef.current);
+            zaznamenejRef.current({ druh: "skladani", pred, po, text, cil });
+          },
+        }
+      : undefined,
   );
+  // useSkladani se volá dřív, než jsou definované pomocné funkce níž — refy to překlenou.
+  const jmenoPodleIdRef = useRef<(steamId: string) => string>((id) => id);
+  const zaznamenejRef = useRef<(z: Zaznam) => void>(() => {});
 
   useEffect(() => {
     void api.me().then((odpoved) => setMe(odpoved.hrac));
@@ -74,6 +102,70 @@ export function App() {
   }, []);
 
   const jsemPrihlaseny = Boolean(me && stav?.prihlaseni.some((h) => h.steamId === me.steamId));
+  const jmenoPodleId = (steamId: string) => {
+    const h = stav?.prihlaseni.find((x) => x.steamId === steamId);
+    return h ? jmenoHrace(h) : steamId;
+  };
+
+  /** Nasadí stav z kroku (před = zpět, po = znovu) a ohlásí to. */
+  const pouzij = (z: Zaznam, smer: "zpet" | "znovu") => {
+    if (!akce) return;
+    const cilovy = smer === "zpet" ? z.pred : z.po;
+    if (z.druh === "skladani") skladani.nastavCelou(cilovy as Zaznam extends infer _ ? typeof z.pred : never);
+    else void hlidej(() => api.nastaveniLobby(akce.id, cilovy as typeof z.pred));
+    zvyrazni(z.druh, z.cil);
+    pridejToast(`${smer === "zpet" ? "Zpět" : "Znovu"}: ${z.text}`);
+  };
+  const zpet = () => {
+    const z = zpetZasobnik.current.pop();
+    if (!z) return;
+    znovuZasobnik.current.push(z);
+    pouzij(z, "zpet");
+  };
+  const znovu = () => {
+    const z = znovuZasobnik.current.pop();
+    if (!z) return;
+    zpetZasobnik.current.push(z);
+    pouzij(z, "znovu");
+  };
+  /** Zpět z toastu: vrátí přesně ten krok, i když už není poslední. */
+  const zpetKrok = (z: Zaznam) => {
+    zpetZasobnik.current = zpetZasobnik.current.filter((x) => x !== z);
+    znovuZasobnik.current.push(z);
+    pouzij(z, "zpet");
+  };
+  const zaznamenej = (z: Zaznam) => {
+    zpetZasobnik.current.push(z);
+    znovuZasobnik.current = [];
+    zvyrazni(z.druh, z.cil);
+    pridejToast(z.text, () => zpetKrok(z));
+  };
+  jmenoPodleIdRef.current = jmenoPodleId;
+  zaznamenejRef.current = zaznamenej;
+
+  const zpetRef = useRef(zpet);
+  const znovuRef = useRef(znovu);
+  zpetRef.current = zpet;
+  znovuRef.current = znovu;
+  useEffect(() => {
+    if (!admin) return;
+    const naKlavesu = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      // V textovém poli patří Ctrl+Z prohlížeči (vrací psaní).
+      const cil = e.target;
+      if (cil instanceof HTMLElement && cil.matches("input[type='text'], input[type='number'], textarea")) return;
+      const klavesa = e.key.toLowerCase();
+      if (klavesa === "z" && !e.shiftKey) {
+        e.preventDefault();
+        zpetRef.current();
+      } else if (klavesa === "y" || (klavesa === "z" && e.shiftKey)) {
+        e.preventDefault();
+        znovuRef.current();
+      }
+    };
+    window.addEventListener("keydown", naKlavesu);
+    return () => window.removeEventListener("keydown", naKlavesu);
+  }, [admin]);
 
   async function prepnout() {
     if (!akce || !me) return;
@@ -150,8 +242,13 @@ export function App() {
             if (akce) void hlidej(() => api.akceStav(akce.id, novyStav));
           }}
           onNastaveniLobby={(n) => {
-            if (akce) void hlidej(() => api.nastaveniLobby(akce.id, n));
+            if (!akce) return;
+            const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
+            const { text, cil } = popisZmenyNastaveni(pred, n);
+            if (cil) zaznamenej({ druh: "nastaveni", pred, po: n, text, cil });
+            void hlidej(() => api.nastaveniLobby(akce.id, n));
           }}
+          zvyraznitNastaveni={zvyrazneni?.druh === "nastaveni" ? zvyrazneni : null}
           onUlozitNastaveni={() => {
             if (akce) void hlidej(() => api.ulozitNastaveniLobby(akce.id));
           }}
@@ -169,6 +266,7 @@ export function App() {
               skladani={skladani}
               onVytvoritZapas={(sestava) => void hlidej(() => api.vytvoritZapas(akce.id, sestava))}
               sadaCivilizaci={doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
+              zvyraznit={zvyrazneni?.druh === "skladani" ? zvyrazneni : null}
             />
           ) : null}
         </SpravaAkce>
@@ -232,6 +330,7 @@ export function App() {
       )}
 
       <ZkusebniLista jaSteamId={me?.steamId ?? null} />
+      {admin ? <Toasty toasty={toasty} onZavrit={zavriToast} /> : null}
       {/* Verze v patičce: po nasazení se jedním pohledem pozná, jestli
           prohlížeč drží nový build, nebo starý z mezipaměti. Vedle ní má
           admin přepínač debug módu. */}

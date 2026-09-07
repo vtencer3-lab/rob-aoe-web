@@ -17,6 +17,8 @@ interface Props {
   ladeni?: boolean;
   /** Levá půlka panelu: rozpracovaná sestava (Skladani), jako seznam hráčů v herní lobby. */
   children?: ReactNode;
+  /** Klíč nastavení ke zvýraznění (historie kroků). */
+  zvyraznitNastaveni?: { cil: string | null; cas: number } | null;
 }
 
 /**
@@ -25,7 +27,7 @@ interface Props {
  * v záhlaví, ať nezavazí; tlačítka zkušebních hráčů jsou pod záhlavím a jen
  * v debug módu.
  */
-export function SpravaAkce({ akce, onZalozit, onStav, onNastaveniLobby, onUlozitNastaveni, zkusebni, ladeni = false, children }: Props) {
+export function SpravaAkce({ akce, onZalozit, onStav, onNastaveniLobby, onUlozitNastaveni, zkusebni, ladeni = false, children, zvyraznitNastaveni }: Props) {
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
   return (
@@ -56,7 +58,7 @@ export function SpravaAkce({ akce, onZalozit, onStav, onNastaveniLobby, onUlozit
       ) : null}
       <div className="lobby-rozlozeni">
         <div className="leva">{children}</div>
-        <NastaveniLobby zive={akce.nastaveniLobby} ulozene={akce.ulozeneNastaveniLobby} onZmena={onNastaveniLobby} onUlozit={onUlozitNastaveni} />
+        <NastaveniLobby zive={akce.nastaveniLobby} ulozene={akce.ulozeneNastaveniLobby} onZmena={onNastaveniLobby} onUlozit={onUlozitNastaveni} zvyraznit={zvyraznitNastaveni} />
       </div>
     </section>
   );

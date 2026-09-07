@@ -584,7 +584,29 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible { color: var(--ak
 
 /* Účastníci zápasu v režii: čtverečky, jméno, ELO, stav a vpravo odznak
    HOST nebo tlačítko na přehození hosta. */
+.zapas .skladani.jen-ke-cteni { margin: 0; }
 .zapas ul.sestava-zapasu { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 1fr auto; margin: 0.4rem 0; }
+.zapas .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
+.zapas .titulek-zapasu small { font-size: 1rem; font-weight: 400; color: var(--tlumene); }
 .zapas ul.sestava-zapasu .radek { padding: 0.35rem 0.2rem; }
 .zapas ul.sestava-zapasu .stav-ucastnika { color: var(--tlumene); }
 .zapas ul.sestava-zapasu .radek > button, .zapas ul.sestava-zapasu .radek > .odznak-host { justify-self: end; margin: 0; }
+
+/* Zvýraznění změny (historie kroků): zlatý záblesk kolem řádku nebo pole. */
+.zmena { animation: zmena-blik 1.6s ease-out; }
+@keyframes zmena-blik {
+  0% { box-shadow: 0 0 0 3px var(--akcent), 0 0 18px 4px rgba(200, 167, 90, 0.7); background-color: rgba(200, 167, 90, 0.35); }
+  60% { box-shadow: 0 0 0 3px var(--akcent), 0 0 12px 2px rgba(200, 167, 90, 0.4); background-color: rgba(200, 167, 90, 0.15); }
+  100% { box-shadow: none; background-color: transparent; }
+}
+.nastaveni-lobby .radek.zmena { display: contents; }
+.nastaveni-lobby .radek.zmena > select, .nastaveni-lobby .radek.zmena > input, .nastaveni-lobby .radek.zmena > .prepinace { animation: zmena-blik 1.6s ease-out; border-radius: 4px; }
+.nastaveni-lobby label.zaskrtavaci.zmena { border-radius: 4px; }
+
+/* Toasty změn vpravo dole, nad kartou se statistikami (když je otevřená). */
+.toasty { position: fixed; right: 1rem; bottom: calc(1rem + var(--staty-vyska, 0px)); z-index: 60; display: flex; flex-direction: column; gap: 0.4rem; max-width: min(28rem, calc(100vw - 2rem)); }
+.toast-zmeny { display: flex; align-items: center; gap: 0.6rem; background: #2c2620; border: 1px solid var(--akcent); border-radius: 6px; padding: 0.5rem 0.6rem 0.5rem 0.8rem; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5); animation: toast-nahoru 0.2s ease-out; }
+.toast-zmeny > span { flex: 1; }
+.toast-zmeny button.zavrit { padding: 0 0.4rem; font-size: 1.1rem; line-height: 1; color: var(--tlumene); background: none; border: none; }
+.toast-zmeny button.zavrit:hover { color: #e07a6a; }
+@keyframes toast-nahoru { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { procentoVyher, ZEBRICKY } from "../../../src/shared/zebricky.js";
 
@@ -8,9 +9,15 @@ import { procentoVyher, ZEBRICKY } from "../../../src/shared/zebricky.js";
  */
 export function StatistikyHrace({ hrac }: { hrac: PlayerView }) {
   const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
+  const karta = useRef<HTMLElement>(null);
+  // Toasty vpravo dole se odsunou nad kartu: výška karty jde do CSS proměnné.
+  useLayoutEffect(() => {
+    document.body.style.setProperty("--staty-vyska", `${(karta.current?.offsetHeight ?? 0) + 12}px`);
+    return () => document.body.style.removeProperty("--staty-vyska");
+  }, [hrac]);
   const podleId = new Map((hrac.zebricky ?? []).map((z) => [z.id, z]));
   return (
-    <aside className="staty-hrace" role="tooltip" data-testid="staty-hrace">
+    <aside className="staty-hrace" role="tooltip" data-testid="staty-hrace" ref={karta}>
       <header>
         {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={48} height={48} /> : null}
         <strong>{jmeno}</strong>

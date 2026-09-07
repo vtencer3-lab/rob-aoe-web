@@ -84,12 +84,19 @@ function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLo
 
   return (
     <article className={bezi ? "zapas" : "zapas odepsany"}>
-      <header data-testid="zapas-hlavicka">
-        Zápas #{zapas.poradi} · {popisFormatu(zapas.ucastnici)}
-        {popisStavu(zapas)}
-      </header>
-      {/* Řádky jako ve skládání: čtvereček barvy a týmu, jméno, ELO, stav. */}
-      <ul className="skladani jen-ke-cteni sestava sestava-zapasu">
+      <h2 className="titulek-zapasu" data-testid="zapas-hlavicka">
+        Zápas #{zapas.poradi}
+        <small>
+          {" · "}
+          {popisFormatu(zapas.ucastnici)}
+          {popisStavu(zapas)}
+        </small>
+      </h2>
+      {/* Řádky jako ve skládání: čtvereček barvy a týmu, jméno, ELO, stav.
+          Obal .skladani a seznam .sestava musí být dva prvky — mřížka je na
+          seznamu, styly čtverečků na obalu. */}
+      <div className="skladani jen-ke-cteni">
+      <ul className="sestava sestava-zapasu">
         {zapas.ucastnici.map((u) => (
           <li key={u.steamId} className={`radek barva-${u.barva}`}>
             <span className={`volba volba-barva barva-${u.barva}`} aria-label={`Barva ${BARVA_NAZEV[u.barva]}`}>
@@ -125,6 +132,7 @@ function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLo
           </li>
         ))}
       </ul>
+      </div>
       {/* Spectate, nápověda pro zamrzlou lobby i tlačítka výsledku patří
           běžícímu zápasu. Po dohrání nebo zrušení jen zabíraly místo a
           nabízely akce, které už nedávají smysl — a za večer se takhle pod
