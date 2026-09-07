@@ -147,3 +147,18 @@ it("přetažení mění pořadí jen uvnitř skupiny", () => {
   expect(vybraniJmena()).toEqual(["Pepa", "TenceR"]);
   expect(nevybraniJmena()).toEqual(["Lukas", "Marek"]);
 });
+
+// Civilizace se vybírá z vlastního seznamu s erby (nativní select obrázky
+// neumí). Vybraná hodnota se propíše do sestavy a seznam se zavře.
+it("civilizaci vybere ze seznamu s erby", () => {
+  render(<Panel />);
+  vyber("TenceR");
+  const tlacitko = screen.getByRole("button", { name: /civilizace tencer/i });
+  expect(tlacitko).toHaveTextContent(/libovolná civ/i);
+  fireEvent.click(tlacitko);
+  const seznam = screen.getByRole("listbox", { name: /civilizace tencer/i });
+  expect(seznam.querySelectorAll("img").length).toBeGreaterThan(50);
+  fireEvent.click(screen.getByRole("option", { name: /koreans/i }));
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /civilizace tencer/i })).toHaveTextContent("Koreans");
+});

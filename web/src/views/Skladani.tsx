@@ -1,9 +1,9 @@
-import { CIVILIZACE } from "../../../src/shared/civilizace.js";
 import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
 import { popisFormatu } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, BARVY, TYMY, type SestavaVstup } from "../../../src/shared/types.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
 import { useTahani } from "../tahani.js";
+import { VyberCivilizace } from "./VyberCivilizace.js";
 
 interface Props {
   skladani: StavSkladani;
@@ -22,10 +22,6 @@ function dalsi<T>(hodnoty: readonly T[], aktualni: T, smer: 1 | -1): T {
  * tabulce přihlášených nad tím, odkud se berou tlačítkem „+“. Pořadí tady je
  * pořadí slotů v lobby a dá se přetahovat. Formát se odvodí, nevybírá se.
  */
-const CIVILIZACE_PODLE_JMENA = Object.entries(CIVILIZACE)
-  .map(([id, nazev]) => ({ id: Number(id), nazev }))
-  .sort((a, b) => a.nazev.localeCompare(b.nazev, "cs"));
-
 export function Skladani({ skladani, onVytvoritZapas }: Props) {
   const tahani = useTahani(skladani.presun);
   const vstupy = skladani.vybrani.map((v) => v.vstup);
@@ -79,19 +75,11 @@ export function Skladani({ skladani, onVytvoritZapas }: Props) {
               </span>
               {/* Civilizace je volitelná: „libovolná“ nechá výběr na hráči, konkrétní
                   se ukáže na jeho kartě a kontrola lobby ji porovná. */}
-              <select
-                className="volba-civ"
-                aria-label={`Civilizace ${jmeno}`}
-                value={v.civ ?? ""}
-                onChange={(e) => skladani.uprav(v.steamId, (x) => ({ ...x, civ: e.target.value === "" ? null : Number(e.target.value) }))}
-              >
-                <option value="">libovolná civ.</option>
-                {CIVILIZACE_PODLE_JMENA.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nazev}
-                  </option>
-                ))}
-              </select>
+              <VyberCivilizace
+                popisek={`Civilizace ${jmeno}`}
+                hodnota={v.civ ?? null}
+                onZmena={(civ) => skladani.uprav(v.steamId, (x) => ({ ...x, civ }))}
+              />
               <button
                 type="button"
                 className="odebrat"

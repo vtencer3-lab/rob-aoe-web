@@ -7,16 +7,17 @@ import { KontrolaLobby } from "./KontrolaLobby.js";
 const vysledek: KontrolaLobbyVysledek = {
   nalezeno: true,
   kontroly: [
-    { klic: "divaci", ok: true, text: "Diváci povoleni", sekce: "hlavni" },
-    { klic: "heslo", ok: false, text: "Lobby nemá heslo", sekce: "hlavni", varovani: true },
-    { klic: "hraci", ok: false, text: "Chybí Pepa", sekce: "hlavni" },
-    { klic: "mapa", ok: false, text: "Mapa: Black Forest, má být Arabia", sekce: "hlavni" },
-    { klic: "lockTeams", ok: false, text: "Lock Teams: vypnuto, má být zapnuto", sekce: "dalsi" },
-    { klic: "recordGame", ok: true, text: "Record Game: zapnuto", sekce: "dalsi" },
+    { klic: "divaci", stav: "ok", text: "Diváci povoleni", sekce: "hlavni" },
+    { klic: "heslo", stav: "varovani", text: "Lobby nemá heslo", sekce: "hlavni" },
+    { klic: "hraci", stav: "spatne", text: "Chybí Pepa", sekce: "hlavni" },
+    { klic: "mapa", stav: "spatne", text: "Mapa: Black Forest, má být Arabia", sekce: "hlavni" },
+    { klic: "lockTeams", stav: "spatne", text: "Lock Teams: vypnuto, má být zapnuto", sekce: "dalsi" },
+    { klic: "recordGame", stav: "ok", text: "Record Game: zapnuto", sekce: "dalsi" },
+    { klic: "aiObtiznost", stav: "jedno", text: "AI Difficulty: Hard", sekce: "dalsi" },
   ],
 };
 
-it("klik zkontroluje a vypíše fajfky, křížky a upozornění; souhrn počítá jen chyby hlavní sekce", async () => {
+it("klik zkontroluje a vypíše čtyři stavy; souhrn počítá červené z obou sekcí", async () => {
   const onKontrola = vi.fn().mockResolvedValue(vysledek);
   render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
 
@@ -29,24 +30,42 @@ it("klik zkontroluje a vypíše fajfky, křížky a upozornění; souhrn počít
   expect(hlavni[0]).toHaveClass("ok");
   expect(hlavni[1]).toHaveClass("varovani");
   expect(hlavni[2]).toHaveClass("spatne");
-  expect(screen.getByTestId("kontrola-souhrn")).toHaveTextContent("2 věci k opravě");
+  expect(screen.getByTestId("kontrola-souhrn")).toHaveTextContent("3 věci k opravě");
   expect(screen.queryByTestId("fajfka-kontrola")).not.toBeInTheDocument();
-  // Další nastavení ve vlastní sbalené sekci s počtem odchylek.
+  // Další nastavení ve vlastní, rozbalené sekci s počtem odchylek; „–“ je šedé.
   const dalsi = screen.getByTestId("dalsi-nastaveni");
+  expect(dalsi).toHaveAttribute("open");
   expect(dalsi).toHaveTextContent(/1 jinak/);
-  expect(dalsi.querySelectorAll("li")).toHaveLength(2);
+  const radky = dalsi.querySelectorAll("li");
+  expect(radky).toHaveLength(3);
+  expect(radky[2]).toHaveClass("jedno");
 });
 
-// Heslo je jen upozornění a další nastavení jsou Robova věc: ani jedno nesmí
-// hostovi sebrat fajfku, jinak by se „Výborně, můžete hrát“ neukázalo nikdy.
-it("bez chyb v hlavní sekci je lobby v pořádku i s upozorněním a odchylkou v dalším nastavení", async () => {
+// Sbalení „Dalšího nastavení“ musí přežít další kontrolu — jinak by se při
+// každém kliknutí (a každých 5 s) zase rozbalilo.
+it("sbalené další nastavení zůstane sbalené i po další kontrole", async () => {
+  const onKontrola = vi.fn().mockResolvedValue(vysledek);
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
+  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  const dalsi = await screen.findByTestId("dalsi-nastaveni");
+  await userEvent.click(dalsi.querySelector("summary")!);
+  expect(dalsi).not.toHaveAttribute("open");
+  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  await waitFor(() => expect(onKontrola).toHaveBeenCalledTimes(2));
+  expect(screen.getByTestId("dalsi-nastaveni")).not.toHaveAttribute("open");
+  // A seznam během kontroly nezmizel.
+  expect(screen.getByTestId("kontroly")).toBeInTheDocument();
+});
+
+// Upozornění (heslo) a „je to jedno“ fajfku neberou; jen červená.
+it("bez červené je lobby v pořádku i s upozorněním a šedým „je to jedno“", async () => {
   const onVerdikt = vi.fn();
   const onKontrola = vi.fn().mockResolvedValue({
     nalezeno: true,
     kontroly: [
-      { klic: "divaci", ok: true, text: "Diváci povoleni", sekce: "hlavni" },
-      { klic: "heslo", ok: false, text: "Lobby nemá heslo", sekce: "hlavni", varovani: true },
-      { klic: "lockTeams", ok: false, text: "Lock Teams: vypnuto", sekce: "dalsi" },
+      { klic: "divaci", stav: "ok", text: "Diváci povoleni", sekce: "hlavni" },
+      { klic: "heslo", stav: "varovani", text: "Lobby nemá heslo", sekce: "hlavni" },
+      { klic: "lockTeams", stav: "jedno", text: "Lock Teams: vypnuto", sekce: "dalsi" },
     ],
   });
   render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} onVerdikt={onVerdikt} />);
@@ -55,6 +74,20 @@ it("bez chyb v hlavní sekci je lobby v pořádku i s upozorněním a odchylkou 
   expect(screen.getByTestId("fajfka-kontrola")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /kontrola lobby/i })).toBeInTheDocument();
   expect(onVerdikt).toHaveBeenLastCalledWith(true);
+});
+
+it("červená v dalším nastavení fajfku bere", async () => {
+  const onKontrola = vi.fn().mockResolvedValue({
+    nalezeno: true,
+    kontroly: [
+      { klic: "divaci", stav: "ok", text: "Diváci povoleni", sekce: "hlavni" },
+      { klic: "lockTeams", stav: "spatne", text: "Lock Teams: vypnuto, má být zapnuto", sekce: "dalsi" },
+    ],
+  });
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
+  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  expect(await screen.findByTestId("kontrola-souhrn")).toHaveTextContent("1 věc k opravě");
+  expect(screen.queryByTestId("fajfka-kontrola")).not.toBeInTheDocument();
 });
 
 it("lobby mimo seznam a chyba serveru mají vlastní hlášky a verdikt nemají", async () => {

@@ -75,3 +75,13 @@ it("nalezená lobby: tlačítko zašedlé, stav se jménem z posledního hledán
   await new Promise((r) => setTimeout(r, 100));
   expect(onHledat.mock.calls.length).toBe(pred);
 });
+
+// Stránka načtená s už nalezenou lobby jméno nezná — jedno hledání navíc
+// ho doplní, ale dál se pak nehledá.
+it("s nalezenou lobby bez jména se zeptá jednou a jméno doplní", async () => {
+  const onHledat = vi.fn().mockResolvedValue(nalezena);
+  render(<HledaniLobby zapasId={7} onHledat={onHledat} nalezena odkaz="aoe2de://0/504953429" automaticky intervalMs={30} />);
+  expect(await screen.findByTestId("lobby-nalezena")).toHaveTextContent("Lobby nalezena („ROB-01“)");
+  await new Promise((r) => setTimeout(r, 100));
+  expect(onHledat).toHaveBeenCalledTimes(1);
+});

@@ -575,11 +575,11 @@ it("nastavení lobby smí jen Rob a ukládá jen známé klíče", async () => {
     method: "POST",
     url: `/api/akce/${akceId}/nastaveni-lobby`,
     cookies: { sid: robSid },
-    payload: { populace: 250, rychlost: 3, nesmysl: 1, mapaId: null, sadaCivilizaci: 2, rezim: 7, primeri: 15, lockTeams: false, turbo: "ano" },
+    payload: { populace: 250, rychlost: 3, nesmysl: 1, mapaId: null, sadaCivilizaci: 2, rezim: 7, primeri: 15, lockTeams: false, turbo: "ano", aiObtiznost: null },
   });
   expect(res.statusCode).toBe(200);
-  // rezim 7 a turbo "ano" hra nezná — zahodí se; ostatní další nastavení projdou.
-  expect(res.json().akce.nastaveniLobby).toEqual({ populace: 250, rychlost: 3, mapaId: null, sadaCivilizaci: 2, primeri: 15, lockTeams: false });
+  // rezim 7 a turbo "ano" hra nezná — zahodí se; null = „je to jedno“ projde.
+  expect(res.json().akce.nastaveniLobby).toEqual({ populace: 250, rychlost: 3, mapaId: null, sadaCivilizaci: 2, primeri: 15, lockTeams: false, aiObtiznost: null });
   const prazdne = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { nesmysl: 1 } });
   expect(prazdne.statusCode).toBe(400);
   await app.close();

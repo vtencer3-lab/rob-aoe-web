@@ -55,7 +55,7 @@ export function App() {
   return (
     <main>
       <header>
-        <h1>Komunitní hry — Robdiesalot</h1>
+        <h1>Komunitní hry — RobDiesALot</h1>
         {me ? (
           <span>
             {jmenoHrace(me)}{" "}

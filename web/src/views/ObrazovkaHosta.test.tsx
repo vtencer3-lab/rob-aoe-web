@@ -149,13 +149,13 @@ it("krok „Zakládáš!“ má fajfku až po nalezení lobby", () => {
   expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
 });
 
-it("po kontrole bez chyb v hlavní sekci se objeví „Výborně, můžete hrát!“", async () => {
+it("po kontrole bez červené se objeví „Výborně, můžete hrát!“", async () => {
   const kontrola = vi.fn().mockResolvedValue({
     nalezeno: true,
     kontroly: [
-      { klic: "divaci", ok: true, text: "Diváci povoleni", sekce: "hlavni" },
-      { klic: "heslo", ok: false, text: "Lobby nemá heslo", sekce: "hlavni", varovani: true },
-      { klic: "lockTeams", ok: false, text: "Lock Teams: vypnuto", sekce: "dalsi" },
+      { klic: "divaci", stav: "ok", text: "Diváci povoleni", sekce: "hlavni" },
+      { klic: "heslo", stav: "varovani", text: "Lobby nemá heslo", sekce: "hlavni" },
+      { klic: "lockTeams", stav: "jedno", text: "Lock Teams: vypnuto", sekce: "dalsi" },
     ],
   });
   render(
@@ -165,10 +165,10 @@ it("po kontrole bez chyb v hlavní sekci se objeví „Výborně, můžete hrát
   expect(screen.getByTestId("fajfka-kontrola")).toBeInTheDocument();
 });
 
-it("s chybou v hlavní sekci finále není", async () => {
+it("s červenou finále není", async () => {
   const kontrola = vi.fn().mockResolvedValue({
     nalezeno: true,
-    kontroly: [{ klic: "divaci", ok: false, text: "Diváci nejsou povoleni", sekce: "hlavni" }],
+    kontroly: [{ klic: "divaci", stav: "spatne", text: "Diváci nejsou povoleni", sekce: "hlavni" }],
   });
   render(
     <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={kontrola} />,

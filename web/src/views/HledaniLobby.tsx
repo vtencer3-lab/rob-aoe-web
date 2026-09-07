@@ -81,6 +81,13 @@ export function HledaniLobby({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automaticky, nalezena, intervalMs, zapasId]);
 
+  // Stránka načtená s už nalezenou lobby jméno nezná (chodí jen v odpovědi
+  // hledání) — jedno hledání navíc ho doplní; server má seznam v cache.
+  useEffect(() => {
+    if (nalezena && nazev === null) void hledej(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nalezena]);
+
   return (
     <div className="hledani-lobby" data-testid="hledani-lobby">
       <div className="ovladani">

@@ -259,13 +259,21 @@ Tři kroky, a mezi nimi se na nic nečeká:
    a pro případ, že lobby ze seznamu vypadla.
 
 **Kontrola lobby** je stejná sekce u hosta i v režii a dokud se v lobby sedí,
-opakuje se sama každých 5 s. Hlavní sekce rozhoduje o verdiktu: diváci, hráči
-(barva, tým, případně předepsaná civilizace), mapa, velikost, rychlost,
-populace, victory, cheaty. Chybějící heslo je jen žluté upozornění. Všechno
+opakuje se sama každých 5 s. Každý řádek má jeden ze čtyř stavů: zelená
+fajfka, červený křížek, žluté upozornění (chybějící heslo — hře nebrání) a
+šedé „–“ (Rob u té volby nastavil „je to jedno“, hodnota se jen vypíše).
+Velká fajfka a „Výborně, můžete hrát!“ jsou tam, jakmile není nikde nic
+červené. Hlavní sekce: diváci, hráči (barva, tým, případně předepsaná
+civilizace), mapa, velikost, rychlost, populace, victory, cheaty. Všechno
 ostatní, co seznam lobby vydává (Civilization Set, Game Mode, AI, Resources,
-Reveal Map, věky, Treaty, Lock Teams, Team Together, … Record Game), je
-sbalené pod „Další nastavení“ s počtem odchylek a fajfku nebere. Co má
-lobby splňovat, si Rob nastaví v panelu akce („Jak má vypadat lobby“).
+Reveal Map, věky, Treaty, Lock Teams, Team Together, … Record Game), je pod
+„Další nastavení“ s počtem odchylek; sekce je rozbalená a pamatuje si, jak
+si ji kdo sbalil. Co má lobby splňovat, si Rob nastaví v panelu akce („Jak má
+vypadat lobby“), který je rozložený stejně jako herní panel Game Settings;
+AI Difficulty a Lock Teams začínají na „–“.
+
+Civilizaci hráče vybírá Rob při skládání ze seznamu s erby (výřezy z herních
+souborů `resources/_common/wpfg/resources/civ_emblems`, viz `web/src/civErby.ts`).
 
 Zápas končí buď zápisem vítěze (tlačítko za každou stranu: „Vyhrál Trokner“,
 „Vyhrál modrý tým“), nebo zrušením. Zrušený zápas jde vrátit do hry, nebo

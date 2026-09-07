@@ -11,47 +11,55 @@ interface Props {
   automaticky?: boolean;
   intervalMs?: number;
   /**
-   * Rodič se dozví verdikt: true = hlavní sekce bez chyb, false = něco k
+   * Rodič se dozví verdikt: true = nikde nic červeného, false = něco k
    * opravě, null = bez výsledku (lobby mimo seznam, chyba, ještě neproběhlo).
    */
   onVerdikt?: (vPoradku: boolean | null) => void;
 }
 
-type Stav =
-  | { druh: "klid" }
-  | { druh: "kontroluji" }
-  | { druh: "vysledek"; vysledek: KontrolaLobbyVysledek }
-  | { druh: "chyba"; text: string };
-
 function skloňujVeci(n: number): string {
   return `${n} ${n === 1 ? "věc k opravě" : n < 5 ? "věci k opravě" : "věcí k opravě"}`;
 }
 
+const ZNAK: Record<Kontrola["stav"], string> = { ok: "✓", spatne: "✗", varovani: "!", jedno: "–" };
+
 /**
  * Sekce „Kontrola lobby“ — stejná pro hosta i režii: server porovná lobby ve
- * hře se sestavou zápasu a očekávaným nastavením akce a vrátí řádky fajfka /
- * křížek. Rob to čte v přenosu, proto věty, ne tabulka hodnot. Dokud se v
- * lobby sedí, kontrola se sama opakuje, ať host vidí, že opravil, co měl.
+ * hře se sestavou zápasu a očekávaným nastavením akce a vrátí řádky ve
+ * čtyřech stavech: zelená fajfka, červený křížek, žluté upozornění (heslo)
+ * a šedé „je to jedno“ (Rob nastavil „–“). Rob to čte v přenosu, proto
+ * věty, ne tabulka hodnot. Dokud se v lobby sedí, kontrola se sama opakuje,
+ * ať host vidí, že opravil, co měl.
  *
- * Hlavní sekce rozhoduje o verdiktu (velká fajfka v záhlaví); chybějící
- * heslo je jen upozornění a „Další nastavení“ mají vlastní sbalený seznam.
+ * O velké fajfce v záhlaví rozhoduje jedině to, že není nic červené —
+ * v hlavní sekci ani v „Dalším nastavení“. To druhé je rozbalené a
+ * pamatuje si, jak si ho kdo sbalil, i přes další kontroly.
  */
 export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, intervalMs = INTERVAL_KONTROLY_MS, onVerdikt }: Props) {
-  const [stav, setStav] = useState<Stav>({ druh: "klid" });
+  // Poslední výsledek se drží i během další kontroly — seznam nesmí při
+  // každém kliknutí zmizet a znovu naskočit.
+  const [vysledek, setVysledek] = useState<KontrolaLobbyVysledek | null>(null);
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [kontroluji, setKontroluji] = useState(false);
+  const [rozbalene, setRozbalene] = useState(true);
   const probiha = useRef(false);
   const zivy = useRef(true);
 
   async function zkontroluj(rucne: boolean) {
     if (probiha.current) return;
     probiha.current = true;
-    if (rucne) setStav({ druh: "kontroluji" });
+    if (rucne) setKontroluji(true);
     try {
-      const vysledek = await onKontrola(zapasId);
-      if (zivy.current) setStav({ druh: "vysledek", vysledek });
+      const v = await onKontrola(zapasId);
+      if (zivy.current) {
+        setVysledek(v);
+        setChyba(null);
+      }
     } catch (err) {
-      if (zivy.current) setStav({ druh: "chyba", text: err instanceof Error ? err.message : "Kontrola se nepovedla." });
+      if (zivy.current) setChyba(err instanceof Error ? err.message : "Kontrola se nepovedla.");
     } finally {
       probiha.current = false;
+      if (zivy.current) setKontroluji(false);
     }
   }
 
@@ -70,12 +78,12 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automaticky, intervalMs, zapasId]);
 
-  const vysledek = stav.druh === "vysledek" && stav.vysledek.nalezeno ? stav.vysledek : null;
-  const hlavni = vysledek?.kontroly.filter((k) => k.sekce === "hlavni") ?? [];
-  const dalsi = vysledek?.kontroly.filter((k) => k.sekce === "dalsi") ?? [];
-  const kOprave = hlavni.filter((k) => !k.ok && !k.varovani).length;
-  const vPoradku = vysledek ? lobbyVPoradku(vysledek.kontroly) : null;
-  const dalsiJinak = dalsi.filter((k) => !k.ok).length;
+  const nalezena = vysledek?.nalezeno ? vysledek : null;
+  const hlavni = nalezena?.kontroly.filter((k) => k.sekce === "hlavni") ?? [];
+  const dalsi = nalezena?.kontroly.filter((k) => k.sekce === "dalsi") ?? [];
+  const kOprave = nalezena?.kontroly.filter((k) => k.stav === "spatne").length ?? 0;
+  const vPoradku = nalezena ? lobbyVPoradku(nalezena.kontroly) : null;
+  const dalsiJinak = dalsi.filter((k) => k.stav === "spatne").length;
 
   useEffect(() => {
     onVerdikt?.(vPoradku);
@@ -93,34 +101,39 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
         ) : null}
       </header>
       <div className="ovladani">
-        <button type="button" onClick={() => void zkontroluj(true)} disabled={stav.druh === "kontroluji"}>
-          {stav.druh === "kontroluji" ? "Kontroluji…" : "Zkontrolovat lobby"}
+        <button type="button" onClick={() => void zkontroluj(true)} disabled={kontroluji}>
+          {kontroluji ? "Kontroluji…" : "Zkontrolovat lobby"}
         </button>
-        {vysledek ? (
+        {nalezena ? (
           <span className={vPoradku ? "potvrzeno" : "chyba"} data-testid="kontrola-souhrn">
             {vPoradku ? "Lobby je v pořádku" : skloňujVeci(kOprave)}
           </span>
         ) : null}
       </div>
-      {stav.druh === "chyba" ? (
+      {chyba ? (
         <p className="chyba chyba-pole" role="alert">
-          {stav.text}
+          {chyba}
         </p>
       ) : null}
-      {stav.druh === "vysledek" && !stav.vysledek.nalezeno ? (
+      {vysledek && !vysledek.nalezeno ? (
         <p className="zaloha" role="status">
           Lobby teď v seznamu ze hry není — buď hra už běží, nebo lobby zmizela.
         </p>
       ) : null}
-      {vysledek ? (
+      {nalezena ? (
         <>
           <SeznamKontrol kontroly={hlavni} testId="kontroly" />
           {dalsi.length > 0 ? (
-            <details className="dalsi-nastaveni" data-testid="dalsi-nastaveni">
+            <details
+              className="dalsi-nastaveni"
+              data-testid="dalsi-nastaveni"
+              open={rozbalene}
+              onToggle={(e) => setRozbalene(e.currentTarget.open)}
+            >
               <summary>
                 Další nastavení{" "}
-                <span className={dalsiJinak === 0 ? "potvrzeno" : "varovani"}>
-                  {dalsiJinak === 0 ? "— vše podle očekávání" : `— ${dalsiJinak} jinak, než Rob nastavil`}
+                <span className={dalsiJinak === 0 ? "potvrzeno" : "chyba"}>
+                  {dalsiJinak === 0 ? "— vše podle nastavení akce" : `— ${dalsiJinak} jinak než v nastavení akce`}
                 </span>
               </summary>
               <SeznamKontrol kontroly={dalsi} testId="kontroly-dalsi" />
@@ -136,9 +149,9 @@ function SeznamKontrol({ kontroly, testId }: { kontroly: Kontrola[]; testId: str
   return (
     <ul className="kontroly" data-testid={testId}>
       {kontroly.map((k) => (
-        <li key={k.klic} className={k.ok ? "ok" : k.varovani ? "varovani" : "spatne"}>
+        <li key={k.klic} className={k.stav}>
           <span className="znak" aria-hidden="true">
-            {k.ok ? "✓" : k.varovani ? "!" : "✗"}
+            {ZNAK[k.stav]}
           </span>{" "}
           {k.text}
         </li>

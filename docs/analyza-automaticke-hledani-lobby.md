@@ -188,16 +188,16 @@ web proto stahuje všechny stránky.
 | Nastavení | Klíč v `options` | Hodnoty |
 |---|---|---|
 | Civilization Set | `101` | 0 All, 1 Age of Empires II, 2 Chronicles |
-| Game Mode | `5` | 0 Random Map, 2 Deathmatch, 3 Scenario |
+| Game Mode | `5` | 0 Random Map, 2 Deathmatch, 3 Scenario (ověřeno); 4 King of the Hill, 5 Wonder Race, 6 Defend the Wonder, 7 Turbo Random Map, 8 Capture the Relic, 10 Battle Royale (podle aoe2.net, neověřeno) |
 | Location (mapa) | `10` | id řetězce z jazykového souboru hry, viz `src/shared/mapy.ts` |
 | Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant |
-| AI Difficulty | `61` | 3 Standard, 1 Hard |
-| Resources | `37` | 0 Standard, 3 High |
+| AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, 5 Extreme (ověřeno 3 a 1) |
+| Resources | `37` | 0 Standard, 1 Low, 2 Medium, 3 High, 4 Ultra High, 5 Infinite (ověřeno 0 a 3) |
 | Population | `28` | číslo |
 | Game Speed | `41` | 1 Slow, 2 Normal, 3 Fast |
-| Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible |
-| Starting Age | `0` | 0 Standard, 3 Feudal, 6 Post-Imperial |
-| Ending Age | `4` | 0 Standard, 4 Castle |
+| Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible, 3 No Fog (ověřeno 0–2) |
+| Starting Age | `0` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial, 6 Post-Imperial (ověřeno 0, 3, 6) |
+| Ending Age | `4` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial (ověřeno 0 a 4) |
 | Treaty Length | `57` | minuty |
 | Victory | `81` | 1 Conquest, 9 Standard |
 | Lock Teams | `66` | y/n |

@@ -11,7 +11,9 @@ export { MAPY, nazevMapy } from "./mapy.js";
  * 7. 9. 2026 (docs/analyza-automaticke-hledani-lobby.md §6).
  *
  * Hlavní část (mapa, velikost, rychlost, populace, victory, cheaty) se
- * ukazuje v první sekci kontroly; zbytek ve druhé „Další nastavení“.
+ * ukazuje v první sekci kontroly; zbytek ve druhé „Další nastavení“. U
+ * dalších nastavení znamená null „je to jedno“: kontrola hodnotu jen vypíše
+ * a nikdy ji neoznačí za chybu.
  */
 export interface NastaveniLobby {
   /** Id mapy ve hře (options[10]); null = nekontrolovat. */
@@ -27,35 +29,35 @@ export interface NastaveniLobby {
   /** Allow Cheats (options[1]). */
   cheaty: boolean;
 
-  // --- další nastavení ---
+  // --- další nastavení (null = je to jedno) ---
   /** Civilization Set (options[101]): 0 All, 1 Age of Empires II, 2 Chronicles. */
-  sadaCivilizaci: number;
+  sadaCivilizaci: number | null;
   /** Game Mode (options[5]): 0 Random Map, 2 Deathmatch, 3 Scenario. */
-  rezim: number;
+  rezim: number | null;
   /** AI Difficulty (options[61]): 3 Standard, 1 Hard. */
-  aiObtiznost: number;
+  aiObtiznost: number | null;
   /** Resources (options[37]): 0 Standard, 3 High. */
-  suroviny: number;
+  suroviny: number | null;
   /** Reveal Map (options[82]): 0 Normal, 1 Explored, 2 All Visible. */
-  odkrytiMapy: number;
+  odkrytiMapy: number | null;
   /** Starting Age (options[0]): 0 Standard, 3 Feudal, 6 Post-Imperial. */
-  pocatecniVek: number;
+  pocatecniVek: number | null;
   /** Ending Age (options[4]): 0 Standard, 4 Castle. */
-  konecnyVek: number;
+  konecnyVek: number | null;
   /** Treaty Length v minutách (options[57]). */
-  primeri: number;
-  lockTeams: boolean;
-  teamTogether: boolean;
-  teamPositions: boolean;
-  sharedExploration: boolean;
-  lockSpeed: boolean;
-  turbo: boolean;
-  fullTechTree: boolean;
-  empireWars: boolean;
-  suddenDeath: boolean;
-  regicide: boolean;
-  antiquity: boolean;
-  recordGame: boolean;
+  primeri: number | null;
+  lockTeams: boolean | null;
+  teamTogether: boolean | null;
+  teamPositions: boolean | null;
+  sharedExploration: boolean | null;
+  lockSpeed: boolean | null;
+  turbo: boolean | null;
+  fullTechTree: boolean | null;
+  empireWars: boolean | null;
+  suddenDeath: boolean | null;
+  regicide: boolean | null;
+  antiquity: boolean | null;
+  recordGame: boolean | null;
 }
 
 export const VYCHOZI_NASTAVENI: NastaveniLobby = {
@@ -67,13 +69,14 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   cheaty: false,
   sadaCivilizaci: 1,
   rezim: 0,
-  aiObtiznost: 3,
+  // Bez AI v lobby na obtížnosti nezáleží; Lock Teams si každý host řeší sám.
+  aiObtiznost: null,
   suroviny: 0,
   odkrytiMapy: 0,
   pocatecniVek: 0,
   konecnyVek: 0,
   primeri: 0,
-  lockTeams: true,
+  lockTeams: null,
   teamTogether: true,
   teamPositions: false,
   sharedExploration: true,
@@ -98,13 +101,30 @@ export const VELIKOSTI: Record<number, string> = {
 
 export const RYCHLOSTI: Record<number, string> = { 1: "Slow", 2: "Normal", 3: "Fast" };
 export const VITEZSTVI: Record<number, string> = { 1: "Conquest", 9: "Standard" };
+/**
+ * Číselníky dalších nastavení. Naživo ověřené hodnoty (7. 9. 2026): sada
+ * civilizací celá, režim 0/2/3, AI 3/1, suroviny 0/3, odkrytí 0/1/2, věky
+ * 0/3/6 a 0/4. Zbytek je doplněný podle pořadí v herním jazykovém souboru a
+ * podle historického číslování aoe2.net (stejný backend) — kdyby seděl
+ * špatně, kontrola vypíše špatné jméno, ale porovnává pořád čísla.
+ */
 export const SADY_CIVILIZACI: Record<number, string> = { 0: "All", 1: "Age of Empires II", 2: "Chronicles" };
-export const REZIMY: Record<number, string> = { 0: "Random Map", 2: "Deathmatch", 3: "Scenario" };
-export const AI_OBTIZNOSTI: Record<number, string> = { 3: "Standard", 1: "Hard" };
-export const SUROVINY: Record<number, string> = { 0: "Standard", 3: "High" };
-export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible" };
-export const POCATECNI_VEKY: Record<number, string> = { 0: "Standard", 3: "Feudal Age", 6: "Post-Imperial Age" };
-export const KONECNE_VEKY: Record<number, string> = { 0: "Standard", 4: "Castle Age" };
+export const REZIMY: Record<number, string> = {
+  0: "Random Map",
+  2: "Deathmatch",
+  3: "Scenario",
+  4: "King of the Hill",
+  5: "Wonder Race",
+  6: "Defend the Wonder",
+  7: "Turbo Random Map",
+  8: "Capture the Relic",
+  10: "Battle Royale",
+};
+export const AI_OBTIZNOSTI: Record<number, string> = { 4: "Easiest", 3: "Standard", 2: "Moderate", 1: "Hard", 0: "Hardest", 5: "Extreme" };
+export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite" };
+export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible", 3: "No Fog" };
+export const POCATECNI_VEKY: Record<number, string> = { 0: "Standard", 2: "Dark Age", 3: "Feudal Age", 4: "Castle Age", 5: "Imperial Age", 6: "Post-Imperial Age" };
+export const KONECNE_VEKY: Record<number, string> = { 0: "Standard", 2: "Dark Age", 3: "Feudal Age", 4: "Castle Age", 5: "Imperial Age" };
 
 /** Zaškrtávátka z Team Settings a Advanced Settings: klíč v nastavení, český popisek. */
 export const ZASKRTAVATKA: ReadonlyArray<{
@@ -190,14 +210,19 @@ export interface PoznatekLobby {
   nastaveni: NastaveniZeHry | null;
 }
 
+/**
+ * Čtyři stavy řádku: „ok“ zelená, „spatne“ červená, „varovani“ žlutá
+ * (neprošlo, ale hře to nebrání), „jedno“ šedá (Rob u toho nastavil „–“,
+ * hodnota se jen vypíše). O fajfce rozhoduje jedině to, že není nic červené.
+ */
+export type StavKontroly = "ok" | "spatne" | "varovani" | "jedno";
+
 export interface Kontrola {
   klic: string;
-  ok: boolean;
+  stav: StavKontroly;
   text: string;
   /** Hlavní sekce (hráči, diváci, mapa…) nebo „Další nastavení“. */
   sekce: "hlavni" | "dalsi";
-  /** Neprošlo, ale jen upozornění: nebrání hře a nepočítá se do „lobby v pořádku“. */
-  varovani?: boolean;
 }
 
 export interface KontrolaLobbyVysledek {
@@ -205,13 +230,9 @@ export interface KontrolaLobbyVysledek {
   kontroly: Kontrola[];
 }
 
-/**
- * „Lobby v pořádku“ = všechno podstatné prošlo: hlavní sekce bez chyb.
- * Upozornění (heslo) a další nastavení se nepočítají — nebrání tomu, aby se
- * hrálo, a Rob je vidí zvlášť.
- */
+/** „Lobby v pořádku“ = nikde nic červeného. Upozornění a „je to jedno“ fajfku neberou. */
 export function lobbyVPoradku(kontroly: Kontrola[]): boolean {
-  return kontroly.filter((k) => k.sekce === "hlavni" && !k.varovani).every((k) => k.ok);
+  return kontroly.every((k) => k.stav !== "spatne");
 }
 
 interface UcastnikProKontrolu {
@@ -249,7 +270,7 @@ export function zkontrolujLobby(
 ): Kontrola[] {
   const k: Kontrola[] = [];
   const hlavni = (klic: string, ok: boolean, text: string, varovani = false): void => {
-    k.push({ klic, ok, text, sekce: "hlavni", ...(varovani ? { varovani: true } : {}) });
+    k.push({ klic, stav: ok ? "ok" : varovani ? "varovani" : "spatne", text, sekce: "hlavni" });
   };
   const vLobby = new Map(lobby.sloty.map((s) => [s.steamId, s]));
   const zapasu = new Set(ucastnici.map((u) => u.steamId));
@@ -338,10 +359,12 @@ export function zkontrolujLobby(
   hlavni("vitezstvi", n.vitezstvi === ocekavane.vitezstvi, n.vitezstvi === ocekavane.vitezstvi ? `Victory: ${jm(VITEZSTVI)(n.vitezstvi)}` : `Victory: ${jm(VITEZSTVI)(n.vitezstvi)}, má být ${jm(VITEZSTVI)(ocekavane.vitezstvi)}`);
   hlavni("cheaty", n.cheaty === ocekavane.cheaty, n.cheaty === ocekavane.cheaty ? (n.cheaty ? "Cheaty povolené" : "Cheaty vypnuté") : n.cheaty ? "Cheaty jsou povolené, mají být vypnuté" : "Cheaty jsou vypnuté, mají být povolené");
 
-  // --- Další nastavení: stejný tvar, jiná sekce. Co nešlo přečíst, je „?“ a křížek. ---
-  const dalsi = (klic: string, popis: string, tabulka: Record<number, string>, ve: number | null | undefined, ma: number): void => {
-    const ok = ve === ma;
-    k.push({ klic, ok, text: ok ? `${popis}: ${jm(tabulka)(ve)}` : `${popis}: ${jm(tabulka)(ve)}, má být ${jm(tabulka)(ma)}`, sekce: "dalsi" });
+  // --- Další nastavení: stejný tvar, jiná sekce. Očekávané null = „je to
+  // jedno“, hodnota se jen vypíše. Co nešlo přečíst, je „?“ a křížek. ---
+  const dalsi = (klic: string, popis: string, tabulka: Record<number, string>, ve: number | null | undefined, ma: number | null): void => {
+    const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : "spatne";
+    const text = stav === "spatne" ? `${popis}: ${jm(tabulka)(ve)}, má být ${jm(tabulka)(ma)}` : `${popis}: ${jm(tabulka)(ve)}`;
+    k.push({ klic, stav, text, sekce: "dalsi" });
   };
   dalsi("sadaCivilizaci", "Civilization Set", SADY_CIVILIZACI, n.sadaCivilizaci, ocekavane.sadaCivilizaci);
   dalsi("rezim", "Game Mode", REZIMY, n.rezim, ocekavane.rezim);
@@ -351,16 +374,17 @@ export function zkontrolujLobby(
   dalsi("pocatecniVek", "Starting Age", POCATECNI_VEKY, n.pocatecniVek, ocekavane.pocatecniVek);
   dalsi("konecnyVek", "Ending Age", KONECNE_VEKY, n.konecnyVek, ocekavane.konecnyVek);
   {
-    const ok = n.primeri === ocekavane.primeri;
+    const ma = ocekavane.primeri;
     const text = (v: number | null | undefined) => (v === null || v === undefined ? "?" : v === 0 ? "žádné" : `${v} min`);
-    k.push({ klic: "primeri", ok, text: ok ? `Treaty Length: ${text(n.primeri)}` : `Treaty Length: ${text(n.primeri)}, má být ${text(ocekavane.primeri)}`, sekce: "dalsi" });
+    const stav: StavKontroly = ma === null ? "jedno" : n.primeri === ma ? "ok" : "spatne";
+    k.push({ klic: "primeri", stav, text: stav === "spatne" ? `Treaty Length: ${text(n.primeri)}, má být ${text(ma)}` : `Treaty Length: ${text(n.primeri)}`, sekce: "dalsi" });
   }
   for (const { klic, popis } of ZASKRTAVATKA) {
     const ve = n[klic];
     const ma = ocekavane[klic];
-    const ok = ve === ma;
-    const stav = (v: boolean | null | undefined) => (v === null || v === undefined ? "?" : v ? "zapnuto" : "vypnuto");
-    k.push({ klic, ok, text: ok ? `${popis}: ${stav(ve)}` : `${popis}: ${stav(ve)}, má být ${stav(ma)}`, sekce: "dalsi" });
+    const zap = (v: boolean | null | undefined) => (v === null || v === undefined ? "?" : v ? "zapnuto" : "vypnuto");
+    const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : "spatne";
+    k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${zap(ve)}, má být ${zap(ma)}` : `${popis}: ${zap(ve)}`, sekce: "dalsi" });
   }
   return k;
 }

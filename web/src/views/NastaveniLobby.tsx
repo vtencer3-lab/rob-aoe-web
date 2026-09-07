@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AI_OBTIZNOSTI,
   doplnNastaveni,
@@ -11,7 +11,6 @@ import {
   SUROVINY,
   VELIKOSTI,
   VITEZSTVI,
-  ZASKRTAVATKA,
   type NastaveniLobby as Nastaveni,
 } from "../../../src/shared/lobbyKontrola.js";
 import { MAPY } from "../../../src/shared/mapy.js";
@@ -26,22 +25,33 @@ const MAPY_PODLE_JMENA = Object.entries(MAPY)
   .map(([id, nazev]) => ({ id: Number(id), nazev }))
   .sort((a, b) => a.nazev.localeCompare(b.nazev, "cs"));
 
-/** Číselníky „Dalšího nastavení“: klíč v nastavení, popisek, tabulka hodnot. */
-const CISELNIKY: ReadonlyArray<{ klic: "sadaCivilizaci" | "rezim" | "aiObtiznost" | "suroviny" | "odkrytiMapy" | "pocatecniVek" | "konecnyVek"; popis: string; tabulka: Record<number, string> }> = [
-  { klic: "sadaCivilizaci", popis: "Civilization Set", tabulka: SADY_CIVILIZACI },
-  { klic: "rezim", popis: "Game Mode", tabulka: REZIMY },
-  { klic: "aiObtiznost", popis: "AI Difficulty", tabulka: AI_OBTIZNOSTI },
-  { klic: "suroviny", popis: "Resources", tabulka: SUROVINY },
-  { klic: "odkrytiMapy", popis: "Reveal Map", tabulka: ODKRYTI_MAPY },
-  { klic: "pocatecniVek", popis: "Starting Age", tabulka: POCATECNI_VEKY },
-  { klic: "konecnyVek", popis: "Ending Age", tabulka: KONECNE_VEKY },
+type KlicTrojstavu = "lockTeams" | "teamTogether" | "teamPositions" | "sharedExploration" | "lockSpeed" | "turbo" | "fullTechTree" | "empireWars" | "suddenDeath" | "regicide" | "antiquity" | "recordGame";
+
+/** Zaškrtávátka přesně v pořadí a rozdělení, jak je má herní panel. */
+const TEAM_SETTINGS: ReadonlyArray<{ klic: KlicTrojstavu; popis: string }> = [
+  { klic: "lockTeams", popis: "Lock Teams" },
+  { klic: "teamTogether", popis: "Team Together" },
+  { klic: "teamPositions", popis: "Team Positions" },
+  { klic: "sharedExploration", popis: "Shared Exploration" },
+];
+const ADVANCED_SETTINGS: ReadonlyArray<{ klic: KlicTrojstavu | "cheaty"; popis: string }> = [
+  { klic: "lockSpeed", popis: "Lock Speed" },
+  { klic: "cheaty", popis: "Allow Cheats" },
+  { klic: "turbo", popis: "Turbo Mode" },
+  { klic: "fullTechTree", popis: "Full Tech Tree" },
+  { klic: "empireWars", popis: "Empire Wars Mode" },
+  { klic: "suddenDeath", popis: "Sudden Death Mode" },
+  { klic: "regicide", popis: "Regicide Mode" },
+  { klic: "antiquity", popis: "Antiquity Mode" },
+  { klic: "recordGame", popis: "Record Game" },
 ];
 
-function Vyber({ popis, hodnota, tabulka, onZmena }: { popis: string; hodnota: number; tabulka: Record<number, string>; onZmena: (v: number) => void }) {
+function Vyber({ popis, hodnota, tabulka, jedno, onZmena }: { popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; onZmena: (v: number | null) => void }) {
   return (
-    <label>
-      {popis}
-      <select value={hodnota} onChange={(e) => onZmena(Number(e.target.value))}>
+    <label className="radek">
+      <span>{popis}:</span>
+      <select value={hodnota ?? ""} onChange={(e) => onZmena(e.target.value === "" ? null : Number(e.target.value))}>
+        {jedno ? <option value="">–</option> : null}
         {Object.entries(tabulka).map(([v, nazev]) => (
           <option key={v} value={v}>
             {nazev}
@@ -53,10 +63,36 @@ function Vyber({ popis, hodnota, tabulka, onZmena }: { popis: string; hodnota: n
 }
 
 /**
- * Očekávané nastavení lobby pro kontrolu: hlavní část (mapa, velikost,
- * rychlost, populace, victory, cheaty) a sbalené „Další nastavení“ se vším
- * ostatním, co seznam lobby vydává. Rob si to nastaví jednou za večer;
- * „Zkontrolovat lobby“ pak u každého zápasu porovná, co host naklikal.
+ * Zaškrtávátko se třemi stavy jako u herního panelu, jen navíc s „–“ (je to
+ * jedno): kliknutí jde dokola vypnuto → zapnuto → „–“. Třetí stav kreslí
+ * prohlížeč jako neurčité (indeterminate), vedle popisku je i „–“ textem.
+ * Allow Cheats „–“ nemá: cheaty patří do hlavní kontroly.
+ */
+function Zaskrtavatko({ popis, hodnota, jedno, onZmena }: { popis: string; hodnota: boolean | null; jedno: boolean; onZmena: (v: boolean | null) => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = hodnota === null;
+  }, [hodnota]);
+  return (
+    <label className="zaskrtavaci">
+      <input
+        ref={ref}
+        type="checkbox"
+        checked={hodnota === true}
+        onChange={() => onZmena(hodnota === false ? true : hodnota === true && jedno ? null : false)}
+      />
+      {popis}
+      {hodnota === null ? <span className="zaloha jedno-znak">–</span> : null}
+    </label>
+  );
+}
+
+/**
+ * Očekávané nastavení lobby pro kontrolu, rozložené stejně jako herní panel
+ * Game Settings: řádky ve stejném pořadí, pod nimi Team Settings a Advanced
+ * Settings ve dvou sloupcích. Host tak srovnává jedna ku jedné. U voleb
+ * mimo hlavní kontrolu jde vybrat „–“: je to jedno, kontrola hodnotu jen
+ * vypíše a nikdy ji neoznačí za chybu. Rob si to nastaví jednou za večer.
  */
 export function NastaveniLobby({ ulozene, onUlozit }: Props) {
   const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(ulozene as Partial<Nastaveni>));
@@ -77,9 +113,27 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
       }}
     >
       <h3>Jak má vypadat lobby</h3>
-      <div className="mrizka">
-        <label>
-          Mapa
+      <div className="radky">
+        <div className="radek" role="radiogroup" aria-label="Civilization Set">
+          <span>Civilization Set:</span>
+          <div className="prepinace">
+            {[["", "–"], ...Object.entries(SADY_CIVILIZACI)].map(([v, nazev]) => (
+              <label key={v}>
+                <input
+                  type="radio"
+                  name="sadaCivilizaci"
+                  value={v}
+                  checked={(n.sadaCivilizaci ?? "") === (v === "" ? "" : Number(v))}
+                  onChange={() => setN({ ...n, sadaCivilizaci: cislo(v!) })}
+                />
+                {nazev}
+              </label>
+            ))}
+          </div>
+        </div>
+        <Vyber popis="Game Mode" hodnota={n.rezim} tabulka={REZIMY} jedno onZmena={(v) => setN({ ...n, rezim: v })} />
+        <label className="radek">
+          <span>Location:</span>
           <select value={n.mapaId ?? ""} onChange={(e) => setN({ ...n, mapaId: cislo(e.target.value) })}>
             <option value="">libovolná</option>
             {MAPY_PODLE_JMENA.map((m) => (
@@ -89,8 +143,8 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
             ))}
           </select>
         </label>
-        <label>
-          Velikost
+        <label className="radek">
+          <span>Map Size:</span>
           <select value={n.velikost ?? ""} onChange={(e) => setN({ ...n, velikost: cislo(e.target.value) })}>
             <option value="">podle počtu hráčů</option>
             {Object.entries(VELIKOSTI).map(([v, nazev]) => (
@@ -100,37 +154,42 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
             ))}
           </select>
         </label>
-        <Vyber popis="Rychlost" hodnota={n.rychlost} tabulka={RYCHLOSTI} onZmena={(v) => setN({ ...n, rychlost: v as 1 | 2 | 3 })} />
-        <label>
-          Populace
+        <Vyber popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno onZmena={(v) => setN({ ...n, aiObtiznost: v })} />
+        <Vyber popis="Resources" hodnota={n.suroviny} tabulka={SUROVINY} jedno onZmena={(v) => setN({ ...n, suroviny: v })} />
+        <label className="radek">
+          <span>Population:</span>
           <input type="number" min={25} max={1000} step={25} value={n.populace} onChange={(e) => setN({ ...n, populace: Number(e.target.value) })} />
         </label>
-        <Vyber popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} onZmena={(v) => setN({ ...n, vitezstvi: v as 1 | 9 })} />
-        <label className="zaskrtavaci">
-          <input type="checkbox" checked={n.cheaty} onChange={(e) => setN({ ...n, cheaty: e.target.checked })} />
-          Cheaty povolené
+        <Vyber popis="Game Speed" hodnota={n.rychlost} tabulka={RYCHLOSTI} onZmena={(v) => setN({ ...n, rychlost: v as 1 | 2 | 3 })} />
+        <Vyber popis="Reveal Map" hodnota={n.odkrytiMapy} tabulka={ODKRYTI_MAPY} jedno onZmena={(v) => setN({ ...n, odkrytiMapy: v })} />
+        <Vyber popis="Starting Age" hodnota={n.pocatecniVek} tabulka={POCATECNI_VEKY} jedno onZmena={(v) => setN({ ...n, pocatecniVek: v })} />
+        <Vyber popis="Ending Age" hodnota={n.konecnyVek} tabulka={KONECNE_VEKY} jedno onZmena={(v) => setN({ ...n, konecnyVek: v })} />
+        <label className="radek">
+          <span>Treaty Length:</span>
+          <input type="number" min={0} max={180} step={5} value={n.primeri ?? ""} placeholder="– (je to jedno)" onChange={(e) => setN({ ...n, primeri: cislo(e.target.value) })} />
         </label>
+        <Vyber popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} onZmena={(v) => setN({ ...n, vitezstvi: v as 1 | 9 })} />
       </div>
-      <details className="dalsi-nastaveni" data-testid="dalsi-nastaveni-form">
-        <summary>Další nastavení</summary>
-        <div className="mrizka">
-          {CISELNIKY.map((c) => (
-            <Vyber key={c.klic} popis={c.popis} hodnota={n[c.klic]} tabulka={c.tabulka} onZmena={(v) => setN({ ...n, [c.klic]: v })} />
+
+      <div className="sloupce">
+        <fieldset>
+          <legend>Team Settings</legend>
+          {TEAM_SETTINGS.map(({ klic, popis }) => (
+            <Zaskrtavatko key={klic} popis={popis} hodnota={n[klic]} jedno onZmena={(v) => setN({ ...n, [klic]: v })} />
           ))}
-          <label>
-            Treaty Length (min)
-            <input type="number" min={0} max={180} step={5} value={n.primeri} onChange={(e) => setN({ ...n, primeri: Number(e.target.value) })} />
-          </label>
-        </div>
-        <div className="mrizka">
-          {ZASKRTAVATKA.map(({ klic, popis }) => (
-            <label key={klic} className="zaskrtavaci">
-              <input type="checkbox" checked={n[klic]} onChange={(e) => setN({ ...n, [klic]: e.target.checked })} />
-              {popis}
-            </label>
-          ))}
-        </div>
-      </details>
+        </fieldset>
+        <fieldset>
+          <legend>Advanced Settings</legend>
+          {ADVANCED_SETTINGS.map(({ klic, popis }) =>
+            klic === "cheaty" ? (
+              <Zaskrtavatko key={klic} popis={popis} hodnota={n.cheaty} jedno={false} onZmena={(v) => setN({ ...n, cheaty: v === true })} />
+            ) : (
+              <Zaskrtavatko key={klic} popis={popis} hodnota={n[klic]} jedno onZmena={(v) => setN({ ...n, [klic]: v })} />
+            ),
+          )}
+        </fieldset>
+      </div>
+      <p className="zaloha">„–“ = je to jedno: kontrola hodnotu jen vypíše. Zaškrtávátko se kliknutím přepíná vypnuto → zapnuto → „–“.</p>
       <button type="submit">Uložit nastavení lobby</button>
     </form>
   );
