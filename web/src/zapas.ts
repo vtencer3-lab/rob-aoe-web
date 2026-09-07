@@ -1,4 +1,6 @@
-import type { Barva, Tym, UcastnikView, ZapasView } from "../../src/shared/types.js";
+import type { UcastnikView, ZapasView } from "../../src/shared/types.js";
+
+export { sdiliCivilizaci, popisFormatu, strany, titulekViteze, vitezVeVete } from "../../src/shared/strany.js";
 
 /**
  * Jméno, které se hráči ukáže. Alias je herní přezdívka ze žebříčku Worlds
@@ -14,16 +16,17 @@ export function mujUcastnik(zapas: ZapasView, steamId: string): UcastnikView | n
   return zapas.ucastnici.find((u) => u.steamId === steamId) ?? null;
 }
 
+/** Spoluhráči = stejný tým 1 až 4. Hráč bez týmu („–“) žádné nemá. */
 export function spoluhraci(zapas: ZapasView, steamId: string): UcastnikView[] {
   const ja = mujUcastnik(zapas, steamId);
-  if (!ja) return [];
+  if (!ja || ja.tym === 0) return [];
   return zapas.ucastnici.filter((u) => u.tym === ja.tym && u.steamId !== steamId);
 }
 
 export function souperi(zapas: ZapasView, steamId: string): UcastnikView[] {
   const ja = mujUcastnik(zapas, steamId);
   if (!ja) return [];
-  return zapas.ucastnici.filter((u) => u.tym !== ja.tym);
+  return zapas.ucastnici.filter((u) => u.steamId !== steamId && (ja.tym === 0 || u.tym !== ja.tym));
 }
 
 export function mojeZapasy(zapasy: ZapasView[], steamId: string): ZapasView[] {
@@ -44,32 +47,7 @@ export function verejneZapasy(zapasy: ZapasView[], steamId: string | null): Zapa
   return zapasy.filter((z) => z.stav !== "zruseny" && !naKarte.has(z.id));
 }
 
-export interface PopisViteze {
-  /** „Vyhrál Trokner“ v 1v1, „Vyhrál modrý tým“ ve větším formátu. */
-  titulek: string;
-  /** Jména hráčů týmu; v 1v1 prázdné, jméno už je v titulku. */
-  hraci: string[];
-  barva: Barva;
-}
-
-/**
- * Tlačítko „Vyhrál tým 1“ nutilo Roba v přenosu přepočítávat, kdo je tým 1.
- * V 1v1 stačí jméno, ve větším formátu barva — tu hráči i diváci vidí ve hře.
- */
-export function popisViteze(zapas: ZapasView, tym: Tym): PopisViteze {
-  const clenove = zapas.ucastnici.filter((u) => u.tym === tym);
-  const barva: Barva = clenove[0]?.barva ?? (tym as Barva);
-  const jediny = clenove.length === 1 ? clenove[0] : undefined;
-  if (jediny) return { titulek: `Vyhrál ${jmenoHrace(jediny)}`, hraci: [], barva };
-  return {
-    titulek: `Vyhrál ${barva === 1 ? "modrý" : "červený"} tým`,
-    hraci: clenove.map(jmenoHrace),
-    barva,
-  };
-}
-
-/** Totéž do věty: „dohráno — vyhrál Trokner“. */
-export function vitezVeVete(zapas: ZapasView, tym: Tym): string {
-  const { titulek } = popisViteze(zapas, tym);
-  return titulek.charAt(0).toLowerCase() + titulek.slice(1);
+/** „tým 2“, nebo „bez týmu“ pro hráče, který hraje sám za sebe. */
+export function popisTymu(u: Pick<UcastnikView, "tym">): string {
+  return u.tym === 0 ? "bez týmu" : `tým ${u.tym}`;
 }

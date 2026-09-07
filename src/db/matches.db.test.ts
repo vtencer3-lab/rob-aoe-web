@@ -11,6 +11,8 @@ import {
   setZapasStav,
 } from "./matches.js";
 import { closePool, getPool } from "./pool.js";
+import { sestavaCoop, sestavaKazdyProtiKazdemu } from "../matches/sestavyProTesty.js";
+
 import { savePlayerStats, upsertPlayer } from "./players.js";
 import { signUp } from "./events.js";
 
@@ -32,7 +34,7 @@ afterAll(async () => {
 });
 
 it("vytvoří 1v1 s pořadím, názvem lobby a heslem", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   expect(zapas.poradi).toBe(1);
   expect(zapas.nazevLobby).toBe("ROB-01");
   expect(zapas.heslo).toHaveLength(8);
@@ -41,14 +43,14 @@ it("vytvoří 1v1 s pořadím, názvem lobby a heslem", async () => {
 });
 
 it("čísluje zápasy po sobě", async () => {
-  await createZapas(akceId, "1v1", HRACI.slice(0, 2));
-  const druhy = await createZapas(akceId, "1v1", HRACI.slice(2, 4));
+  await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
   expect(druhy.poradi).toBe(2);
   expect(druhy.nazevLobby).toBe("ROB-02");
 });
 
 it("Coop Kings dá dvojicím sdílenou barvu", async () => {
-  const zapas = await createZapas(akceId, "coop_kings_2v2", HRACI);
+  const zapas = await createZapas(akceId, sestavaCoop(HRACI));
   const { ucastnici } = (await getZapas(zapas.id))!;
   expect(ucastnici).toHaveLength(4);
   expect(ucastnici[0]!.barva).toBe(ucastnici[1]!.barva);
@@ -57,35 +59,35 @@ it("Coop Kings dá dvojicím sdílenou barvu", async () => {
 });
 
 it("hostem je nejzkušenější hráč", async () => {
-  const zapas = await createZapas(akceId, "coop_kings_2v2", HRACI);
+  const zapas = await createZapas(akceId, sestavaCoop(HRACI));
   const { ucastnici } = (await getZapas(zapas.id))!;
   const host = ucastnici.find((u) => u.jeHost)!;
   expect(host.steamId).toBe(HRACI[3]);
 });
 
 it("účastníci nesou jméno ve hře", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   const { ucastnici } = (await getZapas(zapas.id))!;
   expect(ucastnici.map((u) => u.alias)).toEqual(["Hrac0", "Hrac1"]);
 });
 
 it("odmítne hráče, který se mezitím odhlásil", async () => {
   await getPool().query("UPDATE prihlaska SET stav = 'odhlasen' WHERE steam_id = $1", [HRACI[1]]);
-  await expect(createZapas(akceId, "1v1", HRACI.slice(0, 2))).rejects.toThrow(/není přihlášený/i);
+  await expect(createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)))).rejects.toThrow(/není přihlášený/i);
 });
 
 it("neúspěšné vytvoření nezanechá poloviční zápas", async () => {
   await getPool().query("UPDATE prihlaska SET stav = 'odhlasen' WHERE steam_id = $1", [HRACI[1]]);
-  await expect(createZapas(akceId, "1v1", HRACI.slice(0, 2))).rejects.toThrow();
+  await expect(createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)))).rejects.toThrow();
   expect(await listZapasy(akceId)).toHaveLength(0);
 });
 
 it("odmítne špatný počet hráčů", async () => {
-  await expect(createZapas(akceId, "coop_kings_2v2", HRACI.slice(0, 2))).rejects.toThrow(/4 hráče/);
+  await expect(createZapas(akceId, sestavaCoop(HRACI.slice(0, 2)))).rejects.toThrow(/proti komu/);
 });
 
 it("uložení čísla lobby stavem nehýbe — o založené lobby mluví sám odkaz", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   await setLobbyId(zapas.id, "234230181");
 
   const nacteny = (await getZapas(zapas.id))!;
@@ -102,7 +104,7 @@ it("uložení čísla lobby stavem nehýbe — o založené lobby mluví sám od
 // Rob dostane jen tři tlačítka, ale překliknuté „Vyhrál tým 1“ musí jít vrátit
 // — a s ním i časová známka konce, na které bude stát budoucí statistika.
 it("vrácení dohraného zápasu zpět do běhu zruší časovou známku konce", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   await setZapasStav(zapas.id, "dohrano");
   const { rows: predOpravou } = await getPool().query<{ konec: Date | null }>(
     "SELECT konec FROM zapas WHERE id = $1",
@@ -119,7 +121,7 @@ it("vrácení dohraného zápasu zpět do běhu zruší časovou známku konce",
 });
 
 it("změna hosta zahodí staré číslo lobby", async () => {
-  const zapas = await createZapas(akceId, "coop_kings_2v2", HRACI);
+  const zapas = await createZapas(akceId, sestavaCoop(HRACI));
   await setLobbyId(zapas.id, "234230181");
   await setHost(zapas.id, HRACI[0]!);
 
@@ -129,7 +131,7 @@ it("změna hosta zahodí staré číslo lobby", async () => {
 });
 
 it("setHost odmítne hráče, který není účastníkem, a zachová hosta i lobby_id", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   await setLobbyId(zapas.id, "234230181");
   const pred = (await getZapas(zapas.id))!;
   const puvodniHost = pred.ucastnici.find((u) => u.jeHost)!.steamId;
@@ -142,7 +144,7 @@ it("setHost odmítne hráče, který není účastníkem, a zachová hosta i lob
 });
 
 it("setZapasStav odmítne zápis, pokud stav mezitím změnil někdo jiný", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
 
   const pool = getPool();
   const puvodniQuery = pool.query.bind(pool);
@@ -169,7 +171,7 @@ it("setZapasStav odmítne zápis, pokud stav mezitím změnil někdo jiný", asy
 });
 
 it("zaznamená kliknutí na připojení", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   await oznacKliknutiPripojit(zapas.id, HRACI[0]!);
   const { ucastnici } = (await getZapas(zapas.id))!;
   expect(ucastnici.find((u) => u.steamId === HRACI[0])!.kliknulPripojit).toBeInstanceOf(Date);
@@ -177,9 +179,9 @@ it("zaznamená kliknutí na připojení", async () => {
 });
 
 it("uloží vítězný tým", async () => {
-  const zapas = await createZapas(akceId, "1v1", HRACI.slice(0, 2));
-  await setVysledek(zapas.id, 2);
-  expect((await getZapas(zapas.id))!.zapas.viteznyTym).toBe(2);
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  await setVysledek(zapas.id, { tym: 2 });
+  expect((await getZapas(zapas.id))!.zapas.vitez).toEqual({ tym: 2 });
 });
 
 it("neznámý zápas vrátí null", async () => {
@@ -195,7 +197,7 @@ it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříč
   await savePlayerStats(bezAliasu, { alias: null, steamName: "TibbarZmr", chyba: null });
   await signUp(akceId, bezAliasu);
 
-  const zapas = await createZapas(akceId, "1v1", [HRACI[0]!, bezAliasu]);
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[0]!, bezAliasu]));
   const [zaznam] = await listZapasy(akceId);
   const host = zaznam!.ucastnici.find((u) => u.steamId === bezAliasu)!;
 

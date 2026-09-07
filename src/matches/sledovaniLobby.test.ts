@@ -8,14 +8,13 @@ function zapas(cast: Partial<ZapasView>): ZapasView {
   return {
     id: 1,
     poradi: 1,
-    format: "1v1",
     stav: "bezi",
     nazevLobby: "ROB-01",
     heslo: "x",
     lobbyId: "504953429",
     joinUri: "aoe2de://0/504953429",
     spectatorUri: "aoe2de://1/504953429",
-    viteznyTym: null,
+    vitez: null,
     ucastnici: [],
     ...cast,
   };

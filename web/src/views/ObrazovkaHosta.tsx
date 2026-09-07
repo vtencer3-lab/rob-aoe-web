@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
-import { jmenoHrace, mujUcastnik } from "../zapas.js";
+import { jmenoHrace, mujUcastnik, popisTymu } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
 import { Kopirovatelne } from "./Kopirovatelne.js";
 /**
@@ -46,7 +46,7 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby }: Prop
         <div className="hero">
           <strong data-testid="moje-barva">{BARVA_NAZEV[muj.barva]}</strong>
           <span>
-            tým <span data-testid="muj-tym">{muj.tym}</span>
+            <span data-testid="muj-tym">{popisTymu(muj)}</span>
           </span>
         </div>
       ) : null}
@@ -86,7 +86,7 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby }: Prop
       <ul className="zrcadlo">
         {zapas.ucastnici.map((u) => (
           <li key={u.steamId} data-testid="radek-lobby" className={`barva-${u.barva}`}>
-            <span className="swatch" /> {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, tým {u.tym}
+            <span className="swatch" /> {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, {popisTymu(u)}
             {u.steamId === ja ? " ← TY" : ""}
             {u.kliknulPripojit ? " · klikl na připojení" : ""}
           </li>

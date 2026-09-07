@@ -1,17 +1,32 @@
-export type Format = "1v1" | "coop_kings_2v2";
-export type Tym = 1 | 2;
-export type Barva = 1 | 2;
+/** Osm barev hráčů přesně v pořadí, v jakém je nabízí hra. */
+export type Barva = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export const BARVY: readonly Barva[] = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export const BARVA_NAZEV: Record<Barva, string> = {
   1: "modrá",
   2: "červená",
+  3: "zelená",
+  4: "žlutá",
+  5: "tyrkysová",
+  6: "fialová",
+  7: "šedá",
+  8: "oranžová",
 };
 
-export interface Seat {
+/** Tým jako ve hře: 0 je „–“ (bez týmu, hráč sám za sebe), 1 až 4 týmy. */
+export type Tym = 0 | 1 | 2 | 3 | 4;
+export const TYMY: readonly Tym[] = [0, 1, 2, 3, 4];
+
+/** Jeden řádek sestavy, jak ho Rob naklikal: kdo, jaký tým, jaká barva. Pořadí pole = pořadí slotů v lobby. */
+export interface SestavaVstup {
   steamId: string;
   tym: Tym;
   barva: Barva;
+}
+
+export interface Seat extends SestavaVstup {
   jeHost: boolean;
+  poradi: number;
 }
 
 export interface PlayerView {
@@ -42,8 +57,16 @@ export interface UcastnikView {
   tym: Tym;
   barva: Barva;
   jeHost: boolean;
+  /** Slot v lobby, od nuly; v tomhle pořadí Rob hráče naklikal. */
+  poradi: number;
   kliknulPripojit: string | null;
 }
+
+/**
+ * Kdo vyhrál: tým (1 až 4), nebo jeden hráč, když hrál sám za sebe („–“).
+ * Strany zápasu vznikají ze sestavy, viz strany.ts.
+ */
+export type Vitez = { tym: Tym } | { steamId: string };
 
 /** Lobby ještě stojí (sedí se v ní), nebo už hra běží. Null = nevíme. */
 export type FazeLobby = "lobby" | "hraje_se";
@@ -51,7 +74,6 @@ export type FazeLobby = "lobby" | "hraje_se";
 export interface ZapasView {
   id: number;
   poradi: number;
-  format: Format;
   stav: string;
   nazevLobby: string;
   heslo: string;
@@ -60,7 +82,7 @@ export interface ZapasView {
   spectatorUri: string | null;
   /** Odvozeno ze seznamu otevřených lobby ve hře (sledovaniLobby.ts). */
   fazeLobby?: FazeLobby | null;
-  viteznyTym: Tym | null;
+  vitez: Vitez | null;
   ucastnici: UcastnikView[];
 }
 

@@ -35,20 +35,20 @@ const u = (steamId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikV
   tym,
   barva,
   jeHost,
+  poradi: 0,
   kliknulPripojit: null,
 });
 
 const zapas = (ucastnici: UcastnikView[]): ZapasView => ({
   id: 1,
   poradi: 7,
-  format: "coop_kings_2v2",
   stav: "vyhlaseny",
   nazevLobby: "ROB-07",
   heslo: "k7rm2xq9",
   lobbyId: null,
   joinUri: null,
   spectatorUri: null,
-  viteznyTym: null,
+  vitez: null,
   ucastnici,
 });
 
@@ -232,7 +232,7 @@ it("hráči po zapsání výsledku zápas nezmizí", async () => {
   vi.mocked(api.me).mockResolvedValue({
     hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false },
   });
-  const dohrany = { ...zapas([u("host1", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)]), stav: "dohrano", viteznyTym: 1 as const };
+  const dohrany = { ...zapas([u("host1", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)]), stav: "dohrano", vitez: { tym: 1 } as const };
   nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [dohrany] });
 
   render(<App />);

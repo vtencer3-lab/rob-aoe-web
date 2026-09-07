@@ -240,8 +240,11 @@ Tři kroky, a mezi nimi se na nic nečeká:
 
 1. **Rob založí akci.** Přihlašování je od té chvíle otevřené a zůstane otevřené
    celý večer — kdo dorazí pozdě, přihlásí se i mezi zápasy.
-2. **Rob naklikne zápas.** V ten okamžik ho vidí všichni: hráči svoji barvu a
-   tým, host navíc pokyny k založení lobby a pole na odkaz. Nic se nevyhlašuje.
+2. **Rob naklikne zápas.** Vybere hráče, každému nastaví barvu (8 jako ve hře)
+   a tým (–, 1 až 4) a pořadí slotů v lobby. Formát (1v1, 2v2, Coop Kings…) se
+   z toho odvodí sám; dva hráči se stejnou barvou sdílejí civilizaci. V ten
+   okamžik zápas vidí všichni: hráči svoji barvu a tým, host navíc pokyny
+   k založení lobby. Nic se nevyhlašuje.
 3. **Host založí lobby a klikne „Vyhledat moji lobby“.** Web se podívá do
    seznamu otevřených lobby ve hře, podle Steam ID hosta tu jeho pozná a uloží
    si její číslo. Tím naskočí hráčům „Připojit se do hry“ a Robovi Spectate —
@@ -249,7 +252,8 @@ Tři kroky, a mezi nimi se na nic nečeká:
    („Vyhledat hru“), najde totéž. Když seznam zrovna neodpovídá, host může
    pořád vložit odkaz z tlačítka Copy ručně.
 
-Zápas končí buď zápisem vítěze („Vyhrál tým 1/2“), nebo zrušením. Večer končí
+Zápas končí buď zápisem vítěze (tlačítko za každou stranu: „Vyhrál Trokner“,
+„Vyhrál modrý tým“), nebo zrušením. Večer končí
 tlačítkem „Ukončit akci“, které je nevratné a ptá se na potvrzení.
 
 Do 5. 9. 2026 byl mezi krokem 2 a 3 ještě mezikrok „Vyhlásit“ a akce měla pět

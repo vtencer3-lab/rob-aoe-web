@@ -8,26 +8,25 @@ const nehledat = vi.fn().mockResolvedValue({ nalezeno: false, lobbyId: null, naz
 const zapas: ZapasView = {
   id: 1,
   poradi: 7,
-  format: "coop_kings_2v2",
   stav: "lobby_otevrena",
   nazevLobby: "ROB-07",
   heslo: "k7rm2xq9",
   lobbyId: "234230181",
   joinUri: "aoe2de://0/234230181",
   spectatorUri: null,
-  viteznyTym: null,
+  vitez: null,
   ucastnici: [
-    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
 it("ukáže barvu a tým velkým písmem", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
   expect(screen.getByTestId("moje-barva")).toHaveTextContent("modrá");
-  expect(screen.getByTestId("muj-tym")).toHaveTextContent("1");
+  expect(screen.getByTestId("muj-tym")).toHaveTextContent("tým 1");
 });
 
 it("řekne, s kým se sdílí civilizace", () => {
@@ -38,7 +37,6 @@ it("řekne, s kým se sdílí civilizace", () => {
 it("v 1v1 o sdílení civilizace nemluví", () => {
   const jeden: ZapasView = {
     ...zapas,
-    format: "1v1",
     ucastnici: [zapas.ucastnici[0]!, zapas.ucastnici[2]!],
   };
   render(<KartaHrace zapas={jeden} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
@@ -88,10 +86,10 @@ it("spoluhráče i soupeře bez aliasu pojmenuje jménem ze Steamu", () => {
   const bezAliasu: ZapasView = {
     ...zapas,
     ucastnici: [
-      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: null },
-      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 1, barva: 1, jeHost: true, kliknulPripojit: null },
-      { steamId: "c", alias: null, steamName: "Marecek", tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
-      { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { steamId: "c", alias: null, steamName: "Marecek", tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
   render(<KartaHrace zapas={bezAliasu} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);

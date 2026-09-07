@@ -5,6 +5,8 @@ import { closePool, getPool } from "../../db/pool.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
 import { createSession } from "../../db/sessions.js";
 import { buildServer } from "../server.js";
+import { sestavaCoop, sestavaKazdyProtiKazdemu } from "../../matches/sestavyProTesty.js";
+
 
 const ROB = "76561198000000070";
 const HRACI = ["76561198000000071", "76561198000000072"];
@@ -36,7 +38,7 @@ async function vytvorZapas(app: ReturnType<typeof buildServer>) {
     method: "POST",
     url: `/api/akce/${akceId}/zapas`,
     cookies: { sid: robSid },
-    payload: { format: "1v1", steamIds: HRACI },
+    payload: { sestava: sestavaKazdyProtiKazdemu(HRACI) },
   });
   return res.json().zapas as { id: number };
 }
@@ -47,7 +49,7 @@ it("běžný hráč nesmí vytvořit zápas", async () => {
     method: "POST",
     url: `/api/akce/${akceId}/zapas`,
     cookies: { sid: hracSid },
-    payload: { format: "1v1", steamIds: HRACI },
+    payload: { sestava: sestavaKazdyProtiKazdemu(HRACI) },
   });
   expect(res.statusCode).toBe(403);
   await app.close();
@@ -96,10 +98,10 @@ it("běžný hráč nesmí zapsat výsledek zápasu", async () => {
     method: "POST",
     url: `/api/zapas/${zapas.id}/vysledek`,
     cookies: { sid: hracSid },
-    payload: { viteznyTym: 1 },
+    payload: { vitez: { tym: 1 } },
   });
   expect(res.statusCode).toBe(403);
-  expect((await getZapas(zapas.id))!.zapas.viteznyTym).toBeNull();
+  expect((await getZapas(zapas.id))!.zapas.vitez).toBeNull();
   await app.close();
 });
 
@@ -109,7 +111,7 @@ it("špatný počet hráčů na formát vrátí 400 se srozumitelnou hláškou",
     method: "POST",
     url: `/api/akce/${akceId}/zapas`,
     cookies: { sid: robSid },
-    payload: { format: "coop_kings_2v2", steamIds: HRACI },
+    payload: { sestava: sestavaCoop(HRACI) },
   });
   expect(res.statusCode).toBe(400);
   expect(res.json().chyba).toMatch(/4 hráče/);
@@ -122,7 +124,7 @@ it("stejný hráč dvakrát v sestavě vrátí 400 se srozumitelnou hláškou", 
     method: "POST",
     url: `/api/akce/${akceId}/zapas`,
     cookies: { sid: robSid },
-    payload: { format: "1v1", steamIds: [HRACI[0], HRACI[0]] },
+    payload: { sestava: sestavaKazdyProtiKazdemu([HRACI[0]!, HRACI[0]!]) },
   });
   expect(res.statusCode).toBe(400);
   expect(res.json().chyba).toMatch(/dvakrát/);
@@ -356,11 +358,11 @@ it("Rob zapíše vítěze", async () => {
     method: "POST",
     url: `/api/zapas/${zapas.id}/vysledek`,
     cookies: { sid: robSid },
-    payload: { viteznyTym: 2 },
+    payload: { vitez: { tym: 2 } },
   });
   expect(res.statusCode).toBe(200);
   const nacteny = (await getZapas(zapas.id))!;
-  expect(nacteny.zapas.viteznyTym).toBe(2);
+  expect(nacteny.zapas.vitez).toEqual({ tym: 2 });
   expect(nacteny.zapas.stav).toBe("dohrano");
   await app.close();
 });

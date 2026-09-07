@@ -6,19 +6,18 @@ import { Rezie } from "./Rezie.js";
 const zapas: ZapasView = {
   id: 1,
   poradi: 7,
-  format: "coop_kings_2v2",
   stav: "bezi",
   nazevLobby: "ROB-07",
   heslo: "k7rm2xq9",
   lobbyId: "234230181",
   joinUri: "aoe2de://0/234230181",
   spectatorUri: "aoe2de://1/234230181",
-  viteznyTym: null,
+  vitez: null,
   ucastnici: [
-    { steamId: "a", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, kliknulPripojit: "2026-09-03T12:00:00.000Z" },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, kliknulPripojit: "2026-09-03T12:01:00.000Z" },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, kliknulPripojit: null },
+    { steamId: "a", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: "2026-09-03T12:00:00.000Z" },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: "2026-09-03T12:01:00.000Z" },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
@@ -137,7 +136,7 @@ it("hostitele označí odznak, a právě jeden", () => {
 
 const dohrany: AkceStavPayload = {
   ...stav,
-  zapasy: [{ ...zapas, stav: "dohrano", viteznyTym: 1 }],
+  zapasy: [{ ...zapas, stav: "dohrano", vitez: { tym: 1 } }],
 };
 
 const zruseny: AkceStavPayload = {
@@ -173,7 +172,7 @@ it("výsledek jde změnit až na druhé kliknutí", async () => {
   expect(props.onVysledek).not.toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("button", { name: /vyhrál červený tým/i }));
-  expect(props.onVysledek).toHaveBeenCalledWith(1, 2);
+  expect(props.onVysledek).toHaveBeenCalledWith(1, { tym: 2 });
 });
 
 it("z rozmyšlené změny se dá couvnout, aniž se něco zapíše", () => {
@@ -229,12 +228,11 @@ it("dokud host odkaz nevložil, je vidět, že se na něj čeká", () => {
 it("v 1v1 se na tlačítku výsledku píše jméno hráče, ne číslo týmu", () => {
   const jednaNaJednu: ZapasView = {
     ...zapas,
-    format: "1v1",
     ucastnici: [zapas.ucastnici[0]!, zapas.ucastnici[2]!],
   };
   render(<Rezie stav={{ ...stav, zapasy: [jednaNaJednu] }} {...props} />);
   fireEvent.click(screen.getByRole("button", { name: /vyhrál marek/i }));
-  expect(props.onVysledek).toHaveBeenCalledWith(1, 2);
+  expect(props.onVysledek).toHaveBeenCalledWith(1, { tym: 2 });
 });
 
 it("ve 2v2 tlačítko nese barvu týmu a drobně jeho hráče", () => {

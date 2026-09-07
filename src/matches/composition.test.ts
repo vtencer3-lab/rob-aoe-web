@@ -1,74 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { assignSeats, generatePassword, lobbyName, seatCount } from "./composition.js";
+import type { Barva, SestavaVstup, Tym } from "../shared/types.js";
+import { generatePassword, lobbyName, sestavSedadla } from "./composition.js";
 
-const p = (steamId: string, odehranoHer: number | null) => ({ steamId, odehranoHer });
+const h = (steamId: string, tym: Tym, barva: Barva): SestavaVstup => ({ steamId, tym, barva });
+const her = (zaznamy: Record<string, number | null>) => new Map(Object.entries(zaznamy));
 
-describe("seatCount", () => {
-  it("zná velikost obou formátů", () => {
-    expect(seatCount("1v1")).toBe(2);
-    expect(seatCount("coop_kings_2v2")).toBe(4);
-  });
-});
-
-describe("assignSeats — 1v1", () => {
-  it("dá každému jiný tým a jinou barvu", () => {
-    const seats = assignSeats("1v1", [p("A", 10), p("B", 50)]);
-    expect(seats.map((s) => [s.steamId, s.tym, s.barva])).toEqual([
-      ["A", 1, 1],
-      ["B", 2, 2],
-    ]);
-  });
-});
-
-describe("assignSeats — Coop Kings", () => {
-  it("dá dvojici stejnou barvu i tým a soupeřům druhou", () => {
-    const seats = assignSeats("coop_kings_2v2", [p("A", 1), p("B", 2), p("C", 3), p("D", 4)]);
-    expect(seats.map((s) => [s.steamId, s.tym, s.barva])).toEqual([
-      ["A", 1, 1],
-      ["B", 1, 1],
-      ["C", 2, 2],
-      ["D", 2, 2],
+describe("sestavSedadla", () => {
+  it("zachová pořadí, tým i barvu a očísluje sloty od nuly", () => {
+    const seats = sestavSedadla([h("A", 1, 1), h("B", 1, 1), h("C", 2, 2), h("D", 2, 3)], her({}));
+    expect(seats.map((s) => [s.steamId, s.tym, s.barva, s.poradi])).toEqual([
+      ["A", 1, 1, 0],
+      ["B", 1, 1, 1],
+      ["C", 2, 2, 2],
+      ["D", 2, 3, 3],
     ]);
   });
 
-  it("spoluhráči sdílí barvu, soupeři ne", () => {
-    const seats = assignSeats("coop_kings_2v2", [p("A", 1), p("B", 2), p("C", 3), p("D", 4)]);
-    expect(seats[0]!.barva).toBe(seats[1]!.barva);
-    expect(seats[2]!.barva).toBe(seats[3]!.barva);
-    expect(seats[0]!.barva).not.toBe(seats[2]!.barva);
-  });
-});
-
-describe("assignSeats — host", () => {
   it("hostem je hráč s nejvíc odehranými hrami", () => {
-    const seats = assignSeats("coop_kings_2v2", [p("A", 10), p("B", 900), p("C", 30), p("D", 40)]);
+    const seats = sestavSedadla([h("A", 1, 1), h("B", 1, 3), h("C", 2, 2), h("D", 2, 4)], her({ A: 10, B: 900, C: 30, D: 40 }));
     expect(seats.filter((s) => s.jeHost).map((s) => s.steamId)).toEqual(["B"]);
   });
 
-  it("při shodě vybere prvního", () => {
-    const seats = assignSeats("1v1", [p("A", 5), p("B", 5)]);
-    expect(seats.find((s) => s.jeHost)!.steamId).toBe("A");
-  });
-
-  it("neznámý počet her se počítá jako nula", () => {
-    const seats = assignSeats("1v1", [p("A", null), p("B", 1)]);
-    expect(seats.find((s) => s.jeHost)!.steamId).toBe("B");
+  it("při shodě vybere dřívější slot, neznámý počet her je nula", () => {
+    expect(sestavSedadla([h("A", 1, 1), h("B", 2, 2)], her({ A: 5, B: 5 })).find((s) => s.jeHost)!.steamId).toBe("A");
+    expect(sestavSedadla([h("A", 1, 1), h("B", 2, 2)], her({ A: null, B: 1 })).find((s) => s.jeHost)!.steamId).toBe("B");
   });
 
   it("host je vždy právě jeden", () => {
-    const seats = assignSeats("coop_kings_2v2", [p("A", 1), p("B", 1), p("C", 1), p("D", 1)]);
+    const seats = sestavSedadla([h("A", 0, 1), h("B", 0, 2), h("C", 0, 3)], her({}));
     expect(seats.filter((s) => s.jeHost)).toHaveLength(1);
   });
-});
 
-describe("assignSeats — chyby", () => {
-  it("odmítne špatný počet hráčů", () => {
-    expect(() => assignSeats("1v1", [p("A", 1)])).toThrow(/2 hráče/);
-    expect(() => assignSeats("coop_kings_2v2", [p("A", 1), p("B", 1)])).toThrow(/4 hráče/);
-  });
-
-  it("odmítne stejného hráče dvakrát", () => {
-    expect(() => assignSeats("1v1", [p("A", 1), p("A", 1)])).toThrow(/dvakrát/);
+  it("neplatnou sestavu odmítne českou větou", () => {
+    expect(() => sestavSedadla([h("A", 1, 1)], her({}))).toThrow(/aspoň 2/);
+    expect(() => sestavSedadla([h("A", 1, 1), h("A", 2, 2)], her({}))).toThrow(/dvakrát/);
+    expect(() => sestavSedadla([h("A", 1, 1), h("B", 2, 1)], her({}))).toThrow(/stejném týmu/);
   });
 });
 

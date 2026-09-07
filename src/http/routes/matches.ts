@@ -18,10 +18,48 @@ import { najdiLobby } from "../../matches/hledaniLobby.js";
 import { nastavFaziLobby } from "../../realtime/fazeLobby.js";
 import { MATCH_STATES, PrechodChyba, type MatchState } from "../../matches/stateMachine.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
-import type { Format, HledaniLobbyVysledek, Tym } from "../../shared/types.js";
+import { zkontrolujSestavu } from "../../shared/sestava.js";
+import { stejnyVitez, strany } from "../../shared/strany.js";
+import { BARVY, TYMY, type Barva, type HledaniLobbyVysledek, type SestavaVstup, type Tym, type Vitez } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 
-const FORMATY: readonly Format[] = ["1v1", "coop_kings_2v2"];
+/**
+ * Tělo požadavku na zápas: pole řádků {steamId, tym, barva} v pořadí slotů.
+ * Tvar se kontroluje tady, pravidla sestavy (počty, barvy, týmy) ve sdílené
+ * zkontrolujSestavu, kterou používá i režie.
+ */
+function prectiSestavu(telo: unknown): SestavaVstup[] {
+  const sestava = (telo as { sestava?: unknown }).sestava;
+  if (!Array.isArray(sestava)) throw new HttpError(400, "Chybí sestava zápasu.");
+  const vysledek: SestavaVstup[] = [];
+  for (const radek of sestava) {
+    if (typeof radek !== "object" || radek === null) throw new HttpError(400, "Řádek sestavy není objekt.");
+    const { steamId, tym, barva } = radek as { steamId?: unknown; tym?: unknown; barva?: unknown };
+    if (typeof steamId !== "string" || steamId === "") throw new HttpError(400, "Řádek sestavy nemá hráče.");
+    if (typeof tym !== "number" || !TYMY.includes(tym as Tym)) throw new HttpError(400, "Tým musí být – nebo 1 až 4.");
+    if (typeof barva !== "number" || !BARVY.includes(barva as Barva)) throw new HttpError(400, "Barva musí být 1 až 8.");
+    vysledek.push({ steamId, tym: tym as Tym, barva: barva as Barva });
+  }
+  const chyba = zkontrolujSestavu(vysledek);
+  if (chyba) throw new HttpError(400, chyba);
+  return vysledek;
+}
+
+/** Vítěz z těla: {tym: 1..4} nebo {steamId}. Musí odpovídat některé straně zápasu. */
+function prectiViteze(telo: unknown, ucastnici: Parameters<typeof strany>[0]): Vitez {
+  const vitez = (telo as { vitez?: unknown }).vitez;
+  let kandidat: Vitez | null = null;
+  if (typeof vitez === "object" && vitez !== null) {
+    const v = vitez as { tym?: unknown; steamId?: unknown };
+    if (typeof v.tym === "number" && TYMY.includes(v.tym as Tym) && v.tym !== 0) kandidat = { tym: v.tym as Tym };
+    else if (typeof v.steamId === "string" && v.steamId !== "") kandidat = { steamId: v.steamId };
+  }
+  if (!kandidat) throw new HttpError(400, "Vítěz je tým (1 až 4), nebo hráč bez týmu.");
+  if (!strany(ucastnici).some((s) => stejnyVitez(s.vitez, kandidat))) {
+    throw new HttpError(400, "Takovou stranu zápas nemá.");
+  }
+  return kandidat;
+}
 
 const CHYBA_ODKAZU: Record<LobbyUriError, string> = {
   prazdne: "Vlož odkaz z tlačítka Copy ve hře.",
@@ -70,15 +108,9 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   app.post("/api/akce/:id/zapas", async (request) => {
     await requireAdmin(request);
     const akceId = requireId(request);
-    const { format, steamIds } = request.body as { format?: unknown; steamIds?: unknown };
-    if (typeof format !== "string" || !FORMATY.includes(format as Format)) {
-      throw new HttpError(400, "Neznámý formát zápasu.");
-    }
-    if (!Array.isArray(steamIds) || steamIds.some((s) => typeof s !== "string")) {
-      throw new HttpError(400, "Chybí seznam hráčů.");
-    }
+    const sestava = prectiSestavu(request.body);
     try {
-      const zapas = await createZapas(akceId, format as Format, steamIds as string[]);
+      const zapas = await createZapas(akceId, sestava);
       await broadcastAkce();
       // Klientovi stačí ID — heslo, číslo lobby i potvrzení hosta jsou tajemství,
       // co proudí jen redigovaným SSE kanálem, nikdy syrová v odpovědi na admin akci.
@@ -199,10 +231,9 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   app.post("/api/zapas/:id/vysledek", async (request) => {
     await requireAdmin(request);
     const zapasId = requireId(request);
-    const { viteznyTym } = request.body as { viteznyTym?: unknown };
-    if (viteznyTym !== 1 && viteznyTym !== 2) throw new HttpError(400, "Vítězný tým je 1 nebo 2.");
-    const { zapas } = await nactiNeboSelzi(zapasId);
-    await setVysledek(zapasId, viteznyTym as Tym);
+    const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
+    const vitez = prectiViteze(request.body, ucastnici);
+    await setVysledek(zapasId, vitez);
     if (zapas.stav !== "dohrano") await prejdi(zapasId, "dohrano");
     await broadcastAkce();
     return { ok: true };

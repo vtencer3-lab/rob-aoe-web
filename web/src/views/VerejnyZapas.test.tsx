@@ -10,6 +10,7 @@ const u = (steamId: string, alias: string | null, tym: 1 | 2, steamName: string 
   tym,
   barva: tym,
   jeHost: false,
+  poradi: 0,
   kliknulPripojit: null,
 });
 
@@ -18,14 +19,13 @@ const u = (steamId: string, alias: string | null, tym: 1 | 2, steamName: string 
 const zaslepeny: ZapasView = {
   id: 1,
   poradi: 3,
-  format: "1v1",
   stav: "bezi",
   nazevLobby: "ROB-03",
   heslo: "",
   lobbyId: null,
   joinUri: null,
   spectatorUri: null,
-  viteznyTym: null,
+  vitez: null,
   ucastnici: [u("a", "Trokner", 1), u("b", "TibbarZmr", 2)],
 };
 
@@ -39,14 +39,13 @@ it("ukáže pořadí, formát a kdo proti komu", () => {
 });
 
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
-  render(<VerejnyZapas zapas={{ ...zaslepeny, stav: "dohrano", viteznyTym: 2 }} />);
+  render(<VerejnyZapas zapas={{ ...zaslepeny, stav: "dohrano", vitez: { tym: 2 } }} />);
   expect(screen.getByTestId("verejny-zapas")).toHaveTextContent(/vyhrál (červený tým|\w+)/);
 });
 
 it("spojí spoluhráče do jedné strany", () => {
   const coop: ZapasView = {
     ...zaslepeny,
-    format: "coop_kings_2v2",
     ucastnici: [u("a", "Trokner", 1), u("b", "Pepa", 1), u("c", "Marek", 2), u("d", "Lukas", 2)],
   };
   render(<VerejnyZapas zapas={coop} />);
@@ -74,19 +73,19 @@ it("neukáže heslo ani číslo lobby, ani když v datech jsou", () => {
 });
 
 it("hráči, který zápas hrál, řekne, jak dopadl", () => {
-  const dohrany = { ...zaslepeny, stav: "dohrano", viteznyTym: 1 as const };
+  const dohrany = { ...zaslepeny, stav: "dohrano", vitez: { tym: 1 } as const };
   render(<VerejnyZapas zapas={dohrany} ja="b" />);
   expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("Prohrál jsi");
 });
 
 it("vítězi to řekne taky", () => {
-  const dohrany = { ...zaslepeny, stav: "dohrano", viteznyTym: 1 as const };
+  const dohrany = { ...zaslepeny, stav: "dohrano", vitez: { tym: 1 } as const };
   render(<VerejnyZapas zapas={dohrany} ja="a" />);
   expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("Vyhrál jsi");
 });
 
 it("divákovi mimo zápas nic osobního neříká", () => {
-  const dohrany = { ...zaslepeny, stav: "dohrano", viteznyTym: 1 as const };
+  const dohrany = { ...zaslepeny, stav: "dohrano", vitez: { tym: 1 } as const };
   render(<VerejnyZapas zapas={dohrany} ja="nekdo-jiny" />);
   const radek = screen.getByTestId("verejny-zapas");
   expect(radek).not.toHaveTextContent(/vyhrál jsi/i);

@@ -88,11 +88,9 @@ export function App() {
           {me?.jeAdmin && stav ? (
             <Rezie
               stav={stav}
-              onVytvoritZapas={(format, steamIds) =>
-                void hlidej(() => api.vytvoritZapas(akce.id, format, steamIds))
-              }
+              onVytvoritZapas={(sestava) => void hlidej(() => api.vytvoritZapas(akce.id, sestava))}
               onStav={(zapasId, novyStav) => void hlidej(() => api.zapasStav(zapasId, novyStav))}
-              onVysledek={(zapasId, viteznyTym) => void hlidej(() => api.vysledek(zapasId, viteznyTym))}
+              onVysledek={(zapasId, vitez) => void hlidej(() => api.vysledek(zapasId, vitez))}
               onHost={(zapasId, steamId) => void hlidej(() => api.zmenitHosta(zapasId, steamId))}
             />
           ) : null}

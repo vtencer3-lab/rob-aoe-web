@@ -98,6 +98,7 @@ Backend, `src/`:
 | `aoe/lobbyUri.ts` | rozbor a stavba `aoe2de://` — malé a důležité |
 | `shared/types.ts` | typy sdílené s frontendem, importuje se přímo z `web/` |
 | `shared/verze.ts` | verze webu; mění se jen přes `npm run verze` |
+| `shared/sestava.ts`, `shared/strany.ts` | pravidla sestavy (barvy, týmy, Coop Kings) a strany zápasu — jedno místo pro server i režii |
 
 Frontend, `web/src/`:
 
@@ -105,7 +106,8 @@ Frontend, `web/src/`:
 |---|---|
 | `App.tsx` | rozhoduje, kdo vidí kterou obrazovku |
 | `useAkceStav.ts` | SSE a záložní dotazování — **přečti si komentář nahoře** |
-| `views/Rezie.tsx` | panel režie: skládání zápasů, Spectate, výsledky |
+| `views/Rezie.tsx` | panel režie: zápasy, Spectate, výsledky po stranách |
+| `views/Skladani.tsx` | skládání sestavy: výběr hráčů, barva a tým jako ve hře, pořadí slotů přetažením |
 | `views/ObrazovkaHosta.tsx` | obrazovka hosta se zrcadlem herního dialogu |
 | `views/KartaHrace.tsx` | karta hráče s jeho barvou a odkazem |
 | `views/HledaniLobby.tsx` | tlačítko „Vyhledat hru“ a hláška k němu |

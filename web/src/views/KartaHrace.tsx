@@ -1,5 +1,5 @@
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
-import { jmenoHrace, mujUcastnik, souperi, spoluhraci } from "../zapas.js";
+import { jmenoHrace, mujUcastnik, popisFormatu, popisTymu, sdiliCivilizaci, souperi } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
 
 interface Props {
@@ -12,26 +12,24 @@ interface Props {
 export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
   const muj = mujUcastnik(zapas, ja);
   if (!muj) return null;
-
-  const parta = spoluhraci(zapas, ja);
+  // Civilizaci sdílí, kdo má stejnou barvu (Coop Kings) — ne kdo je ve stejném týmu.
+  const parta = sdiliCivilizaci(zapas.ucastnici, ja);
   const proti = souperi(zapas, ja);
   const barva = BARVA_NAZEV[muj.barva];
 
   return (
     <section className={`karta barva-${muj.barva}`}>
       <header>
-        Zápas #{zapas.poradi} · {zapas.format === "1v1" ? "1v1" : "Coop Kings"}
+        Zápas #{zapas.poradi} · {popisFormatu(zapas.ucastnici)}
       </header>
-
       <div className="hero">
         <strong data-testid="moje-barva">{barva}</strong>
         <span>
-          tým <span data-testid="muj-tym">{muj.tym}</span>
+          <span data-testid="muj-tym">{popisTymu(muj)}</span>
         </span>
       </div>
-
       <p>
-        V lobby si nastav <strong>{barva} barvu</strong> a <strong>tým {muj.tym}</strong>.
+        V lobby si nastav <strong>{barva} barvu</strong> a <strong>{popisTymu(muj)}</strong>.
       </p>
       {parta.length > 0 ? (
         <p>
@@ -39,7 +37,6 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
           musíte mít oba stejnou barvu.
         </p>
       ) : null}
-
       {zapas.joinUri ? (
         <a className="cta" href={zapas.joinUri} onClick={() => onPripojit(zapas.id)}>
           Připojit se do hry
@@ -52,7 +49,6 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
           <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} automaticky />
         </>
       )}
-
       <footer>
         <p>Proti vám: {proti.map(jmenoHrace).join(", ")}</p>
         {/* Bez odkazu nemá smysl ptát se, jestli nejde. Věta říká, co

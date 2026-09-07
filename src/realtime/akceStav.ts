@@ -30,7 +30,6 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
   return {
     id: zapas.id,
     poradi: zapas.poradi,
-    format: zapas.format,
     stav: zapas.stav,
     nazevLobby: zapas.nazevLobby,
     heslo: zapas.heslo,
@@ -39,7 +38,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
     joinUri: zapas.lobbyId ? joinUri(zapas.lobbyId) : null,
     spectatorUri: zapas.lobbyId ? spectatorUri(zapas.lobbyId) : null,
     fazeLobby: fazeLobbyPro(zapas.lobbyId),
-    viteznyTym: zapas.viteznyTym,
+    vitez: zapas.vitez,
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,
       alias: u.alias,
@@ -47,6 +46,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
       tym: u.tym,
       barva: u.barva,
       jeHost: u.jeHost,
+      poradi: u.poradi,
       kliknulPripojit: u.kliknulPripojit?.toISOString() ?? null,
     })),
   };
