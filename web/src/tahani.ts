@@ -39,20 +39,25 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
   // FLIP: po každém překreslení porovnat, kde řádky byly a kde jsou, a
   // rozdíl odanimovat. Tažený řádek se neanimuje — jen se mu přepočítá
   // výchozí bod, aby zůstal pod kurzorem.
+  //
+  // Měří se vůči rodiči, ne vůči oknu: souřadnice vůči oknu se mění při
+  // každém odrolování a první překreslení po něm (třeba najetí na jméno)
+  // pak „animovalo“ celý seznam z místa, kde byl před rolováním. Animuje
+  // se jen během tažení — jindy se poloha jen zapamatuje.
   useLayoutEffect(() => {
     const t = tazeny.current;
     const nove = new Map<string, number>();
     for (const [id, el] of prvky.current) {
-      if (!el.isConnected) continue;
+      if (!el.isConnected || !el.parentElement) continue;
       const jeTazeny = t?.el === el;
       const puvodniTransform = el.style.transform;
       if (jeTazeny) el.style.transform = "";
-      const top = el.getBoundingClientRect().top;
+      const top = el.getBoundingClientRect().top - el.parentElement.getBoundingClientRect().top;
       if (jeTazeny) el.style.transform = puvodniTransform;
       nove.set(id, top);
       const drive = predchoziTop.current.get(id);
-      if (drive === undefined || drive === top) continue;
-      if (jeTazeny && t) {
+      if (!t || drive === undefined || drive === top) continue;
+      if (jeTazeny) {
         t.vychoziY += top - drive;
         el.style.transform = `translateY(${t.posledniY - t.vychoziY}px)`;
         continue;
@@ -128,6 +133,9 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     },
     onPointerUp: poloz,
     onPointerCancel: poloz,
+    // Prohlížeč může zachycení kurzoru vzít (jiné okno, gesto) — řádek
+    // nesmí zůstat viset v ruce.
+    onLostPointerCapture: poloz,
 
     // Záloha: HTML5 drag & drop (testy, prohlížeče bez pointer událostí).
     onDragStart: () => {
