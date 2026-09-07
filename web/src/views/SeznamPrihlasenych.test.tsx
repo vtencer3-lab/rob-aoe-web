@@ -85,3 +85,15 @@ it("hráči bez režie hlavičky klikat nemůžou", () => {
   render(<SeznamPrihlasenych prihlaseni={[hrac()]} />);
   expect(screen.queryByRole("button", { name: /1v1 elo/i })).not.toBeInTheDocument();
 });
+
+// Kdo právě hraje běžící zápas, má v režii zkřížené meče — ať Rob neskládá
+// další zápas z lidí, kteří jsou ve hře.
+it("v režii označí mečem hráče, kteří právě hrají", async () => {
+  const { useSkladani } = await import("../skladani.js");
+  const { renderHook } = await import("@testing-library/react");
+  const hraci = [hrac({ steamId: "a", alias: "Hraje" }), hrac({ steamId: "b", alias: "Volny" })];
+  const { result } = renderHook(() => useSkladani(hraci));
+  render(<SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} vZapase={new Map([["a", 3]])} />);
+  expect(screen.getByRole("img", { name: /právě hraje zápas #3/i })).toBeInTheDocument();
+  expect(screen.getAllByRole("img", { name: /právě hraje/i })).toHaveLength(1);
+});

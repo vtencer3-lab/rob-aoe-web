@@ -50,6 +50,11 @@ export function App() {
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
+  // Kdo je v běžícím zápase — v tabulce přihlášených dostane zkřížené meče.
+  const vZapase = new Map<string, number>();
+  for (const z of stav?.zapasy ?? []) {
+    if (z.stav === "bezi") for (const u of z.ucastnici) vZapase.set(u.steamId, z.poradi);
+  }
 
   // Rozpracovaná sestava žije u akce na serveru a přes SSE ji vidí všichni
   // admini; tady se jen ukazuje a každé kliknutí odchází zpátky.
@@ -166,7 +171,7 @@ export function App() {
             </button>
           ) : null}
           <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
-          <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} skladani={admin ? skladani : undefined} />
+          <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} skladani={admin ? skladani : undefined} vZapase={vZapase} />
           {admin && stav ? (
             <Rezie
               stav={stav}

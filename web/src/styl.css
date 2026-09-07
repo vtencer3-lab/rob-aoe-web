@@ -506,3 +506,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam th button.razeni:hover, .seznam th button.razeni.aktivni { color: var(--akcent); }
 .seznam th .sipka-razeni { font-size: 0.7rem; opacity: 0.6; }
 .seznam th button.razeni.aktivni .sipka-razeni { opacity: 1; }
+
+/* Zkřížené meče u hráče, který právě hraje běžící zápas. */
+.seznam td.hraje { width: 2rem; text-align: center; }
+.seznam .mece { font-size: 1.2rem; color: var(--akcent); }

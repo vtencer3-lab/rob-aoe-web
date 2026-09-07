@@ -11,6 +11,12 @@ interface Props {
    * řádky jdou přetahovat a vybraní z ní odcházejí do panelu sestavy.
    */
   skladani?: Skladani;
+  /**
+   * Jen pro režii: kdo právě hraje běžící zápas (steamId → číslo zápasu).
+   * U takového hráče je v posledním sloupci ikona zkřížených mečů, ať Rob
+   * nesestavuje další zápas z lidí, kteří jsou zrovna ve hře.
+   */
+  vZapase?: Map<string, number>;
 }
 
 type Sloupec = "elo1v1" | "eloNejvyssi" | "odehranoHer" | "steamHodiny";
@@ -59,7 +65,7 @@ export function serad(hraci: PlayerView[], razeni: Razeni | null): PlayerView[] 
   });
 }
 
-export function SeznamPrihlasenych({ prihlaseni, skladani }: Props) {
+export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
   // Řazení je jen pro režii; hráči vidí pořadí přihlášení.
@@ -111,6 +117,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani }: Props) {
               </th>
             );
           })}
+          {skladani ? <th aria-label="Právě hraje" /> : null}
         </tr>
       </thead>
       <tbody>
@@ -149,6 +156,15 @@ export function SeznamPrihlasenych({ prihlaseni, skladani }: Props) {
               {/* Bez avataru se Steamu nikdo neptal (chybí klíč, nebo dotaz
                   selhal) — pak NULL neznamená skrytý profil, ale „nevíme“. */}
               <td>{hrac.steamHodiny !== null || hrac.avatarUrl ? formatHodiny(hrac.steamHodiny) : "—"}</td>
+              {skladani ? (
+                <td className="hraje">
+                  {vZapase?.has(hrac.steamId) ? (
+                    <span className="mece" role="img" aria-label={`Právě hraje zápas #${vZapase.get(hrac.steamId)}`} title={`Právě hraje zápas #${vZapase.get(hrac.steamId)}`}>
+                      ⚔
+                    </span>
+                  ) : null}
+                </td>
+              ) : null}
             </tr>
           );
         })}
