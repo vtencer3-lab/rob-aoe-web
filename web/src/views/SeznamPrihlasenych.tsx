@@ -3,6 +3,7 @@ import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
 import { useTahani } from "../tahani.js";
+import { StatistikyHrace } from "./StatistikyHrace.js";
 
 interface Props {
   prihlaseni: PlayerView[];
@@ -68,6 +69,8 @@ export function serad(hraci: PlayerView[], razeni: Razeni | null): PlayerView[] 
 export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
+  // Najetí na jméno ukáže kartu se statistikami v rohu okna.
+  const [nahled, setNahled] = useState<PlayerView | null>(null);
   // Řazení je jen pro režii; hráči vidí pořadí přihlášení.
   const radky = skladani ? serad(skladani.nevybrani, razeni) : prihlaseni;
 
@@ -142,8 +145,18 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
                 </td>
               ) : null}
               <td>
-                {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={20} height={20} /> : null}
-                {jmeno}
+                <span
+                  className="jmeno-hrace"
+                  data-testid="jmeno-hrace"
+                  onMouseEnter={() => setNahled(hrac)}
+                  onMouseLeave={() => setNahled(null)}
+                  onFocus={() => setNahled(hrac)}
+                  onBlur={() => setNahled(null)}
+                  tabIndex={0}
+                >
+                  {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={20} height={20} /> : null}
+                  {jmeno}
+                </span>
                 {hrac.statyChyba ? (
                   <span className="varovani" title={hrac.statyChyba}>
                     ⚠
@@ -169,6 +182,15 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
           );
         })}
       </tbody>
+      {nahled ? (
+        <tfoot>
+          <tr>
+            <td colSpan={99} style={{ padding: 0, border: "none" }}>
+              <StatistikyHrace hrac={nahled} />
+            </td>
+          </tr>
+        </tfoot>
+      ) : null}
     </table>
   );
 }

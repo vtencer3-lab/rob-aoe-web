@@ -50,6 +50,7 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
       eloNejvyssi: zebricek?.eloNejvyssi ?? null,
       odehranoHer: zebricek?.odehranoHer ?? null,
       posledniZapas: zebricek?.posledniZapas ?? null,
+      zebricky: zebricek?.zebricky ?? null,
       steamName: profil?.personaName ?? null,
       avatarUrl: profil?.avatarUrl ?? null,
       chyba: chyby.length > 0 ? chyby.join("; ") : null,

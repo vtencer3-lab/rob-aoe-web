@@ -97,3 +97,22 @@ it("v režii označí mečem hráče, kteří právě hrají", async () => {
   expect(screen.getByRole("img", { name: /právě hraje zápas #3/i })).toBeInTheDocument();
   expect(screen.getAllByRole("img", { name: /právě hraje/i })).toHaveLength(1);
 });
+
+// Najetí na jméno ukáže kartu se statistikami jako ve hře: všech osm
+// žebříčků, u nehraných „---“ a nuly.
+it("po najetí na jméno ukáže kartu se všemi žebříčky", () => {
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ zebricky: [{ id: 4, rating: 953, nejvyssi: 993, poradi: 43389, vyhry: 7, prohry: 10 }] })]} />);
+  expect(screen.queryByTestId("staty-hrace")).not.toBeInTheDocument();
+  fireEvent.mouseEnter(screen.getByTestId("jmeno-hrace"));
+  const karta = screen.getByTestId("staty-hrace");
+  expect(karta).toHaveTextContent("TenceR");
+  const radky = karta.querySelectorAll("tbody tr");
+  expect(radky).toHaveLength(8);
+  expect(radky[1]).toHaveTextContent("Team Random Map");
+  expect(radky[1]).toHaveTextContent("953");
+  expect(radky[1]).toHaveTextContent("#43389");
+  expect(radky[1]).toHaveTextContent("41%");
+  expect(radky[0]).toHaveTextContent("---");
+  fireEvent.mouseLeave(screen.getByTestId("jmeno-hrace"));
+  expect(screen.queryByTestId("staty-hrace")).not.toBeInTheDocument();
+});

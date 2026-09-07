@@ -8,6 +8,7 @@ const ZEBRICEK = {
   elo1v1: 1847,
   eloNejvyssi: 1901,
   odehranoHer: 512,
+  zebricky: [],
   posledniZapas: new Date("2026-08-30T10:00:00Z"),
 };
 

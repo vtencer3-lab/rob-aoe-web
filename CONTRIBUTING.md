@@ -117,6 +117,7 @@ Backend, `src/`:
 | `shared/sestava.ts`, `shared/strany.ts` | pravidla sestavy (barvy, týmy, civilizace, Coop Kings) a strany zápasu — jedno místo pro server i režii |
 | `shared/lobbyKontrola.ts` | očekávané nastavení lobby, číselníky hodnot a `zkontrolujLobby()` — řádky ve čtyřech stavech (ok / spatne / varovani / jedno) |
 | `shared/mapy.ts`, `shared/civilizace.ts` | tabulky id → název vygenerované z jazykového souboru hry (viz „Data ze hry“) |
+| `shared/zebricky.ts` | seznam žebříčků hry (id, název, pořadí jako v lobby) a procento výher; data se plní při obnově statistik (`players/refresh.ts`, sloupec `player.zebricky`) |
 
 Frontend, `web/src/`:
 
@@ -125,6 +126,7 @@ Frontend, `web/src/`:
 | `App.tsx` | rozhoduje, kdo vidí kterou obrazovku |
 | `useAkceStav.ts` | SSE a záložní dotazování — **přečti si komentář nahoře** |
 | `views/SpravaAkce.tsx` | panel akce jako herní lobby: název + Ukončit v záhlaví, vlevo sestava (children), vpravo `NastaveniLobby.tsx` (jako herní Game Settings, „–“ = je to jedno; každá změna se propíše hned, „Uložit“ dělá snímek) |
+| `views/StatistikyHrace.tsx` | karta se všemi žebříčky hráče v pravém dolním rohu po najetí na jméno v tabulce přihlášených |
 | `views/Prepinac.tsx` | přepínač s knoflíkem (Admin/User View v záhlaví, Debug u verze) — jen pro adminy, stav v localStorage |
 | `views/Rezie.tsx` | panel režie: zápasy, Spectate, kontrola lobby, výsledky po stranách, odebrání zrušeného zápasu |
 | `views/Skladani.tsx`, `skladani.ts`, `tahani.ts` | skládání sestavy: barva a tým jako ve hře, civilizace přes `VyberCivilizace.tsx` (erby z `civErby.ts`), pořadí slotů přetažením. Rozpracovaná sestava je **na serveru u akce** (`akce.skladani`, `PUT /api/akce/:id/skladani`) a přes SSE ji vidí všichni admini; `useSkladani` drží lokální kopii jen do potvrzení serverem |

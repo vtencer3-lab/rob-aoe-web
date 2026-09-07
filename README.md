@@ -275,6 +275,11 @@ propíše hned** (na server a přes SSE všem, kdo mají stránku otevřenou);
 „Uložit nastavení lobby“ jen udělá snímek, ke kterému se „Načíst uložené“
 vrátí, „Reset nastavení“ nasadí výchozí hodnoty.
 
+Najetím na jméno v tabulce přihlášených se v pravém dolním rohu ukáže
+karta se statistikami jako ve hře: všech osm žebříčků s ratingem, pořadím,
+výhrami, prohrami a procentem výher. Plní se při obnově statistik (po
+přihlášení a pak nejvýš jednou za 15 minut).
+
 **Panel akce je rozložený jako herní lobby:** název akce v záhlaví (vpravo
 „Ukončit akci“), vlevo rozpracovaná sestava, vpravo nastavení. Rozpracovaná
 sestava žije u akce na serveru (`PUT /api/akce/:id/skladani`), takže dva

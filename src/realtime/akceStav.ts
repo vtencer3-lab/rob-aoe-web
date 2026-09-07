@@ -20,6 +20,7 @@ export function playerView(hrac: PlayerRow): PlayerView {
     posledniZapas: hrac.posledniZapas?.toISOString() ?? null,
     statyStazenyV: hrac.statyStazenyV?.toISOString() ?? null,
     statyChyba: hrac.statyChyba,
+    zebricky: hrac.zebricky,
   };
 }
 

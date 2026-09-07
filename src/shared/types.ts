@@ -1,3 +1,5 @@
+import type { ZebricekRadek } from "./zebricky.js";
+
 /** Osm barev hráčů přesně v pořadí, v jakém je nabízí hra. */
 export type Barva = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export const BARVY: readonly Barva[] = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -45,6 +47,8 @@ export interface PlayerView {
   posledniZapas: string | null;
   statyStazenyV: string | null;
   statyChyba: string | null;
+  /** Všechny žebříčky pro kartu se statistikami; chybí ve starších snímcích. */
+  zebricky?: ZebricekRadek[] | null;
 }
 
 export interface AkceView {

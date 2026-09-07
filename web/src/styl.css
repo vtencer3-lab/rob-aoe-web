@@ -510,3 +510,23 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Zkřížené meče u hráče, který právě hraje běžící zápas. */
 .seznam td.hraje { width: 2rem; text-align: center; }
 .seznam .mece { font-size: 1.2rem; color: var(--akcent); }
+
+/* Karta se statistikami hráče v pravém dolním rohu, jako ve hře po najetí
+   na jméno v lobby. */
+.staty-hrace {
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 50;
+  min-width: 26rem; max-width: calc(100vw - 2rem);
+  background: #1f1a14; border: 1px solid var(--akcent); border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); padding: 0.8rem 1rem;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.staty-hrace header { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+.staty-hrace header img { border: 1px solid var(--akcent); border-radius: 3px; }
+.staty-hrace header strong { font-size: 1.25rem; font-weight: 400; letter-spacing: 0.02em; }
+.staty-hrace table { width: 100%; border-collapse: collapse; font-variant: small-caps; }
+.staty-hrace th { text-align: left; font-weight: 400; font-size: 1rem; color: var(--text); border-bottom: 1px solid var(--akcent); padding: 0.15rem 0.5rem; }
+.staty-hrace th:not(:first-child), .staty-hrace td:not(:first-child) { text-align: center; }
+.staty-hrace td { padding: 0.15rem 0.5rem; font-size: 1rem; color: var(--text); }
+.staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
+.staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
+.seznam td .jmeno-hrace { cursor: help; }
