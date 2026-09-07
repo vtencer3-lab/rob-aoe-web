@@ -435,6 +435,8 @@ function inzerat(lobbyId: string, hostSteamId: string) {
     maHeslo: true,
     povolujeDivaky: true,
     clenoveSteamIds: [hostSteamId],
+    sloty: [{ steamId: hostSteamId, barva: 1 as const, tym: 1 as const, pripraven: true }],
+    nastaveni: { mapaId: 10875, velikost: 120, rychlost: 2 as const, populace: 200, vitezstvi: 1 as const, cheaty: false },
   };
 }
 
@@ -498,5 +500,57 @@ it("výpadek seznamu ze hry je 502 se srozumitelnou větou, ne 500", async () =>
   });
   expect(res.statusCode).toBe(502);
   expect(res.json().chyba).toMatch(/ručně/);
+  await app.close();
+});
+
+// „Zkontrolovat lobby“: porovnání lobby ze hry se sestavou a očekáváním akce.
+it("kontrola lobby vrátí fajfky a křížky a nové číslo lobby si uloží", async () => {
+  const app = buildServer({
+    nactiInzeraty: async () => [
+      {
+        ...inzerat("504987862", HRACI[1]!),
+        sloty: [{ steamId: HRACI[1]!, barva: 2, tym: 2, pripraven: true }],
+        nastaveni: { mapaId: 10878, velikost: 120, rychlost: 2, populace: 200, vitezstvi: 1, cheaty: false },
+      },
+    ],
+  });
+  const zapas = await vytvorZapas(app);
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { mapaId: 10875, populace: 200 } });
+
+  const res = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: hracSid } });
+  expect(res.statusCode).toBe(200);
+  const telo = res.json() as { nalezeno: boolean; kontroly: { klic: string; ok: boolean; text: string }[] };
+  expect(telo.nalezeno).toBe(true);
+  const podle = Object.fromEntries(telo.kontroly.map((k) => [k.klic, k]));
+  expect(podle["hraci"]!.ok).toBe(false);
+  expect(podle["mapa"]).toMatchObject({ ok: false, text: /Black Forest, má být Arabia/ });
+  expect(podle["velikost"]!.ok).toBe(true);
+  expect((await getZapas(zapas.id))!.zapas.lobbyId).toBe("504987862");
+  await app.close();
+});
+
+it("kontrola bez lobby v seznamu vrátí nalezeno=false, cizí hráč 403", async () => {
+  const app = buildServer({ nactiInzeraty: async () => [] });
+  const zapas = await vytvorZapas(app);
+  const res = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: robSid } });
+  expect(res.json()).toEqual({ nalezeno: false, kontroly: [] });
+
+  const cizi = "76561198000000099";
+  await upsertPlayer(cizi, false);
+  const ciziSid = await createSession(cizi);
+  const zakazano = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: ciziSid } });
+  expect(zakazano.statusCode).toBe(403);
+  await app.close();
+});
+
+it("nastavení lobby smí jen Rob a ukládá jen známé klíče", async () => {
+  const app = buildServer();
+  const zakazano = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: hracSid }, payload: { populace: 100 } });
+  expect(zakazano.statusCode).toBe(403);
+  const res = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { populace: 250, rychlost: 3, nesmysl: 1, mapaId: null } });
+  expect(res.statusCode).toBe(200);
+  expect(res.json().akce.nastaveniLobby).toEqual({ populace: 250, rychlost: 3, mapaId: null });
+  const prazdne = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { nesmysl: 1 } });
+  expect(prazdne.statusCode).toBe(400);
   await app.close();
 });

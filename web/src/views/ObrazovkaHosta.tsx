@@ -1,7 +1,9 @@
 import { useState } from "react";
+import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik, popisTymu } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
+import { KontrolaLobby } from "./KontrolaLobby.js";
 import { Kopirovatelne } from "./Kopirovatelne.js";
 /**
  * Výřez dialogu Create Lobby ze hry. Importuje se, aby mu Vite dal do jména
@@ -15,10 +17,14 @@ interface Props {
   ja: string;
   onVlozitOdkaz: (zapasId: number, odkaz: string) => Promise<unknown> | void;
   onHledatLobby: (zapasId: number) => Promise<HledaniLobbyVysledek>;
+  onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
 }
 
-export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby }: Props) {
+export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby, onKontrolaLobby }: Props) {
   const [odkaz, setOdkaz] = useState("");
+  // Po kliknutí na „Spustit hru“ host lobby zakládá právě teď: hledání zrychlí
+  // ze 4 s na 2 s, ať hráči dostanou odkaz, sotva lobby vznikne.
+  const [hraSpustena, setHraSpustena] = useState(false);
   // Chyba se drží tady, ne v App: host ji čte uprostřed streamu a nahoru na
   // začátek stránky se nedívá. Dvakrát skončilo tím, že odmítnutý odkaz nikdo
   // neviděl a host čekal, až se lidi připojí.
@@ -55,7 +61,7 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby }: Prop
           popředí), a jakmile web zná číslo lobby, druhý odkaz ho do ní vrátí,
           kdyby z ní vypadl. */}
       <div className="ovladani hostovi">
-        <a className="cta" href="steam://run/813780" data-testid="spustit-hru">
+        <a className="cta" href="steam://run/813780" data-testid="spustit-hru" onClick={() => setHraSpustena(true)}>
           Spustit hru
         </a>
         {zapas.joinUri ? (
@@ -75,11 +81,15 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby }: Prop
         onHledat={onHledatLobby}
         popisek="Vyhledat teď"
         automaticky={zapas.lobbyId === null}
+        intervalMs={hraSpustena ? 2_000 : 4_000}
       />
       {zapas.lobbyId ? (
         <p className="potvrzeno" data-testid="lobby-nalezena">
           Web zná číslo tvojí lobby: <strong>{zapas.lobbyId}</strong>. Hráči už mají odkaz.
         </p>
+      ) : null}
+      {zapas.lobbyId ? (
+        <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} />
       ) : null}
       <details className="zaloha-odkaz">
         <summary>Nebo vlož odkaz ručně (tlačítko Copy v lobby)</summary>

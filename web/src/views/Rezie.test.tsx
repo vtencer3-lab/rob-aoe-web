@@ -39,6 +39,7 @@ const props = {
   onStav: vi.fn(),
   onVysledek: vi.fn(),
   onHost: vi.fn(),
+  onKontrolaLobby: vi.fn().mockResolvedValue({ nalezeno: false, kontroly: [] }),
 };
 
 it("stav účastníka pojmenuje jako kliknutí, ne jako přítomnost v lobby", () => {

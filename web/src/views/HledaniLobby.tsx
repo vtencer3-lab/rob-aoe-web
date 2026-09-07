@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { HledaniLobbyVysledek } from "../../../src/shared/types.js";
 
 /** Jak často se web sám ptá, dokud lobby nenajde. Server má stejně dlouhou cache. */
-export const INTERVAL_HLEDANI_MS = 5_000;
+export const INTERVAL_HLEDANI_MS = 4_000;
 
 interface Props {
   zapasId: number;

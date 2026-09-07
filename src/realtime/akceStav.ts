@@ -57,7 +57,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   if (!akce) return { akce: null, prihlaseni: [], zapasy: [] };
   const prihlaseni = await listSignups(akce.id);
   return {
-    akce: { id: akce.id, nazev: akce.nazev, stav: akce.stav },
+    akce: { id: akce.id, nazev: akce.nazev, stav: akce.stav, nastaveniLobby: akce.nastaveniLobby },
     prihlaseni: prihlaseni.map(playerView),
     zapasy: (await listZapasy(akce.id)).map(zapasView),
   };

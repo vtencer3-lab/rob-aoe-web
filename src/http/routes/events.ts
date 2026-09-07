@@ -3,6 +3,7 @@ import {
   createAkce,
   getAktivniAkce,
   setAkceStav,
+  setNastaveniLobby,
   signUp,
   withdraw,
   type AkceStav,
@@ -11,6 +12,7 @@ import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
+import { prectiNastaveniLobby } from "./kontrolaLobby.js";
 
 const STAVY: readonly AkceStav[] = ["bezi", "konec"];
 
@@ -52,6 +54,16 @@ export function registerEventRoutes(app: FastifyInstance): void {
       throw new HttpError(400, "Neznámý stav akce.");
     }
     const akce = await setAkceStav(akceId, stav as AkceStav);
+    await broadcastAkce();
+    return { akce };
+  });
+
+  // Očekávané nastavení lobby pro „Zkontrolovat lobby“ — Rob si ho nastaví
+  // jednou za večer; kontrola zápasů s ním pak porovnává, co host naklikal.
+  app.post("/api/akce/:id/nastaveni-lobby", async (request) => {
+    await requireAdmin(request);
+    const akceId = requireId(request);
+    const akce = await setNastaveniLobby(akceId, prectiNastaveniLobby(request.body));
     await broadcastAkce();
     return { akce };
   });

@@ -1,3 +1,4 @@
+import type { KontrolaLobbyVysledek, NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import type { AkceStavPayload, HledaniLobbyVysledek, SestavaVstup, Vitez } from "../../src/shared/types.js";
 import { cesta } from "./cesty.js";
 
@@ -51,6 +52,16 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ odkaz }),
     }).then((r) => json<{ ok: true }>(r)),
+  kontrolaLobby: (zapasId: number) =>
+    fetch(cesta(`/api/zapas/${zapasId}/kontrola-lobby`), { method: "POST" }).then((r) =>
+      json<KontrolaLobbyVysledek>(r),
+    ),
+  nastaveniLobby: (akceId: number, nastaveni: NastaveniLobby) =>
+    fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(nastaveni),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
   hledatLobby: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>
       json<HledaniLobbyVysledek>(r),

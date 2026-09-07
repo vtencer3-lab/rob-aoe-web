@@ -176,3 +176,50 @@ obojí najednou, v jednom kroku, protože stojí na stejném dotazu.
 - Schéma `aoe2de://<režim>/<match id>`: [fórum AoE, „URL Scheme to launch the game and spectate a match“](https://forums.ageofempires.com/t/url-scheme-to-launch-the-game-and-spectate-a-match/88216).
 - Spectate z aoe2.net: [AoEZone, „AoE2.net Spectate button no longer working“](https://aoezone.net/threads/resolved-aoe2-net-spectate-button-no-longer-working-someone-please-help-me.178544/).
 - Návrh webu, sekce 3.1 a 3.4: `docs/superpowers/specs/2026-09-03-aoe2-komunitni-hry-web-design.md`.
+
+
+## 6. Zmapované klíče nastavení lobby (7. 9. 2026)
+
+Zmapováno naživo s dvouhrannou lobby: každá položka se ve hře přepnula a
+porovnal se seznam lobby před a po. Endpoint vrací **nejvýš 100 lobby na
+stránku** (nejnovější první), starší jsou na `start=100`, `start=200`, …;
+web proto stahuje všechny stránky.
+
+| Nastavení | Klíč v `options` | Hodnoty |
+|---|---|---|
+| Civilization Set | `101` | 0 All, 1 Age of Empires II, 2 Chronicles |
+| Game Mode | `5` | 0 Random Map, 2 Deathmatch, 3 Scenario |
+| Location (mapa) | `10` | id řetězce z jazykového souboru hry, viz `src/shared/mapy.ts` |
+| Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant |
+| AI Difficulty | `61` | 3 Standard, 1 Hard |
+| Resources | `37` | 0 Standard, 3 High |
+| Population | `28` | číslo |
+| Game Speed | `41` | 1 Slow, 2 Normal, 3 Fast |
+| Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible |
+| Starting Age | `0` | 0 Standard, 3 Feudal, 6 Post-Imperial |
+| Ending Age | `4` | 0 Standard, 4 Castle |
+| Treaty Length | `57` | minuty |
+| Victory | `81` | 1 Conquest, 9 Standard |
+| Lock Teams | `66` | y/n |
+| Team Together | `78` | y/n |
+| Team Positions | `77` | y/n (jen s Team Together) |
+| Shared Exploration | `76` | y/n |
+| Lock Speed | `65` | y/n |
+| Allow Cheats | `1` | y/n |
+| Turbo Mode | `79` | y/n |
+| Full Tech Tree | `62` | y/n |
+| Empire Wars | `89` | y/n |
+| Sudden Death | `90` | y/n |
+| Regicide | `91` | y/n |
+| Antiquity Mode | `100` | y/n (Chronicles ho zapíná) |
+| Record Game | `75` | y/n |
+| Handicap | — | do seznamu se nepropisuje vůbec |
+
+Sloty hráčů (`slotinfo`, metadata slotu): `ScenarioPlayerIndex` 0–7 = barva
+1–8 (−1 = random), `Team` 1 = „–“, 2–5 = tým 1–4, 6 = „?“. Pole `teamID`
+slotu se plní nespolehlivě, kontrola ho nepoužívá.
+
+Přímo v záznamu lobby: `visible`, `maxplayers`, `passwordprotected`,
+`isobservable`, `observerdelay`, `hasobserverpassword`, `relayserver_region`
+(Server), `matchtype_id`. Data Mod a Hide Civilizations se nastavují jen při
+založení lobby a zatím zmapované nejsou.

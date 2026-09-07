@@ -80,6 +80,9 @@ export function App() {
           onStav={(novyStav) => {
             if (akce) void hlidej(() => api.akceStav(akce.id, novyStav));
           }}
+          onNastaveniLobby={(n) => {
+            if (akce) void hlidej(() => api.nastaveniLobby(akce.id, n));
+          }}
           zkusebni={
             zkusebniHraci && akce
               ? {
@@ -110,6 +113,7 @@ export function App() {
               onStav={(zapasId, novyStav) => void hlidej(() => api.zapasStav(zapasId, novyStav))}
               onVysledek={(zapasId, vitez) => void hlidej(() => api.vysledek(zapasId, vitez))}
               onHost={(zapasId, steamId) => void hlidej(() => api.zmenitHosta(zapasId, steamId))}
+              onKontrolaLobby={(id) => api.kontrolaLobby(id)}
             />
           ) : null}
           {me
@@ -123,6 +127,7 @@ export function App() {
                     // vkládá — proto se tu nepolyká přes hlidej().
                     onVlozitOdkaz={(id, odkaz) => api.vlozitOdkaz(id, odkaz)}
                     onHledatLobby={(id) => api.hledatLobby(id)}
+                    onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                   />
                 ) : (
                   <KartaHrace

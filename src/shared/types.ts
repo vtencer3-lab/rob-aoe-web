@@ -48,6 +48,8 @@ export interface AkceView {
   id: number;
   nazev: string;
   stav: string;
+  /** Očekávané nastavení lobby pro kontrolu; chybějící klíče = výchozí (lobbyKontrola.ts). */
+  nastaveniLobby?: Record<string, unknown>;
 }
 
 export interface UcastnikView {

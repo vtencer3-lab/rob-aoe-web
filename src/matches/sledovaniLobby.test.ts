@@ -25,7 +25,7 @@ function stavS(...zapasy: ZapasView[]): AkceStavPayload {
 }
 
 function inzerat(lobbyId: string): LobbyInzerat {
-  return { lobbyId, hostSteamId: null, nazev: "", maHeslo: false, povolujeDivaky: false, clenoveSteamIds: [] };
+  return { lobbyId, hostSteamId: null, nazev: "", maHeslo: false, povolujeDivaky: false, clenoveSteamIds: [], sloty: [], nastaveni: null };
 }
 
 beforeEach(() => {
