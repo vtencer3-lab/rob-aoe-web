@@ -25,12 +25,18 @@ function hrac(steamId: string, alias: string, elo: number | null = null): Player
 const prihlaseni = [hrac("a", "TenceR", 1136), hrac("b", "Pepa"), hrac("c", "Marek"), hrac("d", "Lukas")];
 
 /** Stejné propojení jako v App: jeden stav pro tabulku (nevybraní) i panel (vybraní). */
-function Panel({ onVytvoritZapas = vi.fn() }: { onVytvoritZapas?: (s: SestavaVstup[]) => void }) {
+function Panel({
+  onVytvoritZapas = vi.fn(),
+  sadaCivilizaci = null,
+}: {
+  onVytvoritZapas?: (s: SestavaVstup[]) => void;
+  sadaCivilizaci?: number | null;
+}) {
   const skladani = useSkladani(prihlaseni);
   return (
     <>
       <SeznamPrihlasenych prihlaseni={prihlaseni} skladani={skladani} />
-      <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} />
+      <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} sadaCivilizaci={sadaCivilizaci} />
     </>
   );
 }
@@ -161,4 +167,43 @@ it("civilizaci vybere ze seznamu s erby", () => {
   fireEvent.click(screen.getByRole("option", { name: /koreans/i }));
   expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: /civilizace tencer/i })).toHaveTextContent("Koreans");
+});
+
+// Nabídka civilizací se řídí Civilization Setem z nastavení akce: s „Age of
+// Empires II“ nemá co dělat ve výběru Sparta z Chronicles a naopak.
+it("nabídne jen civilizace ze zvolené sady", () => {
+  render(<Panel sadaCivilizaci={1} />);
+  vyber("TenceR");
+  fireEvent.click(screen.getByRole("button", { name: /civilizace tencer/i }));
+  const seznam = screen.getByRole("listbox", { name: /civilizace tencer/i });
+  expect(within(seznam).getByRole("option", { name: /koreans/i })).toBeInTheDocument();
+  expect(within(seznam).queryByRole("option", { name: /spartans/i })).not.toBeInTheDocument();
+  // Three Kingdoms mají v datech hry era "base", takže do AoE II patří.
+  expect(within(seznam).getByRole("option", { name: /jurchens/i })).toBeInTheDocument();
+});
+
+it("s Chronicles nabídne jen je a „libovolnou“", () => {
+  render(<Panel sadaCivilizaci={2} />);
+  vyber("TenceR");
+  fireEvent.click(screen.getByRole("button", { name: /civilizace tencer/i }));
+  const seznam = screen.getByRole("listbox", { name: /civilizace tencer/i });
+  expect(within(seznam).getAllByRole("option")).toHaveLength(7); // 6 civilizací + libovolná
+  expect(within(seznam).getByRole("option", { name: /spartans/i })).toBeInTheDocument();
+  expect(within(seznam).queryByRole("option", { name: /koreans/i })).not.toBeInTheDocument();
+});
+
+// Rob může sadu přepnout až potom, co civilizaci předepsal. Vyhodit ji ze
+// seznamu by znamenalo, že z rozbalené nabídky nejde poznat, co je nastavené.
+it("vybranou civilizaci mimo sadu ze seznamu nevyhodí", () => {
+  const { rerender } = render(<Panel sadaCivilizaci={2} />);
+  vyber("TenceR");
+  fireEvent.click(screen.getByRole("button", { name: /civilizace tencer/i }));
+  fireEvent.click(screen.getByRole("option", { name: /spartans/i }));
+  expect(screen.getByRole("button", { name: /civilizace tencer/i })).toHaveTextContent("Spartans");
+
+  rerender(<Panel sadaCivilizaci={1} />);
+  fireEvent.click(screen.getByRole("button", { name: /civilizace tencer/i }));
+  const seznam = screen.getByRole("listbox", { name: /civilizace tencer/i });
+  expect(within(seznam).getByRole("option", { name: /spartans/i })).toBeInTheDocument();
+  expect(within(seznam).queryByRole("option", { name: /athenians/i })).not.toBeInTheDocument();
 });

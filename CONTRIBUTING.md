@@ -246,12 +246,13 @@ Nic z toho se nestahuje za běhu; do repa se to jednou vygeneruje a commitne.
 |---|---|---|
 | názvy map (id → název) | `resources/en/strings/key-value/key-value-strings-utf8.txt`, řetězce s id mapy tak, jak ho vydává seznam lobby (klíč `10` v `options`) | `src/shared/mapy.ts` |
 | názvy civilizací (id → název) | tentýž soubor, řetězec `10270 + id` | `src/shared/civilizace.ts` |
+| sada civilizací (Chronicles vs. Age of Empires II) | `resources/_common/dat/civilizations.json`, pole `era`: `antiquity` = Chronicles, `base` = AoE II; pořadí v `civilization_list` je herní id (index 0 je Gaia) | `CIVILIZACE_CHRONICLES` v `src/shared/civilizace.ts` |
 | erby civilizací (kulaté ikony jako v lobby) | `resources/_common/wpfg/resources/civ_techtree/menu_techtree_<slug>.png` (104 px), zmenšené na 96 px webp; slugy se liší u Maya (`mayans`), Hindustanis (`indians`), Inca (`inca`), Berbers (`berber`); `random.png` je otazník pro „libovolná civ.“ | `web/src/assets/civ/*.webp`, mapování v `web/src/civErby.ts` |
 | snímek dialogu Create Lobby | screenshot ze hry, do kterého se vsazují název, počet hráčů a PIN | `web/src/assets/create-lobby.webp` |
 | významy klíčů nastavení lobby a slotů | zmapováno naživo přepínáním voleb ve hře a porovnáváním seznamu lobby; které hodnoty jsou ověřené a které doplněné podle pořadí v jazykovém souboru, je v tabulce | `docs/analyza-automaticke-hledani-lobby.md` §6, číselníky v `src/shared/lobbyKontrola.ts` |
 
 Když hra přidá civilizaci nebo mapu: doplnit řádek do tabulky, u civilizace
-i erb (stejný postup: `menu_techtree_<slug>.png` → 96×96 webp), a
+zkontrolovat i `era` (jestli nepatří do Chronicles) a doplnit erb (stejný postup: `menu_techtree_<slug>.png` → 96×96 webp), a
 `web/src/civErby.ts` musí umět slug — test v `Skladani.test.tsx` počítá erby
 v seznamu, ale chybějící soubor se pozná jen tím, že erb u jména není.
 

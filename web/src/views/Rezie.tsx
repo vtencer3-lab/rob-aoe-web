@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
+import { doplnNastaveni, type KontrolaLobbyVysledek, type NastaveniLobby } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
 import {
   BARVA_NAZEV,
@@ -31,7 +31,11 @@ export function Rezie({ stav, skladani, onVytvoritZapas, onStav, onSmazat, onVys
   return (
     <section className="rezie">
       <div className="skladani-obal">
-        <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} />
+        <Skladani
+          skladani={skladani}
+          onVytvoritZapas={onVytvoritZapas}
+          sadaCivilizaci={doplnNastaveni(stav.akce?.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
+        />
       </div>
       {stav.zapasy.map((zapas) => (
         <ZapasVRezii

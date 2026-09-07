@@ -69,3 +69,23 @@ export function nazevCivilizace(id: number | null): string {
   if (id === null) return "libovolná";
   return CIVILIZACE[id] ?? `civilizace č. ${id}`;
 }
+
+/**
+ * Civilizace z Chronicles (v herních datech `era: "antiquity"`). Vygenerováno
+ * 7. 9. 2026 z `resources/_common/dat/civilizations.json` v instalaci hry —
+ * pořadí v `civilization_list` je herní id (index 0 je Gaia). Všechno ostatní
+ * má `era: "base"`, tedy Age of Empires II; patří tam i Shu, Wu, Wei,
+ * Jurchens a Khitans, i když je hra přinesla s Three Kingdoms.
+ */
+export const CIVILIZACE_CHRONICLES: ReadonlySet<number> = new Set([46, 47, 48, 54, 55, 56]);
+
+/**
+ * Patří civilizace do zvolené sady? Sada je `sadaCivilizaci` z nastavení lobby:
+ * 0 All, 1 Age of Empires II, 2 Chronicles (`SADY_CIVILIZACI` v lobbyKontrola.ts).
+ * Null znamená „je to jedno“ — pak projde všechno, stejně jako u All.
+ */
+export function patriDoSady(civ: number, sada: number | null): boolean {
+  if (sada === 1) return !CIVILIZACE_CHRONICLES.has(civ);
+  if (sada === 2) return CIVILIZACE_CHRONICLES.has(civ);
+  return true;
+}

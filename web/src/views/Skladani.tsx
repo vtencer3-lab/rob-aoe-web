@@ -8,6 +8,8 @@ import { VyberCivilizace } from "./VyberCivilizace.js";
 interface Props {
   skladani: StavSkladani;
   onVytvoritZapas: (sestava: SestavaVstup[]) => void;
+  /** Civilization Set z nastavení akce — omezuje nabídku civilizací. */
+  sadaCivilizaci: number | null;
 }
 
 /** Další hodnota v kruhu: levé tlačítko dopředu, pravé zpátky. */
@@ -22,7 +24,7 @@ function dalsi<T>(hodnoty: readonly T[], aktualni: T, smer: 1 | -1): T {
  * tabulce přihlášených nad tím, odkud se berou tlačítkem „+“. Pořadí tady je
  * pořadí slotů v lobby a dá se přetahovat. Formát se odvodí, nevybírá se.
  */
-export function Skladani({ skladani, onVytvoritZapas }: Props) {
+export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
   const tahani = useTahani(skladani.presun);
   const vstupy = skladani.vybrani.map((v) => v.vstup);
   const chyba = zkontrolujSestavu(vstupy);
@@ -77,6 +79,7 @@ export function Skladani({ skladani, onVytvoritZapas }: Props) {
                   se ukáže na jeho kartě a kontrola lobby ji porovná. */}
               <VyberCivilizace
                 popisek={`Civilizace ${jmeno}`}
+                sada={sadaCivilizaci}
                 hodnota={v.civ ?? null}
                 onZmena={(civ) => skladani.uprav(v.steamId, (x) => ({ ...x, civ }))}
               />
