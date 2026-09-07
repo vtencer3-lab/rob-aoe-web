@@ -53,3 +53,17 @@ it("ukončení akce se ptá a při odmítnutí nic nepošle", () => {
   fireEvent.click(screen.getByRole("button", { name: "Ukončit akci" }));
   expect(onStav).toHaveBeenCalledWith("konec");
 });
+
+it("zkušební hráče nabídne jen, když je server povolil", () => {
+  const akce = { id: 1, nazev: "večer", stav: "bezi" };
+  const { rerender } = render(<SpravaAkce akce={akce} onZalozit={vi.fn()} onStav={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
+
+  const onPridat = vi.fn();
+  const onOdebrat = vi.fn();
+  rerender(<SpravaAkce akce={akce} onZalozit={vi.fn()} onStav={vi.fn()} zkusebni={{ onPridat, onOdebrat }} />);
+  fireEvent.click(screen.getByRole("button", { name: /\+ zkušební hráč/i }));
+  fireEvent.click(screen.getByRole("button", { name: /odebrat zkušební/i }));
+  expect(onPridat).toHaveBeenCalled();
+  expect(onOdebrat).toHaveBeenCalled();
+});

@@ -80,6 +80,13 @@ export const config = {
   get devPristup(): boolean {
     return process.env["DEV_PRISTUP"] === "true";
   },
+  /**
+   * Tlačítka „Přidat zkušebního hráče“ v režii. Jen na vývojové verzi:
+   * ostrá proměnnou nemá a routy tam odpovídají 404.
+   */
+  get zkusebniHraci(): boolean {
+    return process.env["ZKUSEBNI_HRACI"] === "true";
+  },
   get jeProdukce(): boolean {
     return this.baseUrl.startsWith("https://");
   },

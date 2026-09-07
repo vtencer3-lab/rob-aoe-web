@@ -185,6 +185,7 @@ Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 | `STEAM_API_KEY` | volitelné | volitelné |
 | `LOG_LEVEL` | `info` | `info` |
 | `DEV_PRISTUP` | nenastavovat | nenastavovat |
+| `ZKUSEBNI_HRACI` | nenastavovat | `true` — tlačítka „+ Zkušební hráč“ v režii |
 
 Zkušební dveře (`/api/dev/*`) se na `https` samy zavírají, takže na jouki.cz
 nejsou dostupné ani ve vývojové verzi. Zkouška večera nasucho se dělá lokálně.

@@ -15,6 +15,7 @@ import { ZkusebniLista } from "./views/ZkusebniLista.js";
 
 export function App() {
   const [me, setMe] = useState<Me["hrac"]>(null);
+  const [zkusebniHraci, setZkusebniHraci] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
   const { stav, spojeno } = useAkceStav();
   // Sestava se skládá ze dvou míst: tabulka přihlášených (nevybraní, „+“)
@@ -23,6 +24,10 @@ export function App() {
 
   useEffect(() => {
     void api.me().then((odpoved) => setMe(odpoved.hrac));
+    void api
+      .nastaveni()
+      .then((n) => setZkusebniHraci(n.zkusebniHraci))
+      .catch(() => {});
   }, []);
 
   const akce = stav?.akce ?? null;
@@ -75,6 +80,14 @@ export function App() {
           onStav={(novyStav) => {
             if (akce) void hlidej(() => api.akceStav(akce.id, novyStav));
           }}
+          zkusebni={
+            zkusebniHraci && akce
+              ? {
+                  onPridat: () => void hlidej(() => api.pridatZkusebniho(akce.id)),
+                  onOdebrat: () => void hlidej(() => api.odebratZkusebni(akce.id)),
+                }
+              : undefined
+          }
         />
       ) : null}
 

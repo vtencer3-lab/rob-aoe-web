@@ -126,6 +126,11 @@ Celý večer se dá projít samotný, na jednom stroji. Zapni v `.env`
 Na stránce je k tomu dole čárkovaná lišta „Zkušební režim“, takže se adresy
 nemusí psát ručně.
 
+Na vývojové verzi na jouki.cz (kde jsou zkušební dveře zavřené) slouží k témuž
+proměnná `ZKUSEBNI_HRACI=true`: v panelu akce přibudou tlačítka „+ Zkušební
+hráč“ a „Odebrat zkušební“. Přidají do akce tytéž vymyšlené hráče, jen se za
+ně nejde přihlásit.
+
 **Přenos režie.** Admin je natrvalo ten, kdo se přihlásil první — obvykle ty.
 Tím pádem si vlastním účtem nejde vyzkoušet, jak web vypadá očima obyčejného
 hráče: panel režie svítí i uprostřed zápasu, který zrovna hraješ. Tlačítko

@@ -8,6 +8,9 @@ import { useAkceStav } from "./useAkceStav.js";
 vi.mock("./api.js", () => ({
   api: {
     me: vi.fn(),
+    nastaveni: vi.fn().mockResolvedValue({ verze: "0.0.0", zkusebniHraci: false }),
+    pridatZkusebniho: vi.fn(),
+    odebratZkusebni: vi.fn(),
     akce: vi.fn(),
     prihlasit: vi.fn(),
     odhlasit: vi.fn(),

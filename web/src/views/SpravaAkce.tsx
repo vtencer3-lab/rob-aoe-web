@@ -5,9 +5,11 @@ interface Props {
   akce: AkceView | null;
   onZalozit: (nazev: string) => void;
   onStav: (stav: string) => void;
+  /** Jen na vývojové verzi: přidávání a odebírání zkušebních hráčů. */
+  zkusebni?: { onPridat: () => void; onOdebrat: () => void };
 }
 
-export function SpravaAkce({ akce, onZalozit, onStav }: Props) {
+export function SpravaAkce({ akce, onZalozit, onStav, zkusebni }: Props) {
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
   return (
@@ -22,6 +24,18 @@ export function SpravaAkce({ akce, onZalozit, onStav }: Props) {
         >
           Ukončit akci
         </button>
+        {/* Zkušební hráči: Rob si složí plnou sestavu bez čtyř lidí. Kreslí se
+            jen tam, kde to server povolil (vývojová verze). */}
+        {zkusebni ? (
+          <>
+            <button onClick={zkusebni.onPridat} title="Přihlásí do akce dalšího zkušebního hráče">
+              + Zkušební hráč
+            </button>
+            <button onClick={zkusebni.onOdebrat} title="Odhlásí z akce všechny zkušební hráče">
+              Odebrat zkušební
+            </button>
+          </>
+        ) : null}
       </div>
     </section>
   );

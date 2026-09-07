@@ -17,6 +17,7 @@ import { broadcastAkce } from "../realtime/akceStav.js";
 import { registerEventRoutes } from "./routes/events.js";
 import { registerMatchRoutes, type MatchDeps } from "./routes/matches.js";
 import { registerStreamRoutes } from "./routes/stream.js";
+import { registerZkusebniRoutes } from "./routes/zkusebni.js";
 import { VERZE } from "../shared/verze.js";
 
 export type ServerDeps = AuthDeps & MatchDeps;
@@ -66,6 +67,7 @@ export function buildServer(castDeps: Partial<ServerDeps> = {}): FastifyInstance
   registerEventRoutes(app);
   registerMatchRoutes(app, deps);
   registerStreamRoutes(app);
+  registerZkusebniRoutes(app);
   // Zkušební dveře se za produkčního nastavení vůbec nezaregistrují. Druhý
   // zámek (adresa na https) sedí uvnitř nich — jeden zámek na tohle nestačí.
   if (config.devPristup) registerDevRoutes(app);

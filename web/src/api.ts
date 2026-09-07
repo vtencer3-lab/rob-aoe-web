@@ -13,8 +13,18 @@ async function json<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
+export interface Nastaveni {
+  verze: string;
+  zkusebniHraci: boolean;
+}
+
 export const api = {
   me: () => fetch(cesta("/api/me")).then((r) => json<Me>(r)),
+  nastaveni: () => fetch(cesta("/api/nastaveni")).then((r) => json<Nastaveni>(r)),
+  pridatZkusebniho: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/zkusebni-hraci`), { method: "POST" }).then((r) => json<{ pridan: string }>(r)),
+  odebratZkusebni: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/zkusebni-hraci`), { method: "DELETE" }).then((r) => json<{ odebrano: number }>(r)),
   akce: () => fetch(cesta("/api/akce")).then((r) => json<AkceStavPayload>(r)),
   vytvoritAkce: (nazev: string) =>
     fetch(cesta("/api/akce"), {
