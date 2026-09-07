@@ -199,6 +199,14 @@ starý a server dál servíruje **předchozí** bundle. Vypadá to, že se změn
 neprojevila. Po zásahu do `src/shared/types.ts` proto vždycky doběhnout celý
 build a zkontrolovat, že se změnil hash souboru ve `web/dist/assets`.
 
+**Spojení SSE umí umřít potichu.** NAT, proxy nebo uspaný počítač shodí
+TCP spojení, aniž by prohlížeč vyhodil chybu — EventSource pak čeká navždy a
+stránka vypadá živě, jen nic nepřijde (7. 9. 2026: Rob 18 s klikal na
+„Zrušit“ a nic). Proto server posílá puls jako **událost** `puls` (komentář
+by JavaScript neviděl), klient po 70 s ticha spojení zahodí, doptá se
+`/api/akce` a otevře nové; při návratu do záložky a po každé vlastní akci se
+stav dočte rovnou (`useAkceStav().obnov()`).
+
 **Cloudflare quick tunnel (`*.trycloudflare.com`) nepropustí SSE.** Drží celé
 tělo odpovědi, dokud odpověď neskončí — a náš stream schválně nekončí nikdy,
 takže přes něj nedorazí ani úvodní snímek. Hlavičkami se to ubránit nedá, edge

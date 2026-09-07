@@ -50,7 +50,7 @@ export function App() {
   // očima hráče; debug mód ukáže tlačítka zkušebních hráčů.
   const [pohledUzivatele, setPohledUzivatele] = useUlozenyPrepinac("rezie.pohled-uzivatele");
   const [ladeni, setLadeni] = useUlozenyPrepinac("rezie.ladeni");
-  const { stav, spojeno } = useAkceStav();
+  const { stav, spojeno, obnov } = useAkceStav();
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
@@ -177,6 +177,7 @@ export function App() {
     try {
       setChyba(null);
       await (jsemPrihlaseny ? api.odhlasit(akce.id) : api.prihlasit(akce.id));
+      void obnov();
     } catch (err) {
       setChyba(err instanceof Error ? err.message : "Nepovedlo se to.");
     }
@@ -186,6 +187,9 @@ export function App() {
     try {
       setChyba(null);
       await akce();
+      // Stav si po vlastní akci dočíst hned: kdyby stream zrovna mlčel,
+      // tlačítko by jinak zůstalo stát, jako by se nic nestalo.
+      void obnov();
     } catch (err) {
       setChyba(err instanceof Error ? err.message : "Nepovedlo se to.");
     }

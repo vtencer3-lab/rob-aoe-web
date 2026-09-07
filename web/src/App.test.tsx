@@ -62,7 +62,7 @@ const zapas = (ucastnici: UcastnikView[]): ZapasView => ({
 });
 
 function nastavStav(payload: AkceStavPayload) {
-  vi.mocked(useAkceStav).mockReturnValue({ stav: payload, spojeno: true });
+  vi.mocked(useAkceStav).mockReturnValue({ stav: payload, spojeno: true, obnov: vi.fn().mockResolvedValue(undefined) });
 }
 
 beforeEach(() => {

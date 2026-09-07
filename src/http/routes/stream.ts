@@ -4,6 +4,9 @@ import { hub, KANAL_AKCE } from "../../realtime/hub.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import type { AkceStavPayload } from "../../shared/types.js";
 
+/** Jak často stream posílá puls; klient po ~trojnásobku ticha spojení obnoví. */
+export const PULS_MS = 25_000;
+
 export function registerStreamRoutes(app: FastifyInstance): void {
   app.get("/api/stream", async (request, reply) => {
     // Úklid musí být zaregistrovaný jako úplně první věc v handleru. Handlerův
@@ -88,7 +91,10 @@ export function registerStreamRoutes(app: FastifyInstance): void {
         maCekajici = false;
       }
 
-      puls = setInterval(() => reply.raw.write(": puls\n\n"), 25_000);
+      // Puls jako pojmenovaná událost, ne komentář: komentář EventSource
+      // v prohlížeči nikdy neuvidí, takže by klient nepoznal spojení, které
+      // umřelo potichu (NAT, proxy) — a čekal na stav, který nikdy nepřijde.
+      puls = setInterval(() => reply.raw.write("event: puls\ndata: {}\n\n"), PULS_MS);
     } catch {
       // Reply je hijacknutá, takže by chyba jinak zmizela beze stopy — Fastify
       // ji jen zaloguje (a logger je vypnutý) a klient by zůstal viset na

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AkceStavPayload } from "../../src/shared/types.js";
 import { api } from "./api.js";
 import { cesta } from "./cesty.js";
@@ -11,6 +11,13 @@ export const MAX_ODKLAD_MS = 15_000;
 export const TRPELIVOST_MS = 5_000;
 /** Tempo náhradního dotazování. Dost husté na živý večer, dost řídké na server. */
 export const DOTAZ_INTERVAL_MS = 3_000;
+/**
+ * Server pulsuje každých 25 s. Když za tuhle dobu nepřijde ani puls, ani
+ * stav, spojení potichu umřelo (NAT, proxy, uspaný počítač) — prohlížeč to
+ * sám nepozná a čekal by navždy. 7. 9. 2026 tak Rob 18 s klikal na „Zrušit“
+ * a nic se nedělo, protože stream byl dvě hodiny mrtvý.
+ */
+export const HLIDKA_MS = 70_000;
 
 /**
  * Server posílá celý stav akce, ne přírůstky. Proto se tady nic neskládá —
@@ -39,9 +46,10 @@ export const DOTAZ_INTERVAL_MS = 3_000;
  * někdy pročistila (jiný tunel, jiná trasa), první doručená zpráva dotazování
  * sama vypne a jsme zpátky na realtime bez jediného refreshe.
  */
-export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean } {
+export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean; obnov: () => Promise<void> } {
   const [stav, setStav] = useState<AkceStavPayload | null>(null);
   const [spojeno, setSpojeno] = useState(false);
+  const obnovRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
     let zdroj: EventSource | undefined;
@@ -50,6 +58,7 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
     let ukonceno = false;
     let hlidka: ReturnType<typeof setTimeout> | undefined;
     let dotazovani: ReturnType<typeof setInterval> | undefined;
+    let hlidkaTicha: ReturnType<typeof setTimeout> | undefined;
 
     const dotazSeServeru = async () => {
       try {
@@ -61,6 +70,14 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
         if (!ukonceno) setSpojeno(false);
       }
     };
+    obnovRef.current = dotazSeServeru;
+
+    // Návrat do záložky: co se stalo mezitím, se raději hned dočte, než aby
+    // se čekalo na další zprávu ze streamu.
+    const naViditelnost = () => {
+      if (document.visibilityState === "visible") void dotazSeServeru();
+    };
+    document.addEventListener("visibilitychange", naViditelnost);
 
     // Otevřený stream, kterým nic neteče, je horší než spadlý: nic se
     // nevyhodí, jen stránka navždy mlčí. Tuhle přesnou vadu dělá Cloudflare
@@ -80,9 +97,24 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
       const aktualni = new EventSource(cesta("/api/stream"));
       zdroj = aktualni;
 
+      // Hlídka ticha: každý puls i stav ji natáhne znovu. Když vyprší,
+      // spojení je potichu mrtvé — zavřít, dotazovat se a otevřít nové.
+      const natahniHlidku = () => {
+        clearTimeout(hlidkaTicha);
+        hlidkaTicha = setTimeout(() => {
+          if (ukonceno || zdroj !== aktualni) return;
+          setSpojeno(false);
+          aktualni.close();
+          zapniDotazovani();
+          odklad = PRVNI_ODKLAD_MS;
+          otevri();
+        }, HLIDKA_MS);
+      };
+
       aktualni.onopen = () => {
         odklad = PRVNI_ODKLAD_MS;
         setSpojeno(true);
+        natahniHlidku();
       };
       aktualni.onmessage = (udalost) => {
         // Stream mluví — náhrada už není k ničemu.
@@ -90,12 +122,16 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
         hlidka = undefined;
         vypniDotazovani();
         odklad = PRVNI_ODKLAD_MS;
+        natahniHlidku();
         setStav(JSON.parse(udalost.data) as AkceStavPayload);
         setSpojeno(true);
       };
+      // Testovací náhrada EventSource nemusí addEventListener mít.
+      aktualni.addEventListener?.("puls", natahniHlidku);
       aktualni.onerror = () => {
         setSpojeno(false);
         if (ukonceno) return;
+        clearTimeout(hlidkaTicha);
         // Zavíráme i my sami: u síťové chyby by se EventSource pokusil znovu
         // připojit vlastním tempem a běžely by dvě obnovy vedle sebe.
         aktualni.close();
@@ -111,10 +147,12 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
       ukonceno = true;
       clearTimeout(casovac);
       clearTimeout(hlidka);
+      clearTimeout(hlidkaTicha);
+      document.removeEventListener("visibilitychange", naViditelnost);
       vypniDotazovani();
       zdroj?.close();
     };
   }, []);
 
-  return { stav, spojeno };
+  return { stav, spojeno, obnov: () => obnovRef.current() };
 }
