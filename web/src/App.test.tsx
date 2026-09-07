@@ -14,7 +14,7 @@ vi.mock("./api.js", () => ({
     odhlasitSe: vi.fn(),
     pripojeni: vi.fn(),
     vlozitOdkaz: vi.fn(),
-    hledatLobby: vi.fn(),
+    hledatLobby: vi.fn().mockResolvedValue({ nalezeno: false, lobbyId: null, nazev: null, maHeslo: null, povolujeDivaky: null }),
     vytvoritAkce: vi.fn(),
     akceStav: vi.fn(),
     vytvoritZapas: vi.fn(),

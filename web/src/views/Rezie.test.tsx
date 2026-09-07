@@ -243,3 +243,10 @@ it("ve 2v2 tlačítko nese barvu týmu a drobně jeho hráče", () => {
   expect(modry).toHaveClass("barva-1");
   expect(modry).toHaveTextContent("TenceR, Pepa_CZ");
 });
+
+it("u Spectate říká, jestli se sedí v lobby, nebo už se hraje", () => {
+  const { rerender } = render(<Rezie stav={{ ...stav, zapasy: [{ ...zapas, fazeLobby: "lobby" }] }} {...props} />);
+  expect(screen.getByTestId("faze-lobby")).toHaveTextContent("(Lobby)");
+  rerender(<Rezie stav={{ ...stav, zapasy: [{ ...zapas, fazeLobby: "hraje_se" }] }} {...props} />);
+  expect(screen.getByTestId("faze-lobby")).toHaveTextContent("(Hraje se)");
+});

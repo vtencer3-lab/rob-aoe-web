@@ -144,3 +144,13 @@ export function varovaniDevPristup(): string | null {
 }
 
 export { povinne };
+
+/**
+ * Bez klíče se Steamu neptáme vůbec: nejsou avatary, jména ze Steamu ani
+ * hodiny a v tabulce zůstanou pomlčky. Nikde jinde se to nepozná, tak aspoň
+ * řádek při startu.
+ */
+export function varovaniSteamKlic(): string | null {
+  if (config.steamApiKey !== "") return null;
+  return "STEAM_API_KEY chybí: avatary, jména ze Steamu ani odehrané hodiny se nestahují. Klíč je zdarma na https://steamcommunity.com/dev/apikey.";
+}

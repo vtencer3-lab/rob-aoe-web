@@ -128,13 +128,28 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
           sebou vršil jeden odepsaný zápas za druhým s plnou výbavou. */}
       {bezi ? (
         <>
+          {/* Druhý řádek říká, kam Rob vleze: do lobby, kde se ještě sedí,
+              nebo do rozehrané hry. Odvozuje to server ze seznamu lobby. */}
           <a
             data-testid="spectate"
-            className="cta"
+            className="cta spectate"
             aria-disabled={muzeSpectate ? "false" : "true"}
             href={zapas.spectatorUri !== null ? zapas.spectatorUri : undefined}
           >
-            {muzeSpectate ? "Spectate" : "Spectate — čeká se na odkaz od hosta"}
+            {muzeSpectate ? (
+              <>
+                <span>Spectate</span>
+                <small data-testid="faze-lobby">
+                  {zapas.fazeLobby === "lobby"
+                    ? "(Lobby)"
+                    : zapas.fazeLobby === "hraje_se"
+                      ? "(Hraje se)"
+                      : "\u00a0"}
+                </small>
+              </>
+            ) : (
+              "Spectate — čeká se na odkaz od hosta"
+            )}
           </a>
 
           {/* Jen informační stavový řádek, ne zámek. */}

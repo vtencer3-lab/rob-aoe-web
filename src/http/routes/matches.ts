@@ -15,6 +15,7 @@ import { getPlayer } from "../../db/players.js";
 import type { LobbyInzerat } from "../../external/worldsEdgeLobby.js";
 import { SestavaChyba } from "../../matches/composition.js";
 import { najdiLobby } from "../../matches/hledaniLobby.js";
+import { nastavFaziLobby } from "../../realtime/fazeLobby.js";
 import { MATCH_STATES, PrechodChyba, type MatchState } from "../../matches/stateMachine.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import type { Format, HledaniLobbyVysledek, Tym } from "../../shared/types.js";
@@ -159,9 +160,12 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
       povolujeDivaky: nalez?.lobby.povolujeDivaky ?? null,
     };
     // Přepíše i dřív uložené číslo: host mohl lobby zrušit a založit znovu.
-    if (nalez && nalez.lobby.lobbyId !== zapas.lobbyId) {
-      await setLobbyId(zapasId, nalez.lobby.lobbyId);
-      await broadcastAkce();
+    // Lobby jsme právě viděli v seznamu, takže se v ní sedí — ať to Spectate
+    // ukáže hned a nečeká na další krok sledování.
+    if (nalez) {
+      const zmenaFaze = nastavFaziLobby(nalez.lobby.lobbyId, "lobby");
+      if (nalez.lobby.lobbyId !== zapas.lobbyId) await setLobbyId(zapasId, nalez.lobby.lobbyId);
+      if (zmenaFaze || nalez.lobby.lobbyId !== zapas.lobbyId) await broadcastAkce();
     }
     return odpoved;
   });

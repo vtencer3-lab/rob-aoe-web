@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import type { HledaniLobbyVysledek } from "../../../src/shared/types.js";
@@ -54,4 +54,27 @@ it("chybu ze serveru ukáže u tlačítka", async () => {
 it("popisek tlačítka jde přepsat", () => {
   render(<HledaniLobby zapasId={7} onHledat={vi.fn()} popisek="Vyhledat moji lobby" />);
   expect(screen.getByRole("button", { name: /vyhledat moji lobby/i })).toBeInTheDocument();
+});
+
+it("v automatickém režimu se ptá hned a pak opakovaně, dokud běží", async () => {
+  const onHledat = vi.fn().mockResolvedValue({ ...nalezena, nalezeno: false, lobbyId: null });
+  const { unmount } = render(
+    <HledaniLobby zapasId={7} onHledat={onHledat} automaticky intervalMs={30} />,
+  );
+
+  expect(await screen.findByRole("status")).toHaveTextContent(/hledám/i);
+  await waitFor(() => expect(onHledat.mock.calls.length).toBeGreaterThanOrEqual(3), { timeout: 2000 });
+  expect(await screen.findByRole("status")).toHaveTextContent(/hledám dál/i);
+
+  unmount();
+  const poOdpojeni = onHledat.mock.calls.length;
+  await new Promise((r) => setTimeout(r, 120));
+  expect(onHledat.mock.calls.length).toBe(poOdpojeni);
+});
+
+it("bez automatického režimu se samo neptá", async () => {
+  const onHledat = vi.fn().mockResolvedValue(nalezena);
+  render(<HledaniLobby zapasId={7} onHledat={onHledat} intervalMs={30} />);
+  await new Promise((r) => setTimeout(r, 100));
+  expect(onHledat).not.toHaveBeenCalled();
 });

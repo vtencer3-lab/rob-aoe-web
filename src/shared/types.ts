@@ -45,6 +45,9 @@ export interface UcastnikView {
   kliknulPripojit: string | null;
 }
 
+/** Lobby ještě stojí (sedí se v ní), nebo už hra běží. Null = nevíme. */
+export type FazeLobby = "lobby" | "hraje_se";
+
 export interface ZapasView {
   id: number;
   poradi: number;
@@ -55,6 +58,8 @@ export interface ZapasView {
   lobbyId: string | null;
   joinUri: string | null;
   spectatorUri: string | null;
+  /** Odvozeno ze seznamu otevřených lobby ve hře (sledovaniLobby.ts). */
+  fazeLobby?: FazeLobby | null;
   viteznyTym: Tym | null;
   ucastnici: UcastnikView[];
 }

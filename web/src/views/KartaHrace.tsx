@@ -49,22 +49,25 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
           <p className="ceka">Čeká se na hosta, až založí lobby.</p>
           {/* Čekající hráč si může pomoct sám: seznam otevřených lobby je
               společný, takže najde totéž číslo, které by našel host. */}
-          <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} />
+          <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} automaticky />
         </>
       )}
 
       <footer>
         <p>Proti vám: {proti.map(jmenoHrace).join(", ")}</p>
-        <p>
-          Nejde odkaz? V lobby prohlížeči hledej <strong>{zapas.nazevLobby}</strong>
-          {zapas.lobbyId ? (
-            <>
-              {" "}
-              nebo vlož číslo <strong>{zapas.lobbyId}</strong>
-            </>
-          ) : null}
-          .
-        </p>
+        {/* Bez odkazu nemá smysl ptát se, jestli nejde. Věta říká, co
+            udělat teď: bez lobby počkat, s lobby ji najít ručně ve hře. */}
+        {zapas.lobbyId ? (
+          <p>
+            Nefunguje tlačítko Připojit? V lobby prohlížeči ve hře hledej{" "}
+            <strong>{zapas.nazevLobby}</strong> nebo vlož číslo <strong>{zapas.lobbyId}</strong>.
+          </p>
+        ) : (
+          <p>
+            Lobby se bude jmenovat <strong>{zapas.nazevLobby}</strong>; jakmile ji host založí,
+            objeví se tu tlačítko Připojit.
+          </p>
+        )}
         {zapas.heslo ? (
           <p>
             Heslo: <strong>{zapas.heslo}</strong>

@@ -10,8 +10,7 @@ import { config } from "../config.js";
 import { getPlayer, savePlayerStats } from "../db/players.js";
 import { steamZdroje } from "../external/steam.js";
 import { fetchPersonalStat } from "../external/worldsEdge.js";
-import { fetchAdvertisements } from "../external/worldsEdgeLobby.js";
-import { SeznamLobby } from "../matches/hledaniLobby.js";
+import { seznamLobby } from "../matches/seznamLobby.js";
 import { jeCerstve, refreshPlayerStats } from "../players/refresh.js";
 import { HttpError } from "./guards.js";
 import { registerEventRoutes } from "./routes/events.js";
@@ -22,8 +21,6 @@ import { VERZE } from "../shared/verze.js";
 export type ServerDeps = AuthDeps & MatchDeps;
 
 function vychoziDeps(): ServerDeps {
-  // Jedna cache pro celý proces: seznam lobby je společný všem zápasům.
-  const seznamLobby = new SeznamLobby(() => fetchAdvertisements());
   return {
     nactiInzeraty: () => seznamLobby.aktualni(),
     overSteam: (params) => verifyWithSteam(params),

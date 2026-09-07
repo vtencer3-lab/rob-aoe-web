@@ -3,6 +3,7 @@ import { getAktivniAkce, listSignups } from "../db/events.js";
 import { listZapasy } from "../db/matches.js";
 import type { PlayerRow } from "../db/players.js";
 import type { AkceStavPayload, PlayerView, ZapasView } from "../shared/types.js";
+import { fazeLobbyPro } from "./fazeLobby.js";
 import { hub, KANAL_AKCE } from "./hub.js";
 
 export function playerView(hrac: PlayerRow): PlayerView {
@@ -37,6 +38,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
     // Odkazy se vždy odvozují z čísla lobby, nikdy se neukládají.
     joinUri: zapas.lobbyId ? joinUri(zapas.lobbyId) : null,
     spectatorUri: zapas.lobbyId ? spectatorUri(zapas.lobbyId) : null,
+    fazeLobby: fazeLobbyPro(zapas.lobbyId),
     viteznyTym: zapas.viteznyTym,
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,

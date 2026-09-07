@@ -53,11 +53,29 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby }: Prop
 
       <DialogCreateLobby zapas={zapas} />
 
-      <label>
-        Odkaz z tlačítka Copy v lobby
-        <input value={odkaz} onChange={(e) => setOdkaz(e.target.value)} placeholder="aoe2de://0/…" />
-      </label>
-      <button onClick={() => void uloz()}>Uložit odkaz</button>
+      {/* Hlavní cesta: web si lobby najde sám podle Steam ID hosta, ptá se
+          každých pár vteřin, dokud číslo nemá. Ruční vložení odkazu zůstává
+          níž jako záloha pro případ, že seznam ze hry zrovna neodpovídá. */}
+      <h3>Až lobby založíš, web si ji najde sám</h3>
+      <HledaniLobby
+        zapasId={zapas.id}
+        onHledat={onHledatLobby}
+        popisek="Vyhledat teď"
+        automaticky={zapas.lobbyId === null}
+      />
+      {zapas.lobbyId ? (
+        <p className="potvrzeno" data-testid="lobby-nalezena">
+          Web zná číslo tvojí lobby: <strong>{zapas.lobbyId}</strong>. Hráči už mají odkaz.
+        </p>
+      ) : null}
+      <details className="zaloha-odkaz">
+        <summary>Nebo vlož odkaz ručně (tlačítko Copy v lobby)</summary>
+        <label>
+          Odkaz z tlačítka Copy v lobby
+          <input value={odkaz} onChange={(e) => setOdkaz(e.target.value)} placeholder="aoe2de://0/…" />
+        </label>
+        <button onClick={() => void uloz()}>Uložit odkaz</button>
+      </details>
       {chyba ? (
         <p className="chyba chyba-pole" data-testid="chyba-odkazu" role="alert">
           {chyba}

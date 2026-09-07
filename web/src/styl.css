@@ -227,3 +227,7 @@ button.vysledek { display: inline-flex; flex-direction: column; align-items: cen
 button.vysledek.barva-1 { background: var(--modra); border-color: var(--modra); }
 button.vysledek.barva-2 { background: var(--cervena); border-color: var(--cervena); }
 button.vysledek small { font-size: 0.68rem; font-weight: 400; opacity: 0.8; margin-top: 0.15rem; }
+
+/* Spectate se dvěma řádky: nahoře akce, dole fáze (Lobby / Hraje se). */
+.cta.spectate { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.cta.spectate small { font-size: 0.72rem; font-weight: 400; opacity: 0.85; }
