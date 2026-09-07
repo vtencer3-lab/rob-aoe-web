@@ -467,8 +467,10 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    klávesnici a čtečky, vidět je drážka s knoflíkem. */
 .prepinac { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.8rem; color: var(--tlumene); user-select: none; }
 .prepinac input { position: absolute; opacity: 0; width: 0; height: 0; }
-.prepinac .drazka { position: relative; width: 1.7rem; height: 0.95rem; border-radius: 1rem; background: #3a3126; border: 1px solid #4a4133; transition: background 0.15s; flex: none; }
-.prepinac .knoflik { position: absolute; top: 2px; left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
+.prepinac .drazka { position: relative; box-sizing: border-box; width: 1.7rem; height: 0.95rem; border-radius: 1rem; background: #3a3126; border: 1px solid #4a4133; transition: background 0.15s; flex: none; }
+/* Knoflík svisle přesně uprostřed drážky (výška drážky bez rámečku), ne o
+   tloušťku rámečku výš. */
+.prepinac .knoflik { position: absolute; top: 50%; transform: translateY(-50%); left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
 .prepinac.zapnuto .drazka { background: var(--akcent); border-color: var(--akcent); }
 .prepinac.zapnuto .knoflik { left: calc(100% - 0.95rem + 4px); background: #241d10; }
 /* Oba popisky stejně těžké — jen barva říká, která poloha platí; tučný text
