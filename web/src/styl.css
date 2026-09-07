@@ -581,3 +581,10 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible { color: var(--ak
 }
 .skladani button.odebrat, button.plus { transition: transform 0.08s ease; }
 .skladani button.odebrat:active, button.plus:active { transform: scale(0.9); }
+
+/* Účastníci zápasu v režii: čtverečky, jméno, ELO, stav a vpravo odznak
+   HOST nebo tlačítko na přehození hosta. */
+.zapas ul.sestava-zapasu { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 1fr auto; margin: 0.4rem 0; }
+.zapas ul.sestava-zapasu .radek { padding: 0.35rem 0.2rem; }
+.zapas ul.sestava-zapasu .stav-ucastnika { color: var(--tlumene); }
+.zapas ul.sestava-zapasu .radek > button, .zapas ul.sestava-zapasu .radek > .odznak-host { justify-self: end; margin: 0; }

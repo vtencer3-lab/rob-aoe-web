@@ -88,15 +88,20 @@ function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLo
         Zápas #{zapas.poradi} · {popisFormatu(zapas.ucastnici)}
         {popisStavu(zapas)}
       </header>
-      <ul>
+      {/* Řádky jako ve skládání: čtvereček barvy a týmu, jméno, ELO, stav. */}
+      <ul className="skladani jen-ke-cteni sestava sestava-zapasu">
         {zapas.ucastnici.map((u) => (
-          <li key={u.steamId} className={`barva-${u.barva}`}>
-            {/* Text ve vlastním spanu, aby ho flex bral jako jednu položku
-                a tlačítko se mu nelepilo na poslední písmeno. */}
-            <span>
-              <span className="swatch" /> {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, {popisTymu(u)}
-              {u.civ !== null ? `, ${nazevCivilizace(u.civ)}` : ""}
-              {" · "}
+          <li key={u.steamId} className={`radek barva-${u.barva}`}>
+            <span className={`volba volba-barva barva-${u.barva}`} aria-label={`Barva ${BARVA_NAZEV[u.barva]}`}>
+              {u.barva}
+            </span>
+            <span className="volba volba-tym" aria-label={popisTymu(u)}>
+              {u.tym === 0 ? "–" : u.tym}
+            </span>
+            <span className="jmeno">{jmenoHrace(u)}</span>
+            <span className="elo">{u.elo1v1 !== null && u.elo1v1 !== undefined ? <small>({u.elo1v1})</small> : null}</span>
+            <span className="stav-ucastnika">
+              {u.civ !== null ? `${nazevCivilizace(u.civ)} · ` : ""}
               {popisUcastnika(zapas, u)}
             </span>
             {/* Kdo hostuje, má odznak; kdo ne, má tlačítko. Nikdy obojí a
@@ -146,7 +151,7 @@ function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLo
                 </small>
               </>
             ) : (
-              "Spectate — čeká se na odkaz od hosta"
+              "Spectate — čeká se na založení lobby"
             )}
           </a>
           {/* Tatáž sekce kontroly, jakou vidí host — stejná komponenta,
