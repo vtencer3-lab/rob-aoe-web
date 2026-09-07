@@ -170,6 +170,29 @@ it("zrušený zápas jde smazat, běžící ne a běžný hráč vůbec", async 
   await app.close();
 });
 
+// Dohraný zápas jde zavřít křížkem a zase otevřít; běžící ne, hráč vůbec.
+it("dohraný zápas jde zavřít a znovu otevřít, běžící ne", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  const bezici = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zavrit`, cookies: { sid: robSid }, payload: {} });
+  expect(bezici.statusCode).toBe(409);
+
+  await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/vysledek`, cookies: { sid: robSid }, payload: { vitez: { tym: 1 } } });
+  const hrac = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zavrit`, cookies: { sid: hracSid }, payload: {} });
+  expect(hrac.statusCode).toBe(403);
+
+  const zavreni = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zavrit`, cookies: { sid: robSid }, payload: {} });
+  expect(zavreni.statusCode).toBe(200);
+  let stav = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: robSid } });
+  expect(stav.json().zapasy[0].zavreny).toBe(true);
+  expect(stav.json().zapasy[0].vitez).toEqual({ tym: 1 });
+
+  await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zavrit`, cookies: { sid: robSid }, payload: { zavreny: false } });
+  stav = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: robSid } });
+  expect(stav.json().zapasy[0].zavreny).toBe(false);
+  await app.close();
+});
+
 // Rob dvojklik na svoje vlastní tlačítko v přímém přenosu udělá dřív nebo
 // později. Do teď to znamenalo červený „Něco se pokazilo na serveru.“, protože
 // odmítnutý přechod padal jako holá Error na 500.

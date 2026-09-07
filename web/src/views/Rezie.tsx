@@ -14,18 +14,23 @@ interface Props {
   onVysledek: (zapasId: number, vitez: Vitez) => void;
   onHost: (zapasId: number, steamId: string) => void;
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
+  /** Dohraný zápas zavřít křížkem (true), nebo z debug módu znovu otevřít (false). */
+  onZavrit: (zapasId: number, zavreny: boolean) => void;
+  /** Debug mód: ukázat i zavřené zápasy, zašedlé, s tlačítkem na otevření. */
+  ladeni?: boolean;
 }
 
 /** Zápasy v režii. Skládání sestavy je v panelu akce (SpravaAkce), vedle nastavení lobby. */
-export function Rezie({ stav, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby }: Props) {
+export function Rezie({ stav, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby, onZavrit, ladeni = false }: Props) {
   return (
     <section className="rezie">
-      {stav.zapasy.map((zapas) => (
+      {stav.zapasy.filter((z) => !z.zavreny || ladeni).map((zapas) => (
         <ZapasVRezii
           key={zapas.id}
           zapas={zapas}
           onStav={onStav}
           onSmazat={onSmazat}
+          onZavrit={onZavrit}
           onVysledek={onVysledek}
           onHost={onHost}
           onKontrolaLobby={onKontrolaLobby}
@@ -52,9 +57,9 @@ function popisUcastnika(zapas: ZapasView, u: ZapasView["ucastnici"][number]): st
   return u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl";
 }
 
-type ZapasProps = Pick<Props, "onStav" | "onSmazat" | "onVysledek" | "onHost" | "onKontrolaLobby"> & { zapas: ZapasView };
+type ZapasProps = Pick<Props, "onStav" | "onSmazat" | "onVysledek" | "onHost" | "onKontrolaLobby" | "onZavrit"> & { zapas: ZapasView };
 
-function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby }: ZapasProps) {
+function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby, onZavrit }: ZapasProps) {
   // Přepsat zapsaný výsledek jde, ale ne jedním kliknutím do prázdna: tlačítka
   // stran se odemknou až po „Změnit výsledek“ a to druhé kliknutí je samo o sobě
   // to potvrzení. Potvrzovací okno navíc by se muselo odškrtávat v přenosu.
@@ -83,15 +88,27 @@ function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLo
   const stranyZapasu = strany(zapas.ucastnici);
 
   return (
-    <article className={bezi ? "zapas" : "zapas odepsany"}>
+    <article className={[bezi ? "zapas" : "zapas odepsany", zapas.zavreny ? "zavreny" : ""].filter(Boolean).join(" ")}>
       <h2 className="titulek-zapasu" data-testid="zapas-hlavicka">
         Zápas #{zapas.poradi}
         <small>
           {" · "}
           {popisFormatu(zapas.ucastnici)}
           {popisStavu(zapas)}
+          {zapas.zavreny ? " · zavřeno" : ""}
         </small>
       </h2>
+      {/* Křížek zavře dohraný zápas: zmizí ze stránky, výsledek zůstává. */}
+      {dohrano && !zapas.zavreny ? (
+        <button type="button" className="zavrit-zapas" aria-label={`Zavřít zápas #${zapas.poradi}`} title="Zavřít — zmizí ze stránky, výsledek zůstane" onClick={() => onZavrit(zapas.id, true)}>
+          ×
+        </button>
+      ) : null}
+      {zapas.zavreny ? (
+        <button type="button" className="zavrit-zapas otevrit" onClick={() => onZavrit(zapas.id, false)}>
+          Znovu otevřít
+        </button>
+      ) : null}
       {/* Řádky jako ve skládání: čtvereček barvy a týmu, jméno, ELO, stav.
           Obal .skladani a seznam .sestava musí být dva prvky — mřížka je na
           seznamu, styly čtverečků na obalu. */}

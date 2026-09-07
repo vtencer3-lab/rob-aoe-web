@@ -16,6 +16,8 @@ export interface ZapasRow {
   heslo: string;
   lobbyId: string | null;
   vitez: Vitez | null;
+  /** Dohraný zápas zavřený křížkem v režii; null = otevřený. */
+  zavrenyV: Date | null;
 }
 
 /** Hráč vybraný do zápasu se mezi kontrolou přihlášek a vložením zápasu odhlásil — skutečný konflikt, ne interní chyba. */
@@ -52,7 +54,7 @@ export function vitezZTextu(text: string | null): Vitez | null {
   return null;
 }
 
-const SLOUPCE_ZAPASU = "id, akce_id, poradi, stav, nazev_lobby, heslo, lobby_id, vitez";
+const SLOUPCE_ZAPASU = "id, akce_id, poradi, stav, nazev_lobby, heslo, lobby_id, vitez, zavreny_v";
 
 function mapujZapas(r: Record<string, unknown>): ZapasRow {
   return {
@@ -64,6 +66,7 @@ function mapujZapas(r: Record<string, unknown>): ZapasRow {
     heslo: r["heslo"] as string,
     lobbyId: r["lobby_id"] as string | null,
     vitez: vitezZTextu(r["vitez"] as string | null),
+    zavrenyV: (r["zavreny_v"] as Date | null) ?? null,
   };
 }
 
@@ -193,6 +196,15 @@ export async function setZapasStav(zapasId: number, stav: MatchState): Promise<v
  */
 export async function smazZrusenyZapas(zapasId: number): Promise<boolean> {
   const { rowCount } = await getPool().query("DELETE FROM zapas WHERE id = $1 AND stav = 'zruseny'", [zapasId]);
+  return (rowCount ?? 0) > 0;
+}
+
+/** Zavřít (zavreny = true) nebo znovu otevřít dohraný zápas. Vrací false, když zápas není dohraný. */
+export async function setZavreny(zapasId: number, zavreny: boolean): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    `UPDATE zapas SET zavreny_v = CASE WHEN $2::boolean THEN now() ELSE NULL END WHERE id = $1 AND stav = 'dohrano'`,
+    [zapasId, zavreny],
+  );
   return (rowCount ?? 0) > 0;
 }
 

@@ -22,6 +22,7 @@ vi.mock("./api.js", () => ({
     ulozitNastaveniLobby: vi.fn(),
     skladani: vi.fn().mockResolvedValue({ akce: { id: 1 } }),
     smazatZapas: vi.fn(),
+    zavritZapas: vi.fn(),
     hledatLobby: vi.fn().mockResolvedValue({ nalezeno: false, lobbyId: null, nazev: null, maHeslo: null, povolujeDivaky: null }),
     vytvoritAkce: vi.fn(),
     akceStav: vi.fn(),

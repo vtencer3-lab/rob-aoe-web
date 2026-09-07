@@ -44,7 +44,7 @@ export function mojeZapasy(zapasy: ZapasView[], steamId: string): ZapasView[] {
  */
 export function verejneZapasy(zapasy: ZapasView[], steamId: string | null): ZapasView[] {
   const naKarte = new Set(steamId === null ? [] : mojeZapasy(zapasy, steamId).map((z) => z.id));
-  return zapasy.filter((z) => z.stav !== "zruseny" && !naKarte.has(z.id));
+  return zapasy.filter((z) => z.stav !== "zruseny" && !z.zavreny && !naKarte.has(z.id));
 }
 
 /** „tým 2“, nebo „bez týmu“ pro hráče, který hraje sám za sebe. */

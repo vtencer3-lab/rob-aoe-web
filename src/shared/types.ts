@@ -100,6 +100,8 @@ export interface ZapasView {
   /** Odvozeno ze seznamu otevřených lobby ve hře (sledovaniLobby.ts). */
   fazeLobby?: FazeLobby | null;
   vitez: Vitez | null;
+  /** Dohraný zápas zavřený křížkem: na stránce se neukazuje (v debug módu zašedlý). */
+  zavreny?: boolean;
   ucastnici: UcastnikView[];
 }
 

@@ -10,6 +10,7 @@ import {
   setLobbyId,
   setVysledek,
   setZapasStav,
+  setZavreny,
   smazZrusenyZapas,
   UcastnikOdhlasenChyba,
 } from "../../db/matches.js";
@@ -141,6 +142,19 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     }
     const { zapas } = await nactiNeboSelzi(zapasId);
     await prejdi(zapasId, stav as MatchState);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Dohraný zápas jde zavřít křížkem: zmizí ze stránky, výsledek zůstává.
+  // Znovu otevřít jde z debug módu. Jen dohraný — běžící má Zrušit, zrušený
+  // má Odebrat úplně.
+  app.post("/api/zapas/:id/zavrit", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const { zavreny } = request.body as { zavreny?: unknown };
+    await nactiNeboSelzi(zapasId);
+    if (!(await setZavreny(zapasId, zavreny !== false))) throw new HttpError(409, "Zavřít jde jen dohraný zápas.");
     await broadcastAkce();
     return { ok: true };
   });

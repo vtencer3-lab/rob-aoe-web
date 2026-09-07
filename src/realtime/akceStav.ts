@@ -40,6 +40,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
     spectatorUri: zapas.lobbyId ? spectatorUri(zapas.lobbyId) : null,
     fazeLobby: fazeLobbyPro(zapas.lobbyId),
     vitez: zapas.vitez,
+    zavreny: zapas.zavrenyV !== null,
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,
       alias: u.alias,

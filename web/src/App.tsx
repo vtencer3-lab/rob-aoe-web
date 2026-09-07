@@ -299,6 +299,8 @@ export function App() {
               stav={stav}
               onStav={(zapasId, novyStav) => void hlidej(() => api.zapasStav(zapasId, novyStav))}
               onSmazat={(zapasId) => void hlidej(() => api.smazatZapas(zapasId))}
+              onZavrit={(zapasId, zavreny) => void hlidej(() => api.zavritZapas(zapasId, zavreny))}
+              ladeni={ladeni}
               onVysledek={(zapasId, vitez) => void hlidej(() => api.vysledek(zapasId, vitez))}
               onHost={(zapasId, steamId) => void hlidej(() => api.zmenitHosta(zapasId, steamId))}
               onKontrolaLobby={(id) => api.kontrolaLobby(id)}
