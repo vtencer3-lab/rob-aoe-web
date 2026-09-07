@@ -225,3 +225,19 @@ it("najetí na jméno vybraného hráče ukáže kartu se statistikami", () => {
   fireEvent.mouseLeave(screen.getByTestId("jmeno-vybraneho"));
   expect(screen.queryByTestId("staty-hrace")).not.toBeInTheDocument();
 });
+
+// Pod seznamem je součet 1v1 ELO za tým; kdo ELO nemá, do součtu nejde a je
+// u týmu jmenovaný, ať Rob ví, že číslo není celé.
+it("ukáže součet ELO za tým a jmenuje hráče bez ELO", () => {
+  render(<Panel />);
+  vyber("TenceR"); // tým 1, 1136
+  vyber("Pepa"); // tým 2, bez ELO
+  vyber("Marek"); // tým 1, bez ELO
+  const tymy = screen.getByTestId("elo-tymu").querySelectorAll(".tym");
+  expect(tymy).toHaveLength(2);
+  expect(tymy[0]).toHaveTextContent("Tým 1");
+  expect(tymy[0]).toHaveTextContent("1136");
+  expect(tymy[0]).toHaveTextContent(/bez ELO: Marek/);
+  expect(tymy[1]).toHaveTextContent("Tým 2");
+  expect(tymy[1]).toHaveTextContent("0");
+});

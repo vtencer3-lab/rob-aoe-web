@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
 import { popisFormatu } from "../../../src/shared/strany.js";
-import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup } from "../../../src/shared/types.js";
+import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
+import type { VybranyHrac } from "../skladani.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
 import { useTahani } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
@@ -18,6 +19,22 @@ interface Props {
 function dalsi<T>(hodnoty: readonly T[], aktualni: T, smer: 1 | -1): T {
   const i = hodnoty.indexOf(aktualni);
   return hodnoty[(i + smer + hodnoty.length) % hodnoty.length]!;
+}
+
+/** Součet 1v1 ELO za tým (1 až 4) s hráči, kteří ELO nemají a do součtu nejdou. */
+export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: number; bezEla: string[] }> {
+  const vysledek: Array<{ tym: Tym; soucet: number; bezEla: string[] }> = [];
+  for (const tym of TYMY) {
+    if (tym === 0) continue;
+    const clenove = vybrani.filter((v) => v.vstup.tym === tym);
+    if (clenove.length === 0) continue;
+    vysledek.push({
+      tym,
+      soucet: clenove.reduce((s, v) => s + (v.hrac.elo1v1 ?? 0), 0),
+      bezEla: clenove.filter((v) => v.hrac.elo1v1 === null).map((v) => v.hrac.alias ?? v.hrac.steamName ?? v.hrac.steamId),
+    });
+  }
+  return vysledek;
 }
 
 /**
@@ -105,6 +122,18 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
       </ul>
 
       {nahled ? <StatistikyHrace hrac={nahled} /> : null}
+      {/* Součet ELO za tým pod seznamem: Rob vidí, jestli jsou strany vyrovnané. */}
+      {eloTymu(skladani.vybrani).length > 0 ? (
+        <div className="elo-tymu" data-testid="elo-tymu">
+          {eloTymu(skladani.vybrani).map(({ tym, soucet, bezEla }) => (
+            <div key={tym} className="tym">
+              <h4>Tým {tym}</h4>
+              <strong>{soucet}</strong>
+              {bezEla.length > 0 ? <small title={`Bez ELO: ${bezEla.join(", ")}`}>bez ELO: {bezEla.join(", ")}</small> : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
       <p className="zaloha" data-testid="souhrn-sestavy">
         {vstupy.length === 0 ? "Nikdo není vybraný." : chyba ? `${format || "Sestava"} — ${chyba}` : `Formát: ${format}`}
       </p>

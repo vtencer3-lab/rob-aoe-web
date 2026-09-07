@@ -545,3 +545,11 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .skladani .radek, .seznam-rezie tbody tr { touch-action: none; }
 .v-ruce { position: relative; z-index: 5; background: #2c2620; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); cursor: grabbing !important; }
 .seznam-rezie tbody tr.v-ruce td { background: #2c2620; }
+
+/* Součet ELO za tým pod seznamem vybraných. Dva týmy vedle sebe, tři a
+   čtyři se zalomí pod ně. */
+.elo-tymu { display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem; margin: 0.8rem 0 0; }
+.elo-tymu .tym { min-width: 8rem; padding: 0.5rem 0.9rem; border: 1px solid #3d352a; border-radius: 6px; }
+.elo-tymu h4 { margin: 0 0 0.1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); }
+.elo-tymu strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.elo-tymu small { display: block; color: var(--tlumene); font-size: 0.75rem; }
