@@ -250,7 +250,7 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 
 /* Host taky hraje, takze i on ma svoji barvu videt jako pruh, ne jen jako
    radek v zrcadle. Stejny utvar jako na karte hrace. */
-.host .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
+.host .titulek-zapasu, .karta .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
 .host .zakladas { font-size: 1.5rem; }
 .host .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
 .host .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
@@ -465,11 +465,36 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 
 /* Přepínač s knoflíkem: vypnuto vlevo, zapnuto vpravo. Checkbox je jen pro
    klávesnici a čtečky, vidět je drážka s knoflíkem. */
-.prepinac { display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; font-size: 0.85rem; color: var(--tlumene); user-select: none; }
+.prepinac { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.8rem; color: var(--tlumene); user-select: none; }
 .prepinac input { position: absolute; opacity: 0; width: 0; height: 0; }
-.prepinac .drazka { position: relative; width: 2.2rem; height: 1.2rem; border-radius: 1rem; background: #3a3126; border: 1px solid #4a4133; transition: background 0.15s; }
-.prepinac .knoflik { position: absolute; top: 2px; left: 2px; width: calc(1.2rem - 6px); height: calc(1.2rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
+.prepinac .drazka { position: relative; width: 1.7rem; height: 0.95rem; border-radius: 1rem; background: #3a3126; border: 1px solid #4a4133; transition: background 0.15s; flex: none; }
+.prepinac .knoflik { position: absolute; top: 2px; left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
 .prepinac.zapnuto .drazka { background: var(--akcent); border-color: var(--akcent); }
-.prepinac.zapnuto .knoflik { left: calc(100% - 1.2rem + 4px); background: #241d10; }
-.prepinac .aktivni { color: var(--text); font-weight: 600; }
+.prepinac.zapnuto .knoflik { left: calc(100% - 0.95rem + 4px); background: #241d10; }
+/* Oba popisky stejně těžké — jen barva říká, která poloha platí; tučný text
+   na jedné straně dělal přepínač opticky nakřivo. */
+.prepinac .aktivni { color: var(--text); }
 .prepinac input:focus-visible + .drazka { outline: 2px solid var(--akcent); outline-offset: 2px; }
+
+/* Karta hráče: krok „Připojuješ se!“ uprostřed, animované tečky, strany
+   zápasu vedle sebe s VS. */
+.stred { text-align: center; }
+.karta .ceka { margin: 0.4rem 0; }
+.karta .heslo { margin-top: 0.8rem; font-size: 1.05rem; }
+.karta .hledani-lobby .ovladani { justify-content: center; }
+.karta .hledani-lobby button { width: min(100%, 22rem); font-size: 1.1rem; padding: 0.6rem 1rem; }
+.tecky::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: tecky 1.5s steps(1) infinite; }
+@keyframes tecky {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+.vs-rozlozeni { display: flex; align-items: center; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+.vs-rozlozeni .vs { font-size: 2.2rem; font-weight: 800; color: var(--akcent); letter-spacing: 0.05em; }
+.skladani.jen-ke-cteni { border: none; padding: 0; margin: 0; }
+.skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem max-content 14rem; column-gap: 0.5rem; }
+.skladani.jen-ke-cteni .radek { cursor: default; }
+.skladani.jen-ke-cteni .radek.ja .jmeno { font-weight: 700; color: var(--akcent); }
+.skladani.jen-ke-cteni .vyber-civ-tlacitko:disabled { opacity: 0.6; cursor: default; }
+.skladani.jen-ke-cteni .vyber-civ-tlacitko .sipka { visibility: hidden; }

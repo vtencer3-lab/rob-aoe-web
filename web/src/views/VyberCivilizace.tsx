@@ -9,6 +9,8 @@ interface Props {
   popisek: string;
   /** Civilization Set z nastavení akce; null = je to jedno, nabídne se všechno. */
   sada: number | null;
+  /** Jen ke čtení (karta hráče): zašedlé tlačítko, seznam se neotvírá. */
+  vypnuto?: boolean;
 }
 
 const PODLE_JMENA: number[] = Object.entries(CIVILIZACE)
@@ -36,7 +38,7 @@ export function Erb({ civ, velikost = 48 }: { civ: number | null; velikost?: num
  * neumí, takže je to tlačítko + vlastní seznam (role listbox). Zavírá se
  * klikem mimo, Escapem i výběrem; šipky a Enter fungují v seznamu.
  */
-export function VyberCivilizace({ hodnota, onZmena, popisek, sada }: Props) {
+export function VyberCivilizace({ hodnota, onZmena, popisek, sada, vypnuto = false }: Props) {
   const [otevreno, setOtevreno] = useState(false);
   const polozky = nabidka(sada, hodnota);
   const obal = useRef<HTMLDivElement>(null);
@@ -81,6 +83,7 @@ export function VyberCivilizace({ hodnota, onZmena, popisek, sada }: Props) {
         aria-label={popisek}
         aria-haspopup="listbox"
         aria-expanded={otevreno}
+        disabled={vypnuto}
         onClick={() => setOtevreno((o) => !o)}
       >
         <Erb civ={hodnota} />

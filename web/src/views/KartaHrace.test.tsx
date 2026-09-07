@@ -31,7 +31,7 @@ it("ukáže barvu a tým velkým písmem", () => {
 
 it("řekne, s kým se sdílí civilizace", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
-  expect(screen.getByText(/Pepa_CZ/)).toBeInTheDocument();
+  expect(screen.getByText(/sdílíš/)).toHaveTextContent("Pepa_CZ");
 });
 
 it("v 1v1 o sdílení civilizace nemluví", () => {
@@ -43,11 +43,16 @@ it("v 1v1 o sdílení civilizace nemluví", () => {
   expect(screen.queryByText(/sdílíš/i)).not.toBeInTheDocument();
 });
 
-it("ukáže záložní cestu — název lobby, heslo i číslo", () => {
+// Název lobby a číslo z karty zmizely (7. 9. 2026) stejně jako z režie:
+// tlačítko do hry stačí, zůstává jen heslo uprostřed.
+it("ukáže heslo, ale ne název ani číslo lobby", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
-  expect(screen.getByText("ROB-07")).toBeInTheDocument();
   expect(screen.getByText("k7rm2xq9")).toBeInTheDocument();
-  expect(screen.getByText("234230181")).toBeInTheDocument();
+  expect(screen.queryByText("ROB-07")).not.toBeInTheDocument();
+  expect(screen.queryByText("234230181")).not.toBeInTheDocument();
+  expect(screen.getByTestId("titulek-zapasu")).toHaveTextContent("Zápas #7");
+  expect(screen.getByRole("heading", { name: /připojuješ se/i })).toBeInTheDocument();
+  expect(screen.getByTestId("fajfka-lobby")).toBeInTheDocument();
 });
 
 it("dokud host nevložil odkaz, čeká se", () => {
@@ -56,8 +61,20 @@ it("dokud host nevložil odkaz, čeká se", () => {
   expect(screen.queryByRole("link", { name: /připojit/i })).not.toBeInTheDocument();
   expect(screen.getByText(/čeká se na hosta/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /vyhledat lobby/i })).toBeInTheDocument();
-  expect(screen.queryByText(/nejde odkaz|nefunguje tlačítko/i)).not.toBeInTheDocument();
-  expect(screen.getByText(/jakmile ji host založí/i)).toBeInTheDocument();
+  expect(screen.queryByText(/jakmile ji host založí|lobby zatím není vidět|v lobby si nastav/i)).not.toBeInTheDocument();
+  expect(screen.queryByTestId("fajfka-lobby")).not.toBeInTheDocument();
+});
+
+// Strany zápasu vedle sebe jako řádky ze skládání, jen ke čtení, s VS mezi
+// nimi; vlastní řádek je zvýrazněný a civilizace se nedá rozkliknout.
+it("ukáže strany zápasu vedle sebe s VS", () => {
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
+  expect(screen.getByText("VS")).toBeInTheDocument();
+  const radky = screen.getAllByTestId("radek-strany");
+  expect(radky).toHaveLength(4);
+  expect(radky[0]).toHaveClass("ja");
+  expect(screen.queryByText(/proti vám/i)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /civilizace marek/i })).toBeDisabled();
 });
 
 it("s odkazem už hledat nenabízí", () => {
@@ -94,7 +111,7 @@ it("spoluhráče i soupeře bez aliasu pojmenuje jménem ze Steamu", () => {
   };
   render(<KartaHrace zapas={bezAliasu} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
 
-  expect(screen.getByText(/TibbarZmr/)).toBeInTheDocument();
-  expect(screen.getByText(/Marecek/)).toBeInTheDocument();
+  expect(screen.getAllByText(/TibbarZmr/).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/Marecek/).length).toBeGreaterThan(0);
   expect(screen.queryByText(/76561199091641101/)).not.toBeInTheDocument();
 });

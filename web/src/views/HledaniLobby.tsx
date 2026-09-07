@@ -19,6 +19,8 @@ interface Props {
   /** Dokud je zapnuté a lobby není nalezená, hledá se samo každých pár vteřin. */
   automaticky?: boolean;
   intervalMs?: number;
+  /** Bez hlášek o průběhu (karta hráče má vlastní větu); chyby se ukážou vždy. */
+  tichy?: boolean;
 }
 
 type Stav =
@@ -40,6 +42,7 @@ export function HledaniLobby({
   odkaz = null,
   automaticky = false,
   intervalMs = INTERVAL_HLEDANI_MS,
+  tichy = false,
 }: Props) {
   const [stav, setStav] = useState<Stav>({ druh: "klid" });
   // Název lobby zná jen odpověď hledání; drží se, aby po nálezu nezmizel.
@@ -99,7 +102,7 @@ export function HledaniLobby({
             Lobby nalezena{nazev ? ` („${nazev}“)` : ""}
             {odkaz ? <Kopirovatelne hodnota={odkaz} popis="odkaz do lobby" jenIkona /> : null}
           </span>
-        ) : (
+        ) : tichy && stav.druh !== "chyba" ? null : (
           <Hlaska stav={stav} automaticky={automaticky} />
         )}
       </div>
