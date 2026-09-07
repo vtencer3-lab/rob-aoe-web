@@ -28,6 +28,8 @@ export interface UcastnikRow {
   tym: Tym;
   barva: Barva;
   civ: number | null;
+  /** 1v1 ELO ze žebříčku v době čtení — na kartě hráče vedle jména. */
+  elo1v1: number | null;
   jeHost: boolean;
   poradi: number;
   kliknulPripojit: Date | null;
@@ -111,7 +113,7 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
 
 async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
   const { rows } = await getPool().query(
-    `SELECT u.steam_id, p.alias, p.steam_name, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
+    `SELECT u.steam_id, p.alias, p.steam_name, p.elo_1v1, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
        FROM ucastnik u JOIN player p ON p.steam_id = u.steam_id
       WHERE u.zapas_id = $1
       ORDER BY u.poradi, u.steam_id`,
@@ -126,6 +128,7 @@ async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
       tym: row["tym"] as Tym,
       barva: row["barva"] as Barva,
       civ: (row["civ"] as number | null) ?? null,
+      elo1v1: (row["elo_1v1"] as number | null) ?? null,
       jeHost: row["je_host"] as boolean,
       poradi: row["poradi"] as number,
       kliknulPripojit: row["kliknul_pripojit"] as Date | null,

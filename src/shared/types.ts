@@ -67,6 +67,8 @@ export interface UcastnikView {
   barva: Barva;
   /** Předepsaná civilizace (herní id), null = libovolná. */
   civ: number | null;
+  /** 1v1 ELO ze žebříčku; chybí ve starších snímcích a testech. */
+  elo1v1?: number | null;
   jeHost: boolean;
   /** Slot v lobby, od nuly; v tomhle pořadí Rob hráče naklikal. */
   poradi: number;

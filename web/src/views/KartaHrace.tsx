@@ -111,6 +111,7 @@ function Strany({ ucastnici, ja }: { ucastnici: UcastnikView[]; ja: string }) {
                     {u.tym === 0 ? "–" : u.tym}
                   </span>
                   <span className="jmeno">{jmenoHrace(u)}</span>
+                  <span className="elo">{u.elo1v1 !== null && u.elo1v1 !== undefined ? <small>({u.elo1v1})</small> : null}</span>
                   <VyberCivilizace popisek={`Civilizace ${jmenoHrace(u)}`} sada={null} hodnota={u.civ} onZmena={() => {}} vypnuto />
                 </li>
               ))}

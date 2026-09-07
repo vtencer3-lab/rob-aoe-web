@@ -493,7 +493,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .vs-rozlozeni { display: flex; align-items: center; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
 .vs-rozlozeni .vs { font-size: 2.2rem; font-weight: 800; color: var(--akcent); letter-spacing: 0.05em; }
 .skladani.jen-ke-cteni { border: none; padding: 0; margin: 0; }
-.skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem max-content 14rem; column-gap: 0.5rem; }
+.skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 14rem; column-gap: 0.5rem; }
 .skladani.jen-ke-cteni .radek { cursor: default; }
 .skladani.jen-ke-cteni .radek.ja .jmeno { font-weight: 700; color: var(--akcent); }
 .skladani.jen-ke-cteni .vyber-civ-tlacitko:disabled { opacity: 0.6; cursor: default; }

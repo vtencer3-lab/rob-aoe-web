@@ -46,6 +46,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
       tym: u.tym,
       barva: u.barva,
       civ: u.civ,
+      elo1v1: u.elo1v1,
       jeHost: u.jeHost,
       poradi: u.poradi,
       kliknulPripojit: u.kliknulPripojit?.toISOString() ?? null,

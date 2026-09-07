@@ -18,7 +18,7 @@ const zapas: ZapasView = {
   ucastnici: [
     { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, elo1v1: 1136, jeHost: false, poradi: 0, kliknulPripojit: null },
     { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
@@ -73,6 +73,7 @@ it("ukáže strany zápasu vedle sebe s VS", () => {
   const radky = screen.getAllByTestId("radek-strany");
   expect(radky).toHaveLength(4);
   expect(radky[0]).toHaveClass("ja");
+  expect(radky[2]!.querySelector(".elo")).toHaveTextContent("(1136)");
   expect(screen.queryByText(/proti vám/i)).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: /civilizace marek/i })).toBeDisabled();
 });
