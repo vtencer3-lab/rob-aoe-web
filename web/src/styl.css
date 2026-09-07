@@ -90,7 +90,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   padding: 0;
   margin: 0.4rem 0;
   display: grid;
-  grid-template-columns: 1rem 2.1rem 2.1rem max-content 4.4rem 15rem 1fr 1.9rem;
+  grid-template-columns: 1rem 2.1rem 2.1rem max-content 4.4rem 16.5rem 1fr 1.9rem;
   column-gap: 0.5rem;
 }
 .skladani .radek {
@@ -418,7 +418,8 @@ button.odebrat:hover { color: #e07a6a; }
 .vyber-civ .erb { height: 48px; width: auto; flex: none; }
 .vyber-civ-seznam {
   position: absolute; z-index: 20; top: calc(100% + 4px); left: 0;
-  min-width: 18rem; max-height: 26rem; overflow-y: auto;
+  /* Stejně široký jako tlačítko nad ním (sloupec 16,5 rem). */
+  width: 100%; box-sizing: border-box; max-height: 26rem; overflow-y: auto;
   margin: 0; padding: 0.3rem; list-style: none;
   background: #1f1a14; border: 1px solid #3d352a; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
