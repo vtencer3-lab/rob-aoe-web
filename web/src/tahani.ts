@@ -14,6 +14,21 @@ interface Tazeny {
   posledniY: number;
 }
 
+/**
+ * Svislý posun z právě běžící animace (translateY v matici transformu).
+ * Během FLIP přechodu je řádek opticky jinde, než kde v rozvržení sedí;
+ * rozhodovat o prohození se musí podle rozvržení, jinak se při rychlém
+ * tahu prohazuje tam a zpět a řádky se „rozletí“.
+ */
+function animovanyPosunY(el: HTMLElement): number {
+  const t = getComputedStyle(el).transform;
+  if (!t || t === "none") return 0;
+  const m = /matrix\(([^)]+)\)/.exec(t);
+  if (!m) return 0;
+  const casti = m[1]!.split(",").map((x) => Number(x.trim()));
+  return casti.length === 6 ? (casti[5] ?? 0) : 0;
+}
+
 /** Interaktivní prvky uvnitř řádku, ze kterých se tažení nezačíná. */
 const NETAHAT = "button, a, input, select, textarea, [role='listbox'], [role='option'], .vyber-civ";
 
@@ -92,7 +107,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     for (const s of sourozenci) {
       const r = s.getBoundingClientRect();
       if (r.height === 0) continue;
-      const stred = r.top + r.height / 2;
+      const stred = r.top - animovanyPosunY(s) + r.height / 2;
       const sousedJePred = Boolean(s.compareDocumentPosition(t.el) & Node.DOCUMENT_POSITION_FOLLOWING);
       if ((sousedJePred && e.clientY < stred) || (!sousedJePred && e.clientY > stred)) {
         presunRef.current(t.skupina, t.steamId, s.dataset["tahId"]!);
