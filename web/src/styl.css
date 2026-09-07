@@ -553,3 +553,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .elo-tymu h4 { margin: 0 0 0.1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); }
 .elo-tymu strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
 .elo-tymu small { display: block; color: var(--tlumene); font-size: 0.75rem; }
+
+/* Robovo jméno v záhlaví je tlačítko (easter egg), ale vypadá jako text;
+   hover ho jen lehce zezlátne. */
+h1 button.jmeno-roba { all: unset; cursor: pointer; transition: color 0.2s; }
+h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible { color: var(--akcent); }

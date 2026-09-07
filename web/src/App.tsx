@@ -15,6 +15,8 @@ import { Skladani } from "./views/Skladani.js";
 import { SpravaAkce } from "./views/SpravaAkce.js";
 import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
+/** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
+import crashoutUrl from "./assets/crashout.mp3";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
 function useUlozenyPrepinac(klic: string): [boolean, (v: boolean) => void] {
@@ -95,7 +97,20 @@ export function App() {
   return (
     <main>
       <header>
-        <h1>Komunitní hry — RobDiesALot</h1>
+        <h1>
+          Komunitní hry —{" "}
+          <button
+            type="button"
+            className="jmeno-roba"
+            title="RobDiesALot"
+            onClick={() => {
+              // Prohlížeč bez autoplay nebo bez zvuku: ticho, žádná chyba.
+              void new Audio(crashoutUrl).play().catch(() => {});
+            }}
+          >
+            RobDiesALot
+          </button>
+        </h1>
         <div className="hlavicka-vpravo">
           {me ? (
             <span>
