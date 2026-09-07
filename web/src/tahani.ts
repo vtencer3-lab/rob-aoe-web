@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type DragEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, type DragEvent, type PointerEvent } from "react";
 import type { Skupina } from "./skladani.js";
 
 /** Jak dlouho se ostatní řádky posouvají na nové místo. */
@@ -31,6 +31,9 @@ const NETAHAT = "button, a, input, select, textarea, [role='listbox'], [role='op
  * geometrii neumí.
  */
 export function useTahani(presun: (skupina: Skupina, odId: string, naId: string) => void) {
+  // Posluchače na window žijí přes překreslení; volají vždy aktuální presun.
+  const presunRef = useRef(presun);
+  presunRef.current = presun;
   const tazenyHtml5 = useRef<{ steamId: string; skupina: Skupina } | null>(null);
   const tazeny = useRef<Tazeny | null>(null);
   const prvky = useRef(new Map<string, HTMLElement>());
@@ -74,22 +77,47 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     predchoziTop.current = nove;
   });
 
-  const poloz = (e: PointerEvent<HTMLElement>) => {
+  // Pohyb a puštění se poslouchají na window, ne na řádku: při přeskládání
+  // React řádek v DOM přesune a prohlížeč mu tím vezme zachycení kurzoru,
+  // takže tažení přes víc než jednu pozici se samo přerušilo.
+  const posun = (e: globalThis.PointerEvent) => {
     const t = tazeny.current;
-    if (!t || t.el !== e.currentTarget) return;
+    if (!t) return;
+    t.posledniY = e.clientY;
+    t.el.style.transform = `translateY(${e.clientY - t.vychoziY}px)`;
+    // Přejel kurzor střed souseda? Pak si s ním prohodit místo.
+    const rodic = t.el.parentElement;
+    if (!rodic) return;
+    const sourozenci = Array.from(rodic.children).filter((c): c is HTMLElement => c instanceof HTMLElement && c !== t.el && c.hasAttribute("data-tah-id"));
+    for (const s of sourozenci) {
+      const r = s.getBoundingClientRect();
+      if (r.height === 0) continue;
+      const stred = r.top + r.height / 2;
+      const sousedJePred = Boolean(s.compareDocumentPosition(t.el) & Node.DOCUMENT_POSITION_FOLLOWING);
+      if ((sousedJePred && e.clientY < stred) || (!sousedJePred && e.clientY > stred)) {
+        presunRef.current(t.skupina, t.steamId, s.dataset["tahId"]!);
+        break;
+      }
+    }
+  };
+
+  const poloz = () => {
+    const t = tazeny.current;
+    if (!t) return;
     tazeny.current = null;
+    window.removeEventListener("pointermove", posun);
+    window.removeEventListener("pointerup", poloz);
+    window.removeEventListener("pointercancel", poloz);
     t.el.classList.remove("v-ruce");
     t.el.style.transition = `transform ${DOBA_POSUNU_MS}ms ease`;
     t.el.style.transform = "";
     t.el.addEventListener("transitionend", () => {
       t.el.style.transition = "";
     }, { once: true });
-    try {
-      t.el.releasePointerCapture(t.pointerId);
-    } catch {
-      // Kurzor už zachycený nebyl (jsdom, nebo prohlížeč po pointercancel).
-    }
   };
+
+  // Odpojení komponenty uprostřed tažení nesmí nechat posluchače na window.
+  useEffect(() => poloz, []);
 
   return (skupina: Skupina, steamId: string) => ({
     ref: (el: HTMLElement | null) => {
@@ -101,41 +129,15 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
       // jsdom pointer událostem tlačítko nedává — chybějící bereme jako levé.
       if ((e.button ?? 0) !== 0 || (e.target as HTMLElement).closest(NETAHAT)) return;
       const el = e.currentTarget;
+      if (tazeny.current) poloz();
       tazeny.current = { steamId, skupina, el, pointerId: e.pointerId, vychoziY: e.clientY, posledniY: e.clientY };
       el.classList.add("v-ruce");
       el.style.transition = "none";
-      try {
-        el.setPointerCapture(e.pointerId);
-      } catch {
-        // jsdom setPointerCapture neumí; tažení pak funguje jen přes HTML5 události.
-      }
+      window.addEventListener("pointermove", posun);
+      window.addEventListener("pointerup", poloz);
+      window.addEventListener("pointercancel", poloz);
       e.preventDefault();
     },
-    onPointerMove: (e: PointerEvent<HTMLElement>) => {
-      const t = tazeny.current;
-      if (!t || t.el !== e.currentTarget) return;
-      t.posledniY = e.clientY;
-      t.el.style.transform = `translateY(${e.clientY - t.vychoziY}px)`;
-      // Přejel kurzor střed souseda? Pak si s ním prohodit místo.
-      const rodic = t.el.parentElement;
-      if (!rodic) return;
-      const sourozenci = Array.from(rodic.children).filter((c): c is HTMLElement => c instanceof HTMLElement && c !== t.el && c.hasAttribute("data-tah-id"));
-      for (const s of sourozenci) {
-        const r = s.getBoundingClientRect();
-        if (r.height === 0) continue;
-        const stred = r.top + r.height / 2;
-        const sousedJePred = Boolean(s.compareDocumentPosition(t.el) & Node.DOCUMENT_POSITION_FOLLOWING);
-        if ((sousedJePred && e.clientY < stred) || (!sousedJePred && e.clientY > stred)) {
-          presun(skupina, t.steamId, s.dataset["tahId"]!);
-          break;
-        }
-      }
-    },
-    onPointerUp: poloz,
-    onPointerCancel: poloz,
-    // Prohlížeč může zachycení kurzoru vzít (jiné okno, gesto) — řádek
-    // nesmí zůstat viset v ruce.
-    onLostPointerCapture: poloz,
 
     // Záloha: HTML5 drag & drop (testy, prohlížeče bez pointer událostí).
     onDragStart: () => {
