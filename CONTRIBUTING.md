@@ -15,6 +15,7 @@ Co kde hledat:
 | `docs/analyza-projektu.md` | technická analýza: architektura, datový model, API, rizika |
 | `docs/analyza-automaticke-hledani-lobby.md` | seznam lobby ze hry (Worlds Edge): jak se hledá lobby, **§6 tabulka klíčů nastavení lobby a slotů** |
 | `docs/nasazeni-u-roba.md` | alternativní nasazení na Robův vlastní stroj |
+| `docs/superpowers/specs`, `docs/superpowers/plans` | proč to vzniklo takhle |
 
 ## Nejkratší možné shrnutí, jak se tu pracuje
 
@@ -29,7 +30,6 @@ Co kde hledat:
 
 Detaily v `docs/nasazeni-jouki-cz.md`; kontrolní seznam před pushem je níž
 v „Jak se tu ověřuje práce“.
-| `docs/superpowers/specs`, `docs/superpowers/plans` | proč to vzniklo takhle |
 
 ## Na čem celý produkt stojí
 
