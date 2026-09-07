@@ -156,7 +156,8 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 .lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: stretch; }
 .lobby-rozlozeni .leva { min-width: 0; display: flex; }
 .lobby-rozlozeni .skladani { margin: 0; border: none; padding: 0; flex: 1; display: flex; flex-direction: column; }
-.lobby-rozlozeni .skladani .sestava { flex: 1; }
+/* Seznam roste dolů, ale řádky se neroztahují — mřížka drží řádky nahoře. */
+.lobby-rozlozeni .skladani .sestava { flex: 1; align-content: start; }
 .lobby-rozlozeni .skladani .vytvorit { align-self: flex-start; }
 @media (max-width: 60rem) { .lobby-rozlozeni { grid-template-columns: 1fr; } }
 .zalozeni-akce { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
@@ -531,3 +532,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
 .seznam td .jmeno-hrace { cursor: help; display: inline-flex; align-items: center; gap: 0.5rem; }
 .seznam td .jmeno-hrace img { width: 28px; height: 28px; border-radius: 3px; flex: none; }
+
+/* Tažený řádek „v ruce“: jede s kurzorem, nad ostatními, se stínem. Ostatní
+   řádky se na nové místo posouvají animací (tahani.ts, FLIP). */
+.skladani .radek, .seznam-rezie tbody tr { touch-action: none; }
+.v-ruce { position: relative; z-index: 5; background: #2c2620; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55); cursor: grabbing !important; }
+.seznam-rezie tbody tr.v-ruce td { background: #2c2620; }
