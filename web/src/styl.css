@@ -157,7 +157,10 @@ input, select { background: #241f19; color: var(--text); border: 1px solid #4a41
 .lobby-rozlozeni .leva { min-width: 0; display: flex; }
 .lobby-rozlozeni .skladani { margin: 0; border: none; padding: 0; flex: 1; display: flex; flex-direction: column; }
 /* Seznam roste dolů, ale řádky se neroztahují — mřížka drží řádky nahoře. */
-.lobby-rozlozeni .skladani .sestava { flex: 1; align-content: start; }
+/* Součet ELO týmů sedí hned pod seznamem; ke spodnímu okraji se odsouvá až
+   souhrn s tlačítkem. */
+.lobby-rozlozeni .skladani .sestava { align-content: start; }
+.lobby-rozlozeni .skladani .souhrn { margin-top: auto; }
 .lobby-rozlozeni .skladani .vytvorit { align-self: flex-start; }
 @media (max-width: 60rem) { .lobby-rozlozeni { grid-template-columns: 1fr; } }
 .zalozeni-akce { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
@@ -549,8 +552,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 
 /* Součet ELO za tým pod seznamem vybraných. Dva týmy vedle sebe, tři a
    čtyři se zalomí pod ně. */
-.elo-tymu { display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem; margin: 0.8rem 0 0; }
-.elo-tymu .tym { min-width: 8rem; padding: 0.5rem 0.9rem; border: 1px solid #3d352a; border-radius: 6px; }
+/* Týmy v jednom řádku; když se nevejdou, po dvou. */
+.elo-tymu { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.6rem 1rem; margin: 0.8rem 0 0; }
+.elo-tymu .tym { padding: 0.5rem 0.9rem; border: 1px solid #3d352a; border-radius: 6px; }
 .elo-tymu h4 { margin: 0 0 0.1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); }
 .elo-tymu strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
 .elo-tymu small { display: block; color: var(--tlumene); font-size: 0.75rem; }

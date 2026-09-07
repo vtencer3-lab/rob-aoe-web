@@ -134,7 +134,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci }: Props) {
           ))}
         </div>
       ) : null}
-      <p className="zaloha" data-testid="souhrn-sestavy">
+      <p className="zaloha souhrn" data-testid="souhrn-sestavy">
         {vstupy.length === 0 ? "Nikdo není vybraný." : chyba ? `${format || "Sestava"} — ${chyba}` : `Formát: ${format}`}
       </p>
       <button
