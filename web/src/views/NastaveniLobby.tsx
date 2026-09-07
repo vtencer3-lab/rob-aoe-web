@@ -11,6 +11,7 @@ import {
   SUROVINY,
   VELIKOSTI,
   VITEZSTVI,
+  VYCHOZI_NASTAVENI,
   type NastaveniLobby as Nastaveni,
 } from "../../../src/shared/lobbyKontrola.js";
 import { MAPY } from "../../../src/shared/mapy.js";
@@ -46,13 +47,17 @@ const ADVANCED_SETTINGS: ReadonlyArray<{ klic: KlicTrojstavu | "cheaty"; popis: 
   { klic: "recordGame", popis: "Record Game" },
 ];
 
-function Vyber({ popis, hodnota, tabulka, jedno, onZmena }: { popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; onZmena: (v: number | null) => void }) {
+/** AI podle obtížnosti, ne podle čísla ve hře (to jde obráceně a Extreme má 5). */
+const PORADI_AI = [4, 3, 2, 1, 0, 5];
+
+function Vyber({ popis, hodnota, tabulka, jedno, poradi, onZmena }: { popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; poradi?: number[]; onZmena: (v: number | null) => void }) {
+  const polozky = poradi ? poradi.map((id) => [String(id), tabulka[id]!] as const) : Object.entries(tabulka);
   return (
     <label className="radek">
       <span>{popis}:</span>
       <select value={hodnota ?? ""} onChange={(e) => onZmena(e.target.value === "" ? null : Number(e.target.value))}>
         {jedno ? <option value="">–</option> : null}
-        {Object.entries(tabulka).map(([v, nazev]) => (
+        {polozky.map(([v, nazev]) => (
           <option key={v} value={v}>
             {nazev}
           </option>
@@ -68,16 +73,17 @@ function Vyber({ popis, hodnota, tabulka, jedno, onZmena }: { popis: string; hod
  * prohlížeč jako neurčité (indeterminate), vedle popisku je i „–“ textem.
  * Allow Cheats „–“ nemá: cheaty patří do hlavní kontroly.
  */
-function Zaskrtavatko({ popis, hodnota, jedno, onZmena }: { popis: string; hodnota: boolean | null; jedno: boolean; onZmena: (v: boolean | null) => void }) {
+function Zaskrtavatko({ popis, hodnota, jedno, vypnuto = false, onZmena }: { popis: string; hodnota: boolean | null; jedno: boolean; vypnuto?: boolean; onZmena: (v: boolean | null) => void }) {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = hodnota === null;
   }, [hodnota]);
   return (
-    <label className="zaskrtavaci">
+    <label className={vypnuto ? "zaskrtavaci vypnute" : "zaskrtavaci"}>
       <input
         ref={ref}
         type="checkbox"
+        disabled={vypnuto}
         checked={hodnota === true}
         onChange={() => onZmena(hodnota === false ? true : hodnota === true && jedno ? null : false)}
       />
@@ -154,7 +160,7 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
             ))}
           </select>
         </label>
-        <Vyber popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno onZmena={(v) => setN({ ...n, aiObtiznost: v })} />
+        <Vyber popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno poradi={PORADI_AI} onZmena={(v) => setN({ ...n, aiObtiznost: v })} />
         <Vyber popis="Resources" hodnota={n.suroviny} tabulka={SUROVINY} jedno onZmena={(v) => setN({ ...n, suroviny: v })} />
         <label className="radek">
           <span>Population:</span>
@@ -174,8 +180,17 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
       <div className="sloupce">
         <fieldset>
           <legend>Team Settings</legend>
+          {/* Team Positions jde ve hře zaškrtnout jen s Team Together; bez něj
+              je zašedlé a kontrola ho bere jako „je to jedno“. */}
           {TEAM_SETTINGS.map(({ klic, popis }) => (
-            <Zaskrtavatko key={klic} popis={popis} hodnota={n[klic]} jedno onZmena={(v) => setN({ ...n, [klic]: v })} />
+            <Zaskrtavatko
+              key={klic}
+              popis={popis}
+              hodnota={n[klic]}
+              jedno
+              vypnuto={klic === "teamPositions" && n.teamTogether === false}
+              onZmena={(v) => setN(klic === "teamTogether" && v === false ? { ...n, teamTogether: false, teamPositions: null } : { ...n, [klic]: v })}
+            />
           ))}
         </fieldset>
         <fieldset>
@@ -189,8 +204,17 @@ export function NastaveniLobby({ ulozene, onUlozit }: Props) {
           )}
         </fieldset>
       </div>
-      <p className="zaloha">„–“ = je to jedno: kontrola hodnotu jen vypíše. Zaškrtávátko se kliknutím přepíná vypnuto → zapnuto → „–“.</p>
-      <button type="submit">Uložit nastavení lobby</button>
+      {/* Reset vrátí formulář na výchozí hodnoty, Načíst na to, co je u akce
+          uložené; ani jedno samo neukládá — na to je Uložit. */}
+      <div className="ovladani">
+        <button type="submit">Uložit nastavení lobby</button>
+        <button type="button" onClick={() => setN({ ...VYCHOZI_NASTAVENI })}>
+          Reset nastavení
+        </button>
+        <button type="button" onClick={() => setN(doplnNastaveni(ulozene as Partial<Nastaveni>))}>
+          Načíst uložené
+        </button>
+      </div>
     </form>
   );
 }

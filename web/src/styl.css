@@ -99,9 +99,16 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   justify-content: center;
   font-weight: 800;
   font-family: Georgia, "Times New Roman", serif;
-  border: 2px solid #5b4a2e;
-  box-shadow: inset 0 0 0 1px rgba(255, 230, 180, 0.35), 0 1px 0 #000;
-  border-radius: 3px;
+  border: 1px solid #2a2118;
+  /* 3D zkosení jako ve hře: světlá hrana vlevo nahoře, tmavá vpravo dole,
+     tenký zlatý rámeček a lesk přes horní půlku. */
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.55),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 3px rgba(212, 175, 95, 0.55),
+    0 1px 0 #000;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.12));
+  border-radius: 2px;
   flex: none;
 }
 .skladani .volba-barva { color: #fff; text-shadow: 0 1px 1px #000; }
@@ -113,7 +120,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .skladani .volba-barva.barva-6 { background: var(--b6); }
 .skladani .volba-barva.barva-7 { background: var(--b7); }
 .skladani .volba-barva.barva-8 { background: var(--b8); color: #241d10; text-shadow: none; }
-.skladani .volba-tym { background: linear-gradient(#e8d6b6, #c9b28a); color: #3b2a12; }
+.skladani .volba-tym { background-color: #d9c49f; color: #3b2a12; }
 
 /* Vstupní pole nemělo do teď žádný styl — na tmavém podkladu svítilo bíle. */
 input, select { background: #241f19; color: var(--text); border: 1px solid #4a4133; border-radius: 4px; padding: 0.4rem 0.6rem; }
@@ -393,7 +400,10 @@ button.odebrat:hover { color: #e07a6a; }
 .nastaveni-lobby .sloupce legend { font-weight: 700; font-size: 1rem; margin-bottom: 0.3rem; }
 .nastaveni-lobby .sloupce label.zaskrtavaci { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; padding: 0.1rem 0; }
 .nastaveni-lobby .jedno-znak { margin: 0; font-weight: 700; }
-.nastaveni-lobby > .zaloha { max-width: 40rem; }
+.nastaveni-lobby .sloupce label.zaskrtavaci.vypnute { opacity: 0.45; }
+/* Panel zarovnaný doprava, jako je herní panel u pravého okraje. */
+.nastaveni-lobby { margin-left: auto; width: fit-content; max-width: 100%; }
+.nastaveni-lobby .ovladani { justify-content: flex-end; }
 
 /* Kroky hosta a kontrola lobby jako sekce se záhlavím; hotový krok má
    vpravo velkou fajfku. Stejná sekce kontroly je i v režii. */

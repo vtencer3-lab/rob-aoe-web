@@ -53,3 +53,31 @@ it("volby mimo hlavní kontrolu jde nastavit na „–“, zaškrtávátka mají
 
   expect(onUlozit).toHaveBeenCalledWith({ ...VYCHOZI_NASTAVENI, sadaCivilizaci: 2, primeri: 20, lockTeams: false, recordGame: null, cheaty: false });
 });
+
+it("Reset vrátí výchozí hodnoty a Načíst uložené zahodí neuložené změny; nic z toho samo neukládá", () => {
+  const onUlozit = vi.fn();
+  render(<NastaveniLobby ulozene={{ populace: 150 }} onUlozit={onUlozit} />);
+  fireEvent.change(screen.getByLabelText(/population/i), { target: { value: "300" } });
+  fireEvent.click(screen.getByRole("button", { name: /načíst uložené/i }));
+  expect(screen.getByLabelText(/population/i)).toHaveValue(150);
+  fireEvent.click(screen.getByRole("button", { name: /reset nastavení/i }));
+  expect(screen.getByLabelText(/population/i)).toHaveValue(200);
+  expect(onUlozit).not.toHaveBeenCalled();
+});
+
+it("bez Team Together je Team Positions zašedlé a nastavené na „–“", () => {
+  render(<NastaveniLobby ulozene={{ teamPositions: true }} onUlozit={vi.fn()} />);
+  const positions = screen.getByLabelText(/team positions/i) as HTMLInputElement;
+  expect(positions).toBeEnabled();
+  fireEvent.click(screen.getByLabelText(/team together/i)); // zapnuto → –
+  expect(positions).toBeEnabled();
+  fireEvent.click(screen.getByLabelText(/team together/i)); // – → vypnuto
+  expect(positions).toBeDisabled();
+  expect(positions.indeterminate).toBe(true);
+});
+
+it("AI Difficulty je seřazená podle obtížnosti", () => {
+  render(<NastaveniLobby ulozene={undefined} onUlozit={vi.fn()} />);
+  const volby = Array.from((screen.getByLabelText(/ai difficulty/i) as HTMLSelectElement).options).map((o) => o.text);
+  expect(volby).toEqual(["–", "Easiest", "Standard", "Moderate", "Hard", "Hardest", "Extreme"]);
+});

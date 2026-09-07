@@ -272,8 +272,9 @@ si ji kdo sbalil. Co má lobby splňovat, si Rob nastaví v panelu akce („Jak 
 vypadat lobby“), který je rozložený stejně jako herní panel Game Settings;
 AI Difficulty a Lock Teams začínají na „–“.
 
-Civilizaci hráče vybírá Rob při skládání ze seznamu s erby (výřezy z herních
-souborů `resources/_common/wpfg/resources/civ_emblems`, viz `web/src/civErby.ts`).
+Civilizaci hráče vybírá Rob při skládání ze seznamu s erby (kulaté ikony z
+herních souborů `resources/_common/wpfg/resources/civ_techtree`, tytéž co
+v lobby, viz `web/src/civErby.ts`).
 
 Zápas končí buď zápisem vítěze (tlačítko za každou stranu: „Vyhrál Trokner“,
 „Vyhrál modrý tým“), nebo zrušením. Zrušený zápas jde vrátit do hry, nebo
