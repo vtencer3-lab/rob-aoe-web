@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { cesta } from "../cesty.js";
 
 interface DevInfo {
   hraci: string[];
@@ -22,7 +23,7 @@ export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
     let zruseno = false;
     void (async () => {
       try {
-        const odpoved = await fetch("/api/dev/hraci");
+        const odpoved = await fetch(cesta("/api/dev/hraci"));
         if (!odpoved.ok || zruseno) return;
         setInfo((await odpoved.json()) as DevInfo);
       } catch {
@@ -48,21 +49,21 @@ export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
       </p>
 
       <div className="ovladani">
-        <a className="tlacitko" href="/api/dev/naplnit?pocet=3">
+        <a className="tlacitko" href={cesta("/api/dev/naplnit?pocet=3")}>
           Nasypat 3 hráče do akce
         </a>
         {info.hraci.map((jmeno) => (
-          <a key={jmeno} href={`/api/dev/login?jmeno=${encodeURIComponent(jmeno)}`}>
+          <a key={jmeno} href={cesta(`/api/dev/login?jmeno=${encodeURIComponent(jmeno)}`)}>
             Jsem {jmeno}
           </a>
         ))}
-        <a href={`/api/dev/login?jmeno=${encodeURIComponent(info.reziser.jmeno)}`}>
+        <a href={cesta(`/api/dev/login?jmeno=${encodeURIComponent(info.reziser.jmeno)}`)}>
           Jsem {info.reziser.jmeno}
         </a>
         {info.skutecni
           .filter((u) => u.steamId !== jaSteamId)
           .map((u) => (
-            <a key={u.steamId} href={`/api/dev/login?steamId=${encodeURIComponent(u.steamId)}`}>
+            <a key={u.steamId} href={cesta(`/api/dev/login?steamId=${encodeURIComponent(u.steamId)}`)}>
               Jsem {u.alias ?? u.steamId}
             </a>
           ))}
@@ -73,10 +74,10 @@ export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
           svítí i uprostřed zápasu, který zrovna hraje. */}
       <p className="zaloha">Režii má: {kdoMaRezii}</p>
       <div className="ovladani">
-        <a href={`/api/dev/rezie?steamId=${encodeURIComponent(info.reziser.steamId)}`}>
+        <a href={cesta(`/api/dev/rezie?steamId=${encodeURIComponent(info.reziser.steamId)}`)}>
           Režii dej účtu {info.reziser.jmeno}
         </a>
-        <a href="/api/dev/rezie">Režii dej tomuhle účtu</a>
+        <a href={cesta("/api/dev/rezie")}>Režii dej tomuhle účtu</a>
       </div>
     </section>
   );

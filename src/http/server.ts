@@ -15,6 +15,7 @@ import { HttpError } from "./guards.js";
 import { registerEventRoutes } from "./routes/events.js";
 import { registerMatchRoutes } from "./routes/matches.js";
 import { registerStreamRoutes } from "./routes/stream.js";
+import { VERZE } from "../shared/verze.js";
 
 function vychoziDeps(): AuthDeps {
   return {
@@ -47,7 +48,9 @@ function nastaveniLogu(): { level: string } | false {
 export function buildServer(deps: AuthDeps = vychoziDeps()): FastifyInstance {
   const app = Fastify({ logger: nastaveniLogu() });
   app.register(cookie);
-  app.get("/api/health", async () => ({ ok: true }));
+  // Verze je v odpovědi schválně: po nasazení jde jedním curl ověřit, že běží
+  // opravdu ten build, který měl.
+  app.get("/api/health", async () => ({ ok: true, verze: VERZE }));
   registerAuthRoutes(app, deps);
   registerEventRoutes(app);
   registerMatchRoutes(app);

@@ -13,6 +13,23 @@ vznikne funkční odkaz.
 hráče, `aoe2de://1/<id>` do téže lobby jako diváka. Ukládá se **jen to číslo**,
 oba odkazy se z něj odvozují. Nikdy neukládat sestavené URI.
 
+## Větve, verze a nasazení (platí pro každého agenta v tomhle repu)
+
+Web běží na **jouki.cz** ve dvou kopiích a nasazuje se samo z commitu:
+`dev` → <https://jouki.cz/aoe/dev>, `main` → <https://jouki.cz/aoe>.
+Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
+
+- **Pracuje se ve větvi `dev`.** Do `main` se přímo necommituje.
+- **Každý commit, který mění chování, zvedne verzi:** `npm run verze`
+  (patch) v tomtéž commitu. Nová funkce nebo migrace = `npm run verze -- minor`.
+  Verze je v `package.json` a `src/shared/verze.ts`, příkaz mění obojí.
+- **Release jen na výslovný pokyn** („releasni“, „pushni do main“): PR
+  `dev → main` a merge. Tím se nasadí ostrá verze. `dev` se nemaže.
+- Po nasazení ověřit `curl https://jouki.cz/aoe/dev/api/health` (nebo `/aoe/`),
+  že vrací verzi, která se právě pushla.
+- **Do repa nikdy nepatří přihlašovací údaje** — je veřejné. Nasazení žádné
+  nepotřebuje.
+
 ## Konvence
 
 - **Identifikátory i uživatelské texty česky**, commity anglicky (rozkazovací
@@ -33,6 +50,7 @@ npm run db:migrate          # migrace (čte .env)
 npm run dev                 # server s watch
 npm --prefix web run dev    # frontend s watch
 npm run build && npm start  # produkční build a běh na :3000
+npm run verze               # zvedne patch verzi (package.json + src/shared/verze.ts)
 
 npm test                    # hermetické
 npm run test:db             # databázové — POZOR níž

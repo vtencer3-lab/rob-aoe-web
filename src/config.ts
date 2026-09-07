@@ -6,9 +6,52 @@ function povinne(jmeno: string, proc?: string): string {
   return hodnota;
 }
 
+/**
+ * Cesta, pod kterou web veřejně běží, odvozená z BASE_URL: pro
+ * `https://jouki.cz/aoe` je to `/aoe`, pro `http://localhost:3000` prázdný
+ * řetězec. Reverzní proxy (Traefik v Coolify) prefix před předáním serveru
+ * odstraní, takže routy zůstávají na kořeni — prefix potřebují jen věci, které
+ * jdou zpátky do prohlížeče: přesměrování a cesta cookie.
+ */
+export function zakladniCesta(baseUrl: string): string {
+  try {
+    return new URL(baseUrl).pathname.replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Název cookie se sezením. Ostrá a vývojová verze běží na téže doméně pod
+ * cestami `/aoe` a `/aoe/dev`; cookie s cestou `/aoe` prohlížeč posílá i na
+ * `/aoe/dev`, takže by se obě verze o jedno `sid` přetahovaly. Jiný název
+ * pro každou cestu to řeší bez další konfigurace.
+ */
+export function nazevCookie(basePath: string): string {
+  return `sid${basePath.replace(/\//g, "_")}`;
+}
+
 export const config = {
   get baseUrl(): string {
     return process.env["BASE_URL"] ?? "http://localhost:3000";
+  },
+  get basePath(): string {
+    return zakladniCesta(this.baseUrl);
+  },
+  get cookieNazev(): string {
+    return nazevCookie(this.basePath);
+  },
+  /** Kam se po přihlášení a ze zkušebních dveří vrací prohlížeč. */
+  get domovskaCesta(): string {
+    return `${this.basePath}/`;
+  },
+  /**
+   * Na čem server poslouchá. Výchozí loopback: veřejný přístup vede vždy přes
+   * tunel nebo proxy. V Docker kontejneru musí být 0.0.0.0, jinak se k němu
+   * proxy nedostane.
+   */
+  get host(): string {
+    return process.env["HOST"] ?? "127.0.0.1";
   },
   port: Number(process.env["PORT"] ?? 3000),
   steamApiKey: process.env["STEAM_API_KEY"] ?? "",

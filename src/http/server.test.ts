@@ -1,3 +1,4 @@
+import { VERZE } from "../shared/verze.js";
 import { describe, expect, it } from "vitest";
 import { buildServer } from "./server.js";
 
@@ -6,7 +7,7 @@ describe("server", () => {
     const app = buildServer();
     const res = await app.inject({ method: "GET", url: "/api/health" });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ok: true });
+    expect(res.json()).toEqual({ ok: true, verze: VERZE });
     await app.close();
   });
 

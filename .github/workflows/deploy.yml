@@ -1,0 +1,42 @@
+name: Nasazení na jouki.cz
+
+# Commit do main = nová verze na https://jouki.cz/aoe,
+# commit do dev  = nová verze na https://jouki.cz/aoe/dev.
+#
+# Tahle akce je rychlá cesta: řekne Coolify na serveru, ať znovu sestaví
+# a nasadí. Potřebuje k tomu secret COOLIFY_TOKEN (nastavuje vlastník repa
+# v Settings → Secrets → Actions). Když secret chybí, akce jen skončí s
+# poznámkou — nasazení pak stejně proběhne, protože server si větve
+# main a dev hlídá sám a nový commit nasadí do minuty
+# (viz docs/nasazeni-jouki-cz.md). Žádné přihlašovací údaje v repu nejsou.
+
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+concurrency:
+  group: nasazeni-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  nasadit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Požádat Coolify o nasazení větve ${{ github.ref_name }}
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          UUID_MAIN: "qjaf9z9nfefm17tc6yr1xcsf"
+          UUID_DEV: "wxju55zz9imrhn9lco0drrvc"
+        run: |
+          case "${{ github.ref_name }}" in
+            main) UUID="$UUID_MAIN" ;;
+            dev)  UUID="$UUID_DEV" ;;
+            *)    echo "Větev ${{ github.ref_name }} se nenasazuje."; exit 0 ;;
+          esac
+          if [ -z "$COOLIFY_TOKEN" ]; then
+            echo "::notice::Secret COOLIFY_TOKEN není nastavený. Nasazení zajistí hlídač na serveru (do 1 minuty)."
+            exit 0
+          fi
+          curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            "https://coolify.jouki.cz/api/v1/deploy?uuid=$UUID"

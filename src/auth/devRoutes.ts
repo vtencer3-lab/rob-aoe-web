@@ -3,9 +3,9 @@ import { config } from "../config.js";
 import { getAktivniAkce, signUp } from "../db/events.js";
 import { savePlayerStats, upsertPlayer } from "../db/players.js";
 import { getPool } from "../db/pool.js";
-import { createSession, SESSION_TTL_MS } from "../db/sessions.js";
+import { createSession } from "../db/sessions.js";
 import { HttpError } from "../http/guards.js";
-import { currentUser } from "./routes.js";
+import { currentUser, nastaveniCookie } from "./routes.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 
 /**
@@ -110,14 +110,8 @@ export function registerDevRoutes(app: FastifyInstance): void {
 
     const sid = await createSession(steamId);
     return reply
-      .setCookie("sid", sid, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: config.jeProdukce,
-        path: "/",
-        maxAge: Math.floor(SESSION_TTL_MS / 1000),
-      })
-      .redirect("/", 302);
+      .setCookie(config.cookieNazev, sid, nastaveniCookie())
+      .redirect(config.domovskaCesta, 302);
   });
 
   // Přenos režie. Bez tohohle je admin navždy ten, kdo se přihlásil první,
@@ -139,7 +133,7 @@ export function registerDevRoutes(app: FastifyInstance): void {
 
     const akce = await getAktivniAkce();
     if (akce) await broadcastAkce();
-    return reply.redirect("/", 302);
+    return reply.redirect(config.domovskaCesta, 302);
   });
 
   // Nasype do běžící akce zkušební hráče, aby bylo z čeho skládat zápas.
@@ -166,6 +160,6 @@ export function registerDevRoutes(app: FastifyInstance): void {
     }
 
     await broadcastAkce();
-    return reply.redirect("/", 302);
+    return reply.redirect(config.domovskaCesta, 302);
   });
 }

@@ -12,6 +12,11 @@ u [`CONTRIBUTING.md`](CONTRIBUTING.md) — je tam rozjetí na cizím stroji, map
 kódu, pravidla, která se nesmí porušit, a pasti, které tenhle projekt už jednou
 stály čas.
 
+**Web běží na <https://jouki.cz/aoe>** (ostrá verze z větve `main`) a
+<https://jouki.cz/aoe/dev> (vývojová z větve `dev`); nasazuje se samo z commitu.
+Jak se pracuje s větvemi a verzí, je v
+[`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
+
 ## Co potřebuješ
 
 - Node.js 24 nebo novější.
@@ -87,8 +92,9 @@ zapsáním Robova ID se prvnímu adminovi práva při jeho dalším přihlášen
 | `DATABASE_URL` | připojení k PostgreSQL, tvar `postgres://uzivatel:heslo@host:port/databaze` | server se nespustí — „Chybí proměnná prostředí DATABASE_URL." |
 | `ADMIN_STEAM_ID` | Steam ID (64bitové) Robova účtu | server se nespustí, dokud nezapneš `ADMIN_BOOTSTRAP`. (Kdyby se spustil, přihlašovací routa by při každém přihlášení zapsala `je_admin = false` a Robovi by uprostřed večera zmizel panel režie bez jediné chybové hlášky.) |
 | `ADMIN_BOOTSTRAP` | pojistka pro provoz bez Robova Steam ID: `true` udělá admina z prvního přihlášeného, dokud žádný admin neexistuje | nic — je to náhrada za `ADMIN_STEAM_ID`, ne doplněk. Když je vyplněné `ADMIN_STEAM_ID`, tahle proměnná se ignoruje |
-| `BASE_URL` | veřejná adresa, na které web lidem běží (musí přesně sedět s tím, kam se prohlížeč skutečně dívá) | použije se `http://localhost:3000`. Steam se po ověření vrací na `BASE_URL` a návrat na jinou adresu se odmítne, takže přihlášení přes tunel bez správné hodnoty neprojde |
+| `BASE_URL` | veřejná adresa, na které web lidem běží, včetně případné cesty (`https://jouki.cz/aoe`); musí přesně sedět s tím, kam se prohlížeč skutečně dívá. Z cesty se odvozuje přesměrování po přihlášení, cesta i název cookie | použije se `http://localhost:3000`. Steam se po ověření vrací na `BASE_URL` a návrat na jinou adresu se odmítne, takže přihlášení přes tunel bez správné hodnoty neprojde |
 | `PORT` | port, na kterém backend poslouchá (výchozí 3000) | použije se výchozí hodnota 3000 |
+| `HOST` | adresa, na které backend poslouchá (výchozí `127.0.0.1`, v Docker kontejneru `0.0.0.0`) | poslouchá jen na loopbacku, ven vede vždy tunel nebo proxy |
 | `STEAM_API_KEY` | bezplatný klíč z <https://steamcommunity.com/dev/apikey>, kterým se web ptá Steamu na odehrané hodiny v AoE2 a na profilovou přezdívku s avatarem | neukážou se odehrané hodiny ani avatary. ELO, herní přezdívka i počet odehraných her chodí ze žebříčku Worlds Edge, který žádný klíč nechce, takže zbytek funguje beze změny. Bez klíče se Steamu vůbec neptáme, takže se nikomu u jména neobjeví varování o chybě |
 | `LOG_LEVEL` | úroveň serverového logu (výchozí `info`) | loguje se od `info` výš |
 

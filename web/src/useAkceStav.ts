@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AkceStavPayload } from "../../src/shared/types.js";
 import { api } from "./api.js";
+import { cesta } from "./cesty.js";
 
 /** První pokus o obnovu je skoro okamžitý, další se zdvojnásobují až na strop. */
 export const PRVNI_ODKLAD_MS = 1_000;
@@ -76,7 +77,7 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean 
     };
 
     const otevri = () => {
-      const aktualni = new EventSource("/api/stream");
+      const aktualni = new EventSource(cesta("/api/stream"));
       zdroj = aktualni;
 
       aktualni.onopen = () => {
