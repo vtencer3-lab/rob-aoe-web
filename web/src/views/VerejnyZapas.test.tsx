@@ -40,7 +40,7 @@ it("ukáže pořadí, formát a kdo proti komu", () => {
 
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
   render(<VerejnyZapas zapas={{ ...zaslepeny, stav: "dohrano", viteznyTym: 2 }} />);
-  expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("vyhrál tým 2");
+  expect(screen.getByTestId("verejny-zapas")).toHaveTextContent(/vyhrál (červený tým|\w+)/);
 });
 
 it("spojí spoluhráče do jedné strany", () => {

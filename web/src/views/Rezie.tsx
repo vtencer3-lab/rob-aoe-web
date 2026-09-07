@@ -6,7 +6,7 @@ import {
   type Tym,
   type ZapasView,
 } from "../../../src/shared/types.js";
-import { jmenoHrace } from "../zapas.js";
+import { jmenoHrace, popisViteze, vitezVeVete } from "../zapas.js";
 
 interface Props {
   stav: AkceStavPayload;
@@ -37,7 +37,7 @@ export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Pro
 function popisStavu(zapas: ZapasView): string {
   if (zapas.stav === "zruseny") return " · zrušeno";
   if (zapas.stav !== "dohrano") return "";
-  return zapas.viteznyTym ? ` · dohráno — vyhrál tým ${zapas.viteznyTym}` : " · dohráno";
+  return zapas.viteznyTym ? ` · dohráno — ${vitezVeVete(zapas, zapas.viteznyTym)}` : " · dohráno";
 }
 
 /**
@@ -144,8 +144,8 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
           </div>
 
           <div className="ovladani">
-            <button onClick={() => onVysledek(zapas.id, 1)}>Vyhrál tým 1</button>
-            <button onClick={() => onVysledek(zapas.id, 2)}>Vyhrál tým 2</button>
+            <TlacitkoViteze zapas={zapas} tym={1} onVysledek={onVysledek} />
+            <TlacitkoViteze zapas={zapas} tym={2} onVysledek={onVysledek} />
             <button onClick={() => onStav(zapas.id, "zruseny")}>Zrušit</button>
           </div>
         </>
@@ -156,22 +156,22 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
           {meniVysledek ? (
             <>
               <span className="zaloha">Kdo doopravdy vyhrál?</span>
-              <button
-                onClick={() => {
-                  onVysledek(zapas.id, 1);
+              <TlacitkoViteze
+                zapas={zapas}
+                tym={1}
+                onVysledek={(id, tym) => {
+                  onVysledek(id, tym);
                   setMeniVysledek(false);
                 }}
-              >
-                Vyhrál tým 1
-              </button>
-              <button
-                onClick={() => {
-                  onVysledek(zapas.id, 2);
+              />
+              <TlacitkoViteze
+                zapas={zapas}
+                tym={2}
+                onVysledek={(id, tym) => {
+                  onVysledek(id, tym);
                   setMeniVysledek(false);
                 }}
-              >
-                Vyhrál tým 2
-              </button>
+              />
               <button onClick={() => setMeniVysledek(false)}>Nechat být</button>
             </>
           ) : (
@@ -188,6 +188,29 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
         </div>
       ) : null}
     </article>
+  );
+}
+
+/**
+ * Tlačítko výsledku nese barvu týmu a jeho jméno: v 1v1 hráče, jinak
+ * „modrý tým“ s hráči drobně pod tím. Rob tak v přenosu nepřepočítává, kdo
+ * je „tým 1“.
+ */
+function TlacitkoViteze({
+  zapas,
+  tym,
+  onVysledek,
+}: {
+  zapas: ZapasView;
+  tym: Tym;
+  onVysledek: (zapasId: number, tym: Tym) => void;
+}) {
+  const { titulek, hraci, barva } = popisViteze(zapas, tym);
+  return (
+    <button className={`vysledek barva-${barva}`} onClick={() => onVysledek(zapas.id, tym)}>
+      <span>{titulek}</span>
+      {hraci.length > 0 ? <small>{hraci.join(", ")}</small> : null}
+    </button>
   );
 }
 
@@ -229,7 +252,10 @@ function SkladaniZapasu({ stav, onVytvoritZapas }: Pick<Props, "stav" | "onVytvo
         })}
       </ul>
 
+      {/* Hlavní akce celého panelu: zlatá a větší, ať nesplývá s výběrem
+          hráčů nad ní. */}
       <button
+        className="vytvorit"
         disabled={vybrani.length !== potreba}
         onClick={() => {
           onVytvoritZapas(format, vybrani);

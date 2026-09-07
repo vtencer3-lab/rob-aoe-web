@@ -237,5 +237,5 @@ it("hráči po zapsání výsledku zápas nezmizí", async () => {
 
   render(<App />);
 
-  expect(await screen.findByTestId("verejny-zapas")).toHaveTextContent("vyhrál tým 1");
+  expect(await screen.findByTestId("verejny-zapas")).toHaveTextContent("vyhrál modrý tým");
 });

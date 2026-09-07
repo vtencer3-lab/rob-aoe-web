@@ -1,5 +1,5 @@
 import type { Format, Tym, ZapasView } from "../../../src/shared/types.js";
-import { jmenoHrace } from "../zapas.js";
+import { jmenoHrace, vitezVeVete } from "../zapas.js";
 
 const FORMAT_NAZEV: Record<Format, string> = {
   "1v1": "1v1",
@@ -8,7 +8,7 @@ const FORMAT_NAZEV: Record<Format, string> = {
 
 function popisStavu(zapas: ZapasView): string {
   if (zapas.stav !== "dohrano") return "běží";
-  return zapas.viteznyTym ? `dohráno — vyhrál tým ${zapas.viteznyTym}` : "dohráno";
+  return zapas.viteznyTym ? `dohráno — ${vitezVeVete(zapas, zapas.viteznyTym)}` : "dohráno";
 }
 
 interface Props {

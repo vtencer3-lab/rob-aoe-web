@@ -147,7 +147,7 @@ const zruseny: AkceStavPayload = {
 
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
   render(<Rezie stav={dohrany} {...props} />);
-  expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhrál tým 1");
+  expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhrál modrý tým");
 });
 
 // Spectate, nápověda pro zamrzlou lobby i Zrušit patří běžícímu zápasu. Po
@@ -158,7 +158,7 @@ it("dohranému zápasu sebere ovládání běžícího", () => {
   expect(screen.queryByTestId("spectate")).not.toBeInTheDocument();
   expect(screen.queryByText(/kdyby to zamrzlo/i)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /^zrušit$/i })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /vyhrál tým 1/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /vyhrál modrý tým/i })).not.toBeInTheDocument();
 });
 
 // Přepsat výsledek jde, ale ne jedním kliknutím do prázdna: druhé kliknutí je
@@ -166,13 +166,13 @@ it("dohranému zápasu sebere ovládání běžícího", () => {
 it("výsledek jde změnit až na druhé kliknutí", async () => {
   render(<Rezie stav={dohrany} {...props} />);
 
-  expect(screen.queryByRole("button", { name: /vyhrál tým 2/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /vyhrál červený tým/i })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
 
-  expect(screen.getByRole("button", { name: /vyhrál tým 2/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /vyhrál červený tým/i })).toBeInTheDocument();
   expect(props.onVysledek).not.toHaveBeenCalled();
 
-  fireEvent.click(screen.getByRole("button", { name: /vyhrál tým 2/i }));
+  fireEvent.click(screen.getByRole("button", { name: /vyhrál červený tým/i }));
   expect(props.onVysledek).toHaveBeenCalledWith(1, 2);
 });
 
@@ -182,7 +182,7 @@ it("z rozmyšlené změny se dá couvnout, aniž se něco zapíše", () => {
   fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
   fireEvent.click(screen.getByRole("button", { name: /nechat být/i }));
 
-  expect(screen.queryByRole("button", { name: /vyhrál tým 2/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /vyhrál červený tým/i })).not.toBeInTheDocument();
   expect(props.onVysledek).not.toHaveBeenCalled();
 });
 
@@ -201,7 +201,7 @@ it("běžícímu zápasu ovládání zůstává", () => {
   render(<Rezie stav={stav} {...props} />);
   expect(screen.getByTestId("spectate")).toBeInTheDocument();
   expect(screen.getByText(/kdyby to zamrzlo/i)).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /vyhrál tým 1/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /vyhrál modrý tým/i })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /změnit výsledek/i })).not.toBeInTheDocument();
 });
 
@@ -224,4 +224,22 @@ it("dokud host odkaz nevložil, je vidět, že se na něj čeká", () => {
   render(<Rezie stav={bezOdkazu} {...props} />);
   const radekHosta = screen.getByTestId("odznak-host").closest("li");
   expect(radekHosta).toHaveTextContent("zakládá lobby");
+});
+
+it("v 1v1 se na tlačítku výsledku píše jméno hráče, ne číslo týmu", () => {
+  const jednaNaJednu: ZapasView = {
+    ...zapas,
+    format: "1v1",
+    ucastnici: [zapas.ucastnici[0]!, zapas.ucastnici[2]!],
+  };
+  render(<Rezie stav={{ ...stav, zapasy: [jednaNaJednu] }} {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: /vyhrál marek/i }));
+  expect(props.onVysledek).toHaveBeenCalledWith(1, 2);
+});
+
+it("ve 2v2 tlačítko nese barvu týmu a drobně jeho hráče", () => {
+  render(<Rezie stav={stav} {...props} />);
+  const modry = screen.getByRole("button", { name: /vyhrál modrý tým/i });
+  expect(modry).toHaveClass("barva-1");
+  expect(modry).toHaveTextContent("TenceR, Pepa_CZ");
 });
