@@ -1,0 +1,177 @@
+# Analýza: může web najít lobby sám, bez vkládání odkazu?
+
+*Stav k 7. 9. 2026. Zdroje jsou uvedené na konci; co je ověřené naživo, je tak označené.*
+
+## Odpověď zkrátka
+
+**Ano, jde to.** Oficiální backend hry (Worlds Edge, stejný, ze kterého web už
+bere ELO) má veřejný, nepřihlášený endpoint se seznamem všech otevřených
+lobby. Vrací pro každou lobby její číslo, název, Steam ID hosta, jestli má
+heslo, jestli povoluje diváky a kdo v ní právě sedí. Web přitom hostovi sám
+předepisuje název lobby (`ROB-01`) a zná jeho Steam ID, takže má dva
+nezávislé klíče, podle kterých svoji lobby v seznamu pozná.
+
+Ruční krok „host klikne Copy a vloží odkaz“ se tím dá nahradit: web se po
+složení zápasu každých pár vteřin podívá do seznamu, a jakmile se tam objeví
+lobby s hostovým Steam ID, uloží si její číslo a všem naskočí odkazy stejně,
+jako by je host vložil. Ruční vložení zůstane jako záloha.
+
+Navíc to přinese něco, co dnes web neumí: **kontrolu lobby před startem**.
+Ze stejné odpovědi se pozná, jestli host zapomněl heslo nebo diváky, a kdo se
+už opravdu připojil (ne jen kdo klikl na odkaz).
+
+Jedna věc zbývá ověřit naživo: že číslo `id` ze seznamu je totéž číslo, které
+hra dává do odkazu `aoe2de://0/<id>`. Všechno nasvědčuje, že ano (viz níže),
+ale ověření je na pět minut s jednou skutečnou lobby a je potřeba ho udělat
+dřív, než se do toho dá jediný řádek kódu.
+
+---
+
+## 1. Co endpoint vrací (ověřeno naživo 7. 9. 2026)
+
+```
+GET https://aoe-api.worldsedgelink.com/community/advertisement/findAdvertisements?title=age2
+```
+
+Bez klíče, bez přihlášení, HTTP 200, odpověď kolem 125 kB. V okamžiku sondy
+(neděle ráno) 55 otevřených lobby. Struktura:
+
+```json
+{
+  "result": { "code": 0, "message": "SUCCESS" },
+  "matches": [ { …lobby… }, … ],
+  "avatars": [ { "profile_id": 19819620, "name": "/steam/76561198068499427", "alias": "…", "country": "cn", … }, … ]
+}
+```
+
+Pole jedné lobby v `matches`:
+
+| Pole | Význam | K čemu nám je |
+|---|---|---|
+| `id` | číslo lobby (advertisement id), např. `504951855` | **velmi pravděpodobně přesně to číslo z `aoe2de://0/<id>`** |
+| `steamlobbyid` | Steam lobby id | druhá cesta dovnitř: `steam://joinlobby/813780/<steamlobbyid>/<hostSteamId>` |
+| `host_profile_id` | Worlds Edge profil hosta | přes `avatars` se převede na `/steam/<steamId64>` |
+| `description` | název lobby přesně tak, jak ho host napsal | shoda s `nazev_lobby` (`ROB-01`) |
+| `passwordprotected` | 0/1 | kontrola, že host nastavil heslo |
+| `isobservable`, `observernum`, `observermax`, `hasobserverpassword` | diváci | kontrola, že je zaškrtnuté Allow Spectators, tedy že se Rob dostane dovnitř |
+| `matchmembers[]` | `{ profile_id, teamid, civilization_id, … }` | kdo v lobby opravdu sedí |
+| `slotinfo` | base64+zlib JSON se sloty (tým, připravenost) | rozestavení, kdyby bylo potřeba |
+| `options` | base64+zlib nastavení hry | mapa, rychlost, typ hry |
+| `state`, `visible`, `maxplayers`, `mapname`, `relayserver_region` | stav a metadata | filtrování |
+
+Všech 55 lobby v sondě mělo `state: 0` a `visible: 1`, tj. seznam ukazuje
+**otevřené veřejné lobby před startem**. To je přesně okno, ve kterém se
+odkaz potřebuje získat; jakmile hra začne, lobby ze seznamu zmizí, ale číslo
+už web má uložené a Spectate funguje i za běhu (ověřeno 4. 9. 2026).
+
+U každé lobby se host podařilo dohledat v `avatars` (55 z 55), takže převod
+na Steam ID je spolehlivý.
+
+## 2. Jak by to ve webu fungovalo
+
+Nic se nemění na tom, na čem web stojí: ukládá se jen číslo lobby, oba odkazy
+se z něj odvozují. Mění se jen to, **odkud číslo přijde**.
+
+1. Rob složí zápas. Host dostane obrazovku jako dnes, ale místo pole na odkaz
+   vidí „Založ lobby podle obrázku, web si ji najde sám.“ Pole na ruční
+   vložení zůstane sbalené níž jako záloha.
+2. Server od té chvíle každých ~10 s zavolá `findAdvertisements` (jen dokud
+   existuje běžící zápas bez `lobby_id`; jinak se neptá vůbec).
+3. V odpovědi hledá lobby, jejíž host má Steam ID hosta zápasu. Jako druhý
+   klíč se porovná `description` s `nazev_lobby`; shoda obojího = jistota,
+   shoda jen hosta = taky bereme, ale v režii se ukáže varování „lobby se
+   jmenuje jinak“.
+4. Nalezené `id` se uloží přes existující `setLobbyId()` a zavolá se
+   `broadcastAkce()`. Od té chvíle je všechno jako dnes: hráči mají odkaz,
+   Rob Spectate.
+5. Dokud lobby v seznamu je, server z ní každý cyklus přebírá kontrolní
+   informace do stavu akce: heslo ano/ne, diváci ano/ne, kdo sedí uvnitř.
+   Režie tak před startem vidí zelené/červené fajfky místo dnešního „klikl
+   na připojení“, které jen říká, že hráč klikl.
+
+Změny v kódu (odhad jeden den práce včetně testů):
+
+| Kde | Co |
+|---|---|
+| `src/external/worldsEdgeLobby.ts` | klient + čistý parser odpovědi (fixtura z živé sondy), stejný styl jako `worldsEdge.ts` |
+| `src/matches/hledaniLobby.ts` | smyčka: dokud je zápas `bezi` bez `lobby_id`, ptát se; při nálezu `setLobbyId` + broadcast |
+| `src/db/matches.ts`, migrace 007 | volitelně sloupce pro kontrolní stav lobby (`ma_heslo`, `povoluje_divaky`, `v_lobby_od`) nebo jen držet v paměti a posílat v payloadu |
+| `src/shared/types.ts` | rozšíření `ZapasView` o kontrolní stav a seznam připojených |
+| `web/src/views/ObrazovkaHosta.tsx` | „hledám tvoji lobby“ místo pole, pole jako záloha |
+| `web/src/views/Rezie.tsx` | fajfky heslo / diváci / připojení |
+
+Ruční cesta (`POST /api/zapas/:id/lobby`) zůstane beze změny.
+
+## 3. Co je potřeba ověřit před implementací
+
+**Rovnost čísel.** Že `id` z `findAdvertisements` je totéž číslo jako v odkazu
+z tlačítka Copy. Důkazy pro: (a) aoe2.net, který ze stejného backendu
+stavěl svůj prohlížeč lobby, používal `aoe2de://1/<match_id>` pro Spectate;
+(b) fórum AoE popisuje schéma jako `aoe2de://<režim>/<match ID>`, kde match
+ID je identifikátor zápasu z herního backendu; (c) čísla z odkazů v návrhu
+(`234230181`, září 2026) a z dnešní sondy (`504 584 778` až `504 951 855`)
+jsou ze stejné řady. Důkaz proti: žádný, ale ani přímý.
+
+Ověření: host založí lobby, klikne Copy, a číslo z odkazu se porovná s `id`
+lobby, u které je v `avatars` jeho Steam ID. Dá se udělat na příštím večeru
+nebo kdykoliv s jedním účtem.
+
+Kdyby se čísla lišila, zůstává druhá cesta přes `steamlobbyid`:
+`steam://joinlobby/813780/<steamlobbyid>/<hostSteamId>` otevře lobby přes
+Steam (tenhle tvar používají existující webové prohlížeče lobby). Nevýhoda:
+neexistuje k němu divácká varianta, Spectate by pak potřeboval `aoe2de://1/`
+a tím i to původní číslo. Takže pro Roba je rovnost čísel důležitá, pro
+hráče ne.
+
+## 4. Rizika a omezení
+
+- **Nezdokumentovaný endpoint.** Stejné riziko, jaké web už nese u žebříčku;
+  design s tím počítá (sekce 9 a 10 návrhu). Když endpoint zmizí, web se
+  vrátí k ručnímu vkládání, které zůstane v kódu. Nesmí to být jediná cesta.
+- **Neznámý limit dotazů.** Sonda proběhla bez omezení, ale nikdo neručí za
+  víc. Návrh se ptá jen v okně mezi složením zápasu a založením lobby
+  (minuty za večer), v intervalu 10 s, s jedním dotazem pro všechny zápasy
+  najednou. To je řádově méně než jeden otevřený herní klient s lobby
+  prohlížečem.
+- **Jen veřejné lobby.** Seznam obsahuje jen `visible: 1`. Robovy lobby musí
+  být veřejné tak jako tak (jinak nejde zapnout diváky), takže to nic nemění.
+- **Velikost odpovědi.** Kolem 125 kB na dotaz při 55 lobby; ve špičce může
+  být několikanásobná. Parsovat se má jen `matches` a `avatars`, `slotinfo`
+  a `options` dekódovat až u nalezené lobby.
+- **Zpoždění.** Lobby se v seznamu objeví do několika vteřin po založení;
+  s intervalem 10 s je odkaz u hráčů do zhruba 15 s. Dnes to trvá tak dlouho,
+  jak dlouho hostovi trvá odkaz zkopírovat a vložit.
+- **Dva hosté se stejným jménem lobby.** Nemůže se stát: primární klíč je
+  Steam ID hosta, název je jen kontrola.
+- **Host založil lobby dřív, než Rob složil zápas.** Nevadí, seznam ji
+  obsahuje, dokud je otevřená. První cyklus po složení ji najde.
+- **Verze z Microsoft Store.** Steam ID by v `avatars` bylo `/xboxlive/…`;
+  hráč bez Steamu se ale na web ani nepřihlásí, takže totéž omezení jako dnes.
+
+## 5. Co se tím získá navíc
+
+Dnes web ví jen to, že hráč klikl na odkaz. Se seznamem lobby by režie před
+startem viděla skutečnost:
+
+- **heslo nastavené** (`passwordprotected`),
+- **diváci povolení** (`isobservable`), tedy že se Rob dostane dovnitř, což
+  je dnes nejčastější důvod, proč Spectate selže,
+- **kdo sedí v lobby** (`matchmembers` → Steam ID → jméno), tedy kdo ještě
+  chybí, bez dotazování na streamu,
+- volitelně rozestavení týmů ze `slotinfo`, tj. jestli si hráči nastavili
+  barvu a tým podle karty.
+
+To je větší přínos než samotné ušetření jednoho Ctrl+V. Doporučení: dělat
+obojí najednou, v jednom kroku, protože stojí na stejném dotazu.
+
+## Zdroje
+
+- Živá sonda endpointu 7. 9. 2026 (55 lobby, struktura výše).
+- Existující klient žebříčku ve webu: `src/external/worldsEdge.ts` (stejný backend).
+- Prohlížeče lobby třetích stran postavené nad tímto backendem, resp. nad
+  aoe2.net, který ho zrcadlil: [AoE2 Insights – Lobby Browser](https://www.aoe2insights.com/lobbies/),
+  [AOE2Lobby](https://aoe2lobby.com/lobby), [musavvirn/Lobby (GitHub)](https://github.com/musavvirn/Lobby)
+  (používá `steam://joinlobby/813780/<steam lobby id>`).
+- Schéma `aoe2de://<režim>/<match id>`: [fórum AoE, „URL Scheme to launch the game and spectate a match“](https://forums.ageofempires.com/t/url-scheme-to-launch-the-game-and-spectate-a-match/88216).
+- Spectate z aoe2.net: [AoEZone, „AoE2.net Spectate button no longer working“](https://aoezone.net/threads/resolved-aoe2-net-spectate-button-no-longer-working-someone-please-help-me.178544/).
+- Návrh webu, sekce 3.1 a 3.4: `docs/superpowers/specs/2026-09-03-aoe2-komunitni-hry-web-design.md`.
