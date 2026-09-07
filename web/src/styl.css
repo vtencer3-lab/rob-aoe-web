@@ -498,3 +498,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .skladani.jen-ke-cteni .radek.ja .jmeno { font-weight: 700; color: var(--akcent); }
 .skladani.jen-ke-cteni .vyber-civ-tlacitko:disabled { opacity: 0.6; cursor: default; }
 .skladani.jen-ke-cteni .vyber-civ-tlacitko .sipka { visibility: hidden; }
+
+/* Řazení tabulky přihlášených v režii: hlavička je tlačítko, šipka říká směr. */
+.seznam th button.razeni { background: none; border: none; padding: 0; margin: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
+.seznam th button.razeni:hover, .seznam th button.razeni.aktivni { color: var(--akcent); }
+.seznam th .sipka-razeni { font-size: 0.7rem; opacity: 0.6; }
+.seznam th button.razeni.aktivni .sipka-razeni { opacity: 1; }

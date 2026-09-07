@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
@@ -49,4 +49,39 @@ it("prázdný seznam to řekne slovy", () => {
 it("bez režie nenabízí tlačítko „+“", () => {
   render(<SeznamPrihlasenych prihlaseni={[hrac()]} />);
   expect(screen.queryByRole("button", { name: /vybrat hráče/i })).not.toBeInTheDocument();
+});
+
+// Admin si tabulku seřadí kliknutím na hlavičku: vzestupně → sestupně →
+// vlastní pořadí (přetažením). Kdo hodnotu nemá, je vždy na konci.
+it("v režii řadí kliknutím na sloupec dokola a hráče bez hodnoty dává na konec", async () => {
+  const { useSkladani } = await import("../skladani.js");
+  const { renderHook } = await import("@testing-library/react");
+  localStorage.clear();
+  const hraci = [
+    hrac({ steamId: "a", alias: "Bez", elo1v1: null }),
+    hrac({ steamId: "b", alias: "Nizke", elo1v1: 900 }),
+    hrac({ steamId: "c", alias: "Vysoke", elo1v1: 1500 }),
+  ];
+  const { result } = renderHook(() => useSkladani(hraci));
+  const jmena = () => screen.getAllByRole("row").slice(1).map((r) => r.querySelectorAll("td")[1]!.textContent);
+  const { rerender } = render(<SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} />);
+  expect(jmena()).toEqual(["Bez", "Nizke", "Vysoke"]);
+
+  const elo = screen.getByRole("button", { name: /1v1 elo/i });
+  fireEvent.click(elo);
+  rerender(<SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} />);
+  expect(jmena()).toEqual(["Nizke", "Vysoke", "Bez"]);
+  expect(screen.getByRole("columnheader", { name: /1v1 elo/i })).toHaveAttribute("aria-sort", "ascending");
+
+  fireEvent.click(elo);
+  expect(jmena()).toEqual(["Vysoke", "Nizke", "Bez"]);
+
+  fireEvent.click(elo);
+  expect(jmena()).toEqual(["Bez", "Nizke", "Vysoke"]);
+  expect(screen.getByRole("columnheader", { name: /1v1 elo/i })).toHaveAttribute("aria-sort", "none");
+});
+
+it("hráči bez režie hlavičky klikat nemůžou", () => {
+  render(<SeznamPrihlasenych prihlaseni={[hrac()]} />);
+  expect(screen.queryByRole("button", { name: /1v1 elo/i })).not.toBeInTheDocument();
 });
