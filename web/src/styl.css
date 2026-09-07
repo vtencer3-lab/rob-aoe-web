@@ -524,7 +524,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); padding: 0.8rem 1rem;
   font-family: Georgia, "Times New Roman", serif;
 }
-.staty-hrace header { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
+/* justify-content přebíjí globální header { space-between }, jinak jméno uteče doprava. */
+.staty-hrace header { display: flex; justify-content: flex-start; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
 .staty-hrace header img { border: 1px solid var(--akcent); border-radius: 3px; }
 .staty-hrace header strong { font-size: 1.25rem; font-weight: 400; letter-spacing: 0.02em; }
 .staty-hrace table { width: 100%; border-collapse: collapse; font-variant: small-caps; }
