@@ -330,11 +330,12 @@ it("Ctrl+Z vrátí poslední změnu sestavy a Ctrl+Y ji zopakuje", async () => {
   render(<App />);
   await screen.findByRole("button", { name: "Vybrat hráče Pepa" });
   fireEvent.click(screen.getByRole("button", { name: "Vybrat hráče Pepa" }));
-  expect(await screen.findByTestId("toasty")).toHaveTextContent("Pepa přidán do sestavy");
   await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, [{ steamId: "a", tym: 1, barva: 1, civ: null }]));
+  // Běžná změna toast nemá — ten patří až ke kroku zpět/znovu.
+  expect(screen.queryByTestId("toasty")).not.toBeInTheDocument();
 
   fireEvent.keyDown(window, { key: "z", ctrlKey: true });
-  expect(screen.getByTestId("toasty")).toHaveTextContent("Zpět: Pepa přidán do sestavy");
+  expect(await screen.findByTestId("toasty")).toHaveTextContent("Zpět: Pepa přidán do sestavy");
   await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, []));
 
   fireEvent.keyDown(window, { key: "y", ctrlKey: true });

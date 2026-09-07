@@ -63,9 +63,9 @@ export function App() {
   const dalsiToastId = useRef(1);
   const [zvyrazneni, setZvyrazneni] = useState<{ druh: Zaznam["druh"]; cil: string | null; cas: number } | null>(null);
   const zavriToast = useCallback((id: number) => setToasty((t) => t.filter((x) => x.id !== id)), []);
-  const pridejToast = (text: string, zpet?: () => void) => {
+  const pridejToast = (text: string) => {
     const id = dalsiToastId.current++;
-    setToasty((t) => [...t.slice(-3), { id, text, zpet }]);
+    setToasty((t) => [...t.slice(-3), { id, text }]);
   };
   const zvyrazni = (druh: Zaznam["druh"], cil: string | null) => setZvyrazneni({ druh, cil, cas: Date.now() });
   // Kdo je v běžícím zápase — v tabulce přihlášených dostane zkřížené meče.
@@ -139,17 +139,11 @@ export function App() {
     zpetZasobnik.current.push(z);
     pouzij(z, "znovu");
   };
-  /** Zpět z toastu: vrátí přesně ten krok, i když už není poslední. */
-  const zpetKrok = (z: Zaznam) => {
-    zpetZasobnik.current = zpetZasobnik.current.filter((x) => x !== z);
-    znovuZasobnik.current.push(z);
-    pouzij(z, "zpet");
-  };
+  // Běžná změna se jen zapíše do historie — toast i zvýraznění patří až
+  // ke kroku zpět/znovu, jinak by každé kliknutí blikalo a hlásilo.
   const zaznamenej = (z: Zaznam) => {
     zpetZasobnik.current.push(z);
     znovuZasobnik.current = [];
-    zvyrazni(z.druh, z.cil);
-    pridejToast(z.text, () => zpetKrok(z));
   };
   jmenoPodleIdRef.current = jmenoPodleId;
   zaznamenejRef.current = zaznamenej;

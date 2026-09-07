@@ -585,12 +585,14 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible { color: var(--ak
 /* Účastníci zápasu v režii: čtverečky, jméno, ELO, stav a vpravo odznak
    HOST nebo tlačítko na přehození hosta. */
 .zapas .skladani.jen-ke-cteni { margin: 0; }
-.zapas ul.sestava-zapasu { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 1fr auto; margin: 0.4rem 0; }
+/* Specifičtější než .skladani.jen-ke-cteni .sestava (karta hráče má 5 sloupců),
+   jinak by odznak HOST a tlačítko padaly na další řádek. */
+.zapas .skladani.jen-ke-cteni .sestava.sestava-zapasu { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 1fr auto; margin: 0.4rem 0; }
 .zapas .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
 .zapas .titulek-zapasu small { font-size: 1rem; font-weight: 400; color: var(--tlumene); }
-.zapas ul.sestava-zapasu .radek { padding: 0.35rem 0.2rem; }
-.zapas ul.sestava-zapasu .stav-ucastnika { color: var(--tlumene); }
-.zapas ul.sestava-zapasu .radek > button, .zapas ul.sestava-zapasu .radek > .odznak-host { justify-self: end; margin: 0; }
+.zapas .skladani.jen-ke-cteni .sestava-zapasu .radek { padding: 0.35rem 0.2rem; }
+.zapas .sestava-zapasu .stav-ucastnika { color: var(--tlumene); }
+.zapas .sestava-zapasu .radek > button, .zapas .sestava-zapasu .radek > .odznak-host { justify-self: end; margin: 0; white-space: nowrap; }
 
 /* Zvýraznění změny (historie kroků): zlatý záblesk kolem řádku nebo pole. */
 .zmena { animation: zmena-blik 1.6s ease-out; }
