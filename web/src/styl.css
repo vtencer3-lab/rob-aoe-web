@@ -533,7 +533,10 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .staty-hrace td { padding: 0.15rem 0.5rem; font-size: 1rem; color: var(--text); }
 .staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
 .staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
-.seznam td .jmeno-hrace { cursor: help; display: inline-flex; align-items: center; gap: 0.5rem; }
+/* Jméno s avatarem jako blok (flex), buňky zarovnané na střed — inline-flex
+   sedělo na účaří textu a jméno bylo výš než zbytek řádku. */
+.seznam td { vertical-align: middle; }
+.seznam td .jmeno-hrace { cursor: help; display: flex; align-items: center; gap: 0.5rem; }
 .seznam td .jmeno-hrace img { width: 28px; height: 28px; border-radius: 3px; flex: none; }
 
 /* Tažený řádek „v ruce“: jede s kurzorem, nad ostatními, se stínem. Ostatní
