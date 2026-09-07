@@ -9,6 +9,7 @@ import {
   setLobbyId,
   setVysledek,
   setZapasStav,
+  smazZrusenyZapas,
   UcastnikOdhlasenChyba,
 } from "../../db/matches.js";
 import { getPlayer } from "../../db/players.js";
@@ -34,11 +35,12 @@ function prectiSestavu(telo: unknown): SestavaVstup[] {
   const vysledek: SestavaVstup[] = [];
   for (const radek of sestava) {
     if (typeof radek !== "object" || radek === null) throw new HttpError(400, "Řádek sestavy není objekt.");
-    const { steamId, tym, barva } = radek as { steamId?: unknown; tym?: unknown; barva?: unknown };
+    const { steamId, tym, barva, civ } = radek as { steamId?: unknown; tym?: unknown; barva?: unknown; civ?: unknown };
     if (typeof steamId !== "string" || steamId === "") throw new HttpError(400, "Řádek sestavy nemá hráče.");
     if (typeof tym !== "number" || !TYMY.includes(tym as Tym)) throw new HttpError(400, "Tým musí být – nebo 1 až 4.");
     if (typeof barva !== "number" || !BARVY.includes(barva as Barva)) throw new HttpError(400, "Barva musí být 1 až 8.");
-    vysledek.push({ steamId, tym: tym as Tym, barva: barva as Barva });
+    if (civ !== undefined && civ !== null && typeof civ !== "number") throw new HttpError(400, "Civilizace musí být číslo, nebo prázdná.");
+    vysledek.push({ steamId, tym: tym as Tym, barva: barva as Barva, civ: typeof civ === "number" ? civ : null });
   }
   const chyba = zkontrolujSestavu(vysledek);
   if (chyba) throw new HttpError(400, chyba);
@@ -136,6 +138,18 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     }
     const { zapas } = await nactiNeboSelzi(zapasId);
     await prejdi(zapasId, stav as MatchState);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Zrušený zápas jde odebrat úplně, ať v režii nestraší celý večer. Jen
+  // zrušený: dohraný je záznam výsledku a běžící se nejdřív ruší.
+  app.delete("/api/zapas/:id", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const { zapas } = await nactiNeboSelzi(zapasId);
+    if (zapas.stav !== "zruseny") throw new HttpError(409, "Odebrat jde jen zrušený zápas. Nejdřív ho zruš.");
+    if (!(await smazZrusenyZapas(zapasId))) throw new HttpError(409, "Zápas se mezitím vrátil do hry.");
     await broadcastAkce();
     return { ok: true };
   });

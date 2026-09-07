@@ -9,6 +9,7 @@ const u = (steamId: string, alias: string | null, tym: 1 | 2, steamName: string 
   steamName,
   tym,
   barva: tym,
+  civ: null,
   jeHost: false,
   poradi: 0,
   kliknulPripojit: null,

@@ -30,6 +30,7 @@ export function sestavSedadla(
     steamId: s.steamId,
     tym: s.tym,
     barva: s.barva,
+    civ: s.civ ?? null,
     jeHost: poradi === hostIndex,
     poradi,
   }));
@@ -39,21 +40,22 @@ export function lobbyName(poradi: number): string {
   return `ROB-${String(poradi).padStart(2, "0")}`;
 }
 
-const ABECEDA = "abcdefghjkmnpqrstuvwxyz23456789";
-
-// Rozsah pro převod kryptograficky bezpečného celého čísla na float v [0, 1),
-// aby výchozí generátor nebyl uhodnutelný jako Math.random.
+// Rozsah pro převod kryptograficky bezpečného celého čísla na float v [0, 1).
 const CSPRNG_ROZSAH = 4_294_967_296; // 2^32
 
 function csprngFloat(): number {
   return randomInt(0, CSPRNG_ROZSAH) / CSPRNG_ROZSAH;
 }
 
+/**
+ * Heslo lobby je čtyřmístný číselný PIN. Osm znaků bylo zbytečné: heslo jen
+ * brání náhodným lidem z lobby prohlížeče, ne útoku, a číslice se v přenosu
+ * opisují z obrazovky bez chyb.
+ */
 export function generatePassword(rng: () => number = csprngFloat): string {
-  let heslo = "";
-  for (let i = 0; i < 8; i++) {
-    const index = Math.max(0, Math.min(ABECEDA.length - 1, Math.floor(rng() * ABECEDA.length)));
-    heslo += ABECEDA[index];
+  let pin = "";
+  for (let i = 0; i < 4; i++) {
+    pin += String(Math.max(0, Math.min(9, Math.floor(rng() * 10))));
   }
-  return heslo;
+  return pin;
 }

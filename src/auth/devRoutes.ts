@@ -8,35 +8,13 @@ import { HttpError } from "../http/guards.js";
 import { currentUser, nastaveniCookie } from "./routes.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 
-/**
- * Zkušební hráči. Jména jsou napevno, aby opakované volání vracelo pořád
- * tytéž lidi — jinak by každé naplnění nasypalo do seznamu další cizince
- * a Rob by se v testovací akci přestal vyznat.
- */
-const ZKUSEBNI = [
-  { jmeno: "Pepa", elo: 1180, her: 342 },
-  { jmeno: "Jana", elo: 1520, her: 1204 },
-  { jmeno: "Karel", elo: 890, her: 87 },
-  { jmeno: "Lida", elo: 1340, her: 655 },
-  { jmeno: "Mirek", elo: 1010, her: 210 },
-  { jmeno: "Tonda", elo: 1690, her: 2431 },
-] as const;
+import { ZKUSEBNI_HRACI as ZKUSEBNI, zkusebniId } from "../matches/zkusebniHraci.js";
 
-/**
- * Zkušební režisér. Není mezi hráči výše schválně: do akce se nepřihlašuje,
- * jen řídí. Díky němu si jde vlastním, skutečným Steam účtem projít celý
- * večer z pohledu obyčejného hráče — režii mezitím drží někdo jiný.
- */
+// Seznam zkušebních hráčů a jejich ID sdílí zkušební dveře s tlačítkem v
+// režii (routes/zkusebni.ts); definice je v matches/zkusebniHraci.ts.
+export { zkusebniId };
+
 export const REZISER = "Rezie";
-
-/**
- * Steam ID zkušebního hráče. Prefix „test:“ je schválně něco, co skutečné
- * 64bitové Steam ID nikdy mít nebude — zkušební účet se tak nemůže srazit
- * s opravdovým člověkem ani omylem, a v databázi je na první pohled poznat.
- */
-export function zkusebniId(jmeno: string): string {
-  return `test:${jmeno.trim().toLowerCase()}`;
-}
 
 /** Účty skutečných lidí, tedy všechno, co nezaložily zkušební dveře. */
 async function skutecneUcty(): Promise<{ steamId: string; alias: string | null }[]> {

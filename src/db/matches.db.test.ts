@@ -37,7 +37,7 @@ it("vytvoří 1v1 s pořadím, názvem lobby a heslem", async () => {
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   expect(zapas.poradi).toBe(1);
   expect(zapas.nazevLobby).toBe("ROB-01");
-  expect(zapas.heslo).toHaveLength(8);
+  expect(zapas.heslo).toMatch(/^[0-9]{4}$/);
   expect(zapas.stav).toBe("bezi");
   expect(zapas.lobbyId).toBeNull();
 });

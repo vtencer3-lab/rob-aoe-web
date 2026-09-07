@@ -146,6 +146,30 @@ it("Rob smí zápas zrušit", async () => {
   await app.close();
 });
 
+// Zrušený zápas, ke kterému se Rob nevrátí, jde odebrat úplně — i s účastníky.
+// Jen zrušený: běžící ani dohraný ne, a jen Rob.
+it("zrušený zápas jde smazat, běžící ne a běžný hráč vůbec", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+
+  const bezici = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}`, cookies: { sid: robSid } });
+  expect(bezici.statusCode).toBe(409);
+
+  await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/stav`, cookies: { sid: robSid }, payload: { stav: "zruseny" } });
+  const hrac = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}`, cookies: { sid: hracSid } });
+  expect(hrac.statusCode).toBe(403);
+
+  const rob = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}`, cookies: { sid: robSid } });
+  expect(rob.statusCode).toBe(200);
+  expect(await getZapas(zapas.id)).toBeNull();
+  const { rows } = await getPool().query("SELECT count(*)::int AS n FROM ucastnik WHERE zapas_id = $1", [zapas.id]);
+  expect(rows[0].n).toBe(0);
+
+  const znovu = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}`, cookies: { sid: robSid } });
+  expect(znovu.statusCode).toBe(404);
+  await app.close();
+});
+
 // Rob dvojklik na svoje vlastní tlačítko v přímém přenosu udělá dřív nebo
 // později. Do teď to znamenalo červený „Něco se pokazilo na serveru.“, protože
 // odmítnutý přechod padal jako holá Error na 500.
@@ -435,6 +459,8 @@ function inzerat(lobbyId: string, hostSteamId: string) {
     maHeslo: true,
     povolujeDivaky: true,
     clenoveSteamIds: [hostSteamId],
+    sloty: [{ steamId: hostSteamId, barva: 1 as const, tym: 1 as const, civ: null, pripraven: true }],
+    nastaveni: { mapaId: 10875, velikost: 120, rychlost: 2 as const, populace: 200, vitezstvi: 1 as const, cheaty: false },
   };
 }
 
@@ -498,5 +524,63 @@ it("výpadek seznamu ze hry je 502 se srozumitelnou větou, ne 500", async () =>
   });
   expect(res.statusCode).toBe(502);
   expect(res.json().chyba).toMatch(/ručně/);
+  await app.close();
+});
+
+// „Zkontrolovat lobby“: porovnání lobby ze hry se sestavou a očekáváním akce.
+it("kontrola lobby vrátí fajfky a křížky a nové číslo lobby si uloží", async () => {
+  const app = buildServer({
+    nactiInzeraty: async () => [
+      {
+        ...inzerat("504987862", HRACI[1]!),
+        sloty: [{ steamId: HRACI[1]!, barva: 2, tym: 2, civ: null, pripraven: true }],
+        nastaveni: { mapaId: 10878, velikost: 120, rychlost: 2, populace: 200, vitezstvi: 1, cheaty: false },
+      },
+    ],
+  });
+  const zapas = await vytvorZapas(app);
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { mapaId: 10875, populace: 200 } });
+
+  const res = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: hracSid } });
+  expect(res.statusCode).toBe(200);
+  const telo = res.json() as { nalezeno: boolean; kontroly: { klic: string; stav: string; text: string }[] };
+  expect(telo.nalezeno).toBe(true);
+  const podle = Object.fromEntries(telo.kontroly.map((k) => [k.klic, k]));
+  expect(podle["hraci"]!.stav).toBe("spatne");
+  expect(podle["mapa"]).toMatchObject({ stav: "spatne", text: /Black Forest, má být Arabia/ });
+  expect(podle["velikost"]!.stav).toBe("ok");
+  expect((await getZapas(zapas.id))!.zapas.lobbyId).toBe("504987862");
+  await app.close();
+});
+
+it("kontrola bez lobby v seznamu vrátí nalezeno=false, cizí hráč 403", async () => {
+  const app = buildServer({ nactiInzeraty: async () => [] });
+  const zapas = await vytvorZapas(app);
+  const res = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: robSid } });
+  expect(res.json()).toEqual({ nalezeno: false, kontroly: [] });
+
+  const cizi = "76561198000000099";
+  await upsertPlayer(cizi, false);
+  const ciziSid = await createSession(cizi);
+  const zakazano = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: ciziSid } });
+  expect(zakazano.statusCode).toBe(403);
+  await app.close();
+});
+
+it("nastavení lobby smí jen Rob a ukládá jen známé klíče", async () => {
+  const app = buildServer();
+  const zakazano = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: hracSid }, payload: { populace: 100 } });
+  expect(zakazano.statusCode).toBe(403);
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akceId}/nastaveni-lobby`,
+    cookies: { sid: robSid },
+    payload: { populace: 250, rychlost: 3, nesmysl: 1, mapaId: null, sadaCivilizaci: 2, rezim: 99, primeri: 15, lockTeams: false, turbo: "ano", aiObtiznost: null },
+  });
+  expect(res.statusCode).toBe(200);
+  // rezim 99 a turbo "ano" hra nezná — zahodí se; null = „je to jedno“ projde.
+  expect(res.json().akce.nastaveniLobby).toEqual({ populace: 250, rychlost: 3, mapaId: null, sadaCivilizaci: 2, primeri: 15, lockTeams: false, aiObtiznost: null });
+  const prazdne = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { nesmysl: 1 } });
+  expect(prazdne.statusCode).toBe(400);
   await app.close();
 });

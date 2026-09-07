@@ -1,0 +1,73 @@
+{
+  "result": {
+    "code": 0,
+    "message": "SUCCESS"
+  },
+  "matches": [
+    {
+      "id": 504987862,
+      "steamlobbyid": 109775244841240311,
+      "goodoldgameslobbyid": 0,
+      "xboxsessionid": "0",
+      "host_profile_id": 20087158,
+      "state": 0,
+      "description": "RobDiesALot",
+      "visible": 1,
+      "mapname": "my map",
+      "options": "eNpNUttuwyAM/Zd+Qa5or8mgUzQBS0s6scdFVTSiLpG2ioSvn4khHU+WsY/Psc/hbNsKXsbV5CoLEa0Ir0LOzPfah5RZ+F/2mMb8uErDLfYxcm23vkK4uax9RLWVpmI+FGqMuIVU8x17WsLrH59LYdZZHT+6dnzKLrfy+OpOWl8u8/W9PJ2MyN9UQhFnsji7W6TpkzAnkbdimyOVJp9D4LHXjqn8ShasHTL5PQZOA+FYmwFWjpx6wlFHKsy0Bvx07zEadHaow7BMVtzHJehsfMAV7E/5HQyBDwfdWC/o9MtDL3c+xtnCTYGbBswuzBmJwP+c07j7HjSzoInB7juLfcxB/ojzWyJc9YJxB1yaNNSARsYw3xOJt1gkYD9v//3qsTmtImYZb8cNaELeK/ggC3dcud/PxqWB+drWw4bjuawi1IPmNdaL3UMNcNFht00OHkLNrgVeeqv1vIQK891+01yo6K1xiTfnro/eKqWKNxsBtwm4OnozffS3S/yXcLMd34G3cR/Fwyc7fu69ixoG+89TgIW1kjYPLnQuD3+JCwTI",
+      "passwordprotected": 0,
+      "maxplayers": 8,
+      "slotinfo": "eNrtkltPgzAYhv0tvQbTkqELl2TrBGWulYPDeNFAccgxUM3m4n9XujAznRfGxMSEq+/Y93vzpEhT7ragbqokzblVJtVpGgNDg3B8jvSxAlrBRFqV1gQYSAGCs6JLoQISFvWD96phEd+nZXbFn3m+rxwmopW7qeWG2smkBV/wBjes4M6N3Etbylm8kVe6m0+tbBdcsAkTDBjAymyTetgkHh6RXMZp4OJrfwpfiL+riWd30XQ9e95FktPQyUMU+KvLaGatSTkPg9m6XWqijf36wn+kpic1aa8dUBRWyxxj+f42S8Gr8hUQ0rUzqI8OAWn/CJD/Y0D4OKCH44BUdIBG/fbzdJMezi7/FR34QQd9ooPNhQsHt4Pbwe0fuL0/eQPLJvqx",
+      "matchtype_id": 0,
+      "matchmembers": [
+        {
+          "match_id": 504987862,
+          "profile_id": 15260548,
+          "ranking": -1,
+          "statgroup_id": 9309081,
+          "civilization_id": -1,
+          "teamid": 0
+        },
+        {
+          "match_id": 504987862,
+          "profile_id": 20087158,
+          "ranking": -1,
+          "statgroup_id": 11253778,
+          "civilization_id": -1,
+          "teamid": -1
+        }
+      ],
+      "observernum": 0,
+      "observermax": 512,
+      "isobservable": 1,
+      "observerdelay": 0,
+      "hasobserverpassword": 1,
+      "servicetype": 0,
+      "relayserver_region": "westeurope"
+    }
+  ],
+  "avatars": [
+    {
+      "profile_id": 15260548,
+      "name": "/steam/76561198014056480",
+      "alias": "Jouki in Rage",
+      "personal_statgroup_id": 9309081,
+      "xp": 66,
+      "level": 1,
+      "leaderboardregion_id": 0,
+      "country": "ua",
+      "clanlist_name": ""
+    },
+    {
+      "profile_id": 20087158,
+      "name": "/steam/76561198014710095",
+      "alias": "Trokner",
+      "personal_statgroup_id": 11253778,
+      "xp": 184,
+      "level": 1,
+      "leaderboardregion_id": 0,
+      "country": "ua",
+      "clanlist_name": ""
+    }
+  ]
+}

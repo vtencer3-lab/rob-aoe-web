@@ -13,6 +13,8 @@ function lobby(cast: Partial<LobbyInzerat> & { lobbyId: string }): LobbyInzerat 
     maHeslo: false,
     povolujeDivaky: false,
     clenoveSteamIds: [],
+    sloty: [],
+    nastaveni: null,
     ...cast,
   };
 }

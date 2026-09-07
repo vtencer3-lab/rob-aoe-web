@@ -126,6 +126,11 @@ Celý večer se dá projít samotný, na jednom stroji. Zapni v `.env`
 Na stránce je k tomu dole čárkovaná lišta „Zkušební režim“, takže se adresy
 nemusí psát ručně.
 
+Na vývojové verzi na jouki.cz (kde jsou zkušební dveře zavřené) slouží k témuž
+proměnná `ZKUSEBNI_HRACI=true`: v panelu akce přibudou tlačítka „+ Zkušební
+hráč“ a „Odebrat zkušební“. Přidají do akce tytéž vymyšlené hráče, jen se za
+ně nejde přihlásit.
+
 **Přenos režie.** Admin je natrvalo ten, kdo se přihlásil první — obvykle ty.
 Tím pádem si vlastním účtem nejde vyzkoušet, jak web vypadá očima obyčejného
 hráče: panel režie svítí i uprostřed zápasu, který zrovna hraješ. Tlačítko
@@ -245,16 +250,43 @@ Tři kroky, a mezi nimi se na nic nečeká:
    z toho odvodí sám; dva hráči se stejnou barvou sdílejí civilizaci. V ten
    okamžik zápas vidí všichni: hráči svoji barvu a tým, host navíc pokyny
    k založení lobby. Nic se nevyhlašuje.
-3. **Host založí lobby a klikne „Vyhledat moji lobby“.** Web se podívá do
-   seznamu otevřených lobby ve hře, podle Steam ID hosta tu jeho pozná a uloží
-   si její číslo. Tím naskočí hráčům „Připojit se do hry“ a Robovi Spectate —
-   obojí se odvodí z toho jednoho čísla. Kliknout může i čekající hráč
-   („Vyhledat hru“), najde totéž. Když seznam zrovna neodpovídá, host může
-   pořád vložit odkaz z tlačítka Copy ručně.
+3. **Host založí lobby, web si ji najde sám.** Obrazovka hosta jde po krocích:
+   „Zakládáš!“ (Spustit hru, snímek dialogu Create Lobby s názvem a PINem;
+   fajfka, jakmile se lobby objeví v seznamu otevřených her a web si uloží
+   její číslo), „Kontrola lobby“ a nakonec „Výborně, můžete hrát!“. Číslem
+   lobby naskočí hráčům „Připojit se do hry“ a Robovi Spectate — obojí se
+   odvodí z toho jednoho čísla. Tlačítko „Vyhledat lobby“ je pro netrpělivé
+   a pro případ, že lobby ze seznamu vypadla.
+
+**Kontrola lobby** je stejná sekce u hosta i v režii a dokud se v lobby sedí,
+opakuje se sama každých 5 s. Každý řádek má jeden ze čtyř stavů: zelená
+fajfka, červený křížek, žluté upozornění (chybějící heslo — hře nebrání) a
+šedé „–“ (Rob u té volby nastavil „je to jedno“, hodnota se jen vypíše).
+Velká fajfka a „Výborně, můžete hrát!“ jsou tam, jakmile není nikde nic
+červené. Hlavní sekce: diváci, hráči (barva, tým, případně předepsaná
+civilizace), mapa, velikost, rychlost, populace, victory, cheaty. Všechno
+ostatní, co seznam lobby vydává (Civilization Set, Game Mode, AI, Resources,
+Reveal Map, věky, Treaty, Lock Teams, Team Together, … Record Game), je pod
+„Další nastavení“ s počtem odchylek; sekce je rozbalená a pamatuje si, jak
+si ji kdo sbalil. Co má lobby splňovat, si Rob nastaví v panelu akce („Jak má
+vypadat lobby“), který je rozložený stejně jako herní panel Game Settings;
+AI Difficulty a Lock Teams začínají na „–“.
+
+Civilizaci hráče vybírá Rob při skládání ze seznamu s erby (kulaté ikony z
+herních souborů `resources/_common/wpfg/resources/civ_techtree`, tytéž co
+v lobby, viz `web/src/civErby.ts`).
 
 Zápas končí buď zápisem vítěze (tlačítko za každou stranu: „Vyhrál Trokner“,
-„Vyhrál modrý tým“), nebo zrušením. Večer končí
-tlačítkem „Ukončit akci“, které je nevratné a ptá se na potvrzení.
+„Vyhrál modrý tým“), nebo zrušením. Zrušený zápas jde vrátit do hry, nebo
+„Odebrat úplně“ (`DELETE /api/zapas/:id`, jen zrušený, jen Rob), ať v režii
+nestraší. Večer končí tlačítkem „Ukončit akci“, které je nevratné a ptá se
+na potvrzení.
+
+Robův Spectate ukazuje, jestli se ještě sedí v lobby, nebo už se hraje. Server
+to odvozuje ze seznamu otevřených lobby každých 10 s; „Hraje se“ se ale
+prohlásí až po třech nepřítomnostech za sebou, protože seznam lobby občas
+na jedno stažení vynechá (stránkování se posune, když mezi stránkami nějaká
+lobby zanikne).
 
 Do 5. 9. 2026 byl mezi krokem 2 a 3 ještě mezikrok „Vyhlásit“ a akce měla pět
 stavů; obojí zmizelo, protože se na tom dalo v přímém přenosu jen zaseknout.

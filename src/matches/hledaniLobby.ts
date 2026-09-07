@@ -49,7 +49,7 @@ export class SeznamLobby {
   #data: LobbyInzerat[] = [];
   #probiha: Promise<LobbyInzerat[]> | null = null;
 
-  constructor(nacti: () => Promise<LobbyInzerat[]>, ttlMs = 5_000, ted: () => number = Date.now) {
+  constructor(nacti: () => Promise<LobbyInzerat[]>, ttlMs = 2_000, ted: () => number = Date.now) {
     this.#nacti = nacti;
     this.#ttlMs = ttlMs;
     this.#ted = ted;

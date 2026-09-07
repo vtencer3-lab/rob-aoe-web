@@ -45,3 +45,8 @@ it("prázdný seznam to řekne slovy", () => {
   render(<SeznamPrihlasenych prihlaseni={[]} />);
   expect(screen.getByText(/zatím se nikdo nepřihlásil/i)).toBeInTheDocument();
 });
+
+it("bez režie nenabízí tlačítko „+“", () => {
+  render(<SeznamPrihlasenych prihlaseni={[hrac()]} />);
+  expect(screen.queryByRole("button", { name: /vybrat hráče/i })).not.toBeInTheDocument();
+});

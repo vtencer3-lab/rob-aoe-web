@@ -16,10 +16,10 @@ const zapas: ZapasView = {
   spectatorUri: null,
   vitez: null,
   ucastnici: [
-    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
@@ -55,14 +55,14 @@ it("dokud host nevložil odkaz, čeká se", () => {
   render(<KartaHrace zapas={bezLobby} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
   expect(screen.queryByRole("link", { name: /připojit/i })).not.toBeInTheDocument();
   expect(screen.getByText(/čeká se na hosta/i)).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /vyhledat hru/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /vyhledat lobby/i })).toBeInTheDocument();
   expect(screen.queryByText(/nejde odkaz|nefunguje tlačítko/i)).not.toBeInTheDocument();
   expect(screen.getByText(/jakmile ji host založí/i)).toBeInTheDocument();
 });
 
 it("s odkazem už hledat nenabízí", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
-  expect(screen.queryByRole("button", { name: /vyhledat hru/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /vyhledat lobby/i })).not.toBeInTheDocument();
 });
 
 it("odkaz na připojení míří do hry", () => {
@@ -86,10 +86,10 @@ it("spoluhráče i soupeře bez aliasu pojmenuje jménem ze Steamu", () => {
   const bezAliasu: ZapasView = {
     ...zapas,
     ucastnici: [
-      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: null },
-      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { steamId: "c", alias: null, steamName: "Marecek", tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
-      { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { steamId: "c", alias: null, steamName: "Marecek", tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
   render(<KartaHrace zapas={bezAliasu} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);

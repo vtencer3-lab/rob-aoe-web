@@ -1,3 +1,4 @@
+import { CIVILIZACE } from "./civilizace.js";
 import { strany } from "./strany.js";
 import { BARVY, TYMY, type SestavaVstup } from "./types.js";
 
@@ -22,6 +23,7 @@ export function zkontrolujSestavu(sestava: SestavaVstup[]): string | null {
   for (const s of sestava) {
     if (!BARVY.includes(s.barva)) return "Barva musí být 1 až 8.";
     if (!TYMY.includes(s.tym)) return "Tým musí být – nebo 1 až 4.";
+    if (s.civ !== undefined && s.civ !== null && !(s.civ in CIVILIZACE)) return "Neznámá civilizace.";
   }
 
   const podleBarvy = new Map<number, SestavaVstup[]>();
@@ -32,6 +34,9 @@ export function zkontrolujSestavu(sestava: SestavaVstup[]): string | null {
       const [a, b] = stejni as [SestavaVstup, SestavaVstup];
       if (a.tym === 0 || a.tym !== b.tym) {
         return "Hráči se stejnou barvou sdílejí civilizaci, musí být ve stejném týmu.";
+      }
+      if ((a.civ ?? null) !== (b.civ ?? null)) {
+        return "Hráči se stejnou barvou sdílejí civilizaci, musí mít předepsanou tutéž.";
       }
     }
   }

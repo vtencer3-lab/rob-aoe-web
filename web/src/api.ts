@@ -1,3 +1,4 @@
+import type { KontrolaLobbyVysledek, NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import type { AkceStavPayload, HledaniLobbyVysledek, SestavaVstup, Vitez } from "../../src/shared/types.js";
 import { cesta } from "./cesty.js";
 
@@ -13,8 +14,18 @@ async function json<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
+export interface Nastaveni {
+  verze: string;
+  zkusebniHraci: boolean;
+}
+
 export const api = {
   me: () => fetch(cesta("/api/me")).then((r) => json<Me>(r)),
+  nastaveni: () => fetch(cesta("/api/nastaveni")).then((r) => json<Nastaveni>(r)),
+  pridatZkusebniho: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/zkusebni-hraci`), { method: "POST" }).then((r) => json<{ pridan: string }>(r)),
+  odebratZkusebni: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/zkusebni-hraci`), { method: "DELETE" }).then((r) => json<{ odebrano: number }>(r)),
   akce: () => fetch(cesta("/api/akce")).then((r) => json<AkceStavPayload>(r)),
   vytvoritAkce: (nazev: string) =>
     fetch(cesta("/api/akce"), {
@@ -41,6 +52,16 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ odkaz }),
     }).then((r) => json<{ ok: true }>(r)),
+  kontrolaLobby: (zapasId: number) =>
+    fetch(cesta(`/api/zapas/${zapasId}/kontrola-lobby`), { method: "POST" }).then((r) =>
+      json<KontrolaLobbyVysledek>(r),
+    ),
+  nastaveniLobby: (akceId: number, nastaveni: NastaveniLobby) =>
+    fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(nastaveni),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
   hledatLobby: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>
       json<HledaniLobbyVysledek>(r),
@@ -57,6 +78,8 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ stav }),
     }).then((r) => json<{ ok: true }>(r)),
+  smazatZapas: (zapasId: number) =>
+    fetch(cesta(`/api/zapas/${zapasId}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   vysledek: (zapasId: number, vitez: Vitez) =>
     fetch(cesta(`/api/zapas/${zapasId}/vysledek`), {
       method: "POST",

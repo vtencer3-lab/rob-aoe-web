@@ -1,18 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import type { HledaniLobbyVysledek } from "../../../src/shared/types.js";
+import { Kopirovatelne } from "./Kopirovatelne.js";
 
-/** Jak často se web sám ptá, dokud lobby nenajde. Server má stejně dlouhou cache. */
-export const INTERVAL_HLEDANI_MS = 5_000;
+/** Jak často se web sám ptá, dokud lobby nenajde. Server má krátkou cache. */
+export const INTERVAL_HLEDANI_MS = 4_000;
 
 interface Props {
   zapasId: number;
   onHledat: (zapasId: number) => Promise<HledaniLobbyVysledek>;
-  /** Text tlačítka: host „Vyhledat teď“, čekající hráč „Vyhledat hru“. */
-  popisek?: string;
   /**
-   * Dokud je zapnuté, hledá se samo každých pár vteřin. Vypíná se zvenčí ve
-   * chvíli, kdy zápas číslo lobby má — dozví se to přes SSE, ne z odpovědi.
+   * Zápas už číslo lobby má a lobby stojí: tlačítko je zašedlé a vedle něj
+   * svítí „Lobby nalezena“. Když lobby ze seznamu zmizí, rodič to přepne
+   * zpátky a tlačítko zase ožije.
    */
+  nalezena: boolean;
+  /** Odkaz do lobby k ručnímu sdílení (ikona vedle stavu); null bez lobby. */
+  odkaz?: string | null;
+  /** Dokud je zapnuté a lobby není nalezená, hledá se samo každých pár vteřin. */
   automaticky?: boolean;
   intervalMs?: number;
 }
@@ -26,19 +30,20 @@ type Stav =
 /**
  * Hledání lobby v seznamu otevřených her podle Steam ID lidí ze zápasu.
  * Host díky němu nemusí kopírovat odkaz; čekající hráč díky němu vidí odkaz
- * ve chvíli, kdy host lobby založí, aniž by kdokoliv cokoliv klikal. Tlačítko
- * zůstává pro netrpělivé. Výsledek se ukazuje tady, ne nahoře na stránce.
+ * ve chvíli, kdy host lobby založí, aniž by kdokoliv cokoliv klikal. Stav se
+ * ukazuje vedle tlačítka, ne nahoře na stránce.
  */
 export function HledaniLobby({
   zapasId,
   onHledat,
-  popisek = "Vyhledat hru",
+  nalezena,
+  odkaz = null,
   automaticky = false,
   intervalMs = INTERVAL_HLEDANI_MS,
 }: Props) {
   const [stav, setStav] = useState<Stav>({ druh: "klid" });
-  // Souběh: automatický tik nesmí spustit druhé hledání, dokud první běží,
-  // a odpověď, která dorazí po odpojení, nesmí sahat na stav.
+  // Název lobby zná jen odpověď hledání; drží se, aby po nálezu nezmizel.
+  const [nazev, setNazev] = useState<string | null>(null);
   const probiha = useRef(false);
   const zivy = useRef(true);
 
@@ -48,7 +53,10 @@ export function HledaniLobby({
     if (rucne) setStav({ druh: "hledam" });
     try {
       const vysledek = await onHledat(zapasId);
-      if (zivy.current) setStav({ druh: "vysledek", vysledek });
+      if (zivy.current) {
+        setStav({ druh: "vysledek", vysledek });
+        if (vysledek.nalezeno) setNazev(vysledek.nazev);
+      }
     } catch (err) {
       if (zivy.current) {
         setStav({ druh: "chyba", text: err instanceof Error ? err.message : "Hledání se nepovedlo." });
@@ -66,62 +74,65 @@ export function HledaniLobby({
   }, []);
 
   useEffect(() => {
-    if (!automaticky) return;
+    if (!automaticky || nalezena) return;
     void hledej(false);
     const casovac = setInterval(() => void hledej(false), intervalMs);
     return () => clearInterval(casovac);
-    // hledej se mění s každým renderem; smyčku řídí jen automaticky/interval.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [automaticky, intervalMs, zapasId]);
+  }, [automaticky, nalezena, intervalMs, zapasId]);
+
+  // Stránka načtená s už nalezenou lobby jméno nezná (chodí jen v odpovědi
+  // hledání) — jedno hledání navíc ho doplní; server má seznam v cache.
+  useEffect(() => {
+    if (nalezena && nazev === null) void hledej(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nalezena]);
 
   return (
     <div className="hledani-lobby" data-testid="hledani-lobby">
-      <button type="button" onClick={() => void hledej(true)} disabled={stav.druh === "hledam"}>
-        {stav.druh === "hledam" ? "Hledám…" : popisek}
-      </button>
-      <Hlaska stav={stav} automaticky={automaticky} />
+      <div className="ovladani">
+        <button type="button" onClick={() => void hledej(true)} disabled={nalezena || stav.druh === "hledam"}>
+          {stav.druh === "hledam" ? "Hledám…" : "Vyhledat lobby"}
+        </button>
+        {nalezena ? (
+          <span className="potvrzeno stav-lobby" role="status" data-testid="lobby-nalezena">
+            Lobby nalezena{nazev ? ` („${nazev}“)` : ""}
+            {odkaz ? <Kopirovatelne hodnota={odkaz} popis="odkaz do lobby" jenIkona /> : null}
+          </span>
+        ) : (
+          <Hlaska stav={stav} automaticky={automaticky} />
+        )}
+      </div>
     </div>
   );
 }
 
 function Hlaska({ stav, automaticky }: { stav: Stav; automaticky: boolean }) {
-  const dal = automaticky ? " Hledám dál, každých pár vteřin." : "";
-  if (stav.druh === "klid" || stav.druh === "hledam") {
-    return automaticky ? (
-      <p className="zaloha" role="status">
-        Hledám lobby automaticky…
-      </p>
-    ) : null;
-  }
   if (stav.druh === "chyba") {
     return (
-      <p className="chyba chyba-pole" role="alert">
+      <span className="chyba" role="alert">
         {stav.text}
-        {dal}
-      </p>
+      </span>
     );
   }
-  const v = stav.vysledek;
-  if (!v.nalezeno) {
+  if (stav.druh === "vysledek" && !stav.vysledek.nalezeno) {
     return (
-      <p className="zaloha" role="status">
-        Lobby zatím není vidět. Musí být založená a <strong>veřejná</strong> (Visibility: Public).
-        {dal}
-      </p>
+      <span className="zaloha" role="status">
+        Lobby zatím není vidět, musí být <strong>veřejná</strong>.{automaticky ? " Hledám dál." : ""}
+      </span>
     );
   }
-  // Tvrdé varování jen u diváků: bez nich se Rob nedostane dovnitř. Heslo je
-  // na hostovi, ale ať ví, že ho nemá.
-  return (
-    <p className="potvrzeno" role="status">
-      Lobby nalezena{v.nazev ? ` („${v.nazev}“)` : ""}, odkazy naskočily všem.
-      {v.povolujeDivaky === false ? (
-        <>
-          {" "}
-          <span className="chyba">Nepovoluje diváky — zaškrtni Allow Spectators, jinak se Rob nedostane dovnitř.</span>
-        </>
-      ) : null}
-      {v.maHeslo === false ? <> Lobby nemá heslo.</> : null}
-    </p>
-  );
+  if (stav.druh === "vysledek" && stav.vysledek.nalezeno) {
+    // Nalezeno, rodič ještě nepřepnul (stav ze serveru dorazí přes SSE).
+    return (
+      <span className="potvrzeno" role="status">
+        Lobby nalezena
+      </span>
+    );
+  }
+  return automaticky ? (
+    <span className="zaloha" role="status">
+      Hledám lobby…
+    </span>
+  ) : null;
 }

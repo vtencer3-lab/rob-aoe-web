@@ -4,6 +4,11 @@ interface Props {
   hodnota: string;
   /** Doplní se do popisku pro čtečky: „Kopírovat <popis>“. */
   popis: string;
+  /** Další třídy, např. pro usazení do snímku dialogu Create Lobby. */
+  className?: string;
+  testId?: string;
+  /** Jen ikona bez vypsané hodnoty — např. sdílení odkazu vedle stavu. */
+  jenIkona?: boolean;
 }
 
 /**
@@ -13,7 +18,7 @@ interface Props {
  * vedle textu říká, že se dá kliknout; toast nad hodnotou potvrdí, že se
  * to povedlo, aniž by se cokoliv v řádku pohnulo.
  */
-export function Kopirovatelne({ hodnota, popis }: Props) {
+export function Kopirovatelne({ hodnota, popis, className, testId, jenIkona = false }: Props) {
   const [zkopirovano, setZkopirovano] = useState(false);
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
   // Bez úklidu by se po odpojení komponenty sahalo na setState odpojeného
@@ -36,12 +41,13 @@ export function Kopirovatelne({ hodnota, popis }: Props) {
   return (
     <button
       type="button"
-      className="kopirovatelne"
+      className={["kopirovatelne", className, jenIkona ? "jen-ikona" : ""].filter(Boolean).join(" ")}
+      data-testid={testId}
       aria-label={`Kopírovat ${popis}`}
       title={`Kopírovat ${popis}`}
       onClick={() => void kopiruj()}
     >
-      <strong>{hodnota}</strong>
+      {jenIkona ? null : <strong>{hodnota}</strong>}
       <svg className="ikona-kopie" aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">
         <rect x="5" y="5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
         <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" fill="none" stroke="currentColor" strokeWidth="1.5" />

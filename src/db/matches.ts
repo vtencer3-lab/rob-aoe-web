@@ -27,6 +27,7 @@ export interface UcastnikRow {
   steamName: string | null;
   tym: Tym;
   barva: Barva;
+  civ: number | null;
   jeHost: boolean;
   poradi: number;
   kliknulPripojit: Date | null;
@@ -100,8 +101,8 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
 
     for (const seat of seats) {
       await client.query(
-        "INSERT INTO ucastnik (zapas_id, steam_id, tym, barva, je_host, poradi) VALUES ($1, $2, $3, $4, $5, $6)",
-        [zapas.id, seat.steamId, seat.tym, seat.barva, seat.jeHost, seat.poradi],
+        "INSERT INTO ucastnik (zapas_id, steam_id, tym, barva, civ, je_host, poradi) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [zapas.id, seat.steamId, seat.tym, seat.barva, seat.civ, seat.jeHost, seat.poradi],
       );
     }
     return zapas;
@@ -110,7 +111,7 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
 
 async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
   const { rows } = await getPool().query(
-    `SELECT u.steam_id, p.alias, p.steam_name, u.tym, u.barva, u.je_host, u.poradi, u.kliknul_pripojit
+    `SELECT u.steam_id, p.alias, p.steam_name, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
        FROM ucastnik u JOIN player p ON p.steam_id = u.steam_id
       WHERE u.zapas_id = $1
       ORDER BY u.poradi, u.steam_id`,
@@ -124,6 +125,7 @@ async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
       steamName: row["steam_name"] as string | null,
       tym: row["tym"] as Tym,
       barva: row["barva"] as Barva,
+      civ: (row["civ"] as number | null) ?? null,
       jeHost: row["je_host"] as boolean,
       poradi: row["poradi"] as number,
       kliknulPripojit: row["kliknul_pripojit"] as Date | null,
@@ -180,6 +182,15 @@ export async function setZapasStav(zapasId: number, stav: MatchState): Promise<v
       `Stav zápasu ${zapasId} se mezitím změnil — někdo byl rychlejší. Načti si stránku znovu.`,
     );
   }
+}
+
+/**
+ * Zrušený zápas smaže i s účastníky (kaskáda). Podmínka na stav je v SQL:
+ * kdyby ho někdo mezitím vrátil do hry, nic se nesmaže a vrátí se false.
+ */
+export async function smazZrusenyZapas(zapasId: number): Promise<boolean> {
+  const { rowCount } = await getPool().query("DELETE FROM zapas WHERE id = $1 AND stav = 'zruseny'", [zapasId]);
+  return (rowCount ?? 0) > 0;
 }
 
 export async function setLobbyId(zapasId: number, lobbyId: string): Promise<void> {

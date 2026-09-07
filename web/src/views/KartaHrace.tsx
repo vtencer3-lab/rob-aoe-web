@@ -1,4 +1,5 @@
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
+import { nazevCivilizace } from "../../../src/shared/civilizace.js";
 import { jmenoHrace, mujUcastnik, popisFormatu, popisTymu, sdiliCivilizaci, souperi } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
 
@@ -29,7 +30,14 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
         </span>
       </div>
       <p>
-        V lobby si nastav <strong>{barva} barvu</strong> a <strong>{popisTymu(muj)}</strong>.
+        V lobby si nastav <strong>{barva} barvu</strong> a <strong>{popisTymu(muj)}</strong>
+        {muj.civ !== null ? (
+          <>
+            {" "}
+            a civilizaci <strong data-testid="moje-civ">{nazevCivilizace(muj.civ)}</strong>
+          </>
+        ) : null}
+        .
       </p>
       {parta.length > 0 ? (
         <p>
@@ -46,7 +54,7 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
           <p className="ceka">Čeká se na hosta, až založí lobby.</p>
           {/* Čekající hráč si může pomoct sám: seznam otevřených lobby je
               společný, takže najde totéž číslo, které by našel host. */}
-          <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} automaticky />
+          <HledaniLobby zapasId={zapas.id} onHledat={onHledatLobby} nalezena={false} automaticky />
         </>
       )}
       <footer>

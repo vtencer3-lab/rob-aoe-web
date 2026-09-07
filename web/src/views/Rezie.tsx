@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
 import {
   BARVA_NAZEV,
@@ -7,30 +8,40 @@ import {
   type Vitez,
   type ZapasView,
 } from "../../../src/shared/types.js";
+import type { Skladani as StavSkladani } from "../skladani.js";
+import { nazevCivilizace } from "../../../src/shared/civilizace.js";
 import { jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete } from "../zapas.js";
+import { KontrolaLobby } from "./KontrolaLobby.js";
 import { Skladani } from "./Skladani.js";
 
 interface Props {
   stav: AkceStavPayload;
+  /** Sdílený stav sestavy — nevybrané ukazuje tabulka přihlášených nad režií. */
+  skladani: StavSkladani;
   onVytvoritZapas: (sestava: SestavaVstup[]) => void;
   onStav: (zapasId: number, stav: string) => void;
+  /** Zrušený zápas úplně odebrat, ať v režii nestraší celý večer. */
+  onSmazat: (zapasId: number) => void;
   onVysledek: (zapasId: number, vitez: Vitez) => void;
   onHost: (zapasId: number, steamId: string) => void;
+  onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
 }
 
-export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Props) {
+export function Rezie({ stav, skladani, onVytvoritZapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby }: Props) {
   return (
     <section className="rezie">
       <div className="skladani-obal">
-        <Skladani prihlaseni={stav.prihlaseni} onVytvoritZapas={onVytvoritZapas} />
+        <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} />
       </div>
       {stav.zapasy.map((zapas) => (
         <ZapasVRezii
           key={zapas.id}
           zapas={zapas}
           onStav={onStav}
+          onSmazat={onSmazat}
           onVysledek={onVysledek}
           onHost={onHost}
+          onKontrolaLobby={onKontrolaLobby}
         />
       ))}
     </section>
@@ -54,9 +65,9 @@ function popisUcastnika(zapas: ZapasView, u: ZapasView["ucastnici"][number]): st
   return u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl";
 }
 
-type ZapasProps = Pick<Props, "onStav" | "onVysledek" | "onHost"> & { zapas: ZapasView };
+type ZapasProps = Pick<Props, "onStav" | "onSmazat" | "onVysledek" | "onHost" | "onKontrolaLobby"> & { zapas: ZapasView };
 
-function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
+function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby }: ZapasProps) {
   // Přepsat zapsaný výsledek jde, ale ne jedním kliknutím do prázdna: tlačítka
   // stran se odemknou až po „Změnit výsledek“ a to druhé kliknutí je samo o sobě
   // to potvrzení. Potvrzovací okno navíc by se muselo odškrtávat v přenosu.
@@ -97,6 +108,7 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
                 a tlačítko se mu nelepilo na poslední písmeno. */}
             <span>
               <span className="swatch" /> {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, {popisTymu(u)}
+              {u.civ !== null ? `, ${nazevCivilizace(u.civ)}` : ""}
               {" · "}
               {popisUcastnika(zapas, u)}
             </span>
@@ -150,11 +162,11 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
               "Spectate — čeká se na odkaz od hosta"
             )}
           </a>
-          {/* Jen informační stavový řádek, ne zámek. */}
-          <div className="zaloha">
-            Kdyby to zamrzlo: lobby <strong>{zapas.nazevLobby}</strong>, heslo{" "}
-            <strong>{zapas.heslo}</strong>, číslo <strong>{zapas.lobbyId ?? "—"}</strong>
-          </div>
+          {/* Tatáž sekce kontroly, jakou vidí host — stejná komponenta,
+              stejné chování (sama se opakuje, dokud se v lobby sedí). */}
+          {zapas.lobbyId ? (
+            <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} />
+          ) : null}
           <div className="ovladani">
             {stranyZapasu.map((strana) => (
               <TlacitkoViteze key={klicStrany(strana)} zapas={zapas} strana={strana} onVysledek={onVysledek} />
@@ -187,10 +199,15 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost }: ZapasProps) {
         </div>
       ) : null}
       {/* Zrušený zápas byl slepá ulička — pořád nabízel Spectate i výsledek,
-          ale žádnou cestu zpátky. Stavový automat návrat dovoluje schválně. */}
+          ale žádnou cestu zpátky. Stavový automat návrat dovoluje schválně.
+          A když se k němu Rob vracet nechce, jde odebrat úplně, ať v režii
+          nestraší do konce večera. */}
       {zruseno ? (
         <div className="ovladani">
           <button onClick={() => onStav(zapas.id, "bezi")}>Vrátit do hry</button>
+          <button className="odebrat-zapas" onClick={() => onSmazat(zapas.id)}>
+            Odebrat úplně
+          </button>
         </div>
       ) : null}
     </article>

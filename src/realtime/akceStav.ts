@@ -45,6 +45,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
       steamName: u.steamName,
       tym: u.tym,
       barva: u.barva,
+      civ: u.civ,
       jeHost: u.jeHost,
       poradi: u.poradi,
       kliknulPripojit: u.kliknulPripojit?.toISOString() ?? null,
@@ -57,7 +58,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   if (!akce) return { akce: null, prihlaseni: [], zapasy: [] };
   const prihlaseni = await listSignups(akce.id);
   return {
-    akce: { id: akce.id, nazev: akce.nazev, stav: akce.stav },
+    akce: { id: akce.id, nazev: akce.nazev, stav: akce.stav, nastaveniLobby: akce.nastaveniLobby },
     prihlaseni: prihlaseni.map(playerView),
     zapasy: (await listZapasy(akce.id)).map(zapasView),
   };

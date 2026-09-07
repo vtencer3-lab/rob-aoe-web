@@ -8,12 +8,17 @@ import { useAkceStav } from "./useAkceStav.js";
 vi.mock("./api.js", () => ({
   api: {
     me: vi.fn(),
+    nastaveni: vi.fn().mockResolvedValue({ verze: "0.0.0", zkusebniHraci: false }),
+    pridatZkusebniho: vi.fn(),
+    odebratZkusebni: vi.fn(),
     akce: vi.fn(),
     prihlasit: vi.fn(),
     odhlasit: vi.fn(),
     odhlasitSe: vi.fn(),
     pripojeni: vi.fn(),
     vlozitOdkaz: vi.fn(),
+    kontrolaLobby: vi.fn().mockResolvedValue({ nalezeno: false, kontroly: [] }),
+    nastaveniLobby: vi.fn(),
     hledatLobby: vi.fn().mockResolvedValue({ nalezeno: false, lobbyId: null, nazev: null, maHeslo: null, povolujeDivaky: null }),
     vytvoritAkce: vi.fn(),
     akceStav: vi.fn(),
@@ -34,6 +39,7 @@ const u = (steamId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikV
   steamName: null,
   tym,
   barva,
+  civ: null,
   jeHost,
   poradi: 0,
   kliknulPripojit: null,
@@ -74,7 +80,7 @@ it("host vidí obrazovku hosta, ne kartu hráče", async () => {
 
   render(<App />);
 
-  expect(await screen.findByRole("button", { name: /uložit odkaz/i })).toBeInTheDocument();
+  expect(await screen.findByTestId("spustit-hru")).toBeInTheDocument();
   expect(screen.queryByText(/v lobby si nastav/i)).not.toBeInTheDocument();
 });
 
@@ -91,7 +97,7 @@ it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async ()
   render(<App />);
 
   expect(await screen.findByText(/v lobby si nastav/i)).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /uložit odkaz/i })).not.toBeInTheDocument();
+  expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
 });
 
 it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
@@ -107,7 +113,7 @@ it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
   render(<App />);
 
   expect(await screen.findByText("Akce 1")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /uložit odkaz/i })).not.toBeInTheDocument();
+  expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
   expect(screen.queryByText(/v lobby si nastav/i)).not.toBeInTheDocument();
 });
 

@@ -47,29 +47,13 @@ describe("lobbyName", () => {
 });
 
 describe("generatePassword", () => {
-  it("má osm znaků", () => {
-    expect(generatePassword()).toHaveLength(8);
+  it("je čtyřmístný číselný PIN", () => {
+    for (let i = 0; i < 100; i++) expect(generatePassword()).toMatch(/^\d{4}$/);
   });
 
-  it("neobsahuje zaměnitelné znaky", () => {
-    for (let i = 0; i < 200; i++) {
-      expect(generatePassword()).not.toMatch(/[ilo01]/);
-    }
-  });
-
-  it("je deterministické při daném generátoru", () => {
-    expect(generatePassword(() => 0)).toBe("aaaaaaaa");
-  });
-
-  it("ošetří generátor vracející hraniční hodnotu 1", () => {
-    const heslo = generatePassword(() => 1);
-    expect(heslo).toHaveLength(8);
-    expect(heslo).toMatch(/^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/);
-  });
-
-  it("výchozí generátor vrací jen znaky z abecedy", () => {
-    const heslo = generatePassword();
-    expect(heslo).toHaveLength(8);
-    expect(heslo).toMatch(/^[abcdefghjkmnpqrstuvwxyz23456789]{8}$/);
+  it("je deterministický při daném generátoru a snese hraniční hodnoty", () => {
+    expect(generatePassword(() => 0)).toBe("0000");
+    expect(generatePassword(() => 1)).toBe("9999");
+    expect(generatePassword(() => 0.5)).toBe("5555");
   });
 });

@@ -34,3 +34,10 @@ describe("zkontrolujSestavu", () => {
     expect(zkontrolujSestavu([h("a", 1, 1), h("b", 1, 2)])).toMatch(/proti komu/);
   });
 });
+
+it("civilizace musí být známá a u sdílené barvy stejná", () => {
+  expect(zkontrolujSestavu([{ ...h("a", 1, 1), civ: 18 }, h("b", 2, 2)])).toBeNull();
+  expect(zkontrolujSestavu([{ ...h("a", 1, 1), civ: 999 }, h("b", 2, 2)])).toMatch(/civilizace/i);
+  expect(zkontrolujSestavu([{ ...h("a", 1, 1), civ: 18 }, { ...h("b", 1, 1), civ: 2 }, h("c", 2, 2), h("d", 2, 2)])).toMatch(/tutéž/);
+  expect(zkontrolujSestavu([{ ...h("a", 1, 1), civ: 18 }, { ...h("b", 1, 1), civ: 18 }, h("c", 2, 2), h("d", 2, 2)])).toBeNull();
+});

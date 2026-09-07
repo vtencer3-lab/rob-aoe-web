@@ -3,6 +3,7 @@ import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
 import { VERZE } from "../../src/shared/verze.js";
 import { useAkceStav } from "./useAkceStav.js";
+import { useSkladani } from "./skladani.js";
 import { jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
@@ -14,11 +15,19 @@ import { ZkusebniLista } from "./views/ZkusebniLista.js";
 
 export function App() {
   const [me, setMe] = useState<Me["hrac"]>(null);
+  const [zkusebniHraci, setZkusebniHraci] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
   const { stav, spojeno } = useAkceStav();
+  // Sestava se skládá ze dvou míst: tabulka přihlášených (nevybraní, „+“)
+  // a panel režie (vybraní). Stav proto žije tady, nad oběma.
+  const skladani = useSkladani(stav?.prihlaseni ?? []);
 
   useEffect(() => {
     void api.me().then((odpoved) => setMe(odpoved.hrac));
+    void api
+      .nastaveni()
+      .then((n) => setZkusebniHraci(n.zkusebniHraci))
+      .catch(() => {});
   }, []);
 
   const akce = stav?.akce ?? null;
@@ -46,7 +55,7 @@ export function App() {
   return (
     <main>
       <header>
-        <h1>Komunitní hry — Robdiesalot</h1>
+        <h1>Komunitní hry — RobDiesALot</h1>
         {me ? (
           <span>
             {jmenoHrace(me)}{" "}
@@ -71,6 +80,17 @@ export function App() {
           onStav={(novyStav) => {
             if (akce) void hlidej(() => api.akceStav(akce.id, novyStav));
           }}
+          onNastaveniLobby={(n) => {
+            if (akce) void hlidej(() => api.nastaveniLobby(akce.id, n));
+          }}
+          zkusebni={
+            zkusebniHraci && akce
+              ? {
+                  onPridat: () => void hlidej(() => api.pridatZkusebniho(akce.id)),
+                  onOdebrat: () => void hlidej(() => api.odebratZkusebni(akce.id)),
+                }
+              : undefined
+          }
         />
       ) : null}
 
@@ -84,14 +104,17 @@ export function App() {
               {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
             </button>
           ) : null}
-          <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} />
+          <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} skladani={me?.jeAdmin ? skladani : undefined} />
           {me?.jeAdmin && stav ? (
             <Rezie
               stav={stav}
+              skladani={skladani}
               onVytvoritZapas={(sestava) => void hlidej(() => api.vytvoritZapas(akce.id, sestava))}
               onStav={(zapasId, novyStav) => void hlidej(() => api.zapasStav(zapasId, novyStav))}
+              onSmazat={(zapasId) => void hlidej(() => api.smazatZapas(zapasId))}
               onVysledek={(zapasId, vitez) => void hlidej(() => api.vysledek(zapasId, vitez))}
               onHost={(zapasId, steamId) => void hlidej(() => api.zmenitHosta(zapasId, steamId))}
+              onKontrolaLobby={(id) => api.kontrolaLobby(id)}
             />
           ) : null}
           {me
@@ -101,10 +124,8 @@ export function App() {
                     key={zapas.id}
                     zapas={zapas}
                     ja={me.steamId}
-                    // Chybu si obrazovka hosta ukáže sama u pole, kam se odkaz
-                    // vkládá — proto se tu nepolyká přes hlidej().
-                    onVlozitOdkaz={(id, odkaz) => api.vlozitOdkaz(id, odkaz)}
                     onHledatLobby={(id) => api.hledatLobby(id)}
+                    onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                   />
                 ) : (
                   <KartaHrace

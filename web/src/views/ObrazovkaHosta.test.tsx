@@ -5,6 +5,7 @@ import type { ZapasView } from "../../../src/shared/types.js";
 import { ObrazovkaHosta } from "./ObrazovkaHosta.js";
 
 /** Automatické hledání volá onHledatLobby hned po vykreslení; mock musí vracet odpověď. */
+const nekontroluj = vi.fn().mockResolvedValue({ nalezeno: false, kontroly: [] });
 const nehledat = vi.fn().mockResolvedValue({ nalezeno: false, lobbyId: null, nazev: null, maHeslo: null, povolujeDivaky: null });
 
 const zaklad: ZapasView = {
@@ -18,55 +19,17 @@ const zaklad: ZapasView = {
   spectatorUri: null,
   vitez: null,
   ucastnici: [
-    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
-
-it("ukáže zrcadlo lobby se všemi barvami a týmy", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />);
-  const radky = screen.getAllByTestId("radek-lobby");
-  expect(radky).toHaveLength(4);
-  expect(radky[0]).toHaveTextContent("modrá");
-  expect(radky[2]).toHaveTextContent("červená");
-});
-
-
-
-it("odešle vložený odkaz", async () => {
-  const onVlozitOdkaz = vi.fn();
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} onHledatLobby={nehledat} />);
-
-  await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://0/234230181");
-  await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
-
-  expect(onVlozitOdkaz).toHaveBeenCalledWith(1, "aoe2de://0/234230181");
-});
-
-
-it("v zrcadle lobby pojmenuje hráče bez aliasu jménem ze Steamu", () => {
-  const bezAliasu: ZapasView = {
-    ...zaklad,
-    ucastnici: [
-      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
-    ],
-  };
-  render(
-    <ObrazovkaHosta zapas={bezAliasu} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />,
-  );
-
-  const radky = screen.getAllByTestId("radek-lobby");
-  expect(radky[1]).toHaveTextContent("TibbarZmr");
-  expect(radky[1]).not.toHaveTextContent("76561199091641101");
-});
 
 it("nabídne kopírování názvu lobby i hesla", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />);
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
 
   await userEvent.click(screen.getByRole("button", { name: /kopírovat název lobby/i }));
   expect(writeText).toHaveBeenLastCalledWith("ROB-07");
@@ -77,34 +40,8 @@ it("nabídne kopírování názvu lobby i hesla", async () => {
 
 // Hláška patří k poli, ne na začátek stránky. Host ji vkládá uprostřed
 // streamu a nahoru se nedívá — dvakrát to skončilo tím, že chybu nikdo neviděl.
-it("ukáže odmítnutí odkazu u pole, ne někde nahoře", async () => {
-  const onVlozitOdkaz = vi
-    .fn()
-    .mockRejectedValue(new Error("Tohle je divácký odkaz (aoe2de://1/…)."));
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} onHledatLobby={nehledat} />);
-
-  await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://1/234230181");
-  await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
-
-  const hlaska = await screen.findByTestId("chyba-odkazu");
-  expect(hlaska).toHaveTextContent(/divácký odkaz/i);
-});
-
-it("po povedeném uložení žádnou chybu nedrží", async () => {
-  const onVlozitOdkaz = vi.fn().mockResolvedValue(undefined);
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} onHledatLobby={nehledat} />);
-
-  await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://0/234230181");
-  await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
-
-  expect(screen.queryByTestId("chyba-odkazu")).not.toBeInTheDocument();
-});
-
-// Host taky hraje. Svoji barvu ale doteď viděl jen jako jeden řádek dole
-// v zrcadle, zatímco každý druhý účastník dostal přes půl obrazovky pruh —
-// host dostane ObrazovkaHosta *místo* KartaHrace, ne k ní.
 it("ukáže hostovi jeho vlastní barvu jako pruh, ne jen řádek v zrcadle", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />);
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
   expect(screen.getByTestId("moje-barva")).toHaveTextContent("modrá");
   expect(screen.getByTestId("muj-tym")).toHaveTextContent("1");
 });
@@ -113,11 +50,11 @@ it("pruh nese barvu toho, kdo se dívá", () => {
   const cerveny = {
     ...zaklad,
     ucastnici: [
-      { steamId: "ja", alias: "TenceR", steamName: null, tym: 2 as const, barva: 2 as const, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1 as const, barva: 1 as const, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
-  render(<ObrazovkaHosta zapas={cerveny} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />);
+  render(<ObrazovkaHosta zapas={cerveny} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
   expect(screen.getByTestId("moje-barva")).toHaveTextContent("červená");
   expect(screen.getByTestId("muj-tym")).toHaveTextContent("2");
 });
@@ -137,15 +74,15 @@ it("pruh nese barvu toho, kdo se dívá", () => {
 // Uložit odkaz je jediné opravdové tlačítko poblíž dialogu a musí zůstat
 // dosažitelné i po tom, co dialog obrostl dekorací.
 it("skutečné ovládání zůstává funkční", async () => {
-  const onVlozitOdkaz = vi.fn();
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={onVlozitOdkaz} onHledatLobby={nehledat} />);
-  await userEvent.type(screen.getByLabelText(/odkaz/i), "aoe2de://0/1");
-  await userEvent.click(screen.getByRole("button", { name: /uložit odkaz/i }));
-  expect(onVlozitOdkaz).toHaveBeenCalledWith(1, "aoe2de://0/1");
+  const onHledatLobby = vi.fn().mockResolvedValue({ nalezeno: false, lobbyId: null, nazev: null, maHeslo: null, povolujeDivaky: null });
+  render(<ObrazovkaHosta zapas={{ ...zaklad, lobbyId: null, joinUri: null }} ja="ja" onHledatLobby={onHledatLobby} onKontrolaLobby={nekontroluj} />);
+  await userEvent.click(screen.getByRole("button", { name: /vyhledat lobby/i }));
+  expect(onHledatLobby).toHaveBeenCalledWith(1);
+  expect(screen.getByRole("button", { name: /kopírovat název lobby/i })).toBeInTheDocument();
 });
 
 it("posadí do dialogu jen ty tři hodnoty, které web řídí", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />);
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
   expect(screen.getByTestId("pole-nazev-lobby")).toHaveTextContent("ROB-07");
   expect(screen.getByTestId("pole-heslo")).toHaveTextContent("k7rm2xq9");
   expect(screen.getByTestId("pole-players")).toHaveTextContent("4");
@@ -155,25 +92,87 @@ it("posadí do dialogu jen ty tři hodnoty, které web řídí", () => {
 // zaškrtnuté Allow Spectators, Unranked, None, Default, Definitive Set.
 // Přepisovat je nemá co.
 it("do ostatních polí dialogu nic nevkládá", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />);
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
   expect(screen.getAllByTestId(/^pole-/)).toHaveLength(3);
 });
 
-it("obrázek dialogu je jen dekorace, čtečka na něm nic nehledá", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />);
+it("obrázek dialogu popisuje pro čtečku tři hodnoty, které web řídí", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
   const obrazek = screen.getByTestId("obrazek-dialogu");
-  expect(obrazek).toHaveAttribute("alt", "");
+  expect(obrazek.getAttribute("alt")).toMatch(/Lobby Name ROB-07/);
   expect(obrazek.getAttribute("src")).toMatch(/create-lobby/);
 });
 
 // Kdyby se obrázek nenačetl, nebo se na něj někdo nedíval, nesmí s ním zmizet
 // zadání. Všechno podstatné proto musí být i v textu pod ním.
-it("pokyny přežijí i bez obrázku", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />);
-  const text = screen.getByTestId("dialog-legenda");
-  expect(text).toHaveTextContent("ROB-07");
-  expect(text).toHaveTextContent("k7rm2xq9");
-  expect(text).toHaveTextContent(/Public/);
-  expect(text).toHaveTextContent(/Allow Spectators/);
-  expect(text).toHaveTextContent(/po založení.*nezměníš/i);
+// Host lobby zakládá, do lobby se odkazem připojují ostatní. Tlačítko
+// „Připojit se do lobby“ tu proto není ani po nalezení lobby.
+it("host má tlačítko na spuštění hry, ale žádné na připojení do lobby", () => {
+  render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
+  );
+  expect(screen.getByTestId("spustit-hru")).toHaveAttribute("href", "steam://run/813780");
+  expect(screen.queryByTestId("do-lobby")).not.toBeInTheDocument();
+  expect(screen.getByTestId("titulek-zapasu")).toHaveTextContent("Zápas #7");
+});
+
+it("po nalezení lobby je hledání zašedlé a vedle něj stav s ikonou odkazu", () => {
+  render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
+  );
+  expect(screen.getByRole("button", { name: /vyhledat lobby/i })).toBeDisabled();
+  expect(screen.getByTestId("lobby-nalezena")).toHaveTextContent(/lobby nalezena/i);
+  expect(screen.getByRole("button", { name: /kopírovat odkaz do lobby/i })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: /kontrola lobby/i })).toBeInTheDocument();
+});
+
+it("když lobby ze seznamu zmizí, tlačítko hledání zase ožije", () => {
+  render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "hraje_se" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
+  );
+  expect(screen.getByRole("button", { name: /vyhledat lobby/i })).toBeEnabled();
+});
+
+// Tři kroky pod sebou: „Zakládáš!“ dostane fajfku, jakmile web lobby
+// najde; „Kontrola lobby“ jakmile hlavní sekce projde; pak „Výborně, můžete
+// hrát!“. Heslo ani další nastavení hostovi fajfku neberou.
+it("krok „Zakládáš!“ má fajfku až po nalezení lobby", () => {
+  const { rerender } = render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
+  expect(screen.getByRole("heading", { name: /zakládáš/i })).toBeInTheDocument();
+  expect(screen.queryByTestId("fajfka-lobby")).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: /kontrola lobby/i })).not.toBeInTheDocument();
+
+  rerender(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
+  );
+  expect(screen.getByTestId("fajfka-lobby")).toBeInTheDocument();
+  expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
+});
+
+it("po kontrole bez červené se objeví „Výborně, můžete hrát!“", async () => {
+  const kontrola = vi.fn().mockResolvedValue({
+    nalezeno: true,
+    kontroly: [
+      { klic: "divaci", stav: "ok", text: "Diváci povoleni", sekce: "hlavni" },
+      { klic: "heslo", stav: "varovani", text: "Lobby nemá heslo", sekce: "hlavni" },
+      { klic: "lockTeams", stav: "jedno", text: "Lock Teams: vypnuto", sekce: "dalsi" },
+    ],
+  });
+  render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={kontrola} />,
+  );
+  expect(await screen.findByTestId("muzete-hrat")).toHaveTextContent(/výborně, můžete hrát/i);
+  expect(screen.getByTestId("fajfka-kontrola")).toBeInTheDocument();
+});
+
+it("s červenou finále není", async () => {
+  const kontrola = vi.fn().mockResolvedValue({
+    nalezeno: true,
+    kontroly: [{ klic: "divaci", stav: "spatne", text: "Diváci nejsou povoleni", sekce: "hlavni" }],
+  });
+  render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={kontrola} />,
+  );
+  expect(await screen.findByTestId("kontrola-souhrn")).toHaveTextContent(/1 věc k opravě/);
+  expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
 });

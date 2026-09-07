@@ -22,9 +22,12 @@ export interface SestavaVstup {
   steamId: string;
   tym: Tym;
   barva: Barva;
+  /** Herní id civilizace (civilizace.ts); null nebo chybí = libovolná. */
+  civ?: number | null;
 }
 
 export interface Seat extends SestavaVstup {
+  civ: number | null;
   jeHost: boolean;
   poradi: number;
 }
@@ -48,6 +51,8 @@ export interface AkceView {
   id: number;
   nazev: string;
   stav: string;
+  /** Očekávané nastavení lobby pro kontrolu; chybějící klíče = výchozí (lobbyKontrola.ts). */
+  nastaveniLobby?: Record<string, unknown>;
 }
 
 export interface UcastnikView {
@@ -56,6 +61,8 @@ export interface UcastnikView {
   steamName: string | null;
   tym: Tym;
   barva: Barva;
+  /** Předepsaná civilizace (herní id), null = libovolná. */
+  civ: number | null;
   jeHost: boolean;
   /** Slot v lobby, od nuly; v tomhle pořadí Rob hráče naklikal. */
   poradi: number;
