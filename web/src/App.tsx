@@ -3,6 +3,7 @@ import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
 import { VERZE } from "../../src/shared/verze.js";
 import { useAkceStav } from "./useAkceStav.js";
+import { useSkladani } from "./skladani.js";
 import { jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
@@ -16,6 +17,9 @@ export function App() {
   const [me, setMe] = useState<Me["hrac"]>(null);
   const [chyba, setChyba] = useState<string | null>(null);
   const { stav, spojeno } = useAkceStav();
+  // Sestava se skládá ze dvou míst: tabulka přihlášených (nevybraní, „+“)
+  // a panel režie (vybraní). Stav proto žije tady, nad oběma.
+  const skladani = useSkladani(stav?.prihlaseni ?? []);
 
   useEffect(() => {
     void api.me().then((odpoved) => setMe(odpoved.hrac));
@@ -84,10 +88,11 @@ export function App() {
               {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
             </button>
           ) : null}
-          <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} />
+          <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} skladani={me?.jeAdmin ? skladani : undefined} />
           {me?.jeAdmin && stav ? (
             <Rezie
               stav={stav}
+              skladani={skladani}
               onVytvoritZapas={(sestava) => void hlidej(() => api.vytvoritZapas(akce.id, sestava))}
               onStav={(zapasId, novyStav) => void hlidej(() => api.zapasStav(zapasId, novyStav))}
               onVysledek={(zapasId, vitez) => void hlidej(() => api.vysledek(zapasId, vitez))}

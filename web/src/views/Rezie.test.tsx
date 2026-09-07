@@ -1,7 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { AkceStavPayload, ZapasView } from "../../../src/shared/types.js";
+import { useSkladani } from "../skladani.js";
 import { Rezie } from "./Rezie.js";
+
+/** Rezie potřebuje sdílený stav sestavy; v testech ho drží tenhle obal. */
+function RezieSeStavem(props: Omit<React.ComponentProps<typeof Rezie>, "skladani">) {
+  const skladani = useSkladani(props.stav.prihlaseni);
+  return <Rezie {...props} skladani={skladani} />;
+}
 
 const zapas: ZapasView = {
   id: 1,
@@ -35,7 +42,7 @@ const props = {
 };
 
 it("stav účastníka pojmenuje jako kliknutí, ne jako přítomnost v lobby", () => {
-  render(<Rezie stav={stav} {...props} />);
+  render(<RezieSeStavem stav={stav} {...props} />);
   expect(screen.getByText(/klikl na připojení/i)).toBeInTheDocument();
   expect(screen.queryByText(/je v lobby/i)).not.toBeInTheDocument();
 });
@@ -46,7 +53,7 @@ it("stav účastníka pojmenuje jako kliknutí, ne jako přítomnost v lobby", (
 // za běhu zápasu. Jakýkoliv další zámek by Roba brzdil přesně ve chvíli, kdy je
 // nejužitečnější; proto tu žádný není.
 it("spectate se odemkne, jakmile host vloží odkaz do lobby", () => {
-  render(<Rezie stav={stav} {...props} />);
+  render(<RezieSeStavem stav={stav} {...props} />);
   const odkaz = screen.getByTestId("spectate");
   expect(odkaz).toHaveAttribute("aria-disabled", "false");
   expect(odkaz).toHaveAttribute("href", "aoe2de://1/234230181");
@@ -58,7 +65,7 @@ it("spectate se odemkne, jakmile host vloží odkaz do lobby", () => {
 
 
 it("záložní údaje jsou vidět pořád", () => {
-  render(<Rezie stav={stav} {...props} />);
+  render(<RezieSeStavem stav={stav} {...props} />);
   expect(screen.getByText("ROB-07")).toBeInTheDocument();
   expect(screen.getByText("k7rm2xq9")).toBeInTheDocument();
   expect(screen.getByText("234230181")).toBeInTheDocument();
@@ -66,7 +73,7 @@ it("záložní údaje jsou vidět pořád", () => {
 
 it("bez čísla lobby spectate vůbec nenabízí", () => {
   const bez = { ...stav, zapasy: [{ ...zapas, lobbyId: null, spectatorUri: null }] };
-  render(<Rezie stav={bez} {...props} />);
+  render(<RezieSeStavem stav={bez} {...props} />);
   expect(screen.getByTestId("spectate")).toHaveAttribute("aria-disabled", "true");
 });
 
@@ -85,7 +92,7 @@ function klikniNaHostuje(index = 0) {
 it("přehození hosta u zápasu s odkazem se ptá a při odmítnutí nic neudělá", () => {
   const potvrzeni = vi.spyOn(window, "confirm").mockReturnValue(false);
   const onHost = vi.fn();
-  render(<Rezie stav={stav} {...props} onHost={onHost} />);
+  render(<RezieSeStavem stav={stav} {...props} onHost={onHost} />);
 
   klikniNaHostuje();
 
@@ -97,7 +104,7 @@ it("přehození hosta u zápasu s odkazem se ptá a při odmítnutí nic neuděl
 it("po potvrzení se host přehodí", () => {
   vi.spyOn(window, "confirm").mockReturnValue(true);
   const onHost = vi.fn();
-  render(<Rezie stav={stav} {...props} onHost={onHost} />);
+  render(<RezieSeStavem stav={stav} {...props} onHost={onHost} />);
 
   klikniNaHostuje();
 
@@ -108,7 +115,7 @@ it("bez odkazu do lobby se na nic neptá — není co ztratit", () => {
   const potvrzeni = vi.spyOn(window, "confirm").mockReturnValue(false);
   const onHost = vi.fn();
   const bezOdkazu = { ...stav, zapasy: [{ ...zapas, lobbyId: null, spectatorUri: null }] };
-  render(<Rezie stav={bezOdkazu} {...props} onHost={onHost} />);
+  render(<RezieSeStavem stav={bezOdkazu} {...props} onHost={onHost} />);
 
   klikniNaHostuje();
 
@@ -120,14 +127,14 @@ it("bez odkazu do lobby se na nic neptá — není co ztratit", () => {
 // nic nezměnila, a vedle textového „(host)“ uprostřed věty se dvě stejná
 // tlačítka pletla. Hostitele teď nese odznak, ostatní tlačítko.
 it("u hosta tlačítko na přehození vůbec není", () => {
-  render(<Rezie stav={stav} {...props} />);
+  render(<RezieSeStavem stav={stav} {...props} />);
 
   const tlacitka = screen.getAllByRole("button", { name: /udělat hostem/i });
   expect(tlacitka).toHaveLength(zapas.ucastnici.length - 1);
 });
 
 it("hostitele označí odznak, a právě jeden", () => {
-  render(<Rezie stav={stav} {...props} />);
+  render(<RezieSeStavem stav={stav} {...props} />);
 
   const odznaky = screen.getAllByTestId("odznak-host");
   expect(odznaky).toHaveLength(1);
@@ -145,7 +152,7 @@ const zruseny: AkceStavPayload = {
 };
 
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
-  render(<Rezie stav={dohrany} {...props} />);
+  render(<RezieSeStavem stav={dohrany} {...props} />);
   expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhrál modrý tým");
 });
 
@@ -153,7 +160,7 @@ it("u dohraného zápasu řekne, kdo vyhrál", () => {
 // dohrání jen zabíraly místo a nabízely akce, které už nedávají smysl —
 // a přes večer se takhle vršil jeden odepsaný zápas za druhým.
 it("dohranému zápasu sebere ovládání běžícího", () => {
-  render(<Rezie stav={dohrany} {...props} />);
+  render(<RezieSeStavem stav={dohrany} {...props} />);
   expect(screen.queryByTestId("spectate")).not.toBeInTheDocument();
   expect(screen.queryByText(/kdyby to zamrzlo/i)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /^zrušit$/i })).not.toBeInTheDocument();
@@ -163,7 +170,7 @@ it("dohranému zápasu sebere ovládání běžícího", () => {
 // Přepsat výsledek jde, ale ne jedním kliknutím do prázdna: druhé kliknutí je
 // samo o sobě to potvrzení.
 it("výsledek jde změnit až na druhé kliknutí", async () => {
-  render(<Rezie stav={dohrany} {...props} />);
+  render(<RezieSeStavem stav={dohrany} {...props} />);
 
   expect(screen.queryByRole("button", { name: /vyhrál červený tým/i })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
@@ -176,7 +183,7 @@ it("výsledek jde změnit až na druhé kliknutí", async () => {
 });
 
 it("z rozmyšlené změny se dá couvnout, aniž se něco zapíše", () => {
-  render(<Rezie stav={dohrany} {...props} />);
+  render(<RezieSeStavem stav={dohrany} {...props} />);
 
   fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
   fireEvent.click(screen.getByRole("button", { name: /nechat být/i }));
@@ -188,7 +195,7 @@ it("z rozmyšlené změny se dá couvnout, aniž se něco zapíše", () => {
 // Zrušený zápas byl slepá ulička: pořád nabízel Spectate a tlačítka výsledku,
 // ale žádnou cestu zpátky. Stavový automat návrat dovoluje.
 it("zrušený zápas jde vrátit do hry", () => {
-  render(<Rezie stav={zruseny} {...props} />);
+  render(<RezieSeStavem stav={zruseny} {...props} />);
 
   expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("zrušeno");
   fireEvent.click(screen.getByRole("button", { name: /vrátit do hry/i }));
@@ -197,7 +204,7 @@ it("zrušený zápas jde vrátit do hry", () => {
 });
 
 it("běžícímu zápasu ovládání zůstává", () => {
-  render(<Rezie stav={stav} {...props} />);
+  render(<RezieSeStavem stav={stav} {...props} />);
   expect(screen.getByTestId("spectate")).toBeInTheDocument();
   expect(screen.getByText(/kdyby to zamrzlo/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /vyhrál modrý tým/i })).toBeInTheDocument();
@@ -208,7 +215,7 @@ it("běžícímu zápasu ovládání zůstává", () => {
 // tvrdil něco, co nemohlo nikdy nastat. Jeho skutečný stav je, jestli už vložil
 // odkaz, a to je přesně to, co Rob potřebuje vědět.
 it("u hosta nemluví o klikání, ale o lobby", () => {
-  render(<Rezie stav={stav} {...props} />);
+  render(<RezieSeStavem stav={stav} {...props} />);
   const radekHosta = screen.getByTestId("odznak-host").closest("li");
   expect(radekHosta).toHaveTextContent("vložil odkaz do lobby");
   expect(radekHosta).not.toHaveTextContent("zatím neklikl");
@@ -220,7 +227,7 @@ it("dokud host odkaz nevložil, je vidět, že se na něj čeká", () => {
     ...stav,
     zapasy: [{ ...zapas, lobbyId: null, joinUri: null, spectatorUri: null }],
   };
-  render(<Rezie stav={bezOdkazu} {...props} />);
+  render(<RezieSeStavem stav={bezOdkazu} {...props} />);
   const radekHosta = screen.getByTestId("odznak-host").closest("li");
   expect(radekHosta).toHaveTextContent("zakládá lobby");
 });
@@ -230,21 +237,21 @@ it("v 1v1 se na tlačítku výsledku píše jméno hráče, ne číslo týmu", (
     ...zapas,
     ucastnici: [zapas.ucastnici[0]!, zapas.ucastnici[2]!],
   };
-  render(<Rezie stav={{ ...stav, zapasy: [jednaNaJednu] }} {...props} />);
+  render(<RezieSeStavem stav={{ ...stav, zapasy: [jednaNaJednu] }} {...props} />);
   fireEvent.click(screen.getByRole("button", { name: /vyhrál marek/i }));
   expect(props.onVysledek).toHaveBeenCalledWith(1, { tym: 2 });
 });
 
 it("ve 2v2 tlačítko nese barvu týmu a drobně jeho hráče", () => {
-  render(<Rezie stav={stav} {...props} />);
+  render(<RezieSeStavem stav={stav} {...props} />);
   const modry = screen.getByRole("button", { name: /vyhrál modrý tým/i });
   expect(modry).toHaveClass("barva-1");
   expect(modry).toHaveTextContent("TenceR, Pepa_CZ");
 });
 
 it("u Spectate říká, jestli se sedí v lobby, nebo už se hraje", () => {
-  const { rerender } = render(<Rezie stav={{ ...stav, zapasy: [{ ...zapas, fazeLobby: "lobby" }] }} {...props} />);
+  const { rerender } = render(<RezieSeStavem stav={{ ...stav, zapasy: [{ ...zapas, fazeLobby: "lobby" }] }} {...props} />);
   expect(screen.getByTestId("faze-lobby")).toHaveTextContent("(Lobby)");
-  rerender(<Rezie stav={{ ...stav, zapasy: [{ ...zapas, fazeLobby: "hraje_se" }] }} {...props} />);
+  rerender(<RezieSeStavem stav={{ ...stav, zapasy: [{ ...zapas, fazeLobby: "hraje_se" }] }} {...props} />);
   expect(screen.getByTestId("faze-lobby")).toHaveTextContent("(Hraje se)");
 });

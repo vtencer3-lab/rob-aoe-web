@@ -7,22 +7,25 @@ import {
   type Vitez,
   type ZapasView,
 } from "../../../src/shared/types.js";
+import type { Skladani as StavSkladani } from "../skladani.js";
 import { jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete } from "../zapas.js";
 import { Skladani } from "./Skladani.js";
 
 interface Props {
   stav: AkceStavPayload;
+  /** Sdílený stav sestavy — nevybrané ukazuje tabulka přihlášených nad režií. */
+  skladani: StavSkladani;
   onVytvoritZapas: (sestava: SestavaVstup[]) => void;
   onStav: (zapasId: number, stav: string) => void;
   onVysledek: (zapasId: number, vitez: Vitez) => void;
   onHost: (zapasId: number, steamId: string) => void;
 }
 
-export function Rezie({ stav, onVytvoritZapas, onStav, onVysledek, onHost }: Props) {
+export function Rezie({ stav, skladani, onVytvoritZapas, onStav, onVysledek, onHost }: Props) {
   return (
     <section className="rezie">
       <div className="skladani-obal">
-        <Skladani prihlaseni={stav.prihlaseni} onVytvoritZapas={onVytvoritZapas} />
+        <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} />
       </div>
       {stav.zapasy.map((zapas) => (
         <ZapasVRezii
