@@ -177,3 +177,16 @@ it("pokyny přežijí i bez obrázku", () => {
   expect(text).toHaveTextContent(/Allow Spectators/);
   expect(text).toHaveTextContent(/po založení.*nezměníš/i);
 });
+
+it("host má tlačítko na spuštění hry a po nalezení lobby i odkaz do ní", () => {
+  const { rerender } = render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: null, joinUri: null }} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />,
+  );
+  expect(screen.getByTestId("spustit-hru")).toHaveAttribute("href", "steam://run/813780");
+  expect(screen.queryByTestId("do-lobby")).not.toBeInTheDocument();
+
+  rerender(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429" }} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} />,
+  );
+  expect(screen.getByTestId("do-lobby")).toHaveAttribute("href", "aoe2de://0/504953429");
+});

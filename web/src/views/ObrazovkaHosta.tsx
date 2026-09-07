@@ -51,6 +51,19 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby }: Prop
         </div>
       ) : null}
 
+      {/* Host si hru pouští odtud: steam://run ji nastartuje (nebo vytáhne do
+          popředí), a jakmile web zná číslo lobby, druhý odkaz ho do ní vrátí,
+          kdyby z ní vypadl. */}
+      <div className="ovladani hostovi">
+        <a className="cta" href="steam://run/813780" data-testid="spustit-hru">
+          Spustit hru
+        </a>
+        {zapas.joinUri ? (
+          <a className="cta" href={zapas.joinUri} data-testid="do-lobby">
+            Připojit se do lobby
+          </a>
+        ) : null}
+      </div>
       <DialogCreateLobby zapas={zapas} />
 
       {/* Hlavní cesta: web si lobby najde sám podle Steam ID hosta, ptá se
