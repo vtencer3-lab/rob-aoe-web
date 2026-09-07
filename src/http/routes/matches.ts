@@ -9,6 +9,7 @@ import {
   setLobbyId,
   setVysledek,
   setZapasStav,
+  smazZrusenyZapas,
   UcastnikOdhlasenChyba,
 } from "../../db/matches.js";
 import { getPlayer } from "../../db/players.js";
@@ -137,6 +138,18 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     }
     const { zapas } = await nactiNeboSelzi(zapasId);
     await prejdi(zapasId, stav as MatchState);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Zrušený zápas jde odebrat úplně, ať v režii nestraší celý večer. Jen
+  // zrušený: dohraný je záznam výsledku a běžící se nejdřív ruší.
+  app.delete("/api/zapas/:id", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const { zapas } = await nactiNeboSelzi(zapasId);
+    if (zapas.stav !== "zruseny") throw new HttpError(409, "Odebrat jde jen zrušený zápas. Nejdřív ho zruš.");
+    if (!(await smazZrusenyZapas(zapasId))) throw new HttpError(409, "Zápas se mezitím vrátil do hry.");
     await broadcastAkce();
     return { ok: true };
   });

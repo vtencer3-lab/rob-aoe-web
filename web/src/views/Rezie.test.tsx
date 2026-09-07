@@ -37,6 +37,7 @@ const stav: AkceStavPayload = {
 const props = {
   onVytvoritZapas: vi.fn(),
   onStav: vi.fn(),
+  onSmazat: vi.fn(),
   onVysledek: vi.fn(),
   onHost: vi.fn(),
   onKontrolaLobby: vi.fn().mockResolvedValue({ nalezeno: false, kontroly: [] }),
@@ -65,11 +66,14 @@ it("spectate se odemkne, jakmile host vloží odkaz do lobby", () => {
 // žádné tlačítko na "odemčení i bez potvrzení". Spectate se nikdy na potvrzení nezamyká.
 
 
-it("záložní údaje jsou vidět pořád", () => {
+// Řádek „Kdyby to zamrzlo“ s názvem, heslem a číslem šel 7. 9. 2026 pryč:
+// v přenosu jen rušil. Kdyby byl někdy potřeba divácký odkaz nebo PIN ke
+// zkopírování, patří vedle Spectate, ne pod kontrolu.
+it("záložní řádek s názvem, heslem a číslem lobby v režii není", () => {
   render(<RezieSeStavem stav={stav} {...props} />);
-  expect(screen.getByText("ROB-07")).toBeInTheDocument();
-  expect(screen.getByText("k7rm2xq9")).toBeInTheDocument();
-  expect(screen.getByText("234230181")).toBeInTheDocument();
+  expect(screen.queryByText(/kdyby to zamrzlo/i)).not.toBeInTheDocument();
+  expect(screen.queryByText("ROB-07")).not.toBeInTheDocument();
+  expect(screen.queryByText("k7rm2xq9")).not.toBeInTheDocument();
 });
 
 it("bez čísla lobby spectate vůbec nenabízí", () => {
@@ -163,7 +167,6 @@ it("u dohraného zápasu řekne, kdo vyhrál", () => {
 it("dohranému zápasu sebere ovládání běžícího", () => {
   render(<RezieSeStavem stav={dohrany} {...props} />);
   expect(screen.queryByTestId("spectate")).not.toBeInTheDocument();
-  expect(screen.queryByText(/kdyby to zamrzlo/i)).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /^zrušit$/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /vyhrál modrý tým/i })).not.toBeInTheDocument();
 });
@@ -204,10 +207,26 @@ it("zrušený zápas jde vrátit do hry", () => {
   expect(props.onStav).toHaveBeenCalledWith(1, "bezi");
 });
 
+// Zrušený zápas, ke kterému se Rob vracet nechce, jde odebrat úplně — jinak
+// by v režii strašil do konce večera. Jen u zrušeného: dohraný je záznam.
+it("zrušený zápas jde odebrat úplně, dohraný ne", () => {
+  const { rerender } = render(<RezieSeStavem stav={zruseny} {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: /odebrat úplně/i }));
+  expect(props.onSmazat).toHaveBeenCalledWith(1);
+
+  rerender(<RezieSeStavem stav={dohrany} {...props} />);
+  expect(screen.queryByRole("button", { name: /odebrat úplně/i })).not.toBeInTheDocument();
+});
+
+it("kontrola lobby je v režii stejná sekce jako u hosta", () => {
+  render(<RezieSeStavem stav={stav} {...props} />);
+  expect(screen.getByRole("heading", { name: /kontrola lobby/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /zkontrolovat lobby/i })).toBeInTheDocument();
+});
+
 it("běžícímu zápasu ovládání zůstává", () => {
   render(<RezieSeStavem stav={stav} {...props} />);
   expect(screen.getByTestId("spectate")).toBeInTheDocument();
-  expect(screen.getByText(/kdyby to zamrzlo/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /vyhrál modrý tým/i })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /změnit výsledek/i })).not.toBeInTheDocument();
 });

@@ -105,17 +105,15 @@ it("obrázek dialogu popisuje pro čtečku tři hodnoty, které web řídí", ()
 
 // Kdyby se obrázek nenačetl, nebo se na něj někdo nedíval, nesmí s ním zmizet
 // zadání. Všechno podstatné proto musí být i v textu pod ním.
-it("host má tlačítko na spuštění hry a po nalezení lobby i odkaz do ní", () => {
-  const { rerender } = render(
-    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: null, joinUri: null }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
+// Host lobby zakládá, do lobby se odkazem připojují ostatní. Tlačítko
+// „Připojit se do lobby“ tu proto není ani po nalezení lobby.
+it("host má tlačítko na spuštění hry, ale žádné na připojení do lobby", () => {
+  render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
   );
   expect(screen.getByTestId("spustit-hru")).toHaveAttribute("href", "steam://run/813780");
   expect(screen.queryByTestId("do-lobby")).not.toBeInTheDocument();
-
-  rerender(
-    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
-  );
-  expect(screen.getByTestId("do-lobby")).toHaveAttribute("href", "aoe2de://0/504953429");
+  expect(screen.getByTestId("titulek-zapasu")).toHaveTextContent("Zápas #7");
 });
 
 it("po nalezení lobby je hledání zašedlé a vedle něj stav s ikonou odkazu", () => {
@@ -133,4 +131,48 @@ it("když lobby ze seznamu zmizí, tlačítko hledání zase ožije", () => {
     <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "hraje_se" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
   );
   expect(screen.getByRole("button", { name: /vyhledat lobby/i })).toBeEnabled();
+});
+
+// Tři kroky pod sebou: „Zakládáš!“ dostane fajfku, jakmile web lobby
+// najde; „Kontrola lobby“ jakmile hlavní sekce projde; pak „Výborně, můžete
+// hrát!“. Heslo ani další nastavení hostovi fajfku neberou.
+it("krok „Zakládáš!“ má fajfku až po nalezení lobby", () => {
+  const { rerender } = render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
+  expect(screen.getByRole("heading", { name: /zakládáš/i })).toBeInTheDocument();
+  expect(screen.queryByTestId("fajfka-lobby")).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: /kontrola lobby/i })).not.toBeInTheDocument();
+
+  rerender(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
+  );
+  expect(screen.getByTestId("fajfka-lobby")).toBeInTheDocument();
+  expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
+});
+
+it("po kontrole bez chyb v hlavní sekci se objeví „Výborně, můžete hrát!“", async () => {
+  const kontrola = vi.fn().mockResolvedValue({
+    nalezeno: true,
+    kontroly: [
+      { klic: "divaci", ok: true, text: "Diváci povoleni", sekce: "hlavni" },
+      { klic: "heslo", ok: false, text: "Lobby nemá heslo", sekce: "hlavni", varovani: true },
+      { klic: "lockTeams", ok: false, text: "Lock Teams: vypnuto", sekce: "dalsi" },
+    ],
+  });
+  render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={kontrola} />,
+  );
+  expect(await screen.findByTestId("muzete-hrat")).toHaveTextContent(/výborně, můžete hrát/i);
+  expect(screen.getByTestId("fajfka-kontrola")).toBeInTheDocument();
+});
+
+it("s chybou v hlavní sekci finále není", async () => {
+  const kontrola = vi.fn().mockResolvedValue({
+    nalezeno: true,
+    kontroly: [{ klic: "divaci", ok: false, text: "Diváci nejsou povoleni", sekce: "hlavni" }],
+  });
+  render(
+    <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={kontrola} />,
+  );
+  expect(await screen.findByTestId("kontrola-souhrn")).toHaveTextContent(/1 věc k opravě/);
+  expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
 });

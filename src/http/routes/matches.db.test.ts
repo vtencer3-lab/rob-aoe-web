@@ -146,6 +146,30 @@ it("Rob smí zápas zrušit", async () => {
   await app.close();
 });
 
+// Zrušený zápas, ke kterému se Rob nevrátí, jde odebrat úplně — i s účastníky.
+// Jen zrušený: běžící ani dohraný ne, a jen Rob.
+it("zrušený zápas jde smazat, běžící ne a běžný hráč vůbec", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+
+  const bezici = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}`, cookies: { sid: robSid } });
+  expect(bezici.statusCode).toBe(409);
+
+  await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/stav`, cookies: { sid: robSid }, payload: { stav: "zruseny" } });
+  const hrac = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}`, cookies: { sid: hracSid } });
+  expect(hrac.statusCode).toBe(403);
+
+  const rob = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}`, cookies: { sid: robSid } });
+  expect(rob.statusCode).toBe(200);
+  expect(await getZapas(zapas.id)).toBeNull();
+  const { rows } = await getPool().query("SELECT count(*)::int AS n FROM ucastnik WHERE zapas_id = $1", [zapas.id]);
+  expect(rows[0].n).toBe(0);
+
+  const znovu = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}`, cookies: { sid: robSid } });
+  expect(znovu.statusCode).toBe(404);
+  await app.close();
+});
+
 // Rob dvojklik na svoje vlastní tlačítko v přímém přenosu udělá dřív nebo
 // později. Do teď to znamenalo červený „Něco se pokazilo na serveru.“, protože
 // odmítnutý přechod padal jako holá Error na 500.
@@ -547,9 +571,15 @@ it("nastavení lobby smí jen Rob a ukládá jen známé klíče", async () => {
   const app = buildServer();
   const zakazano = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: hracSid }, payload: { populace: 100 } });
   expect(zakazano.statusCode).toBe(403);
-  const res = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { populace: 250, rychlost: 3, nesmysl: 1, mapaId: null } });
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akceId}/nastaveni-lobby`,
+    cookies: { sid: robSid },
+    payload: { populace: 250, rychlost: 3, nesmysl: 1, mapaId: null, sadaCivilizaci: 2, rezim: 7, primeri: 15, lockTeams: false, turbo: "ano" },
+  });
   expect(res.statusCode).toBe(200);
-  expect(res.json().akce.nastaveniLobby).toEqual({ populace: 250, rychlost: 3, mapaId: null });
+  // rezim 7 a turbo "ano" hra nezná — zahodí se; ostatní další nastavení projdou.
+  expect(res.json().akce.nastaveniLobby).toEqual({ populace: 250, rychlost: 3, mapaId: null, sadaCivilizaci: 2, primeri: 15, lockTeams: false });
   const prazdne = await app.inject({ method: "POST", url: `/api/akce/${akceId}/nastaveni-lobby`, cookies: { sid: robSid }, payload: { nesmysl: 1 } });
   expect(prazdne.statusCode).toBe(400);
   await app.close();

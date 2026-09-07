@@ -211,6 +211,8 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 
 /* Host taky hraje, takze i on ma svoji barvu videt jako pruh, ne jen jako
    radek v zrcadle. Stejny utvar jako na karte hrace. */
+.host .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
+.host .zakladas { font-size: 1.5rem; }
 .host .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
 .host .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
 
@@ -288,9 +290,10 @@ button.vysledek.barva-7 { background: var(--b7); border-color: var(--b7); }
 button.vysledek.barva-8 { background: var(--b8); border-color: var(--b8); color: #241d10; }
 button.vysledek small { font-size: 0.68rem; font-weight: 400; opacity: 0.8; margin-top: 0.15rem; }
 
-/* Spectate se dvěma řádky: nahoře akce, dole fáze (Lobby / Hraje se). */
-.cta.spectate { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
-.cta.spectate small { font-size: 0.72rem; font-weight: 400; opacity: 0.85; }
+/* Spectate se dvěma řádky: nahoře akce, dole fáze (Lobby / Hraje se).
+   Široké a uprostřed karty — je to to jediné, na co Rob u zápasu kliká. */
+.cta.spectate { display: flex; flex-direction: column; align-items: center; line-height: 1.2; width: min(100%, 22rem); margin: 0.6rem auto; padding: 0.6rem 1rem; font-size: 1.1rem; }
+.cta.spectate small { font-size: 0.78rem; font-weight: 400; opacity: 0.85; }
 
 /* Kopírovatelná hodnota usazená přímo do pole ve snímku dialogu: zelené herní
    písmo zůstává, ikona sedí vpravo v poli, toast vyskočí nad polem. */
@@ -335,14 +338,19 @@ button.odebrat:hover { color: #e07a6a; }
 /* Tlačítka hosta nad snímkem dialogu. */
 .hostovi { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.6rem 0 0.9rem; }
 
-/* Kontrola lobby: řádky fajfka / křížek, čitelné i z dálky. */
-.kontrola-lobby { margin: 0.6rem 0; }
-.kontrola-lobby .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+/* Kontrola lobby: řádky fajfka / křížek, čitelné i z dálky. Upozornění
+   (chybějící heslo) žlutě — nebrání hře. */
 .kontroly { list-style: none; padding: 0; margin: 0.4rem 0 0; columns: 2; column-gap: 1.5rem; }
 .kontroly li { break-inside: avoid; padding: 0.15rem 0; }
 .kontroly li.ok { color: #9ccf8a; }
 .kontroly li.spatne { color: #e07a6a; font-weight: 600; }
+.kontroly li.varovani { color: #e0c46a; }
 .kontroly .znak { display: inline-block; width: 1.2rem; }
+.varovani { color: #e0c46a; }
+.dalsi-nastaveni { margin-top: 0.6rem; }
+.dalsi-nastaveni summary { cursor: pointer; color: var(--tlumene); }
+.dalsi-nastaveni .kontroly { font-size: 0.9rem; }
+.dalsi-nastaveni .mrizka { margin-top: 0.5rem; }
 
 /* Očekávané nastavení lobby v panelu akce. */
 .nastaveni-lobby { margin-top: 0.8rem; }
@@ -354,9 +362,17 @@ button.odebrat:hover { color: #e07a6a; }
 
 .skladani .volba-civ { font-size: 0.85rem; padding: 0.25rem 0.4rem; }
 
-/* Kontrola lobby jako vlastní sekce na obrazovce hosta. */
-.sekce-kontrola { border-top: 1px solid #3d352a; margin-top: 1rem; padding-top: 0.6rem; }
-.sekce-kontrola h3 { margin: 0 0 0.3rem; }
+/* Kroky hosta a kontrola lobby jako sekce se záhlavím; hotový krok má
+   vpravo velkou fajfku. Stejná sekce kontroly je i v režii. */
+.sekce-kontrola, .sekce-krok { border-top: 1px solid #3d352a; margin-top: 1rem; padding-top: 0.6rem; }
+.zahlavi-sekce { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.zahlavi-sekce h3 { margin: 0 0 0.3rem; font-size: 1.15rem; }
+.zahlavi-sekce .fajfka { font-size: 2.2rem; line-height: 1; font-weight: 700; color: #9ccf8a; }
+.sekce-krok.finale { border-color: #9ccf8a; }
+.sekce-krok.finale h3 { color: #9ccf8a; font-size: 1.4rem; }
+.sekce-kontrola .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+button.odebrat-zapas { color: var(--tlumene); }
+button.odebrat-zapas:hover { color: #e07a6a; }
 .hledani-lobby .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 .stav-lobby { display: inline-flex; align-items: center; gap: 0.3rem; }
 button.kopirovatelne.jen-ikona { padding: 0.15rem 0.3rem; }

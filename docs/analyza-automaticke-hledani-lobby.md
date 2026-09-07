@@ -219,6 +219,17 @@ Sloty hráčů (`slotinfo`, metadata slotu): `ScenarioPlayerIndex` 0–7 = barva
 1–8 (−1 = random), `Team` 1 = „–“, 2–5 = tým 1–4, 6 = „?“. Pole `teamID`
 slotu se plní nespolehlivě, kontrola ho nepoužívá.
 
+Web klíče čte v `nastaveniZOptions` (`src/external/worldsEdgeLobby.ts`) a
+porovnává v `zkontrolujLobby` (`src/shared/lobbyKontrola.ts`): mapa, velikost,
+rychlost, populace, victory a cheaty patří do hlavní sekce kontroly, zbytek do
+„Dalšího nastavení“, které verdikt „lobby v pořádku“ neovlivňuje.
+
+**Past se stránkováním (7. 9. 2026):** seznam občas lobby na jedno stažení
+vynechá — když mezi stažením první a druhé stránky nějaká novější lobby
+zanikne, starší se posunou o jednu nahoru a jedna propadne mezi stránkami.
+Sledování fáze proto prohlásí „hraje_se“ až po třech nepřítomnostech za sebou
+(`src/realtime/fazeLobby.ts`), návrat do „lobby“ je okamžitý.
+
 Přímo v záznamu lobby: `visible`, `maxplayers`, `passwordprotected`,
 `isobservable`, `observerdelay`, `hasobserverpassword`, `relayserver_region`
 (Server), `matchtype_id`. Data Mod a Hide Civilizations se nastavují jen při

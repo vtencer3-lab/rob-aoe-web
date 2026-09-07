@@ -184,6 +184,15 @@ export async function setZapasStav(zapasId: number, stav: MatchState): Promise<v
   }
 }
 
+/**
+ * Zrušený zápas smaže i s účastníky (kaskáda). Podmínka na stav je v SQL:
+ * kdyby ho někdo mezitím vrátil do hry, nic se nesmaže a vrátí se false.
+ */
+export async function smazZrusenyZapas(zapasId: number): Promise<boolean> {
+  const { rowCount } = await getPool().query("DELETE FROM zapas WHERE id = $1 AND stav = 'zruseny'", [zapasId]);
+  return (rowCount ?? 0) > 0;
+}
+
 export async function setLobbyId(zapasId: number, lobbyId: string): Promise<void> {
   await getPool().query("UPDATE zapas SET lobby_id = $2 WHERE id = $1", [zapasId, lobbyId]);
 }

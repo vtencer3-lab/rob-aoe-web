@@ -19,10 +19,19 @@ interface Props {
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
 }
 
+/**
+ * Obrazovka hosta: velký titulek zápasu, pruh s barvou, a pak tři kroky pod
+ * sebou — „Zakládáš!“ (fajfka, jakmile web lobby najde), „Kontrola lobby“
+ * (fajfka, když hlavní sekce prošla) a nakonec „Výborně, můžete hrát!“. Host
+ * tak i uprostřed streamu vidí, kde je. Tlačítko do lobby tu není: host ji
+ * zakládá, do lobby se odkazem připojují ostatní (KartaHrace).
+ */
 export function ObrazovkaHosta({ zapas, ja, onHledatLobby, onKontrolaLobby }: Props) {
   // Po kliknutí na „Spustit hru“ host lobby zakládá právě teď: hledání zrychlí
   // ze 4 s na 2 s, ať hráči dostanou odkaz, sotva lobby vznikne.
   const [hraSpustena, setHraSpustena] = useState(false);
+  // Verdikt kontroly drží sekce kontroly; sem ho jen hlásí.
+  const [vPoradku, setVPoradku] = useState<boolean | null>(null);
 
   // Host dostane tuhle obrazovku *místo* KartaHrace, ne k ní — svoji barvu by
   // jinak neviděl, zatímco každý druhý účastník má pruh přes půl obrazovky.
@@ -33,7 +42,9 @@ export function ObrazovkaHosta({ zapas, ja, onHledatLobby, onKontrolaLobby }: Pr
 
   return (
     <section className={muj ? `host barva-${muj.barva}` : "host"}>
-      <header>Jsi host zápasu #{zapas.poradi}</header>
+      <h2 className="titulek-zapasu" data-testid="titulek-zapasu">
+        Zápas #{zapas.poradi}
+      </h2>
 
       {muj ? (
         <div className="hero">
@@ -44,36 +55,48 @@ export function ObrazovkaHosta({ zapas, ja, onHledatLobby, onKontrolaLobby }: Pr
         </div>
       ) : null}
 
-      {/* Host si hru pouští odtud: steam://run ji nastartuje (nebo vytáhne do
-          popředí), a jakmile web zná číslo lobby, druhý odkaz ho do ní vrátí,
-          kdyby z ní vypadl. */}
-      <div className="ovladani hostovi">
-        <a className="cta" href="steam://run/813780" data-testid="spustit-hru" onClick={() => setHraSpustena(true)}>
-          Spustit hru
-        </a>
-        {zapas.joinUri ? (
-          <a className="cta" href={zapas.joinUri} data-testid="do-lobby">
-            Připojit se do lobby
+      <section className={nalezena ? "sekce-krok hotovo" : "sekce-krok"} data-testid="krok-lobby">
+        <header className="zahlavi-sekce">
+          <h3 className="zakladas">Zakládáš!</h3>
+          {nalezena ? (
+            <span className="fajfka" data-testid="fajfka-lobby" aria-label="Lobby nalezena">
+              ✓
+            </span>
+          ) : null}
+        </header>
+        {/* Host si hru pouští odtud: steam://run ji nastartuje (nebo vytáhne
+            do popředí). */}
+        <div className="ovladani hostovi">
+          <a className="cta" href="steam://run/813780" data-testid="spustit-hru" onClick={() => setHraSpustena(true)}>
+            Spustit hru
           </a>
-        ) : null}
-      </div>
-      <DialogCreateLobby zapas={zapas} />
+        </div>
+        <DialogCreateLobby zapas={zapas} />
 
-      {/* Web si lobby najde sám podle Steam ID hosta; tlačítko je pro
-          netrpělivé a pro případ, že lobby ze seznamu vypadla. */}
-      <HledaniLobby
-        zapasId={zapas.id}
-        onHledat={onHledatLobby}
-        nalezena={nalezena}
-        odkaz={zapas.joinUri}
-        automaticky={zapas.lobbyId === null}
-        intervalMs={hraSpustena ? 2_000 : 4_000}
-      />
+        {/* Web si lobby najde sám podle Steam ID hosta; tlačítko je pro
+            netrpělivé a pro případ, že lobby ze seznamu vypadla. */}
+        <HledaniLobby
+          zapasId={zapas.id}
+          onHledat={onHledatLobby}
+          nalezena={nalezena}
+          odkaz={zapas.joinUri}
+          automaticky={zapas.lobbyId === null}
+          intervalMs={hraSpustena ? 2_000 : 4_000}
+        />
+      </section>
 
       {zapas.lobbyId ? (
-        <section className="sekce-kontrola">
-          <h3>Kontrola lobby</h3>
-          <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} />
+        <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} onVerdikt={setVPoradku} />
+      ) : null}
+
+      {zapas.lobbyId && vPoradku ? (
+        <section className="sekce-krok hotovo finale" data-testid="muzete-hrat">
+          <header className="zahlavi-sekce">
+            <h3>Výborně, můžete hrát!</h3>
+            <span className="fajfka" aria-hidden="true">
+              ✓
+            </span>
+          </header>
         </section>
       ) : null}
     </section>

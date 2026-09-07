@@ -8,7 +8,10 @@ export { MAPY, nazevMapy } from "./mapy.js";
  * Očekávané nastavení lobby, které si režie nastaví u akce. Web ho porovnává
  * s tím, co host ve hře opravdu naklikal (viz zkontrolujLobby). Klíče a
  * hodnoty odpovídají tomu, co seznam lobby ze hry vydává — zmapováno naživo
- * 7. 9. 2026 (docs/analyza-automaticke-hledani-lobby.md).
+ * 7. 9. 2026 (docs/analyza-automaticke-hledani-lobby.md §6).
+ *
+ * Hlavní část (mapa, velikost, rychlost, populace, victory, cheaty) se
+ * ukazuje v první sekci kontroly; zbytek ve druhé „Další nastavení“.
  */
 export interface NastaveniLobby {
   /** Id mapy ve hře (options[10]); null = nekontrolovat. */
@@ -23,6 +26,36 @@ export interface NastaveniLobby {
   vitezstvi: 1 | 9;
   /** Allow Cheats (options[1]). */
   cheaty: boolean;
+
+  // --- další nastavení ---
+  /** Civilization Set (options[101]): 0 All, 1 Age of Empires II, 2 Chronicles. */
+  sadaCivilizaci: number;
+  /** Game Mode (options[5]): 0 Random Map, 2 Deathmatch, 3 Scenario. */
+  rezim: number;
+  /** AI Difficulty (options[61]): 3 Standard, 1 Hard. */
+  aiObtiznost: number;
+  /** Resources (options[37]): 0 Standard, 3 High. */
+  suroviny: number;
+  /** Reveal Map (options[82]): 0 Normal, 1 Explored, 2 All Visible. */
+  odkrytiMapy: number;
+  /** Starting Age (options[0]): 0 Standard, 3 Feudal, 6 Post-Imperial. */
+  pocatecniVek: number;
+  /** Ending Age (options[4]): 0 Standard, 4 Castle. */
+  konecnyVek: number;
+  /** Treaty Length v minutách (options[57]). */
+  primeri: number;
+  lockTeams: boolean;
+  teamTogether: boolean;
+  teamPositions: boolean;
+  sharedExploration: boolean;
+  lockSpeed: boolean;
+  turbo: boolean;
+  fullTechTree: boolean;
+  empireWars: boolean;
+  suddenDeath: boolean;
+  regicide: boolean;
+  antiquity: boolean;
+  recordGame: boolean;
 }
 
 export const VYCHOZI_NASTAVENI: NastaveniLobby = {
@@ -32,6 +65,26 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   populace: 200,
   vitezstvi: 1,
   cheaty: false,
+  sadaCivilizaci: 1,
+  rezim: 0,
+  aiObtiznost: 3,
+  suroviny: 0,
+  odkrytiMapy: 0,
+  pocatecniVek: 0,
+  konecnyVek: 0,
+  primeri: 0,
+  lockTeams: true,
+  teamTogether: true,
+  teamPositions: false,
+  sharedExploration: true,
+  lockSpeed: true,
+  turbo: false,
+  fullTechTree: false,
+  empireWars: false,
+  suddenDeath: false,
+  regicide: false,
+  antiquity: false,
+  recordGame: true,
 };
 
 export const VELIKOSTI: Record<number, string> = {
@@ -45,6 +98,32 @@ export const VELIKOSTI: Record<number, string> = {
 
 export const RYCHLOSTI: Record<number, string> = { 1: "Slow", 2: "Normal", 3: "Fast" };
 export const VITEZSTVI: Record<number, string> = { 1: "Conquest", 9: "Standard" };
+export const SADY_CIVILIZACI: Record<number, string> = { 0: "All", 1: "Age of Empires II", 2: "Chronicles" };
+export const REZIMY: Record<number, string> = { 0: "Random Map", 2: "Deathmatch", 3: "Scenario" };
+export const AI_OBTIZNOSTI: Record<number, string> = { 3: "Standard", 1: "Hard" };
+export const SUROVINY: Record<number, string> = { 0: "Standard", 3: "High" };
+export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible" };
+export const POCATECNI_VEKY: Record<number, string> = { 0: "Standard", 3: "Feudal Age", 6: "Post-Imperial Age" };
+export const KONECNE_VEKY: Record<number, string> = { 0: "Standard", 4: "Castle Age" };
+
+/** Zaškrtávátka z Team Settings a Advanced Settings: klíč v nastavení, český popisek. */
+export const ZASKRTAVATKA: ReadonlyArray<{
+  klic: keyof Pick<NastaveniLobby, "lockTeams" | "teamTogether" | "teamPositions" | "sharedExploration" | "lockSpeed" | "turbo" | "fullTechTree" | "empireWars" | "suddenDeath" | "regicide" | "antiquity" | "recordGame">;
+  popis: string;
+}> = [
+  { klic: "lockTeams", popis: "Lock Teams" },
+  { klic: "teamTogether", popis: "Team Together" },
+  { klic: "teamPositions", popis: "Team Positions" },
+  { klic: "sharedExploration", popis: "Shared Exploration" },
+  { klic: "lockSpeed", popis: "Lock Speed" },
+  { klic: "turbo", popis: "Turbo Mode" },
+  { klic: "fullTechTree", popis: "Full Tech Tree" },
+  { klic: "empireWars", popis: "Empire Wars" },
+  { klic: "suddenDeath", popis: "Sudden Death" },
+  { klic: "regicide", popis: "Regicide" },
+  { klic: "antiquity", popis: "Antiquity Mode" },
+  { klic: "recordGame", popis: "Record Game" },
+];
 
 /** Nejmenší velikost, do které se hráči vejdou, jak ji volí sama hra. */
 export function velikostProHrace(pocet: number): number {
@@ -71,6 +150,36 @@ export interface SlotLobby {
   pripraven: boolean;
 }
 
+/** Nastavení hry, jak ho seznam lobby vydává; co nešlo přečíst, je null (nebo chybí). */
+export interface NastaveniZeHry {
+  mapaId: number | null;
+  velikost: number | null;
+  rychlost: number | null;
+  populace: number | null;
+  vitezstvi: number | null;
+  cheaty: boolean | null;
+  sadaCivilizaci?: number | null;
+  rezim?: number | null;
+  aiObtiznost?: number | null;
+  suroviny?: number | null;
+  odkrytiMapy?: number | null;
+  pocatecniVek?: number | null;
+  konecnyVek?: number | null;
+  primeri?: number | null;
+  lockTeams?: boolean | null;
+  teamTogether?: boolean | null;
+  teamPositions?: boolean | null;
+  sharedExploration?: boolean | null;
+  lockSpeed?: boolean | null;
+  turbo?: boolean | null;
+  fullTechTree?: boolean | null;
+  empireWars?: boolean | null;
+  suddenDeath?: boolean | null;
+  regicide?: boolean | null;
+  antiquity?: boolean | null;
+  recordGame?: boolean | null;
+}
+
 /** Co ze seznamu lobby ve hře opravdu čteme. */
 export interface PoznatekLobby {
   lobbyId: string;
@@ -78,26 +187,31 @@ export interface PoznatekLobby {
   maHeslo: boolean;
   povolujeDivaky: boolean;
   sloty: SlotLobby[];
-  /** Nastavení hry, pokud šlo rozbalit. */
-  nastaveni: {
-    mapaId: number | null;
-    velikost: number | null;
-    rychlost: number | null;
-    populace: number | null;
-    vitezstvi: number | null;
-    cheaty: boolean | null;
-  } | null;
+  nastaveni: NastaveniZeHry | null;
 }
 
 export interface Kontrola {
   klic: string;
   ok: boolean;
   text: string;
+  /** Hlavní sekce (hráči, diváci, mapa…) nebo „Další nastavení“. */
+  sekce: "hlavni" | "dalsi";
+  /** Neprošlo, ale jen upozornění: nebrání hře a nepočítá se do „lobby v pořádku“. */
+  varovani?: boolean;
 }
 
 export interface KontrolaLobbyVysledek {
   nalezeno: boolean;
   kontroly: Kontrola[];
+}
+
+/**
+ * „Lobby v pořádku“ = všechno podstatné prošlo: hlavní sekce bez chyb.
+ * Upozornění (heslo) a další nastavení se nepočítají — nebrání tomu, aby se
+ * hrálo, a Rob je vidí zvlášť.
+ */
+export function lobbyVPoradku(kontroly: Kontrola[]): boolean {
+  return kontroly.filter((k) => k.sekce === "hlavni" && !k.varovani).every((k) => k.ok);
 }
 
 interface UcastnikProKontrolu {
@@ -120,10 +234,13 @@ function popisTymu(t: Tym | "?" | null): string {
   return t === 0 ? "–" : `tým ${t}`;
 }
 
+const jm = (tabulka: Record<number, string>) => (v: number | null | undefined) =>
+  v === null || v === undefined ? "?" : (tabulka[v] ?? String(v));
+
 /**
  * Porovná lobby ve hře se zápasem a očekáváním. Každý řádek je jedna fajfka
  * nebo křížek s větou, kterou Rob přečte v přenosu bez přemýšlení. Hráči se
- * kontrolují po jednom: chybějící, navíc, barva, tým.
+ * kontrolují po jednom: chybějící, navíc, barva, tým, civilizace.
  */
 export function zkontrolujLobby(
   ucastnici: UcastnikProKontrolu[],
@@ -131,69 +248,66 @@ export function zkontrolujLobby(
   lobby: PoznatekLobby,
 ): Kontrola[] {
   const k: Kontrola[] = [];
+  const hlavni = (klic: string, ok: boolean, text: string, varovani = false): void => {
+    k.push({ klic, ok, text, sekce: "hlavni", ...(varovani ? { varovani: true } : {}) });
+  };
   const vLobby = new Map(lobby.sloty.map((s) => [s.steamId, s]));
   const zapasu = new Set(ucastnici.map((u) => u.steamId));
 
-  k.push({ klic: "divaci", ok: lobby.povolujeDivaky, text: lobby.povolujeDivaky ? "Diváci povoleni" : "Diváci nejsou povoleni — zaškrtni Allow Spectators" });
-  k.push({ klic: "heslo", ok: lobby.maHeslo, text: lobby.maHeslo ? "Heslo nastavené" : "Lobby nemá heslo" });
+  hlavni("divaci", lobby.povolujeDivaky, lobby.povolujeDivaky ? "Diváci povoleni" : "Diváci nejsou povoleni — zaškrtni Allow Spectators");
+  // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
+  hlavni("heslo", lobby.maHeslo, lobby.maHeslo ? "Heslo nastavené" : "Lobby nemá heslo — kdokoliv z lobby prohlížeče se může připojit", true);
 
   const chybi = ucastnici.filter((u) => !vLobby.has(u.steamId));
   const navic = lobby.sloty.filter((s) => !zapasu.has(s.steamId));
-  k.push({
-    klic: "hraci",
-    ok: chybi.length === 0 && navic.length === 0,
-    text:
-      chybi.length === 0 && navic.length === 0
-        ? `Hráči: všech ${ucastnici.length} uvnitř`
-        : [
-            chybi.length > 0 ? `chybí ${chybi.map(jmeno).join(", ")}` : "",
-            navic.length > 0 ? `navíc ${navic.length} cizí` : "",
-          ]
-            .filter(Boolean)
-            .join("; ")
-            .replace(/^./, (c) => c.toUpperCase()),
-  });
+  hlavni(
+    "hraci",
+    chybi.length === 0 && navic.length === 0,
+    chybi.length === 0 && navic.length === 0
+      ? `Hráči: všech ${ucastnici.length} uvnitř`
+      : [chybi.length > 0 ? `chybí ${chybi.map(jmeno).join(", ")}` : "", navic.length > 0 ? `navíc ${navic.length} cizí` : ""]
+          .filter(Boolean)
+          .join("; ")
+          .replace(/^./, (c) => c.toUpperCase()),
+  );
 
   // Týmová hra = některý tým z webu má víc než jednoho hráče. Jen tam záleží
   // na číslech: spoluhráči musí sdílet číslo týmu, soupeři mít jiné. Když
   // hraje každý sám za sebe (1v1, FFA), je jedno, co si nastaví — „–“, „?“
   // i číslo — jen dva soupeři nesmí mít stejné číslo, to by je hra spojila.
   const tymova = ucastnici.some((u) => u.tym !== 0 && ucastnici.filter((x) => x.tym === u.tym).length > 1);
+  const cisloTymu = (t: SlotLobby["tym"]) => (typeof t === "number" && t >= 1 ? t : null);
 
   for (const u of ucastnici) {
     const s = vLobby.get(u.steamId);
     if (!s) continue;
     const barvaOk = s.barva === u.barva;
-    k.push({
-      klic: `barva:${u.steamId}`,
-      ok: barvaOk,
-      text: barvaOk
+    hlavni(
+      `barva:${u.steamId}`,
+      barvaOk,
+      barvaOk
         ? `${jmeno(u)}: ${BARVA_NAZEV[u.barva]}`
         : `${jmeno(u)} má ${s.barva === null ? "náhodnou barvu" : BARVA_NAZEV[s.barva]}, má mít ${BARVA_NAZEV[u.barva]}`,
-    });
-
+    );
     if (u.civ !== undefined && u.civ !== null) {
       const civOk = s.civ === u.civ;
-      k.push({
-        klic: `civ:${u.steamId}`,
-        ok: civOk,
-        text: civOk
+      hlavni(
+        `civ:${u.steamId}`,
+        civOk,
+        civOk
           ? `${jmeno(u)}: ${nazevCivilizace(u.civ)}`
           : `${jmeno(u)} má ${s.civ === null ? "náhodnou civilizaci" : nazevCivilizace(s.civ)}, má mít ${nazevCivilizace(u.civ)}`,
-      });
+      );
     }
 
     const ostatni = ucastnici.filter((x) => x.steamId !== u.steamId && vLobby.has(x.steamId));
-    const cisloTymu = (t: SlotLobby["tym"]) => (typeof t === "number" && t >= 1 ? t : null);
     if (!tymova) {
       const stejny = ostatni.find((x) => cisloTymu(vLobby.get(x.steamId)!.tym) !== null && vLobby.get(x.steamId)!.tym === s.tym);
-      k.push({
-        klic: `tym:${u.steamId}`,
-        ok: !stejny,
-        text: stejny
-          ? `${jmeno(u)} a ${jmeno(stejny)} mají oba tým ${cisloTymu(s.tym)} — soupeři musí mít jiný`
-          : `${jmeno(u)}: ${popisTymu(s.tym)}`,
-      });
+      hlavni(
+        `tym:${u.steamId}`,
+        !stejny,
+        stejny ? `${jmeno(u)} a ${jmeno(stejny)} mají oba tým ${cisloTymu(s.tym)} — soupeři musí mít jiný` : `${jmeno(u)}: ${popisTymu(s.tym)}`,
+      );
     } else {
       const moje = cisloTymu(s.tym);
       const spoluhrac = ostatni.find((x) => x.tym === u.tym);
@@ -203,42 +317,50 @@ export function zkontrolujLobby(
       if (moje === null) text = `${jmeno(u)} má ${popisTymu(s.tym)}, v týmové hře musí mít číslo týmu${spoluhrac ? ` (stejné jako ${jmeno(spoluhrac)})` : ""}`;
       else if (spoluhracJiny) text = `${jmeno(u)} má tým ${moje}, ${jmeno(spoluhracJiny)} ze stejného týmu má ${popisTymu(vLobby.get(spoluhracJiny.steamId)!.tym)}`;
       else if (souperStejny) text = `${jmeno(u)} a soupeř ${jmeno(souperStejny)} mají oba tým ${moje}`;
-      k.push({ klic: `tym:${u.steamId}`, ok: text === null, text: text ?? `${jmeno(u)}: tým ${moje}` });
+      hlavni(`tym:${u.steamId}`, text === null, text ?? `${jmeno(u)}: tým ${moje}`);
     }
   }
 
   const n = lobby.nastaveni;
   if (!n) {
-    k.push({ klic: "nastaveni", ok: false, text: "Nastavení hry se nepodařilo přečíst" });
+    hlavni("nastaveni", false, "Nastavení hry se nepodařilo přečíst");
     return k;
   }
   if (ocekavane.mapaId !== null) {
     const ok = n.mapaId === ocekavane.mapaId;
-    k.push({ klic: "mapa", ok, text: ok ? `Mapa: ${nazevMapy(n.mapaId)}` : `Mapa: ${nazevMapy(n.mapaId)}, má být ${nazevMapy(ocekavane.mapaId)}` });
+    hlavni("mapa", ok, ok ? `Mapa: ${nazevMapy(n.mapaId)}` : `Mapa: ${nazevMapy(n.mapaId)}, má být ${nazevMapy(ocekavane.mapaId)}`);
   }
   const velikost = ocekavane.velikost ?? velikostProHrace(ucastnici.length);
+  const jmVelikost = (v: number | null) => (v === null ? "?" : (VELIKOSTI[v] ?? `${v} dílců`));
+  hlavni("velikost", n.velikost === velikost, n.velikost === velikost ? `Velikost: ${jmVelikost(n.velikost)}` : `Velikost: ${jmVelikost(n.velikost)}, má být ${jmVelikost(velikost)}`);
+  hlavni("rychlost", n.rychlost === ocekavane.rychlost, n.rychlost === ocekavane.rychlost ? `Rychlost: ${jm(RYCHLOSTI)(n.rychlost)}` : `Rychlost: ${jm(RYCHLOSTI)(n.rychlost)}, má být ${jm(RYCHLOSTI)(ocekavane.rychlost)}`);
+  hlavni("populace", n.populace === ocekavane.populace, n.populace === ocekavane.populace ? `Populace: ${n.populace}` : `Populace: ${n.populace ?? "?"}, má být ${ocekavane.populace}`);
+  hlavni("vitezstvi", n.vitezstvi === ocekavane.vitezstvi, n.vitezstvi === ocekavane.vitezstvi ? `Victory: ${jm(VITEZSTVI)(n.vitezstvi)}` : `Victory: ${jm(VITEZSTVI)(n.vitezstvi)}, má být ${jm(VITEZSTVI)(ocekavane.vitezstvi)}`);
+  hlavni("cheaty", n.cheaty === ocekavane.cheaty, n.cheaty === ocekavane.cheaty ? (n.cheaty ? "Cheaty povolené" : "Cheaty vypnuté") : n.cheaty ? "Cheaty jsou povolené, mají být vypnuté" : "Cheaty jsou vypnuté, mají být povolené");
+
+  // --- Další nastavení: stejný tvar, jiná sekce. Co nešlo přečíst, je „?“ a křížek. ---
+  const dalsi = (klic: string, popis: string, tabulka: Record<number, string>, ve: number | null | undefined, ma: number): void => {
+    const ok = ve === ma;
+    k.push({ klic, ok, text: ok ? `${popis}: ${jm(tabulka)(ve)}` : `${popis}: ${jm(tabulka)(ve)}, má být ${jm(tabulka)(ma)}`, sekce: "dalsi" });
+  };
+  dalsi("sadaCivilizaci", "Civilization Set", SADY_CIVILIZACI, n.sadaCivilizaci, ocekavane.sadaCivilizaci);
+  dalsi("rezim", "Game Mode", REZIMY, n.rezim, ocekavane.rezim);
+  dalsi("aiObtiznost", "AI Difficulty", AI_OBTIZNOSTI, n.aiObtiznost, ocekavane.aiObtiznost);
+  dalsi("suroviny", "Resources", SUROVINY, n.suroviny, ocekavane.suroviny);
+  dalsi("odkrytiMapy", "Reveal Map", ODKRYTI_MAPY, n.odkrytiMapy, ocekavane.odkrytiMapy);
+  dalsi("pocatecniVek", "Starting Age", POCATECNI_VEKY, n.pocatecniVek, ocekavane.pocatecniVek);
+  dalsi("konecnyVek", "Ending Age", KONECNE_VEKY, n.konecnyVek, ocekavane.konecnyVek);
   {
-    const ok = n.velikost === velikost;
-    const jm = (v: number | null) => (v === null ? "?" : (VELIKOSTI[v] ?? `${v} dílců`));
-    k.push({ klic: "velikost", ok, text: ok ? `Velikost: ${jm(n.velikost)}` : `Velikost: ${jm(n.velikost)}, má být ${jm(velikost)}` });
+    const ok = n.primeri === ocekavane.primeri;
+    const text = (v: number | null | undefined) => (v === null || v === undefined ? "?" : v === 0 ? "žádné" : `${v} min`);
+    k.push({ klic: "primeri", ok, text: ok ? `Treaty Length: ${text(n.primeri)}` : `Treaty Length: ${text(n.primeri)}, má být ${text(ocekavane.primeri)}`, sekce: "dalsi" });
   }
-  {
-    const ok = n.rychlost === ocekavane.rychlost;
-    const jm = (v: number | null) => (v === null ? "?" : (RYCHLOSTI[v] ?? String(v)));
-    k.push({ klic: "rychlost", ok, text: ok ? `Rychlost: ${jm(n.rychlost)}` : `Rychlost: ${jm(n.rychlost)}, má být ${jm(ocekavane.rychlost)}` });
-  }
-  {
-    const ok = n.populace === ocekavane.populace;
-    k.push({ klic: "populace", ok, text: ok ? `Populace: ${n.populace}` : `Populace: ${n.populace ?? "?"}, má být ${ocekavane.populace}` });
-  }
-  {
-    const ok = n.vitezstvi === ocekavane.vitezstvi;
-    const jm = (v: number | null) => (v === null ? "?" : (VITEZSTVI[v] ?? String(v)));
-    k.push({ klic: "vitezstvi", ok, text: ok ? `Victory: ${jm(n.vitezstvi)}` : `Victory: ${jm(n.vitezstvi)}, má být ${jm(ocekavane.vitezstvi)}` });
-  }
-  {
-    const ok = n.cheaty === ocekavane.cheaty;
-    k.push({ klic: "cheaty", ok, text: ok ? (n.cheaty ? "Cheaty povolené" : "Cheaty vypnuté") : n.cheaty ? "Cheaty jsou povolené, mají být vypnuté" : "Cheaty jsou vypnuté, mají být povolené" });
+  for (const { klic, popis } of ZASKRTAVATKA) {
+    const ve = n[klic];
+    const ma = ocekavane[klic];
+    const ok = ve === ma;
+    const stav = (v: boolean | null | undefined) => (v === null || v === undefined ? "?" : v ? "zapnuto" : "vypnuto");
+    k.push({ klic, ok, text: ok ? `${popis}: ${stav(ve)}` : `${popis}: ${stav(ve)}, má být ${stav(ma)}`, sekce: "dalsi" });
   }
   return k;
 }

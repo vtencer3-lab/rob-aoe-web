@@ -105,14 +105,36 @@ const cislo = (hodnota: string | undefined): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+/** Klíče `options` → položky nastavení; zaškrtávátka jsou „y“/„n“. Mapa viz docs §6. */
 export function nastaveniZOptions(o: Map<string, string>): NonNullable<PoznatekLobby["nastaveni"]> {
+  const ano = (klic: string): boolean | null => (o.has(klic) ? o.get(klic) === "y" : null);
   return {
     mapaId: cislo(o.get("10")),
     velikost: cislo(o.get("8")),
     rychlost: cislo(o.get("41")),
     populace: cislo(o.get("28")),
     vitezstvi: cislo(o.get("81")),
-    cheaty: o.has("1") ? o.get("1") === "y" : null,
+    cheaty: ano("1"),
+    sadaCivilizaci: cislo(o.get("101")),
+    rezim: cislo(o.get("5")),
+    aiObtiznost: cislo(o.get("61")),
+    suroviny: cislo(o.get("37")),
+    odkrytiMapy: cislo(o.get("82")),
+    pocatecniVek: cislo(o.get("0")),
+    konecnyVek: cislo(o.get("4")),
+    primeri: cislo(o.get("57")),
+    lockTeams: ano("66"),
+    teamTogether: ano("78"),
+    teamPositions: ano("77"),
+    sharedExploration: ano("76"),
+    lockSpeed: ano("65"),
+    turbo: ano("79"),
+    fullTechTree: ano("62"),
+    empireWars: ano("89"),
+    suddenDeath: ano("90"),
+    regicide: ano("91"),
+    antiquity: ano("100"),
+    recordGame: ano("75"),
   };
 }
 

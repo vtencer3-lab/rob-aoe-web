@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
+import { lobbyVPoradku, type Kontrola, type KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 
 /** Jak často se kontrola opakuje sama, dokud se v lobby sedí. */
 export const INTERVAL_KONTROLY_MS = 5_000;
@@ -10,6 +10,11 @@ interface Props {
   /** Dokud je zapnuté, kontroluje se samo; vypíná se, jakmile hra běží. */
   automaticky?: boolean;
   intervalMs?: number;
+  /**
+   * Rodič se dozví verdikt: true = hlavní sekce bez chyb, false = něco k
+   * opravě, null = bez výsledku (lobby mimo seznam, chyba, ještě neproběhlo).
+   */
+  onVerdikt?: (vPoradku: boolean | null) => void;
 }
 
 type Stav =
@@ -18,13 +23,20 @@ type Stav =
   | { druh: "vysledek"; vysledek: KontrolaLobbyVysledek }
   | { druh: "chyba"; text: string };
 
+function skloňujVeci(n: number): string {
+  return `${n} ${n === 1 ? "věc k opravě" : n < 5 ? "věci k opravě" : "věcí k opravě"}`;
+}
+
 /**
- * „Zkontrolovat lobby“: server porovná lobby ve hře se sestavou zápasu a
- * očekávaným nastavením akce a vrátí řádky fajfka / křížek. Rob to čte v
- * přenosu, proto věty, ne tabulka hodnot. Dokud se v lobby sedí, kontrola
- * se sama opakuje, ať host vidí, že opravil, co měl.
+ * Sekce „Kontrola lobby“ — stejná pro hosta i režii: server porovná lobby ve
+ * hře se sestavou zápasu a očekávaným nastavením akce a vrátí řádky fajfka /
+ * křížek. Rob to čte v přenosu, proto věty, ne tabulka hodnot. Dokud se v
+ * lobby sedí, kontrola se sama opakuje, ať host vidí, že opravil, co měl.
+ *
+ * Hlavní sekce rozhoduje o verdiktu (velká fajfka v záhlaví); chybějící
+ * heslo je jen upozornění a „Další nastavení“ mají vlastní sbalený seznam.
  */
-export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, intervalMs = INTERVAL_KONTROLY_MS }: Props) {
+export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, intervalMs = INTERVAL_KONTROLY_MS, onVerdikt }: Props) {
   const [stav, setStav] = useState<Stav>({ druh: "klid" });
   const probiha = useRef(false);
   const zivy = useRef(true);
@@ -58,18 +70,35 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automaticky, intervalMs, zapasId]);
 
-  const vysledek = stav.druh === "vysledek" ? stav.vysledek : null;
-  const spatne = vysledek?.kontroly.filter((k) => !k.ok).length ?? 0;
+  const vysledek = stav.druh === "vysledek" && stav.vysledek.nalezeno ? stav.vysledek : null;
+  const hlavni = vysledek?.kontroly.filter((k) => k.sekce === "hlavni") ?? [];
+  const dalsi = vysledek?.kontroly.filter((k) => k.sekce === "dalsi") ?? [];
+  const kOprave = hlavni.filter((k) => !k.ok && !k.varovani).length;
+  const vPoradku = vysledek ? lobbyVPoradku(vysledek.kontroly) : null;
+  const dalsiJinak = dalsi.filter((k) => !k.ok).length;
+
+  useEffect(() => {
+    onVerdikt?.(vPoradku);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vPoradku]);
 
   return (
-    <div className="kontrola-lobby" data-testid="kontrola-lobby">
+    <section className={vPoradku ? "sekce-kontrola hotovo" : "sekce-kontrola"} data-testid="kontrola-lobby">
+      <header className="zahlavi-sekce">
+        <h3>Kontrola lobby</h3>
+        {vPoradku ? (
+          <span className="fajfka" data-testid="fajfka-kontrola" aria-label="Lobby je v pořádku">
+            ✓
+          </span>
+        ) : null}
+      </header>
       <div className="ovladani">
         <button type="button" onClick={() => void zkontroluj(true)} disabled={stav.druh === "kontroluji"}>
           {stav.druh === "kontroluji" ? "Kontroluji…" : "Zkontrolovat lobby"}
         </button>
-        {vysledek && vysledek.nalezeno ? (
-          <span className={spatne === 0 ? "potvrzeno" : "chyba"} data-testid="kontrola-souhrn">
-            {spatne === 0 ? "Lobby je v pořádku" : `${spatne} ${spatne === 1 ? "věc k opravě" : spatne < 5 ? "věci k opravě" : "věcí k opravě"}`}
+        {vysledek ? (
+          <span className={vPoradku ? "potvrzeno" : "chyba"} data-testid="kontrola-souhrn">
+            {vPoradku ? "Lobby je v pořádku" : skloňujVeci(kOprave)}
           </span>
         ) : null}
       </div>
@@ -78,23 +107,42 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
           {stav.text}
         </p>
       ) : null}
-      {vysledek && !vysledek.nalezeno ? (
+      {stav.druh === "vysledek" && !stav.vysledek.nalezeno ? (
         <p className="zaloha" role="status">
           Lobby teď v seznamu ze hry není — buď hra už běží, nebo lobby zmizela.
         </p>
       ) : null}
-      {vysledek && vysledek.nalezeno ? (
-        <ul className="kontroly" data-testid="kontroly">
-          {vysledek.kontroly.map((k) => (
-            <li key={k.klic} className={k.ok ? "ok" : "spatne"}>
-              <span className="znak" aria-hidden="true">
-                {k.ok ? "✓" : "✗"}
-              </span>{" "}
-              {k.text}
-            </li>
-          ))}
-        </ul>
+      {vysledek ? (
+        <>
+          <SeznamKontrol kontroly={hlavni} testId="kontroly" />
+          {dalsi.length > 0 ? (
+            <details className="dalsi-nastaveni" data-testid="dalsi-nastaveni">
+              <summary>
+                Další nastavení{" "}
+                <span className={dalsiJinak === 0 ? "potvrzeno" : "varovani"}>
+                  {dalsiJinak === 0 ? "— vše podle očekávání" : `— ${dalsiJinak} jinak, než Rob nastavil`}
+                </span>
+              </summary>
+              <SeznamKontrol kontroly={dalsi} testId="kontroly-dalsi" />
+            </details>
+          ) : null}
+        </>
       ) : null}
-    </div>
+    </section>
+  );
+}
+
+function SeznamKontrol({ kontroly, testId }: { kontroly: Kontrola[]; testId: string }) {
+  return (
+    <ul className="kontroly" data-testid={testId}>
+      {kontroly.map((k) => (
+        <li key={k.klic} className={k.ok ? "ok" : k.varovani ? "varovani" : "spatne"}>
+          <span className="znak" aria-hidden="true">
+            {k.ok ? "✓" : k.varovani ? "!" : "✗"}
+          </span>{" "}
+          {k.text}
+        </li>
+      ))}
+    </ul>
   );
 }

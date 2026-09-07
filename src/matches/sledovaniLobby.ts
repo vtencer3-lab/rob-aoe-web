@@ -1,5 +1,5 @@
 import type { LobbyInzerat } from "../external/worldsEdgeLobby.js";
-import { fazeLobbyPro, nastavFaziLobby, ponechJenFaze } from "../realtime/fazeLobby.js";
+import { fazeLobbyPro, nastavFaziLobby, ponechJenFaze, zaznamenejNepritomnost } from "../realtime/fazeLobby.js";
 import type { AkceStavPayload } from "../shared/types.js";
 
 export interface SledovaniDeps {
@@ -14,8 +14,8 @@ export const INTERVAL_SLEDOVANI_MS = 10_000;
 /**
  * Jeden krok sledování: pro každý běžící zápas s číslem lobby se podívá,
  * jestli je lobby pořád v seznamu otevřených her. Je-li, sedí se v ní
- * („lobby“); není-li, hra se rozjela („hraje_se“). Rob tak u Spectate vidí,
- * jestli vleze do lobby, nebo do rozehrané hry.
+ * („lobby“); chybí-li několikrát po sobě, hra se rozjela („hraje_se“). Rob
+ * tak u Spectate vidí, jestli vleze do lobby, nebo do rozehrané hry.
  *
  * Bez běžícího zápasu s lobby se seznam vůbec nestahuje. Výpadek seznamu
  * nic nemění: nevíme, tak nic netvrdíme. Vrací true, když se něco změnilo
@@ -39,8 +39,10 @@ export async function zkontrolujFazeLobby(deps: SledovaniDeps): Promise<boolean>
   const otevrene = new Set(inzeraty.map((l) => l.lobbyId));
   let zmena = false;
   for (const z of sledovane) {
-    const nova = otevrene.has(z.lobbyId) ? "lobby" : "hraje_se";
-    if (nastavFaziLobby(z.lobbyId, nova)) zmena = true;
+    // Přítomnost přepíná hned, nepřítomnost až po několika kontrolách za
+    // sebou — seznam ze hry lobby občas na jedno stažení vynechá.
+    const zmenilo = otevrene.has(z.lobbyId) ? nastavFaziLobby(z.lobbyId, "lobby") : zaznamenejNepritomnost(z.lobbyId);
+    if (zmenilo) zmena = true;
   }
   if (zmena) await deps.broadcast();
   return zmena;

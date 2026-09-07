@@ -7,7 +7,15 @@ import { najdiLobby } from "../../matches/hledaniLobby.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import { nastavFaziLobby } from "../../realtime/fazeLobby.js";
 import {
+  AI_OBTIZNOSTI,
   doplnNastaveni,
+  KONECNE_VEKY,
+  ODKRYTI_MAPY,
+  POCATECNI_VEKY,
+  REZIMY,
+  SADY_CIVILIZACI,
+  SUROVINY,
+  ZASKRTAVATKA,
   zkontrolujLobby,
   type KontrolaLobbyVysledek,
   type NastaveniLobby,
@@ -34,6 +42,24 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   const vit = cislo(t["vitezstvi"]);
   if (vit === 1 || vit === 9) v.vitezstvi = vit;
   if (typeof t["cheaty"] === "boolean") v.cheaty = t["cheaty"];
+
+  // Další nastavení: číselníky jen z hodnot, které hra opravdu vydává.
+  const vyber = (klic: keyof NastaveniLobby, tabulka: Record<number, string>) => {
+    const h = cislo(t[klic]);
+    if (h !== undefined && h in tabulka) (v as Record<string, unknown>)[klic] = h;
+  };
+  vyber("sadaCivilizaci", SADY_CIVILIZACI);
+  vyber("rezim", REZIMY);
+  vyber("aiObtiznost", AI_OBTIZNOSTI);
+  vyber("suroviny", SUROVINY);
+  vyber("odkrytiMapy", ODKRYTI_MAPY);
+  vyber("pocatecniVek", POCATECNI_VEKY);
+  vyber("konecnyVek", KONECNE_VEKY);
+  const primeri = cislo(t["primeri"]);
+  if (primeri !== undefined && Number.isInteger(primeri) && primeri >= 0 && primeri <= 180) v.primeri = primeri;
+  for (const { klic } of ZASKRTAVATKA) {
+    if (typeof t[klic] === "boolean") v[klic] = t[klic];
+  }
   if (Object.keys(v).length === 0) throw new HttpError(400, "Nastavení lobby neobsahuje nic, co by šlo uložit.");
   return v;
 }

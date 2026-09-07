@@ -78,6 +78,8 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ stav }),
     }).then((r) => json<{ ok: true }>(r)),
+  smazatZapas: (zapasId: number) =>
+    fetch(cesta(`/api/zapas/${zapasId}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   vysledek: (zapasId: number, vitez: Vitez) =>
     fetch(cesta(`/api/zapas/${zapasId}/vysledek`), {
       method: "POST",

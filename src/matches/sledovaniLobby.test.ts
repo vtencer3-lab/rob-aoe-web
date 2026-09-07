@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { LobbyInzerat } from "../external/worldsEdgeLobby.js";
-import { fazeLobbyPro, ponechJenFaze } from "../realtime/fazeLobby.js";
+import { fazeLobbyPro, NEPRITOMNOSTI_PRO_HRAJE_SE, ponechJenFaze } from "../realtime/fazeLobby.js";
 import type { AkceStavPayload, ZapasView } from "../shared/types.js";
 import { zkontrolujFazeLobby } from "./sledovaniLobby.js";
 
@@ -33,16 +33,46 @@ beforeEach(() => {
 });
 
 describe("zkontrolujFazeLobby", () => {
-  it("lobby v seznamu = „lobby“, po zmizení = „hraje_se“, každá změna rozešle stav", async () => {
+  it("lobby v seznamu = „lobby“; „hraje_se“ až po několika nepřítomnostech za sebou, každá změna rozešle stav", async () => {
     const broadcast = vi.fn().mockResolvedValue(undefined);
-    const inzeraty = vi.fn().mockResolvedValueOnce([inzerat("504953429")]).mockResolvedValueOnce([]);
+    const inzeraty = vi.fn().mockResolvedValueOnce([inzerat("504953429")]).mockResolvedValue([]);
     const deps = { nactiStav: async () => stavS(zapas({})), nactiInzeraty: inzeraty, broadcast };
 
     expect(await zkontrolujFazeLobby(deps)).toBe(true);
     expect(fazeLobbyPro("504953429")).toBe("lobby");
+    for (let i = 1; i < NEPRITOMNOSTI_PRO_HRAJE_SE; i++) {
+      expect(await zkontrolujFazeLobby(deps)).toBe(false);
+      expect(fazeLobbyPro("504953429")).toBe("lobby");
+    }
     expect(await zkontrolujFazeLobby(deps)).toBe(true);
     expect(fazeLobbyPro("504953429")).toBe("hraje_se");
     expect(broadcast).toHaveBeenCalledTimes(2);
+  });
+
+  // 7. 9. 2026: seznam ze hry lobby na jedno stažení vynechal a Spectate
+  // ukázal „Hraje se“, zatímco se v lobby pořád sedělo. Jedno vynechání
+  // nesmí nic přepnout a návrat do seznamu počítadlo nuluje.
+  it("jedno vynechání v seznamu fázi nemění a návrat nuluje počítadlo", async () => {
+    const broadcast = vi.fn().mockResolvedValue(undefined);
+    const inzeraty = vi.fn().mockResolvedValue([inzerat("504953429")]);
+    const deps = { nactiStav: async () => stavS(zapas({})), nactiInzeraty: inzeraty, broadcast };
+    await zkontrolujFazeLobby(deps);
+    for (let kolo = 0; kolo < 3; kolo++) {
+      inzeraty.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      await zkontrolujFazeLobby(deps);
+      await zkontrolujFazeLobby(deps);
+      await zkontrolujFazeLobby(deps);
+      expect(fazeLobbyPro("504953429")).toBe("lobby");
+    }
+    expect(broadcast).toHaveBeenCalledTimes(1);
+  });
+
+  it("neznámá lobby mimo seznam nedostane „hraje_se“ hned, ale taky až po čase", async () => {
+    const deps = { nactiStav: async () => stavS(zapas({})), nactiInzeraty: async () => [], broadcast: vi.fn().mockResolvedValue(undefined) };
+    await zkontrolujFazeLobby(deps);
+    expect(fazeLobbyPro("504953429")).toBeNull();
+    for (let i = 1; i < NEPRITOMNOSTI_PRO_HRAJE_SE; i++) await zkontrolujFazeLobby(deps);
+    expect(fazeLobbyPro("504953429")).toBe("hraje_se");
   });
 
   it("beze změny nerozesílá nic", async () => {

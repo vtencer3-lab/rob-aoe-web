@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doplnNastaveni, velikostProHrace, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
+import { doplnNastaveni, lobbyVPoradku, velikostProHrace, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
 import { nazevMapy } from "./mapy.js";
 import type { Barva, Tym } from "./types.js";
 
@@ -7,6 +7,9 @@ const HOST = "76561198014710095";
 const JA = "76561198014056480";
 
 const u = (steamId: string, tym: Tym, barva: Barva, alias: string) => ({ steamId, tym, barva, alias });
+
+/** Nastavení ze hry přesně podle výchozího očekávání (velikost pro dva). */
+const podleOcekavani = { ...VYCHOZI_NASTAVENI, velikost: 120 };
 
 function lobby(cast: Partial<PoznatekLobby> = {}): PoznatekLobby {
   return {
@@ -18,7 +21,7 @@ function lobby(cast: Partial<PoznatekLobby> = {}): PoznatekLobby {
       { steamId: HOST, barva: 1, tym: 1, civ: null, pripraven: true },
       { steamId: JA, barva: 2, tym: 0, civ: null, pripraven: true },
     ],
-    nastaveni: { mapaId: 10875, velikost: 120, rychlost: 2, populace: 200, vitezstvi: 1, cheaty: false },
+    nastaveni: podleOcekavani,
     ...cast,
   };
 }
@@ -27,13 +30,19 @@ const sestava = [u(HOST, 1, 1, "Trokner"), u(JA, 0, 2, "Jouki")];
 const ocekavane = doplnNastaveni(null);
 
 describe("zkontrolujLobby", () => {
-  it("lobby přesně podle zápasu projde celá", () => {
+  it("lobby přesně podle zápasu projde celá; hlavní sekce před dalším nastavením", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby());
     expect(k.every((x) => x.ok)).toBe(true);
-    expect(k.map((x) => x.klic)).toEqual([
+    expect(k.filter((x) => x.sekce === "hlavni").map((x) => x.klic)).toEqual([
       "divaci", "heslo", "hraci", `barva:${HOST}`, `tym:${HOST}`, `barva:${JA}`, `tym:${JA}`,
       "mapa", "velikost", "rychlost", "populace", "vitezstvi", "cheaty",
     ]);
+    expect(k.filter((x) => x.sekce === "dalsi").map((x) => x.klic)).toEqual([
+      "sadaCivilizaci", "rezim", "aiObtiznost", "suroviny", "odkrytiMapy", "pocatecniVek", "konecnyVek", "primeri",
+      "lockTeams", "teamTogether", "teamPositions", "sharedExploration", "lockSpeed", "turbo", "fullTechTree",
+      "empireWars", "suddenDeath", "regicide", "antiquity", "recordGame",
+    ]);
+    expect(lobbyVPoradku(k)).toBe(true);
   });
 
   it("chybějící a cizí hráče pojmenuje", () => {
@@ -43,6 +52,7 @@ describe("zkontrolujLobby", () => {
     expect(hraci.text).toBe("Chybí Jouki; navíc 1 cizí");
     // Kdo v lobby není, nemá řádky barvy a týmu.
     expect(k.some((x) => x.klic === `barva:${JA}`)).toBe(false);
+    expect(lobbyVPoradku(k)).toBe(false);
   });
 
   it("špatná barva říká, co má být; v 1v1 tým nevadí, dokud není stejný jako soupeřův", () => {
@@ -82,14 +92,19 @@ describe("zkontrolujLobby", () => {
     expect(ok.find((x) => x.klic === `civ:${HOST}`)).toMatchObject({ ok: true, text: "Trokner: Koreans" });
   });
 
-  it("diváci a heslo", () => {
+  // Heslo není povinné: bez něj se hrát dá, jen do lobby může vlézt někdo
+  // cizí. Je to upozornění, ne chyba — „lobby v pořádku“ na něm nestojí.
+  it("diváci jsou chyba, chybějící heslo jen upozornění", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({ povolujeDivaky: false, maHeslo: false }));
     expect(k.find((x) => x.klic === "divaci")).toMatchObject({ ok: false, text: /Allow Spectators/ });
-    expect(k.find((x) => x.klic === "heslo")).toMatchObject({ ok: false });
+    expect(k.find((x) => x.klic === "heslo")).toMatchObject({ ok: false, varovani: true, sekce: "hlavni" });
+    expect(lobbyVPoradku(k)).toBe(false);
+    const jenBezHesla = zkontrolujLobby(sestava, ocekavane, lobby({ maHeslo: false }));
+    expect(lobbyVPoradku(jenBezHesla)).toBe(true);
   });
 
   it("nastavení hry porovná s očekáváním a pojmenuje hodnoty", () => {
-    const k = zkontrolujLobby(sestava, ocekavane, lobby({ nastaveni: { mapaId: 10878, velikost: 168, rychlost: 3, populace: 150, vitezstvi: 9, cheaty: true } }));
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ nastaveni: { ...podleOcekavani, mapaId: 10878, velikost: 168, rychlost: 3, populace: 150, vitezstvi: 9, cheaty: true } }));
     const t = Object.fromEntries(k.map((x) => [x.klic, x.text]));
     expect(t["mapa"]).toBe("Mapa: Black Forest, má být Arabia");
     expect(t["velikost"]).toBe("Velikost: Medium (4), má být Tiny (2)");
@@ -99,15 +114,29 @@ describe("zkontrolujLobby", () => {
     expect(t["cheaty"]).toBe("Cheaty jsou povolené, mají být vypnuté");
   });
 
+  // Další nastavení se hlásí ve své sekci a do „lobby v pořádku“ se nepočítá:
+  // Rob je vidí zvlášť a rozhodne sám, jestli kvůli Team Positions zdržovat.
+  it("další nastavení porovná ve vlastní sekci, hlavní verdikt neovlivní", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ nastaveni: { ...podleOcekavani, sadaCivilizaci: 2, primeri: 15, lockTeams: false, teamPositions: null } }));
+    const t = Object.fromEntries(k.map((x) => [x.klic, x]));
+    expect(t["sadaCivilizaci"]).toMatchObject({ ok: false, sekce: "dalsi", text: "Civilization Set: Chronicles, má být Age of Empires II" });
+    expect(t["primeri"]).toMatchObject({ ok: false, text: "Treaty Length: 15 min, má být žádné" });
+    expect(t["lockTeams"]).toMatchObject({ ok: false, text: "Lock Teams: vypnuto, má být zapnuto" });
+    expect(t["teamPositions"]).toMatchObject({ ok: false, text: "Team Positions: ?, má být vypnuto" });
+    expect(t["recordGame"]).toMatchObject({ ok: true, text: "Record Game: zapnuto" });
+    expect(lobbyVPoradku(k)).toBe(true);
+  });
+
   it("mapa null = nekontroluje se, velikost null = podle počtu hráčů", () => {
-    const k = zkontrolujLobby(sestava, doplnNastaveni({ mapaId: null }), lobby({ nastaveni: { mapaId: 301112, velikost: 120, rychlost: 2, populace: 200, vitezstvi: 1, cheaty: false } }));
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ mapaId: null }), lobby({ nastaveni: { ...podleOcekavani, mapaId: 301112 } }));
     expect(k.some((x) => x.klic === "mapa")).toBe(false);
     expect(k.find((x) => x.klic === "velikost")!.ok).toBe(true);
   });
 
   it("nečitelné nastavení je jeden křížek místo pádu", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({ nastaveni: null }));
-    expect(k.at(-1)).toMatchObject({ klic: "nastaveni", ok: false });
+    expect(k.at(-1)).toMatchObject({ klic: "nastaveni", ok: false, sekce: "hlavni" });
+    expect(lobbyVPoradku(k)).toBe(false);
   });
 });
 
