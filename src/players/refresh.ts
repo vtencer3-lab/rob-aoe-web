@@ -9,6 +9,21 @@ export function jeCerstve(statyStazenyV: Date | null, ted: Date = new Date()): b
   return ted.getTime() - statyStazenyV.getTime() < CACHE_TTL_MS;
 }
 
+/**
+ * Jestli se dá obnova přeskočit. Vedle stáří rozhoduje i to, zda řádek vůbec
+ * má žebříčky: sloupec přibyl v migraci 011 a řádek stažený starší verzí
+ * serveru je jinak „čerstvý“, ale bez nich. 7. 9. 2026 tak Jouki minutu po
+ * releasu viděl kartu s „Žebříčky se ještě nestáhly“ a čtvrt hodiny se
+ * nic nedělo — starý server mu data stáhl těsně před nasazením nového.
+ */
+export function maCerstveStaty(
+  hrac: { statyStazenyV: Date | null; zebricky: unknown[] | null } | null,
+  ted: Date = new Date(),
+): boolean {
+  if (!hrac || hrac.zebricky === null) return false;
+  return jeCerstve(hrac.statyStazenyV, ted);
+}
+
 export interface RefreshDeps {
   nactiZebricek: (steamId: string) => Promise<LeaderboardStats | null>;
   nactiProfil: (steamId: string) => Promise<SteamProfile | null>;

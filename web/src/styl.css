@@ -284,7 +284,7 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
    tri hodnoty z webu. Souradnice jsou v procentech vyrezu 1400x1292 px podle
    pixelu zmerenych ve snimku (pole x 665-1164, radky po 80 px), takze drzi
    pri kazde sirce. Pismo v cqw ze stejneho duvodu. */
-.dialog-lobby { margin: 1rem 0; max-width: 46rem; }
+.dialog-lobby { margin: 1rem auto; max-width: 46rem; }
 
 .dialog-snimek { position: relative; container-type: inline-size; line-height: 1; }
 .dialog-obrazek { display: block; width: 100%; height: auto; border-radius: 3px; }
