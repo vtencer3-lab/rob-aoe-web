@@ -105,7 +105,7 @@ it("běžný hráč nesmí zapsat výsledek zápasu", async () => {
   await app.close();
 });
 
-it("špatný počet hráčů na formát vrátí 400 se srozumitelnou hláškou", async () => {
+it("neplatná sestava vrátí 400 se srozumitelnou hláškou", async () => {
   const app = buildServer();
   const res = await app.inject({
     method: "POST",
@@ -114,7 +114,7 @@ it("špatný počet hráčů na formát vrátí 400 se srozumitelnou hláškou",
     payload: { sestava: sestavaCoop(HRACI) },
   });
   expect(res.statusCode).toBe(400);
-  expect(res.json().chyba).toMatch(/4 hráče/);
+  expect(res.json().chyba).toMatch(/proti komu/);
   await app.close();
 });
 
