@@ -123,6 +123,7 @@ export function nastaveniZOptions(o: Map<string, string>): NonNullable<PoznatekL
 function slotZMetadat(steamId: string, slot: Record<string, unknown>): SlotLobby {
   let barva: Barva | null = null;
   let tym: Tym | "?" | null = null;
+  let civ: number | null = null;
   const meta = slot["metaData"];
   if (typeof meta === "string") {
     try {
@@ -133,6 +134,10 @@ function slotZMetadat(steamId: string, slot: Record<string, unknown>): SlotLobby
         for (let i = 0; i + 1 < polozky.length; i += 2) dvojice.set(polozky[i]!, polozky[i + 1]!);
         const index = cislo(dvojice.get("ScenarioPlayerIndex"));
         if (index !== null && index >= 0 && index <= 7) barva = (index + 1) as Barva;
+        // Klíč „1“: herní id civilizace; hodnoty s nastaveným horním slovem
+        // (65537 = 0x10001) jsou náhodná volba, ne konkrétní civilizace.
+        const c = cislo(dvojice.get("1"));
+        if (c !== null && c > 0 && c < 65536) civ = c;
         const t = cislo(dvojice.get("Team"));
         if (t === 6) tym = "?";
         else if (t !== null && t >= 1 && t <= 5) tym = (t - 1) as Tym;
@@ -141,7 +146,7 @@ function slotZMetadat(steamId: string, slot: Record<string, unknown>): SlotLobby
       // Nečitelná metadata: barva i tým zůstanou null a kontrola to řekne.
     }
   }
-  return { steamId, barva, tym, pripraven: slot["isReady"] === 1 };
+  return { steamId, barva, tym, civ, pripraven: slot["isReady"] === 1 };
 }
 
 /** slotinfo: zlib → „N,[sloty…]“. Vrací jen obsazené sloty se Steam účtem. */

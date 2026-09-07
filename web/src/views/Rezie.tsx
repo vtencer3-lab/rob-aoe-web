@@ -9,6 +9,7 @@ import {
   type ZapasView,
 } from "../../../src/shared/types.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
+import { nazevCivilizace } from "../../../src/shared/civilizace.js";
 import { jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete } from "../zapas.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 import { Skladani } from "./Skladani.js";
@@ -104,6 +105,7 @@ function ZapasVRezii({ zapas, onStav, onVysledek, onHost, onKontrolaLobby }: Zap
                 a tlačítko se mu nelepilo na poslední písmeno. */}
             <span>
               <span className="swatch" /> {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, {popisTymu(u)}
+              {u.civ !== null ? `, ${nazevCivilizace(u.civ)}` : ""}
               {" · "}
               {popisUcastnika(zapas, u)}
             </span>

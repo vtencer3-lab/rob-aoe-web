@@ -1,3 +1,4 @@
+import { nazevCivilizace } from "./civilizace.js";
 import { nazevMapy } from "./mapy.js";
 import { BARVA_NAZEV, type Barva, type Tym } from "./types.js";
 
@@ -65,6 +66,8 @@ export interface SlotLobby {
   barva: Barva | null;
   /** 0 = „–“, 1 až 4 tým, "?" = náhodný, null = nečitelné. */
   tym: Tym | "?" | null;
+  /** Herní id civilizace; null = náhodná nebo nečitelná. */
+  civ: number | null;
   pripraven: boolean;
 }
 
@@ -101,6 +104,8 @@ interface UcastnikProKontrolu {
   steamId: string;
   tym: Tym;
   barva: Barva;
+  /** Předepsaná civilizace; null nebo chybí = libovolná, nekontroluje se. */
+  civ?: number | null;
   alias?: string | null;
   steamName?: string | null;
 }
@@ -149,6 +154,12 @@ export function zkontrolujLobby(
             .replace(/^./, (c) => c.toUpperCase()),
   });
 
+  // Týmová hra = některý tým z webu má víc než jednoho hráče. Jen tam záleží
+  // na číslech: spoluhráči musí sdílet číslo týmu, soupeři mít jiné. Když
+  // hraje každý sám za sebe (1v1, FFA), je jedno, co si nastaví — „–“, „?“
+  // i číslo — jen dva soupeři nesmí mít stejné číslo, to by je hra spojila.
+  const tymova = ucastnici.some((u) => u.tym !== 0 && ucastnici.filter((x) => x.tym === u.tym).length > 1);
+
   for (const u of ucastnici) {
     const s = vLobby.get(u.steamId);
     if (!s) continue;
@@ -160,12 +171,40 @@ export function zkontrolujLobby(
         ? `${jmeno(u)}: ${BARVA_NAZEV[u.barva]}`
         : `${jmeno(u)} má ${s.barva === null ? "náhodnou barvu" : BARVA_NAZEV[s.barva]}, má mít ${BARVA_NAZEV[u.barva]}`,
     });
-    const tymOk = s.tym === u.tym;
-    k.push({
-      klic: `tym:${u.steamId}`,
-      ok: tymOk,
-      text: tymOk ? `${jmeno(u)}: ${popisTymu(u.tym)}` : `${jmeno(u)} má ${popisTymu(s.tym)}, má mít ${popisTymu(u.tym)}`,
-    });
+
+    if (u.civ !== undefined && u.civ !== null) {
+      const civOk = s.civ === u.civ;
+      k.push({
+        klic: `civ:${u.steamId}`,
+        ok: civOk,
+        text: civOk
+          ? `${jmeno(u)}: ${nazevCivilizace(u.civ)}`
+          : `${jmeno(u)} má ${s.civ === null ? "náhodnou civilizaci" : nazevCivilizace(s.civ)}, má mít ${nazevCivilizace(u.civ)}`,
+      });
+    }
+
+    const ostatni = ucastnici.filter((x) => x.steamId !== u.steamId && vLobby.has(x.steamId));
+    const cisloTymu = (t: SlotLobby["tym"]) => (typeof t === "number" && t >= 1 ? t : null);
+    if (!tymova) {
+      const stejny = ostatni.find((x) => cisloTymu(vLobby.get(x.steamId)!.tym) !== null && vLobby.get(x.steamId)!.tym === s.tym);
+      k.push({
+        klic: `tym:${u.steamId}`,
+        ok: !stejny,
+        text: stejny
+          ? `${jmeno(u)} a ${jmeno(stejny)} mají oba tým ${cisloTymu(s.tym)} — soupeři musí mít jiný`
+          : `${jmeno(u)}: ${popisTymu(s.tym)}`,
+      });
+    } else {
+      const moje = cisloTymu(s.tym);
+      const spoluhrac = ostatni.find((x) => x.tym === u.tym);
+      const souperStejny = ostatni.find((x) => x.tym !== u.tym && moje !== null && cisloTymu(vLobby.get(x.steamId)!.tym) === moje);
+      const spoluhracJiny = ostatni.find((x) => x.tym === u.tym && cisloTymu(vLobby.get(x.steamId)!.tym) !== moje);
+      let text: string | null = null;
+      if (moje === null) text = `${jmeno(u)} má ${popisTymu(s.tym)}, v týmové hře musí mít číslo týmu${spoluhrac ? ` (stejné jako ${jmeno(spoluhrac)})` : ""}`;
+      else if (spoluhracJiny) text = `${jmeno(u)} má tým ${moje}, ${jmeno(spoluhracJiny)} ze stejného týmu má ${popisTymu(vLobby.get(spoluhracJiny.steamId)!.tym)}`;
+      else if (souperStejny) text = `${jmeno(u)} a soupeř ${jmeno(souperStejny)} mají oba tým ${moje}`;
+      k.push({ klic: `tym:${u.steamId}`, ok: text === null, text: text ?? `${jmeno(u)}: tým ${moje}` });
+    }
   }
 
   const n = lobby.nastaveni;

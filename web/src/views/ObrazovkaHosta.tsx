@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
+import { nazevCivilizace } from "../../../src/shared/civilizace.js";
 import { jmenoHrace, mujUcastnik, popisTymu } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
@@ -110,6 +111,7 @@ export function ObrazovkaHosta({ zapas, ja, onVlozitOdkaz, onHledatLobby, onKont
         {zapas.ucastnici.map((u) => (
           <li key={u.steamId} data-testid="radek-lobby" className={`barva-${u.barva}`}>
             <span className="swatch" /> {jmenoHrace(u)} — {BARVA_NAZEV[u.barva]}, {popisTymu(u)}
+            {u.civ !== null ? `, ${nazevCivilizace(u.civ)}` : ""}
             {u.steamId === ja ? " ← TY" : ""}
             {u.kliknulPripojit ? " · klikl na připojení" : ""}
           </li>

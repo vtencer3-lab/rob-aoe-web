@@ -34,11 +34,12 @@ function prectiSestavu(telo: unknown): SestavaVstup[] {
   const vysledek: SestavaVstup[] = [];
   for (const radek of sestava) {
     if (typeof radek !== "object" || radek === null) throw new HttpError(400, "Řádek sestavy není objekt.");
-    const { steamId, tym, barva } = radek as { steamId?: unknown; tym?: unknown; barva?: unknown };
+    const { steamId, tym, barva, civ } = radek as { steamId?: unknown; tym?: unknown; barva?: unknown; civ?: unknown };
     if (typeof steamId !== "string" || steamId === "") throw new HttpError(400, "Řádek sestavy nemá hráče.");
     if (typeof tym !== "number" || !TYMY.includes(tym as Tym)) throw new HttpError(400, "Tým musí být – nebo 1 až 4.");
     if (typeof barva !== "number" || !BARVY.includes(barva as Barva)) throw new HttpError(400, "Barva musí být 1 až 8.");
-    vysledek.push({ steamId, tym: tym as Tym, barva: barva as Barva });
+    if (civ !== undefined && civ !== null && typeof civ !== "number") throw new HttpError(400, "Civilizace musí být číslo, nebo prázdná.");
+    vysledek.push({ steamId, tym: tym as Tym, barva: barva as Barva, civ: typeof civ === "number" ? civ : null });
   }
   const chyba = zkontrolujSestavu(vysledek);
   if (chyba) throw new HttpError(400, chyba);

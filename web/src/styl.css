@@ -351,3 +351,5 @@ button.odebrat:hover { color: #e07a6a; }
 .nastaveni-lobby label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--tlumene); }
 .nastaveni-lobby label.zaskrtavaci { flex-direction: row; align-items: center; gap: 0.4rem; align-self: end; }
 .nastaveni-lobby select, .nastaveni-lobby input[type="number"] { color: var(--text); }
+
+.skladani .volba-civ { font-size: 0.85rem; padding: 0.25rem 0.4rem; }

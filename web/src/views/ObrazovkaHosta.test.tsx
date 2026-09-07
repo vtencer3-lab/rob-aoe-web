@@ -19,10 +19,10 @@ const zaklad: ZapasView = {
   spectatorUri: null,
   vitez: null,
   ucastnici: [
-    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
@@ -51,8 +51,8 @@ it("v zrcadle lobby pojmenuje hráče bez aliasu jménem ze Steamu", () => {
   const bezAliasu: ZapasView = {
     ...zaklad,
     ucastnici: [
-      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
   render(
@@ -114,8 +114,8 @@ it("pruh nese barvu toho, kdo se dívá", () => {
   const cerveny = {
     ...zaklad,
     ucastnici: [
-      { steamId: "ja", alias: "TenceR", steamName: null, tym: 2 as const, barva: 2 as const, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1 as const, barva: 1 as const, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
   render(<ObrazovkaHosta zapas={cerveny} ja="ja" onVlozitOdkaz={vi.fn()} onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);

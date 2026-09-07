@@ -16,10 +16,10 @@ const zapas: ZapasView = {
   spectatorUri: null,
   vitez: null,
   ucastnici: [
-    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
@@ -86,10 +86,10 @@ it("spoluhráče i soupeře bez aliasu pojmenuje jménem ze Steamu", () => {
   const bezAliasu: ZapasView = {
     ...zapas,
     ucastnici: [
-      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: null },
-      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { steamId: "c", alias: null, steamName: "Marecek", tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
-      { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { steamId: "c", alias: null, steamName: "Marecek", tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
   render(<KartaHrace zapas={bezAliasu} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);

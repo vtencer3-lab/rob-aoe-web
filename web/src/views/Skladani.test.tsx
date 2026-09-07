@@ -97,8 +97,8 @@ it("vytvoří zápas se sestavou v pořadí slotů a hlásí formát", () => {
 
   fireEvent.click(screen.getByRole("button", { name: /vytvořit zápas \(2\)/i }));
   expect(onVytvoritZapas).toHaveBeenCalledWith([
-    { steamId: "a", tym: 1, barva: 1 },
-    { steamId: "b", tym: 2, barva: 2 },
+    { steamId: "a", tym: 1, barva: 1, civ: null },
+    { steamId: "b", tym: 2, barva: 2, civ: null },
   ]);
   expect(nevybraniJmena()).toHaveLength(4);
 });

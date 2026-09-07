@@ -435,7 +435,7 @@ function inzerat(lobbyId: string, hostSteamId: string) {
     maHeslo: true,
     povolujeDivaky: true,
     clenoveSteamIds: [hostSteamId],
-    sloty: [{ steamId: hostSteamId, barva: 1 as const, tym: 1 as const, pripraven: true }],
+    sloty: [{ steamId: hostSteamId, barva: 1 as const, tym: 1 as const, civ: null, pripraven: true }],
     nastaveni: { mapaId: 10875, velikost: 120, rychlost: 2 as const, populace: 200, vitezstvi: 1 as const, cheaty: false },
   };
 }
@@ -509,7 +509,7 @@ it("kontrola lobby vrátí fajfky a křížky a nové číslo lobby si uloží",
     nactiInzeraty: async () => [
       {
         ...inzerat("504987862", HRACI[1]!),
-        sloty: [{ steamId: HRACI[1]!, barva: 2, tym: 2, pripraven: true }],
+        sloty: [{ steamId: HRACI[1]!, barva: 2, tym: 2, civ: null, pripraven: true }],
         nastaveni: { mapaId: 10878, velikost: 120, rychlost: 2, populace: 200, vitezstvi: 1, cheaty: false },
       },
     ],

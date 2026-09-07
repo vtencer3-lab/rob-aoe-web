@@ -30,6 +30,7 @@ export function sestavSedadla(
     steamId: s.steamId,
     tym: s.tym,
     barva: s.barva,
+    civ: s.civ ?? null,
     jeHost: poradi === hostIndex,
     poradi,
   }));

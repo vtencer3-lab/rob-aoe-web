@@ -21,10 +21,10 @@ const zapas: ZapasView = {
   spectatorUri: "aoe2de://1/234230181",
   vitez: null,
   ucastnici: [
-    { steamId: "a", alias: "TenceR", steamName: null, tym: 1, barva: 1, jeHost: true, poradi: 0, kliknulPripojit: "2026-09-03T12:00:00.000Z" },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, jeHost: false, poradi: 0, kliknulPripojit: "2026-09-03T12:01:00.000Z" },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "a", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: "2026-09-03T12:00:00.000Z" },
+    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: "2026-09-03T12:01:00.000Z" },
+    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 

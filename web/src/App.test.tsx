@@ -39,6 +39,7 @@ const u = (steamId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikV
   steamName: null,
   tym,
   barva,
+  civ: null,
   jeHost,
   poradi: 0,
   kliknulPripojit: null,

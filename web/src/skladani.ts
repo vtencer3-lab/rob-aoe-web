@@ -48,7 +48,7 @@ export function vychoziVstup(steamId: string, vybrani: SestavaVstup[]): SestavaV
   const obsazene = new Set(vybrani.map((v) => v.barva));
   const barva = BARVY.find((b) => !obsazene.has(b)) ?? 1;
   const tym: Tym = vybrani.length % 2 === 0 ? 1 : 2;
-  return { steamId, tym, barva };
+  return { steamId, tym, barva, civ: null };
 }
 
 function presunout<T>(pole: T[], klic: (x: T) => string, odId: string, naId: string): T[] {

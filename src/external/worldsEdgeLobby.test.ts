@@ -58,8 +58,8 @@ describe("parseAdvertisements — sloty a nastavení", () => {
 
   it("rozbalí sloty: barvu z ScenarioPlayerIndex, tým z Team", () => {
     expect(lobby!.sloty).toEqual([
-      { steamId: "76561198014710095", barva: 1, tym: 1, pripraven: true },
-      { steamId: "76561198014056480", barva: 2, tym: 0, pripraven: true },
+      { steamId: "76561198014710095", barva: 1, tym: 1, civ: null, pripraven: true },
+      { steamId: "76561198014056480", barva: 2, tym: 0, civ: null, pripraven: true },
     ]);
   });
 
