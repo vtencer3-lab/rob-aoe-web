@@ -26,6 +26,22 @@ body {
 
 main { max-width: calc(62rem + 250px); margin: 0 auto; padding: 1.5rem; }
 header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+header .logo { width: 64px; height: auto; flex: none; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
+header h1 { margin-right: auto; }
+.nova-verze {
+  margin: -1.5rem -1.5rem 1.5rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--akcent);
+  color: #1a140c;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.nova-verze button { background: #1a140c; color: var(--akcent); border: 0; border-radius: 6px; padding: 0.35rem 0.9rem; cursor: pointer; font-weight: 600; }
+.nova-verze button:hover { background: #2a2116; }
 .hlavicka-vpravo { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
 .nadpis-seznamu { margin: 1rem 0 0.3rem; font-size: 1.05rem; }
 

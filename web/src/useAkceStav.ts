@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { AkceStavPayload } from "../../src/shared/types.js";
+import { VERZE } from "../../src/shared/verze.js";
 import { api } from "./api.js";
 import { cesta } from "./cesty.js";
 
@@ -46,9 +47,18 @@ export const HLIDKA_MS = 70_000;
  * někdy pročistila (jiný tunel, jiná trasa), první doručená zpráva dotazování
  * sama vypne a jsme zpátky na realtime bez jediného refreshe.
  */
-export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean; obnov: () => Promise<void> } {
+export interface AkceStavHook {
+  stav: AkceStavPayload | null;
+  spojeno: boolean;
+  obnov: () => Promise<void>;
+  /** Verze serveru, když se liší od té, kterou má stránka načtenou; jinak null. */
+  novaVerze: string | null;
+}
+
+export function useAkceStav(): AkceStavHook {
   const [stav, setStav] = useState<AkceStavPayload | null>(null);
   const [spojeno, setSpojeno] = useState(false);
+  const [novaVerze, setNovaVerze] = useState<string | null>(null);
   const obnovRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
@@ -128,6 +138,13 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean;
       };
       // Testovací náhrada EventSource nemusí addEventListener mít.
       aktualni.addEventListener?.("puls", natahniHlidku);
+      // Server se po nasazení restartuje, stream spadne a nové spojení
+      // přinese novou verzi. Stará stránka by jinak nové položky stavu
+      // tiše ignorovala a tvářila se, že se nic nesynchronizuje.
+      aktualni.addEventListener?.("verze", (udalost) => {
+        const { verze } = JSON.parse((udalost as MessageEvent<string>).data) as { verze?: string };
+        if (typeof verze === "string") setNovaVerze(verze !== VERZE ? verze : null);
+      });
       aktualni.onerror = () => {
         setSpojeno(false);
         if (ukonceno) return;
@@ -154,5 +171,5 @@ export function useAkceStav(): { stav: AkceStavPayload | null; spojeno: boolean;
     };
   }, []);
 
-  return { stav, spojeno, obnov: () => obnovRef.current() };
+  return { stav, spojeno, obnov: () => obnovRef.current(), novaVerze };
 }

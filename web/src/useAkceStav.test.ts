@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { VERZE } from "../../src/shared/verze.js";
 import { api } from "./api.js";
 import {
   DOTAZ_INTERVAL_MS,
@@ -24,18 +25,22 @@ class FalesnyZdroj {
   onmessage: ((udalost: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
   zavreno = false;
-  posluchace = new Map<string, () => void>();
+  posluchace = new Map<string, (udalost?: { data: string }) => void>();
 
   constructor(readonly url: string) {
     otevrene.push(this);
   }
 
-  addEventListener(typ: string, fn: () => void) {
+  addEventListener(typ: string, fn: (udalost?: { data: string }) => void) {
     this.posluchace.set(typ, fn);
   }
 
   puls() {
     this.posluchace.get("puls")?.();
+  }
+
+  verze(verze: string) {
+    this.posluchace.get("verze")?.({ data: JSON.stringify({ verze }) });
   }
 
   close() {
@@ -274,5 +279,19 @@ it("obnov() se doptá serveru a stav převezme", async () => {
   const { result, unmount } = renderHook(() => useAkceStav());
   await act(async () => result.current.obnov());
   expect(result.current.stav?.akce?.nazev).toBe("po akci");
+  unmount();
+});
+
+// Po nasazení se stream znovu otevře a server pošle svou verzi. Liší-li se od
+// té zabudované do bundlu, hook ji ohlásí; stejná verze nic neznamená.
+it("ohlásí novou verzi serveru, když se liší od načtené", () => {
+  const { result, unmount } = renderHook(() => useAkceStav());
+  expect(result.current.novaVerze).toBeNull();
+
+  act(() => otevrene[0]!.verze(VERZE));
+  expect(result.current.novaVerze).toBeNull();
+
+  act(() => otevrene[0]!.verze("99.0.0"));
+  expect(result.current.novaVerze).toBe("99.0.0");
   unmount();
 });

@@ -63,7 +63,12 @@ const zapas = (ucastnici: UcastnikView[]): ZapasView => ({
 });
 
 function nastavStav(payload: AkceStavPayload) {
-  vi.mocked(useAkceStav).mockReturnValue({ stav: payload, spojeno: true, obnov: vi.fn().mockResolvedValue(undefined) });
+  vi.mocked(useAkceStav).mockReturnValue({
+    stav: payload,
+    spojeno: true,
+    obnov: vi.fn().mockResolvedValue(undefined),
+    novaVerze: null,
+  });
 }
 
 beforeEach(() => {
@@ -342,4 +347,21 @@ it("Ctrl+Z vrátí poslední změnu sestavy a Ctrl+Y ji zopakuje", async () => {
   fireEvent.keyDown(window, { key: "y", ctrlKey: true });
   expect(screen.getByTestId("toasty")).toHaveTextContent("Znovu: Pepa přidán do sestavy");
   await waitFor(() => expect(api.skladani).toHaveBeenLastCalledWith(1, [{ steamId: "a", tym: 1, barva: 1, civ: null }]));
+});
+
+// Web se nasazuje několikrát za večer. Stará stránka s novými daty tiše
+// nefunguje (8. 9. 2026: druhý admin neviděl zavření zápasu, protože jeho
+// bundle pole `zavreny` neznal). Server proto hlásí verzi a stránka nabídne
+// obnovení — sama se nenačte, aby nikomu nezmizela rozdělaná sestava.
+it("při nové verzi serveru nabídne obnovení stránky", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  vi.mocked(useAkceStav).mockReturnValue({
+    stav: { akce: null, prihlaseni: [], zapasy: [] },
+    spojeno: true,
+    obnov: vi.fn().mockResolvedValue(undefined),
+    novaVerze: "99.0.0",
+  });
+  render(<App />);
+  expect(await screen.findByRole("status")).toHaveTextContent("99.0.0");
+  expect(screen.getByRole("button", { name: "Načíst znovu" })).toBeInTheDocument();
 });

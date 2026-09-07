@@ -19,6 +19,7 @@ import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
 import crashoutUrl from "./assets/crashout.mp3";
+import logoUrl from "./assets/logo.webp";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
 function useUlozenyPrepinac(klic: string): [boolean, (v: boolean) => void] {
@@ -50,7 +51,7 @@ export function App() {
   // očima hráče; debug mód ukáže tlačítka zkušebních hráčů.
   const [pohledUzivatele, setPohledUzivatele] = useUlozenyPrepinac("rezie.pohled-uzivatele");
   const [ladeni, setLadeni] = useUlozenyPrepinac("rezie.ladeni");
-  const { stav, spojeno, obnov } = useAkceStav();
+  const { stav, spojeno, obnov, novaVerze } = useAkceStav();
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
@@ -197,7 +198,16 @@ export function App() {
 
   return (
     <main>
+      {novaVerze ? (
+        <p className="nova-verze" role="status">
+          Web se aktualizoval na verzi {novaVerze}, tahle stránka má {VERZE}.{" "}
+          <button type="button" onClick={() => location.reload()}>
+            Načíst znovu
+          </button>
+        </p>
+      ) : null}
       <header>
+        <img className="logo" src={logoUrl} alt="" width={64} height={67} />
         <h1>
           Komunitní hry —{" "}
           <button

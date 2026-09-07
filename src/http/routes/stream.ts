@@ -3,6 +3,7 @@ import { buildAkceStav } from "../../realtime/akceStav.js";
 import { hub, KANAL_AKCE } from "../../realtime/hub.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import type { AkceStavPayload } from "../../shared/types.js";
+import { VERZE } from "../../shared/verze.js";
 
 /** Jak často stream posílá puls; klient po ~trojnásobku ticha spojení obnoví. */
 export const PULS_MS = 25_000;
@@ -84,6 +85,11 @@ export function registerStreamRoutes(app: FastifyInstance): void {
         return reply;
       }
 
+      // Verze serveru jako první: web se nasazuje několikrát za večer a
+      // otevřená stránka se starým bundlem by nové položky stavu tiše
+      // ignorovala. Po každém nasazení se stream znovu otevře, takže tohle
+      // stačí — puls verzi nosit nemusí.
+      reply.raw.write(`event: verze\ndata: ${JSON.stringify({ verze: VERZE })}\n\n`);
       posli(stav);
       zive = true;
       if (maCekajici) {
