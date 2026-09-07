@@ -558,3 +558,17 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    hover ho jen lehce zezlátne. */
 h1 button.jmeno-roba { all: unset; cursor: pointer; transition: color 0.2s; }
 h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible { color: var(--akcent); }
+
+/* Čtverečky barvy a týmu se neoznačují jako text (na kartě hráče jsou to
+   jen span). Tlačítka ve skládání se při stisku zamáčknou: zkosení se
+   obrátí a čtvereček trochu zmenší. */
+.skladani .volba { user-select: none; -webkit-user-select: none; transition: transform 0.08s ease, box-shadow 0.08s ease; }
+.skladani button.volba:active {
+  transform: scale(0.92) translateY(1px);
+  box-shadow:
+    inset -2px -2px 0 rgba(255, 255, 255, 0.35),
+    inset 2px 2px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 0 3px rgba(212, 175, 95, 0.55);
+}
+.skladani button.odebrat, button.plus { transition: transform 0.08s ease; }
+.skladani button.odebrat:active, button.plus:active { transform: scale(0.9); }
