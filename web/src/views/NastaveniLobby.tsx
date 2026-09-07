@@ -144,7 +144,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit }: Props) {
 
   return (
     <form className="nastaveni-lobby" data-testid="nastaveni-lobby" onSubmit={(e) => e.preventDefault()}>
-      <h3>Jak má vypadat lobby</h3>
+      <h3>Nastavení Lobby</h3>
       <div className="radky">
         <div className="radek" role="radiogroup" aria-label="Civilization Set">
           <span>Civilization Set:</span>

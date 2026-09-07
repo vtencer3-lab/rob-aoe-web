@@ -268,8 +268,8 @@ civilizace), mapa, velikost, rychlost, populace, victory, cheaty. Všechno
 ostatní, co seznam lobby vydává (Civilization Set, Game Mode, AI, Resources,
 Reveal Map, věky, Treaty, Lock Teams, Team Together, … Record Game), je pod
 „Další nastavení“ s počtem odchylek; sekce je rozbalená a pamatuje si, jak
-si ji kdo sbalil. Co má lobby splňovat, si Rob nastaví v panelu akce („Jak má
-vypadat lobby“), který je rozložený stejně jako herní panel Game Settings;
+si ji kdo sbalil. Co má lobby splňovat, si Rob nastaví v panelu akce („Nastavení
+Lobby“), který je rozložený stejně jako herní panel Game Settings;
 AI Difficulty a Lock Teams začínají na „–“. **Každá změna v panelu se
 propíše hned** (na server a přes SSE všem, kdo mají stránku otevřenou);
 „Uložit nastavení lobby“ jen udělá snímek, ke kterému se „Načíst uložené“
