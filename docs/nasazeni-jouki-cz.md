@@ -181,7 +181,7 @@ Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 | `BASE_PATH` (build) | `/aoe/` | `/aoe/dev/` |
 | `HOST` | `0.0.0.0` | `0.0.0.0` |
 | `PORT` | `3000` | `3000` |
-| `ADMIN_STEAM_ID` nebo `ADMIN_BOOTSTRAP` | viz README | viz README |
+| `ADMIN_STEAM_ID` | seznam Steam ID s režií oddělený čárkou (Rob + správce) | totéž |
 | `STEAM_API_KEY` | volitelné | volitelné |
 | `LOG_LEVEL` | `info` | `info` |
 | `DEV_PRISTUP` | nenastavovat | nenastavovat |

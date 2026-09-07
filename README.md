@@ -90,7 +90,7 @@ zapsáním Robova ID se prvnímu adminovi práva při jeho dalším přihlášen
 | Proměnná | K čemu | Co se stane bez ní |
 |---|---|---|
 | `DATABASE_URL` | připojení k PostgreSQL, tvar `postgres://uzivatel:heslo@host:port/databaze` | server se nespustí — „Chybí proměnná prostředí DATABASE_URL." |
-| `ADMIN_STEAM_ID` | Steam ID (64bitové) Robova účtu | server se nespustí, dokud nezapneš `ADMIN_BOOTSTRAP`. (Kdyby se spustil, přihlašovací routa by při každém přihlášení zapsala `je_admin = false` a Robovi by uprostřed večera zmizel panel režie bez jediné chybové hlášky.) |
+| `ADMIN_STEAM_ID` | Steam ID (64bitové) účtů s režií; víc účtů oddělených čárkou (`id1,id2`), typicky Rob a ten, kdo mu web spravuje | server se nespustí, dokud nezapneš `ADMIN_BOOTSTRAP`. (Kdyby se spustil, přihlašovací routa by při každém přihlášení zapsala `je_admin = false` a Robovi by uprostřed večera zmizel panel režie bez jediné chybové hlášky.) |
 | `ADMIN_BOOTSTRAP` | pojistka pro provoz bez Robova Steam ID: `true` udělá admina z prvního přihlášeného, dokud žádný admin neexistuje | nic — je to náhrada za `ADMIN_STEAM_ID`, ne doplněk. Když je vyplněné `ADMIN_STEAM_ID`, tahle proměnná se ignoruje |
 | `BASE_URL` | veřejná adresa, na které web lidem běží, včetně případné cesty (`https://jouki.cz/aoe`); musí přesně sedět s tím, kam se prohlížeč skutečně dívá. Z cesty se odvozuje přesměrování po přihlášení, cesta i název cookie | použije se `http://localhost:3000`. Steam se po ověření vrací na `BASE_URL` a návrat na jinou adresu se odmítne, takže přihlášení přes tunel bez správné hodnoty neprojde |
 | `PORT` | port, na kterém backend poslouchá (výchozí 3000) | použije se výchozí hodnota 3000 |
