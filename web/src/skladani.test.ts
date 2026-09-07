@@ -53,3 +53,14 @@ it("bez sdílení drží sestavu jen v prohlížeči (jako dřív)", () => {
   expect(ids(result.current)).toEqual(["b"]);
   expect(result.current.nevybrani.map((h) => h.steamId)).toEqual(["a", "c"]);
 });
+
+// Zpět nesmí vrátit hráče, který se mezitím odhlásil: nastavCelou ho vynechá
+// i v tom, co odchází na server.
+it("nastavCelou vynechá hráče, kteří už nejsou přihlášení", async () => {
+  const odesli = vi.fn().mockResolvedValue({});
+  const { result } = renderHook(() => useSkladani([hrac("a")], { hodnota: [], odesli }));
+  act(() => result.current.nastavCelou([{ steamId: "a", tym: 1, barva: 1, civ: null }, { steamId: "zmizely", tym: 2, barva: 2, civ: null }]));
+  expect(ids(result.current)).toEqual(["a"]);
+  await waitFor(() => expect(odesli).toHaveBeenCalledTimes(1));
+  expect(odesli.mock.calls[0]![0]).toEqual([{ steamId: "a", tym: 1, barva: 1, civ: null }]);
+});

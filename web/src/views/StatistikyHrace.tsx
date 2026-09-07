@@ -13,7 +13,9 @@ export function StatistikyHrace({ hrac }: { hrac: PlayerView }) {
   // Toasty vpravo dole se odsunou nad kartu: výška karty jde do CSS proměnné.
   useLayoutEffect(() => {
     document.body.style.setProperty("--staty-vyska", `${(karta.current?.offsetHeight ?? 0) + 12}px`);
-    return () => document.body.style.removeProperty("--staty-vyska");
+    return () => {
+      document.body.style.removeProperty("--staty-vyska");
+    };
   }, [hrac]);
   const podleId = new Map((hrac.zebricky ?? []).map((z) => [z.id, z]));
   return (

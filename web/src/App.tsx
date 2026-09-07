@@ -110,11 +110,22 @@ export function App() {
   /** Nasadí stav z kroku (před = zpět, po = znovu) a ohlásí to. */
   const pouzij = (z: Zaznam, smer: "zpet" | "znovu") => {
     if (!akce) return;
+    const predpona = smer === "zpet" ? "Zpět" : "Znovu";
+    if (z.druh === "skladani") {
+      // Krok je platný jen pro hráče, kteří jsou pořád přihlášení; ostatní se
+      // vynechají a toast to řekne, místo aby se někdo vrátil natvrdo.
+      const cilovy = smer === "zpet" ? z.pred : z.po;
+      const prihlaseniIds = new Set((stav?.prihlaseni ?? []).map((h) => h.steamId));
+      const chybejici = cilovy.filter((v) => !prihlaseniIds.has(v.steamId)).map((v) => jmenoPodleId(v.steamId));
+      skladani.nastavCelou(cilovy.filter((v) => prihlaseniIds.has(v.steamId)));
+      zvyrazni(z.druh, z.cil);
+      pridejToast(chybejici.length > 0 ? `${predpona}: ${z.text} — ${chybejici.join(", ")} už není přihlášený, vynechán` : `${predpona}: ${z.text}`);
+      return;
+    }
     const cilovy = smer === "zpet" ? z.pred : z.po;
-    if (z.druh === "skladani") skladani.nastavCelou(cilovy as Zaznam extends infer _ ? typeof z.pred : never);
-    else void hlidej(() => api.nastaveniLobby(akce.id, cilovy as typeof z.pred));
+    void hlidej(() => api.nastaveniLobby(akce.id, cilovy));
     zvyrazni(z.druh, z.cil);
-    pridejToast(`${smer === "zpet" ? "Zpět" : "Znovu"}: ${z.text}`);
+    pridejToast(`${predpona}: ${z.text}`);
   };
   const zpet = () => {
     const z = zpetZasobnik.current.pop();

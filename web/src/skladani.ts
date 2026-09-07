@@ -128,7 +128,10 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
       return (ia === -1 ? Number.MAX_SAFE_INTEGER : ia) - (ib === -1 ? Number.MAX_SAFE_INTEGER : ib);
     });
 
-  const nastav = (nove: SestavaVstup[], hlasit = true) => {
+  const nastav = (navrzene: SestavaVstup[], hlasit = true) => {
+    // Kdo už není přihlášený, do sestavy nepatří — ani při zpět/znovu, kdy
+    // by ho starý snímek vrátil natvrdo.
+    const nove = navrzene.filter((v) => podleId.has(v.steamId));
     if (hlasit) sdilene?.naZmenu?.(platni, nove);
     setLokalni(nove);
     if (!sdilene) return;
