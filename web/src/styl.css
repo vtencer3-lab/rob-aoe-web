@@ -82,16 +82,27 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .skladani { border: 1px solid #3d352a; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
 /* Skládání sestavy: vybraní nahoře pod sebou s tlačítky barvy a týmu jako
    ve hře, nevybraní ztlumeně pod nimi. Řádky se přetahují jen v rámci skupiny. */
-.skladani .sestava { list-style: none; padding: 0; margin: 0.4rem 0; }
+/* Sloupce jsou na celém seznamu (subgrid), takže jméno má šířku podle
+   nejdelšího jména v sestavě a ELO i civilizace sedí zarovnané hned za ním;
+   křížek je až u pravého okraje za prázdným sloupcem. */
+.skladani .sestava {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0;
+  display: grid;
+  grid-template-columns: 1rem 2.1rem 2.1rem max-content 4.4rem 15rem 1fr 1.9rem;
+  column-gap: 0.5rem;
+}
 .skladani .radek {
   display: grid;
-  grid-template-columns: 1rem 2.1rem 2.1rem minmax(6rem, 1fr) 4.4rem 15rem 1.9rem;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  gap: 0.5rem;
   padding: 0.3rem 0.2rem;
   border-bottom: 1px solid #2a241c;
   cursor: grab;
 }
+.skladani .radek .odebrat { grid-column: 8; }
 .skladani .radek:active { cursor: grabbing; }
 .skladani .uchyt { color: #5a5040; font-size: 0.9rem; letter-spacing: -0.2em; width: 1rem; }
 .skladani .nevybrani { margin-top: 0.8rem; opacity: 0.5; }
@@ -365,7 +376,7 @@ button.plus {
   color: #241d10;
 }
 button.plus:hover { filter: brightness(1.1); }
-.skladani .jmeno { padding: 0.2rem 0.4rem; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.skladani .jmeno { padding: 0.2rem 0.4rem; max-width: 16rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .skladani .jmeno small { color: var(--tlumene); }
 .skladani .elo { text-align: right; color: var(--tlumene); font-variant-numeric: tabular-nums; white-space: nowrap; }
 button.odebrat { width: 1.9rem; height: 1.9rem; min-width: 1.9rem; box-sizing: border-box; padding: 0; margin: 0; font-size: 1.1rem; line-height: 1; color: var(--tlumene); justify-self: end; }
