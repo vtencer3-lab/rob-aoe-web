@@ -68,10 +68,10 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     for (const [id, el] of prvky.current) {
       if (!el.isConnected || !el.parentElement) continue;
       const jeTazeny = t?.el === el;
-      const puvodniTransform = el.style.transform;
-      if (jeTazeny) el.style.transform = "";
-      const top = el.getBoundingClientRect().top - el.parentElement.getBoundingClientRect().top;
-      if (jeTazeny) el.style.transform = puvodniTransform;
+      // Poloha v rozvržení, bez vlastního posunu: tažený řádek jede s kurzorem,
+      // ostatní můžou být uprostřed animace. Kdyby se ta měřila, uložená poloha
+      // by lhala a další překreslení by řádky poslalo o to dál.
+      const top = el.getBoundingClientRect().top - animovanyPosunY(el) - el.parentElement.getBoundingClientRect().top;
       nove.set(id, top);
       const drive = predchoziTop.current.get(id);
       if (!t || drive === undefined || drive === top) continue;
