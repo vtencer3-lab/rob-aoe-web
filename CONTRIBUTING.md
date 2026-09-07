@@ -13,7 +13,22 @@ Co kde hledat:
 | **tenhle soubor** | jak to rozjet na cizím stroji, jak je to uvnitř poskládané a o co se nezakopnout |
 | `docs/nasazeni-jouki-cz.md` | **jak se pracuje: větev `dev`, verze, release do `main`, automatické nasazení na jouki.cz** |
 | `docs/analyza-projektu.md` | technická analýza: architektura, datový model, API, rizika |
+| `docs/analyza-automaticke-hledani-lobby.md` | seznam lobby ze hry (Worlds Edge): jak se hledá lobby, **§6 tabulka klíčů nastavení lobby a slotů** |
 | `docs/nasazeni-u-roba.md` | alternativní nasazení na Robův vlastní stroj |
+
+## Nejkratší možné shrnutí, jak se tu pracuje
+
+1. Větev **`dev`**. Do `main` se nikdy necommituje přímo.
+2. Změna → testy → **`npm run verze`** (patch; `-- minor` u nové funkce nebo
+   migrace) **v tomtéž commitu** → commit anglicky → `git push origin dev`.
+3. Za dvě až tři minuty ověřit `curl -s https://jouki.cz/aoe/dev/api/health`,
+   že vrací verzi, kterou jsi právě pushnul.
+4. Release do `main` (= ostrá adresa) **jen když to někdo výslovně řekne**:
+   PR `dev → main`, merge, ověřit `https://jouki.cz/aoe/api/health`.
+5. Do repa nikdy nepatří přihlašovací údaje ani klíče. Repo je veřejné.
+
+Detaily v `docs/nasazeni-jouki-cz.md`; kontrolní seznam před pushem je níž
+v „Jak se tu ověřuje práce“.
 | `docs/superpowers/specs`, `docs/superpowers/plans` | proč to vzniklo takhle |
 
 ## Na čem celý produkt stojí
@@ -92,13 +107,16 @@ Backend, `src/`:
 | `config.ts` | proměnné prostředí a jejich kontrola při startu |
 | `auth/` | Steam OpenID (`steamOpenId.ts`), sezení, `devRoutes.ts` |
 | `db/` | přístup k databázi, jedna tabulka = jeden modul |
-| `http/routes/` | `events.ts`, `matches.ts`, `stream.ts` (SSE) |
-| `realtime/` | `hub.ts` (jeden kanál), `akceStav.ts` (staví stav), `redakce.ts` (zaslepení) |
-| `matches/` | `composition.ts` (skládání dvojic), `stateMachine.ts`, `hledaniLobby.ts` (výběr lobby podle Steam ID + cache seznamu) |
+| `http/routes/` | `events.ts` (akce, nastavení lobby), `matches.ts` (zápasy, hledání lobby, `DELETE /api/zapas/:id`), `kontrolaLobby.ts` („Zkontrolovat lobby“), `zkusebni.ts` (zkušební hráči na dev), `stream.ts` (SSE) |
+| `realtime/` | `hub.ts` (jeden kanál), `akceStav.ts` (staví stav), `redakce.ts` (zaslepení), `fazeLobby.ts` (lobby / hraje se, s pojistkou proti výpadku v seznamu) |
+| `matches/` | `composition.ts` (sedadla, PIN), `stateMachine.ts`, `hledaniLobby.ts` (výběr lobby podle Steam ID), `seznamLobby.ts` (cache seznamu), `sledovaniLobby.ts` (každých 10 s hlídá, jestli lobby ještě stojí), `zkusebniHraci.ts` |
+| `external/worldsEdgeLobby.ts` | stahuje a rozbaluje seznam otevřených lobby ze hry (stránkované po 100, sloty i nastavení) — klíče viz `docs/analyza-automaticke-hledani-lobby.md` §6 |
 | `aoe/lobbyUri.ts` | rozbor a stavba `aoe2de://` — malé a důležité |
 | `shared/types.ts` | typy sdílené s frontendem, importuje se přímo z `web/` |
 | `shared/verze.ts` | verze webu; mění se jen přes `npm run verze` |
-| `shared/sestava.ts`, `shared/strany.ts` | pravidla sestavy (barvy, týmy, Coop Kings) a strany zápasu — jedno místo pro server i režii |
+| `shared/sestava.ts`, `shared/strany.ts` | pravidla sestavy (barvy, týmy, civilizace, Coop Kings) a strany zápasu — jedno místo pro server i režii |
+| `shared/lobbyKontrola.ts` | očekávané nastavení lobby, číselníky hodnot a `zkontrolujLobby()` — řádky ve čtyřech stavech (ok / spatne / varovani / jedno) |
+| `shared/mapy.ts`, `shared/civilizace.ts` | tabulky id → název vygenerované z jazykového souboru hry (viz „Data ze hry“) |
 
 Frontend, `web/src/`:
 
@@ -106,11 +124,13 @@ Frontend, `web/src/`:
 |---|---|
 | `App.tsx` | rozhoduje, kdo vidí kterou obrazovku |
 | `useAkceStav.ts` | SSE a záložní dotazování — **přečti si komentář nahoře** |
-| `views/Rezie.tsx` | panel režie: zápasy, Spectate, výsledky po stranách |
-| `views/Skladani.tsx` | skládání sestavy: výběr hráčů, barva a tým jako ve hře, pořadí slotů přetažením |
-| `views/ObrazovkaHosta.tsx` | obrazovka hosta se zrcadlem herního dialogu |
+| `views/SpravaAkce.tsx` | panel akce: ukončení, zkušební hráči, formulář `NastaveniLobby.tsx` (rozložený jako herní Game Settings, „–“ = je to jedno) |
+| `views/Rezie.tsx` | panel režie: zápasy, Spectate, kontrola lobby, výsledky po stranách, odebrání zrušeného zápasu |
+| `views/Skladani.tsx`, `skladani.ts`, `tahani.ts` | skládání sestavy: barva a tým jako ve hře, civilizace přes `VyberCivilizace.tsx` (erby z `civErby.ts`), pořadí slotů přetažením |
+| `views/ObrazovkaHosta.tsx` | obrazovka hosta: kroky „Zakládáš!“ → „Kontrola lobby“ → „Výborně, můžete hrát!“, snímek herního dialogu |
+| `views/KontrolaLobby.tsx` | sekce „Kontrola lobby“, **jedna a tatáž pro hosta i režii**; sama se opakuje po 5 s, dokud se v lobby sedí |
 | `views/KartaHrace.tsx` | karta hráče s jeho barvou a odkazem |
-| `views/HledaniLobby.tsx` | tlačítko „Vyhledat hru“ a hláška k němu |
+| `views/HledaniLobby.tsx` | tlačítko „Vyhledat lobby“ + automatické hledání (4 s, po „Spustit hru“ 2 s) |
 | `views/Kopirovatelne.tsx` | hodnota, která se zkopíruje kliknutím, s toastem |
 | `views/VerejnyZapas.tsx` | zápas očima diváka, bez tajemství |
 | `zapas.ts` | kdo co vidí — `mojeZapasy`, `verejneZapasy` |
@@ -198,6 +218,42 @@ celou cestu **na skutečně běžícím serveru** (`curl` na běžící proces, 
 
 Vizuální kontrola zůstává na člověku. Prohánět GUI screenshoty přes agenta se
 v tomhle projektu nevyplatilo.
+
+### Kontrolní seznam před pushem do `dev`
+
+```bash
+npx tsc --noEmit                          # typy backendu
+npm --prefix web exec tsc -- -b --force   # typy frontendu (build je jinak tiše přeskočí)
+npm test                                  # hermetické
+npm --prefix web test                     # frontend
+npm run test:db                           # proti rob_aoe_test — potřebuje lokální PostgreSQL
+npm run build                             # celý řetěz; ve web/dist/assets se musí změnit hash
+npm run verze                             # nebo -- minor; v tomtéž commitu jako změna
+git push origin dev
+curl -s https://jouki.cz/aoe/dev/api/health   # za 2–3 minuty vrací novou verzi
+```
+
+Bez lokálního PostgreSQL `test:db` neproběhne; správce serveru je umí pustit
+proti testovací databázi na serveru, tak o to požádej v popisu změny.
+
+## Data ze hry
+
+Několik tabulek a obrázků pochází přímo z instalace Age of Empires II DE
+(Steam, typicky `C:\Program Files (x86)\Steam\steamapps\common\AoE2DE`).
+Nic z toho se nestahuje za běhu; do repa se to jednou vygeneruje a commitne.
+
+| Co | Odkud | Kam |
+|---|---|---|
+| názvy map (id → název) | `resources/en/strings/key-value/key-value-strings-utf8.txt`, řetězce s id mapy tak, jak ho vydává seznam lobby (klíč `10` v `options`) | `src/shared/mapy.ts` |
+| názvy civilizací (id → název) | tentýž soubor, řetězec `10270 + id` | `src/shared/civilizace.ts` |
+| erby civilizací (kulaté ikony jako v lobby) | `resources/_common/wpfg/resources/civ_techtree/menu_techtree_<slug>.png` (104 px), zmenšené na 96 px webp; slugy se liší u Maya (`mayans`), Hindustanis (`indians`), Inca (`inca`), Berbers (`berber`); `random.png` je otazník pro „libovolná civ.“ | `web/src/assets/civ/*.webp`, mapování v `web/src/civErby.ts` |
+| snímek dialogu Create Lobby | screenshot ze hry, do kterého se vsazují název, počet hráčů a PIN | `web/src/assets/create-lobby.webp` |
+| významy klíčů nastavení lobby a slotů | zmapováno naživo přepínáním voleb ve hře a porovnáváním seznamu lobby; které hodnoty jsou ověřené a které doplněné podle pořadí v jazykovém souboru, je v tabulce | `docs/analyza-automaticke-hledani-lobby.md` §6, číselníky v `src/shared/lobbyKontrola.ts` |
+
+Když hra přidá civilizaci nebo mapu: doplnit řádek do tabulky, u civilizace
+i erb (stejný postup: `menu_techtree_<slug>.png` → 96×96 webp), a
+`web/src/civErby.ts` musí umět slug — test v `Skladani.test.tsx` počítá erby
+v seznamu, ale chybějící soubor se pozná jen tím, že erb u jména není.
 
 ## Konvence
 
