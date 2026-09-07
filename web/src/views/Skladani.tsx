@@ -5,7 +5,7 @@ import { popisFormatu } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
 import type { VybranyHrac } from "../skladani.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
-import { tahneSe, useTahani } from "../tahani.js";
+import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
 import { VyberCivilizace } from "./VyberCivilizace.js";
 
@@ -54,6 +54,14 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit 
   }, [zvyraznit]);
   // Najetí na jméno ukáže tutéž kartu se statistikami jako v tabulce přihlášených.
   const [nahled, setNahled] = useState<PlayerView | null>(null);
+  useEffect(() => {
+    const srovnej = (e: Event) => {
+      const id = jmenoPodKurzorem(e);
+      setNahled(id ? (skladani.vybrani.find((v) => v.hrac.steamId === id)?.hrac ?? null) : null);
+    };
+    window.addEventListener(KONEC_TAHU, srovnej);
+    return () => window.removeEventListener(KONEC_TAHU, srovnej);
+  }, [skladani.vybrani]);
   const vstupy = skladani.vybrani.map((v) => v.vstup);
   const chyba = zkontrolujSestavu(vstupy);
   const format = popisFormatu(vstupy.map((v, poradi) => ({ ...v, poradi })));
@@ -98,6 +106,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit 
               </button>
               <span
                 className="jmeno jmeno-hrace"
+                data-jmeno-hrace={hrac.steamId}
                 data-testid="jmeno-vybraneho"
                 onMouseEnter={() => {
                   if (!tahneSe()) setNahled(hrac);

@@ -152,6 +152,9 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
   };
 
   const cislo = (v: string) => (v === "" ? null : Number(v));
+  const stejne = (a: Nastaveni, b: Nastaveni) => (Object.keys(a) as Array<keyof Nastaveni>).every((k) => (a[k] ?? null) === (b[k] ?? null));
+  const jakoUlozene = ulozene !== null && ulozene !== undefined && stejne(n, doplnNastaveni(ulozene as Partial<Nastaveni>));
+  const jakoVychozi = stejne(n, VYCHOZI_NASTAVENI);
 
   return (
     <form className="nastaveni-lobby" data-testid="nastaveni-lobby" onSubmit={(e) => e.preventDefault()} ref={formular}>
@@ -248,13 +251,13 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
         <button type="button" onClick={onUlozit}>
           Uložit nastavení lobby
         </button>
-        <button type="button" onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+        <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
           Reset nastavení
         </button>
         <button
           type="button"
-          disabled={ulozene === null || ulozene === undefined}
-          title={ulozene ? undefined : "Zatím nic uloženého"}
+          disabled={ulozene === null || ulozene === undefined || jakoUlozene}
+          title={!ulozene ? "Zatím nic uloženého" : jakoUlozene ? "Nastavení je stejné jako uložené" : undefined}
           onClick={() => zmen(doplnNastaveni(ulozene as Partial<Nastaveni>), true)}
         >
           Načíst uložené

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
-import { tahneSe, useTahani } from "../tahani.js";
+import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
 
 interface Props {
@@ -71,6 +71,16 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
   // Najetí na jméno ukáže kartu se statistikami v rohu okna.
   const [nahled, setNahled] = useState<PlayerView | null>(null);
+  // Po tažení se karta srovná podle toho, kde kurzor opravdu skončil —
+  // najetí/odjetí se během tahu ignorovalo, takže by jinak mohla zůstat viset.
+  useEffect(() => {
+    const srovnej = (e: Event) => {
+      const id = jmenoPodKurzorem(e);
+      setNahled(id ? (prihlaseni.find((h) => h.steamId === id) ?? null) : null);
+    };
+    window.addEventListener(KONEC_TAHU, srovnej);
+    return () => window.removeEventListener(KONEC_TAHU, srovnej);
+  }, [prihlaseni]);
   // Řazení je jen pro režii; hráči vidí pořadí přihlášení.
   const radky = skladani ? serad(skladani.nevybrani, razeni) : prihlaseni;
 
@@ -147,6 +157,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
               <td>
                 <span
                   className="jmeno-hrace"
+                  data-jmeno-hrace={hrac.steamId}
                   data-testid="jmeno-hrace"
                   onMouseEnter={() => {
                     if (!tahneSe()) setNahled(hrac);

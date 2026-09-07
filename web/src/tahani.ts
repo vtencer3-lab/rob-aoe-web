@@ -9,6 +9,19 @@ export const DOBA_POSUNU_MS = 150;
  * najetí/odjetí by jinak zhasínalo a rozsvěcelo kartu se statistikami.
  * Komponenty se ptají tady a během tahu hover ignorují.
  */
+/** Událost na window po konci tažení; `detail.prvek` je to, co je pod kurzorem. */
+export const KONEC_TAHU = "tahani-konec";
+
+/**
+ * Po konci tažení: má karta se statistikami zůstat? Vrátí steamId jména,
+ * nad kterým kurzor skončil, jinak null (karta se má schovat).
+ */
+export function jmenoPodKurzorem(e: Event): string | null {
+  const prvek = (e as CustomEvent<{ prvek: Element | null }>).detail?.prvek;
+  const jmeno = prvek?.closest?.("[data-jmeno-hrace]");
+  return jmeno instanceof HTMLElement ? (jmeno.dataset["jmenoHrace"] ?? null) : null;
+}
+
 export function tahneSe(): boolean {
   return typeof document !== "undefined" && document.body.classList.contains("tahne-se");
 }
@@ -18,6 +31,7 @@ interface Tazeny {
   skupina: Skupina;
   el: HTMLElement;
   pointerId: number;
+  posledniX: number;
   /** clientY, u kterého má řádek posun 0 — po přeskládání se přepočítá. */
   vychoziY: number;
   posledniY: number;
@@ -108,6 +122,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     const t = tazeny.current;
     if (!t) return;
     t.posledniY = e.clientY;
+    t.posledniX = e.clientX;
     t.el.style.transform = `translateY(${e.clientY - t.vychoziY}px)`;
     // Přejel kurzor střed souseda? Pak si s ním prohodit místo.
     const rodic = t.el.parentElement;
@@ -130,6 +145,10 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     if (!t) return;
     tazeny.current = null;
     document.body.classList.remove("tahne-se");
+    // Během tahu se najetí/odjetí ignorovalo; teď se řekne, co je pod
+    // kurzorem, ať si karta se statistikami srovná stav (KONEC_TAHU).
+    const pod = typeof document.elementFromPoint === "function" ? document.elementFromPoint(t.posledniX, t.posledniY) : null;
+    window.dispatchEvent(new CustomEvent(KONEC_TAHU, { detail: { prvek: pod } }));
     window.removeEventListener("pointermove", posun);
     window.removeEventListener("pointerup", poloz);
     window.removeEventListener("pointercancel", poloz);
@@ -155,7 +174,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
       if ((e.button ?? 0) !== 0 || (e.target as HTMLElement).closest(NETAHAT)) return;
       const el = e.currentTarget;
       if (tazeny.current) poloz();
-      tazeny.current = { steamId, skupina, el, pointerId: e.pointerId, vychoziY: e.clientY, posledniY: e.clientY };
+      tazeny.current = { steamId, skupina, el, pointerId: e.pointerId, posledniX: e.clientX, vychoziY: e.clientY, posledniY: e.clientY };
       el.classList.add("v-ruce");
       el.style.transition = "none";
       document.body.classList.add("tahne-se");
