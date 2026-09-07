@@ -4,6 +4,9 @@ interface Props {
   hodnota: string;
   /** Doplní se do popisku pro čtečky: „Kopírovat <popis>“. */
   popis: string;
+  /** Další třídy, např. pro usazení do snímku dialogu Create Lobby. */
+  className?: string;
+  testId?: string;
 }
 
 /**
@@ -13,7 +16,7 @@ interface Props {
  * vedle textu říká, že se dá kliknout; toast nad hodnotou potvrdí, že se
  * to povedlo, aniž by se cokoliv v řádku pohnulo.
  */
-export function Kopirovatelne({ hodnota, popis }: Props) {
+export function Kopirovatelne({ hodnota, popis, className, testId }: Props) {
   const [zkopirovano, setZkopirovano] = useState(false);
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
   // Bez úklidu by se po odpojení komponenty sahalo na setState odpojeného
@@ -36,7 +39,8 @@ export function Kopirovatelne({ hodnota, popis }: Props) {
   return (
     <button
       type="button"
-      className="kopirovatelne"
+      className={className ? `kopirovatelne ${className}` : "kopirovatelne"}
+      data-testid={testId}
       aria-label={`Kopírovat ${popis}`}
       title={`Kopírovat ${popis}`}
       onClick={() => void kopiruj()}

@@ -291,3 +291,23 @@ button.vysledek small { font-size: 0.68rem; font-weight: 400; opacity: 0.8; marg
 /* Spectate se dvěma řádky: nahoře akce, dole fáze (Lobby / Hraje se). */
 .cta.spectate { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.2; }
 .cta.spectate small { font-size: 0.72rem; font-weight: 400; opacity: 0.85; }
+
+/* Kopírovatelná hodnota usazená přímo do pole ve snímku dialogu: zelené herní
+   písmo zůstává, ikona sedí vpravo v poli, toast vyskočí nad polem. */
+button.kopirovatelne.vsazeno {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6cqw;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  padding: 0 0.9cqw;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+button.kopirovatelne.vsazeno-vstup { color: rgb(0, 255, 0); font-size: 17px; font-size: 2.55cqw; }
+button.kopirovatelne.vsazeno strong { color: inherit; }
+button.kopirovatelne.vsazeno:hover { background: rgba(255, 255, 255, 0.12); }
+button.kopirovatelne.vsazeno .ikona-kopie { color: rgba(0, 255, 0, 0.75); width: 1.7cqw; height: 1.7cqw; margin-left: auto; }
+button.kopirovatelne.vsazeno .toast { font-family: system-ui, sans-serif; font-size: 0.8rem; }

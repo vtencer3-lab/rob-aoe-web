@@ -129,9 +129,14 @@ function DialogCreateLobby({ zapas }: { zapas: ZapasView }) {
 
         {/* Tmavé pole se zeleným písmem — hodnotu přebíjíme celou, protože ve
             snímku v něm stojí jméno z toho večera, kdy vznikl. */}
-        <span className="vsazeno vsazeno-vstup vsazeno-nazev" data-testid="pole-nazev-lobby">
-          {zapas.nazevLobby}
-        </span>
+        {/* Klik na hodnotu přímo v poli dialogu ji zkopíruje — host má
+            před sebou totéž, co ve hře, a bere si to rovnou odtud. */}
+        <Kopirovatelne
+          hodnota={zapas.nazevLobby}
+          popis="název lobby"
+          className="vsazeno vsazeno-vstup vsazeno-nazev"
+          testId="pole-nazev-lobby"
+        />
 
         {/* Rozbalovací seznam: přebíjí se jen část se jménem, šipka vpravo ve
             snímku zůstává vidět. */}
@@ -139,21 +144,14 @@ function DialogCreateLobby({ zapas }: { zapas: ZapasView }) {
           {pocetHracu}
         </span>
 
-        <span className="vsazeno vsazeno-vstup vsazeno-heslo" data-testid="pole-heslo">
-          {zapas.heslo}
-        </span>
+        <Kopirovatelne
+          hodnota={zapas.heslo}
+          popis="heslo"
+          className="vsazeno vsazeno-vstup vsazeno-heslo"
+          testId="pole-heslo"
+        />
       </div>
 
-      {/* Klik na samotnou hodnotu ji zkopíruje — ikona vedle jen říká, že
-          se dá kliknout. Toast vyskočí nad hodnotou, řádek se nehne. */}
-      <div className="dialog-kopirovani">
-        <span>
-          Lobby Name <Kopirovatelne hodnota={zapas.nazevLobby} popis="název lobby" />
-        </span>
-        <span>
-          Set Password <Kopirovatelne hodnota={zapas.heslo} popis="heslo" />
-        </span>
-      </div>
 
       <p className="dialog-legenda" data-testid="dialog-legenda">
         Nastav <strong>Lobby Name</strong> na <strong>{zapas.nazevLobby}</strong>,{" "}
