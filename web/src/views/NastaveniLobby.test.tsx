@@ -100,3 +100,23 @@ it("AI Difficulty je seřazená podle obtížnosti", () => {
   const volby = Array.from((screen.getByLabelText(/ai difficulty/i) as HTMLSelectElement).options).map((o) => o.text);
   expect(volby).toEqual(["–", "Easiest", "Standard", "Moderate", "Hard", "Hardest", "Extreme"]);
 });
+
+// Pravé tlačítko jde kruhem pozpátku: po levém (vypnuto → zapnuto) ho pravé
+// vrátí na vypnuto; po levém (zapnuto → „–“) ho pravé vrátí na zapnuto.
+it("pravé tlačítko na zaškrtávátku dělá opačný krok než levé", async () => {
+  const onZmena = vi.fn();
+  render(<NastaveniLobby zive={{ turbo: false }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  const turbo = screen.getByLabelText(/turbo mode/i) as HTMLInputElement;
+  fireEvent.click(turbo); // vypnuto → zapnuto
+  expect(turbo).toBeChecked();
+  fireEvent.contextMenu(turbo.closest("label")!); // zpět na vypnuto
+  expect(turbo).not.toBeChecked();
+  fireEvent.click(turbo); // zapnuto
+  fireEvent.click(turbo); // „–“
+  expect(turbo.indeterminate).toBe(true);
+  fireEvent.contextMenu(turbo.closest("label")!); // zpět na zapnuto
+  expect(turbo).toBeChecked();
+  expect(turbo.indeterminate).toBe(false);
+  await waitFor(() => expect(onZmena).toHaveBeenCalled());
+  expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ turbo: true }));
+});

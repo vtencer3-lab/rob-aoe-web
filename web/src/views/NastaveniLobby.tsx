@@ -80,7 +80,8 @@ function Vyber({ klic, popis, hodnota, tabulka, jedno, poradi, onZmena }: { klic
 
 /**
  * Zaškrtávátko se třemi stavy jako u herního panelu, jen navíc s „–“ (je to
- * jedno): kliknutí jde dokola vypnuto → zapnuto → „–“. Třetí stav kreslí
+ * jedno): levé tlačítko jde dokola vypnuto → zapnuto → „–“, pravé tlačítko
+ * stejný kruh pozpátku (zapnuto → vypnuto, „–“ → zapnuto). Třetí stav kreslí
  * prohlížeč jako neurčité (indeterminate), vedle popisku je i „–“ textem.
  * Allow Cheats „–“ nemá: cheaty patří do hlavní kontroly.
  */
@@ -89,15 +90,18 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = hodnota === null;
   }, [hodnota]);
+  const dopredu = () => onZmena(hodnota === false ? true : hodnota === true && jedno ? null : false);
+  const pozpatku = () => onZmena(hodnota === true ? false : hodnota === null ? true : jedno ? null : true);
   return (
-    <label className={vypnuto ? "zaskrtavaci vypnute" : "zaskrtavaci"} data-klic={klic}>
-      <input
-        ref={ref}
-        type="checkbox"
-        disabled={vypnuto}
-        checked={hodnota === true}
-        onChange={() => onZmena(hodnota === false ? true : hodnota === true && jedno ? null : false)}
-      />
+    <label
+      className={vypnuto ? "zaskrtavaci vypnute" : "zaskrtavaci"}
+      data-klic={klic}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        if (!vypnuto) pozpatku();
+      }}
+    >
+      <input ref={ref} type="checkbox" disabled={vypnuto} checked={hodnota === true} onChange={dopredu} />
       {popis}
       {hodnota === null ? <span className="zaloha jedno-znak">–</span> : null}
     </label>
