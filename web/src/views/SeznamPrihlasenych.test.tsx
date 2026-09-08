@@ -190,3 +190,31 @@ it("vlastní aktivní řádek tlačítko nenabízí", () => {
   render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", aktivniDo: za(2) })]} ja="ja" onJsemTu={vi.fn()} />);
   expect(screen.queryByRole("button", { name: /jsem tu/i })).not.toBeInTheDocument();
 });
+
+// V tabulce o dvaceti jménech se člověk hledá první. Vlastní řádek proto nese
+// třídu, na kterou se věší zvýraznění — a nese ji i tehdy, když hráč usnul.
+it("vlastní řádek je označený, aktivní i usnulý", () => {
+  zmrazCas();
+  const { rerender } = render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(5) }), hrac({ steamId: "cizi", alias: "Cizí", aktivniDo: za(5) })]}
+      ja="ja"
+    />,
+  );
+  expect(screen.getByText("Já").closest("tr")).toHaveClass("muj-radek");
+  expect(screen.getByText("Cizí").closest("tr")).not.toHaveClass("muj-radek");
+
+  rerender(
+    <SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(-1) })]} ja="ja" />,
+  );
+  const radek = screen.getByText("Já").closest("tr");
+  expect(radek).toHaveClass("muj-radek");
+  expect(radek).toHaveClass("spici");
+});
+
+// Nepřihlášený návštěvník žádný vlastní řádek nemá.
+it("bez přihlášení není označený nikdo", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a" })]} ja={null} />);
+  expect(screen.getByText("TenceR").closest("tr")).not.toHaveClass("muj-radek");
+});

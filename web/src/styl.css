@@ -988,6 +988,28 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    — je to informace „asi tu není“, ne škrtnutí. */
 .seznam > tbody > tr.spici { opacity: 0.52; }
 .seznam > tbody > tr.spici:hover { opacity: 0.78; }
+
+/* Vlastní řádek. V tabulce o dvaceti jménech se člověk hledá první, tak ať ho
+   najde bez čtení: zlatá zarážka u kraje, teplejší podklad a jméno o odstín
+   světlejší. Usnutý vlastní řádek se stmívá míň než cizí — pořád je to ten,
+   podle kterého se člověk orientuje. */
+.seznam > tbody > tr.muj-radek > td { background: rgba(216, 168, 58, 0.11); }
+.seznam > tbody > tr.muj-radek:hover > td { background: rgba(216, 168, 58, 0.16); }
+.seznam > tbody > tr.muj-radek > td:first-child { box-shadow: inset 3px 0 0 var(--zlato); }
+.seznam > tbody > tr.muj-radek .jmeno-hrace { color: var(--zlato-svetle); font-weight: 700; }
+.seznam > tbody > tr.spici.muj-radek { opacity: 0.78; }
+.seznam > tbody > tr.spici.muj-radek:hover { opacity: 1; }
+
+/* Nadpis a tlačítka tabulky přihlášených na jednom řádku; nadpis si nese
+   ozdobu, takže se zarovnává shora, ne na střed. */
+.panel-prihlaseni > .hlavicka-prihlasenych {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.panel-prihlaseni > .hlavicka-prihlasenych > .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .seznam .spi {
   font-family: "Cinzel", Georgia, serif;
   font-size: 0.82rem;

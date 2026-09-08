@@ -67,20 +67,15 @@ it("zkušební hráče nabídne jen se souhlasem serveru a v debug módu", () =>
   const akce = { id: 1, nazev: "večer", stav: "bezi" };
   const onPridat = vi.fn();
   const onOdebrat = vi.fn();
-  const onPretocitCas = vi.fn();
   const { rerender } = render(<SpravaAkce {...zaklad} akce={akce} ladeni />);
   expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
 
-  rerender(<SpravaAkce {...zaklad} akce={akce} zkusebni={{ onPridat, onOdebrat, onPretocitCas }} />);
+  rerender(<SpravaAkce {...zaklad} akce={akce} zkusebni={{ onPridat, onOdebrat }} />);
   expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
 
-  rerender(<SpravaAkce {...zaklad} akce={akce} zkusebni={{ onPridat, onOdebrat, onPretocitCas }} ladeni />);
+  rerender(<SpravaAkce {...zaklad} akce={akce} zkusebni={{ onPridat, onOdebrat }} ladeni />);
   fireEvent.click(screen.getByRole("button", { name: /\+ zkušební hráč/i }));
   fireEvent.click(screen.getByRole("button", { name: /odebrat zkušební/i }));
-  // Přetočení času patří ke stejné dvojici: bez něj by se čekalo čtvrt hodiny,
-  // než bude vidět, jak přihlášeným vyprší lhůta.
-  fireEvent.click(screen.getByRole("button", { name: /přetočit o 15 min/i }));
   expect(onPridat).toHaveBeenCalled();
   expect(onOdebrat).toHaveBeenCalled();
-  expect(onPretocitCas).toHaveBeenCalled();
 });

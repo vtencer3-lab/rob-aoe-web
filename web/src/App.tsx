@@ -306,17 +306,33 @@ export function App() {
         <>
           {/* Admin má název akce v záhlaví panelu; ostatním zůstává tady. */}
           {!admin ? <h2>{akce.nazev}</h2> : null}
-          {/* Existující akce sama o sobě znamená „hlásit se lze“ — skončenou
-              akci server do stavu vůbec neposílá. */}
-          {me ? (
-            <button onClick={() => void prepnout()}>
-              {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
-            </button>
-          ) : null}
           {/* Obal je jen kvůli vzhledu: nadpis a tabulka mají sedět na jedné
               desce s rámem, ne se vznášet na pozadí. Rozvržení nemění. */}
           <section className="panel-prihlaseni">
-            <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
+            {/* Tlačítka patří k tabulce, ne nad ni: přihlášení do akce i
+                přetočení času jsou o tom, kdo je v seznamu. */}
+            <header className="hlavicka-prihlasenych">
+              <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
+              <div className="ovladani">
+                {/* Existující akce sama o sobě znamená „hlásit se lze“ —
+                    skončenou akci server do stavu vůbec neposílá. */}
+                {me ? (
+                  <button onClick={() => void prepnout()}>
+                    {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
+                  </button>
+                ) : null}
+                {/* Debug mód na vývojové verzi: lhůty aktivity o čtvrt hodiny
+                    dopředu, ať se usínání nemusí odsedět. */}
+                {admin && ladeni && zkusebniHraci && akce ? (
+                  <button
+                    onClick={() => void hlidej(() => api.pretocitCas(akce.id))}
+                    title="Posune lhůty aktivity o čtvrt hodiny — všichni přihlášení usnou"
+                  >
+                    Přetočit o 15 min
+                  </button>
+                ) : null}
+              </div>
+            </header>
             <SeznamPrihlasenych
               prihlaseni={stav?.prihlaseni ?? []}
               skladani={admin ? skladani : undefined}
@@ -354,7 +370,6 @@ export function App() {
               ? {
                   onPridat: () => void hlidej(() => api.pridatZkusebniho(akce.id)),
                   onOdebrat: () => void hlidej(() => api.odebratZkusebni(akce.id)),
-                  onPretocitCas: () => void hlidej(() => api.pretocitCas(akce.id)),
                 }
               : undefined
           }

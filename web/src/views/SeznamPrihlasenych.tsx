@@ -172,7 +172,13 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, onJsemTu
           // přesun nebyl vidět.
           const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId) : {};
           return (
-            <tr key={hrac.steamId} className={jeAktivni(hrac.aktivniDo, ted) ? undefined : "spici"} {...tah}>
+            <tr
+              key={hrac.steamId}
+              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : ""]
+                .filter(Boolean)
+                .join(" ")}
+              {...tah}
+            >
               {skladani ? (
                 <td className="vybrat">
                   <button
