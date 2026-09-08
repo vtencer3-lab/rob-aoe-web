@@ -220,6 +220,10 @@ header h1 {
   height: 1.37rem;
   margin-top: 0.35rem;
   background: url(./assets/ui/oddelovac.webp) left center / 100% 100% no-repeat;
+  /* Stín i uvnitř desky: bez něj ozdoba na dřevě plave. Je slabší než u nadpisů
+     venku na scéně — na desce stačí naznačit, že kov leží nad ní. Musí to být
+     `drop-shadow`, který obkreslí tvar; `box-shadow` by udělal obdélník. */
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
 }
 
 /* Tlačítka se kreslí v CSS, ne z obrázku: zůstanou ostrá v každé velikosti
