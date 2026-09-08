@@ -33,11 +33,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 0.16.3, nasazeno na <https://jouki.cz/aoe> (PR #7, 8. 9. 2026 ~01:00) |
-| `origin/dev` | 0.16.3, totéž, nasazeno na <https://jouki.cz/aoe/dev> |
-| `origin/experimental` | 0.16.4-17.2, odbočka z `dev` z 8. 9. 2026, nasazeno na <https://jouki.cz/aoe/experimental>; nese grafický kabátek (§3.12) |
+| `origin/main` | 0.17.0, nasazeno na <https://jouki.cz/aoe>; **nemá** velikost mapy podle barev (§3.13) |
+| `origin/dev` | 0.18.0, nasazeno na <https://jouki.cz/aoe/dev>; nese grafický kabátek (§3.12) |
+| `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; zatím prázdné kolo |
 | Migrace | 001–012, poslední `012_zavreny_zapas.sql`; aplikované na všech třech databázích |
-| Testy | backend hermetické 203, databázové 132, frontend 177 — všechny zelené |
+| Testy | backend hermetické 219, databázové 134, frontend 177 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
@@ -100,6 +100,8 @@ npm run verze -- experiment                 # 0.16.4 → 0.16.4-16.4 (jen jednou
 # … práce; npm run verze (0.16.4-16.5), npm run verze -- minor (0.16.4-17.0); nasazuje se samo
 curl -s https://jouki.cz/aoe/experimental/api/health
 git checkout dev && git merge experimental   # pokus vyšel; konflikt verzí vyřešit ve prospěch dev
+npm run verze -- 0.17.1                      # POZOR: když merge projde fast-forward, git verzi nekonfliktuje
+                                             # a do devu propadne pokusná — nastav ji ručně na verzi devu
 npm run verze -- z-experimentu               # dopočítá verzi devu podle pravidel §2.1
 git checkout experimental && git reset --hard dev && git push --force-with-lease origin experimental   # pokus se zahazuje
 ```
@@ -375,7 +377,7 @@ přeskočí se, když je řádek mladší než 15 min **a má žebříčky**; po
 Worlds Edge `getPersonalStat` a Steam (profil, hodiny; skrytý profil =
 `null`, chybějící klíč = nesahat).
 
-### 3.12 Grafický kabátek (jen `experimental`)
+### 3.12 Grafický kabátek (v `dev` od 0.18.0)
 
 **Záměr.** Uživatel doslova: „chtěl bych zkusit dát webové stránce kompletní
 grafický kabátek… layout chci aby prakticky zůstal 1:1, pouze na to chci
@@ -410,6 +412,21 @@ kolem nadpisu a tabulky přihlášených, aby seděly na jedné desce.
 s manifestem, devítidílný řez, klíčování, export do webp) a mimo repo
 `_grafika/nastroje/` (Playwright: sada snímků, kontrola šířek, vzorník všech
 prvků).
+
+### 3.13 Sestava bez stropů a velikost mapy podle barev
+
+**Záměr.** Uživatel doslova: „počet lidí s jednou barvou nechci omezovat,
+stejně tak ani počet lidí v jednom týmu nechci nijak omezovat“. Pravidlo
+sestavy dřív pouštělo na jednu barvu nejvýš dva hráče (Coop Kings) a zápas
+se třemi na slotu nešel založit. Strop je pryč; co zůstalo, je podmínka,
+že celá skupina se stejnou barvou musí být v jednom týmu a mít tutéž civ —
+sdílejí totiž ve hře jeden slot. Kontrola proto kouká na celou skupinu,
+ne jen na dvojici (`src/shared/sestava.ts`). Vydáno jako 0.17.0 do `main`.
+
+**Velikost mapy.** Volba „podle počtu hráčů“ počítá unikátní barvy, ne hlavy
+(`src/shared/lobbyKontrola.ts`). Tři lidi na jedné barvě proti jednomu jsou
+ve hře 1v1, ne 4hráčová mapa. Vydáno jako 0.17.1 do `dev`; **v `main` to
+zatím není**, release nebyl zadán.
 
 ### 3.11 Drobnosti a easter egg
 
