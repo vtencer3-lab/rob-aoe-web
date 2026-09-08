@@ -468,7 +468,10 @@ it("debug mód nabízí přetočení času o 15 minut", async () => {
 
   fireEvent.click(await screen.findByRole("switch", { name: /debug/i }));
   fireEvent.click(screen.getByRole("button", { name: /přetočit o 15 min/i }));
-  await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1));
+  await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1, 15));
+
+  fireEvent.click(screen.getByRole("button", { name: /přetočit o 1 min/i }));
+  await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1, 1));
 });
 
 // „Ukončit akci“ se přestěhovalo z panelu akce nahoru k tabulce přihlášených.

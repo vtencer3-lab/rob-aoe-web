@@ -23,6 +23,18 @@ export function registerZkusebniRoutes(app: FastifyInstance): void {
     if (!config.zkusebniHraci) throw new HttpError(404, "Neznámá cesta.");
   };
 
+  /** O kolik minut přetočit. Bez údaje celá lhůta; strop je den, ať se nedá
+      přetočit o nesmysl a rozbít tím pořadí v seznamu. */
+  const prectiMinuty = (telo: unknown): number => {
+    const zadano = (telo as { minut?: unknown } | null)?.minut;
+    if (zadano === undefined || zadano === null) return AKTIVITA_MINUT;
+    const cislo = Number(zadano);
+    if (!Number.isFinite(cislo) || cislo <= 0 || cislo > 24 * 60) {
+      throw new HttpError(400, "Přetočit jde o 1 až 1440 minut.");
+    }
+    return Math.round(cislo);
+  };
+
   // Přidá dalšího zkušebního hráče, který v akci ještě není (pořadí ze seznamu).
   app.post("/api/akce/:id/zkusebni-hraci", async (request) => {
     zkontroluj();
@@ -50,17 +62,19 @@ export function registerZkusebniRoutes(app: FastifyInstance): void {
     return { pridan: dalsi.jmeno };
   });
 
-  // Přetočí lhůty aktivity o čtvrt hodiny dopředu, tedy tak, že všichni
-  // přihlášení usnou. Jinak by se chování dalo zkoušet jen čekáním.
+  // Přetočí lhůty aktivity dopředu, jinak by se usínání dalo zkoušet jen
+  // čekáním. Celá lhůta uspí všechny naráz, minuta po minutě jde sledovat,
+  // jak se odpočet blíží ke konci a kdy se nabídne „Jsem tu!“.
   app.post("/api/akce/:id/pretocit-cas", async (request) => {
     zkontroluj();
     await requireAdmin(request);
     const akceId = requireId(request);
     const akce = await getAktivniAkce();
     if (!akce || akce.id !== akceId) throw new HttpError(409, "Tahle akce neběží.");
-    const dotcenych = await pretocCas(akceId, AKTIVITA_MINUT);
+    const minut = prectiMinuty(request.body);
+    const dotcenych = await pretocCas(akceId, minut);
     if (dotcenych > 0) await broadcastAkce();
-    return { minut: AKTIVITA_MINUT, dotcenych };
+    return { minut, dotcenych };
   });
 
   // Odhlásí z akce všechny zkušební hráče. Řádky v player zůstávají — jsou

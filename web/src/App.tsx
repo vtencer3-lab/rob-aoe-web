@@ -337,12 +337,22 @@ export function App() {
                 {/* Debug mód na vývojové verzi: lhůty aktivity o čtvrt hodiny
                     dopředu, ať se usínání nemusí odsedět. */}
                 {admin && ladeni && zkusebniHraci && akce ? (
-                  <button
-                    onClick={() => void hlidej(() => api.pretocitCas(akce.id))}
-                    title="Posune lhůty aktivity o čtvrt hodiny — všichni přihlášení usnou"
-                  >
-                    Přetočit o 15 min
-                  </button>
+                  <>
+                    <button
+                      onClick={() => void hlidej(() => api.pretocitCas(akce.id, 15))}
+                      title="Posune lhůty aktivity o čtvrt hodiny — všichni přihlášení usnou"
+                    >
+                      Přetočit o 15 min
+                    </button>
+                    {/* Po minutách jde sledovat, jak odpočet ubývá a kdy se
+                        nabídne „Jsem tu!“ — na to je uspání všech naráz hrubé. */}
+                    <button
+                      onClick={() => void hlidej(() => api.pretocitCas(akce.id, 1))}
+                      title="Posune lhůty aktivity o minutu"
+                    >
+                      Přetočit o 1 min
+                    </button>
+                  </>
                 ) : null}
                 {/* Existující akce sama o sobě znamená „hlásit se lze“ —
                     skončenou akci server do stavu vůbec neposílá. */}

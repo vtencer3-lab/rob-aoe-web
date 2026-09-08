@@ -46,11 +46,13 @@ export const api = {
   /** „Jsem tu!“ — vrátí přihlášce plnou lhůtu aktivity. */
   jsemTu: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/jsem-tu`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
-  /** Debug mód: přetočí lhůty aktivity o čtvrt hodiny, takže všichni usnou. */
-  pretocitCas: (akceId: number) =>
-    fetch(cesta(`/api/akce/${akceId}/pretocit-cas`), { method: "POST" }).then((r) =>
-      json<{ minut: number; dotcenych: number }>(r),
-    ),
+  /** Debug mód: přetočí lhůty aktivity o daný počet minut dopředu. */
+  pretocitCas: (akceId: number, minut: number) =>
+    fetch(cesta(`/api/akce/${akceId}/pretocit-cas`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ minut }),
+    }).then((r) => json<{ minut: number; dotcenych: number }>(r)),
   /** Puls od kliknutí do stránky. Server sám rozhodne, jestli lhůtu posune. */
   aktivita: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/aktivita`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),

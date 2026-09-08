@@ -74,10 +74,11 @@ def main() -> None:
 
     print(f"1/4 upload {src.name} ({src.stat().st_size // 1024} kB)...")
     b64 = base64.b64encode(src.read_bytes()).decode()
-    telo = {"image": f"data:image/png;base64,{b64}", "name": src.name}
-    if args.projekt:
-        telo["projectId"] = args.projekt
-    asset = _call(auth, "POST", "/assets", telo)
+    # Projekt se předává parametrem adresy. V těle požadavku ho server tiše
+    # ignoruje a asset spadne do projektu, ke kterému patří API klíč — což se
+    # pozná až zpětně podle `ownerId`.
+    cesta = "/assets" + (f"?projectId={args.projekt}" if args.projekt else "")
+    asset = _call(auth, "POST", cesta, {"image": f"data:image/png;base64,{b64}", "name": src.name})
     asset_id = asset.get("asset", {}).get("id") or asset.get("assetId")
     if not asset_id:
         sys.exit(f"CHYBA: upload nevrátil assetId: {json.dumps(asset)[:500]}")

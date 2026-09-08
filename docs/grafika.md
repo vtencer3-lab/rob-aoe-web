@@ -246,11 +246,15 @@ kde má kde skončit; v obrázku s odstraněným pozadím je venek dokonale čer
 a záplava by po něm protekla i do tmavého dřeva.
 
 **Projekt na Scenariu.** Uživatel určil `proj_9Epp9mVRGdKPcaiZwwQ9JjMS`.
-Projekt se předává parametrem adresy (`POST /assets?projectId=...`), jenže klíč
-v `~/.scenario_api.json` do něj **nemá přístup** — vrací 403 „You cannot access
-this team or project“. Assety proto padají do projektu, kam patří klíč
-(`proj_HcK68Stx6KTqWcyQqjEG6PEr`). Než bude po ruce klíč z určeného projektu,
-posílá `scenario_bg.py` `projectId` v těle požadavku, kde ho server ignoruje.
+Projekt se předává **parametrem adresy** (`POST /assets?projectId=...`); v těle
+požadavku ho server tiše ignoruje a asset spadne do projektu, ke kterému patří
+API klíč. Pozná se to až zpětně podle `ownerId` v odpovědi. Klíč musí být
+založený uvnitř toho projektu, jinak vrací 403 „You cannot access this team or
+project“ — první tři odklíčované assety (9. 9. 2026) proto ještě vznikly pod
+starým klíčem v jiném projektu.
+
+Přihlašovací údaje patří **jen** do `~/.scenario_api.json`, nikdy do repozitáře
+(je veřejný).
 
 ## 5. Co se při tom naučilo
 
