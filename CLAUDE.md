@@ -8,6 +8,11 @@ vznikne funkční odkaz.
 > **Nejsi autor repa?** Tenhle soubor popisuje zvyky a **lokální prostředí
 > autora** — cesty a jména databází níž platí na jeho stroji, ne na tvém.
 > Rozjetí na cizím stroji, mapu kódu a pasti má [`CONTRIBUTING.md`](CONTRIBUTING.md).
+>
+> **Nová session, která má navázat na předchozí práci:** nejdřív přečíst
+> [`docs/prehled-praci-a-zameru.md`](docs/prehled-praci-a-zameru.md) — stav,
+> postup jedné změny, záměry za funkcemi, čekající rozhodnutí. Po větší
+> práci ho aktualizovat (sekce 1, 5, 6).
 
 **Celý produkt stojí na jedné číslici.** `aoe2de://0/<id>` připojí do lobby jako
 hráče, `aoe2de://1/<id>` do téže lobby jako diváka. Ukládá se **jen to číslo**,
@@ -15,14 +20,27 @@ oba odkazy se z něj odvozují. Nikdy neukládat sestavené URI.
 
 ## Větve, verze a nasazení (platí pro každého agenta v tomhle repu)
 
-Web běží na **jouki.cz** ve dvou kopiích a nasazuje se samo z commitu:
-`dev` → <https://jouki.cz/aoe/dev>, `main` → <https://jouki.cz/aoe>.
+Web běží na **jouki.cz** ve třech kopiích a nasazuje se samo z commitu:
+`dev` → <https://jouki.cz/aoe/dev>, `main` → <https://jouki.cz/aoe>,
+`experimental` → <https://jouki.cz/aoe/experimental>.
 Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
 
 - **Pracuje se ve větvi `dev`.** Do `main` se přímo necommituje.
+- **`experimental` je na velké pokusy, které se klidně zahodí.** Zakládá se
+  z `dev`, nasazuje se na `/aoe/experimental` nad vlastní databází a do
+  `main` nejde nikdy přímo — vždycky přes merge do `dev`. Smysl: `dev`
+  zůstane kdykoliv vydatelná pro hotfix. Postup a řešení konfliktu verzí
+  má [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md) §1.1.
 - **Každý commit, který mění chování, zvedne verzi:** `npm run verze`
   (patch) v tomtéž commitu. Nová funkce nebo migrace = `npm run verze -- minor`.
   Verze je v `package.json` a `src/shared/verze.ts`, příkaz mění obojí.
+- **Na `experimental` má verze tvar `X.Y.Z-A.B`** — před pomlčkou verze
+  devu, ze které pokus vyšel (nemění se), za pomlčkou vlastní dvojčíslí
+  pokusu; první číslo webu pokus nikdy nemění. Zakládá se zdvojením
+  (`npm run verze -- experiment`: `0.16.3` → `0.16.3-16.3`), po mergi do
+  devu se výsledná verze devu dopočítá `npm run verze -- z-experimentu`
+  a pokus se přezaloží z nové verze devu. Pravidla a tabulka případů:
+  [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md) §2.1.
 - **Release jen na výslovný pokyn** („releasni“, „pushni do main“): PR
   `dev → main` a merge. Tím se nasadí ostrá verze. `dev` se nemaže.
 - Po nasazení ověřit `curl https://jouki.cz/aoe/dev/api/health` (nebo `/aoe/`),
