@@ -24,7 +24,7 @@ interface Props {
   ulozene: Record<string, unknown> | null | undefined;
   /** Každá změna v panelu — propíše se na server a přes SSE všem. */
   onZmena: (nastaveni: Nastaveni) => void;
-  /** „Uložit nastavení lobby“: server si udělá snímek živého nastavení. */
+  /** „Uložit preset lobby“: server si udělá snímek živého nastavení. */
   onUlozit: () => void;
   /** Klíč nastavení ke zvýraznění po změně / zpět / znovu. */
   zvyraznit?: { cil: string | null; cas: number } | null;
@@ -117,7 +117,7 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
  *
  * Každá změna se propíše hned (s krátkým odkladem, ať psaní do čísla nepálí
  * požadavek na každou číslici) a přes SSE ji uvidí všichni. „Uložit“ dělá
- * snímek, ke kterému se „Načíst uložené“ vrátí; „Reset“ nasadí výchozí.
+ * snímek, ke kterému se „Načíst uložený preset“ vrátí; „Reset“ nasadí výchozí.
  */
 export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: Props) {
   const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(zive as Partial<Nastaveni>));
@@ -245,11 +245,11 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
           )}
         </fieldset>
       </div>
-      {/* Uložit = snímek na serveru; Načíst uložené a Reset jen nasadí jiné
+      {/* Uložit = snímek na serveru; načtení presetu a Reset jen nasadí jiné
           živé nastavení (hned, bez odkladu). */}
       <div className="ovladani">
         <button type="button" onClick={onUlozit}>
-          Uložit nastavení lobby
+          Uložit preset lobby
         </button>
         <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
           Reset nastavení
@@ -260,7 +260,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
           title={!ulozene ? "Zatím nic uloženého" : jakoUlozene ? "Nastavení je stejné jako uložené" : undefined}
           onClick={() => zmen(doplnNastaveni(ulozene as Partial<Nastaveni>), true)}
         >
-          Načíst uložené
+          Načíst uložený preset
         </button>
       </div>
     </form>

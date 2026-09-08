@@ -97,13 +97,19 @@ def main() -> None:
     ap.add_argument("--vyhlad", type=float, default=0.75)
     ap.add_argument("--prah", type=int, default=26)
     ap.add_argument("--nahled", type=Path, default=None)
+    ap.add_argument("--alfa-ze-vstupu", action="store_true",
+                    help="pozadí už odstranil někdo jiný (Scenario); vlastní klíčování neprovádět")
     args = ap.parse_args()
 
     im = Image.open(args.vstup)
     if args.orez:
         x1, x2 = (int(v) for v in args.orez.split(","))
         im = im.crop((x1, 0, x2, im.height))
-    im = klicuj(im, args.prah)
+    # Pozadí buď odstraní Scenario (--alfa-ze-vstupu), nebo záplava tady.
+    if not args.alfa_ze_vstupu:
+        im = klicuj(im, args.prah)
+    else:
+        im = im.convert("RGBA")
     bbox = im.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
     if bbox:
         im = im.crop(bbox)

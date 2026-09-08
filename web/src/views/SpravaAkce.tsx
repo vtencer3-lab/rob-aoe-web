@@ -8,7 +8,7 @@ interface Props {
   onZalozit: (nazev: string) => void;
   /** Živá změna nastavení lobby (každé kliknutí). */
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
-  /** „Uložit nastavení lobby“: snímek na serveru. */
+  /** „Uložit preset lobby“: snímek na serveru. */
   onUlozitNastaveni: () => void;
   /** Jen na vývojové verzi: přidávání a odebírání zkušebních hráčů. */
   zkusebni?: { onPridat: () => void; onOdebrat: () => void };

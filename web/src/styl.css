@@ -369,12 +369,28 @@ main > .prazdno::after {
 .stavovy-radek { color: var(--tlumene); font-size: 0.85rem; margin: 0.3rem 0; }
 .rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
 
-/* Nadpis historie stojí na pozadí mezi kartami. Odstup shora si musí říct sám:
-   sekce žádný nemá, mezery mezi kartami dělají jejich vlastní okraje. Velikost
-   má stejnou jako titulek zápasu pod ním — je to nadpis celé sekce, ne popisek,
-   a v menší velikosti se mezi kartami ztrácel. */
-.historie-zapasu > .nadpis-seznamu { margin-top: 2.4rem; font-size: 1.8rem; }
-.historie-zapasu > .nadpis-seznamu::after { width: 26rem; height: 1.7rem; margin-top: 0.5rem; }
+/* Nadpisy, které stojí přímo na malovaném pozadí (název akce, historie
+   zápasů), drží jednu velikost — stejnou jako titulek zápasu pod nimi. Uvnitř
+   panelu zůstává nadpis menší: tam ho nese deska, ne scéna.
+
+   Stín pod písmem i pod ozdobou je tu kvůli čitelnosti, ne pro efekt: na
+   vížkách a lucernách v pozadí se zlaté písmo bez něj ztrácí. Ozdoba je
+   obrázek, takže potřebuje `drop-shadow` (obkreslí tvar), ne `box-shadow`
+   (obkreslil by obdélník). */
+main > h2,
+.historie-zapasu > .nadpis-seznamu {
+  font-size: 1.8rem;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.8), 0 0 16px rgba(0, 0, 0, 0.5);
+}
+main > h2::after,
+.historie-zapasu > .nadpis-seznamu::after,
+main > .prazdno::after {
+  width: 26rem;
+  height: 1.7rem;
+  margin-top: 0.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75));
+}
+.historie-zapasu > .nadpis-seznamu { margin-top: 2.4rem; }
 
 /* Vítěz dohraného zápasu. Zlatý odznak vedle jména a teplejší řádek — kdo
    vyhrál, má být vidět dřív, než se přečte věta v hlavičce. */

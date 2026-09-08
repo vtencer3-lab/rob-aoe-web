@@ -185,14 +185,18 @@ python nastroje/grafika/davka.py nastroje/grafika/zadani/pozadi.json -o ../_graf
 python nastroje/grafika/prehled.py prehled.png "../_grafika/navrhy/pozadi/*.png" --sloupce 3
 
 # 4. Z vybraného rámu udělat devítidílný rámeček
-python nastroje/grafika/devitidil.py ram_02.png -o ram.png --roh 250 --pas 150 --nahled zkouska.png
+python nastroje/grafika/devitidil.py ram_02_nobg.png -o ram.png --roh 250 --pas 150 --alfa-ze-vstupu --otvor-z ram_02.png --nahled zkouska.png
 
-# 5. Vyříznout z černého pozadí (ozdoba)
+# 5. Odstranit pozadí přes Scenario (stojí kredity, jen na pokyn uživatele)
+python nastroje/grafika/scenario_bg.py oddelovac_03.png -o oddelovac_03_nobg.png
+python nastroje/grafika/klic.py oddelovac_03_nobg.png -o oddelovac.png --alfa-ze-vstupu
+
+# 5a. Vlastní záplava od rohů, když Scenario není po ruce (horší, viz 4.1)
 python nastroje/grafika/klic.py oddelovac_03.png -o oddelovac.png --prah 55
 
 # 5b. Praporec do trojdílného pásu (změří periodu výšivky, srovná tón)
-python nastroje/grafika/praporec.py praporec2_04.png -o praporec.png \
-    --orez 264,1786 --cap 336 --prah 6 --vyhlad 0.55 --nahled zkouska.png
+python nastroje/grafika/praporec.py praporec2_04_nobg.png -o praporec.png \
+    --orez 264,1786 --cap 336 --prah 6 --vyhlad 0.55 --alfa-ze-vstupu --nahled zkouska.png
 
 # 5c. Lva na prázdné praporce v pozadí
 python nastroje/grafika/vsad_znak.py pozadi.png lev.png -z praporce.json -o hotovo.png --nahled
@@ -203,6 +207,50 @@ python nastroje/grafika/export.py drevo_01.png -o web/src/assets/ui/drevo.webp -
 ```
 
 ---
+
+## 4.1 Odstranění pozadí: Scenario, ne vlastní záplava
+
+Difuze neumí průhlednost, takže se assety generují na černé pozadí a alfa se
+dodělává až potom. Dělaly to vlastní záplavy od rohů (`klic.py` a totéž uvnitř
+`devitidil.py` i `praporec.py`). Od 9. 9. 2026 je dělá **Scenario Remove
+Background** (`nastroje/grafika/scenario_bg.py`) a nástroje pak dostanou
+`--alfa-ze-vstupu`, aby cizí masku nepřepisovaly vlastní.
+
+Naměřený rozdíl (jas okrajových pixelů proti jasu plochy — čím zápornější,
+tím silnější černý lem; a čím víc poloprůhledných pixelů, tím vybledlejší
+asset):
+
+| Asset | Záplava | Scenario |
+|---|---|---|
+| `oddelovac` | 8 393 okrajových px, lem −72 | 4 191 px, lem −16 |
+| `praporec` | 5 814 px, lem −18 | 5 786 px, bez tmavého lemu |
+| `ram` | 128 144 px, lem −52 | 9 132 px, lem −4 |
+
+Rám nakonec nestojí ani na jednom: 9. 9. 2026 poslal uživatel vlastní
+vyčištěnou verzi (`navrhy/prvky/ram_02_vycisteny.png`), která má odstraněné
+pozadí **i otvor uprostřed** a jen 3 068 poloprůhledných okrajových pixelů —
+třetinu oproti Scenariu. Skládá se proto bez `--otvor-z`:
+
+```bash
+python nastroje/grafika/devitidil.py ram_02_vycisteny.png -o ram.png --roh 250 --pas 150 --alfa-ze-vstupu
+```
+
+U rámu je to nejvíc vidět: záplava mu udělala poloprůhlednou skoro celou
+dřevěnou desku (proto vypadal vybledlý a ztratil fialový pásek), Scenario ji
+nechá plnou. Soubor je i tak menší, 60 kB místo 149 kB.
+
+**Jedna věc Scenario neumí:** vyřízne předmět z okolí, ale otvor uvnitř rámu
+za pozadí nepovažuje. Devítidílný rám by pak měl v rozích neprůhledné cáry.
+Otvor se proto bere záplavou od středu z **původního** renderu (`--otvor-z`),
+kde má kde skončit; v obrázku s odstraněným pozadím je venek dokonale černý
+a záplava by po něm protekla i do tmavého dřeva.
+
+**Projekt na Scenariu.** Uživatel určil `proj_9Epp9mVRGdKPcaiZwwQ9JjMS`.
+Projekt se předává parametrem adresy (`POST /assets?projectId=...`), jenže klíč
+v `~/.scenario_api.json` do něj **nemá přístup** — vrací 403 „You cannot access
+this team or project“. Assety proto padají do projektu, kam patří klíč
+(`proj_HcK68Stx6KTqWcyQqjEG6PEr`). Než bude po ruce klíč z určeného projektu,
+posílá `scenario_bg.py` `projectId` v těle požadavku, kde ho server ignoruje.
 
 ## 5. Co se při tom naučilo
 

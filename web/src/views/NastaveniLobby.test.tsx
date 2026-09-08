@@ -13,7 +13,7 @@ it("bez uloženého nastavení nabídne výchozí: Arabia, Normal, 200, Conquest
   expect(screen.getByLabelText(/population/i)).toHaveValue(200);
   expect(screen.getByLabelText(/allow cheats/i)).not.toBeChecked();
   // Bez snímku není co načítat.
-  expect(screen.getByRole("button", { name: /načíst uložené/i })).toBeDisabled();
+  expect(screen.getByRole("button", { name: /načíst uložený preset/i })).toBeDisabled();
 });
 
 // Nastavení se propisuje samo, po krátkém odkladu — žádné „Uložit“, aby se
@@ -64,18 +64,18 @@ it("volby mimo hlavní kontrolu jde nastavit na „–“, zaškrtávátka mají
   expect(onZmena).toHaveBeenLastCalledWith({ ...VYCHOZI_NASTAVENI, sadaCivilizaci: 2, primeri: 20, lockTeams: false, recordGame: null, cheaty: false });
 });
 
-// Uložit = snímek na serveru (jen zavolá rodiče). Načíst uložené a Reset
+// Uložit = snímek na serveru (jen zavolá rodiče). Načtení presetu a Reset
 // nasadí jiné živé nastavení hned, bez odkladu.
-it("Uložit dělá snímek, Načíst uložené a Reset nasadí živé nastavení hned", () => {
+it("Uložit dělá snímek, načtení presetu a Reset nasadí živé nastavení hned", () => {
   const onZmena = vi.fn();
   const onUlozit = vi.fn();
   render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} onZmena={onZmena} onUlozit={onUlozit} />);
 
-  fireEvent.click(screen.getByRole("button", { name: /uložit nastavení lobby/i }));
+  fireEvent.click(screen.getByRole("button", { name: /uložit preset lobby/i }));
   expect(onUlozit).toHaveBeenCalledTimes(1);
   expect(onZmena).not.toHaveBeenCalled();
 
-  fireEvent.click(screen.getByRole("button", { name: /načíst uložené/i }));
+  fireEvent.click(screen.getByRole("button", { name: /načíst uložený preset/i }));
   expect(screen.getByLabelText(/population/i)).toHaveValue(150);
   expect(onZmena).toHaveBeenLastCalledWith({ ...VYCHOZI_NASTAVENI, populace: 150 });
 
