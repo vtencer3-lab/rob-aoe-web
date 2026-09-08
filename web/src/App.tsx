@@ -354,15 +354,27 @@ export function App() {
               {/* Zleva doprava od nejméně vážného po nejvážnější: nástroj
                   na zkoušení, vlastní přihláška, konec celého večera. */}
               <div className="ovladani">
-                {/* Debug mód na vývojové verzi: lhůty aktivity o čtvrt hodiny
-                    dopředu, ať se usínání nemusí odsedět. */}
+                {/* Debug mód na vývojové verzi. Zkušební hráči jdou první: napřed
+                    se seznam naplní, teprve pak má smysl posouvat čas. */}
                 {admin && ladeni && zkusebniHraci && akce ? (
                   <>
+                    <button
+                      onClick={() => void hlidej(() => api.pridatZkusebniho(akce.id))}
+                      title="Přihlásí do akce dalšího zkušebního hráče"
+                    >
+                      + Zkušební hráč
+                    </button>
+                    <button
+                      onClick={() => void hlidej(() => api.odebratZkusebni(akce.id))}
+                      title="Odhlásí z akce všechny zkušební hráče"
+                    >
+                      Odebrat zkušební
+                    </button>
                     <button
                       onClick={() => void hlidej(() => api.pretocitCas(akce.id, 15))}
                       title="Posune lhůty aktivity o čtvrt hodiny — všichni přihlášení usnou"
                     >
-                      Přetočit o 15 min
+                      Posunout o 15 min
                     </button>
                     {/* Po minutách jde sledovat, jak odpočet ubývá a kdy se
                         nabídne „Jsem tu!“ — na to je uspání všech naráz hrubé. */}
@@ -370,7 +382,7 @@ export function App() {
                       onClick={() => void hlidej(() => api.pretocitCas(akce.id, 1))}
                       title="Posune lhůty aktivity o minutu"
                     >
-                      Přetočit o 1 min
+                      Posunout o 1 min
                     </button>
                   </>
                 ) : null}
@@ -399,7 +411,6 @@ export function App() {
       {admin ? (
         <SpravaAkce
           akce={akce}
-          ladeni={ladeni}
           onZalozit={(nazev) => void hlidej(() => api.vytvoritAkce(nazev))}
           onNastaveniLobby={(n) => {
             if (!akce) return;
@@ -412,14 +423,6 @@ export function App() {
           onUlozitNastaveni={() => {
             if (akce) void hlidej(() => api.ulozitNastaveniLobby(akce.id));
           }}
-          zkusebni={
-            zkusebniHraci && akce
-              ? {
-                  onPridat: () => void hlidej(() => api.pridatZkusebniho(akce.id)),
-                  onOdebrat: () => void hlidej(() => api.odebratZkusebni(akce.id)),
-                }
-              : undefined
-          }
         >
           {akce ? (
             <Skladani

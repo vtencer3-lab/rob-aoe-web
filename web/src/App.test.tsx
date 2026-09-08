@@ -455,9 +455,9 @@ it("po založení zápasu se stránka posune na jeho kartu", async () => {
   await vi.waitFor(() => expect(posun).toHaveBeenCalledWith({ behavior: "smooth", block: "center" }));
 });
 
-// Lhůta aktivity je čtvrt hodiny; bez přetočení by se usínání hráčů dalo
-// zkoušet jen čekáním.
-it("debug mód nabízí přetočení času o 15 minut", async () => {
+// Debug mód na vývojové verzi: zkušební hráči a posun času. Lhůta aktivity je
+// čtvrt hodiny, takže bez posunu by se usínání dalo zkoušet jen čekáním.
+it("debug mód nabízí zkušební hráče i posun času", async () => {
   const { fireEvent } = await import("@testing-library/react");
   vi.mocked(api.me).mockResolvedValue({
     hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
@@ -468,11 +468,20 @@ it("debug mód nabízí přetočení času o 15 minut", async () => {
 
   render(<App />);
 
+  // Bez debug módu tam nic z toho není, ať v ostrém večeru nezavazí.
+  expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
+
   fireEvent.click(await screen.findByRole("switch", { name: /debug/i }));
-  fireEvent.click(screen.getByRole("button", { name: /přetočit o 15 min/i }));
+  fireEvent.click(screen.getByRole("button", { name: /\+ zkušební hráč/i }));
+  await vi.waitFor(() => expect(api.pridatZkusebniho).toHaveBeenCalledWith(1));
+
+  fireEvent.click(screen.getByRole("button", { name: /odebrat zkušební/i }));
+  await vi.waitFor(() => expect(api.odebratZkusebni).toHaveBeenCalledWith(1));
+
+  fireEvent.click(screen.getByRole("button", { name: /posunout o 15 min/i }));
   await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1, 15));
 
-  fireEvent.click(screen.getByRole("button", { name: /přetočit o 1 min/i }));
+  fireEvent.click(screen.getByRole("button", { name: /posunout o 1 min/i }));
   await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1, 1));
 });
 

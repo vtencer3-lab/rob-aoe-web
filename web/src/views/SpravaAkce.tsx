@@ -10,10 +10,6 @@ interface Props {
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
   /** „Uložit preset lobby“: snímek na serveru. */
   onUlozitNastaveni: () => void;
-  /** Jen na vývojové verzi: přidávání a odebírání zkušebních hráčů. */
-  zkusebni?: { onPridat: () => void; onOdebrat: () => void };
-  /** Debug mód (přepínač u verze): ukáže tlačítka zkušebních hráčů. */
-  ladeni?: boolean;
   /** Levá půlka panelu: rozpracovaná sestava (Skladani), jako seznam hráčů v herní lobby. */
   children?: ReactNode;
   /** Klíč nastavení ke zvýraznění (historie kroků). */
@@ -22,10 +18,10 @@ interface Props {
 
 /**
  * Panel akce rozložený jako herní lobby: název akce v záhlaví, vlevo
- * vybraní hráči (sestava), vpravo Game Settings. Tlačítka zkušebních hráčů
- * jsou pod záhlavím a jen v debug módu.
+ * vybraní hráči (sestava), vpravo Game Settings. Tlačítka debug módu stojí
+ * nahoře u tabulky přihlášených — týkají se toho, kdo je v seznamu.
  */
-export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, zkusebni, ladeni = false, children, zvyraznitNastaveni }: Props) {
+export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, children, zvyraznitNastaveni }: Props) {
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
   return (
@@ -35,18 +31,6 @@ export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaven
       <header className="hlavicka-akce">
         <h2>Nastavení Lobby</h2>
       </header>
-      {/* Zkušební hráči: Rob si složí plnou sestavu bez čtyř lidí. Kreslí se
-          jen tam, kde to server povolil (vývojová verze), a jen v debug módu. */}
-      {zkusebni && ladeni ? (
-        <div className="ovladani ladeni" data-testid="ladeni-tlacitka">
-          <button onClick={zkusebni.onPridat} title="Přihlásí do akce dalšího zkušebního hráče">
-            + Zkušební hráč
-          </button>
-          <button onClick={zkusebni.onOdebrat} title="Odhlásí z akce všechny zkušební hráče">
-            Odebrat zkušební
-          </button>
-        </div>
-      ) : null}
       <div className="lobby-rozlozeni">
         <div className="leva">{children}</div>
         <NastaveniLobby zive={akce.nastaveniLobby} ulozene={akce.ulozeneNastaveniLobby} onZmena={onNastaveniLobby} onUlozit={onUlozitNastaveni} zvyraznit={zvyraznitNastaveni} />
