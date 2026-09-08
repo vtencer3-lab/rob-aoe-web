@@ -127,17 +127,21 @@ header .logo {
    visel ve vzduchu vedle nich. */
 header h1 {
   margin: 0 auto 0 0;
-  /* Svislé odsazení je v pixelech schválně: výška praporce musí přesně
-     odpovídat poměru předlohy (463 px při šířce nárožníku 336 px), jinak se
-     látka i výšivka svisle zmáčknou. Nárožník 104 px dává výšku 143 px —
-     dost na to, aby samet nepůsobil jako tenký pásek, a text sedí v něm nad
-     zlatou bordurou. */
-  padding: 34px 2.8rem 74px 0.6rem;
+  /* Praporec vcelku, v poměru předlohy (1600 × 502). Žádné dělení na krajní
+     díly a dlaždicovaný střed: ať se opakující dlaždice udělá jakkoliv, na
+     šířku hlavičky je jí vidět začátek i konec a látka se svisle mačká.
+     `aspect-ratio` drží poměr, takže `100% 100%` nic nedeformuje.
+
+     Cena je, že na širokém okně praporec roste do výšky. Právě to je na
+     posouzení: jestli tenhle poměr stačí. */
+  aspect-ratio: 1600 / 502;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2.8rem 9% 0.6rem;
   font-size: 2.05rem;
-  line-height: 35px;
-  border-style: solid;
-  border-width: 0 104px;
-  border-image: url(./assets/ui/praporec.webp) 0 336 fill / 0 104px repeat stretch;
+  line-height: 1.15;
+  background: url(./assets/ui/praporec-cely.webp) center / 100% 100% no-repeat;
   color: var(--zlato-svetle);
   text-shadow: 0 2px 4px rgba(40, 6, 6, 0.9), 0 0 20px rgba(0, 0, 0, 0.55);
   filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
