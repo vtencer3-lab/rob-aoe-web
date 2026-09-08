@@ -33,11 +33,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 0.18.0, nasazeno na <https://jouki.cz/aoe> (PR #9, 8. 9. 2026); stav před ním nese značka `v0.17.0` |
-| `origin/dev` | 0.18.0, nasazeno na <https://jouki.cz/aoe/dev>; nese grafický kabátek (§3.12) |
+| `origin/main` | 0.19.1, nasazeno na <https://jouki.cz/aoe> (PR #11, 8. 9. 2026); stav před ním nese značku `v0.18.1` |
+| `origin/dev` | 0.20.0, nasazeno na <https://jouki.cz/aoe/dev>; nese aktivitu přihlášek (§3.15), do `main` zatím nešla |
 | `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; zatím prázdné kolo |
-| Migrace | 001–012, poslední `012_zavreny_zapas.sql`; aplikované na všech třech databázích |
-| Testy | backend hermetické 219, databázové 134, frontend 177 — všechny zelené |
+| Migrace | 001–013, poslední `013_aktivita_prihlaseni.sql`; na ostré databázi zatím **není** (jde tam s 0.20.0) |
+| Testy | backend hermetické 223, databázové 143, frontend 190 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
@@ -450,6 +450,45 @@ menší recap… je to prakticky stejný jako ta větší varianta. Klasický Us
 vidět, protože oni nevidí tu větší variantu.“ Sedí to: adminovi visí u každého
 zápasu plná karta, takže `VerejnyZapas` pod ní říkal totéž podruhé. Ostatním
 zůstává beze změny a v „User View“ si je Rob prohlédne taky. Vydáno v 0.19.0.
+
+### 3.15 Aktivita přihlášek, pořadí sekcí a skok na nový zápas
+
+**Kdo tu ještě je.** Uživatel: „přidejme mechaniku, že přihlášení uživatelé po
+15 minutách automaticky ztmavnou a přesunou se na konec seznamu. Naopak
+uživatelé u sebe uvidí tlačítko ‚Jsem tu!‘“. Večer se hlásí lidi, kteří pak
+odejdou vařit, a Rob z tabulky nepozná, koho má smysl dát do zápasu.
+
+Lhůty drží [`src/shared/aktivita.ts`](../src/shared/aktivita.ts) — patnáct
+minut platnost, pět minut za kliknutí, nejmenší odstup mezi pulsy čtyři minuty
+— aby server i prohlížeč počítaly s týmiž čísly. Uživatel je chce později
+nechat nastavovat adminovi; zatím jsou pevné.
+
+Sloupec `prihlaska.aktivni_do` říká, kdy hráč usne, `posledni_puls` drží odstup
+mezi automatickými prodlouženími. `POST /api/akce/:id/jsem-tu` vrátí plnou
+lhůtu, `POST /api/akce/:id/aktivita` je puls od kliknutí do stránky: vypršelou
+lhůtu obnoví celou (opakovat to nevadí, výsledek je stejný), běžící prodlouží
+o pět minut se stropem na plné lhůtě, a to nejvýš jednou za čtyři minuty.
+Když se nic nezmění, stav se nerozesílá — puls tak nestojí nic.
+
+**Usínání počítá prohlížeč.** Lhůta vyprší tichým během času, ne zápisem, který
+by šel na serveru poznat a rozeslat. Kdyby o pořadí rozhodovalo SQL, hráč by
+ztmavl až s příští zprávou ze serveru, klidně za půl hodiny. Tabulka proto tiká
+vlastními hodinami (20 s) a řadí i stmívá sama; server posílá jen `aktivniDo`.
+
+**V tabulce.** Spáč ztmavne, propadne na konec i v seřazeném seznamu a dostane
+ve sloupci stavu „Zzz“ tam, kde mají hráči ve hře zkřížené meče. Vlastní usnulý
+řádek nabízí místo ikony tlačítko „Jsem tu!“. Sloupec stavu se nově kreslí i
+hráčům, ne jen v režii — spáče má vidět každý. Debug mód umí čas přetočit
+o čtvrt hodiny (`POST /api/akce/:id/pretocit-cas`), jinak by se to zkoušelo
+jen čekáním.
+
+**Pořadí sekcí.** „Přihlášení hráči“ jsou nad panelem akce: kdo dorazil, se
+čte dřív, než se z toho staví zápas.
+
+**Skok na nový zápas.** Po „Vytvořit zápas“ se karta najede doprostřed
+obrazovky. Zakládá se dole pod tabulkou, takže z ní do té doby nebyl vidět ani
+kus. Karta nese `data-zapas`, `App` si po založení číslo pamatuje a posune se,
+až zápas dorazí ve stavu.
 
 ### 3.11 Drobnosti a easter egg
 
