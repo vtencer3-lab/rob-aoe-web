@@ -3,6 +3,7 @@ import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
 import { doplnNastaveni, type NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import { VERZE } from "../../src/shared/verze.js";
+import type { Vitez } from "../../src/shared/types.js";
 import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.js";
 import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
@@ -11,7 +12,7 @@ import { jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
-import { Rezie } from "./views/Rezie.js";
+import { HistorieZapasu, Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { Skladani } from "./views/Skladani.js";
 import { SpravaAkce } from "./views/SpravaAkce.js";
@@ -196,6 +197,17 @@ export function App() {
     }
   }
 
+  // Tytéž ovládací prvky obsluhují běžící zápasy i historii, proto se předává
+  // jeden balík dvěma sekcím místo dvou opsaných seznamů.
+  const rezieObsluha = {
+    onStav: (zapasId: number, novyStav: string) => void hlidej(() => api.zapasStav(zapasId, novyStav)),
+    onSmazat: (zapasId: number) => void hlidej(() => api.smazatZapas(zapasId)),
+    onZavrit: (zapasId: number, zavreny: boolean) => void hlidej(() => api.zavritZapas(zapasId, zavreny)),
+    onVysledek: (zapasId: number, vitez: Vitez) => void hlidej(() => api.vysledek(zapasId, vitez)),
+    onHost: (zapasId: number, steamId: string) => void hlidej(() => api.zmenitHosta(zapasId, steamId)),
+    onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
+  };
+
   return (
     <>
       {/* Nad <main>, ať jde přes celou šířku okna, ne jen obsahu. */}
@@ -310,18 +322,7 @@ export function App() {
             <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
             <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} skladani={admin ? skladani : undefined} vZapase={vZapase} />
           </section>
-          {admin && stav ? (
-            <Rezie
-              stav={stav}
-              onStav={(zapasId, novyStav) => void hlidej(() => api.zapasStav(zapasId, novyStav))}
-              onSmazat={(zapasId) => void hlidej(() => api.smazatZapas(zapasId))}
-              onZavrit={(zapasId, zavreny) => void hlidej(() => api.zavritZapas(zapasId, zavreny))}
-              ladeni={ladeni}
-              onVysledek={(zapasId, vitez) => void hlidej(() => api.vysledek(zapasId, vitez))}
-              onHost={(zapasId, steamId) => void hlidej(() => api.zmenitHosta(zapasId, steamId))}
-              onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-            />
-          ) : null}
+          {admin && stav ? <Rezie stav={stav} ladeni={ladeni} {...rezieObsluha} /> : null}
           {me
             ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
                 mujUcastnik(zapas, me.steamId)?.jeHost ? (
@@ -348,9 +349,17 @@ export function App() {
               mojeZapasy()), takže složený zápas neviděl nikdo kromě hráčů
               a admina — přestože ho server posílá všem a jen zaslepí
               tajemství. */}
-          {verejneZapasy(stav?.zapasy ?? [], me?.steamId ?? null).map((zapas) => (
-            <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.steamId ?? null} />
-          ))}
+          {/* Adminovi ne: každý zápas už má v režii plnou kartu a zkrácený
+              řádek by pod ní říkal totéž ještě jednou. V „User View“ se
+              `admin` vypíná, takže si Rob stránku prohlédne i s řádky. */}
+          {admin
+            ? null
+            : verejneZapasy(stav?.zapasy ?? [], me?.steamId ?? null).map((zapas) => (
+                <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.steamId ?? null} />
+              ))}
+          {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
+              má zůstat nahoře, dohrané jsou k nahlédnutí. */}
+          {admin && stav ? <HistorieZapasu stav={stav} ladeni={ladeni} {...rezieObsluha} /> : null}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>

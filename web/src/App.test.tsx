@@ -365,3 +365,34 @@ it("při nové verzi serveru nabídne obnovení stránky", async () => {
   expect(await screen.findByRole("status")).toHaveTextContent("99.0.0");
   expect(screen.getByRole("button", { name: "Načíst znovu" })).toBeInTheDocument();
 });
+
+// Adminovi visí u každého zápasu plná karta, takže zkrácený veřejný řádek pod
+// ní říkal totéž ještě jednou. A dohrané zápasy se přes večer vršily nad
+// rozehraným a tlačily ho z obrazovky — patří pod něj, do vlastní sekce.
+it("admin má dohrané zápasy až pod běžícím a bez zkráceného řádku", async () => {
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  const bezici = zapas([u("host1", 1, 1, true), u("c", 2, 2)]);
+  const dohrany: ZapasView = {
+    ...zapas([u("host1", 1, 1, true), u("c", 2, 2)]),
+    id: 2,
+    poradi: 8,
+    stav: "dohrano",
+    vitez: { tym: 1 },
+  };
+  // Pořadí ve stavu schválně obráceně: rozhoduje sekce, ne pořadí ze serveru.
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] },
+    prihlaseni: [],
+    zapasy: [dohrany, bezici],
+  });
+
+  render(<App />);
+
+  expect(await screen.findByRole("heading", { name: /historie zápasů/i })).toBeInTheDocument();
+  expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
+  const poradi = screen.getAllByTestId("zapas-hlavicka").map((h) => h.textContent ?? "");
+  expect(poradi[0]).toContain("Zápas #7");
+  expect(poradi[1]).toContain("Zápas #8");
+});
