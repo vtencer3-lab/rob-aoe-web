@@ -314,6 +314,10 @@ main > .prazdno::after {
     linear-gradient(rgba(38, 22, 16, 0.90), rgba(20, 12, 8, 0.95)),
     radial-gradient(120% 90% at 50% 0%, rgba(168, 20, 25, 0.16), transparent 62%),
     url(./assets/ui/drevo.webp) center / 380px repeat;
+  /* Výplň se kreslí pod rám (border-box), ale počítala by se k vnitřní ploše
+     (padding-box). Přechod pak pod rámem začínal znovu od své světlé strany
+     a kolem panelu svítil světlý pruh. */
+  background-origin: border-box;
   box-shadow: 0 12px 38px rgba(0, 0, 0, 0.6);
 }
 .karta .hero, .host .hero {
@@ -366,6 +370,7 @@ main > .prazdno::after {
   background:
     linear-gradient(rgba(38, 22, 16, 0.90), rgba(20, 12, 8, 0.95)),
     url(./assets/ui/drevo.webp) center / 380px repeat;
+  background-origin: border-box;
 }
 /* Skládání sestavy: vybraní nahoře pod sebou s tlačítky barvy a týmu jako
    ve hře, nevybraní ztlumeně pod nimi. Řádky se přetahují jen v rámci skupiny. */
