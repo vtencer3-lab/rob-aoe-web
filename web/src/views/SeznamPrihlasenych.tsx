@@ -106,6 +106,10 @@ const PRESUN_MS = 340;
  * React vykreslil nové pořadí: řádek se posune zpátky tam, kde byl, a hned se
  * nechá dojet na nové místo.
  *
+ * Měří se `offsetTop`, tedy poloha uvnitř tabulky, ne `getBoundingClientRect`.
+ * Ta je vůči oknu, takže odrolování stránky mezi dvěma měřeními přičetlo všem
+ * řádkům posun, který se nikdy nestal — a ty pak odlétaly ven ze seznamu.
+ *
  * `poradi` je otisk pořadí; efekt se pouští jen když se opravdu změnilo.
  */
 function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi: string) {
@@ -113,13 +117,14 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
   useLayoutEffect(() => {
     const prvek = tabulka.current;
     if (!prvek) return;
-    // Kdo si nepřeje pohyb, dostane přeskládání naráz.
-    const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    // Kdo si nepřeje pohyb, dostane přeskládání naráz. Během tažení taky ne:
+    // řádek pod kurzorem má jít za myší, ne si dojíždět po svém.
+    const bezPohybu = (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false) || tahneSe();
     const nynejsi = new Map<string, number>();
     for (const radek of prvek.querySelectorAll<HTMLTableRowElement>("tbody > tr[data-hrac]")) {
       const kdo = radek.dataset["hrac"];
       if (!kdo) continue;
-      const ted = radek.getBoundingClientRect().top;
+      const ted = radek.offsetTop;
       nynejsi.set(kdo, ted);
       const predtim = drive.current.get(kdo);
       // Nový řádek nemá odkud přijet; nulový posun není co animovat. V testovacím

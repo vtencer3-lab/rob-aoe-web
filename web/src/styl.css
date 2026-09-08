@@ -318,6 +318,22 @@ main > .prazdno::after {
   padding: 0.4rem 0.6rem;
   margin: 1.6rem 0;
   background:
+    /* Prohlubeň pod rámem. Nekreslí ji `box-shadow: inset`, protože ten začíná
+       až na vnitřní hraně rámečku (34 px), kdežto kresba rámu končí už na
+       21 px — mezi tím zůstával světlý pruh, ve kterém bylo vidět, že stín
+       s rámem nelícuje. Přechody se počítají od vnějšího okraje (viz
+       `background-origin` níž), takže se dají posadit přesně na hranu
+       kresby. 21 px je změřeno z `ram.webp`: 152 z 650 px řezu na 34 px. */
+    linear-gradient(
+      to bottom,
+      transparent 20px, rgba(0, 0, 0, 0.5) 22px, transparent 62px,
+      transparent calc(100% - 62px), rgba(0, 0, 0, 0.5) calc(100% - 22px), transparent calc(100% - 20px)
+    ),
+    linear-gradient(
+      to right,
+      transparent 20px, rgba(0, 0, 0, 0.42) 22px, transparent 62px,
+      transparent calc(100% - 62px), rgba(0, 0, 0, 0.42) calc(100% - 22px), transparent calc(100% - 20px)
+    ),
     linear-gradient(rgba(38, 22, 16, 0.90), rgba(20, 12, 8, 0.95)),
     radial-gradient(120% 90% at 50% 0%, rgba(168, 20, 25, 0.16), transparent 62%),
     url(./assets/ui/drevo.webp) center / 380px repeat;
@@ -325,13 +341,9 @@ main > .prazdno::after {
      (padding-box). Přechod pak pod rámem začínal znovu od své světlé strany
      a kolem panelu svítil světlý pruh. */
   background-origin: border-box;
-  /* Vnější stín desku zvedne nad scénu, vnitřní ji pod rámem prohloubí —
-     obsah pak sedí v prohlubni, ne na plochém obdélníku. Vnitřní stín se
-     kreslí od vnitřní hrany rámu, takže rám sám nezašpiní. */
-  box-shadow:
-    0 12px 38px rgba(0, 0, 0, 0.6),
-    inset 0 0 40px rgba(0, 0, 0, 0.55),
-    inset 0 2px 3px rgba(0, 0, 0, 0.5);
+  /* Vnější stín desku zvedne nad scénu; prohlubeň uvnitř kreslí přechody
+     v pozadí, aby lícovala s rámem (viz výš). */
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.6);
 }
 .karta .hero, .host .hero {
   border-radius: 2px;
