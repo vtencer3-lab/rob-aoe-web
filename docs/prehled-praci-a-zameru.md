@@ -431,6 +431,26 @@ ne jen na dvojici (`src/shared/sestava.ts`). Vydáno jako 0.17.0 do `main`.
 ve hře 1v1, ne 4hráčová mapa. Vydáno jako 0.17.1 do `dev` a do `main` spolu
 s kabátkem v 0.18.0.
 
+### 3.14 Historie zápasů v režii
+
+**Záměr.** Uživatel doslova: „udělal bych že tahle historie (zápas 1 a 2) bude
+až pod aktivním zápasem… a asi bych přidal ještě nadpis pro sekci Historie
+zápasů“. Režie vypisovala všechny zápasy v jedné řadě, takže přes večer
+dohrané kusy narůstaly nad rozehraným a tlačily ho z obrazovky.
+
+**Jak to je.** `Rezie` nahoře vykresluje jen zápasy, které se hrají; dohrané
+a zrušené jdou do sekce `HistorieZapasu` pod nadpis „Historie zápasů“, až za
+vlastní kartu hráče. Jsou to tytéž karty, ne zkrácený výpis — Rob u nich
+potřebuje přepsat výsledek a zavřít je křížkem. Dokud se nic nedohrálo, sekce
+se nevykreslí. Rozhoduje sdílený predikát `jeVeHre()` ve `web/src/zapas.ts`,
+který používá i `mojeZapasy()`.
+
+**Zkrácené řádky adminovi zmizely.** Uživatel: „admin asi nemusí vidět tady ten
+menší recap… je to prakticky stejný jako ta větší varianta. Klasický User to má
+vidět, protože oni nevidí tu větší variantu.“ Sedí to: adminovi visí u každého
+zápasu plná karta, takže `VerejnyZapas` pod ní říkal totéž podruhé. Ostatním
+zůstává beze změny a v „User View“ si je Rob prohlédne taky. Vydáno v 0.19.0.
+
 ### 3.11 Drobnosti a easter egg
 
 - Logo (lev se štítem, od uživatele 8. 9.) v záhlaví vlevo od nadpisu,

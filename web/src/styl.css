@@ -368,6 +368,10 @@ main > .prazdno::after {
 .zaloha { color: var(--tlumene); font-size: 0.85rem; margin-top: 0.6rem; }
 .stavovy-radek { color: var(--tlumene); font-size: 0.85rem; margin: 0.3rem 0; }
 .rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+
+/* Nadpis historie stojí na pozadí mezi kartami. Odstup shora si musí říct sám:
+   sekce žádný nemá, mezery mezi kartami dělají jejich vlastní okraje. */
+.historie-zapasu > .nadpis-seznamu { margin-top: 2.4rem; }
 .skladani {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;

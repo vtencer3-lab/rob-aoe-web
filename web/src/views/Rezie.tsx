@@ -3,7 +3,7 @@ import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js
 import type { Strana } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type AkceStavPayload, type Vitez, type ZapasView } from "../../../src/shared/types.js";
 import { nazevCivilizace } from "../../../src/shared/civilizace.js";
-import { jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete } from "../zapas.js";
+import { jeVeHre, jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete } from "../zapas.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 
 interface Props {
@@ -20,22 +20,42 @@ interface Props {
   ladeni?: boolean;
 }
 
-/** Zápasy v režii. Skládání sestavy je v panelu akce (SpravaAkce), vedle nastavení lobby. */
-export function Rezie({ stav, onStav, onSmazat, onVysledek, onHost, onKontrolaLobby, onZavrit, ladeni = false }: Props) {
+/** Obsluha karty. Stejná pro běžící zápasy i pro historii, tak ať se nepíše dvakrát. */
+type Obsluha = Pick<Props, "onStav" | "onSmazat" | "onVysledek" | "onHost" | "onKontrolaLobby" | "onZavrit">;
+
+/** Zápasy, na které režie vůbec kouká: zavřený se ukáže jen v debug módu. */
+function vRezii(stav: AkceStavPayload, ladeni: boolean): ZapasView[] {
+  return stav.zapasy.filter((z) => !z.zavreny || ladeni);
+}
+
+function karty(zapasy: ZapasView[], obsluha: Obsluha) {
+  return zapasy.map((zapas) => <ZapasVRezii key={zapas.id} zapas={zapas} {...obsluha} />);
+}
+
+/**
+ * Běžící zápasy v režii. Skládání sestavy je v panelu akce (SpravaAkce), vedle
+ * nastavení lobby.
+ *
+ * Dohrané se sem nevrací: během večera jich přibývá a odsouvaly by rozehraný
+ * zápas — tedy to jediné, co Rob právě řeší — pod okraj obrazovky. Mají vlastní
+ * sekci `HistorieZapasu` až pod ním.
+ */
+export function Rezie({ stav, ladeni = false, ...obsluha }: Props) {
+  return <section className="rezie">{karty(vRezii(stav, ladeni).filter(jeVeHre), obsluha)}</section>;
+}
+
+/**
+ * Dohrané a zrušené zápasy, na konci stránky. Jsou to tytéž karty jako nahoře,
+ * ne zkrácený výpis — Rob u nich pořád potřebuje přepsat výsledek a zavřít je
+ * křížkem. Dokud se nic nedohrálo, sekce se nevykreslí vůbec.
+ */
+export function HistorieZapasu({ stav, ladeni = false, ...obsluha }: Props) {
+  const historie = vRezii(stav, ladeni).filter((z) => !jeVeHre(z));
+  if (historie.length === 0) return null;
   return (
-    <section className="rezie">
-      {stav.zapasy.filter((z) => !z.zavreny || ladeni).map((zapas) => (
-        <ZapasVRezii
-          key={zapas.id}
-          zapas={zapas}
-          onStav={onStav}
-          onSmazat={onSmazat}
-          onZavrit={onZavrit}
-          onVysledek={onVysledek}
-          onHost={onHost}
-          onKontrolaLobby={onKontrolaLobby}
-        />
-      ))}
+    <section className="rezie historie-zapasu">
+      <h3 className="nadpis-seznamu">Historie zápasů</h3>
+      {karty(historie, obsluha)}
     </section>
   );
 }

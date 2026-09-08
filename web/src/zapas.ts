@@ -29,11 +29,13 @@ export function souperi(zapas: ZapasView, steamId: string): UcastnikView[] {
   return zapas.ucastnici.filter((u) => u.steamId !== steamId && (ja.tym === 0 || u.tym !== ja.tym));
 }
 
+/** Zápas, který má večer ještě před sebou: ani dohraný, ani zrušený. */
+export function jeVeHre(zapas: Pick<ZapasView, "stav">): boolean {
+  return zapas.stav !== "dohrano" && zapas.stav !== "zruseny";
+}
+
 export function mojeZapasy(zapasy: ZapasView[], steamId: string): ZapasView[] {
-  return zapasy.filter(
-    (z) =>
-      z.stav !== "dohrano" && z.stav !== "zruseny" && z.ucastnici.some((u) => u.steamId === steamId),
-  );
+  return zapasy.filter((z) => jeVeHre(z) && z.ucastnici.some((u) => u.steamId === steamId));
 }
 
 /**

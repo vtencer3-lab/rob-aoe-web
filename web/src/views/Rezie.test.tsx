@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { AkceStavPayload, ZapasView } from "../../../src/shared/types.js";
-import { Rezie } from "./Rezie.js";
+import { HistorieZapasu, Rezie } from "./Rezie.js";
 
 
 const zapas: ZapasView = {
@@ -151,7 +151,7 @@ const zruseny: AkceStavPayload = {
 };
 
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
-  render(<Rezie stav={dohrany} {...props} />);
+  render(<HistorieZapasu stav={dohrany} {...props} />);
   expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhrál modrý tým");
 });
 
@@ -159,7 +159,7 @@ it("u dohraného zápasu řekne, kdo vyhrál", () => {
 // dohrání jen zabíraly místo a nabízely akce, které už nedávají smysl —
 // a přes večer se takhle vršil jeden odepsaný zápas za druhým.
 it("dohranému zápasu sebere ovládání běžícího", () => {
-  render(<Rezie stav={dohrany} {...props} />);
+  render(<HistorieZapasu stav={dohrany} {...props} />);
   expect(screen.queryByTestId("spectate")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /^zrušit$/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /vyhrál modrý tým/i })).not.toBeInTheDocument();
@@ -168,7 +168,7 @@ it("dohranému zápasu sebere ovládání běžícího", () => {
 // Přepsat výsledek jde, ale ne jedním kliknutím do prázdna: druhé kliknutí je
 // samo o sobě to potvrzení.
 it("výsledek jde změnit až na druhé kliknutí", async () => {
-  render(<Rezie stav={dohrany} {...props} />);
+  render(<HistorieZapasu stav={dohrany} {...props} />);
 
   expect(screen.queryByRole("button", { name: /vyhrál červený tým/i })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
@@ -181,7 +181,7 @@ it("výsledek jde změnit až na druhé kliknutí", async () => {
 });
 
 it("z rozmyšlené změny se dá couvnout, aniž se něco zapíše", () => {
-  render(<Rezie stav={dohrany} {...props} />);
+  render(<HistorieZapasu stav={dohrany} {...props} />);
 
   fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
   fireEvent.click(screen.getByRole("button", { name: /nechat být/i }));
@@ -193,7 +193,7 @@ it("z rozmyšlené změny se dá couvnout, aniž se něco zapíše", () => {
 // Zrušený zápas byl slepá ulička: pořád nabízel Spectate a tlačítka výsledku,
 // ale žádnou cestu zpátky. Stavový automat návrat dovoluje.
 it("zrušený zápas jde vrátit do hry", () => {
-  render(<Rezie stav={zruseny} {...props} />);
+  render(<HistorieZapasu stav={zruseny} {...props} />);
 
   expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("zrušeno");
   fireEvent.click(screen.getByRole("button", { name: /vrátit do hry/i }));
@@ -204,11 +204,11 @@ it("zrušený zápas jde vrátit do hry", () => {
 // Zrušený zápas, ke kterému se Rob vracet nechce, jde odebrat úplně — jinak
 // by v režii strašil do konce večera. Jen u zrušeného: dohraný je záznam.
 it("zrušený zápas jde odebrat úplně, dohraný ne", () => {
-  const { rerender } = render(<Rezie stav={zruseny} {...props} />);
+  const { rerender } = render(<HistorieZapasu stav={zruseny} {...props} />);
   fireEvent.click(screen.getByRole("button", { name: /odebrat úplně/i }));
   expect(props.onSmazat).toHaveBeenCalledWith(1);
 
-  rerender(<Rezie stav={dohrany} {...props} />);
+  rerender(<HistorieZapasu stav={dohrany} {...props} />);
   expect(screen.queryByRole("button", { name: /odebrat úplně/i })).not.toBeInTheDocument();
 });
 
@@ -274,19 +274,61 @@ it("u Spectate říká, jestli se sedí v lobby, nebo už se hraje", () => {
 // módu je vidět zašedlý a jde znovu otevřít; běžící ani zrušený křížek nemají.
 it("dohraný zápas má křížek na zavření, zavřený se ukáže jen v debug módu", () => {
   const onZavrit = vi.fn();
-  const { rerender } = render(<Rezie stav={dohrany} {...props} onZavrit={onZavrit} />);
+  const { rerender } = render(<HistorieZapasu stav={dohrany} {...props} onZavrit={onZavrit} />);
   fireEvent.click(screen.getByRole("button", { name: /zavřít zápas #7/i }));
   expect(onZavrit).toHaveBeenCalledWith(1, true);
 
   const zavreny: AkceStavPayload = { ...stav, zapasy: [{ ...zapas, stav: "dohrano", vitez: { tym: 1 }, zavreny: true }] };
-  rerender(<Rezie stav={zavreny} {...props} onZavrit={onZavrit} />);
+  rerender(<HistorieZapasu stav={zavreny} {...props} onZavrit={onZavrit} />);
   expect(screen.queryByTestId("zapas-hlavicka")).not.toBeInTheDocument();
 
-  rerender(<Rezie stav={zavreny} {...props} onZavrit={onZavrit} ladeni />);
+  rerender(<HistorieZapasu stav={zavreny} {...props} onZavrit={onZavrit} ladeni />);
   expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("zavřeno");
   fireEvent.click(screen.getByRole("button", { name: /znovu otevřít/i }));
   expect(onZavrit).toHaveBeenCalledWith(1, false);
 
   rerender(<Rezie stav={stav} {...props} onZavrit={onZavrit} />);
   expect(screen.queryByRole("button", { name: /zavřít zápas/i })).not.toBeInTheDocument();
+});
+
+// Během večera se dohrané zápasy vršily nad rozehraným a odsouvaly ho z dohledu.
+// Nahoře proto zůstává jen to, co se hraje; zbytek má sekci pod ním.
+it("nahoře jsou jen běžící zápasy, dohrané a zrušené ne", () => {
+  const oba: AkceStavPayload = {
+    ...stav,
+    zapasy: [
+      { ...zapas, id: 1, poradi: 7, stav: "dohrano", vitez: { tym: 1 } },
+      { ...zapas, id: 2, poradi: 8 },
+      { ...zapas, id: 3, poradi: 9, stav: "zruseny" },
+    ],
+  };
+  render(<Rezie stav={oba} {...props} />);
+  const hlavicky = screen.getAllByTestId("zapas-hlavicka");
+  expect(hlavicky).toHaveLength(1);
+  expect(hlavicky[0]).toHaveTextContent("Zápas #8");
+});
+
+it("historie nese nadpis a dohrané i zrušené zápasy", () => {
+  const oba: AkceStavPayload = {
+    ...stav,
+    zapasy: [
+      { ...zapas, id: 1, poradi: 7, stav: "dohrano", vitez: { tym: 1 } },
+      { ...zapas, id: 2, poradi: 8 },
+      { ...zapas, id: 3, poradi: 9, stav: "zruseny" },
+    ],
+  };
+  render(<HistorieZapasu stav={oba} {...props} />);
+  expect(screen.getByRole("heading", { name: /historie zápasů/i })).toBeInTheDocument();
+  const hlavicky = screen.getAllByTestId("zapas-hlavicka");
+  expect(hlavicky.map((h) => h.textContent)).toEqual([
+    expect.stringContaining("Zápas #7"),
+    expect.stringContaining("Zápas #9"),
+  ]);
+});
+
+// Prázdný nadpis na začátku večera by jen zabíral místo.
+it("dokud se nic nedohrálo, historie se nevykreslí vůbec", () => {
+  const { container } = render(<HistorieZapasu stav={stav} {...props} />);
+  expect(container).toBeEmptyDOMElement();
+  expect(screen.queryByRole("heading", { name: /historie zápasů/i })).not.toBeInTheDocument();
 });
