@@ -108,10 +108,10 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit 
                 className="jmeno jmeno-hrace"
                 data-jmeno-hrace={hrac.steamId}
                 data-testid="jmeno-vybraneho"
-                onMouseEnter={() => {
+                onPointerEnter={() => {
                   if (!tahneSe()) setNahled(hrac);
                 }}
-                onMouseLeave={() => {
+                onPointerLeave={() => {
                   if (!tahneSe()) setNahled(null);
                 }}
               >

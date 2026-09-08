@@ -477,9 +477,43 @@ input:focus, select:focus { outline: none; border-color: var(--zlato); box-shado
    nastavené přímo na <option>; bez toho svítí bílý. */
 select { color-scheme: dark; accent-color: var(--zlato-tmave); }
 select option { background-color: #1c110b; color: var(--text); }
-/* Zvýraznění vybrané položky kreslí prohlížeč systémovou modrou; `accent-color`
-   i `option:checked` ji přebíjejí na zlatou. */
-select option:checked, select option:hover { background: var(--zlato-tmave); color: #fff3d6; }
+select option:checked { background: var(--zlato-tmave); color: #fff3d6; }
+
+/* Rozbalený seznam kreslil prohlížeč jako okno operačního systému, takže
+   položka pod kurzorem svítila systémovou modrou a CSS na ni nedosáhlo.
+   `appearance: base-select` z něj udělá běžný prvek stránky, který se dá
+   nastylovat celý. Prohlížeč, který to neumí, blok přeskočí a chová se jako
+   dřív — proto `@supports`, ne bezpodmínečně. */
+@supports (appearance: base-select) {
+  select, ::picker(select) { appearance: base-select; }
+
+  select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: space-between;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  select::picker-icon { color: var(--zlato); transition: transform 0.15s; }
+  select:open::picker-icon { transform: rotate(180deg); }
+
+  ::picker(select) {
+    background: linear-gradient(rgba(34, 20, 14, 0.99), rgba(20, 12, 8, 0.99));
+    border: 1px solid var(--zlato-tmave);
+    border-radius: 2px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
+    padding: 0.25rem;
+  }
+  ::picker(select) option {
+    padding: 0.3rem 0.6rem;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--text);
+  }
+  ::picker(select) option:hover,
+  ::picker(select) option:focus { background: rgba(216, 168, 58, 0.20); color: var(--zlato-svetle); outline: none; }
+  ::picker(select) option:checked { background: linear-gradient(#e2c47c, #c99a35); color: #23150a; }
+}
 
 /* Zaškrtávátka a přepínače kreslí prohlížeč modře podle systému, což na
    zlatohnědé desce vypadá jako cizí těleso. Překreslujeme je na zapuštěný

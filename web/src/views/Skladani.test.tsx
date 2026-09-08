@@ -220,9 +220,9 @@ it("ELO stojí ve vlastním sloupci vedle jména", () => {
 it("najetí na jméno vybraného hráče ukáže kartu se statistikami", () => {
   render(<Panel />);
   vyber("TenceR");
-  fireEvent.mouseEnter(screen.getByTestId("jmeno-vybraneho"));
+  fireEvent.pointerEnter(screen.getByTestId("jmeno-vybraneho"));
   expect(screen.getByTestId("staty-hrace")).toHaveTextContent("TenceR");
-  fireEvent.mouseLeave(screen.getByTestId("jmeno-vybraneho"));
+  fireEvent.pointerLeave(screen.getByTestId("jmeno-vybraneho"));
   expect(screen.queryByTestId("staty-hrace")).not.toBeInTheDocument();
 });
 

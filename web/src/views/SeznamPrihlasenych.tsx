@@ -159,10 +159,10 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
                   className="jmeno-hrace"
                   data-jmeno-hrace={hrac.steamId}
                   data-testid="jmeno-hrace"
-                  onMouseEnter={() => {
+                  onPointerEnter={() => {
                     if (!tahneSe()) setNahled(hrac);
                   }}
-                  onMouseLeave={() => {
+                  onPointerLeave={() => {
                     if (!tahneSe()) setNahled(null);
                   }}
                   onFocus={() => setNahled(hrac)}
