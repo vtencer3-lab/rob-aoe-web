@@ -10,9 +10,11 @@ export const MAX_HRACU = 8;
  * zakládání zápasu i režie, aby tlačítko „Vytvořit zápas“ svítilo jen tehdy,
  * když to server přijme. Vrací českou větu s důvodem, nebo null.
  *
- * Coop Kings: dva hráči se stejnou barvou sdílejí ve hře civilizaci a musí
- * být v jednom týmu — jinak by spolu sdíleli civilizaci a hráli proti sobě,
- * což hra nedovolí. Víc než dva stejnou barvu mít nemůžou.
+ * Coop Kings: hráči se stejnou barvou sdílejí ve hře jeden slot, a tím
+ * i civilizaci. Musí proto být v jednom týmu — jinak by sdíleli civilizaci
+ * a přitom hráli proti sobě, což hra nedovolí. **Kolik jich barvu sdílí,
+ * pravidlo neomezuje**: dřív tu byl strop dva, ale ve hře můžou na jednom
+ * slotu sedět i tři a víc, a stejně tak může mít tým libovolnou velikost.
  */
 export function zkontrolujSestavu(sestava: SestavaVstup[]): string | null {
   if (sestava.length < MIN_HRACU) return `Zápas potřebuje aspoň ${MIN_HRACU} hráče.`;
@@ -29,15 +31,13 @@ export function zkontrolujSestavu(sestava: SestavaVstup[]): string | null {
   const podleBarvy = new Map<number, SestavaVstup[]>();
   for (const s of sestava) podleBarvy.set(s.barva, [...(podleBarvy.get(s.barva) ?? []), s]);
   for (const [, stejni] of podleBarvy) {
-    if (stejni.length > 2) return "Stejnou barvu můžou mít nejvýš dva hráči (Coop Kings).";
-    if (stejni.length === 2) {
-      const [a, b] = stejni as [SestavaVstup, SestavaVstup];
-      if (a.tym === 0 || a.tym !== b.tym) {
-        return "Hráči se stejnou barvou sdílejí civilizaci, musí být ve stejném týmu.";
-      }
-      if ((a.civ ?? null) !== (b.civ ?? null)) {
-        return "Hráči se stejnou barvou sdílejí civilizaci, musí mít předepsanou tutéž.";
-      }
+    if (stejni.length < 2) continue;
+    const [prvni, ...dalsi] = stejni as [SestavaVstup, ...SestavaVstup[]];
+    if (prvni.tym === 0 || dalsi.some((s) => s.tym !== prvni.tym)) {
+      return "Hráči se stejnou barvou sdílejí civilizaci, musí být ve stejném týmu.";
+    }
+    if (dalsi.some((s) => (s.civ ?? null) !== (prvni.civ ?? null))) {
+      return "Hráči se stejnou barvou sdílejí civilizaci, musí mít předepsanou tutéž.";
     }
   }
 
