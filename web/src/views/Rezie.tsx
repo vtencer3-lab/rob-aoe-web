@@ -108,7 +108,10 @@ function ZapasVRezii({ zapas, onStav, onSmazat, onVysledek, onHost, onKontrolaLo
   const stranyZapasu = strany(zapas.ucastnici);
 
   return (
-    <article className={[bezi ? "zapas" : "zapas odepsany", zapas.zavreny ? "zavreny" : ""].filter(Boolean).join(" ")}>
+    <article
+      data-zapas={zapas.id}
+      className={[bezi ? "zapas" : "zapas odepsany", zapas.zavreny ? "zavreny" : ""].filter(Boolean).join(" ")}
+    >
       <h2 className="titulek-zapasu" data-testid="zapas-hlavicka">
         Zápas #{zapas.poradi}
         <small>

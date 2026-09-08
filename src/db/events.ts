@@ -1,3 +1,4 @@
+import { AKTIVITA_MINUT, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT } from "../shared/aktivita.js";
 import type { SestavaVstup } from "../shared/types.js";
 import { getPool } from "./pool.js";
 import { mapuj, PLAYER_SLOUPEC_NAZVY, type DbRow, type PlayerRow } from "./players.js";
@@ -96,10 +97,61 @@ export async function setSkladani(akceId: number, sestava: SestavaVstup[]): Prom
 
 export async function signUp(akceId: number, steamId: string): Promise<void> {
   await getPool().query(
-    `INSERT INTO prihlaska (akce_id, steam_id, stav, kdy) VALUES ($1, $2, 'prihlasen', now())
-     ON CONFLICT (akce_id, steam_id) DO UPDATE SET stav = 'prihlasen', kdy = now()`,
-    [akceId, steamId],
+    `INSERT INTO prihlaska (akce_id, steam_id, stav, kdy, aktivni_do)
+          VALUES ($1, $2, 'prihlasen', now(), now() + $3 * interval '1 minute')
+     ON CONFLICT (akce_id, steam_id) DO UPDATE
+          SET stav = 'prihlasen', kdy = now(),
+              aktivni_do = now() + $3 * interval '1 minute',
+              posledni_puls = NULL`,
+    [akceId, steamId, AKTIVITA_MINUT],
   );
+}
+
+/**
+ * „Jsem tu!“: lhůta se nastaví na plnou, bez ohledu na to, jestli vypršela.
+ * Vrací `false`, když se nic nezměnilo — odhlášený hráč, nebo cizí akce.
+ */
+export async function obnovAktivitu(akceId: number, steamId: string): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    `UPDATE prihlaska
+        SET aktivni_do = now() + $3 * interval '1 minute', posledni_puls = now()
+      WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'`,
+    [akceId, steamId, AKTIVITA_MINUT],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+/**
+ * Puls z prohlížeče: hráč něco na stránce udělal.
+ *
+ * Vypršelou lhůtu vrátí na plnou — to je zpráva „už jsem zpátky“ a opakovat ji
+ * nevadí, výsledek je pořád stejný. Běžící lhůtu jen prodlouží, a to nejvýš
+ * jednou za `ODSTUP_PULSU_MINUT`; jinak by se dala naklikat donekonečna.
+ * Strop je vždycky plná lhůta od teď.
+ *
+ * Vrací `false`, když se nic nezměnilo. Volající pak nemusí rozesílat stav,
+ * a puls tak nestojí nic, i když chodí od každého kliknutí.
+ */
+export async function pulsAktivity(akceId: number, steamId: string): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    `UPDATE prihlaska
+        SET aktivni_do = CASE
+              WHEN aktivni_do <= now() THEN now() + $3 * interval '1 minute'
+              ELSE LEAST(aktivni_do + $4 * interval '1 minute', now() + $3 * interval '1 minute')
+            END,
+            posledni_puls = now()
+      WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'
+        AND (
+          aktivni_do <= now()
+          OR posledni_puls IS NULL
+          OR posledni_puls <= now() - $5 * interval '1 minute'
+        )
+        -- Prodloužení, které by nic nepřidalo (lhůta už je na stropu), se
+        -- zahodí tady: jinak by každé kliknutí rozesílalo stav nazdařbůh.
+        AND (aktivni_do <= now() OR aktivni_do < now() + $3 * interval '1 minute')`,
+    [akceId, steamId, AKTIVITA_MINUT, PRODLOUZENI_MINUT, ODSTUP_PULSU_MINUT],
+  );
+  return (rowCount ?? 0) > 0;
 }
 
 export async function withdraw(akceId: number, steamId: string): Promise<void> {
@@ -109,15 +161,40 @@ export async function withdraw(akceId: number, steamId: string): Promise<void> {
   );
 }
 
-export async function listSignups(akceId: number): Promise<PlayerRow[]> {
+/**
+ * Posune všem přihláškám v akci lhůtu o daný počet minut zpátky, jako by ten
+ * čas uběhl. Jen pro debug mód: čekat čtvrt hodiny, aby šlo vidět, jak hráči
+ * usínají, není zkouška, ale trest.
+ *
+ * Zpátky jde i poslední puls, jinak by přetočení odemklo odstup mezi pulsy
+ * a chování by po něm neodpovídalo skutečnosti.
+ */
+export async function pretocCas(akceId: number, minut: number): Promise<number> {
+  const { rowCount } = await getPool().query(
+    `UPDATE prihlaska
+        SET aktivni_do = aktivni_do - $2 * interval '1 minute',
+            posledni_puls = posledni_puls - $2 * interval '1 minute'
+      WHERE akce_id = $1 AND stav = 'prihlasen'`,
+    [akceId, minut],
+  );
+  return rowCount ?? 0;
+}
+
+/** Přihlášený hráč i s tím, dokdy platí jeho přihláška (viz shared/aktivita.ts). */
+export type PrihlasenyRow = PlayerRow & { aktivniDo: Date };
+
+export async function listSignups(akceId: number): Promise<PrihlasenyRow[]> {
   const sloupce = PLAYER_SLOUPEC_NAZVY.map((sloupec) => `p.${sloupec}`).join(", ");
-  const { rows } = await getPool().query<DbRow>(
-    `SELECT ${sloupce}
+  const { rows } = await getPool().query<DbRow & { aktivni_do: Date }>(
+    `SELECT ${sloupce}, pr.aktivni_do
        FROM prihlaska pr
        JOIN player p ON p.steam_id = pr.steam_id
       WHERE pr.akce_id = $1 AND pr.stav = 'prihlasen'
       ORDER BY pr.kdy ASC`,
     [akceId],
   );
-  return rows.map(mapuj);
+  // Pořadí zůstává podle času přihlášení. Neaktivní se propadají na konec až
+  // v prohlížeči: lhůta vyprší sama od sebe, bez zápisu, který by šel poznat
+  // na serveru a vyvolal rozeslání stavu.
+  return rows.map((row) => ({ ...mapuj(row), aktivniDo: row.aktivni_do }));
 }

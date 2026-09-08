@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { jeAktivni } from "../../../src/shared/aktivita.js";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
@@ -18,6 +19,10 @@ interface Props {
    * nesestavuje další zápas z lidí, kteří jsou zrovna ve hře.
    */
   vZapase?: Map<string, number>;
+  /** Steam ID přihlášeného návštěvníka: jen on u sebe vidí „Jsem tu!“. */
+  ja?: string | null;
+  /** Kliknutí na „Jsem tu!“ — vrátí hráči plnou lhůtu aktivity. */
+  onJsemTu?: () => void;
 }
 
 type Sloupec = "elo1v1" | "eloNejvyssi" | "odehranoHer" | "steamHodiny";
@@ -66,7 +71,31 @@ export function serad(hraci: PlayerView[], razeni: Razeni | null): PlayerView[] 
   });
 }
 
-export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
+/**
+ * Neaktivní hráči na konec, mezi sebou i uvnitř aktivních pořadí zůstává.
+ * Vrací původní pole, když nikdo neusnul — ať se seznam zbytečně nepřekresluje.
+ */
+export function podleAktivity(hraci: PlayerView[], ted: number): PlayerView[] {
+  const spici = hraci.filter((h) => !jeAktivni(h.aktivniDo, ted));
+  if (spici.length === 0) return hraci;
+  return [...hraci.filter((h) => jeAktivni(h.aktivniDo, ted)), ...spici];
+}
+
+/**
+ * Hodiny, které tikají samy. Lhůta aktivity vyprší tichým během času, ne
+ * zápisem do databáze — bez vlastního tikání by hráč ztmavl až s příští
+ * zprávou ze serveru, tedy klidně za půl hodiny.
+ */
+function useTed(): number {
+  const [ted, setTed] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setTed(Date.now()), 20_000);
+    return () => clearInterval(id);
+  }, []);
+  return ted;
+}
+
+export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, onJsemTu }: Props) {
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
   const tabulka = useRef<HTMLTableElement>(null);
@@ -82,8 +111,10 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
     window.addEventListener(KONEC_TAHU, srovnej);
     return () => window.removeEventListener(KONEC_TAHU, srovnej);
   }, [prihlaseni]);
-  // Řazení je jen pro režii; hráči vidí pořadí přihlášení.
-  const radky = skladani ? serad(skladani.nevybrani, razeni) : prihlaseni;
+  // Řazení je jen pro režii; hráči vidí pořadí přihlášení. Usnulí jdou na
+  // konec za všech okolností — i za seřazeného seznamu.
+  const ted = useTed();
+  const radky = podleAktivity(skladani ? serad(skladani.nevybrani, razeni) : prihlaseni, ted);
 
   const prepni = (sloupec: Sloupec) => {
     const nove = dalsiRazeni(razeni, sloupec);
@@ -131,7 +162,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
               </th>
             );
           })}
-          {skladani ? <th aria-label="Právě hraje" /> : null}
+          <th aria-label="Stav hráče" />
         </tr>
       </thead>
       <tbody>
@@ -141,7 +172,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
           // přesun nebyl vidět.
           const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId) : {};
           return (
-            <tr key={hrac.steamId} {...tah}>
+            <tr key={hrac.steamId} className={jeAktivni(hrac.aktivniDo, ted) ? undefined : "spici"} {...tah}>
               {skladani ? (
                 <td className="vybrat">
                   <button
@@ -185,15 +216,15 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
               {/* Bez avataru se Steamu nikdo neptal (chybí klíč, nebo dotaz
                   selhal) — pak NULL neznamená skrytý profil, ale „nevíme“. */}
               <td>{hrac.steamHodiny !== null || hrac.avatarUrl ? formatHodiny(hrac.steamHodiny) : "—"}</td>
-              {skladani ? (
-                <td className="hraje">
-                  {vZapase?.has(hrac.steamId) ? (
-                    <span className="mece" role="img" aria-label={`Právě hraje zápas #${vZapase.get(hrac.steamId)}`} title={`Právě hraje zápas #${vZapase.get(hrac.steamId)}`}>
-                      ⚔
-                    </span>
-                  ) : null}
-                </td>
-              ) : null}
+              <td className="hraje">
+                <StavHrace
+                  hrac={hrac}
+                  ted={ted}
+                  jsemTo={ja !== null && ja !== undefined && ja === hrac.steamId}
+                  vZapase={vZapase}
+                  onJsemTu={onJsemTu}
+                />
+              </td>
             </tr>
           );
         })}
@@ -208,5 +239,49 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
         </tfoot>
       ) : null}
     </table>
+  );
+}
+
+/**
+ * Poslední sloupec tabulky: co je s hráčem teď.
+ *
+ * Vlastní usnulý řádek má přednost před vším ostatním — kdo usnul, potřebuje
+ * hlavně cestu zpátky, ne informaci, že spí. Jinak jdou zkřížené meče před
+ * ikonou spáče: že je někdo ve hře, je pro sestavování důležitější.
+ */
+function StavHrace({
+  hrac,
+  ted,
+  jsemTo,
+  vZapase,
+  onJsemTu,
+}: {
+  hrac: PlayerView;
+  ted: number;
+  jsemTo: boolean;
+  vZapase?: Map<string, number>;
+  onJsemTu?: () => void;
+}) {
+  const spi = !jeAktivni(hrac.aktivniDo, ted);
+  if (spi && jsemTo && onJsemTu) {
+    return (
+      <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
+        Jsem tu!
+      </button>
+    );
+  }
+  const zapas = vZapase?.get(hrac.steamId);
+  if (zapas !== undefined) {
+    return (
+      <span className="mece" role="img" aria-label={`Právě hraje zápas #${zapas}`} title={`Právě hraje zápas #${zapas}`}>
+        ⚔
+      </span>
+    );
+  }
+  if (!spi) return null;
+  return (
+    <span className="spi" role="img" aria-label="Delší dobu neaktivní" title="Delší dobu neaktivní">
+      Zzz
+    </span>
   );
 }

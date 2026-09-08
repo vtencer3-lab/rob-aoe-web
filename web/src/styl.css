@@ -981,8 +981,27 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam > thead > tr > th button.razeni.aktivni .sipka-razeni { opacity: 1; }
 
 /* Zkřížené meče u hráče, který právě hraje běžící zápas. */
-.seznam > tbody > tr > td.hraje { width: 2rem; text-align: center; }
+.seznam > tbody > tr > td.hraje { width: 2rem; text-align: center; white-space: nowrap; }
 .seznam .mece { font-size: 1.2rem; color: var(--akcent); }
+
+/* Kdo se dlouho neozval, ztmavne a propadne na konec seznamu. Zůstává čitelný
+   — je to informace „asi tu není“, ne škrtnutí. */
+.seznam > tbody > tr.spici { opacity: 0.52; }
+.seznam > tbody > tr.spici:hover { opacity: 0.78; }
+.seznam .spi {
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  color: var(--zlato-tmave);
+}
+/* Vlastní usnulý řádek nabízí cestu zpátky. Drobné tlačítko, ať se sloupec
+   kvůli němu neroztáhne přes půl tabulky. */
+.seznam button.jsem-tu {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
 
 /* Karta se statistikami hráče v pravém dolním rohu, jako ve hře po najetí
    na jméno v lobby. */

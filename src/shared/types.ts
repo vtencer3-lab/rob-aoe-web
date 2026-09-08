@@ -49,6 +49,12 @@ export interface PlayerView {
   statyChyba: string | null;
   /** Všechny žebříčky pro kartu se statistikami; chybí ve starších snímcích. */
   zebricky?: ZebricekRadek[] | null;
+  /**
+   * Dokdy platí přihláška do akce (ISO). Po vypršení hráč v tabulce ztmavne
+   * a propadne na konec — viz `shared/aktivita.ts`. Vyplňuje se jen v seznamu
+   * přihlášených; jinde (a ve starších snímcích stavu) chybí.
+   */
+  aktivniDo?: string | null;
 }
 
 export interface AkceView {

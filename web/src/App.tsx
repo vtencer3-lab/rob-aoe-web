@@ -185,6 +185,42 @@ export function App() {
     }
   }
 
+  // Zápas se zakládá dole pod tabulkou přihlášených, takže z něj po kliknutí
+  // nebyl vidět ani kus. Číslo si tu počká, než ho stav přinese, a karta se
+  // pak najede doprostřed obrazovky.
+  const [novyZapas, setNovyZapas] = useState<number | null>(null);
+  useEffect(() => {
+    if (novyZapas === null) return;
+    const karta = document.querySelector(`[data-zapas="${novyZapas}"]`);
+    // Stav se zápasem ještě nedorazil — efekt se pustí znovu, až dorazí.
+    if (!karta) return;
+    // V testovacím DOM scrollIntoView neexistuje; posun je ozdoba, ne funkce.
+    karta.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    setNovyZapas(null);
+  }, [novyZapas, stav]);
+
+  // Puls aktivity: kliknutí nebo klávesa je zpráva „sedím u počítače“. Posílá
+  // se nejvýš jednou za minutu; kolik z toho server uzná, řeší aktivita.ts.
+  const akceId = akce?.id ?? null;
+  useEffect(() => {
+    if (akceId === null || !jsemPrihlaseny) return;
+    let posledni = 0;
+    const puls = () => {
+      const ted = Date.now();
+      if (ted - posledni < 60_000) return;
+      posledni = ted;
+      // Selhání se schválně polyká: puls je vedlejší, chybová hláška kvůli
+      // němu by přebila to, co uživatel právě dělá.
+      void api.aktivita(akceId).catch(() => {});
+    };
+    window.addEventListener("pointerdown", puls);
+    window.addEventListener("keydown", puls);
+    return () => {
+      window.removeEventListener("pointerdown", puls);
+      window.removeEventListener("keydown", puls);
+    };
+  }, [akceId, jsemPrihlaseny]);
+
   async function hlidej(akce: () => Promise<unknown>) {
     try {
       setChyba(null);
@@ -264,6 +300,34 @@ export function App() {
       {!spojeno ? <p className="spojeni">Obnovuji spojení…</p> : null}
       {chyba ? <p className="chyba">{chyba}</p> : null}
 
+      {/* Kdo dorazil, se čte dřív, než se z toho staví zápas — tabulka proto
+          stojí nad panelem akce, ne pod ním. */}
+      {akce ? (
+        <>
+          {/* Admin má název akce v záhlaví panelu; ostatním zůstává tady. */}
+          {!admin ? <h2>{akce.nazev}</h2> : null}
+          {/* Existující akce sama o sobě znamená „hlásit se lze“ — skončenou
+              akci server do stavu vůbec neposílá. */}
+          {me ? (
+            <button onClick={() => void prepnout()}>
+              {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
+            </button>
+          ) : null}
+          {/* Obal je jen kvůli vzhledu: nadpis a tabulka mají sedět na jedné
+              desce s rámem, ne se vznášet na pozadí. Rozvržení nemění. */}
+          <section className="panel-prihlaseni">
+            <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
+            <SeznamPrihlasenych
+              prihlaseni={stav?.prihlaseni ?? []}
+              skladani={admin ? skladani : undefined}
+              vZapase={vZapase}
+              ja={me?.steamId ?? null}
+              onJsemTu={() => void hlidej(() => api.jsemTu(akce.id))}
+            />
+          </section>
+        </>
+      ) : null}
+
       {/* Mimo větev `akce ?` níže schválně: bez tohohle by Rob neměl akci jak
           založit — dokud žádná neběží, celý panel režie se nevykresluje. */}
       {admin ? (
@@ -290,6 +354,7 @@ export function App() {
               ? {
                   onPridat: () => void hlidej(() => api.pridatZkusebniho(akce.id)),
                   onOdebrat: () => void hlidej(() => api.odebratZkusebni(akce.id)),
+                  onPretocitCas: () => void hlidej(() => api.pretocitCas(akce.id)),
                 }
               : undefined
           }
@@ -297,7 +362,12 @@ export function App() {
           {akce ? (
             <Skladani
               skladani={skladani}
-              onVytvoritZapas={(sestava) => void hlidej(() => api.vytvoritZapas(akce.id, sestava))}
+              onVytvoritZapas={(sestava) =>
+                void hlidej(async () => {
+                  const { zapas } = await api.vytvoritZapas(akce.id, sestava);
+                  setNovyZapas(zapas.id);
+                })
+              }
               sadaCivilizaci={doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
               zvyraznit={zvyrazneni?.druh === "skladani" ? zvyrazneni : null}
             />
@@ -307,21 +377,6 @@ export function App() {
 
       {akce ? (
         <>
-          {/* Admin má název akce v záhlaví panelu; ostatním zůstává tady. */}
-          {!admin ? <h2>{akce.nazev}</h2> : null}
-          {/* Existující akce sama o sobě znamená „hlásit se lze“ — skončenou
-              akci server do stavu vůbec neposílá. */}
-          {me ? (
-            <button onClick={() => void prepnout()}>
-              {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
-            </button>
-          ) : null}
-          {/* Obal je jen kvůli vzhledu: nadpis a tabulka mají sedět na jedné
-              desce s rámem, ne se vznášet na pozadí. Rozvržení nemění. */}
-          <section className="panel-prihlaseni">
-            <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
-            <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} skladani={admin ? skladani : undefined} vZapase={vZapase} />
-          </section>
           {admin && stav ? <Rezie stav={stav} ladeni={ladeni} {...rezieObsluha} /> : null}
           {me
             ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>

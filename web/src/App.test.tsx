@@ -30,6 +30,9 @@ vi.mock("./api.js", () => ({
     zapasStav: vi.fn(),
     vysledek: vi.fn(),
     zmenitHosta: vi.fn(),
+    jsemTu: vi.fn(),
+    aktivita: vi.fn(),
+    pretocitCas: vi.fn(),
   },
 }));
 
@@ -395,4 +398,74 @@ it("admin má dohrané zápasy až pod běžícím a bez zkráceného řádku", 
   const poradi = screen.getAllByTestId("zapas-hlavicka").map((h) => h.textContent ?? "");
   expect(poradi[0]).toContain("Zápas #7");
   expect(poradi[1]).toContain("Zápas #8");
+});
+
+// Tabulka přihlášených patří nad panel akce: kdo dorazil, se čte dřív, než se
+// z toho staví zápas.
+it("přihlášení hráči stojí nad panelem akce", async () => {
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  const tabulka = await screen.findByRole("heading", { name: "Přihlášení hráči" });
+  const panel = screen.getByTestId("nazev-akce");
+  // Node.compareDocumentPosition: 4 = druhý uzel je v dokumentu za prvním.
+  expect(tabulka.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+// Zápas se zakládá dole pod tabulkou, takže z něj po kliknutí nebyl vidět ani
+// kus. Karta se musí najet doprostřed obrazovky, jakmile dorazí ve stavu.
+it("po založení zápasu se stránka posune na jeho kartu", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  const posun = vi.fn();
+  Element.prototype.scrollIntoView = posun;
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  vi.mocked(api.vytvoritZapas).mockResolvedValue({ zapas: { id: 42 } });
+  const hraci = [
+    { steamId: "a", alias: "A", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null },
+    { steamId: "b", alias: "B", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null },
+  ];
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [{ steamId: "a", tym: 1, barva: 1, civ: null }, { steamId: "b", tym: 2, barva: 2, civ: null }] },
+    prihlaseni: hraci,
+    zapasy: [],
+  });
+
+  const { rerender } = render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /vytvořit zápas/i }));
+  await vi.waitFor(() => expect(api.vytvoritZapas).toHaveBeenCalled());
+  // Do téhle chvíle karta na stránce není, takže není kam posouvat.
+  expect(posun).not.toHaveBeenCalled();
+
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] },
+    prihlaseni: hraci,
+    zapasy: [{ ...zapas([u("a", 1, 1, true), u("b", 2, 2)]), id: 42 }],
+  });
+  rerender(<App />);
+
+  await vi.waitFor(() => expect(posun).toHaveBeenCalledWith({ behavior: "smooth", block: "center" }));
+});
+
+// Lhůta aktivity je čtvrt hodiny; bez přetočení by se usínání hráčů dalo
+// zkoušet jen čekáním.
+it("debug mód nabízí přetočení času o 15 minut", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  vi.mocked(api.nastaveni).mockResolvedValue({ verze: "0.0.0", zkusebniHraci: true });
+  vi.mocked(api.pretocitCas).mockResolvedValue({ minut: 15, dotcenych: 3 });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  fireEvent.click(await screen.findByRole("switch", { name: /debug/i }));
+  fireEvent.click(screen.getByRole("button", { name: /přetočit o 15 min/i }));
+  await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1));
 });

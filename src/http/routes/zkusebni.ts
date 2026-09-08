@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { config } from "../../config.js";
-import { getAktivniAkce, listSignups, signUp, withdraw } from "../../db/events.js";
+import { getAktivniAkce, listSignups, pretocCas, signUp, withdraw } from "../../db/events.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
 import { jeZkusebni, ZKUSEBNI_HRACI, zkusebniId } from "../../matches/zkusebniHraci.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
+import { AKTIVITA_MINUT } from "../../shared/aktivita.js";
 import { VERZE } from "../../shared/verze.js";
 import { HttpError, requireAdmin, requireId } from "../guards.js";
 
@@ -47,6 +48,19 @@ export function registerZkusebniRoutes(app: FastifyInstance): void {
     await signUp(akceId, steamId);
     await broadcastAkce();
     return { pridan: dalsi.jmeno };
+  });
+
+  // Přetočí lhůty aktivity o čtvrt hodiny dopředu, tedy tak, že všichni
+  // přihlášení usnou. Jinak by se chování dalo zkoušet jen čekáním.
+  app.post("/api/akce/:id/pretocit-cas", async (request) => {
+    zkontroluj();
+    await requireAdmin(request);
+    const akceId = requireId(request);
+    const akce = await getAktivniAkce();
+    if (!akce || akce.id !== akceId) throw new HttpError(409, "Tahle akce neběží.");
+    const dotcenych = await pretocCas(akceId, AKTIVITA_MINUT);
+    if (dotcenych > 0) await broadcastAkce();
+    return { minut: AKTIVITA_MINUT, dotcenych };
   });
 
   // Odhlásí z akce všechny zkušební hráče. Řádky v player zůstávají — jsou

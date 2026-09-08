@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import {
   createAkce,
   getAktivniAkce,
+  obnovAktivitu,
+  pulsAktivity,
   setAkceStav,
   setNastaveniLobby,
   setSkladani,
@@ -124,6 +126,24 @@ export function registerEventRoutes(app: FastifyInstance): void {
     }
     await signUp(akceId, steamId);
     await broadcastAkce();
+    return { ok: true };
+  });
+
+  // „Jsem tu!“ z tabulky přihlášených: plná lhůta, ať vypršela nebo ne.
+  app.post("/api/akce/:id/jsem-tu", async (request) => {
+    const steamId = await requireUser(request);
+    const akceId = requireId(request);
+    if (await obnovAktivitu(akceId, steamId)) await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Puls z prohlížeče od kliknutí do stránky. Chodí často a schválně mlčky:
+  // když se nic nezmění (lhůta je na stropu, nebo je puls dřív než za odstup),
+  // odpověď je stejná a stav se nerozesílá.
+  app.post("/api/akce/:id/aktivita", async (request) => {
+    const steamId = await requireUser(request);
+    const akceId = requireId(request);
+    if (await pulsAktivity(akceId, steamId)) await broadcastAkce();
     return { ok: true };
   });
 

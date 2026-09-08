@@ -11,8 +11,8 @@ interface Props {
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
   /** „Uložit nastavení lobby“: snímek na serveru. */
   onUlozitNastaveni: () => void;
-  /** Jen na vývojové verzi: přidávání a odebírání zkušebních hráčů. */
-  zkusebni?: { onPridat: () => void; onOdebrat: () => void };
+  /** Jen na vývojové verzi: zkušební hráči a přetočení času. */
+  zkusebni?: { onPridat: () => void; onOdebrat: () => void; onPretocitCas: () => void };
   /** Debug mód (přepínač u verze): ukáže tlačítka zkušebních hráčů. */
   ladeni?: boolean;
   /** Levá půlka panelu: rozpracovaná sestava (Skladani), jako seznam hráčů v herní lobby. */
@@ -53,6 +53,12 @@ export function SpravaAkce({ akce, onZalozit, onStav, onNastaveniLobby, onUlozit
           </button>
           <button onClick={zkusebni.onOdebrat} title="Odhlásí z akce všechny zkušební hráče">
             Odebrat zkušební
+          </button>
+          <button
+            onClick={zkusebni.onPretocitCas}
+            title="Posune lhůty aktivity o čtvrt hodiny — všichni přihlášení usnou"
+          >
+            Přetočit o 15 min
           </button>
         </div>
       ) : null}
