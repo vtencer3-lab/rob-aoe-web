@@ -1065,21 +1065,29 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam > tbody > tr.spici.muj-radek { opacity: 0.78; }
 .seznam > tbody > tr.spici.muj-radek:hover { opacity: 1; }
 
-/* Tužka u názvu akce. Drží se textu, ale nemá na sebe strhávat pozornost —
-   svítí až pod kurzorem. */
+/* Tužka u názvu akce. Vedle nadpisu jen tiše čeká — je to nabídka, ne výzva —
+   a rozsvítí se až pod kurzorem. Rozměry jsou svázané na čtverec, aby rámeček
+   pod kurzorem nebyl podlouhlý podle šířky znaku. */
 .hlavicka-akce h2 button.prejmenovat {
-  margin-left: 0.5rem;
-  padding: 0 0.3rem;
-  font-size: 0.9rem;
+  margin-left: 0.6rem;
+  padding: 0;
+  width: 1.55rem;
+  height: 1.55rem;
+  flex: none;
+  font-size: 0.8rem;
   line-height: 1;
-  vertical-align: 0.1em;
+  vertical-align: 0.14em;
   color: var(--tlumene);
+  opacity: 0.42;
   background: none;
   border: 1px solid transparent;
+  border-radius: 2px;
   box-shadow: none;
   text-shadow: none;
 }
-.hlavicka-akce h2 button.prejmenovat:hover:enabled {
+.hlavicka-akce h2 button.prejmenovat:hover:enabled,
+.hlavicka-akce h2 button.prejmenovat:focus-visible {
+  opacity: 1;
   color: var(--akcent);
   border-color: var(--zlato-tmave);
   background: none;
