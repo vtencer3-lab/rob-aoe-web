@@ -93,7 +93,8 @@ body::before {
 main { max-width: calc(62rem + 250px); margin: 0 auto; padding: 1.5rem; position: relative; }
 /* Nadpis akce mimo panel (pohled hráče) stojí přímo na scéně — bez stínu by
    se ztratil v obloze nad náměstím. */
-main > h2 { margin: 0.6rem 0 1rem; font-size: 1.5rem; }
+/* Odstup od praporce: nalepený hned pod látku vypadal jako její součást. */
+main > h2 { margin: 20px 0 1rem; font-size: 1.5rem; }
 
 /* Nadpisy kapitálkou jako nápisy ve hře. Georgia zůstává na běžný text —
    kapitálka se v odstavci čte špatně. */
