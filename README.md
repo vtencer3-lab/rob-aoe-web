@@ -15,7 +15,9 @@ stály čas.
 **Web běží na <https://jouki.cz/aoe>** (ostrá verze z větve `main`) a
 <https://jouki.cz/aoe/dev> (vývojová z větve `dev`); nasazuje se samo z commitu.
 Jak se pracuje s větvemi a verzí, je v
-[`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
+[`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md). Proč jednotlivé
+funkce vypadají tak, jak vypadají, co se zamítlo a co čeká na rozhodnutí, je
+v [`docs/prehled-praci-a-zameru.md`](docs/prehled-praci-a-zameru.md).
 
 ## Co potřebuješ
 

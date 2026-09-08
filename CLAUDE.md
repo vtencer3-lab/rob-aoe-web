@@ -8,6 +8,11 @@ vznikne funkční odkaz.
 > **Nejsi autor repa?** Tenhle soubor popisuje zvyky a **lokální prostředí
 > autora** — cesty a jména databází níž platí na jeho stroji, ne na tvém.
 > Rozjetí na cizím stroji, mapu kódu a pasti má [`CONTRIBUTING.md`](CONTRIBUTING.md).
+>
+> **Nová session, která má navázat na předchozí práci:** nejdřív přečíst
+> [`docs/prehled-praci-a-zameru.md`](docs/prehled-praci-a-zameru.md) — stav,
+> postup jedné změny, záměry za funkcemi, čekající rozhodnutí. Po větší
+> práci ho aktualizovat (sekce 1, 5, 6).
 
 **Celý produkt stojí na jedné číslici.** `aoe2de://0/<id>` připojí do lobby jako
 hráče, `aoe2de://1/<id>` do téže lobby jako diváka. Ukládá se **jen to číslo**,
