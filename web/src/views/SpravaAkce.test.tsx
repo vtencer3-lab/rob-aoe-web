@@ -6,7 +6,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const zaklad = { onZalozit: vi.fn(), onStav: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn() };
+const zaklad = { onZalozit: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn() };
 
 // Dokud tahle obrazovka neexistovala, POST /api/akce neměl na webu žádného
 // volajícího: Rob se přihlásil, uviděl „Právě neběží žádná akce.“ a víc se
@@ -31,9 +31,9 @@ it("prázdný název neodešle", () => {
   expect(onZalozit).not.toHaveBeenCalled();
 });
 
-// Panel jako herní lobby: název akce v záhlaví, vpravo Ukončit, vlevo
-// sestava (children), vpravo nastavení.
-it("s běžící akcí ukáže název, ukončení, sestavu i nastavení lobby, ne zakládání", () => {
+// Panel jako herní lobby: název akce v záhlaví, vlevo sestava (children),
+// vpravo nastavení. „Ukončit akci“ je od 0.22.0 nahoře u tabulky přihlášených.
+it("s běžící akcí ukáže název, sestavu i nastavení lobby, ne zakládání", () => {
   render(
     <SpravaAkce {...zaklad} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }}>
       <p>SESTAVA</p>
@@ -41,25 +41,12 @@ it("s běžící akcí ukáže název, ukončení, sestavu i nastavení lobby, n
   );
 
   expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Čtvrtek");
-  expect(screen.getByRole("button", { name: "Ukončit akci" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Ukončit akci" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: /uložit nastavení lobby/i })).toBeInTheDocument();
   expect(screen.getByText("SESTAVA")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Založit akci" })).not.toBeInTheDocument();
 });
 
-it("ukončení akce se ptá a při odmítnutí nic nepošle", () => {
-  const onStav = vi.fn();
-  const potvrzeni = vi.spyOn(window, "confirm").mockReturnValue(false);
-  render(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }} onStav={onStav} />);
-
-  fireEvent.click(screen.getByRole("button", { name: "Ukončit akci" }));
-  expect(potvrzeni).toHaveBeenCalled();
-  expect(onStav).not.toHaveBeenCalled();
-
-  potvrzeni.mockReturnValue(true);
-  fireEvent.click(screen.getByRole("button", { name: "Ukončit akci" }));
-  expect(onStav).toHaveBeenCalledWith("konec");
-});
 
 // Zkušební hráči: server je musí povolit a admin zapnout debug mód. Bez
 // debug módu jsou tlačítka schovaná, ať v ostrém večeru nezavazí.

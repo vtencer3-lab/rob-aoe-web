@@ -49,6 +49,15 @@ export function verejneZapasy(zapasy: ZapasView[], steamId: string | null): Zapa
   return zapasy.filter((z) => z.stav !== "zruseny" && !z.zavreny && !naKarte.has(z.id));
 }
 
+/**
+ * Vyhrál tenhle hráč? U dohraného zápasu buď vyhrál celý tým, nebo jeden
+ * konkrétní hráč — podle toho, jak Rob výsledek zapsal.
+ */
+export function jeVitez(zapas: Pick<ZapasView, "vitez">, u: Pick<UcastnikView, "steamId" | "tym">): boolean {
+  if (!zapas.vitez) return false;
+  return "tym" in zapas.vitez ? u.tym === zapas.vitez.tym : u.steamId === zapas.vitez.steamId;
+}
+
 /** „tým 2“, nebo „bez týmu“ pro hráče, který hraje sám za sebe. */
 export function popisTymu(u: Pick<UcastnikView, "tym">): string {
   return u.tym === 0 ? "bez týmu" : `tým ${u.tym}`;

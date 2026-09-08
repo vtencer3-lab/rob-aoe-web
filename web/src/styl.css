@@ -370,8 +370,29 @@ main > .prazdno::after {
 .rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
 
 /* Nadpis historie stojí na pozadí mezi kartami. Odstup shora si musí říct sám:
-   sekce žádný nemá, mezery mezi kartami dělají jejich vlastní okraje. */
-.historie-zapasu > .nadpis-seznamu { margin-top: 2.4rem; }
+   sekce žádný nemá, mezery mezi kartami dělají jejich vlastní okraje. Velikost
+   má stejnou jako titulek zápasu pod ním — je to nadpis celé sekce, ne popisek,
+   a v menší velikosti se mezi kartami ztrácel. */
+.historie-zapasu > .nadpis-seznamu { margin-top: 2.4rem; font-size: 1.8rem; }
+.historie-zapasu > .nadpis-seznamu::after { width: 26rem; height: 1.7rem; margin-top: 0.5rem; }
+
+/* Vítěz dohraného zápasu. Zlatý odznak vedle jména a teplejší řádek — kdo
+   vyhrál, má být vidět dřív, než se přečte věta v hlavičce. */
+.sestava-zapasu .radek.vyhral { background: rgba(216, 168, 58, 0.09); }
+.sestava-zapasu .radek.vyhral .jmeno { color: var(--zlato-svetle); }
+.odznak-vitez {
+  margin-left: 0.5rem;
+  padding: 0.08rem 0.4rem;
+  border-radius: 2px;
+  background: linear-gradient(#e2c47c, #c99a35 55%, #9d7420);
+  color: #23150a;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  vertical-align: 0.12em;
+  box-shadow: inset 0 1px 0 rgba(255, 245, 215, 0.7), 0 1px 2px rgba(0, 0, 0, 0.5);
+}
 .skladani {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
@@ -1140,7 +1161,13 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 /* Křížek na zavření dohraného zápasu v pravém horním rohu karty; zavřený
    zápas (jen v debug módu) je zašedlý s tlačítkem na otevření. */
 .zapas { position: relative; }
-.zapas button.zavrit-zapas { position: absolute; top: 0.7rem; right: 0.7rem; width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+/* Rohová tlačítka karty (sbalit, zavřít) v jednom pruhu. Dřív si křížek
+   držel vlastní `right`, takže druhé tlačítko by se muselo umisťovat podle
+   toho, jestli křížek zrovna je — pruh to řeší sám. */
+.zapas .ovladani-karty { position: absolute; top: 0.7rem; right: 0.7rem; display: flex; align-items: center; gap: 0.2rem; }
+.zapas button.zavrit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.sbalit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 0.95rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.sbalit-zapas:hover:enabled { color: var(--akcent); border-color: var(--zlato-tmave); background: none; }
 .zapas button.zavrit-zapas:hover { color: var(--chyba); border-color: var(--zlato-tmave); }
 .zapas button.zavrit-zapas.otevrit { width: auto; height: auto; padding: 0.3rem 0.6rem; font-size: 0.85rem; background: linear-gradient(#4a2a1c, #2c1710); border-color: var(--zlato-tmave); }
 .zapas.zavreny { opacity: 0.45; }

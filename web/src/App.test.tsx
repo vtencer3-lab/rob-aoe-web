@@ -244,9 +244,9 @@ it("účastníkovi se jeho vlastní běžící zápas nezdvojí", async () => {
   expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
 });
 
-// Dohraný zápas z karty vypadne, protože mojeZapasy() filtruje `dohrano`.
-// Bez veřejného řádku by hráči po zapsání výsledku zmizel z obrazovky beze
-// stopy a nedozvěděl by se, jak zápas dopadl.
+// Dohraný zápas z vlastní karty vypadne, protože mojeZapasy() filtruje
+// `dohrano`. Bez historie by hráči po zapsání výsledku zmizel z obrazovky
+// beze stopy a nedozvěděl by se, jak dopadl.
 it("hráči po zapsání výsledku zápas nezmizí", async () => {
   vi.mocked(api.me).mockResolvedValue({
     hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false },
@@ -256,7 +256,8 @@ it("hráči po zapsání výsledku zápas nezmizí", async () => {
 
   render(<App />);
 
-  expect(await screen.findByTestId("verejny-zapas")).toHaveTextContent("vyhrál modrý tým");
+  expect(await screen.findByTestId("zapas-hlavicka")).toHaveTextContent("vyhrál modrý tým");
+  expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
 });
 
 // Přepínače jen pro adminy: „User View“ schová všechno adminské (panel akce,
@@ -468,4 +469,51 @@ it("debug mód nabízí přetočení času o 15 minut", async () => {
   fireEvent.click(await screen.findByRole("switch", { name: /debug/i }));
   fireEvent.click(screen.getByRole("button", { name: /přetočit o 15 min/i }));
   await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1));
+});
+
+// „Ukončit akci“ se přestěhovalo z panelu akce nahoru k tabulce přihlášených.
+// Je nevratné: po „konec“ akce zmizí všem naráz i s rozehranými zápasy.
+it("ukončení akce se ptá a při odmítnutí nic nepošle", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  nastavStav({ akce: { id: 1, nazev: "Čtvrtek", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+  const potvrzeni = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+  render(<App />);
+
+  const tlacitko = await screen.findByRole("button", { name: "Ukončit akci" });
+  fireEvent.click(tlacitko);
+  expect(potvrzeni).toHaveBeenCalled();
+  expect(api.akceStav).not.toHaveBeenCalled();
+
+  potvrzeni.mockReturnValue(true);
+  fireEvent.click(tlacitko);
+  await vi.waitFor(() => expect(api.akceStav).toHaveBeenCalledWith(1, "konec"));
+  potvrzeni.mockRestore();
+});
+
+// Hráč vidí tytéž karty historie jako Rob, ale nesmí do nich sáhnout.
+it("hráči vidí historii zápasů jen ke čtení", async () => {
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "divak", alias: "Divak", steamName: null, jeAdmin: false },
+  });
+  const dohrany: ZapasView = {
+    ...zapas([u("a", 1, 1, true), u("c", 2, 2)]),
+    stav: "dohrano",
+    vitez: { tym: 1 },
+  };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [dohrany] });
+
+  render(<App />);
+
+  expect(await screen.findByRole("heading", { name: /historie zápasů/i })).toBeInTheDocument();
+  expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("Zápas #7");
+  // Karta místo zkráceného řádku, bez zásahů do výsledku a bez zavírání.
+  expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /změnit výsledek/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /zavřít zápas/i })).not.toBeInTheDocument();
+  // Sbalit smí každý.
+  expect(screen.getByRole("button", { name: /sbalit zápas #7/i })).toBeInTheDocument();
 });

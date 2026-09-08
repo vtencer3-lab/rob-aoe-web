@@ -6,7 +6,6 @@ import { NastaveniLobby } from "./NastaveniLobby.js";
 interface Props {
   akce: AkceView | null;
   onZalozit: (nazev: string) => void;
-  onStav: (stav: string) => void;
   /** Živá změna nastavení lobby (každé kliknutí). */
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
   /** „Uložit nastavení lobby“: snímek na serveru. */
@@ -23,26 +22,18 @@ interface Props {
 
 /**
  * Panel akce rozložený jako herní lobby: název akce v záhlaví, vlevo
- * vybraní hráči (sestava), vpravo Game Settings. „Ukončit akci“ je vpravo
- * v záhlaví, ať nezavazí; tlačítka zkušebních hráčů jsou pod záhlavím a jen
- * v debug módu.
+ * vybraní hráči (sestava), vpravo Game Settings. Tlačítka zkušebních hráčů
+ * jsou pod záhlavím a jen v debug módu.
  */
-export function SpravaAkce({ akce, onZalozit, onStav, onNastaveniLobby, onUlozitNastaveni, zkusebni, ladeni = false, children, zvyraznitNastaveni }: Props) {
+export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, zkusebni, ladeni = false, children, zvyraznitNastaveni }: Props) {
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
   return (
     <section className="sprava-akce">
+      {/* „Ukončit akci“ bývalo tady vpravo; přestěhovalo se nahoru k tabulce
+          přihlášených, kde jsou i ostatní tlačítka na úrovni akce. */}
       <header className="hlavicka-akce">
         <h2 data-testid="nazev-akce">{akce.nazev}</h2>
-        <button
-          onClick={() => {
-            // Jediné tlačítko na úrovni akce, a nevratné: po „konec“ akce zmizí
-            // všem naráz ze streamu, včetně rozehraných zápasů. Proto potvrzení.
-            if (window.confirm(`Ukončit akci „${akce.nazev}“? Zpátky to nejde.`)) onStav("konec");
-          }}
-        >
-          Ukončit akci
-        </button>
       </header>
       {/* Zkušební hráči: Rob si složí plnou sestavu bez čtyř lidí. Kreslí se
           jen tam, kde to server povolil (vývojová verze), a jen v debug módu. */}

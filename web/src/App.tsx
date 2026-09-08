@@ -8,7 +8,7 @@ import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.
 import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
 import { useSkladani } from "./skladani.js";
-import { jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
+import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
@@ -313,14 +313,9 @@ export function App() {
                 přetočení času jsou o tom, kdo je v seznamu. */}
             <header className="hlavicka-prihlasenych">
               <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
+              {/* Zleva doprava od nejméně vážného po nejvážnější: nástroj
+                  na zkoušení, vlastní přihláška, konec celého večera. */}
               <div className="ovladani">
-                {/* Existující akce sama o sobě znamená „hlásit se lze“ —
-                    skončenou akci server do stavu vůbec neposílá. */}
-                {me ? (
-                  <button onClick={() => void prepnout()}>
-                    {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
-                  </button>
-                ) : null}
                 {/* Debug mód na vývojové verzi: lhůty aktivity o čtvrt hodiny
                     dopředu, ať se usínání nemusí odsedět. */}
                 {admin && ladeni && zkusebniHraci && akce ? (
@@ -329,6 +324,29 @@ export function App() {
                     title="Posune lhůty aktivity o čtvrt hodiny — všichni přihlášení usnou"
                   >
                     Přetočit o 15 min
+                  </button>
+                ) : null}
+                {/* Existující akce sama o sobě znamená „hlásit se lze“ —
+                    skončenou akci server do stavu vůbec neposílá. */}
+                {me ? (
+                  <button onClick={() => void prepnout()}>
+                    {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
+                  </button>
+                ) : null}
+                {/* Ukončení akce bývalo v záhlaví panelu níž. Patří k seznamu
+                    lidí: končí se, když se rozejdou, ne když se dohraje. */}
+                {admin && akce ? (
+                  <button
+                    className="ukoncit-akci"
+                    onClick={() => {
+                      // Nevratné: po „konec“ akce zmizí všem naráz ze streamu,
+                      // včetně rozehraných zápasů. Proto potvrzení.
+                      if (window.confirm(`Ukončit akci „${akce.nazev}“? Zpátky to nejde.`)) {
+                        void hlidej(() => api.akceStav(akce.id, "konec"));
+                      }
+                    }}
+                  >
+                    Ukončit akci
                   </button>
                 ) : null}
               </div>
@@ -351,9 +369,6 @@ export function App() {
           akce={akce}
           ladeni={ladeni}
           onZalozit={(nazev) => void hlidej(() => api.vytvoritAkce(nazev))}
-          onStav={(novyStav) => {
-            if (akce) void hlidej(() => api.akceStav(akce.id, novyStav));
-          }}
           onNastaveniLobby={(n) => {
             if (!akce) return;
             const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
@@ -392,7 +407,7 @@ export function App() {
 
       {akce ? (
         <>
-          {admin && stav ? <Rezie stav={stav} ladeni={ladeni} {...rezieObsluha} /> : null}
+          {admin && stav ? <Rezie stav={stav} ladeni={ladeni} obsluha={rezieObsluha} /> : null}
           {me
             ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
                 mujUcastnik(zapas, me.steamId)?.jeHost ? (
@@ -419,17 +434,19 @@ export function App() {
               mojeZapasy()), takže složený zápas neviděl nikdo kromě hráčů
               a admina — přestože ho server posílá všem a jen zaslepí
               tajemství. */}
-          {/* Adminovi ne: každý zápas už má v režii plnou kartu a zkrácený
-              řádek by pod ní říkal totéž ještě jednou. V „User View“ se
-              `admin` vypíná, takže si Rob stránku prohlédne i s řádky. */}
+          {/* Zkrácený řádek zůstal jen pro zápasy, které se hrají a divák u nich
+              nemá vlastní kartu. Dohrané mají plnou kartu v historii níž, tak
+              by tu říkal totéž podruhé. Adminovi nezbývá nic: běžící zápasy má
+              v režii. */}
           {admin
             ? null
-            : verejneZapasy(stav?.zapasy ?? [], me?.steamId ?? null).map((zapas) => (
-                <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.steamId ?? null} />
-              ))}
+            : verejneZapasy(stav?.zapasy ?? [], me?.steamId ?? null)
+                .filter(jeVeHre)
+                .map((zapas) => <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.steamId ?? null} />)}
           {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
-              má zůstat nahoře, dohrané jsou k nahlédnutí. */}
-          {admin && stav ? <HistorieZapasu stav={stav} ladeni={ladeni} {...rezieObsluha} /> : null}
+              má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
+              karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}
+          {stav ? <HistorieZapasu stav={stav} ladeni={ladeni} obsluha={admin ? rezieObsluha : undefined} /> : null}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>
