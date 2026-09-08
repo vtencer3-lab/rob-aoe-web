@@ -1188,6 +1188,10 @@ h2 .nazev-akce-obal {
      Počítá se ze stejných hodnot jako to odsazení, ať to drží i po jejich
      změně; rozměry pole zůstávají, jen se nezapočítají do výšky řádku. */
   margin-block: calc((0.2rem + 1px) * -1);
+  /* A doleva o vlastní odsazení, ať písmena zůstanou tam, kde byla: naměřený
+     posun textu při přepnutí byl 10,4 px doprava. Rámeček pod kurzorem má
+     stejné vyrovnání, takže se nehne ani on. */
+  margin-inline-start: -0.65rem;
 }
 h2 .nazev-akce-mira,
 h2 input.nazev-akce-pole {
