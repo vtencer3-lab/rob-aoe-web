@@ -801,6 +801,12 @@ button.vysledek.barva-4 small, button.vysledek.barva-8 small { color: #3b2a0c; }
   text-shadow: none;
 }
 
+/* Zašedlé tlačítko má světlé písmo na tmavém podkladu, takže reliéf musí být
+   obrácený: světlá linka pod písmem ho obtahovala a rozmazávala. Selektor je
+   schválně s atributem — pravidlo `.cta[aria-disabled="true"]` výš má stejnou
+   váhu jako `.cta.spectate` a prohrálo by pořadím v souboru. */
+.cta.spectate[aria-disabled="true"] { text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6); }
+
 /* Kopírovatelná hodnota usazená přímo do pole ve snímku dialogu: zelené herní
    písmo zůstává, ikona sedí vpravo v poli, toast vyskočí nad polem. */
 button.kopirovatelne.vsazeno {
