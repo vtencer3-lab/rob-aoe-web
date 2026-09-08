@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dalsiVerze, napis, rozeber, verzePoMergi } from "./verze.js";
+import { dalsiVerze, duvodOdmitnuti, napis, rozeber, verzePoMergi } from "./verze.js";
 
 describe("rozeber", () => {
   it("pozná obyčejnou i pokusnou verzi", () => {
@@ -63,5 +63,25 @@ describe("verzePoMergi", () => {
   it("odmítne verzi, která pokusná není", () => {
     expect(() => verzePoMergi("0.16.3", "0.16.4")).toThrow(/není pokusná/);
     expect(() => verzePoMergi("0.16.3-16.4", "0.16.3-17.0")).toThrow(/pokusná/);
+  });
+});
+
+// Git po mergi experimentu do devu často vyřeší konflikt ve verzi sám ve
+// prospěch pokusné větve. Zábradlí pak musí zastavit obyčejný bump, ale
+// **nesmí** blokovat výslovně zadanou verzi — tou se stav napravuje.
+describe("duvodOdmitnuti", () => {
+  it("zastaví obyčejný bump nad pokusnou verzí mimo pokusnou větev", () => {
+    expect(duvodOdmitnuti("0.16.4-18.11", "patch", "dev")).toMatch(/pokusná verze/);
+    expect(duvodOdmitnuti("0.16.4-18.11", "minor", "main")).toMatch(/pokusná verze/);
+  });
+
+  it("výslovnou verzi pustí, je to jediná cesta ven", () => {
+    expect(duvodOdmitnuti("0.16.4-18.11", "0.17.1", "dev")).toBeNull();
+  });
+
+  it("na pokusné větvi ani u obyčejné verze nebrání ničemu", () => {
+    expect(duvodOdmitnuti("0.16.4-18.11", "patch", "experimental")).toBeNull();
+    expect(duvodOdmitnuti("0.17.1", "patch", "dev")).toBeNull();
+    expect(duvodOdmitnuti("0.16.4-18.11", "patch", null)).toBeNull();
   });
 });
