@@ -972,15 +972,15 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
   text-align: left;
   font-family: "Cinzel", Georgia, serif;
   font-weight: 400;
-  font-size: 0.78rem;
+  font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--zlato);
-  padding: 0.5rem 0.6rem;
+  color: var(--text);
+  padding: 0.15rem 0.5rem;
   border-bottom: 1px solid rgba(216, 168, 58, 0.45);
 }
 .staty-hrace th:not(:first-child), .staty-hrace td:not(:first-child) { text-align: center; }
-.staty-hrace td { padding: 0.5rem 0.6rem; font-size: 1rem; color: var(--text); border-bottom: 1px solid rgba(216, 168, 58, 0.16); }
+.staty-hrace td { padding: 0.15rem 0.5rem; font-size: 1rem; color: var(--text); border-bottom: 1px solid rgba(216, 168, 58, 0.16); }
 .staty-hrace tbody tr:nth-child(even) { background: rgba(216, 168, 58, 0.045); }
 .staty-hrace tbody tr:hover { background: rgba(216, 168, 58, 0.10); }
 .staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
