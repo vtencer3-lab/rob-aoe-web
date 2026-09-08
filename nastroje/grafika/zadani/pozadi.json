@@ -1,0 +1,42 @@
+{
+  "pozadi_hrad": {
+    "prompt": "Wide painted background illustration: a Bohemian castle town at dusk seen from a stone rampart, slender Gothic spires with steep slate roofs on a rocky hill, half-timbered houses below, tall crimson banners bearing a golden rampant lion hanging from timber poles at the left and right edges, iron braziers and torches burning with warm orange light, low mist over the rooftops. The centre of the picture is calm open sky and haze, the detail sits at the left and right edges and in the lower corners. Painted concept art in the style of the Age of Empires II Definitive Edition main menu artwork, oil painting brushwork, warm torchlight against a cold violet and indigo twilight sky, deep shadows at the picture edges, no text, no user interface",
+    "n": 3,
+    "width": 1536,
+    "height": 864,
+    "lora": 0.0,
+    "raw": true
+  },
+  "pozadi_lezeni": {
+    "prompt": "Wide painted background illustration: a medieval Bohemian war camp at dusk before the walls of a Gothic city, canvas tents and Hussite war wagons chained together, campfires and iron braziers throwing warm light on trampled ground, tall crimson banners with a golden rampant lion on poles at both edges of the picture, slender cathedral spires silhouetted against the sky behind. The centre of the picture is calm open sky and mist, the detail sits at the left and right edges and in the lower corners. Painted concept art in the style of the Age of Empires II Definitive Edition main menu artwork, oil painting brushwork, warm firelight against a cold violet and indigo twilight sky, deep shadows at the picture edges, no text, no user interface",
+    "n": 3,
+    "width": 1536,
+    "height": 864,
+    "lora": 0.0,
+    "raw": true
+  },
+  "pozadi_brana": {
+    "prompt": "Wide painted background illustration seen from inside a dark stone gatehouse: a huge Gothic arch frames a Bohemian castle town glowing at dusk, weathered stone masonry and heavy timber beams in the near foreground on the left and right, crimson banners with a golden rampant lion hanging in the arch, torches in iron sconces on the pillars, mist and warm light beyond the gate. The centre of the picture is the bright calm view through the arch, the heavy dark stone frames the left and right edges. Painted concept art in the style of the Age of Empires II Definitive Edition main menu artwork, oil painting brushwork, warm torchlight against a cold violet and indigo twilight sky, no text, no user interface",
+    "n": 3,
+    "width": 1536,
+    "height": 864,
+    "lora": 0.0,
+    "raw": true
+  },
+  "pozadi_most": {
+    "prompt": "Wide painted background illustration: a medieval stone bridge lined with weathered statues leads across a misty river towards a Bohemian Gothic bridge tower and castle spires at dusk, crimson banners with a golden rampant lion on tall poles at the left and right edges, lanterns and braziers burning warm orange, boats and reeds in the dark water. The centre of the picture is calm mist and sky, the detail sits at the edges and in the lower corners. Painted concept art in the style of the Age of Empires II Definitive Edition main menu artwork, oil painting brushwork, warm lantern light against a cold violet and indigo twilight sky, deep shadows at the picture edges, no text, no user interface",
+    "n": 3,
+    "width": 1536,
+    "height": 864,
+    "lora": 0.0,
+    "raw": true
+  },
+  "pozadi_namesti": {
+    "prompt": "Wide painted background illustration: the market square of a Bohemian town at dusk, tall Gothic town hall with an astronomical clock and slender twin spires behind, gabled burgher houses with steep roofs, a stone fountain in the middle distance, rows of tall crimson banners with a golden rampant lion on timber poles down both sides of the square, braziers and hanging lanterns burning warm orange, cobblestones wet with rain. The centre of the picture is calm open sky and haze, the detail sits at the left and right edges and in the lower corners. Painted concept art in the style of the Age of Empires II Definitive Edition main menu artwork, oil painting brushwork, warm light against a cold violet and indigo twilight sky, deep shadows at the picture edges, no text, no user interface",
+    "n": 3,
+    "width": 1536,
+    "height": 864,
+    "lora": 0.0,
+    "raw": true
+  }
+}

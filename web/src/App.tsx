@@ -304,8 +304,12 @@ export function App() {
               {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
             </button>
           ) : null}
-          <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
-          <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} skladani={admin ? skladani : undefined} vZapase={vZapase} />
+          {/* Obal je jen kvůli vzhledu: nadpis a tabulka mají sedět na jedné
+              desce s rámem, ne se vznášet na pozadí. Rozvržení nemění. */}
+          <section className="panel-prihlaseni">
+            <h3 className="nadpis-seznamu">Přihlášení hráči</h3>
+            <SeznamPrihlasenych prihlaseni={stav?.prihlaseni ?? []} skladani={admin ? skladani : undefined} vZapase={vZapase} />
+          </section>
           {admin && stav ? (
             <Rezie
               stav={stav}
