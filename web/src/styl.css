@@ -199,7 +199,10 @@ header h1 {
    bloku, ne jako pozadí nadpisu: pozadí se ořezávalo šířkou nadpisu a u
    krátkého titulku z ozdoby zbyla půlka s rozetou mimo střed. */
 .nadpis-seznamu, h2.nadpis-akce, .hlavicka-akce h2 { margin: 0 0 0.7rem; }
-.nadpis-seznamu, h2.nadpis-akce { font-size: 1.1rem; }
+/* Nadpisy panelů drží jednu velikost. „Nastavení Lobby“ ji dřív bralo
+   z výchozího stylu prohlížeče pro h2, takže vycházelo větší než „Přihlášení
+   hráči“ vedle něj; teď je řečená u obou. */
+.nadpis-seznamu, .hlavicka-akce h2 { font-size: 1.4rem; }
 .nadpis-seznamu::after, h2.nadpis-akce::after, .hlavicka-akce h2::after {
   content: "";
   display: block;
@@ -442,6 +445,16 @@ main > .prazdno::after {
   height: 1.7rem;
   margin-top: 0.5rem;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75));
+}
+/* Ozdoba pod názvem akce visí mimo tok: nadpis pak měří jen svůj řádek textu
+   a tlačítko vedle něj se má podle čeho vystředit. Místo pod ní drží spodní
+   okraj nadpisu (odstup + výška ozdoby + odstup od panelu). */
+h2.nadpis-akce { position: relative; margin-bottom: 0; }
+h2.nadpis-akce::after {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
 }
 .historie-zapasu > .nadpis-seznamu { margin-top: 2.4rem; }
 
@@ -1108,6 +1121,9 @@ h2 button.nazev-akce-tlacitko {
 h2 button.nazev-akce-tlacitko:hover,
 h2 button.nazev-akce-tlacitko:focus-visible {
   color: var(--zlato);
+  background: none;
+  border: none;
+  box-shadow: none;
   text-shadow: 0 0 16px rgba(216, 168, 58, 0.55);
 }
 h2 input.nazev-akce-pole {
@@ -1117,10 +1133,20 @@ h2 input.nazev-akce-pole {
   padding: 0.1rem 0.4rem;
 }
 
-/* Nadpis akce a ukončení večera na jedné řádce. Zarovnání k hornímu okraji,
-   ne na střed: pod nadpisem visí ozdoba a tlačítko má stát vedle textu, ne
-   vedle ní. */
-.radek-akce { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+/* Nadpis akce a ukončení večera na jedné řádce, tlačítko svisle na střed textu.
+   Aby střed vycházel z písma a ne z ozdoby pod ním, je ozdoba vytažená z toku
+   (viz `h2.nadpis-akce::after` níž) — nadpis je pak vysoký přesně jako jeho
+   řádek. Kdyby ozdoba do výšky počítala, tlačítko by kleslo pod účaří. */
+.radek-akce {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  /* Odstup i místo pro ozdobu drží řádek, ne nadpis: pružné centrování počítá
+     i s okraji položky, takže spodní okraj nadpisu by tlačítko stáhl dolů. */
+  margin-bottom: calc(0.5rem + 1.7rem + 1rem);
+}
 .radek-akce > h2 { flex: 0 1 auto; }
 
 /* Nadpis a tlačítka tabulky přihlášených na jednom řádku; nadpis si nese
