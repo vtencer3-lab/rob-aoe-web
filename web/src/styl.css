@@ -130,7 +130,9 @@ header .logo {
    praporec má vlaštovčí cípy a průhledné pozadí, takže obdélníkový stín by
    visel ve vzduchu vedle nich. */
 header h1 {
-  margin: 0 auto 0 0;
+  /* Záporný levý okraj zasune praporec za štít; záporný spodní vyrovná horní
+     odsazení, aby usazení textu neposouvalo zbytek stránky. */
+  margin: 0 auto -18px -30px;
   /* Praporec vcelku, v poměru předlohy (1600 × 502). Žádné dělení na krajní
      díly a dlaždicovaný střed: ať se opakující dlaždice udělá jakkoliv, na
      šířku hlavičky je jí vidět začátek i konec a látka se svisle mačká.
@@ -160,10 +162,10 @@ header h1 {
      výšky. Spodní odsazení tam obsah zvedne: procento se počítá ze šířky,
      takže při poměru 4,42:1 odpovídá 7,6 % šířky 34 % výšky. Usazení tím drží
      v každé velikosti, na rozdíl od posunu v pixelech. */
-  padding: 0 4% 7.6% 4%;
+  padding: 18px 4% 7.6% 4%;
   /* Písmo roste s praporcem, ale nepřeroste ho: v plné šířce má zabírat asi
      čtvrtinu vzdálenosti mezi tyčí a bordurou. */
-  font-size: clamp(1rem, 2vw, 1.72rem);
+  font-size: 2rem;
   line-height: 1.15;
   background: url(./assets/ui/praporec-cely.webp) center / contain no-repeat;
   color: var(--zlato-svetle);
