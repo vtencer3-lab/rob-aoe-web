@@ -1231,7 +1231,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 
 /* Robovo jméno v záhlaví je tlačítko (easter egg), ale vypadá jako text;
    hover ho jen lehce zezlátne. */
-h1 button.jmeno-roba { all: unset; cursor: pointer; transition: color 0.2s; }
+/* Odsazení musí stát až za `all: unset`, ten smaže i okraje. Mezi pomlčkou
+   a jménem jinak nezbyla mezera — tlačítko se lepilo rovnou na ni. */
+h1 button.jmeno-roba { all: unset; margin-left: 10px; cursor: pointer; transition: color 0.2s; }
 h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
   color: var(--zlato);
   background: none;
