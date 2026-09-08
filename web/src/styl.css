@@ -103,7 +103,11 @@ h1, h2, h3, h4, legend, .nadpis-seznamu {
   color: var(--zlato-svetle);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 14px rgba(216, 168, 58, 0.18);
 }
-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+/* Zarovnání shora, ne na střed: praporec je nejvyšší prvek řady a uživatelský
+   blok vedle něj patří k hornímu okraji. Prázdné místo nad i pod praporcem
+   zmizelo s ořezem obrázku — dřív ho tvořilo jeho prázdné plátno, ne odsazení,
+   takže se nemá čím dorovnávat. */
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.4rem; }
 /* Štít nesedí vedle praporce, ale NA něm: přesahuje přes jeho levý konec
    a vrhá na látku vlastní stín. Bez toho vypadal odloženě vedle. */
 header .logo {
@@ -114,7 +118,7 @@ header .logo {
   z-index: 2;
   /* Přesah jen přes zlatý nárožník, ne přes celý konec praporce — pod štítem
      má zůstat vidět, že látka někde začíná. */
-  margin: -0.2rem -46px 0 0;
+  margin: 0.4rem -60px 0 0;
   filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 22px rgba(0, 0, 0, 0.45));
 }
 /* Nadpis sedí na praporci. Krajní díly obrázku (zlaté nárožníky s cípy)
@@ -133,21 +137,29 @@ header h1 {
      Kreslí se přes `contain`, ne `100% 100%`: to druhé vyplní box, ať má
      jakýkoliv tvar, a stačí aby výška vyšla o kousek jinak (výška řádku,
      odsazení, `align-items` v hlavičce) a látka se zmáčkne. `contain` poměr
-     drží za všech okolností; `aspect-ratio` jen říká, jak vysoký box má být,
-     aby kolem obrázku nezbývalo prázdno.
+     drží za všech okolností; `aspect-ratio` říká, jak vysoký box má být, aby
+     kolem obrázku nezbývalo prázdno, a `box-sizing` musí být `border-box`,
+     jinak se odsazení k té výšce ještě přičte.
 
-     Cena je, že na širokém okně praporec roste do výšky. Právě to je na
-     posouzení: jestli tenhle poměr stačí. */
+     Obrázek je oříznutý na kresbu (1962 × 444). Dokud měl kolem sebe prázdné
+     plátno, musela se jeho poloha dorovnávat posunem — teď sedí sám.
+
+     Šířka je zastropovaná: praporec roste s oknem a na širokém monitoru by
+     zabral půl obrazovky. */
   flex: 1 1 auto;
   min-width: 0;
-  /* Bez tohohle se odsazení přičte k výšce spočítané z poměru (výchozí
-     content-box) a praporec vyjde vyšší, než má být. */
+  max-width: 860px;
   box-sizing: border-box;
-  aspect-ratio: 1600 / 502;
+  aspect-ratio: 1962 / 444;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 2.8rem 9% 0.6rem;
+  /* Text patří do látky mezi tyčí a zlatou bordurou, ne doprostřed obrázku.
+     Bordura je na 62 % výšky, tyč zabírá vršek — střed textu má vyjít na 39 %.
+     Spodní odsazení zvedne obsah přesně tam. Procento se počítá ze šířky,
+     takže při 4,42:1 odpovídá 5 % šířky 22 % výšky a usazení drží v každé
+     velikosti. */
+  padding: 0 4% 5% 4%;
   font-size: 2.05rem;
   line-height: 1.15;
   background: url(./assets/ui/praporec-cely.webp) center / contain no-repeat;
