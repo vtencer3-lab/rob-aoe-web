@@ -34,10 +34,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.19.1, nasazeno na <https://jouki.cz/aoe> (PR #11, 8. 9. 2026); stav před ním nese značku `v0.18.1` |
-| `origin/dev` | 0.20.0, nasazeno na <https://jouki.cz/aoe/dev>; nese aktivitu přihlášek (§3.15), do `main` zatím nešla |
+| `origin/dev` | 0.21.0, nasazeno na <https://jouki.cz/aoe/dev>; nese aktivitu přihlášek (§3.15) a otisk pro archiv (§3.16), do `main` zatím nešlo |
 | `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; zatím prázdné kolo |
-| Migrace | 001–013, poslední `013_aktivita_prihlaseni.sql`; na ostré databázi zatím **není** (jde tam s 0.20.0) |
-| Testy | backend hermetické 223, databázové 143, frontend 190 — všechny zelené |
+| Migrace | 001–014, poslední `014_archiv_zapasu.sql`; na ostré databázi zatím **nejsou** 013 ani 014 |
+| Testy | backend hermetické 223, databázové 145, frontend 192 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
@@ -489,6 +489,31 @@ jen čekáním.
 obrazovky. Zakládá se dole pod tabulkou, takže z ní do té doby nebyl vidět ani
 kus. Karta nese `data-zapas`, `App` si po založení číslo pamatuje a posune se,
 až zápas dorazí ve stavu.
+
+### 3.16 Otisk zápasu pro budoucí archiv
+
+**Otázka.** Uživatel: „ukládají se tyto zápasy (výsledky a všechno) do
+databáze? abychom pak mohli udělat i archiv? (chtěl bych aby se tam ukládalo
+uplně vše, datum, složení, veškeré nastavení atd. ohledně té hry)“.
+
+**Co se ukládalo.** Zápas držel pořadí, název lobby, heslo, číslo lobby, stav,
+vítěze, čas založení a dohrání, u účastníků tým, barvu, civilizaci, hosta,
+pořadí a čas kliknutí na připojení. To všechno zůstává v databázi i po večeru.
+
+**Co chybělo.** Nastavení lobby žije na akci (`akce.nastaveni_lobby`) a
+přepisuje se každým kliknutím, takže po večeru zbyl jen jeho poslední stav —
+u zápasu nešlo zjistit, na jaké mapě a s jakými pravidly se hrál. ELO hráče se
+přepisuje při každém stažení statistik, takže by archiv u loňského zápasu
+ukazoval dnešní čísla.
+
+**Jak to je teď.** Migrace `014_archiv_zapasu.sql` přidává `zapas.nastaveni`
+(snímek nastavení v okamžiku založení) a `ucastnik.elo_pri_zapasu`. Otisk se
+bere v `createZapas`, v téže transakci jako zápas sám. Do přenosu stavu nic
+z toho nejde — je to zásoba pro archiv, ne údaj pro stránku.
+
+**Co archivu pořád chybí** (až se bude stavět): obrazovka nad těmi daty,
+a rozhodnutí, co se zrušenými zápasy — „Odebrat úplně“ je maže z databáze
+natvrdo. Tabulka `udalost` ze schématu 001 existuje, ale nikdo do ní nezapisuje.
 
 ### 3.11 Drobnosti a easter egg
 
