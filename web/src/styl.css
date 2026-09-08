@@ -1122,24 +1122,44 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    malý terč hned vedle velkého nápisu, na který se stejně chtělo klikat.
    Tlačítko nesmí být vidět jako tlačítko — dědí písmo i barvu nadpisu a pod
    kurzorem jen zezlátne. */
+/* Pod kurzorem se pod nadpisem načrtne to pole, ve které se po kliknutí
+   promění: tmavší prohlubeň s tenkým zlatým rámečkem. Říká to, co se stane,
+   líp než pouhé přebarvení. Odsazení a rámeček má stejné jako to pole, jen
+   průhledné, aby nápis při přepnutí nepodskočil; záporný levý okraj to
+   odsazení vyruší, ať nadpis začíná tam, kde ostatní. */
 h2 button.nazev-akce-tlacitko {
   all: unset;
   cursor: pointer;
-  transition: color 0.2s;
+  padding: 0.1rem 0.4rem;
+  margin-left: -0.4rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transition: background-color 0.18s, border-color 0.18s, color 0.18s;
 }
 h2 button.nazev-akce-tlacitko:hover,
 h2 button.nazev-akce-tlacitko:focus-visible {
-  color: var(--zlato);
-  background: none;
-  border: none;
-  box-shadow: none;
-  text-shadow: 0 0 16px rgba(216, 168, 58, 0.55);
+  color: var(--zlato-svetle);
+  background-color: rgba(12, 7, 4, 0.35);
+  border-color: var(--zlato-tmave);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.55);
 }
+/* Pole i jeho neviditelná míra musí mít stejné písmo, odsazení i rámeček,
+   jinak by se šířky rozešly. Míra drží obal, pole ho vyplní. */
+h2 .nazev-akce-obal { position: relative; display: inline-block; max-width: 100%; }
+h2 .nazev-akce-mira,
 h2 input.nazev-akce-pole {
   font: inherit;
-  color: inherit;
-  width: min(100%, 22rem);
+  letter-spacing: inherit;
   padding: 0.1rem 0.4rem;
+  border: 1px solid var(--zlato-tmave);
+  box-sizing: border-box;
+}
+h2 .nazev-akce-mira { display: block; visibility: hidden; white-space: pre; min-width: 6ch; }
+h2 input.nazev-akce-pole {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  color: inherit;
 }
 
 /* Nadpis akce a ukončení večera na jedné řádce, tlačítko svisle na střed textu.

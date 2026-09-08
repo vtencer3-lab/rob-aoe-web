@@ -44,19 +44,26 @@ export function NazevAkce({ nazev, onPrejmenovat }: { nazev: string; onPrejmenov
 
   return (
     <h2 className="nadpis-akce" data-testid="nazev-akce">
-      <input
-        className="nazev-akce-pole"
-        aria-label="Název akce"
-        value={text}
-        autoFocus
-        maxLength={120}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={uloz}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") uloz();
-          if (e.key === "Escape") setUpravuje(false);
-        }}
-      />
+      {/* Pole roste s textem: neviditelná kopie nápisu drží šířku obalu a pole
+          ji vyplní. Pevná šířka by delší název odřízla a psalo by se naslepo. */}
+      <span className="nazev-akce-obal">
+        <span className="nazev-akce-mira" aria-hidden="true">
+          {text || " "}
+        </span>
+        <input
+          className="nazev-akce-pole"
+          aria-label="Název akce"
+          value={text}
+          autoFocus
+          maxLength={120}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={uloz}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") uloz();
+            if (e.key === "Escape") setUpravuje(false);
+          }}
+        />
+      </span>
     </h2>
   );
 }
