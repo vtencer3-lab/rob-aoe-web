@@ -130,10 +130,19 @@ header h1 {
   /* Praporec vcelku, v poměru předlohy (1600 × 502). Žádné dělení na krajní
      díly a dlaždicovaný střed: ať se opakující dlaždice udělá jakkoliv, na
      šířku hlavičky je jí vidět začátek i konec a látka se svisle mačká.
-     `aspect-ratio` drží poměr, takže `100% 100%` nic nedeformuje.
+     Kreslí se přes `contain`, ne `100% 100%`: to druhé vyplní box, ať má
+     jakýkoliv tvar, a stačí aby výška vyšla o kousek jinak (výška řádku,
+     odsazení, `align-items` v hlavičce) a látka se zmáčkne. `contain` poměr
+     drží za všech okolností; `aspect-ratio` jen říká, jak vysoký box má být,
+     aby kolem obrázku nezbývalo prázdno.
 
      Cena je, že na širokém okně praporec roste do výšky. Právě to je na
      posouzení: jestli tenhle poměr stačí. */
+  flex: 1 1 auto;
+  min-width: 0;
+  /* Bez tohohle se odsazení přičte k výšce spočítané z poměru (výchozí
+     content-box) a praporec vyjde vyšší, než má být. */
+  box-sizing: border-box;
   aspect-ratio: 1600 / 502;
   display: flex;
   align-items: center;
@@ -141,7 +150,7 @@ header h1 {
   padding: 0 2.8rem 9% 0.6rem;
   font-size: 2.05rem;
   line-height: 1.15;
-  background: url(./assets/ui/praporec-cely.webp) center / 100% 100% no-repeat;
+  background: url(./assets/ui/praporec-cely.webp) center / contain no-repeat;
   color: var(--zlato-svetle);
   text-shadow: 0 2px 4px rgba(40, 6, 6, 0.9), 0 0 20px rgba(0, 0, 0, 0.55);
   filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
