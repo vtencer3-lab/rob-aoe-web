@@ -1,8 +1,9 @@
 import { useState } from "react";
 
 /**
- * Název akce s tužkou. Večer se často jmenuje podle toho, co se zrovna hraje,
- * a přepsat ho jde bez zakládání nové akce.
+ * Název akce. Večer se často jmenuje podle toho, co se zrovna hraje, a přepsat
+ * ho jde bez zakládání nové akce: adminovi je celý nadpis tlačítko. Tužka vedle
+ * něj byla drobný terč vedle velkého nápisu, na který se stejně chtělo klikat.
  *
  * Uloží se odchodem z pole nebo Enterem, Escape změnu zahodí. Prázdný název
  * se neuloží — server by ho stejně odmítl a Rob by koukal na chybu místo na
@@ -15,22 +16,22 @@ export function NazevAkce({ nazev, onPrejmenovat }: { nazev: string; onPrejmenov
   // Bez obsluhy (hráč) je to obyčejný nadpis — přejmenovat smí jen admin.
   if (!upravuje || !onPrejmenovat) {
     return (
-      <h2 data-testid="nazev-akce">
-        {nazev}
+      <h2 className="nadpis-akce" data-testid="nazev-akce">
         {onPrejmenovat ? (
-        <button
-          type="button"
-          className="prejmenovat"
-          aria-label="Přejmenovat akci"
-          title="Přejmenovat akci"
-          onClick={() => {
-            setText(nazev);
-            setUpravuje(true);
-          }}
-        >
-          ✎
-        </button>
-        ) : null}
+          <button
+            type="button"
+            className="nazev-akce-tlacitko"
+            title="Upravit název akce"
+            onClick={() => {
+              setText(nazev);
+              setUpravuje(true);
+            }}
+          >
+            {nazev}
+          </button>
+        ) : (
+          nazev
+        )}
       </h2>
     );
   }
@@ -42,7 +43,7 @@ export function NazevAkce({ nazev, onPrejmenovat }: { nazev: string; onPrejmenov
   };
 
   return (
-    <h2 data-testid="nazev-akce">
+    <h2 className="nadpis-akce" data-testid="nazev-akce">
       <input
         className="nazev-akce-pole"
         aria-label="Název akce"

@@ -277,9 +277,9 @@ it("admin si přepne na pohled uživatele a adminské části zmizí", async () 
   fireEvent.click(screen.getByRole("switch", { name: /pohled uživatele/i }));
   expect(screen.queryByRole("button", { name: /vytvořit zápas/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Nastavení Lobby" })).not.toBeInTheDocument();
-  // Název akce zůstává: patří celému večeru, ne režii. Tužka u něj mizí.
+  // Název akce zůstává: patří celému večeru, ne režii. Přestane být tlačítkem.
   expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Akce 1");
-  expect(screen.queryByRole("button", { name: /přejmenovat akci/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Akce 1" })).not.toBeInTheDocument();
   // Přepínač zpátky zůstává, ať se admin dostane ven.
   expect(screen.getByRole("switch", { name: /pohled uživatele/i })).toBeInTheDocument();
 });

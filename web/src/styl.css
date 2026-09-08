@@ -94,7 +94,7 @@ main { max-width: calc(62rem + 250px); margin: 0 auto; padding: 1.5rem; position
 /* Nadpis akce mimo panel (pohled hráče) stojí přímo na scéně — bez stínu by
    se ztratil v obloze nad náměstím. */
 /* Odstup od praporce: nalepený hned pod látku vypadal jako její součást. */
-main > h2 { margin: 20px 0 1rem; font-size: 1.5rem; }
+h2.nadpis-akce { margin: 20px 0 1rem; font-size: 1.5rem; }
 
 /* Nadpisy kapitálkou jako nápisy ve hře. Georgia zůstává na běžný text —
    kapitálka se v odstavci čte špatně. */
@@ -112,7 +112,7 @@ header { display: flex; justify-content: space-between; align-items: flex-start;
 /* Štít nesedí vedle praporce, ale NA něm: přesahuje přes jeho levý konec
    a vrhá na látku vlastní stín. Bez toho vypadal odloženě vedle. */
 header .logo {
-  width: 142px;
+  width: 160px;
   height: auto;
   flex: none;
   position: relative;
@@ -131,9 +131,9 @@ header .logo {
    praporec má vlaštovčí cípy a průhledné pozadí, takže obdélníkový stín by
    visel ve vzduchu vedle nich. */
 header h1 {
-  /* Záporný levý okraj zasune praporec za štít; záporný spodní vyrovná horní
-     odsazení, aby usazení textu neposouvalo zbytek stránky. */
-  margin: 0 auto -18px -30px;
+  /* Záporný levý okraj zasune praporec za štít. Spodní zůstává na nule: pod
+     praporcem teď stojí název akce a stlačovat ho k látce se neosvědčilo. */
+  margin: 0 auto 0 -30px;
   /* Praporec vcelku, v poměru předlohy (1600 × 502). Žádné dělení na krajní
      díly a dlaždicovaný střed: ať se opakující dlaždice udělá jakkoliv, na
      šířku hlavičky je jí vidět začátek i konec a látka se svisle mačká.
@@ -198,9 +198,9 @@ header h1 {
    pod kapitálkou vypadá jako podtržení, ne jako výzdoba. Kreslí se do vlastního
    bloku, ne jako pozadí nadpisu: pozadí se ořezávalo šířkou nadpisu a u
    krátkého titulku z ozdoby zbyla půlka s rozetou mimo střed. */
-.nadpis-seznamu, main > h2, .hlavicka-akce h2 { margin: 0 0 0.7rem; }
-.nadpis-seznamu, main > h2 { font-size: 1.1rem; }
-.nadpis-seznamu::after, main > h2::after, .hlavicka-akce h2::after {
+.nadpis-seznamu, h2.nadpis-akce, .hlavicka-akce h2 { margin: 0 0 0.7rem; }
+.nadpis-seznamu, h2.nadpis-akce { font-size: 1.1rem; }
+.nadpis-seznamu::after, h2.nadpis-akce::after, .hlavicka-akce h2::after {
   content: "";
   display: block;
   width: 21rem;
@@ -426,7 +426,7 @@ main > .prazdno::after {
    vížkách a lucernách v pozadí se zlaté písmo bez něj ztrácí. Ozdoba je
    obrázek, takže potřebuje `drop-shadow` (obkreslí tvar), ne `box-shadow`
    (obkreslil by obdélník). */
-main > h2,
+h2.nadpis-akce,
 .historie-zapasu > .nadpis-seznamu {
   font-size: 1.8rem;
   text-shadow:
@@ -435,7 +435,7 @@ main > h2,
     0 2px 6px rgba(0, 0, 0, 0.75),
     0 0 26px rgba(0, 0, 0, 0.55);
 }
-main > h2::after,
+h2.nadpis-akce::after,
 .historie-zapasu > .nadpis-seznamu::after,
 main > .prazdno::after {
   width: 26rem;
@@ -1096,33 +1096,19 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam > tbody > tr.spici.muj-radek { opacity: 0.78; }
 .seznam > tbody > tr.spici.muj-radek:hover { opacity: 1; }
 
-/* Tužka u názvu akce. Selektor není vázaný na panel: nadpis se přestěhoval
-   nad tabulku přihlášených a tužka jde s ním. Vedle nadpisu jen tiše čeká — je to nabídka, ne výzva —
-   a rozsvítí se až pod kurzorem. Rozměry jsou svázané na čtverec, aby rámeček
-   pod kurzorem nebyl podlouhlý podle šířky znaku. */
-h2 button.prejmenovat {
-  margin-left: 0.6rem;
-  padding: 0;
-  width: 1.55rem;
-  height: 1.55rem;
-  flex: none;
-  font-size: 0.8rem;
-  line-height: 1;
-  vertical-align: 0.14em;
-  color: var(--tlumene);
-  opacity: 0.42;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 2px;
-  box-shadow: none;
-  text-shadow: none;
+/* Přejmenování: adminovi je tlačítkem celý nadpis. Drobná tužka vedle něj byla
+   malý terč hned vedle velkého nápisu, na který se stejně chtělo klikat.
+   Tlačítko nesmí být vidět jako tlačítko — dědí písmo i barvu nadpisu a pod
+   kurzorem jen zezlátne. */
+h2 button.nazev-akce-tlacitko {
+  all: unset;
+  cursor: pointer;
+  transition: color 0.2s;
 }
-h2 button.prejmenovat:hover:enabled,
-h2 button.prejmenovat:focus-visible {
-  opacity: 1;
-  color: var(--akcent);
-  border-color: var(--zlato-tmave);
-  background: none;
+h2 button.nazev-akce-tlacitko:hover,
+h2 button.nazev-akce-tlacitko:focus-visible {
+  color: var(--zlato);
+  text-shadow: 0 0 16px rgba(216, 168, 58, 0.55);
 }
 h2 input.nazev-akce-pole {
   font: inherit;
@@ -1131,8 +1117,11 @@ h2 input.nazev-akce-pole {
   padding: 0.1rem 0.4rem;
 }
 
-/* Ukončení akce stojí samo nad panelem, vpravo pod přepínačem pohledu. */
-.ukonceni-akce { display: flex; justify-content: flex-end; margin: 0 0 0.6rem; }
+/* Nadpis akce a ukončení večera na jedné řádce. Zarovnání k hornímu okraji,
+   ne na střed: pod nadpisem visí ozdoba a tlačítko má stát vedle textu, ne
+   vedle ní. */
+.radek-akce { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.radek-akce > h2 { flex: 0 1 auto; }
 
 /* Nadpis a tlačítka tabulky přihlášených na jednom řádku; nadpis si nese
    ozdobu, takže se zarovnává shora, ne na střed. */

@@ -307,17 +307,17 @@ export function App() {
         <>
           {/* Název akce nad tabulkou přihlášených, stejně pro všechny: patří
               k celému večeru, ne k nastavení hry. Tužku má jen admin. */}
-          <NazevAkce
-            nazev={akce.nazev}
-            onPrejmenovat={
-              admin ? (novy) => void hlidej(() => api.prejmenovatAkci(akce.id, novy)) : undefined
-            }
-          />
-          {/* Ukončení akce stojí nad panelem, ne v něm: je to jediné tlačítko
-              nad celým večerem, ne nad seznamem lidí, a v řadě s ostatními by
-              se mu dalo omylem kliknout. */}
-          {admin && akce ? (
-            <div className="ukonceni-akce">
+          {/* Ukončení akce stojí v řádce s názvem, ne v panelu: je to jediné
+              tlačítko nad celým večerem, ne nad seznamem lidí, a mezi ostatními
+              by se mu dalo omylem kliknout. */}
+          <div className="radek-akce">
+            <NazevAkce
+              nazev={akce.nazev}
+              onPrejmenovat={
+                admin ? (novy) => void hlidej(() => api.prejmenovatAkci(akce.id, novy)) : undefined
+              }
+            />
+            {admin && akce ? (
               <button
                 onClick={() => {
                   // Nevratné: po „konec“ akce zmizí všem naráz ze streamu,
@@ -329,8 +329,8 @@ export function App() {
               >
                 Ukončit akci
               </button>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
           {/* Obal je jen kvůli vzhledu: nadpis a tabulka mají sedět na jedné
               desce s rámem, ne se vznášet na pozadí. Rozvržení nemění. */}
           <section className="panel-prihlaseni">
