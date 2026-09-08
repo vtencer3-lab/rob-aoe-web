@@ -125,41 +125,30 @@ pod štítem má zůstat vidět, že látka někde začíná.
 rozetu. **Výška se zadává natvrdo** (`... / min(100%, 24rem) 0.95rem`), ne
 přes `auto` — z poměru šířky vyrostla ozdoba širokému nadpisu do textu.
 
-### Vodoznak
+### Vodoznak: zrušený
 
-Prázdná půlka sloupce se sestavou nese **českého dvouocasého lva vyřezaného
-do dřeva desky**. Světlá kopie posunutá o pět pixelů dolů doprava dělá hranu
-zářezu, tmavý tvar nad ní samotný zářez. Je to tentýž lev, co visí na
-praporcích v pozadí a sedí na štítu v logu.
+V prázdné půlce sloupce se sestavou byl chvíli vodoznak — nejdřív zlatá
+rytina pražského orloje, pak český lev „vyřezaný do dřeva“. Obojí bylo
+poskládané ručně a obojí vypadalo špatně: první jako nálepka na desce, druhý
+jako fušeřina, a navíc si s sebou nesl artefakt z předlohy. Vodoznak je teď
+pryč. Až se k němu vrátíme, musí ho nakreslit nástroj, ne skládání kopií.
 
-Předchůdcem byla zlatá rytina pražského orloje (herní znak civilizace
-Bohemians). Vypadala jako nálepka položená na desku, ne jako její součást —
-proto řezba místo přetisku.
+### Dvouocasý lev: nedořešeno
 
-### Dvouocasý lev
+Lev na praporcích v pozadí má podle státního znaku **dva ocasy**. Difuzní
+model mu ve scéně spolehlivě kreslí jeden, i když se v promptu dvakrát řekne
+opak, a Qwen-Image-Edit druhý ocas na hotovém obrázku nepřidá taky.
 
-Lev na praporcích v pozadí **není vygenerovaný spolu se scénou**. Difuzní
-model mu spolehlivě kreslí jeden ocas, i když se v promptu dvakrát řekne, že
-má mít dva; Qwen-Image-Edit ho na hotovém obrázku nepřidá taky. Český lev je
-státní symbol a dva ocasy u něj nejsou detail, na kterém by se dalo slevit.
+Vyzkoušená a **zamítnutá** cesta: vygenerovat scénu s prázdnými praporci
+(`zadani/pozadi3.json`), lva zvlášť (`zadani/lev.json`, tam vychází správně)
+a vsadit ho perspektivní transformací (`vsad_znak.py`). Technicky to fungovalo,
+výsledek byl ale horší než původní vygenerovaná scéna — lvi seděli jinak, měli
+jinou barvu a celé to působilo slepené. Nástroj v repu zůstává, ale
+**nepoužívá se**; pozadí je čistě vygenerované (`namesti2_04`).
 
-Postup je proto dvoukrokový:
-
-1. **Lev se vygeneruje sám o sobě** (`zadani/lev.json`). Jako jediný motiv ve
-   frameu ho model nakreslí heraldicky správně — dva ocasy, které se jednou
-   kříží a končí dvěma střapci, zlatá koruna, zlaté drápy.
-2. **Scéna se vygeneruje s prázdnými praporci** (`zadani/pozadi3.json`, do
-   promptu patří „PLAIN … absolutely nothing on it, no emblem“) a lev se na ně
-   vsadí nástrojem `vsad_znak.py`.
-
-`vsad_znak.py` lva vyřízne z rudého pole podle sytosti (bílé tělo má sytost
-nízkou, pole i koruna vysokou; zlato se z výběru vyjímá podle odstínu),
-natáhne ho perspektivní transformací do čtyřúhelníku zadaného čtyřmi rohy
-a **násobí místním jasem látky**, takže záhyby praporce prosvítají skrz a
-znak nevypadá jako nálepka.
-
-Souřadnice praporců jsou v `_grafika/final/praporce.json` (mimo repo);
-`--nahled` obtáhne zadané čtyřúhelníky zeleně, ať je vidět, kam padnou.
+Správná cesta je nechat opravu udělat model, který umí cílenou editaci
+obrázku (GPT-Image, Scenario), ne skládat kusy ručně. Do té doby má lev na
+pozadí jeden ocas a je to známý nedodělek.
 
 ---
 
@@ -172,13 +161,13 @@ ComfyUI a stažení vah).
 
 | Soubor ve `web/src/assets/ui/` | Předloha | Seed | Rozměr generování |
 |---|---|---|---|
-| `pozadi.webp` | `namesti3` var. 00 (prázdné praporce) + vsazený lev | 5551187599571487886 | 1536×864 |
+| `pozadi.webp` | `namesti2` var. 04 | 4235347553055014676 | 1536×864 |
 | `ram.webp` | `ram` var. 02 | 4923907625749824255 | 1024×1024 |
 | `praporec.webp` | `praporec2` var. 04 | 384470600565535280 | 2048×512 |
 | `oddelovac.webp` | `oddelovac` var. 03 | 6271939320368049132 | 1536×384 |
 | `drevo.webp` | `drevo` var. 01 | 3567542112645301907 | 1024×1024 |
 | `pergamen.webp` | `pergamen` var. 00 | 1398608127076758676 | 1024×1024 |
-| `vodoznak.webp` | `lev` var. 04, vyřezaný do dřeva | 4235347553055014676 | 768×1024 |
+| — | vodoznak zrušen, viz §3 | — | — |
 
 Všechno generováno **bez LoRA** (`lora: 0.0`), 24 kroků, guidance 4,0.
 Dohromady zabírají necelých 600 kB.
@@ -235,9 +224,18 @@ python nastroje/grafika/export.py drevo_01.png -o web/src/assets/ui/drevo.webp -
   hrany (jinak z opakování vzniknou pruhy) a posunem tónu na poslední sloupec
   rohu (jinak je na styku schod).
 - **Difuze neumí spočítat do dvou.** Lev na praporcích má mít dva ocasy;
-  z promptu i z editace hotového obrázku vycházel jeden. Když je ale lev
-  jediným motivem obrázku, model ho nakreslí správně. Poučení: **co musí
-  přesně sedět, se generuje zvlášť a skládá se to potom.**
+  z promptu i z editace hotového obrázku vycházel jeden. Když je lev jediným
+  motivem obrázku, model ho nakreslí správně — ale **vsadit ho pak do scény
+  po svém je slepá ulička**: výsledek vyšel hůř než původní vygenerovaná
+  scéna. Co má obrázek změnit, musí změnit model, ne skládání kopií.
+- **Zaškrtávátko se nafouklo z odsazení.** Obecné pravidlo pro `input, select`
+  dává polím vnitřní odsazení; u `box-sizing: border-box` se pod jeho součet
+  šířka stáhnout nedá, takže ze čtverečku 17 × 17 px byl obdélník 21 × 17 a
+  žádné `max-width` to nespravilo. Pravidlo pro zaškrtávátka proto stojí až
+  za ním a odsazení výslovně nuluje.
+- **Ozdoba jako pozadí nadpisu se ořezává jeho šířkou.** V pružném řádku je
+  nadpis široký jen podle textu, takže z ozdoby zbyla půlka. Patří do
+  vlastního bloku (`::after`), který smí být širší než nadpis.
 - **Klíčování prahem podle jasu nefunguje** na věcech, které mají vlastní
   tmavá místa. Záplava od rohů obrázku ano — ale práh je citlivý: praporec
   při `--prah 60` „vytekl“ do tmavě rudé látky a zbyly z něj cáry, při 18

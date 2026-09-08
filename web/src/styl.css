@@ -132,7 +132,7 @@ header h1 {
      látka i výšivka svisle zmáčknou. Nárožník 104 px dává výšku 143 px —
      dost na to, aby samet nepůsobil jako tenký pásek, a text sedí v něm nad
      zlatou bordurou. */
-  padding: 34px 2.8rem 74px 4rem;
+  padding: 34px 2.8rem 74px 2.4rem;
   font-size: 2.05rem;
   line-height: 35px;
   border-style: solid;
@@ -163,13 +163,20 @@ header h1 {
 .nova-verze button { background: #1a140c; color: var(--akcent); border: 0; border-radius: 6px; padding: 0.35rem 0.9rem; cursor: pointer; font-weight: 600; }
 .nova-verze button:hover { background: #2a2116; }
 .hlavicka-vpravo { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
-/* Nadpis seznamu se zlatou ozdobou pod ním. Ozdoba je obrázek, ne čára —
-   tenká linka pod kapitálkou vypadá jako podtržení, ne jako výzdoba. */
-.nadpis-seznamu, main > h2 {
-  margin: 0 0 0.7rem;
-  font-size: 1.1rem;
-  padding-bottom: 1.5rem;
-  background: url(./assets/ui/oddelovac.webp) bottom left / auto 1.35rem no-repeat;
+/* Nadpis se zlatou ozdobou pod ním. Ozdoba je obrázek, ne čára — tenká linka
+   pod kapitálkou vypadá jako podtržení, ne jako výzdoba. Kreslí se do vlastního
+   bloku, ne jako pozadí nadpisu: pozadí se ořezávalo šířkou nadpisu a u
+   krátkého titulku z ozdoby zbyla půlka s rozetou mimo střed. */
+.nadpis-seznamu, main > h2, .hlavicka-akce h2 { margin: 0 0 0.7rem; }
+.nadpis-seznamu, main > h2 { font-size: 1.1rem; }
+.nadpis-seznamu::after, main > h2::after, .hlavicka-akce h2::after {
+  content: "";
+  display: block;
+  width: 21rem;
+  max-width: 100vw;
+  height: 1.37rem;
+  margin-top: 0.35rem;
+  background: url(./assets/ui/oddelovac.webp) left center / 100% 100% no-repeat;
 }
 
 /* Tlačítka se kreslí v CSS, ne z obrázku: zůstanou ostrá v každé velikosti
@@ -196,7 +203,12 @@ a.tlacitko, .cta, button.vytvorit, button.plus {
    najetí zhnědlo do barvy běžných tlačítek. */
 a.tlacitko:hover, .cta:hover,
 button.vytvorit:hover:enabled, button.plus:hover:enabled {
-  background: linear-gradient(#eed595, #d8ab48 45%, #ac8228);
+  background: linear-gradient(#e8cd88, #d2a53e 45%, #a67c22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 215, 0.8),
+    inset 0 -2px 5px rgba(90, 50, 8, 0.5),
+    0 0 12px rgba(216, 168, 58, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.55);
   filter: none;
 }
 .cta[aria-disabled="true"] {
@@ -272,9 +284,11 @@ main > .prazdno {
 main > .prazdno::after {
   content: "";
   display: block;
-  height: 1.3rem;
+  width: 21rem;
+  max-width: 100%;
+  height: 1.37rem;
   margin: 0.9rem auto 0;
-  background: url(./assets/ui/oddelovac.webp) center / auto 100% no-repeat;
+  background: url(./assets/ui/oddelovac.webp) center / 100% 100% no-repeat;
 }
 .varovani { color: var(--akcent); margin-left: 0.35rem; cursor: help; }
 .chyba { color: var(--chyba); }
@@ -394,10 +408,9 @@ main > .prazdno::after {
   /* 3D zkosení jako ve hře: světlá hrana vlevo nahoře, tmavá vpravo dole,
      tenký zlatý rámeček a lesk přes horní půlku. */
   box-shadow:
-    inset 2px 2px 0 rgba(255, 255, 255, 0.55),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.5),
     inset -2px -2px 0 rgba(0, 0, 0, 0.45),
-    inset 0 0 0 3px rgba(212, 175, 95, 0.55),
-    0 1px 0 #000;
+    0 1px 0 rgba(0, 0, 0, 0.8);
   background-image: linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.12));
   border-radius: 2px;
   flex: none;
@@ -418,21 +431,60 @@ main > .prazdno::after {
   box-shadow:
     inset 2px 2px 0 rgba(255, 255, 255, 0.7),
     inset -2px -2px 0 rgba(90, 62, 24, 0.35),
-    inset 0 0 0 3px rgba(154, 107, 24, 0.5),
-    0 1px 0 #000;
+    0 1px 0 rgba(0, 0, 0, 0.8);
 }
 
+/* Čtverečky jsou tlačítka, ale barvu si drží i pod kurzorem — obecný hover
+   tlačítek je přebarvoval na hnědou a béžový čtvereček týmu ztmavl. Kurzor
+   se pozná jen po zlatém rámečku; přesvětlení z něj dělalo bílou skvrnu. */
+.skladani button.volba:hover:enabled { border-color: var(--zlato); }
+.skladani button.volba-barva:hover:enabled { background-image: linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.12)); }
+.skladani button.volba-tym:hover:enabled { background-color: #ded0b0; background-image: none; }
+
 /* Vstupní pole nemělo do teď žádný styl — na tmavém podkladu svítilo bíle. */
+/* Pole jsou zapuštěná: tmavý podklad, zlatý rámeček a stín shora, aby
+   vypadala vyříznutá do dřeva jako ve hře. */
+input, select {
+  background: linear-gradient(#170e09, #241610);
+  color: var(--text);
+  border: 1px solid var(--zlato-tmave);
+  border-radius: 2px;
+  padding: 0.4rem 0.6rem;
+  font-family: Georgia, "Times New Roman", serif;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(216, 168, 58, 0.12);
+}
+input:focus, select:focus { outline: none; border-color: var(--zlato); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 0 0 2px rgba(216, 168, 58, 0.35); }
+/* Rozbalený seznam vykresluje prohlížeč mimo stránku, takže dědí jen barvy
+   nastavené přímo na <option>; bez toho svítí bílý. */
+select { color-scheme: dark; accent-color: var(--zlato-tmave); }
+select option { background-color: #1c110b; color: var(--text); }
+/* Zvýraznění vybrané položky kreslí prohlížeč systémovou modrou; `accent-color`
+   i `option:checked` ji přebíjejí na zlatou. */
+select option:checked, select option:hover { background: var(--zlato-tmave); color: #fff3d6; }
+
 /* Zaškrtávátka a přepínače kreslí prohlížeč modře podle systému, což na
    zlatohnědé desce vypadá jako cizí těleso. Překreslujeme je na zapuštěný
-   štítek se zlatou fajfkou; třetí stav („je to jedno“) má pomlčku. */
+   štítek se zlatou fajfkou; třetí stav („je to jedno“) má pomlčku.
+
+   Blok musí stát AŽ ZA obecným pravidlem pro `input, select`. To dává polím
+   vnitřní odsazení 0,4/0,6 rem, a protože se počítá do šířky (border-box),
+   nafouklo čtvereček na 21 × 17 px — vypadal zdeformovaně a žádné max-width
+   to nespravilo, protože pod součet odsazení a rámečku se šířka stáhnout
+   nedá. Proto se tu odsazení výslovně nuluje. */
 input[type="checkbox"], input[type="radio"] {
   appearance: none;
   -webkit-appearance: none;
+  box-sizing: border-box;
+  padding: 0;
   width: 1.05rem;
+  min-width: 1.05rem;
+  max-width: 1.05rem;
   height: 1.05rem;
+  min-height: 1.05rem;
+  aspect-ratio: 1;
   margin: 0;
   flex: none;
+  align-self: center;
   display: inline-grid;
   place-content: center;
   background: linear-gradient(#1c110b, #2a1a12);
@@ -475,23 +527,6 @@ input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
   outline-offset: 2px;
 }
 
-/* Pole jsou zapuštěná: tmavý podklad, zlatý rámeček a stín shora, aby
-   vypadala vyříznutá do dřeva jako ve hře. */
-input, select {
-  background: linear-gradient(#170e09, #241610);
-  color: var(--text);
-  border: 1px solid var(--zlato-tmave);
-  border-radius: 2px;
-  padding: 0.4rem 0.6rem;
-  font-family: Georgia, "Times New Roman", serif;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(216, 168, 58, 0.12);
-}
-input:focus, select:focus { outline: none; border-color: var(--zlato); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 0 0 2px rgba(216, 168, 58, 0.35); }
-/* Rozbalený seznam vykresluje prohlížeč mimo stránku, takže dědí jen barvy
-   nastavené přímo na <option>; bez toho svítí bílý. */
-select { color-scheme: dark; }
-select option { background-color: #1c110b; color: var(--text); }
-select option:checked { background-color: var(--zlato-tmave); color: #fff3d6; }
 
 /* Vnitřní panely (skládání, nastavení) rám ani výplň nemají — dva rámy
    v sobě dělají z panelu matrjošku a druhá vrstva dřeva jen ztmaví desku. */
@@ -500,21 +535,10 @@ select option:checked { background-color: var(--zlato-tmave); color: #fff3d6; }
 /* Panel akce jako herní lobby: název vlevo, Ukončit vpravo, pod tím vlevo
    hráči (sestava) a vpravo Game Settings. */
 .hlavicka-akce { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
-.hlavicka-akce h2 {
-  margin: 0;
-  padding-bottom: 1.45rem;
-  background: url(./assets/ui/oddelovac.webp) bottom left / auto 1.25rem no-repeat;
-}
+
 .sprava-akce .ovladani.ladeni { margin: 0 0 0.6rem; }
 .lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: stretch; }
-/* Prázdné místo pod sestavou nese vodoznak: český dvouocasý lev vyřezaný do
-   dřeva desky. Světlá hrana zářezu a tmavý tvar z něj dělají řezbu, ne
-   nálepku — zlatý orloj, co tu byl předtím, na desce plaval. Je to tentýž
-   lev, co visí na praporcích v pozadí a sedí na štítu v logu. */
 .lobby-rozlozeni .leva { min-width: 0; display: flex; }
-.lobby-rozlozeni .leva .skladani {
-  background: url(./assets/ui/vodoznak.webp) center 76% / auto min(58%, 20rem) no-repeat;
-}
 .lobby-rozlozeni .skladani { margin: 0; border: none; padding: 0; flex: 1; display: flex; flex-direction: column; }
 /* Seznam roste dolů, ale řádky se neroztahují — mřížka drží řádky nahoře. */
 /* Součet ELO týmů sedí hned pod seznamem; ke spodnímu okraji se odsouvá až
@@ -705,7 +729,21 @@ button.vysledek small { font-size: 0.68rem; font-weight: 400; opacity: 0.8; marg
 
 /* Spectate se dvěma řádky: nahoře akce, dole fáze (Lobby / Hraje se).
    Široké a uprostřed karty — je to to jediné, na co Rob u zápasu kliká. */
-.cta.spectate { display: flex; flex-direction: column; align-items: center; line-height: 1.2; width: min(100%, 22rem); margin: 0.6rem auto; padding: 0.6rem 1rem; font-size: 1.1rem; }
+.cta.spectate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  line-height: 1.25;
+  width: min(100%, 26rem);
+  box-sizing: border-box;
+  margin: 1.2rem auto;
+  padding: 0.7rem 1.2rem;
+  font-size: 1.05rem;
+}
+/* Hlavní řádek se nesmí lámat — „Spectate — čeká se na založení lobby“ se
+   dřív zalomil doprostřed slova a zůstal zarovnaný vlevo. */
+.cta.spectate > span:first-child { white-space: nowrap; }
 .cta.spectate small { font-size: 0.78rem; font-weight: 400; opacity: 0.85; }
 
 /* Kopírovatelná hodnota usazená přímo do pole ve snímku dialogu: zelené herní

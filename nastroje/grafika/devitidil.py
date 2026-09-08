@@ -118,7 +118,16 @@ def slozit(im: Image.Image, roh: int, pas: int, symetricky: bool = True,
     out = Image.new("RGBA", (velikost, velikost), (0, 0, 0, 0))
 
     if symetricky:
-        roh_lh = im.crop((0, 0, roh, roh))
+        # Roh se nejdřív zesouměrní podle úhlopříčky. Model kreslí horní pás
+        # jinak tlustý než levý, takže otočená strana na roh nesedla a zlaté
+        # linky se o pár pixelů minuly. Průměr rohu s jeho překlopením přes
+        # úhlopříčku má obě hrany stejné, a otočené strany pak navazují přesně.
+        import numpy as np
+
+        vyrez = im.crop((0, 0, roh, roh))
+        a_roh = np.asarray(vyrez.convert("RGBA")).astype(np.float32)
+        a_roh = (a_roh + np.transpose(a_roh, (1, 0, 2))) / 2
+        roh_lh = Image.fromarray(a_roh.astype("uint8"), "RGBA")
         out.paste(roh_lh, (0, 0))
         out.paste(roh_lh.transpose(Image.FLIP_LEFT_RIGHT), (velikost - roh, 0))
         out.paste(roh_lh.transpose(Image.FLIP_TOP_BOTTOM), (0, velikost - roh))
