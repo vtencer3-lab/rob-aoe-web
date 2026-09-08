@@ -212,18 +212,10 @@ it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříč
 // čísla a nešlo by zjistit, na jaké mapě se hrál.
 
 it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
-  const akce = await createAkce("archiv");
-  for (const steamId of HRACI.slice(0, 2)) {
-    await upsertPlayer(steamId, null);
-    await signUp(akce.id, steamId);
-  }
   await savePlayerStats(HRACI[0]!, { alias: "A", steamName: "A", elo1v1: 1234, eloNejvyssi: 1300, odehranoHer: 10, chyba: null });
-  await setNastaveniLobby(akce.id, { location: "Arabia", population: 200 });
+  await setNastaveniLobby(akceId, { location: "Arabia", population: 200 });
 
-  const zapas = await createZapas(akce.id, [
-    { steamId: HRACI[0]!, tym: 1, barva: 1, civ: null },
-    { steamId: HRACI[1]!, tym: 2, barva: 2, civ: null },
-  ]);
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
 
   const { rows } = await getPool().query<{ nastaveni: Record<string, unknown> }>(
     "SELECT nastaveni FROM zapas WHERE id = $1",
@@ -243,18 +235,10 @@ it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
 // Otisk je snímek, ne odkaz: pozdější změna nastavení akce se do už založeného
 // zápasu nesmí promítnout.
 it("pozdější změna nastavení akce zápasem nehne", async () => {
-  const akce = await createAkce("archiv 2");
-  for (const steamId of HRACI.slice(0, 2)) {
-    await upsertPlayer(steamId, null);
-    await signUp(akce.id, steamId);
-  }
-  await setNastaveniLobby(akce.id, { location: "Arabia" });
-  const zapas = await createZapas(akce.id, [
-    { steamId: HRACI[0]!, tym: 1, barva: 1, civ: null },
-    { steamId: HRACI[1]!, tym: 2, barva: 2, civ: null },
-  ]);
+  await setNastaveniLobby(akceId, { location: "Arabia" });
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
 
-  await setNastaveniLobby(akce.id, { location: "Black Forest" });
+  await setNastaveniLobby(akceId, { location: "Black Forest" });
 
   const { rows } = await getPool().query<{ nastaveni: Record<string, unknown> }>(
     "SELECT nastaveni FROM zapas WHERE id = $1",
