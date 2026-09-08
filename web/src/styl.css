@@ -132,7 +132,7 @@ header h1 {
      látka i výšivka svisle zmáčknou. Nárožník 104 px dává výšku 143 px —
      dost na to, aby samet nepůsobil jako tenký pásek, a text sedí v něm nad
      zlatou bordurou. */
-  padding: 34px 2.8rem 74px 2.4rem;
+  padding: 34px 2.8rem 74px 0.6rem;
   font-size: 2.05rem;
   line-height: 35px;
   border-style: solid;
@@ -220,6 +220,14 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
   cursor: not-allowed;
 }
 
+button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba),
+a.tlacitko, .cta:not(.spectate) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+}
+
 button {
   background: linear-gradient(#4a2a1c, #2c1710 60%, #200f0a);
   color: var(--zlato-svetle);
@@ -239,7 +247,6 @@ button {
 button:hover:enabled {
   background: linear-gradient(#5e3724, #3a1e14 60%, #2a1410);
   border-color: var(--zlato);
-  color: #fff0cc;
 }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
@@ -725,7 +732,12 @@ button.vysledek.barva-5 { background: var(--b5); border-color: var(--b5); }
 button.vysledek.barva-6 { background: var(--b6); border-color: var(--b6); }
 button.vysledek.barva-7 { background: var(--b7); border-color: var(--b7); }
 button.vysledek.barva-8 { background: var(--b8); border-color: var(--b8); color: #241d10; }
-button.vysledek small { font-size: 0.68rem; font-weight: 400; opacity: 0.8; margin-top: 0.15rem; }
+button.vysledek { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
+button.vysledek small { font-size: 0.74rem; font-weight: 600; opacity: 1; margin-top: 0.2rem; }
+/* Světlé barvy týmů (žlutá, oranžová) mají tmavé písmo — stín pod ním jen
+   rozmazává tvar, tak se u nich vypíná. */
+button.vysledek.barva-4, button.vysledek.barva-8 { text-shadow: none; }
+button.vysledek.barva-4 small, button.vysledek.barva-8 small { color: #3b2a0c; }
 
 /* Spectate se dvěma řádky: nahoře akce, dole fáze (Lobby / Hraje se).
    Široké a uprostřed karty — je to to jediné, na co Rob u zápasu kliká. */
