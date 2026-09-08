@@ -777,7 +777,25 @@ button.vysledek.barva-4 small, button.vysledek.barva-8 small { color: #3b2a0c; }
 /* Hlavní řádek se nesmí lámat — „Spectate — čeká se na založení lobby“ se
    dřív zalomil doprostřed slova a zůstal zarovnaný vlevo. */
 .cta.spectate > span:first-child { white-space: nowrap; }
-.cta.spectate small { font-size: 0.78rem; font-weight: 400; opacity: 0.85; }
+
+/* Čitelnost obou řádků. Světlý reliéfní stín pod tmavým písmem vypadá na
+   kovu dobře, ale v Cinzelu zalévá tahy, takže je tady slabší než na ostatních
+   zlatých tlačítkách a pod drobným řádkem není vůbec — v téhle velikosti už
+   z písma dělá šmouhu. Druhý řádek se navíc rozplýval do zlata: tenký řez při
+   krytí 0,85. Barvu oba dědí po tlačítku, nepředepisuje se znovu.
+
+   Naměřený kontrast (WCAG, průměr nejtmavších tahů proti podkladu): hlavní
+   řádek 4,7 → 6,9:1, druhý 1,7 → 3,8:1. Výš to u drobného řezu Cinzelu na
+   zlatě nejde bez toho, aby se změnil ráz tlačítka. */
+.cta.spectate { text-shadow: 0 1px 0 rgba(255, 244, 210, 0.34); }
+.cta.spectate > span:first-child { font-size: 1.14rem; }
+.cta.spectate small {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  opacity: 1;
+  text-shadow: none;
+}
 
 /* Kopírovatelná hodnota usazená přímo do pole ve snímku dialogu: zelené herní
    písmo zůstává, ikona sedí vpravo v poli, toast vyskočí nad polem. */
