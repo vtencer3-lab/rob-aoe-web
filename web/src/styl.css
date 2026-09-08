@@ -1134,23 +1134,27 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 
    Rozsvěcuje to najetí na celý nadpis, ne jen na tlačítko: tužka stojí vedle
    něj a couvala by pod kurzorem sama před sebou. */
-h2 button.nazev-akce-tlacitko {
-  all: unset;
-  cursor: pointer;
-  padding: 0.1rem 0.4rem;
-  margin-left: -0.4rem;
+h2 button.nazev-akce-tlacitko { all: unset; cursor: pointer; }
+/* Rámeček obtahuje jen text a nechává mu kolem sebe vzduch — nalepený na
+   písmenech vypadá jako podtržení, ne jako pole. Pozadí zůstává průhledné:
+   je to náznak pole, ne deska. Odsazení i rámeček má stejné jako to pole, jen
+   průhledné, aby nápis při přepnutí nepodskočil; záporný levý okraj to
+   odsazení vyruší, ať nadpis začíná tam, kde ostatní nadpisy. */
+h2 .nazev-akce-text {
+  padding: 0.2rem 0.65rem;
+  margin-left: -0.65rem;
   border: 1px solid transparent;
   border-radius: 2px;
-  transition: background-color 0.18s, border-color 0.18s, color 0.18s;
+  transition: border-color 0.18s, color 0.18s;
 }
-h2.nadpis-akce:hover button.nazev-akce-tlacitko,
-h2 button.nazev-akce-tlacitko:focus-visible {
+h2 button.nazev-akce-tlacitko:hover .nazev-akce-text,
+h2 button.nazev-akce-tlacitko:focus-visible .nazev-akce-text {
   color: var(--zlato-svetle);
-  background-color: rgba(12, 7, 4, 0.16);
   border-color: rgba(216, 168, 58, 0.5);
 }
 
-/* Tužka vedle nadpisu: v klidu není, pod kurzorem svítí naplno. */
+/* Tužka vedle nadpisu: v klidu není, pod kurzorem svítí naplno. Stojí uvnitř
+   tlačítka, takže je klikací jako nadpis sám. */
 h2 .tuzka-napovedy {
   margin-left: 0.7rem;
   font-size: 0.62em;
@@ -1160,10 +1164,9 @@ h2 .tuzka-napovedy {
   opacity: 0;
   transition: opacity 0.18s;
   text-shadow: 0 0 12px rgba(216, 168, 58, 0.6);
-  pointer-events: none;
 }
-h2.nadpis-akce:hover .tuzka-napovedy,
-h2 button.nazev-akce-tlacitko:focus-visible + .tuzka-napovedy { opacity: 1; }
+h2 button.nazev-akce-tlacitko:hover .tuzka-napovedy,
+h2 button.nazev-akce-tlacitko:focus-visible .tuzka-napovedy { opacity: 1; }
 /* Pole i jeho neviditelná míra musí mít stejné písmo, odsazení i rámeček,
    jinak by se šířky rozešly. Míra drží obal, pole ho vyplní. */
 h2 .nazev-akce-obal { position: relative; display: inline-block; max-width: 100%; }
@@ -1171,7 +1174,7 @@ h2 .nazev-akce-mira,
 h2 input.nazev-akce-pole {
   font: inherit;
   letter-spacing: inherit;
-  padding: 0.1rem 0.4rem;
+  padding: 0.2rem 0.65rem;
   border: 1px solid var(--zlato-tmave);
   box-sizing: border-box;
 }
