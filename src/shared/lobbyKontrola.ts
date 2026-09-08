@@ -145,7 +145,14 @@ export const ZASKRTAVATKA: ReadonlyArray<{
   { klic: "recordGame", popis: "Record Game" },
 ];
 
-/** Nejmenší velikost, do které se hráči vejdou, jak ji volí sama hra. */
+/**
+ * Nejmenší velikost, do které se hráči vejdou, jak ji volí sama hra.
+ *
+ * Počítá se **barvami, ne hlavami**: hráči, kteří sdílejí barvu, sedí ve hře
+ * na jednom slotu a mají jednu civilizaci, takže na mapě je to pořád jeden
+ * hráč. Coop Kings ve třech na jedné barvě proti jednomu soupeři je tedy
+ * mapa pro dva, ne pro čtyři.
+ */
 export function velikostProHrace(pocet: number): number {
   if (pocet <= 2) return 120;
   if (pocet <= 3) return 144;
@@ -351,7 +358,7 @@ export function zkontrolujLobby(
     const ok = n.mapaId === ocekavane.mapaId;
     hlavni("mapa", ok, ok ? `Mapa: ${nazevMapy(n.mapaId)}` : `Mapa: ${nazevMapy(n.mapaId)}, má být ${nazevMapy(ocekavane.mapaId)}`);
   }
-  const velikost = ocekavane.velikost ?? velikostProHrace(ucastnici.length);
+  const velikost = ocekavane.velikost ?? velikostProHrace(new Set(ucastnici.map((u) => u.barva)).size);
   const jmVelikost = (v: number | null) => (v === null ? "?" : (VELIKOSTI[v] ?? `${v} dílců`));
   hlavni("velikost", n.velikost === velikost, n.velikost === velikost ? `Velikost: ${jmVelikost(n.velikost)}` : `Velikost: ${jmVelikost(n.velikost)}, má být ${jmVelikost(velikost)}`);
   hlavni("rychlost", n.rychlost === ocekavane.rychlost, n.rychlost === ocekavane.rychlost ? `Rychlost: ${jm(RYCHLOSTI)(n.rychlost)}` : `Rychlost: ${jm(RYCHLOSTI)(n.rychlost)}, má být ${jm(RYCHLOSTI)(ocekavane.rychlost)}`);

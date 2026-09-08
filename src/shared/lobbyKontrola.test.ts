@@ -141,6 +141,24 @@ describe("zkontrolujLobby", () => {
     expect(k.find((x) => x.klic === "velikost")!.stav).toBe("ok");
   });
 
+  // Hráči na jedné barvě sedí ve hře na jednom slotu, takže na mapě je to
+  // jeden hráč. Čtyři lidé ve dvou barvách proto potřebují mapu pro dva
+  // (120 dílců), ne pro čtyři.
+  it("velikost mapy počítá barvy, ne hlavy", () => {
+    const coop = [
+      u(HOST, 1, 1, "Trokner"),
+      u("76561198000000001", 1, 1, "Kolega"),
+      u(JA, 2, 2, "Jouki"),
+      u("76561198000000002", 2, 2, "Soupeř"),
+    ];
+    const sloty = coop.map((c) => ({ steamId: c.steamId, barva: c.barva, tym: c.tym, civ: null, pripraven: true }));
+    const k = zkontrolujLobby(coop, ocekavane, lobby({ sloty, nastaveni: { ...VYCHOZI_NASTAVENI, velikost: 120 } }));
+    expect(k.find((x) => x.klic === "velikost")!.stav).toBe("ok");
+
+    const vetsi = zkontrolujLobby(coop, ocekavane, lobby({ sloty, nastaveni: { ...VYCHOZI_NASTAVENI, velikost: 168 } }));
+    expect(vetsi.find((x) => x.klic === "velikost")!.stav).toBe("spatne");
+  });
+
   it("nečitelné nastavení je jeden křížek místo pádu", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({ nastaveni: null }));
     expect(k.at(-1)).toMatchObject({ klic: "nastaveni", stav: "spatne", sekce: "hlavni" });
