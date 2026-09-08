@@ -284,7 +284,7 @@ v seznamu, ale chybějící soubor se pozná jen tím, že erb u jména není.
   způsob v předmětu). Komentáře česky a k věci: proč, ne co.
 - TypeScript ESM: `NodeNext`, `strict`, `noUncheckedIndexedAccess`,
   `verbatimModuleSyntax`, přípona `.js` v importech.
-- Rozdělení testů: `*.test.ts` hermetické, `*.db.test.ts` proti databázi,
+- Rozdělení testů: `*.test.ts` hermetické (i ve `scripts/`), `*.db.test.ts` proti databázi,
   `web/src/**/*.test.tsx` frontend.
 - Závislostí je schválně málo: backend `fastify`, `pg`, `@fastify/cookie`,
   `@fastify/static`; frontend `react`, `react-dom`. Než nějakou přidáš,

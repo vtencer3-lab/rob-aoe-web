@@ -34,6 +34,13 @@ Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
 - **Každý commit, který mění chování, zvedne verzi:** `npm run verze`
   (patch) v tomtéž commitu. Nová funkce nebo migrace = `npm run verze -- minor`.
   Verze je v `package.json` a `src/shared/verze.ts`, příkaz mění obojí.
+- **Na `experimental` má verze tvar `X.Y.Z-A.B`** — před pomlčkou verze
+  devu, ze které pokus vyšel (nemění se), za pomlčkou vlastní dvojčíslí
+  pokusu; první číslo webu pokus nikdy nemění. Zakládá se zdvojením
+  (`npm run verze -- experiment`: `0.16.3` → `0.16.3-16.3`), po mergi do
+  devu se výsledná verze devu dopočítá `npm run verze -- z-experimentu`
+  a pokus se přezaloží z nové verze devu. Pravidla a tabulka případů:
+  [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md) §2.1.
 - **Release jen na výslovný pokyn** („releasni“, „pushni do main“): PR
   `dev → main` a merge. Tím se nasadí ostrá verze. `dev` se nemaže.
 - Po nasazení ověřit `curl https://jouki.cz/aoe/dev/api/health` (nebo `/aoe/`),

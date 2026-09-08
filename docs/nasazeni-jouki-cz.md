@@ -109,6 +109,11 @@ npm run verze -- major   # 0.2.3 → 1.0.0
 npm run verze -- 1.4.0   # přesně tahle
 ```
 
+Čísla se v tomhle projektu jmenují **první.prostřední.poslední**
+(`0.16.3`): poslední = oprava nebo drobnost, prostřední = nová funkce
+nebo migrace, první = velká změna celého večera. `npm run verze` hýbe
+posledním, `-- minor` prostředním, `-- major` prvním.
+
 Pravidla:
 
 - **Patch** při každé změně chování (oprava, drobná úprava UI, změna textu).
@@ -124,6 +129,78 @@ Pravidla:
 Proč: verze v patičce a v `/api/health` je jediný způsob, jak se u živého
 webu za pár vteřin zjistí, jestli prohlížeč drží nový build, nebo starý z
 mezipaměti. Dvě různé verze se stejným číslem tuhle informaci zničí.
+
+### 2.1 Verzování větve `experimental`
+
+Pokusná větev má **vlastní tvar verze**: `X.Y.Z-A.B`.
+
+| část | co znamená |
+|---|---|
+| `X.Y.Z` před pomlčkou | verze `dev`, ze které pokus vyšel. Během celého pokusu se **nemění** — je to razítko výchozího bodu. |
+| `A.B` za pomlčkou | vlastní verzování pokusu. Nemá první číslo, protože **pokus nikdy nemění první číslo webu** — to smí jen release z `dev` do `main`. |
+
+**Začíná se zdvojením.** Pokus vyšlý z `dev` na `0.16.3` začne na
+`0.16.3-16.3`: dvojčíslí je zpočátku opsané z devu, takže je na první
+pohled vidět, že pokus zatím nikam neposunul.
+
+```
+npm run verze -- experiment   # 0.16.3 → 0.16.3-16.3 (jen ve větvi experimental)
+npm run verze                 # 0.16.3-16.3 → 0.16.3-16.4  (drobnost)
+npm run verze -- minor        # 0.16.3-16.28 → 0.16.3-17.0 (velká změna)
+```
+
+Pomlčka je záměrně to, co semver bere jako předvydání: `0.16.3-16.4` je
+podle npm **starší** než `0.16.3`, což přesně sedí — pokus je odbočka,
+ne novější verze webu.
+
+#### Co se stane při mergi zpátky do `dev`
+
+Verze v `package.json` a `src/shared/verze.ts` se při mergi vždycky
+pohádají. **Konflikt se řeší ve prospěch `dev`** a pak jeden příkaz
+dopočítá výsledek:
+
+```
+git checkout dev && git merge experimental
+# konflikt ve verzi vyřešit tak, že zůstane verze z dev
+npm run verze -- z-experimentu        # verzi pokusu si přečte z větve experimental
+npm run verze -- z-experimentu 0.16.3-17.9   # nebo se předá ručně
+```
+
+Rozhoduje **jediná otázka: zvedl pokus svoje první číslo proti základu,
+ze kterého vyšel?**
+
+| verze `dev` | verze pokusu | první číslo pokusu | výsledek v `dev` |
+|---|---|---|---|
+| `0.16.3` | `0.16.3-16.28` | 16, základ má taky 16 → beze změny | `0.16.4` |
+| `0.16.3` | `0.16.3-17.9` | 17 proti základu 16 → zvedlo se | `0.17.0` |
+| `0.18.1` | `0.16.3-17.9` | zvedlo se | `0.19.0` |
+| `0.18.1` | `0.16.3-16.28` | beze změny | `0.18.2` |
+
+Počítá se vždycky **z aktuální verze `dev`**, ne z čísel pokusu. Dev mohl
+mezitím ujet dopředu (hotfixy) a jeho verze nikdy nesmí klesnout ani se
+zopakovat — poslední dva řádky tabulky jsou přesně tenhle případ.
+
+#### A pak se pokus přezaloží
+
+Po mergi se `experimental` srovná s novým `dev` a pokusné verzování
+**začne znovu od zdvojení** nové verze devu:
+
+```
+git checkout experimental && git merge dev
+# konflikt ve verzi vyřešit ve prospěch dev
+npm run verze -- experiment    # dev 0.19.0 → 0.19.0-19.0
+```
+
+Bez argumentu si příkaz základ vezme z větve `dev` sám, když je vlastní
+verze ještě ta stará pokusná; jinak zdvojí verzi, kterou má.
+
+Pravidla jsou celá v `scripts/verze.ts` a hlídá je `scripts/verze.test.ts`
+(tabulka výše je v něm doslova jako testy). Skript navíc odmítne:
+
+- `npm run verze -- major` na pokusu (první číslo pokus nemění),
+- `npm run verze -- experiment` mimo větev `experimental`,
+- obyčejný bump ve větvi, která má pokusnou verzi — to znamená špatně
+  vyřešený konflikt a příkaz rovnou napoví `z-experimentu`.
 
 ---
 

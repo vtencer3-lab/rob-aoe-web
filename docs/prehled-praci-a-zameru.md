@@ -17,6 +17,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | Jak večer probíhá, co který uživatel vidí | `README.md`, sekce „Jak večer probíhá“ |
 | Které větve kam nasazují a jak se pracuje s `experimental` | `docs/nasazeni-jouki-cz.md` §1, §1.1 |
+| Verzování včetně tvaru `X.Y.Z-A.B` na pokusné větvi a pravidel při mergi | `docs/nasazeni-jouki-cz.md` §2, §2.1; kód `scripts/verze.ts` |
 | Rozjetí, mapa kódu, pasti, kontrolní seznam před pushem | `CONTRIBUTING.md` |
 | Architektura, datový model, API, bezpečnostní hranice (k 6. 9.) | `docs/analyza-projektu.md` |
 | Pracovní postup dev → main, verzování, Coolify, migrace | `docs/nasazeni-jouki-cz.md` |
@@ -49,8 +50,15 @@ pokusy. Záměr uživatele doslova: „dev verzi nechat, kdyby bylo potřeba
 vydávat hotfixy, a experimental na větší experimenty, které kdyžtak
 zahodím“. Každá kopie má vlastní databázi a vlastní cookie; pokus se
 zahazuje `git reset --hard dev`, aniž by se čehokoliv dotkl. Podrobný
-postup včetně řešení konfliktu verzí a přečíslování migrací je
-v `docs/nasazeni-jouki-cz.md` §1.1.
+postup včetně přečíslování migrací je v `docs/nasazeni-jouki-cz.md` §1.1.
+
+**Pokusná větev má vlastní tvar verze** `X.Y.Z-A.B` (§2.1): před pomlčkou
+verze devu, ze které pokus vyšel, za pomlčkou vlastní dvojčíslí pokusu.
+Pokus nikdy nemění první číslo webu. Začíná zdvojením (`0.16.3` →
+`0.16.3-16.3`), při mergi zpátky se verze devu dopočítá podle toho, jestli
+pokus zvedl svoje první číslo (`npm run verze -- z-experimentu`), a pokus
+se pak přezaloží z nové verze devu. Logika je v `scripts/verze.ts`
+a případy z tabulky v §2.1 jsou doslova testy v `scripts/verze.test.ts`.
 
 ---
 
@@ -87,9 +95,11 @@ Pokus na `experimental` (velká přestavba, kterou je možné zahodit):
 
 ```bash
 git checkout experimental && git merge dev   # začít od aktuálního dev
-# … práce, verze, build, push origin experimental — nasadí se samo
+npm run verze -- experiment                 # 0.16.4 → 0.16.4-16.4 (jen jednou, na začátku kola)
+# … práce; npm run verze (0.16.4-16.5), npm run verze -- minor (0.16.4-17.0); nasazuje se samo
 curl -s https://jouki.cz/aoe/experimental/api/health
-git checkout dev && git merge experimental   # pokus vyšel (konflikt verzí: vzít dev a znovu npm run verze)
+git checkout dev && git merge experimental   # pokus vyšel; konflikt verzí vyřešit ve prospěch dev
+npm run verze -- z-experimentu               # dopočítá verzi devu podle pravidel §2.1
 git checkout experimental && git reset --hard dev && git push --force-with-lease origin experimental   # pokus se zahazuje
 ```
 

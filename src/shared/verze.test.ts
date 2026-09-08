@@ -7,6 +7,8 @@ it("verze v kódu odpovídá package.json", () => {
   expect(VERZE).toBe(pkg.version);
 });
 
-it("verze má tvar MAJOR.MINOR.PATCH", () => {
-  expect(VERZE).toMatch(/^\d+\.\d+\.\d+$/);
+// Pokusná větev přidává za pomlčku vlastní dvojčíslí (0.16.3-16.4);
+// mimo ni musí verze zůstat obyčejná X.Y.Z.
+it("verze má tvar X.Y.Z, na pokusné větvi X.Y.Z-A.B", () => {
+  expect(VERZE).toMatch(/^\d+\.\d+\.\d+(-\d+\.\d+)?$/);
 });
