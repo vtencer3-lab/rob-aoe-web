@@ -34,10 +34,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.19.1, nasazeno na <https://jouki.cz/aoe> (PR #11, 8. 9. 2026); stav před ním nese značku `v0.18.1` |
-| `origin/dev` | 0.21.0, nasazeno na <https://jouki.cz/aoe/dev>; nese aktivitu přihlášek (§3.15) a otisk pro archiv (§3.16), do `main` zatím nešlo |
+| `origin/dev` | 0.22.0, nasazeno na <https://jouki.cz/aoe/dev>; nese §3.15–§3.17, do `main` zatím nešlo |
 | `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; zatím prázdné kolo |
 | Migrace | 001–014, poslední `014_archiv_zapasu.sql`; na ostré databázi zatím **nejsou** 013 ani 014 |
-| Testy | backend hermetické 223, databázové 145, frontend 192 — všechny zelené |
+| Testy | backend hermetické 228, databázové 145, frontend 193 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
@@ -514,6 +514,37 @@ z toho nejde — je to zásoba pro archiv, ne údaj pro stránku.
 **Co archivu pořád chybí** (až se bude stavět): obrazovka nad těmi daty,
 a rozhodnutí, co se zrušenými zápasy — „Odebrat úplně“ je maže z databáze
 natvrdo. Tabulka `udalost` ze schématu 001 existuje, ale nikdo do ní nezapisuje.
+
+### 3.17 Historie pro hráče, sbalování a odchod ze stránky
+
+**Historie i pro hráče.** Uživatel: „myslím že uživatelé mohou vidět taky tu
+historii zápasu podobně jako admini… akorát s rozdílem že tam nebudou mít
+možnost změnit výsledek a místo zavření budou mít tlačítko minimalizace“.
+Karta zápasu je proto jedna pro obojí: `ZapasVRezii` bere `obsluha?: Obsluha`
+a bez ní vykreslí totéž jen ke čtení — bez změny výsledku, bez zavírání, bez
+přehazování hosta. Hráči tím zmizel zkrácený řádek u dohraných zápasů; zůstal
+jen pro ty, které se hrají a divák u nich nemá vlastní kartu.
+
+**Sbalení** má každý u dohraného i zrušeného zápasu: nechá vidět hlavičku.
+Rohová tlačítka (sbalit, zavřít) jsou v jednom pruhu `.ovladani-karty`, aby
+se neumisťovala podle toho, jestli křížek zrovna je.
+
+**Vítěz** dohraného zápasu má zlatý odznak vedle jména a teplejší řádek.
+Rozhoduje `jeVitez()` ve `web/src/zapas.ts` — výsledek je buď tým, nebo jeden
+hráč, podle toho, jak ho Rob zapsal.
+
+**Tlačítka nad tabulkou** jdou zleva od nejméně vážného: přetočení času (debug),
+vlastní přihláška, „Ukončit akci“. To poslední se sem přestěhovalo ze záhlaví
+panelu akce; potvrzení i znění zůstaly.
+
+**Odchod ze stránky.** Uživatel: „je možnost udělat, že když uživatel zavře
+stránku, tak ho to automaticky odhlásí z akce…? (myslím akci, ne samotný
+account)“. Ano, ale ne přes `beforeunload` — ta se pouští i při obnovení
+stránky a odhlásila by každého, kdo si dá F5. Hlídá se to podle SSE spojení
+(`src/realtime/pritomnost.ts`): počítají se otevřené streamy na hráče a teprve
+když spadne poslední, běží odklad 90 s. Obnovení stránky i krátký výpadek sítě
+se do odkladu vejdou a odhlášení zruší. Restart serveru mapu vyprázdní, takže
+po nasazení se neodhlásí nikdo — chyba na bezpečnou stranu.
 
 ### 3.11 Drobnosti a easter egg
 
