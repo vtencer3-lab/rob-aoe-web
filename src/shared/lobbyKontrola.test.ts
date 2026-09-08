@@ -33,8 +33,9 @@ describe("zkontrolujLobby", () => {
   it("lobby přesně podle zápasu projde celá; hlavní sekce před dalším nastavením", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby());
     expect(k.every((x) => x.stav === "ok" || x.stav === "jedno")).toBe(true);
-    // AI a Lock Teams jsou ve výchozím stavu „je to jedno“.
-    expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual(["aiObtiznost", "lockTeams"]);
+    // „Je to jedno“ zůstala ve výchozím stavu jen AI obtížnost; Lock Teams se
+    // od 9. 9. 2026 vyžaduje zapnutý (sestavu skládá Rob, v lobby se s ní nehýbe).
+    expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual(["aiObtiznost"]);
     expect(k.filter((x) => x.sekce === "hlavni").map((x) => x.klic)).toEqual([
       "divaci", "heslo", "hraci", `barva:${HOST}`, `tym:${HOST}`, `barva:${JA}`, `tym:${JA}`,
       "mapa", "velikost", "rychlost", "populace", "vitezstvi", "cheaty",

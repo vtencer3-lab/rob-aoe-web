@@ -69,14 +69,16 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   cheaty: false,
   sadaCivilizaci: 1,
   rezim: 0,
-  // Bez AI v lobby na obtížnosti nezáleží; Lock Teams si každý host řeší sám.
+  // Bez AI v lobby na obtížnosti nezáleží.
   aiObtiznost: null,
   suroviny: 0,
   odkrytiMapy: 0,
   pocatecniVek: 0,
   konecnyVek: 0,
   primeri: 0,
-  lockTeams: null,
+  // Týmy zamknuté: sestavu skládá Rob a v lobby se s ní hýbat nemá. Do 9. 9.
+  // 2026 tu bylo `null` („neřešíme“) a kontrola lobby si toho nevšímala.
+  lockTeams: true,
   teamTogether: true,
   teamPositions: false,
   sharedExploration: true,
