@@ -95,6 +95,15 @@ export async function setSkladani(akceId: number, sestava: SestavaVstup[]): Prom
   return mapujAkci(rows[0]);
 }
 
+/** Přejmenuje akci. Vrací `null`, když akce neexistuje. */
+export async function prejmenujAkci(akceId: number, nazev: string): Promise<AkceRow | null> {
+  const { rows } = await getPool().query<AkceDbRow>(
+    `UPDATE akce SET nazev = $2 WHERE id = $1 RETURNING ${SLOUPCE_AKCE}`,
+    [akceId, nazev],
+  );
+  return rows[0] ? mapujAkci(rows[0]) : null;
+}
+
 export async function signUp(akceId: number, steamId: string): Promise<void> {
   await getPool().query(
     `INSERT INTO prihlaska (akce_id, steam_id, stav, kdy, aktivni_do)

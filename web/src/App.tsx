@@ -381,6 +381,9 @@ export function App() {
           akce={akce}
           ladeni={ladeni}
           onZalozit={(nazev) => void hlidej(() => api.vytvoritAkce(nazev))}
+          onPrejmenovat={(nazev) => {
+            if (akce) void hlidej(() => api.prejmenovatAkci(akce.id, nazev));
+          }}
           onNastaveniLobby={(n) => {
             if (!akce) return;
             const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);

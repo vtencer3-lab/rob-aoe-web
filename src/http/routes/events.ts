@@ -3,6 +3,7 @@ import {
   createAkce,
   getAktivniAkce,
   obnovAktivitu,
+  prejmenujAkci,
   pulsAktivity,
   setAkceStav,
   setNastaveniLobby,
@@ -110,6 +111,24 @@ export function registerEventRoutes(app: FastifyInstance): void {
     await requireAdmin(request);
     const akceId = requireId(request);
     const akce = await setSkladani(akceId, prectiSkladani(request.body));
+    await broadcastAkce();
+    return { akce };
+  });
+
+  // Přejmenování akce. Název je jediné, co u běžící akce jde přepsat — večer
+  // se často jmenuje podle toho, co se zrovna hraje, a Rob to mění za pochodu.
+  app.post("/api/akce/:id/nazev", async (request) => {
+    await requireAdmin(request);
+    const akceId = requireId(request);
+    const { nazev } = request.body as { nazev?: unknown };
+    if (typeof nazev !== "string" || nazev.trim() === "") {
+      throw new HttpError(400, "Akce musí mít název.");
+    }
+    if (nazev.trim().length > 120) {
+      throw new HttpError(400, "Název akce je moc dlouhý (nejvýš 120 znaků).");
+    }
+    const akce = await prejmenujAkci(akceId, nazev.trim());
+    if (!akce) throw new HttpError(404, "Tahle akce neexistuje.");
     await broadcastAkce();
     return { akce };
   });

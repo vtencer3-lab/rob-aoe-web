@@ -43,6 +43,13 @@ export const api = {
     fetch(cesta(`/api/akce/${akceId}/prihlaska`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   odhlasit: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/prihlaska`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+  /** Přejmenování běžící akce (tužka u nadpisu panelu). */
+  prejmenovatAkci: (akceId: number, nazev: string) =>
+    fetch(cesta(`/api/akce/${akceId}/nazev`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nazev }),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
   /** „Jsem tu!“ — vrátí přihlášce plnou lhůtu aktivity. */
   jsemTu: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/jsem-tu`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),

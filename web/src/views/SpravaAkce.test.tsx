@@ -6,7 +6,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const zaklad = { onZalozit: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn() };
+const zaklad = { onZalozit: vi.fn(), onPrejmenovat: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn() };
 
 // Dokud tahle obrazovka neexistovala, POST /api/akce neměl na webu žádného
 // volajícího: Rob se přihlásil, uviděl „Právě neběží žádná akce.“ a víc se
@@ -65,4 +65,39 @@ it("zkušební hráče nabídne jen se souhlasem serveru a v debug módu", () =>
   fireEvent.click(screen.getByRole("button", { name: /odebrat zkušební/i }));
   expect(onPridat).toHaveBeenCalled();
   expect(onOdebrat).toHaveBeenCalled();
+});
+
+// Večer se často jmenuje podle toho, co se zrovna hraje. Tužka u nadpisu ho
+// přepíše bez zakládání nové akce.
+it("tužka přepíše název akce, Escape změnu zahodí", () => {
+  const onPrejmenovat = vi.fn();
+  render(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }} onPrejmenovat={onPrejmenovat} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /přejmenovat akci/i }));
+  const pole = screen.getByLabelText("Název akce");
+  fireEvent.change(pole, { target: { value: "Pátek" } });
+  fireEvent.keyDown(pole, { key: "Enter" });
+  expect(onPrejmenovat).toHaveBeenCalledWith("Pátek");
+
+  fireEvent.click(screen.getByRole("button", { name: /přejmenovat akci/i }));
+  const znovu = screen.getByLabelText("Název akce");
+  fireEvent.change(znovu, { target: { value: "Nic z toho" } });
+  fireEvent.keyDown(znovu, { key: "Escape" });
+  expect(onPrejmenovat).toHaveBeenCalledTimes(1);
+});
+
+// Prázdný název by server odmítl; ať Rob nekouká na chybu místo na to, že se
+// prostě nic nestalo. Beze změny se taky nic neposílá.
+it("prázdný ani nezměněný název se neposílá", () => {
+  const onPrejmenovat = vi.fn();
+  render(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }} onPrejmenovat={onPrejmenovat} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /přejmenovat akci/i }));
+  fireEvent.change(screen.getByLabelText("Název akce"), { target: { value: "   " } });
+  fireEvent.blur(screen.getByLabelText("Název akce"));
+  expect(onPrejmenovat).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("button", { name: /přejmenovat akci/i }));
+  fireEvent.blur(screen.getByLabelText("Název akce"));
+  expect(onPrejmenovat).not.toHaveBeenCalled();
 });

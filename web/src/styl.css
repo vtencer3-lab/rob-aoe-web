@@ -1065,6 +1065,32 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam > tbody > tr.spici.muj-radek { opacity: 0.78; }
 .seznam > tbody > tr.spici.muj-radek:hover { opacity: 1; }
 
+/* Tužka u názvu akce. Drží se textu, ale nemá na sebe strhávat pozornost —
+   svítí až pod kurzorem. */
+.hlavicka-akce h2 button.prejmenovat {
+  margin-left: 0.5rem;
+  padding: 0 0.3rem;
+  font-size: 0.9rem;
+  line-height: 1;
+  vertical-align: 0.1em;
+  color: var(--tlumene);
+  background: none;
+  border: 1px solid transparent;
+  box-shadow: none;
+  text-shadow: none;
+}
+.hlavicka-akce h2 button.prejmenovat:hover:enabled {
+  color: var(--akcent);
+  border-color: var(--zlato-tmave);
+  background: none;
+}
+.hlavicka-akce h2 input.nazev-akce-pole {
+  font: inherit;
+  color: inherit;
+  width: min(100%, 22rem);
+  padding: 0.1rem 0.4rem;
+}
+
 /* Ukončení akce stojí samo nad panelem, vpravo pod přepínačem pohledu. */
 .ukonceni-akce { display: flex; justify-content: flex-end; margin: 0 0 0.6rem; }
 
