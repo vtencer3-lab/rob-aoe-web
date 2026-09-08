@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, expect, it, vi } from "vitest";
 import { config } from "../config.js";
 import { closePool, getPool } from "../db/pool.js";
-import { getPlayer } from "../db/players.js";
+import { getPlayer, savePlayerStats } from "../db/players.js";
 import { buildServer } from "../http/server.js";
 import { navratovaUrl } from "./steamOpenId.js";
 
@@ -91,6 +91,32 @@ it("/api/me vrátí null bez cookie a hráče s cookie", async () => {
 
   const s = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
   expect(s.json().hrac.steamId).toBe(STEAM_ID);
+  await app.close();
+});
+
+// Než dorazí jméno ze Steamu, je řádek hráče prázdný a v záhlaví by svítilo
+// Steam ID (8. 9. 2026 přesně tohle potkalo prvního člověka na experimentální
+// větvi, protože ta má vlastní čistou databázi). První dotaz na /api/me proto
+// na obnovu chvíli počká.
+it("/api/me počká při prvním přihlášení na jméno hráče", async () => {
+  const obnovStaty = vi.fn(async (steamId: string) => {
+    await savePlayerStats(steamId, { alias: "Jouki in Rage", steamName: "Jouki in Rage", chyba: null });
+  });
+  const app = buildServer({ overSteam: async () => true, obnovStaty });
+
+  const prihlaseni = await app.inject({
+    method: "GET",
+    url: `/api/auth/steam/return?${NAVRAT.toString()}`,
+  });
+  const sid = prihlaseni.cookies.find((c) => c.name === "sid")!.value;
+
+  const s = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
+  expect(s.json().hrac.alias).toBe("Jouki in Rage");
+
+  // Podruhé už se nečeká: jméno je v tabulce, obnova běží na pozadí.
+  obnovStaty.mockClear();
+  const podruhe = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
+  expect(podruhe.json().hrac.alias).toBe("Jouki in Rage");
   await app.close();
 });
 

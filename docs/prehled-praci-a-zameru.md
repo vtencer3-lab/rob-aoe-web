@@ -18,6 +18,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | Jak večer probíhá, co který uživatel vidí | `README.md`, sekce „Jak večer probíhá“ |
 | Které větve kam nasazují a jak se pracuje s `experimental` | `docs/nasazeni-jouki-cz.md` §1, §1.1 |
 | Verzování včetně tvaru `X.Y.Z-A.B` na pokusné větvi a pravidel při mergi | `docs/nasazeni-jouki-cz.md` §2, §2.1; kód `scripts/verze.ts` |
+| Vzhled: paleta, písmo, rámy, generování obrázků | `docs/grafika.md` |
 | Rozjetí, mapa kódu, pasti, kontrolní seznam před pushem | `CONTRIBUTING.md` |
 | Architektura, datový model, API, bezpečnostní hranice (k 6. 9.) | `docs/analyza-projektu.md` |
 | Pracovní postup dev → main, verzování, Coolify, migrace | `docs/nasazeni-jouki-cz.md` |
@@ -32,11 +33,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 0.16.3, nasazeno na <https://jouki.cz/aoe> (PR #7, 8. 9. 2026 ~01:00) |
-| `origin/dev` | 0.16.3, totéž, nasazeno na <https://jouki.cz/aoe/dev> |
-| `origin/experimental` | 0.16.3, odbočka z `dev` z 8. 9. 2026, nasazeno na <https://jouki.cz/aoe/experimental> |
+| `origin/main` | 0.17.0, nasazeno na <https://jouki.cz/aoe>; **nemá** velikost mapy podle barev (§3.13) |
+| `origin/dev` | 0.18.0, nasazeno na <https://jouki.cz/aoe/dev>; nese grafický kabátek (§3.12) |
+| `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; zatím prázdné kolo |
 | Migrace | 001–012, poslední `012_zavreny_zapas.sql`; aplikované na všech třech databázích |
-| Testy | backend hermetické 203, databázové 132, frontend 177 — všechny zelené |
+| Testy | backend hermetické 219, databázové 134, frontend 177 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
@@ -99,6 +100,8 @@ npm run verze -- experiment                 # 0.16.4 → 0.16.4-16.4 (jen jednou
 # … práce; npm run verze (0.16.4-16.5), npm run verze -- minor (0.16.4-17.0); nasazuje se samo
 curl -s https://jouki.cz/aoe/experimental/api/health
 git checkout dev && git merge experimental   # pokus vyšel; konflikt verzí vyřešit ve prospěch dev
+npm run verze -- 0.17.1                      # POZOR: když merge projde fast-forward, git verzi nekonfliktuje
+                                             # a do devu propadne pokusná — nastav ji ručně na verzi devu
 npm run verze -- z-experimentu               # dopočítá verzi devu podle pravidel §2.1
 git checkout experimental && git reset --hard dev && git push --force-with-lease origin experimental   # pokus se zahazuje
 ```
@@ -373,6 +376,57 @@ přeskočí se, když je řádek mladší než 15 min **a má žebříčky**; po
 `broadcastAkce()`. Chyby externích zdrojů do `player.staty_chyba`.
 Worlds Edge `getPersonalStat` a Steam (profil, hodiny; skrytý profil =
 `null`, chybějící klíč = nesahat).
+
+### 3.12 Grafický kabátek (v `dev` od 0.18.0)
+
+**Záměr.** Uživatel doslova: „chtěl bych zkusit dát webové stránce kompletní
+grafický kabátek… layout chci aby prakticky zůstal 1:1, pouze na to chci
+hodit grafický overhaul“, s tím, že se vyjde z loga Brohemians, tématika je
+Age of Empires II a logo má být dobře zakomponované. Rozhodnutí padla
+v dotazníku: plný herní kabátek, pozadí české s AoE2 nádechem, herní assety
+z instalace hry volně, písmo Cinzel + Georgia.
+
+**Jak to je.** Celý systém včetně palety, rámů, seedů a postupu regenerace
+popisuje [`docs/grafika.md`](grafika.md). Ve zkratce: barvy vytažené z loga,
+malované pozadí (pražské náměstí za soumraku, Flux.2-dev lokálně), devítidílný
+řezbovaný rám panelů s ametysty, praporec pod nadpisem, vodoznak pražského
+orloje (herní znak civilizace Bohemians), tlačítka a pole kreslená v CSS.
+Layout se nezměnil; jediný zásah do JSX je obal `section.panel-prihlaseni`
+kolem nadpisu a tabulky přihlášených, aby seděly na jedné desce.
+
+**Rozhodnutí.**
+- **Tlačítka a pole v CSS, ne z obrázku.** Vygenerované destičky vyšly hezky,
+  ale působily jako nálepky a nedržely ostrost. Obrázky nesou jen to, co se
+  nakreslit nedá.
+- **Stylová LoRA z Koshishatsi se nepoužila.** Přimalovala pozadí černou
+  vinětu (je trénovaná na izolované předměty), bez ní vyšla scéna líp.
+- **Barvy hráčů (`--b1`…`--b8`) zůstaly beze změny** — musí sedět s barvami
+  ve hře, jinak hráč nepozná, že je „modrý“.
+- **GPT-Image se nepoužilo** — klíč na stanici není a uživatel potvrdil, že
+  nefunguje. Všechno vzniklo lokálně na RTX 5090.
+- Ze Scenaria uživatel povolil odstranění pozadí, bezešvé textury a upscaling,
+  textury si napřed chce ocenit v kreditech. **Zatím se nic z toho nepoužilo**,
+  lokální pipeline stačila.
+
+**Nástroje.** `nastroje/grafika/` v repu (paleta, dávkové generování
+s manifestem, devítidílný řez, klíčování, export do webp) a mimo repo
+`_grafika/nastroje/` (Playwright: sada snímků, kontrola šířek, vzorník všech
+prvků).
+
+### 3.13 Sestava bez stropů a velikost mapy podle barev
+
+**Záměr.** Uživatel doslova: „počet lidí s jednou barvou nechci omezovat,
+stejně tak ani počet lidí v jednom týmu nechci nijak omezovat“. Pravidlo
+sestavy dřív pouštělo na jednu barvu nejvýš dva hráče (Coop Kings) a zápas
+se třemi na slotu nešel založit. Strop je pryč; co zůstalo, je podmínka,
+že celá skupina se stejnou barvou musí být v jednom týmu a mít tutéž civ —
+sdílejí totiž ve hře jeden slot. Kontrola proto kouká na celou skupinu,
+ne jen na dvojici (`src/shared/sestava.ts`). Vydáno jako 0.17.0 do `main`.
+
+**Velikost mapy.** Volba „podle počtu hráčů“ počítá unikátní barvy, ne hlavy
+(`src/shared/lobbyKontrola.ts`). Tři lidi na jedné barvě proti jednomu jsou
+ve hře 1v1, ne 4hráčová mapa. Vydáno jako 0.17.1 do `dev`; **v `main` to
+zatím není**, release nebyl zadán.
 
 ### 3.11 Drobnosti a easter egg
 

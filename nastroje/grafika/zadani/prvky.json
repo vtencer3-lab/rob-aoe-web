@@ -1,0 +1,50 @@
+{
+  "ram": {
+    "prompt": "A single ornate rectangular border frame that fills the whole square image edge to edge, drawn flat from the front with no perspective and no shadow. The frame is carved dark oak with polished gold metal fittings, a thin band of deep crimson enamel inlay running along the inside edge, and a small round amethyst cabochon set at each of the four corners. The four sides are straight and identical, the corners are symmetrical, the whole centre of the image is completely empty. Medieval Bohemian goldsmith work, painted game user interface asset, clean readable shapes, isolated on solid pure black background, no text, no letters",
+    "n": 6,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "praporec": {
+    "prompt": "A long horizontal crimson cloth banner hanging flat against nothing, seen straight from the front with no perspective, its lower edge cut into two swallow tails, gold embroidered trim along the top and bottom edges, soft folds in the fabric catching warm light, a slim carved timber pole with gold caps running across the top. Painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters, no emblem",
+    "n": 6,
+    "width": 1536,
+    "height": 512,
+    "lora": 0.0,
+    "raw": true
+  },
+  "tlacitko": {
+    "prompt": "A single wide horizontal medieval button plate for a game interface, seen flat from the front with no perspective, made of dark polished bronze with a raised gold bevelled rim and a deep crimson enamel face, small gold rivets at the left and right ends, gently lit from above so the top edge catches a warm highlight. The shape is a plain rounded rectangle, the surface is empty. Painted game user interface asset, isolated on solid pure black background, no text, no letters, no icon",
+    "n": 6,
+    "width": 1024,
+    "height": 384,
+    "lora": 0.0,
+    "raw": true
+  },
+  "roh": {
+    "prompt": "A single ornate corner boss for a medieval frame, seen flat from the front with no perspective, a gold acanthus scroll curling around a round faceted amethyst gem, dark oak visible beneath the metal, warm highlights on the gold. One object floating free in empty space, centered, painted game user interface asset, isolated on solid pure black background, no text",
+    "n": 6,
+    "width": 768,
+    "height": 768,
+    "lora": 0.0,
+    "raw": true
+  },
+  "oddelovac": {
+    "prompt": "A long slender horizontal divider ornament for a medieval game interface, seen flat from the front with no perspective, a thin gold bar that widens in the middle into a small heraldic rosette flanked by two symmetrical acanthus scrolls, tapering to fine points at both ends. One object floating free in empty space, centered, painted game user interface asset, isolated on solid pure black background, no text",
+    "n": 6,
+    "width": 1536,
+    "height": 384,
+    "lora": 0.0,
+    "raw": true
+  },
+  "pole": {
+    "prompt": "A single wide horizontal input field plate for a medieval game interface, seen flat from the front with no perspective, a sunken panel of dark stained wood with a thin gold beaded rim around it, the inner surface dark and slightly polished as if recessed, small gold corner brackets. The shape is a plain rounded rectangle, the surface is empty. Painted game user interface asset, isolated on solid pure black background, no text, no letters",
+    "n": 4,
+    "width": 1024,
+    "height": 320,
+    "lora": 0.0,
+    "raw": true
+  }
+}

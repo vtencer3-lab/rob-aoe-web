@@ -118,6 +118,23 @@ export function verzePoMergi(verzeDev: string, verzeExperimentu: string): string
   return dalsiVerze(verzeDev, zvedlPrvniCislo ? "minor" : "patch");
 }
 
+/**
+ * Proč se v téhle větvi nesmí verze zvednout obvyklým způsobem, jinak `null`.
+ *
+ * Pokusná verze mimo pokusnou větev znamená nedodělaný merge: konflikt ve verzi
+ * po mergi git často vyřeší sám ve prospěch experimentu a nikoho se nezeptá.
+ * Kdyby se tady jen přičetlo číslo, jelo by se dál s cizím verzováním.
+ *
+ * Výslovně zadaná verze se nezakazuje — je to jediná cesta ven. Verze devu se
+ * musí nastavit ručně, teprve pak dává `z-experimentu` smysl.
+ */
+export function duvodOdmitnuti(soucasna: string, pokyn: string, vetev: string | null): string | null {
+  const vyslovna = TVAR_ZAKLADNI.test(pokyn) || TVAR_POKUSNY.test(pokyn);
+  if (vyslovna || vetev === null || vetev === "experimental") return null;
+  if (!rozeber(soucasna).pokus) return null;
+  return `Ve větvi ${vetev} je pokusná verze ${soucasna}. Vezmi verzi z devu a spusť npm run verze -- z-experimentu ${soucasna}.`;
+}
+
 /** Verze z package.json v jiné větvi. Vrací `null`, když se ji nepovede přečíst. */
 function verzeVetve(vetev: string): string | null {
   try {
@@ -182,14 +199,8 @@ function spust(): void {
     return;
   }
 
-  // Pojistka proti nedodělanému mergi: pokusná verze mimo pokusnou větev
-  // znamená, že se konflikt vyřešil ve prospěch experimentu. Kdyby se tady
-  // jen přičetlo číslo, jelo by se dál s cizím verzováním.
-  if (rozeber(soucasna).pokus && vetev !== null && vetev !== "experimental") {
-    throw new Error(
-      `Ve větvi ${vetev} je pokusná verze ${soucasna}. Vezmi verzi z devu a spusť npm run verze -- z-experimentu ${soucasna}.`,
-    );
-  }
+  const duvod = duvodOdmitnuti(soucasna, pokyn, vetev);
+  if (duvod) throw new Error(duvod);
 
   zapis(dalsiVerze(soucasna, pokyn));
 }

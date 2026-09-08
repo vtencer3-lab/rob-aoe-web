@@ -103,7 +103,10 @@ it("v režii označí mečem hráče, kteří právě hrají", async () => {
 it("po najetí na jméno ukáže kartu se všemi žebříčky", () => {
   render(<SeznamPrihlasenych prihlaseni={[hrac({ zebricky: [{ id: 4, rating: 953, nejvyssi: 993, poradi: 43389, vyhry: 7, prohry: 10 }] })]} />);
   expect(screen.queryByTestId("staty-hrace")).not.toBeInTheDocument();
-  fireEvent.mouseEnter(screen.getByTestId("jmeno-hrace"));
+  // Ukazatelové události schválně: tažení řádku volá na pointerdown
+  // preventDefault, což potlačí navazující myší události, takže po kliknutí
+  // by karta se statistikami zůstala viset.
+  fireEvent.pointerEnter(screen.getByTestId("jmeno-hrace"));
   const karta = screen.getByTestId("staty-hrace");
   expect(karta).toHaveTextContent("TenceR");
   const radky = karta.querySelectorAll("tbody tr");
@@ -113,6 +116,6 @@ it("po najetí na jméno ukáže kartu se všemi žebříčky", () => {
   expect(radky[1]).toHaveTextContent("#43389");
   expect(radky[1]).toHaveTextContent("41%");
   expect(radky[0]).toHaveTextContent("---");
-  fireEvent.mouseLeave(screen.getByTestId("jmeno-hrace"));
+  fireEvent.pointerLeave(screen.getByTestId("jmeno-hrace"));
   expect(screen.queryByTestId("staty-hrace")).not.toBeInTheDocument();
 });

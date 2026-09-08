@@ -1,0 +1,14 @@
+{
+  "pergamen": {
+    "prompt": "A flat top-down photograph-like painting of aged parchment, warm cream vellum with faint fibres, soft brown staining and gentle mottling, very even lighting with no shadows and no vignette, no edges, no torn borders, no writing, no text, the texture fills the entire frame uniformly from corner to corner",
+    "n": 4, "width": 1024, "height": 1024, "lora": 0.0, "raw": true
+  },
+  "drevo": {
+    "prompt": "A flat top-down painting of dark stained oak planks seen straight from above, deep brown wood grain with subtle knots and fine scratches, narrow dark seams between the planks running vertically, very even lighting with no shadows and no vignette, the texture fills the entire frame uniformly from corner to corner, no text",
+    "n": 4, "width": 1024, "height": 1024, "lora": 0.0, "raw": true
+  },
+  "kamen": {
+    "prompt": "A flat top-down painting of dark grey castle stone masonry seen straight from above, rough hewn blocks with weathered surfaces and thin mortar joints, cool grey tones with a faint violet cast, very even lighting with no shadows and no vignette, the texture fills the entire frame uniformly from corner to corner, no text",
+    "n": 4, "width": 1024, "height": 1024, "lora": 0.0, "raw": true
+  }
+}

@@ -48,6 +48,13 @@ Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
 - **Do repa nikdy nepatří přihlašovací údaje** — je veřejné. Nasazení žádné
   nepotřebuje.
 
+## Vzhled
+
+Web má od 8. 9. 2026 (zatím jen `experimental`) grafický kabátek v podobě
+herního rozhraní AoE2 DE s českou heraldikou. Barvy, písmo, rámy, odkud
+jsou obrázky a jak je vygenerovat znovu — [`docs/grafika.md`](docs/grafika.md).
+**Barvu nikdy nepsat napevno do pravidla**, paleta je v `:root`.
+
 ## Konvence
 
 - **Identifikátory i uživatelské texty česky**, commity anglicky (rozkazovací
