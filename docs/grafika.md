@@ -196,7 +196,7 @@ python nastroje/grafika/klic.py oddelovac_03.png -o oddelovac.png --prah 55
 
 # 5b. Praporec do trojdílného pásu (změří periodu výšivky, srovná tón)
 python nastroje/grafika/praporec.py praporec2_04_nobg.png -o praporec.png \
-    --orez 264,1786 --cap 336 --prah 6 --vyhlad 0.55 --alfa-ze-vstupu --nahled zkouska.png
+    --orez 264,1786 --cap 336 --prah 6 --vyhlad 1.0 --alfa-ze-vstupu --nahled zkouska.png
 
 # 5c. Lva na prázdné praporce v pozadí
 python nastroje/grafika/vsad_znak.py pozadi.png lev.png -z praporce.json -o hotovo.png --nahled
@@ -255,6 +255,26 @@ starým klíčem v jiném projektu.
 
 Přihlašovací údaje patří **jen** do `~/.scenario_api.json`, nikdy do repozitáře
 (je veřejný).
+
+## 4.2 Praporec: srovnat tón, ne kresbu
+
+Prostřední dlaždice praporce se opakuje přes celou šířku, takže si nese vlastní
+světlo — a bez srovnání je na první pohled vidět, kde začíná a kde končí.
+
+Původní `vyhlad_podel` mísil každý pixel s průměrem svého řádku. Přechod tím
+zmizel, jenže s ním i výšivka: růže uprostřed se slily do vodorovné šmouhy.
+Od 9. 9. 2026 se odečítá jen nízkofrekvenční složka — klouzavý průměr podél osy
+opakování, okno půl dlaždice (asi 1,5 periody vzoru). Přechod je pomalý a nechá
+se odečíst; růže jsou rychlé a projdou beze změny.
+
+Naměřeno na prostřední dlaždici (detail = průměrný rozdíl sousedních sloupců,
+šev = rozdíl na spoji dlaždic):
+
+| Varianta | detail | šev / detail | kolísání tónu |
+|---|---|---|---|
+| míchání s průměrem řádku (`--vyhlad 0.55`) | 1,09 | 5,74× | 3,32 |
+| bez srovnání (`--vyhlad 0`) | 2,40 | 5,75× | 7,29 |
+| **odečtená nízká frekvence (`--vyhlad 1.0`)** | **2,41** | **4,45×** | **5,93** |
 
 ## 5. Co se při tom naučilo
 
