@@ -325,7 +325,13 @@ main > .prazdno::after {
      (padding-box). Přechod pak pod rámem začínal znovu od své světlé strany
      a kolem panelu svítil světlý pruh. */
   background-origin: border-box;
-  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.6);
+  /* Vnější stín desku zvedne nad scénu, vnitřní ji pod rámem prohloubí —
+     obsah pak sedí v prohlubni, ne na plochém obdélníku. Vnitřní stín se
+     kreslí od vnitřní hrany rámu, takže rám sám nezašpiní. */
+  box-shadow:
+    0 12px 38px rgba(0, 0, 0, 0.6),
+    inset 0 0 40px rgba(0, 0, 0, 0.55),
+    inset 0 2px 3px rgba(0, 0, 0, 0.5);
 }
 .karta .hero, .host .hero {
   border-radius: 2px;
@@ -380,7 +386,11 @@ main > .prazdno::after {
 main > h2,
 .historie-zapasu > .nadpis-seznamu {
   font-size: 1.8rem;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.8), 0 0 16px rgba(0, 0, 0, 0.5);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.75),
+    0 0 14px rgba(216, 168, 58, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.75),
+    0 0 26px rgba(0, 0, 0, 0.55);
 }
 main > h2::after,
 .historie-zapasu > .nadpis-seznamu::after,
@@ -1062,8 +1072,18 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
   letter-spacing: 0.06em;
   color: var(--zlato-tmave);
 }
-/* Vlastní usnulý řádek nabízí cestu zpátky. Drobné tlačítko, ať se sloupec
-   kvůli němu neroztáhne přes půl tabulky. */
+/* Vlastní stav: odpočet lhůty a tlačítko zpátky mezi aktivní. Odpočet je
+   nevýrazný schválně — je to informace na okraji, ne budík. */
+.seznam .muj-stav { display: inline-flex; align-items: center; gap: 0.5rem; justify-content: flex-end; }
+.seznam .muj-cas {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--tlumene);
+  opacity: 0.75;
+}
+
+/* Drobné tlačítko, ať se sloupec kvůli němu neroztáhne přes půl tabulky. */
 .seznam button.jsem-tu {
   padding: 0.2rem 0.5rem;
   font-size: 0.76rem;

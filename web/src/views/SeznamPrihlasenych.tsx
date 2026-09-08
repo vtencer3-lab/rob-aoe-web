@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { jeAktivni } from "../../../src/shared/aktivita.js";
+import { jeAktivni, nabidnoutJsemTu, zbyvaMs } from "../../../src/shared/aktivita.js";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
@@ -292,6 +292,27 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, onJsemTu
 }
 
 /**
+ * Odpočet vlastní lhůty. Tiká po vteřinách sám za sebe: tabulka se překresluje
+ * po dvaceti a odpočet po vteřinách by ji hnal zbytečně celou.
+ */
+function MujCas({ aktivniDo }: { aktivniDo: string }) {
+  const [ted, setTed] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setTed(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const zbyva = zbyvaMs(aktivniDo, ted) ?? 0;
+  if (zbyva <= 0) return null;
+  const vteriny = Math.ceil(zbyva / 1000);
+  const text = `${Math.floor(vteriny / 60)}:${String(vteriny % 60).padStart(2, "0")}`;
+  return (
+    <span className="muj-cas" title="Za jak dlouho tě seznam odsune mezi neaktivní">
+      {text}
+    </span>
+  );
+}
+
+/**
  * Poslední sloupec tabulky: co je s hráčem teď.
  *
  * Vlastní usnulý řádek má přednost před vším ostatním — kdo usnul, potřebuje
@@ -312,21 +333,31 @@ function StavHrace({
   onJsemTu?: () => void;
 }) {
   const spi = !jeAktivni(hrac.aktivniDo, ted);
-  if (spi && jsemTo && onJsemTu) {
-    return (
-      <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
-        Jsem tu!
-      </button>
-    );
-  }
   const zapas = vZapase?.get(hrac.steamId);
-  if (zapas !== undefined) {
-    return (
+  const mece =
+    zapas === undefined ? null : (
       <span className="mece" role="img" aria-label={`Právě hraje zápas #${zapas}`} title={`Právě hraje zápas #${zapas}`}>
         ⚔
       </span>
     );
+
+  // Vlastní řádek: odpočet vlastní lhůty a od minuty po obnovení i tlačítko.
+  // Cizí řádek cizí čas nezajímá, tam zůstává ikona spáče.
+  if (jsemTo && hrac.aktivniDo) {
+    return (
+      <span className="muj-stav">
+        {mece}
+        <MujCas aktivniDo={hrac.aktivniDo} />
+        {onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted) ? (
+          <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
+            Jsem tu!
+          </button>
+        ) : null}
+      </span>
+    );
   }
+
+  if (mece) return mece;
   if (!spi) return null;
   return (
     <span className="spi" role="img" aria-label="Delší dobu neaktivní" title="Delší dobu neaktivní">

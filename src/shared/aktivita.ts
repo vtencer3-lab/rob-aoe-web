@@ -34,3 +34,23 @@ export function jeAktivni(aktivniDo: string | null | undefined, ted: number): bo
   const konec = Date.parse(aktivniDo);
   return Number.isNaN(konec) || konec > ted;
 }
+
+/** Kolik milisekund zbývá do usnutí. Záporné číslo = hráč už spí. */
+export function zbyvaMs(aktivniDo: string | null | undefined, ted: number): number | null {
+  if (!aktivniDo) return null;
+  const konec = Date.parse(aktivniDo);
+  return Number.isNaN(konec) ? null : konec - ted;
+}
+
+/**
+ * Má hráč u sebe vidět „Jsem tu!“?
+ *
+ * Nabídne se minutu po posledním obnovení lhůty, ne až když hráč usne: kdo
+ * u počítače sedí a vidí, že mu čas ubývá, si má umět sáhnout na tlačítko dřív,
+ * než ho seznam odsune dolů. Práh se počítá z lhůty, ať sedí i tehdy, až si ji
+ * bude admin nastavovat sám.
+ */
+export function nabidnoutJsemTu(aktivniDo: string | null | undefined, ted: number): boolean {
+  const zbyva = zbyvaMs(aktivniDo, ted);
+  return zbyva !== null && zbyva < (AKTIVITA_MINUT - 1) * 60_000;
+}

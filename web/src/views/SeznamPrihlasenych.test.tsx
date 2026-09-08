@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { PlayerView } from "../../../src/shared/types.js";
+import { AKTIVITA_MINUT } from "../../../src/shared/aktivita.js";
 import { podleAktivity, SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
 
 const hrac = (prepis: Partial<PlayerView> = {}): PlayerView => ({
@@ -184,11 +185,32 @@ it("u vlastního spícího řádku je tlačítko Jsem tu!, u cizího ne", () => 
   expect(onJsemTu).toHaveBeenCalledTimes(1);
 });
 
-// Dokud lhůta běží, tlačítko nemá co nabízet — hráč je mezi aktivními.
-it("vlastní aktivní řádek tlačítko nenabízí", () => {
+// Čerstvě obnovená lhůta tlačítko nenabízí: není co resetovat.
+it("s plnou lhůtou se tlačítko nenabízí, jen odpočet", () => {
   zmrazCas();
-  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", aktivniDo: za(2) })]} ja="ja" onJsemTu={vi.fn()} />);
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", aktivniDo: za(AKTIVITA_MINUT) })]} ja="ja" onJsemTu={vi.fn()} />);
   expect(screen.queryByRole("button", { name: /jsem tu/i })).not.toBeInTheDocument();
+  expect(screen.getByText("15:00")).toBeInTheDocument();
+});
+
+// Minutu po obnovení už tlačítko je — kdo vidí čas ubývat, má si umět sáhnout
+// na reset dřív, než ho seznam odsune dolů.
+it("po minutě se tlačítko nabídne, i když hráč ještě neusnul", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", aktivniDo: za(AKTIVITA_MINUT - 1.5) })]} ja="ja" onJsemTu={vi.fn()} />);
+  expect(screen.getByRole("button", { name: /jsem tu/i })).toBeInTheDocument();
+});
+
+// Odpočet je jen vlastní; cizí lhůta nikomu nic neříká.
+it("odpočet vidí hráč jen u sebe", () => {
+  zmrazCas();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(5) }), hrac({ steamId: "cizi", alias: "Cizí", aktivniDo: za(5) })]}
+      ja="ja"
+    />,
+  );
+  expect(screen.getAllByText("5:00")).toHaveLength(1);
 });
 
 // V tabulce o dvaceti jménech se člověk hledá první. Vlastní řádek proto nese

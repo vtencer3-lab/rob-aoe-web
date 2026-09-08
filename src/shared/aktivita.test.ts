@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { AKTIVITA_MINUT, jeAktivni, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT } from "./aktivita.js";
+import {
+  AKTIVITA_MINUT,
+  jeAktivni,
+  nabidnoutJsemTu,
+  ODSTUP_PULSU_MINUT,
+  PRODLOUZENI_MINUT,
+  zbyvaMs,
+} from "./aktivita.js";
 
 const TED = Date.parse("2026-09-08T20:00:00.000Z");
 const za = (minut: number) => new Date(TED + minut * 60_000).toISOString();
@@ -30,4 +37,34 @@ describe("jeAktivni", () => {
 it("lhůty dávají dohromady smysl", () => {
   expect(ODSTUP_PULSU_MINUT).toBeLessThan(AKTIVITA_MINUT);
   expect(PRODLOUZENI_MINUT).toBeLessThan(AKTIVITA_MINUT);
+});
+
+describe("zbyvaMs", () => {
+  it("spočítá zbytek lhůty a záporné číslo u spáče", () => {
+    expect(zbyvaMs(za(2), TED)).toBe(120_000);
+    expect(zbyvaMs(za(-1), TED)).toBe(-60_000);
+  });
+
+  it("bez údaje nevrací nic", () => {
+    expect(zbyvaMs(null, TED)).toBeNull();
+    expect(zbyvaMs("nesmysl", TED)).toBeNull();
+  });
+});
+
+// Práh se počítá z lhůty, ne z pevného čísla: až si ji bude admin nastavovat,
+// tlačítko se má nabízet minutu po obnovení bez ohledu na to, jak je dlouhá.
+describe("nabidnoutJsemTu", () => {
+  it("čerstvá lhůta tlačítko nenabízí, po minutě ano", () => {
+    expect(nabidnoutJsemTu(za(AKTIVITA_MINUT), TED)).toBe(false);
+    expect(nabidnoutJsemTu(za(AKTIVITA_MINUT - 0.5), TED)).toBe(false);
+    expect(nabidnoutJsemTu(za(AKTIVITA_MINUT - 1.5), TED)).toBe(true);
+  });
+
+  it("spáčovi se nabízí taky", () => {
+    expect(nabidnoutJsemTu(za(-5), TED)).toBe(true);
+  });
+
+  it("bez údaje se nenabízí", () => {
+    expect(nabidnoutJsemTu(null, TED)).toBe(false);
+  });
 });
