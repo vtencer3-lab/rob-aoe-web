@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { jeAktivni, nabidnoutJsemTu, zbyvaMs } from "../../../src/shared/aktivita.js";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
@@ -21,6 +21,8 @@ interface Props {
   vZapase?: Map<string, number>;
   /** Steam ID přihlášeného návštěvníka: jen on u sebe vidí „Jsem tu!“. */
   ja?: string | null;
+  /** Admin vidí odpočet u všech, ať má přehled, kdo za chvíli usne. */
+  admin?: boolean;
   /** Kliknutí na „Jsem tu!“ — vrátí hráči plnou lhůtu aktivity. */
   onJsemTu?: () => void;
 }
@@ -141,7 +143,7 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
   }, [tabulka, poradi]);
 }
 
-export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, onJsemTu }: Props) {
+export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu }: Props) {
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
   const tabulka = useRef<HTMLTableElement>(null);
@@ -275,6 +277,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, onJsemTu
                   hrac={hrac}
                   ted={ted}
                   jsemTo={ja !== null && ja !== undefined && ja === hrac.steamId}
+                  admin={admin}
                   vZapase={vZapase}
                   onJsemTu={onJsemTu}
                 />
@@ -322,56 +325,61 @@ function MujCas({ aktivniDo }: { aktivniDo: string }) {
 /**
  * Poslední sloupec tabulky: co je s hráčem teď.
  *
- * Vlastní usnulý řádek má přednost před vším ostatním — kdo usnul, potřebuje
- * hlavně cestu zpátky, ne informaci, že spí. Jinak jdou zkřížené meče před
- * ikonou spáče: že je někdo ve hře, je pro sestavování důležitější.
+ * Značka (meče, odpočet, „Zzz“) stojí vždy na stejném místě vpravo, ať je
+ * jakákoliv — sloupec pak lícuje po celé tabulce. Tlačítko „Jsem tu!“ se
+ * vejde nalevo od ní a nemění tím její polohu.
+ *
+ * Odpočet vidí hráč u sebe a admin u všech: potřebuje přehled, kdo za chvíli
+ * usne, a zkušební hráči mají lhůtu jako každý jiný. Kdo už spí, má místo
+ * čísel „Zzz“; zkřížené meče jdou před obojím, protože „hraje zápas“ je pro
+ * sestavování důležitější než lhůta.
  */
 function StavHrace({
   hrac,
   ted,
   jsemTo,
+  admin,
   vZapase,
   onJsemTu,
 }: {
   hrac: PlayerView;
   ted: number;
   jsemTo: boolean;
+  admin: boolean;
   vZapase?: Map<string, number>;
   onJsemTu?: () => void;
 }) {
   const spi = !jeAktivni(hrac.aktivniDo, ted);
   const zapas = vZapase?.get(hrac.steamId);
-  const mece =
-    zapas === undefined ? null : (
+  const tlacitko =
+    jsemTo && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted) ? (
+      <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
+        Jsem tu!
+      </button>
+    ) : null;
+
+  let znacka: ReactNode = null;
+  if (zapas !== undefined) {
+    znacka = (
       <span className="mece" role="img" aria-label={`Právě hraje zápas #${zapas}`} title={`Právě hraje zápas #${zapas}`}>
         ⚔
       </span>
     );
-
-  // Vlastní řádek: odpočet vlastní lhůty a od minuty po obnovení i tlačítko.
-  // Cizí řádek cizí čas nezajímá, tam zůstává ikona spáče.
-  if (jsemTo && hrac.aktivniDo) {
-    return (
-      <span className="muj-stav">
-        {mece}
-        {/* Tlačítko před odpočtem: úplně vpravo pak stojí buď odpočet, nebo
-            „Zzz“ ostatních řádků, takže sloupec lícuje a tlačítko nemění
-            polohu podle toho, jak jsou čísla široká. */}
-        {onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted) ? (
-          <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
-            Jsem tu!
-          </button>
-        ) : null}
-        <MujCas aktivniDo={hrac.aktivniDo} />
+  } else if (spi) {
+    znacka = (
+      <span className="spi" role="img" aria-label="Delší dobu neaktivní" title="Delší dobu neaktivní">
+        Zzz
       </span>
     );
+  } else if ((jsemTo || admin) && hrac.aktivniDo) {
+    znacka = <MujCas aktivniDo={hrac.aktivniDo} />;
   }
 
-  if (mece) return mece;
-  if (!spi) return null;
+  if (!tlacitko && !znacka) return null;
   return (
-    <span className="spi" role="img" aria-label="Delší dobu neaktivní" title="Delší dobu neaktivní">
-      Zzz
+    <span className="muj-stav">
+      {tlacitko}
+      <span className="stav-znacka">{znacka}</span>
     </span>
   );
 }

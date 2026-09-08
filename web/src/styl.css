@@ -1218,14 +1218,14 @@ h2 input.nazev-akce-pole {
   letter-spacing: 0.06em;
   color: var(--zlato-tmave);
 }
-/* Vlastní stav: odpočet lhůty a tlačítko zpátky mezi aktivní. Odpočet je
-   nevýrazný schválně — je to informace na okraji, ne budík. */
-.seznam .muj-stav { display: inline-flex; align-items: center; gap: 0.5rem; justify-content: flex-end; }
+/* Stav hráče: značka vpravo, tlačítko nalevo od ní. Značka má pevnou šířku,
+   takže odpočet, „Zzz“ i meče stojí na stejném místě a sloupec lícuje po celé
+   tabulce — a odpočet nehýbe ničím, když se změní počet číslic. */
+.seznam .muj-stav { display: inline-flex; align-items: center; gap: 0.6rem; justify-content: flex-end; }
+.seznam .stav-znacka { display: inline-block; min-width: 4.6ch; text-align: right; }
 .seznam .muj-cas {
-  /* Pevná šířka a číslice stejné šíře: jinak by se sloupec hýbal s každou
-     vteřinou a s ním celá tabulka. */
+  /* Číslice stejné šíře: jinak by se čas při každé vteřině mírně přeléval. */
   display: inline-block;
-  min-width: 4.4ch;
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-size: 0.78rem;

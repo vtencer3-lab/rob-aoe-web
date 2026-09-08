@@ -400,6 +400,7 @@ export function App() {
               skladani={admin ? skladani : undefined}
               vZapase={vZapase}
               ja={me?.steamId ?? null}
+              admin={admin}
               onJsemTu={() => void hlidej(() => api.jsemTu(akce.id))}
             />
           </section>

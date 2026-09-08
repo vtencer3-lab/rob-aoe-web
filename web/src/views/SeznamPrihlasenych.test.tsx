@@ -178,8 +178,8 @@ it("u vlastního spícího řádku je tlačítko Jsem tu!, u cizího ne", () => 
 
   const tlacitko = screen.getByRole("button", { name: /jsem tu/i });
   expect(screen.getAllByRole("button", { name: /jsem tu/i })).toHaveLength(1);
-  // Cizí spáč má místo tlačítka ikonu.
-  expect(screen.getAllByText("Zzz")).toHaveLength(1);
+  // Značka „spí“ zůstává u obou; tlačítko stojí vedle ní, ne místo ní.
+  expect(screen.getAllByText("Zzz")).toHaveLength(2);
 
   fireEvent.click(tlacitko);
   expect(onJsemTu).toHaveBeenCalledTimes(1);
@@ -249,4 +249,33 @@ it("řádky nesou značku, podle které je animace najde", () => {
   render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a" }), hrac({ steamId: "b" })]} />);
   const znacky = document.querySelectorAll("tbody > tr[data-hrac]");
   expect([...znacky].map((r) => r.getAttribute("data-hrac"))).toEqual(["a", "b"]);
+});
+
+// Admin potřebuje přehled, kdo za chvíli usne — odpočet proto vidí u všech,
+// zkušební hráče nevyjímaje. Hráč vidí jen ten svůj.
+it("adminovi běží odpočet u všech řádků", () => {
+  zmrazCas();
+  const hraci = [hrac({ steamId: "a", alias: "A", aktivniDo: za(5) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(9) })];
+  const { rerender } = render(<SeznamPrihlasenych prihlaseni={hraci} ja="a" admin />);
+  expect(screen.getByText("05:00")).toBeInTheDocument();
+  expect(screen.getByText("09:00")).toBeInTheDocument();
+
+  rerender(<SeznamPrihlasenych prihlaseni={hraci} ja="a" />);
+  expect(screen.getByText("05:00")).toBeInTheDocument();
+  expect(screen.queryByText("09:00")).not.toBeInTheDocument();
+});
+
+// Značka stojí ve vlastním sloupci s pevnou šířkou, ať je to čas, „Zzz“ nebo
+// meče — jinak by se sloupec s každým stavem posouval.
+it("čas i Zzz stojí ve stejné značce", () => {
+  zmrazCas();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "a", alias: "A", aktivniDo: za(5) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(-1) })]}
+      ja="a"
+      admin
+    />,
+  );
+  expect(screen.getByText("05:00").closest(".stav-znacka")).not.toBeNull();
+  expect(screen.getByText("Zzz").closest(".stav-znacka")).not.toBeNull();
 });
