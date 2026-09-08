@@ -20,11 +20,17 @@ oba odkazy se z něj odvozují. Nikdy neukládat sestavené URI.
 
 ## Větve, verze a nasazení (platí pro každého agenta v tomhle repu)
 
-Web běží na **jouki.cz** ve dvou kopiích a nasazuje se samo z commitu:
-`dev` → <https://jouki.cz/aoe/dev>, `main` → <https://jouki.cz/aoe>.
+Web běží na **jouki.cz** ve třech kopiích a nasazuje se samo z commitu:
+`dev` → <https://jouki.cz/aoe/dev>, `main` → <https://jouki.cz/aoe>,
+`experimental` → <https://jouki.cz/aoe/experimental>.
 Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
 
 - **Pracuje se ve větvi `dev`.** Do `main` se přímo necommituje.
+- **`experimental` je na velké pokusy, které se klidně zahodí.** Zakládá se
+  z `dev`, nasazuje se na `/aoe/experimental` nad vlastní databází a do
+  `main` nejde nikdy přímo — vždycky přes merge do `dev`. Smysl: `dev`
+  zůstane kdykoliv vydatelná pro hotfix. Postup a řešení konfliktu verzí
+  má [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md) §1.1.
 - **Každý commit, který mění chování, zvedne verzi:** `npm run verze`
   (patch) v tomtéž commitu. Nová funkce nebo migrace = `npm run verze -- minor`.
   Verze je v `package.json` a `src/shared/verze.ts`, příkaz mění obojí.

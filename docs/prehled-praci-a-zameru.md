@@ -16,6 +16,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | Otázka | Dokument |
 |---|---|
 | Jak večer probíhá, co který uživatel vidí | `README.md`, sekce „Jak večer probíhá“ |
+| Které větve kam nasazují a jak se pracuje s `experimental` | `docs/nasazeni-jouki-cz.md` §1, §1.1 |
 | Rozjetí, mapa kódu, pasti, kontrolní seznam před pushem | `CONTRIBUTING.md` |
 | Architektura, datový model, API, bezpečnostní hranice (k 6. 9.) | `docs/analyza-projektu.md` |
 | Pracovní postup dev → main, verzování, Coolify, migrace | `docs/nasazeni-jouki-cz.md` |
@@ -32,7 +33,8 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | 0.16.3, nasazeno na <https://jouki.cz/aoe> (PR #7, 8. 9. 2026 ~01:00) |
 | `origin/dev` | 0.16.3, totéž, nasazeno na <https://jouki.cz/aoe/dev> |
-| Migrace | 001–012, poslední `012_zavreny_zapas.sql`; na obou databázích aplikované |
+| `origin/experimental` | 0.16.3, odbočka z `dev` z 8. 9. 2026, nasazeno na <https://jouki.cz/aoe/experimental> |
+| Migrace | 001–012, poslední `012_zavreny_zapas.sql`; aplikované na všech třech databázích |
 | Testy | backend hermetické 203, databázové 132, frontend 177 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -40,6 +42,15 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 Releasy do `main` proběhly čtyři: PR #4 (0.11.2, 7. 9. večer), PR #5
 (0.16.0), PR #6 (0.16.2), PR #7 (0.16.3), všechny 8. 9. po půlnoci.
 **Release se dělá jen na výslovný pokyn** („pushni do mainu“).
+
+**Tři větve, tři nasazení (od 8. 9. 2026).** `main` = ostrá,
+`dev` = vývojová a zdroj releasů, `experimental` = pískoviště na velké
+pokusy. Záměr uživatele doslova: „dev verzi nechat, kdyby bylo potřeba
+vydávat hotfixy, a experimental na větší experimenty, které kdyžtak
+zahodím“. Každá kopie má vlastní databázi a vlastní cookie; pokus se
+zahazuje `git reset --hard dev`, aniž by se čehokoliv dotkl. Podrobný
+postup včetně řešení konfliktu verzí a přečíslování migrací je
+v `docs/nasazeni-jouki-cz.md` §1.1.
 
 ---
 
@@ -72,6 +83,16 @@ curl -s https://jouki.cz/aoe/dev/api/health
 ssh root@178.104.160.182 "bash /root/aoe-deploy/test-db.sh dev"
 ```
 
+Pokus na `experimental` (velká přestavba, kterou je možné zahodit):
+
+```bash
+git checkout experimental && git merge dev   # začít od aktuálního dev
+# … práce, verze, build, push origin experimental — nasadí se samo
+curl -s https://jouki.cz/aoe/experimental/api/health
+git checkout dev && git merge experimental   # pokus vyšel (konflikt verzí: vzít dev a znovu npm run verze)
+git checkout experimental && git reset --hard dev && git push --force-with-lease origin experimental   # pokus se zahazuje
+```
+
 Release do `main`:
 
 ```bash
@@ -93,9 +114,15 @@ Provozní drobnosti, které stály čas:
   `/deploy?uuid=`. Samotný `/restart` nové proměnné **nenačte**.
 - **Logy kontejneru zmizí s každým nasazením** (Coolify staví nový kontejner,
   jméno `<uuid>-<číslo>`). Když se má něco vyšetřit z logu, udělat to před
-  dalším pushem. Dev kontejner: prefix `wxju55zz…`, ostrý `qjaf9z9n…`.
+  dalším pushem. Dev kontejner: prefix `wxju55zz…`, ostrý `qjaf9z9n…`,
+  pokusný `on5tol2p…` (to jsou zároveň uuid aplikací pro Coolify API).
 - Postgres kontejner `aj70ceyvdhxuvhe07suo3q9y`, databáze `rob_aoe` (ostrá),
-  `rob_aoe_dev`, `rob_aoe_test`; dotaz: `docker exec … psql -U rob_aoe -d rob_aoe_dev -c "…"`.
+  `rob_aoe_dev`, `rob_aoe_experimental`, `rob_aoe_test`; dotaz:
+  `docker exec … psql -U rob_aoe -d rob_aoe_dev -c "…"`. Novou databázi
+  role `rob_aoe` založit neumí, `CREATE DATABASE` se musí spustit jako
+  `POSTGRES_USER` uvnitř kontejneru.
+- **Hlídač větví** `/root/aoe-deploy/watch.sh` má seznam dvojic
+  `větev:uuid`; nová větev se nasazuje, až když je v něm zapsaná.
 - Screenshoty od uživatele bývají **z ostré verze i z dev** — verze v patičce
   (`v0.16.0`) říká, ze které. Dvakrát to zmátlo diagnostiku.
 

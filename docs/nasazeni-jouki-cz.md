@@ -1,11 +1,12 @@
 # Nasazení na jouki.cz a pracovní postup (dev → main)
 
-Web běží na serveru jouki.cz ve dvou kopiích, každá z jedné větve repozitáře:
+Web běží na serveru jouki.cz ve **třech** kopiích, každá z jedné větve repozitáře:
 
 | Větev | Adresa | K čemu |
 |---|---|---|
 | `main` | <https://jouki.cz/aoe> | ostrá verze, na kterou se posílají lidé |
-| `dev` | <https://jouki.cz/aoe/dev> | vývojová verze, tady se zkouší všechno nové |
+| `dev` | <https://jouki.cz/aoe/dev> | vývojová verze, odtud se releasuje; musí zůstat pořád vydatelná, aby šel kdykoliv poslat hotfix |
+| `experimental` | <https://jouki.cz/aoe/experimental> | pískoviště na velké pokusy, které se klidně zahodí (od 8. 9. 2026) |
 
 **Commit do větve = nasazení.** Nic dalšího se nedělá: po pushi se na serveru
 sestaví nový obraz, proběhnou migrace a nová verze se objeví na adrese. Trvá
@@ -14,6 +15,7 @@ to zhruba dvě až tři minuty. Ověření, že běží to, co má:
 ```
 curl -s https://jouki.cz/aoe/api/health        # {"ok":true,"verze":"X.Y.Z"}
 curl -s https://jouki.cz/aoe/dev/api/health
+curl -s https://jouki.cz/aoe/experimental/api/health
 ```
 
 Stejná verze je vidět v patičce stránky.
@@ -27,16 +29,18 @@ Stejná verze je vidět v patičce stránky.
 
 ## 1. Pracovní postup
 
-Dvě větve, jeden směr:
+Tři větve, jeden směr:
 
 ```
-dev  ──── commit, commit, commit ────►  PR  ────►  main
- │                                                  │
- ▼                                                  ▼
-jouki.cz/aoe/dev                              jouki.cz/aoe
+experimental ──► merge, když pokus vyjde ──┐
+      │                                    ▼
+      │      dev ── commit, commit ──►  PR  ────►  main
+      ▼                 │                            │
+jouki.cz/aoe/           ▼                            ▼
+  experimental   jouki.cz/aoe/dev              jouki.cz/aoe
 ```
 
-1. **Všechna práce jde do `dev`.** Do `main` se přímo necommituje.
+1. **Běžná práce jde do `dev`.** Do `main` se přímo necommituje.
 2. **Každý commit, který mění chování, zvedne verzi** (viz kapitola 2). Verze
    se zvedá ve větvi `dev`; do `main` se dostane s releasem.
 3. **Release se dělá jen na výslovný pokyn** („releasni“, „pushni do main“,
@@ -52,6 +56,35 @@ jouki.cz/aoe/dev                              jouki.cz/aoe
 4. Po releasu ověřit, že `https://jouki.cz/aoe/api/health` vrací verzi, která
    se právě releasovala. Trvá to pár minut; než se nový build rozběhne, běží
    dál ten starý.
+
+### 1.1 Větev `experimental`
+
+Na velké přestavby, u kterých není jisté, že se nechají. Smysl je udržet
+`dev` pořád vydatelnou: když se večer objeví chyba, hotfix jde do `dev` a
+odtud rovnou do `main`, aniž by ho blokoval rozdělaný pokus.
+
+```
+git checkout experimental && git merge dev     # vzít si aktuální dev
+…                                             # pokusy; nasazuje se samo
+git checkout dev && git merge experimental    # pokus vyšel
+git checkout experimental && git reset --hard dev
+git push --force-with-lease origin experimental   # pokus se zahazuje
+```
+
+- **Nikdy se nereleasuje přímo z `experimental` do `main`.** Vždycky
+  nejdřív merge do `dev` a odtud PR.
+- Verze se na `experimental` zvedá stejně jako jinde, ať `/api/health`
+  a patička říkají pravdu. Při merge zpátky do `dev` bude v `package.json`
+  a `src/shared/verze.ts` konflikt — vyřešit tak, že se vezme verze z `dev`
+  a znovu se spustí `npm run verze` (`-- minor`, když pokus přinesl novou
+  funkci nebo migraci).
+- Migrace z `experimental` se aplikují jen na `rob_aoe_experimental`. **Do
+  `dev` se dostanou až s mergem**, takže jejich pořadové číslo se může krýt
+  s migrací, která mezitím vznikla v `dev` — před mergem zkontrolovat čísla
+  v `database/` a případně soubor přečíslovat. Zahozená databáze se dá
+  smazat a nechat vytvořit znovu.
+- Zahození větve je bezpečné: `main` ani `dev` o ní nevědí a nasazení na
+  `/aoe/experimental` běží samostatně nad vlastní databází.
 
 Proč takhle: ostrá adresa je ta, kterou Rob posílá lidem před streamem.
 Nesmí se na ní objevit nic, co neprošlo dev verzí. A protože nasazení je
@@ -101,12 +134,13 @@ mezipaměti. Dvě různé verze se stejným číslem tuhle informaci zničí.
 Jeden VPS (Hetzner, Ubuntu), na kterém běží [Coolify](https://coolify.io) —
 správce kontejnerů s reverzní proxy Traefik a certifikáty Let's Encrypt.
 Coolify už hostuje ostatní věci na jouki.cz; tenhle web je v něm zaregistrovaný
-jako dvě aplikace:
+jako tři aplikace:
 
 | Coolify aplikace | Větev | Veřejná adresa | Proměnná `BASE_URL` | Build ARG `BASE_PATH` |
 |---|---|---|---|---|
 | `aoe-web` | `main` | `https://jouki.cz/aoe` | `https://jouki.cz/aoe` | `/aoe/` |
 | `aoe-web-dev` | `dev` | `https://jouki.cz/aoe/dev` | `https://jouki.cz/aoe/dev` | `/aoe/dev/` |
+| `aoe-web-experimental` | `experimental` | `https://jouki.cz/aoe/experimental` | `https://jouki.cz/aoe/experimental` | `/aoe/experimental/` |
 
 Obě staví z veřejného repa (`https://github.com/vtencer3-lab/rob-aoe-web`)
 podle `Dockerfile` v kořeni. Sestavený kontejner obsluhuje API i frontend
@@ -124,26 +158,29 @@ nemění. Prefix je potřeba jen tam, kde adresa jde zpátky do prohlížeče:
 | adresy assetů (`/aoe/assets/…`) a všechna volání `fetch` z frontendu | `web/vite.config.ts` (`base`), `web/src/cesty.ts` | build ARG `BASE_PATH` |
 | přesměrování po přihlášení a ze zkušebních dveří, cesta cookie | `src/config.ts` (`basePath`, `domovskaCesta`) | `BASE_URL` |
 | návratová adresa pro Steam OpenID | `src/auth/steamOpenId.ts` | `BASE_URL` |
-| název cookie se sezením (`sid_aoe`, `sid_aoe_dev`) | `src/config.ts` (`cookieNazev`) | `BASE_URL` |
+| název cookie se sezením (`sid_aoe`, `sid_aoe_dev`, `sid_aoe_experimental`) | `src/config.ts` (`cookieNazev`) | `BASE_URL` |
 
-Název cookie se liší schválně: obě verze běží na téže doméně a cookie s
-cestou `/aoe` prohlížeč posílá i na `/aoe/dev`. Se stejným názvem by se obě
-verze o jedno sezení přetahovaly.
+Název cookie se liší schválně: všechny kopie běží na téže doméně a cookie
+s cestou `/aoe` prohlížeč posílá i na `/aoe/dev` a `/aoe/experimental`. Se
+stejným názvem by se o jedno sezení přetahovaly. Název se z cesty odvozuje
+sám (`nazevCookie`), takže další kopie nepotřebuje zásah do kódu.
 
-Delší prefix `/aoe/dev` má v Traefiku přednost před `/aoe` automaticky
-(priorita podle délky pravidla), takže vývojová verze nepotřebuje žádnou
-výjimku v ostré.
+Delší prefix `/aoe/dev` i `/aoe/experimental` má v Traefiku přednost před
+`/aoe` automaticky (priorita podle délky pravidla), takže vývojová ani
+pokusná verze nepotřebuje v ostré žádnou výjimku.
 
 ### 3.3 Co se děje po pushi
 
 Nasazení spouštějí dvě nezávislé cesty; stačí, aby fungovala jedna:
 
 1. **Hlídač větví na serveru** (systemd timer, každou minutu). Ptá se GitHubu
-   na aktuální commit větví `main` a `dev` (`git ls-remote`, veřejné repo,
+   na aktuální commit větví `main`, `dev` a `experimental` (`git ls-remote`,
+   veřejné repo,
    bez přihlášení). Když se commit změnil a Coolify ho ještě nenasadilo,
    požádá Coolify o nasazení. Tohle funguje vždy a nepotřebuje v repu nic.
-2. **GitHub Action** `.github/workflows/deploy.yml`. Po pushi do `main` nebo
-   `dev` zavolá Coolify přímo, takže nasazení začne hned, ne až za minutu.
+2. **GitHub Action** `.github/workflows/deploy.yml`. Po pushi do `main`,
+   `dev` nebo `experimental` zavolá Coolify přímo, takže nasazení začne
+   hned, ne až za minutu.
    Potřebuje k tomu secret `COOLIFY_TOKEN` v nastavení repa (Settings →
    Secrets and variables → Actions). **Nastavit ho může jen vlastník repa**;
    token vydá správce serveru. Dokud secret není, akce jen skončí s poznámkou
@@ -159,33 +196,35 @@ připojí).
 
 Kontejner před startem serveru spustí `node dist/scripts/migrate.js`. Migrace
 jsou tedy součástí nasazení a **nová migrace v `dev` se projeví v `rob_aoe_dev`
-hned, v `rob_aoe` až s releasem**. Migrace musí být proto vždycky dopředně
+hned, v `rob_aoe` až s releasem** (a migrace z `experimental` jen v
+`rob_aoe_experimental`, dokud se větev nemerguje). Migrace musí být proto vždycky dopředně
 kompatibilní se starým kódem: mezi startem migrace a přepnutím provozu ještě
 pár vteřin běží předchozí verze nad novým schématem.
 
 ### 3.5 Databáze
 
-Ostrá a vývojová verze mají **oddělené databáze** (`rob_aoe`, `rob_aoe_dev`)
-na jednom PostgreSQL 18, který na serveru už běžel pro jiné projekty.
-Přístup k němu mají jen kontejnery na serveru, zvenčí není vidět. Vývojová
-databáze se dá kdykoliv vyprázdnit; ostrá ne.
+Každá kopie má **vlastní databázi** (`rob_aoe`, `rob_aoe_dev`,
+`rob_aoe_experimental`) na jednom PostgreSQL 18, který na serveru už běžel
+pro jiné projekty. Přístup k němu mají jen kontejnery na serveru, zvenčí
+není vidět. Vývojová i pokusná databáze se dají kdykoliv vyprázdnit; ostrá
+ne. Databázové testy běží proti čtvrté, `rob_aoe_test`.
 
 ### 3.6 Proměnné prostředí
 
 Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 
-| Proměnná | ostrá | vývojová |
-|---|---|---|
-| `DATABASE_URL` | `postgres://…/rob_aoe` | `postgres://…/rob_aoe_dev` |
-| `BASE_URL` | `https://jouki.cz/aoe` | `https://jouki.cz/aoe/dev` |
-| `BASE_PATH` (build) | `/aoe/` | `/aoe/dev/` |
-| `HOST` | `0.0.0.0` | `0.0.0.0` |
-| `PORT` | `3000` | `3000` |
-| `ADMIN_STEAM_ID` | seznam Steam ID s režií oddělený čárkou (Rob + správce) | totéž |
-| `STEAM_API_KEY` | volitelné | volitelné |
-| `LOG_LEVEL` | `info` | `info` |
-| `DEV_PRISTUP` | nenastavovat | nenastavovat |
-| `ZKUSEBNI_HRACI` | nenastavovat | `true` — tlačítka „+ Zkušební hráč“ v režii |
+| Proměnná | ostrá | vývojová | pokusná |
+|---|---|---|---|
+| `DATABASE_URL` | `postgres://…/rob_aoe` | `postgres://…/rob_aoe_dev` | `postgres://…/rob_aoe_experimental` |
+| `BASE_URL` | `https://jouki.cz/aoe` | `https://jouki.cz/aoe/dev` | `https://jouki.cz/aoe/experimental` |
+| `BASE_PATH` (build) | `/aoe/` | `/aoe/dev/` | `/aoe/experimental/` |
+| `HOST` | `0.0.0.0` | `0.0.0.0` | `0.0.0.0` |
+| `PORT` | `3000` | `3000` | `3000` |
+| `ADMIN_STEAM_ID` | seznam Steam ID s režií oddělený čárkou (Rob + správce) | totéž | totéž |
+| `STEAM_API_KEY` | volitelné | volitelné | volitelné |
+| `LOG_LEVEL` | `info` | `info` | `info` |
+| `DEV_PRISTUP` | nenastavovat | nenastavovat | nenastavovat |
+| `ZKUSEBNI_HRACI` | nenastavovat | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` |
 
 Zkušební dveře (`/api/dev/*`) se na `https` samy zavírají, takže na jouki.cz
 nejsou dostupné ani ve vývojové verzi. Zkouška večera nasucho se dělá lokálně.

@@ -12,8 +12,10 @@ u [`CONTRIBUTING.md`](CONTRIBUTING.md) — je tam rozjetí na cizím stroji, map
 kódu, pravidla, která se nesmí porušit, a pasti, které tenhle projekt už jednou
 stály čas.
 
-**Web běží na <https://jouki.cz/aoe>** (ostrá verze z větve `main`) a
-<https://jouki.cz/aoe/dev> (vývojová z větve `dev`); nasazuje se samo z commitu.
+**Web běží na <https://jouki.cz/aoe>** (ostrá verze z větve `main`),
+<https://jouki.cz/aoe/dev> (vývojová z větve `dev`) a
+<https://jouki.cz/aoe/experimental> (pokusná z větve `experimental`);
+nasazuje se samo z commitu.
 Jak se pracuje s větvemi a verzí, je v
 [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md). Proč jednotlivé
 funkce vypadají tak, jak vypadají, co se zamítlo a co čeká na rozhodnutí, je
