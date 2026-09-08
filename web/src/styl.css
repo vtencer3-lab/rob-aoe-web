@@ -155,12 +155,15 @@ header h1 {
   align-items: center;
   justify-content: center;
   /* Text patří do látky mezi tyčí a zlatou bordurou, ne doprostřed obrázku.
-     Bordura je na 62 % výšky, tyč zabírá vršek — střed textu má vyjít na 39 %.
-     Spodní odsazení zvedne obsah přesně tam. Procento se počítá ze šířky,
-     takže při 4,42:1 odpovídá 5 % šířky 22 % výšky a usazení drží v každé
-     velikosti. */
-  padding: 0 4% 5% 4%;
-  font-size: 2.05rem;
+     Naměřeno v obrázku: látka začíná pod tyčí na 2 % výšky, střed bordury je
+     na 61,7 %. Text má stát ve 45 % té vzdálenosti, tedy na 28,9 % celkové
+     výšky. Spodní odsazení tam obsah zvedne: procento se počítá ze šířky,
+     takže při poměru 4,42:1 odpovídá 7,6 % šířky 34 % výšky. Usazení tím drží
+     v každé velikosti, na rozdíl od posunu v pixelech. */
+  padding: 0 4% 7.6% 4%;
+  /* Písmo roste s praporcem, ale nepřeroste ho: v plné šířce má zabírat asi
+     čtvrtinu vzdálenosti mezi tyčí a bordurou. */
+  font-size: clamp(1rem, 2vw, 1.72rem);
   line-height: 1.15;
   background: url(./assets/ui/praporec-cely.webp) center / contain no-repeat;
   color: var(--zlato-svetle);
