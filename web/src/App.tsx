@@ -276,7 +276,7 @@ export function App() {
           Komunitní hry —{" "}
           <button
             type="button"
-            className="jmeno-roba"
+            className="bez-vzhledu jmeno-roba"
             title="RobDiesALot"
             onClick={() => {
               // Prohlížeč bez autoplay nebo bez zvuku: ticho, žádná chyba.

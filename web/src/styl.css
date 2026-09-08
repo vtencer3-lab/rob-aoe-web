@@ -266,7 +266,13 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
   cursor: not-allowed;
 }
 
-button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba),
+/* Tlačítka, která se jako tlačítka nemají tvářit (nadpis akce, jméno Roba
+   v záhlaví), nesou `bez-vzhledu` a vypadávají ze všech obecných pravidel
+   níž. Do 9. 9. 2026 se místo toho vzhled přebíjel u každého zvlášť — jenže
+   `all: unset` platí jen v klidu a hnědá deska se vracela pod kurzorem. */
+button.bez-vzhledu { all: unset; cursor: pointer; }
+
+button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(.bez-vzhledu),
 a.tlacitko, .cta:not(.spectate) {
   display: inline-flex;
   align-items: center;
@@ -274,7 +280,7 @@ a.tlacitko, .cta:not(.spectate) {
   line-height: 1.15;
 }
 
-button {
+button:not(.bez-vzhledu) {
   background: linear-gradient(#4a2a1c, #2c1710 60%, #200f0a);
   color: var(--zlato-svetle);
   border: 1px solid var(--zlato-tmave);
@@ -290,7 +296,7 @@ button {
     inset 0 -2px 6px rgba(0, 0, 0, 0.45),
     0 1px 2px rgba(0, 0, 0, 0.5);
 }
-button:hover:enabled {
+button:hover:enabled:not(.bez-vzhledu) {
   background: linear-gradient(#5e3724, #3a1e14 60%, #2a1410);
   border-color: var(--zlato);
 }
@@ -1134,16 +1140,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 
    Rozsvěcuje to najetí na celý nadpis, ne jen na tlačítko: tužka stojí vedle
    něj a couvala by pod kurzorem sama před sebou. */
-/* `all: unset` platí jen v klidovém stavu. Pod kurzorem se na tlačítko vrhne
-   obecné `button:hover:enabled` s hnědým přechodem — proto se pozadí musí
-   odmítnout i tady, jinak se pod nadpisem objeví deska. */
-h2 button.nazev-akce-tlacitko { all: unset; cursor: pointer; }
-h2 button.nazev-akce-tlacitko:hover,
-h2 button.nazev-akce-tlacitko:focus-visible {
-  background: none;
-  border: none;
-  box-shadow: none;
-}
+/* Vzhled tlačítka nemá; obecná pravidla ho míjejí díky `bez-vzhledu` výš. */
 /* Rámeček obtahuje jen text a nechává mu kolem sebe vzduch — nalepený na
    písmenech vypadá jako podtržení, ne jako pole. Pozadí zůstává průhledné:
    je to náznak pole, ne deska. Odsazení i rámeček má stejné jako to pole, jen
@@ -1230,8 +1227,10 @@ h2 input.nazev-akce-pole {
 /* Stav hráče: značka vpravo, tlačítko nalevo od ní. Značka má pevnou šířku,
    takže odpočet, „Zzz“ i meče stojí na stejném místě a sloupec lícuje po celé
    tabulce — a odpočet nehýbe ničím, když se změní počet číslic. */
-.seznam .muj-stav { display: inline-flex; align-items: center; gap: 0.6rem; justify-content: flex-end; }
 .seznam .stav-znacka { display: inline-block; min-width: 4.6ch; text-align: right; }
+/* Vlastní sloupec pro „Jsem tu!“: v jednom se značkou by jeho šířka odpočet
+   odsouvala a sloupec by se řádek od řádku neshodoval. */
+.seznam > tbody > tr > td.jsem-tu-bunka { width: 1px; padding-right: 0.6rem; text-align: right; white-space: nowrap; }
 .seznam .muj-cas {
   /* Číslice stejné šíře: jinak by se čas při každé vteřině mírně přeléval. */
   display: inline-block;
@@ -1309,9 +1308,9 @@ h2 input.nazev-akce-pole {
 
 /* Robovo jméno v záhlaví je tlačítko (easter egg), ale vypadá jako text;
    hover ho jen lehce zezlátne. */
-/* Odsazení musí stát až za `all: unset`, ten smaže i okraje. Mezi pomlčkou
-   a jménem jinak nezbyla mezera — tlačítko se lepilo rovnou na ni. */
-h1 button.jmeno-roba { all: unset; margin-left: 10px; cursor: pointer; transition: color 0.2s; }
+/* Odsazení musí stát až za `all: unset` z `bez-vzhledu`, ten smaže i okraje.
+   Mezi pomlčkou a jménem jinak nezbyla mezera — tlačítko se lepilo na ni. */
+h1 button.jmeno-roba { margin-left: 10px; transition: color 0.2s; }
 h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
   color: var(--zlato);
   background: none;

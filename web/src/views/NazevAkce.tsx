@@ -20,7 +20,7 @@ export function NazevAkce({ nazev, onPrejmenovat }: { nazev: string; onPrejmenov
         {onPrejmenovat ? (
           <button
             type="button"
-            className="nazev-akce-tlacitko"
+            className="bez-vzhledu nazev-akce-tlacitko"
             title="Upravit název akce"
             onClick={() => {
               setText(nazev);

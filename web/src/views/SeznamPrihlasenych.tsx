@@ -211,6 +211,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
               </th>
             );
           })}
+          <th aria-label="Návrat mezi aktivní" />
           <th aria-label="Stav hráče" />
         </tr>
       </thead>
@@ -272,15 +273,26 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
               {/* Bez avataru se Steamu nikdo neptal (chybí klíč, nebo dotaz
                   selhal) — pak NULL neznamená skrytý profil, ale „nevíme“. */}
               <td>{hrac.steamHodiny !== null || hrac.avatarUrl ? formatHodiny(hrac.steamHodiny) : "—"}</td>
+              {/* Tlačítko a značka mají vlastní sloupce. V jednom by šířka
+                  tlačítka odsouvala odpočet a ten by se řádek od řádku
+                  neshodoval. */}
+              <td className="jsem-tu-bunka">
+                {ja === hrac.steamId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted) ? (
+                  <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
+                    Jsem tu!
+                  </button>
+                ) : null}
+              </td>
               <td className="hraje">
-                <StavHrace
-                  hrac={hrac}
-                  ted={ted}
-                  jsemTo={ja !== null && ja !== undefined && ja === hrac.steamId}
-                  admin={admin}
-                  vZapase={vZapase}
-                  onJsemTu={onJsemTu}
-                />
+                <span className="stav-znacka">
+                  <ZnackaHrace
+                    hrac={hrac}
+                    ted={ted}
+                    vlastni={ja !== null && ja !== undefined && ja === hrac.steamId}
+                    admin={admin}
+                    vZapase={vZapase}
+                  />
+                </span>
               </td>
             </tr>
           );
@@ -323,63 +335,45 @@ function MujCas({ aktivniDo }: { aktivniDo: string }) {
 }
 
 /**
- * Poslední sloupec tabulky: co je s hráčem teď.
+ * Značka stavu v posledním sloupci: meče, odpočet, nebo „Zzz“.
  *
- * Značka (meče, odpočet, „Zzz“) stojí vždy na stejném místě vpravo, ať je
- * jakákoliv — sloupec pak lícuje po celé tabulce. Tlačítko „Jsem tu!“ se
- * vejde nalevo od ní a nemění tím její polohu.
+ * Sloupec je jen pro ni a má pevnou šířku, takže značky stojí pod sebou, ať je
+ * u koho která. Tlačítko „Jsem tu!“ má vlastní sloupec vedle — v jednom by
+ * jeho šířka odpočet odsouvala.
  *
  * Odpočet vidí hráč u sebe a admin u všech: potřebuje přehled, kdo za chvíli
  * usne, a zkušební hráči mají lhůtu jako každý jiný. Kdo už spí, má místo
  * čísel „Zzz“; zkřížené meče jdou před obojím, protože „hraje zápas“ je pro
  * sestavování důležitější než lhůta.
  */
-function StavHrace({
+function ZnackaHrace({
   hrac,
   ted,
-  jsemTo,
+  vlastni,
   admin,
   vZapase,
-  onJsemTu,
 }: {
   hrac: PlayerView;
   ted: number;
-  jsemTo: boolean;
+  vlastni: boolean;
   admin: boolean;
   vZapase?: Map<string, number>;
-  onJsemTu?: () => void;
 }) {
-  const spi = !jeAktivni(hrac.aktivniDo, ted);
   const zapas = vZapase?.get(hrac.steamId);
-  const tlacitko =
-    jsemTo && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted) ? (
-      <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
-        Jsem tu!
-      </button>
-    ) : null;
-
-  let znacka: ReactNode = null;
   if (zapas !== undefined) {
-    znacka = (
+    return (
       <span className="mece" role="img" aria-label={`Právě hraje zápas #${zapas}`} title={`Právě hraje zápas #${zapas}`}>
         ⚔
       </span>
     );
-  } else if (spi) {
-    znacka = (
+  }
+  if (!jeAktivni(hrac.aktivniDo, ted)) {
+    return (
       <span className="spi" role="img" aria-label="Delší dobu neaktivní" title="Delší dobu neaktivní">
         Zzz
       </span>
     );
-  } else if ((jsemTo || admin) && hrac.aktivniDo) {
-    znacka = <MujCas aktivniDo={hrac.aktivniDo} />;
   }
-
-  if (!tlacitko && !znacka) return null;
-  return (
-    <span className="muj-stav">
-      {tlacitko}
-      <span className="stav-znacka">{znacka}</span>
-    </span>
-  );
+  if ((vlastni || admin) && hrac.aktivniDo) return <MujCas aktivniDo={hrac.aktivniDo} />;
+  return null;
 }
