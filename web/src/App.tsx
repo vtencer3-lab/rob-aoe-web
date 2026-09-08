@@ -370,19 +370,23 @@ export function App() {
                     >
                       Odebrat zkušební
                     </button>
+                    {/* Popisek je slovy, na tlačítku je jen dvojšipka: „posunout
+                        čas“ se řekne rychleji symbolem než větou. */}
                     <button
                       onClick={() => void hlidej(() => api.pretocitCas(akce.id, 15))}
+                      aria-label="Posunout o 15 min"
                       title="Posune lhůty aktivity o čtvrt hodiny — všichni přihlášení usnou"
                     >
-                      Posunout o 15 min
+                      » 15 min
                     </button>
                     {/* Po minutách jde sledovat, jak odpočet ubývá a kdy se
                         nabídne „Jsem tu!“ — na to je uspání všech naráz hrubé. */}
                     <button
                       onClick={() => void hlidej(() => api.pretocitCas(akce.id, 1))}
+                      aria-label="Posunout o 1 min"
                       title="Posune lhůty aktivity o minutu"
                     >
-                      Posunout o 1 min
+                      » 1 min
                     </button>
                   </>
                 ) : null}
