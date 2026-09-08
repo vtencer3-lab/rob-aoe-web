@@ -35,7 +35,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | 0.16.3, nasazeno na <https://jouki.cz/aoe> (PR #7, 8. 9. 2026 ~01:00) |
 | `origin/dev` | 0.16.3, totéž, nasazeno na <https://jouki.cz/aoe/dev> |
-| `origin/experimental` | 0.16.3, odbočka z `dev` z 8. 9. 2026, nasazeno na <https://jouki.cz/aoe/experimental> |
+| `origin/experimental` | 0.16.4-17.2, odbočka z `dev` z 8. 9. 2026, nasazeno na <https://jouki.cz/aoe/experimental>; nese grafický kabátek (§3.12) |
 | Migrace | 001–012, poslední `012_zavreny_zapas.sql`; aplikované na všech třech databázích |
 | Testy | backend hermetické 203, databázové 132, frontend 177 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -374,6 +374,42 @@ přeskočí se, když je řádek mladší než 15 min **a má žebříčky**; po
 `broadcastAkce()`. Chyby externích zdrojů do `player.staty_chyba`.
 Worlds Edge `getPersonalStat` a Steam (profil, hodiny; skrytý profil =
 `null`, chybějící klíč = nesahat).
+
+### 3.12 Grafický kabátek (jen `experimental`)
+
+**Záměr.** Uživatel doslova: „chtěl bych zkusit dát webové stránce kompletní
+grafický kabátek… layout chci aby prakticky zůstal 1:1, pouze na to chci
+hodit grafický overhaul“, s tím, že se vyjde z loga Brohemians, tématika je
+Age of Empires II a logo má být dobře zakomponované. Rozhodnutí padla
+v dotazníku: plný herní kabátek, pozadí české s AoE2 nádechem, herní assety
+z instalace hry volně, písmo Cinzel + Georgia.
+
+**Jak to je.** Celý systém včetně palety, rámů, seedů a postupu regenerace
+popisuje [`docs/grafika.md`](grafika.md). Ve zkratce: barvy vytažené z loga,
+malované pozadí (pražské náměstí za soumraku, Flux.2-dev lokálně), devítidílný
+řezbovaný rám panelů s ametysty, praporec pod nadpisem, vodoznak pražského
+orloje (herní znak civilizace Bohemians), tlačítka a pole kreslená v CSS.
+Layout se nezměnil; jediný zásah do JSX je obal `section.panel-prihlaseni`
+kolem nadpisu a tabulky přihlášených, aby seděly na jedné desce.
+
+**Rozhodnutí.**
+- **Tlačítka a pole v CSS, ne z obrázku.** Vygenerované destičky vyšly hezky,
+  ale působily jako nálepky a nedržely ostrost. Obrázky nesou jen to, co se
+  nakreslit nedá.
+- **Stylová LoRA z Koshishatsi se nepoužila.** Přimalovala pozadí černou
+  vinětu (je trénovaná na izolované předměty), bez ní vyšla scéna líp.
+- **Barvy hráčů (`--b1`…`--b8`) zůstaly beze změny** — musí sedět s barvami
+  ve hře, jinak hráč nepozná, že je „modrý“.
+- **GPT-Image se nepoužilo** — klíč na stanici není a uživatel potvrdil, že
+  nefunguje. Všechno vzniklo lokálně na RTX 5090.
+- Ze Scenaria uživatel povolil odstranění pozadí, bezešvé textury a upscaling,
+  textury si napřed chce ocenit v kreditech. **Zatím se nic z toho nepoužilo**,
+  lokální pipeline stačila.
+
+**Nástroje.** `nastroje/grafika/` v repu (paleta, dávkové generování
+s manifestem, devítidílný řez, klíčování, export do webp) a mimo repo
+`_grafika/nastroje/` (Playwright: sada snímků, kontrola šířek, vzorník všech
+prvků).
 
 ### 3.11 Drobnosti a easter egg
 
