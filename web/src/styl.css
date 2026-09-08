@@ -1114,6 +1114,11 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    nevýrazný schválně — je to informace na okraji, ne budík. */
 .seznam .muj-stav { display: inline-flex; align-items: center; gap: 0.5rem; justify-content: flex-end; }
 .seznam .muj-cas {
+  /* Pevná šířka a číslice stejné šíře: jinak by se sloupec hýbal s každou
+     vteřinou a s ním celá tabulka. */
+  display: inline-block;
+  min-width: 4.4ch;
+  text-align: right;
   font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   letter-spacing: 0.04em;

@@ -308,8 +308,10 @@ function MujCas({ aktivniDo }: { aktivniDo: string }) {
   }, []);
   const zbyva = zbyvaMs(aktivniDo, ted) ?? 0;
   if (zbyva <= 0) return null;
+  // Minuty vždy na dvě číslice: „09:59“ je stejně široké jako „14:56“, takže
+  // odpočet každou vteřinu nemění šířku sloupce a tabulka pod ním neposkakuje.
   const vteriny = Math.ceil(zbyva / 1000);
-  const text = `${Math.floor(vteriny / 60)}:${String(vteriny % 60).padStart(2, "0")}`;
+  const text = `${String(Math.floor(vteriny / 60)).padStart(2, "0")}:${String(vteriny % 60).padStart(2, "0")}`;
   return (
     <span className="muj-cas" title="Za jak dlouho tě seznam odsune mezi neaktivní">
       {text}

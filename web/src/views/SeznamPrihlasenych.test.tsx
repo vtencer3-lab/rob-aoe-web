@@ -210,7 +210,8 @@ it("odpočet vidí hráč jen u sebe", () => {
       ja="ja"
     />,
   );
-  expect(screen.getAllByText("5:00")).toHaveLength(1);
+  // Dvě číslice i pod deset minut — šířka sloupce se pak nemění.
+  expect(screen.getAllByText("05:00")).toHaveLength(1);
 });
 
 // V tabulce o dvaceti jménech se člověk hledá první. Vlastní řádek proto nese
