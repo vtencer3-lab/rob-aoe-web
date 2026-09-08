@@ -354,12 +354,15 @@ function StavHrace({
     return (
       <span className="muj-stav">
         {mece}
-        <MujCas aktivniDo={hrac.aktivniDo} />
+        {/* Tlačítko před odpočtem: úplně vpravo pak stojí buď odpočet, nebo
+            „Zzz“ ostatních řádků, takže sloupec lícuje a tlačítko nemění
+            polohu podle toho, jak jsou čísla široká. */}
         {onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted) ? (
           <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
             Jsem tu!
           </button>
         ) : null}
+        <MujCas aktivniDo={hrac.aktivniDo} />
       </span>
     );
   }
