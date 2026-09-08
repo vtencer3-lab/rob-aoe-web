@@ -255,7 +255,11 @@ button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
 }
 
 .seznam { width: 100%; border-collapse: collapse; }
-.seznam th {
+/* Přímí potomci schválně: uvnitř tabulky se vykresluje i karta se
+   statistikami (ve <tfoot>) a její řádky nemají vypadat jako řádky seznamu.
+   Dokud se pravidla psala volně, měla tatáž karta u tabulky jiný vzhled než
+   u sestavy — a rozdíl si nikdo neuměl vysvětlit. */
+.seznam > thead > tr > th {
   text-align: left;
   font-family: "Cinzel", Georgia, serif;
   font-size: 0.78rem;
@@ -263,11 +267,11 @@ button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
   letter-spacing: 0.1em;
   color: var(--zlato);
 }
-.seznam td, .seznam th { padding: 0.5rem 0.6rem; border-bottom: 1px solid rgba(216, 168, 58, 0.16); }
-.seznam thead th { border-bottom: 1px solid rgba(216, 168, 58, 0.45); }
+.seznam > tbody > tr > td, .seznam > thead > tr > th { padding: 0.5rem 0.6rem; border-bottom: 1px solid rgba(216, 168, 58, 0.16); }
+.seznam > thead > tr > th { border-bottom: 1px solid rgba(216, 168, 58, 0.45); }
 /* Střídavé řádky jako řádkování v účetní knize — jinak dlouhý seznam splyne. */
-.seznam tbody tr:nth-child(even) { background: rgba(216, 168, 58, 0.045); }
-.seznam tbody tr:hover { background: rgba(216, 168, 58, 0.10); }
+.seznam > tbody > tr:nth-child(even) { background: rgba(216, 168, 58, 0.045); }
+.seznam > tbody > tr:hover { background: rgba(216, 168, 58, 0.10); }
 
 .prazdno, .ceka, .spojeni { color: var(--tlumene); }
 
@@ -787,8 +791,8 @@ button.kopirovatelne.vsazeno .toast { font-family: system-ui, sans-serif; font-s
 button.kopirovatelne.vsazeno { overflow: visible; }
 
 /* Tabulka přihlášených v režii = nevybraní: velké „+“ u jména, řádky se přetahují. */
-.seznam-rezie tbody tr { cursor: grab; }
-.seznam-rezie td.vybrat { width: 2.6rem; padding-right: 0; }
+.seznam-rezie > tbody > tr { cursor: grab; }
+.seznam-rezie > tbody > tr > td.vybrat { width: 2.6rem; padding-right: 0; }
 button.plus {
   width: 2.1rem;
   height: 2.1rem;
@@ -931,13 +935,13 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .skladani.jen-ke-cteni .vyber-civ-tlacitko .sipka { visibility: hidden; }
 
 /* Řazení tabulky přihlášených v režii: hlavička je tlačítko, šipka říká směr. */
-.seznam th button.razeni { background: none; border: none; box-shadow: none; padding: 0; margin: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
-.seznam th button.razeni:hover, .seznam th button.razeni.aktivni { color: var(--akcent); }
-.seznam th .sipka-razeni { font-size: 0.7rem; opacity: 0.6; }
-.seznam th button.razeni.aktivni .sipka-razeni { opacity: 1; }
+.seznam > thead > tr > th button.razeni { background: none; border: none; box-shadow: none; padding: 0; margin: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
+.seznam > thead > tr > th button.razeni:hover, .seznam > thead > tr > th button.razeni.aktivni { color: var(--akcent); }
+.seznam > thead > tr > th .sipka-razeni { font-size: 0.7rem; opacity: 0.6; }
+.seznam > thead > tr > th button.razeni.aktivni .sipka-razeni { opacity: 1; }
 
 /* Zkřížené meče u hráče, který právě hraje běžící zápas. */
-.seznam td.hraje { width: 2rem; text-align: center; }
+.seznam > tbody > tr > td.hraje { width: 2rem; text-align: center; }
 .seznam .mece { font-size: 1.2rem; color: var(--akcent); }
 
 /* Karta se statistikami hráče v pravém dolním rohu, jako ve hře po najetí
@@ -960,20 +964,22 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .staty-hrace table { width: 100%; border-collapse: collapse; font-variant: small-caps; }
 .staty-hrace th { text-align: left; font-weight: 400; font-size: 1rem; color: var(--text); border-bottom: 1px solid var(--akcent); padding: 0.15rem 0.5rem; }
 .staty-hrace th:not(:first-child), .staty-hrace td:not(:first-child) { text-align: center; }
-.staty-hrace td { padding: 0.15rem 0.5rem; font-size: 1rem; color: var(--text); }
+.staty-hrace td { padding: 0.32rem 0.5rem; font-size: 1rem; color: var(--text); border-bottom: 1px solid rgba(216, 168, 58, 0.14); }
+.staty-hrace tbody tr:nth-child(even) { background: rgba(216, 168, 58, 0.05); }
+.staty-hrace tbody tr:last-child td { border-bottom: none; }
 .staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
 .staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
 /* Jméno s avatarem jako blok (flex), buňky zarovnané na střed — inline-flex
    sedělo na účaří textu a jméno bylo výš než zbytek řádku. */
-.seznam td { vertical-align: middle; }
-.seznam td .jmeno-hrace { cursor: help; display: flex; align-items: center; gap: 0.5rem; }
-.seznam td .jmeno-hrace img { width: 28px; height: 28px; border-radius: 2px; flex: none; border: 1px solid var(--zlato-tmave); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+.seznam > tbody > tr > td { vertical-align: middle; }
+.seznam > tbody > tr > td .jmeno-hrace { cursor: help; display: flex; align-items: center; gap: 0.5rem; }
+.seznam > tbody > tr > td .jmeno-hrace img { width: 28px; height: 28px; border-radius: 2px; flex: none; border: 1px solid var(--zlato-tmave); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
 
 /* Tažený řádek „v ruce“: jede s kurzorem, nad ostatními, se stínem. Ostatní
    řádky se na nové místo posouvají animací (tahani.ts, FLIP). */
-.skladani .radek, .seznam-rezie tbody tr { touch-action: none; }
+.skladani .radek, .seznam-rezie > tbody > tr { touch-action: none; }
 .v-ruce { position: relative; z-index: 5; background: rgba(216, 168, 58, 0.18); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6); cursor: grabbing !important; }
-.seznam-rezie tbody tr.v-ruce td { background: rgba(216, 168, 58, 0.18); }
+.seznam-rezie > tbody > tr.v-ruce > td { background: rgba(216, 168, 58, 0.18); }
 
 /* Součet ELO za tým pod seznamem vybraných. Dva týmy vedle sebe, tři a
    čtyři se zalomí pod ně. */
