@@ -16,10 +16,18 @@ export const KONEC_TAHU = "tahani-konec";
  * Po konci tažení: má karta se statistikami zůstat? Vrátí steamId jména,
  * nad kterým kurzor skončil, jinak null (karta se má schovat).
  */
-export function jmenoPodKurzorem(e: Event): string | null {
+/**
+ * Čí jméno bylo pod kurzorem na konci tahu. `koren` omezí hledání na jeden
+ * seznam: sestava i tabulka přihlášených značí jména stejným atributem, a bez
+ * omezení si tabulka brala i jméno ze sestavy a ukázala kartu hráče, na
+ * kterého se v ní nenajelo.
+ */
+export function jmenoPodKurzorem(e: Event, koren?: Element | null): string | null {
   const prvek = (e as CustomEvent<{ prvek: Element | null }>).detail?.prvek;
   const jmeno = prvek?.closest?.("[data-jmeno-hrace]");
-  return jmeno instanceof HTMLElement ? (jmeno.dataset["jmenoHrace"] ?? null) : null;
+  if (!(jmeno instanceof HTMLElement)) return null;
+  if (koren && !koren.contains(jmeno)) return null;
+  return jmeno.dataset["jmenoHrace"] ?? null;
 }
 
 export function tahneSe(): boolean {

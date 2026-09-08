@@ -56,7 +56,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit 
   const [nahled, setNahled] = useState<PlayerView | null>(null);
   useEffect(() => {
     const srovnej = (e: Event) => {
-      const id = jmenoPodKurzorem(e);
+      const id = jmenoPodKurzorem(e, seznam.current);
       setNahled(id ? (skladani.vybrani.find((v) => v.hrac.steamId === id)?.hrac ?? null) : null);
     };
     window.addEventListener(KONEC_TAHU, srovnej);

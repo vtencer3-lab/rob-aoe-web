@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
@@ -69,13 +69,14 @@ export function serad(hraci: PlayerView[], razeni: Razeni | null): PlayerView[] 
 export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
+  const tabulka = useRef<HTMLTableElement>(null);
   // Najetí na jméno ukáže kartu se statistikami v rohu okna.
   const [nahled, setNahled] = useState<PlayerView | null>(null);
   // Po tažení se karta srovná podle toho, kde kurzor opravdu skončil —
   // najetí/odjetí se během tahu ignorovalo, takže by jinak mohla zůstat viset.
   useEffect(() => {
     const srovnej = (e: Event) => {
-      const id = jmenoPodKurzorem(e);
+      const id = jmenoPodKurzorem(e, tabulka.current);
       setNahled(id ? (prihlaseni.find((h) => h.steamId === id) ?? null) : null);
     };
     window.addEventListener(KONEC_TAHU, srovnej);
@@ -103,7 +104,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
   }
 
   return (
-    <table className={skladani ? "seznam seznam-rezie" : "seznam"}>
+    <table className={skladani ? "seznam seznam-rezie" : "seznam"} ref={tabulka}>
       <thead>
         <tr>
           {skladani ? <th aria-label="Vybrat do sestavy" /> : null}
