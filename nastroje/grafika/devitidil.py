@@ -68,16 +68,75 @@ def zrcadlove_bezesvy(pruh: Image.Image, vodorovne: bool) -> Image.Image:
     return Image.fromarray(((1 - w) * a + w * zrcadlo).astype("uint8"), "RGBA")
 
 
-def slozit(im: Image.Image, roh: int, pas: int) -> Image.Image:
+def vyhlad_podel(pruh: Image.Image, vodorovne: bool, sila: float) -> Image.Image:
+    """Srovná proužek podél směru, ve kterém se bude opakovat.
+
+    Předloha má po délce hrany světelný přechod. Po opakování z něj vzniknou
+    pravidelné světlé a tmavé pruhy, které na panelu bijí do očí víc než
+    chybějící kresba dřeva. Proto se každý sloupec (resp. řádek) přimíchá
+    k průměru všech — kolmo na hranu zůstane kresba i zlaté linky, podél
+    hrany se srovná jas.
+    """
+    import numpy as np
+
+    if sila <= 0:
+        return pruh
+    a = np.asarray(pruh.convert("RGBA")).astype(np.float32)
+    osa = 1 if vodorovne else 0
+    prumer = a.mean(axis=osa, keepdims=True)
+    return Image.fromarray(((1 - sila) * a + sila * prumer).astype("uint8"), "RGBA")
+
+
+def srovnej_na_roh(pruh: Image.Image, roh_im: Image.Image) -> Image.Image:
+    """Posune tón proužku tak, aby po řádcích navazoval na poslední sloupec rohu."""
+    import numpy as np
+
+    a = np.asarray(pruh.convert("RGBA")).astype(np.float32)
+    r = np.asarray(roh_im.convert("RGBA")).astype(np.float32)
+    okraj = r[:, -1:, :3]                      # poslední sloupec rohu, po řádcích
+    ted = a[:, :, :3].mean(axis=1, keepdims=True)
+    a[:, :, :3] = np.clip(a[:, :, :3] + (okraj - ted), 0, 255)
+    return Image.fromarray(a.astype("uint8"), "RGBA")
+
+
+def slozit(im: Image.Image, roh: int, pas: int, symetricky: bool = True,
+           vyhlad: float = 0.85) -> Image.Image:
     """Rohy z předlohy, strany z proužku hned vedle rohu.
 
     Proužek se bere těsně za rohem, ne ze středu strany — jen tak na roh
     navazují zlaté linky přesně. Aby opakování nedělalo šev, projde proužek
     zrcadlovým prolnutím.
+
+    **Symetrický režim (výchozí):** všechny čtyři rohy i všechny čtyři strany
+    se odvodí z jediného rohu a jediného proužku otáčením a zrcadlením. Model
+    totiž každou stranu maluje trochu jinak — dolní hrana vyšla o odstín jinde
+    než svislé, a na hotovém panelu to bylo vidět jako nesouvislý rám. Cenou je,
+    že rám nemá směrové nasvícení; herní rámy ho stejně nemívají.
     """
     s, v = im.size
     velikost = roh * 2 + pas
     out = Image.new("RGBA", (velikost, velikost), (0, 0, 0, 0))
+
+    if symetricky:
+        roh_lh = im.crop((0, 0, roh, roh))
+        out.paste(roh_lh, (0, 0))
+        out.paste(roh_lh.transpose(Image.FLIP_LEFT_RIGHT), (velikost - roh, 0))
+        out.paste(roh_lh.transpose(Image.FLIP_TOP_BOTTOM), (0, velikost - roh))
+        out.paste(roh_lh.transpose(Image.ROTATE_180), (velikost - roh, velikost - roh))
+
+        horni = vyhlad_podel(zrcadlove_bezesvy(im.crop((roh, 0, roh + pas, roh)), True), True, vyhlad)
+        # Vyhlazený proužek má jiný průměrný jas než roh, ze kterého vychází,
+        # takže na styku vznikal schod. Srovná se to po řádcích na poslední
+        # sloupec rohu — geometrie ani kresba se nemění, jen se posune tón.
+        horni = srovnej_na_roh(horni, roh_lh)
+        # ROTATE_90 je proti směru hodin: horní (vnější) hrana proužku se
+        # překlopí doleva, což je přesně vnější hrana levé strany rámu.
+        levy = horni.transpose(Image.ROTATE_90)
+        out.paste(horni, (roh, 0))
+        out.paste(horni.transpose(Image.FLIP_TOP_BOTTOM), (roh, velikost - roh))
+        out.paste(levy, (0, roh))
+        out.paste(levy.transpose(Image.FLIP_LEFT_RIGHT), (velikost - roh, roh))
+        return out
 
     # Rohy
     out.paste(im.crop((0, 0, roh, roh)), (0, 0))
@@ -132,6 +191,10 @@ def main() -> None:
     ap.add_argument("--roh", type=int, default=250, help="velikost rohu v pixelech předlohy")
     ap.add_argument("--pas", type=int, default=64, help="šířka opakovaného proužku strany")
     ap.add_argument("--prah", type=int, default=70, help="tolerance záplavy při odstranění černé")
+    ap.add_argument("--vyhlad", type=float, default=0.85,
+                    help="0–1: jak srovnat jas proužku podél hrany (proti pruhům z opakování)")
+    ap.add_argument("--nesymetricky", action="store_true",
+                    help="strany brát každou z její vlastní hrany předlohy (model je maluje jinak)")
     ap.add_argument("--bez-orezu", action="store_true")
     ap.add_argument("--nahled", type=Path, default=None, help="kam uložit zkoušku poskládání")
     args = ap.parse_args()
@@ -143,7 +206,7 @@ def main() -> None:
         im = orez_na_obsah(im)
     print(f"po ořezu: {im.size[0]}x{im.size[1]}")
 
-    devitidil = slozit(im, args.roh, args.pas)
+    devitidil = slozit(im, args.roh, args.pas, symetricky=not args.nesymetricky, vyhlad=args.vyhlad)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     devitidil.save(args.out)
     print(f"{args.out}  {devitidil.size[0]}x{devitidil.size[1]}  (roh {args.roh}, pás {args.pas})")

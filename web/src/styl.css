@@ -104,31 +104,43 @@ h1, h2, h3, h4, legend, .nadpis-seznamu {
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 14px rgba(216, 168, 58, 0.18);
 }
 header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-/* Logo přesahuje přes levý konec praporce, jako by na něm viselo. Proto
-   záporný pravý okraj a vyšší vrstva — bez toho by mezi štítem a látkou
-   zůstala mezera a znak by vypadal odloženě. */
+/* Štít nesedí vedle praporce, ale NA něm: přesahuje přes jeho levý konec
+   a vrhá na látku vlastní stín. Bez toho vypadal odloženě vedle. */
 header .logo {
-  width: 108px;
+  width: 142px;
   height: auto;
   flex: none;
   position: relative;
   z-index: 2;
-  margin-right: -42px;
-  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.75));
+  /* Přesah jen přes zlatý nárožník, ne přes celý konec praporce — pod štítem
+     má zůstat vidět, že látka někde začíná. */
+  margin: -0.2rem -46px 0 0;
+  filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 22px rgba(0, 0, 0, 0.45));
 }
-/* Nadpis sedí na praporci: krajní díly obrázku (žerď s hroty a vlaštovčí
-   ocasy) zůstávají, prostředek se roztahuje podle délky textu. Proto
-   border-image s `fill` — pozadím by se celý praporec deformoval. */
+/* Nadpis sedí na praporci. Krajní díly obrázku (zlaté nárožníky s cípy)
+   zůstávají v původním poměru, prostředek se vodorovně DLAŽDICUJE — kdyby se
+   roztahoval, výšivka růží by se rozmazala do šmouhy. Svisle se natahuje,
+   takže praporec drží výšku nadpisu.
+
+   Stín pod látkou dělá `drop-shadow` nad celým prvkem, ne `box-shadow`:
+   praporec má vlaštovčí cípy a průhledné pozadí, takže obdélníkový stín by
+   visel ve vzduchu vedle nich. */
 header h1 {
   margin: 0 auto 0 0;
-  padding: 1.5rem 2.4rem 2.5rem 3.2rem;
-  font-size: 1.95rem;
-  line-height: 1.1;
+  /* Svislé odsazení je v pixelech schválně: výška praporce musí přesně
+     odpovídat poměru předlohy (463 px při šířce nárožníku 336 px), jinak se
+     látka i výšivka svisle zmáčknou. Nárožník 104 px dává výšku 143 px —
+     dost na to, aby samet nepůsobil jako tenký pásek, a text sedí v něm nad
+     zlatou bordurou. */
+  padding: 34px 2.8rem 74px 4rem;
+  font-size: 2.05rem;
+  line-height: 35px;
   border-style: solid;
-  border-width: 0 68px;
-  border-image: url(./assets/ui/praporec.webp) 0 300 fill / 0 68px stretch;
+  border-width: 0 104px;
+  border-image: url(./assets/ui/praporec.webp) 0 336 fill / 0 104px repeat stretch;
   color: var(--zlato-svetle);
-  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.85), 0 0 18px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 2px 4px rgba(40, 6, 6, 0.9), 0 0 20px rgba(0, 0, 0, 0.55);
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
 }
 .nova-verze {
   position: sticky;
@@ -136,8 +148,8 @@ header h1 {
   z-index: 20;
   margin: 0;
   padding: 0.6rem 1.5rem;
-  background: linear-gradient(#f0cd6e, var(--zlato) 55%, #b7861f);
-  color: #2a1a06;
+  background: linear-gradient(#e2c47c, #c99a35 55%, #9d7420);
+  color: #23150a;
   font-family: "Cinzel", Georgia, serif;
   font-weight: 700;
   border-bottom: 1px solid var(--zlato-stin);
@@ -156,8 +168,8 @@ header h1 {
 .nadpis-seznamu, main > h2 {
   margin: 0 0 0.7rem;
   font-size: 1.1rem;
-  padding-bottom: 1.15rem;
-  background: url(./assets/ui/oddelovac.webp) bottom left / min(100%, 24rem) 0.95rem no-repeat;
+  padding-bottom: 1.5rem;
+  background: url(./assets/ui/oddelovac.webp) bottom left / auto 1.35rem no-repeat;
 }
 
 /* Tlačítka se kreslí v CSS, ne z obrázku: zůstanou ostrá v každé velikosti
@@ -165,23 +177,26 @@ header h1 {
    ostatní. Obojí má nahoře světlou hranu a dole stín, jako ražený kov. */
 a.tlacitko, .cta, button.vytvorit, button.plus {
   display: inline-block;
-  background: linear-gradient(#f0cd6e, var(--zlato) 45%, #b7861f);
-  color: #2a1a06;
+  background: linear-gradient(#e2c47c, #c99a35 45%, #9d7420);
+  color: #23150a;
   font-family: "Cinzel", Georgia, serif;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 800;
+  letter-spacing: 0.045em;
   padding: 0.7rem 1rem;
   border: 1px solid var(--zlato-stin);
   border-radius: 3px;
   text-decoration: none;
-  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.5);
+  text-shadow: 0 1px 0 rgba(255, 242, 205, 0.55);
   box-shadow:
     inset 0 1px 0 rgba(255, 245, 215, 0.75),
     inset 0 -2px 5px rgba(90, 50, 8, 0.55),
     0 2px 4px rgba(0, 0, 0, 0.55);
 }
-a.tlacitko:hover, .cta:hover, button.vytvorit:hover:enabled, button.plus:hover {
-  background: linear-gradient(#f8dc90, #e2b647 45%, #c4931f);
+/* Specifičtější než `button:hover:enabled` níž — jinak by zlaté tlačítko při
+   najetí zhnědlo do barvy běžných tlačítek. */
+a.tlacitko:hover, .cta:hover,
+button.vytvorit:hover:enabled, button.plus:hover:enabled {
+  background: linear-gradient(#eed595, #d8ab48 45%, #ac8228);
   filter: none;
 }
 .cta[aria-disabled="true"] {
@@ -257,10 +272,9 @@ main > .prazdno {
 main > .prazdno::after {
   content: "";
   display: block;
-  height: 0.95rem;
+  height: 1.3rem;
   margin: 0.9rem auto 0;
-  width: min(100%, 18rem);
-  background: url(./assets/ui/oddelovac.webp) center / 100% 100% no-repeat;
+  background: url(./assets/ui/oddelovac.webp) center / auto 100% no-repeat;
 }
 .varovani { color: var(--akcent); margin-left: 0.35rem; cursor: help; }
 .chyba { color: var(--chyba); }
@@ -397,7 +411,16 @@ main > .prazdno::after {
 .skladani .volba-barva.barva-6 { background: var(--b6); }
 .skladani .volba-barva.barva-7 { background: var(--b7); }
 .skladani .volba-barva.barva-8 { background: var(--b8); color: #241d10; text-shadow: none; }
-.skladani .volba-tym { background-color: #d9c49f; color: #3b2a12; }
+.skladani .volba-tym {
+  background-color: #ded0b0;
+  color: #2b1d08;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.7),
+    inset -2px -2px 0 rgba(90, 62, 24, 0.35),
+    inset 0 0 0 3px rgba(154, 107, 24, 0.5),
+    0 1px 0 #000;
+}
 
 /* Vstupní pole nemělo do teď žádný styl — na tmavém podkladu svítilo bíle. */
 /* Zaškrtávátka a přepínače kreslí prohlížeč modře podle systému, což na
@@ -464,6 +487,11 @@ input, select {
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(216, 168, 58, 0.12);
 }
 input:focus, select:focus { outline: none; border-color: var(--zlato); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 0 0 2px rgba(216, 168, 58, 0.35); }
+/* Rozbalený seznam vykresluje prohlížeč mimo stránku, takže dědí jen barvy
+   nastavené přímo na <option>; bez toho svítí bílý. */
+select { color-scheme: dark; }
+select option { background-color: #1c110b; color: var(--text); }
+select option:checked { background-color: var(--zlato-tmave); color: #fff3d6; }
 
 /* Vnitřní panely (skládání, nastavení) rám ani výplň nemají — dva rámy
    v sobě dělají z panelu matrjošku a druhá vrstva dřeva jen ztmaví desku. */
@@ -474,17 +502,18 @@ input:focus, select:focus { outline: none; border-color: var(--zlato); box-shado
 .hlavicka-akce { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
 .hlavicka-akce h2 {
   margin: 0;
-  padding-bottom: 1.1rem;
-  background: url(./assets/ui/oddelovac.webp) bottom left / min(100%, 20rem) 0.9rem no-repeat;
+  padding-bottom: 1.45rem;
+  background: url(./assets/ui/oddelovac.webp) bottom left / auto 1.25rem no-repeat;
 }
 .sprava-akce .ovladani.ladeni { margin: 0 0 0.6rem; }
 .lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: stretch; }
-/* Prázdné místo pod sestavou nese vodoznak: rytina pražského orloje, kterou
-   hra používá jako znak civilizace Bohemians. Odkazuje na hru i na Čechy
-   naráz a je to tentýž orloj, co stojí na pozadí stránky. */
+/* Prázdné místo pod sestavou nese vodoznak: český dvouocasý lev vyřezaný do
+   dřeva desky. Světlá hrana zářezu a tmavý tvar z něj dělají řezbu, ne
+   nálepku — zlatý orloj, co tu byl předtím, na desce plaval. Je to tentýž
+   lev, co visí na praporcích v pozadí a sedí na štítu v logu. */
 .lobby-rozlozeni .leva { min-width: 0; display: flex; }
 .lobby-rozlozeni .leva .skladani {
-  background: url(./assets/ui/orloj.webp) center 74% / min(60%, 21rem) auto no-repeat;
+  background: url(./assets/ui/vodoznak.webp) center 76% / auto min(58%, 20rem) no-repeat;
 }
 .lobby-rozlozeni .skladani { margin: 0; border: none; padding: 0; flex: 1; display: flex; flex-direction: column; }
 /* Seznam roste dolů, ale řádky se neroztahují — mřížka drží řádky nahoře. */
@@ -506,8 +535,8 @@ input:focus, select:focus { outline: none; border-color: var(--zlato); box-shado
 .odznak-host {
   margin-left: auto;
   flex: none;
-  background: linear-gradient(#f0cd6e, var(--zlato) 55%, #b7861f);
-  color: #2a1a06;
+  background: linear-gradient(#e2c47c, #c99a35 55%, #9d7420);
+  color: #23150a;
   font-family: "Cinzel", Georgia, serif;
   font-size: 0.72rem;
   font-weight: 800;
@@ -657,12 +686,8 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 
 /* Hlavní tlačítko panelu režie: zlaté a větší, aby se v přenosu našlo naslepo. */
 button.vytvorit {
-  background: var(--akcent);
-  border-color: var(--akcent);
-  color: #241d10;
-  font-weight: 700;
-  font-size: 1rem;
-  padding: 0.7rem 1.3rem;
+  font-size: 1.05rem;
+  padding: 0.75rem 1.4rem;
 }
 button.vytvorit:disabled { background: linear-gradient(#3a2f22, #241c14); border-color: #4a3a24; color: #7a6b52; text-shadow: none; box-shadow: inset 0 1px 0 rgba(255, 235, 190, 0.08); opacity: 1; }
 
@@ -769,7 +794,7 @@ button.odebrat:hover { color: var(--chyba); }
 }
 .vyber-civ-seznam li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 1.05rem; }
 .vyber-civ-seznam li:hover { background: rgba(216, 168, 58, 0.16); }
-.vyber-civ-seznam li.vybrana { background: linear-gradient(#f0cd6e, var(--zlato)); color: #2a1a06; }
+.vyber-civ-seznam li.vybrana { background: linear-gradient(#e2c47c, #c99a35); color: #23150a; }
 
 /* Nastaveni lobby jako herni panel Game Settings: popisek vlevo, ovladani
    vpravo, pod tim Team Settings a Advanced Settings vedle sebe. */
@@ -820,7 +845,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Knoflík svisle přesně uprostřed drážky (výška drážky bez rámečku), ne o
    tloušťku rámečku výš. */
 .prepinac .knoflik { position: absolute; top: 50%; transform: translateY(-50%); left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
-.prepinac.zapnuto .drazka { background: linear-gradient(#f0cd6e, var(--zlato)); border-color: var(--zlato); }
+.prepinac.zapnuto .drazka { background: linear-gradient(#e2c47c, #c99a35); border-color: var(--zlato); }
 .prepinac.zapnuto .knoflik { left: calc(100% - 0.95rem + 4px); background: #241d10; }
 /* Oba popisky stejně těžké — jen barva říká, která poloha platí; tučný text
    na jedné straně dělal přepínač opticky nakřivo. */
@@ -844,7 +869,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .vs-rozlozeni { display: flex; align-items: center; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
 .vs-rozlozeni .vs { font-size: 2.2rem; font-weight: 800; color: var(--akcent); letter-spacing: 0.05em; }
 .skladani.jen-ke-cteni { border: none; padding: 0; margin: 0; }
-.skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 14rem; column-gap: 0.5rem; }
+.skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 17rem; column-gap: 0.5rem; }
 .skladani.jen-ke-cteni .radek { cursor: default; }
 .skladani.jen-ke-cteni .radek.ja .jmeno { font-weight: 700; color: var(--akcent); }
 .skladani.jen-ke-cteni .vyber-civ-tlacitko:disabled { opacity: 0.6; cursor: default; }
@@ -907,7 +932,13 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Robovo jméno v záhlaví je tlačítko (easter egg), ale vypadá jako text;
    hover ho jen lehce zezlátne. */
 h1 button.jmeno-roba { all: unset; cursor: pointer; transition: color 0.2s; }
-h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible { color: var(--akcent); }
+h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
+  color: var(--zlato);
+  background: none;
+  border: none;
+  box-shadow: none;
+  text-shadow: 0 0 16px rgba(216, 168, 58, 0.55);
+}
 
 /* Čtverečky barvy a týmu se neoznačují jako text (na kartě hráče jsou to
    jen span). Tlačítka ve skládání se při stisku zamáčknou: zkosení se

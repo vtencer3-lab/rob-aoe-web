@@ -11,6 +11,9 @@ import {
   maPodepsanaPovinnaPole,
 } from "./steamOpenId.js";
 
+/** Jak dlouho smí `/api/me` čekat na jméno hráče při prvním přihlášení. */
+export const CEKANI_NA_JMENO_MS = 4_000;
+
 export interface AuthDeps {
   overSteam: (params: URLSearchParams) => Promise<boolean>;
   obnovStaty: (steamId: string) => Promise<void>;
@@ -124,6 +127,19 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
   app.get("/api/me", async (request) => {
     const steamId = await currentUser(request);
     if (!steamId) return { hrac: null };
+    // Úplně první přihlášení: řádek hráče v tu chvíli existuje, ale je prázdný,
+    // protože stahování statistik běží mimo přihlašovací cestu. Kdybychom
+    // odpověděli hned, v záhlaví by svítilo Steam ID, dokud si člověk stránku
+    // nenačte znovu. Proto se u nepojmenovaného hráče na obnovu chvíli počká —
+    // ale jen chvíli, ať přihlášení nedrží pohledem do nefunkčního Steamu.
+    const cerstvy = await getPlayer(steamId);
+    if (cerstvy && !cerstvy.alias && !cerstvy.steamName) {
+      await Promise.race([
+        deps.obnovStaty(steamId).catch(() => {}),
+        new Promise((hotovo) => setTimeout(hotovo, CEKANI_NA_JMENO_MS)),
+      ]);
+      return { hrac: (await getPlayer(steamId)) ?? cerstvy };
+    }
     // Statistiky se dřív obnovovaly jen při přihlášení, a sezení drží měsíc:
     // kdo se nepřihlásil znovu, měl v tabulce data z prvního dne. Načtení
     // stránky je dost častá a dost levná příležitost; obnova sama hlídá,

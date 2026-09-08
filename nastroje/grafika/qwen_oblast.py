@@ -38,6 +38,8 @@ def main() -> None:
     ap.add_argument("--cil", type=int, default=1024, help="delší strana výřezu pro model")
     ap.add_argument("--feather", type=int, default=12, help="rozostření okraje vložení (px)")
     ap.add_argument("--fast", action="store_true")
+    ap.add_argument("--ref", type=Path, default=None,
+                    help="druhý obrázek jako předloha detailu (Picture 2 pro model)")
     a = ap.parse_args()
 
     x1, y1, x2, y2 = (int(v) for v in a.oblast.split(","))
@@ -54,9 +56,13 @@ def main() -> None:
 
     for i in range(a.count):
         dst = tmp / f"qwen_oblast_out_{i}.png"
-        cmd = [sys.executable, "scripts/dev/gen_qwen_edit.py", str(src), a.prompt,
+        # Generátor leží vedle tohoto skriptu, ne v cestě původního projektu.
+        generator = Path(__file__).resolve().parent / "gen_qwen_edit.py"
+        cmd = [sys.executable, str(generator), str(src), a.prompt,
                "--keep-size", "--pad", "0.12", "-o", str(dst),
                "--denoise", str(a.denoise)]
+        if a.ref:
+            cmd += ["--ref", str(a.ref)]
         if a.fast:
             cmd.append("--fast")
         if subprocess.run(cmd).returncode != 0:

@@ -1,6 +1,6 @@
 # Grafický kabátek: co, proč a jak se dělá znovu
 
-Web je od 8. 9. 2026 (větev `experimental`, verze `0.16.4-17.0`) oblečený do
+Web je od 8. 9. 2026 (větev `experimental`) oblečený do
 podoby herního rozhraní Age of Empires II: Definitive Edition s českou
 heraldikou. **Rozvržení se nezměnilo ani o pixel** — všechno jsou barvy,
 písma, obrázky a rámy. Kdo hledá, jak stránka funguje, ať jde do
@@ -92,21 +92,32 @@ Nadpis `h1` sedí na praporci, který je taky `border-image`, ale jen
 vodorovně dělený:
 
 ```css
-border-width: 0 68px;
-border-image: url(./assets/ui/praporec.webp) 0 300 fill / 0 68px stretch;
+border-width: 0 104px;
+border-image: url(./assets/ui/praporec.webp) 0 336 fill / 0 104px repeat stretch;
+padding: 34px 2.8rem 74px 4rem;   /* svisle v px, viz níž */
+filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55));
 ```
 
-`fill` znamená, že se prostřední díl kreslí jako pozadí prvku, takže látka
-roste s délkou nadpisu, zatímco žerď s hroty a vlaštovčí ocasy zůstávají.
+- `fill` kreslí prostřední díl jako pozadí prvku, takže látka roste s délkou
+  nadpisu, zatímco zlaté nárožníky s cípy zůstávají.
+- `repeat stretch` = vodorovně **dlaždicovat**, svisle natáhnout. Roztažení
+  vodorovně by z výšivky růží udělalo šmouhu.
+- **Výška musí sedět na poměr předlohy**, jinak se látka svisle zmáčkne.
+  Pravidlo: `výška = výška předlohy × (šířka nárožníku na obrazovce / řez)`.
+  Předloha 966×463, řez 336, nárožník 104 px → 463 × 104/336 ≈ 143 px. Proto
+  je svislé odsazení v pixelech, ne v rem.
+- Stín pod látkou dělá `drop-shadow` nad celým prvkem. `box-shadow` by
+  u praporce s vlaštovčími cípy a průhledným pozadím visel ve vzduchu.
 
-**Pozor na poměr.** Krajní díly se stlačují vodorovně nezávisle na svislém
-stlačení celého obrázku. Když to nesedí, žerď vypadá jako tenký bodec.
-Pravidlo: `šířka krajního dílu ≈ řez / (výška předlohy / výška praporce na
-obrazovce)`. Při výšce ~100 px a předloze 455 px vychází 300 / 4,5 ≈ 68 px.
+Předloha se na trojdílný pás převádí nástrojem `praporec.py`, který:
+změří **periodu výšivky autokorelací** (aby dlaždice nekončila v půlce růže),
+z prostředního proužku odečte podélný světelný přechod a srovná jeho tón na
+poslední sloupec nárožníku. Bez těch tří kroků byly v pásu vidět pruhy a
+svislý schod na styku.
 
-Logo přesahuje přes levý konec praporce (`margin-right: -42px`, vyšší
-`z-index`) — bez toho by mezi štítem a látkou zůstala mezera a znak by
-vypadal odloženě.
+Logo přesahuje přes levý nárožník (`margin-right: -46px`, vyšší `z-index`)
+a vrhá na látku vlastní stín. Přesah jen přes nárožník, ne přes celý konec:
+pod štítem má zůstat vidět, že látka někde začíná.
 
 ### Ozdoba pod nadpisem
 
@@ -116,11 +127,39 @@ přes `auto` — z poměru šířky vyrostla ozdoba širokému nadpisu do textu.
 
 ### Vodoznak
 
-Prázdná půlka sloupce se sestavou nese rytinu pražského orloje. Není to
-náhodná dekorace: **je to znak civilizace Bohemians přímo ze hry**
-(`resources/_common/wpfg/resources/civ_emblems/bohemians.png`), přebarvený
-do zlata. Odkazuje na hru i na Čechy naráz a je to tentýž orloj, co stojí
-na pozadí stránky.
+Prázdná půlka sloupce se sestavou nese **českého dvouocasého lva vyřezaného
+do dřeva desky**. Světlá kopie posunutá o pět pixelů dolů doprava dělá hranu
+zářezu, tmavý tvar nad ní samotný zářez. Je to tentýž lev, co visí na
+praporcích v pozadí a sedí na štítu v logu.
+
+Předchůdcem byla zlatá rytina pražského orloje (herní znak civilizace
+Bohemians). Vypadala jako nálepka položená na desku, ne jako její součást —
+proto řezba místo přetisku.
+
+### Dvouocasý lev
+
+Lev na praporcích v pozadí **není vygenerovaný spolu se scénou**. Difuzní
+model mu spolehlivě kreslí jeden ocas, i když se v promptu dvakrát řekne, že
+má mít dva; Qwen-Image-Edit ho na hotovém obrázku nepřidá taky. Český lev je
+státní symbol a dva ocasy u něj nejsou detail, na kterém by se dalo slevit.
+
+Postup je proto dvoukrokový:
+
+1. **Lev se vygeneruje sám o sobě** (`zadani/lev.json`). Jako jediný motiv ve
+   frameu ho model nakreslí heraldicky správně — dva ocasy, které se jednou
+   kříží a končí dvěma střapci, zlatá koruna, zlaté drápy.
+2. **Scéna se vygeneruje s prázdnými praporci** (`zadani/pozadi3.json`, do
+   promptu patří „PLAIN … absolutely nothing on it, no emblem“) a lev se na ně
+   vsadí nástrojem `vsad_znak.py`.
+
+`vsad_znak.py` lva vyřízne z rudého pole podle sytosti (bílé tělo má sytost
+nízkou, pole i koruna vysokou; zlato se z výběru vyjímá podle odstínu),
+natáhne ho perspektivní transformací do čtyřúhelníku zadaného čtyřmi rohy
+a **násobí místním jasem látky**, takže záhyby praporce prosvítají skrz a
+znak nevypadá jako nálepka.
+
+Souřadnice praporců jsou v `_grafika/final/praporce.json` (mimo repo);
+`--nahled` obtáhne zadané čtyřúhelníky zeleně, ať je vidět, kam padnou.
 
 ---
 
@@ -133,13 +172,13 @@ ComfyUI a stažení vah).
 
 | Soubor ve `web/src/assets/ui/` | Předloha | Seed | Rozměr generování |
 |---|---|---|---|
-| `pozadi.webp` | `pozadi_namesti` var. 02 | 8095574997087876325 | 1536×864 |
+| `pozadi.webp` | `namesti3` var. 00 (prázdné praporce) + vsazený lev | 5551187599571487886 | 1536×864 |
 | `ram.webp` | `ram` var. 02 | 4923907625749824255 | 1024×1024 |
-| `praporec.webp` | `praporec` var. 03 | 6199344767629039397 | 1536×512 |
+| `praporec.webp` | `praporec2` var. 04 | 384470600565535280 | 2048×512 |
 | `oddelovac.webp` | `oddelovac` var. 03 | 6271939320368049132 | 1536×384 |
 | `drevo.webp` | `drevo` var. 01 | 3567542112645301907 | 1024×1024 |
 | `pergamen.webp` | `pergamen` var. 00 | 1398608127076758676 | 1024×1024 |
-| `orloj.webp` | znak Bohemians ze hry, přebarvený | — | — |
+| `vodoznak.webp` | `lev` var. 04, vyřezaný do dřeva | 4235347553055014676 | 768×1024 |
 
 Všechno generováno **bez LoRA** (`lora: 0.0`), 24 kroků, guidance 4,0.
 Dohromady zabírají necelých 600 kB.
@@ -159,8 +198,15 @@ python nastroje/grafika/prehled.py prehled.png "../_grafika/navrhy/pozadi/*.png"
 # 4. Z vybraného rámu udělat devítidílný rámeček
 python nastroje/grafika/devitidil.py ram_02.png -o ram.png --roh 250 --pas 150 --nahled zkouska.png
 
-# 5. Vyříznout z černého pozadí (praporec, ozdoba)
-python nastroje/grafika/klic.py praporec_03.png -o praporec.png --prah 18
+# 5. Vyříznout z černého pozadí (ozdoba)
+python nastroje/grafika/klic.py oddelovac_03.png -o oddelovac.png --prah 55
+
+# 5b. Praporec do trojdílného pásu (změří periodu výšivky, srovná tón)
+python nastroje/grafika/praporec.py praporec2_04.png -o praporec.png \
+    --orez 264,1786 --cap 336 --prah 6 --vyhlad 0.55 --nahled zkouska.png
+
+# 5c. Lva na prázdné praporce v pozadí
+python nastroje/grafika/vsad_znak.py pozadi.png lev.png -z praporce.json -o hotovo.png --nahled
 
 # 6. Do webu jako webp
 python nastroje/grafika/export.py pozadi.png -o web/src/assets/ui/pozadi.webp -q 80 --sirka 2560
@@ -181,9 +227,17 @@ python nastroje/grafika/export.py drevo_01.png -o web/src/assets/ui/drevo.webp -
   of the picture is calm open sky and haze, the detail sits at the left and
   right edges“ — jinak model narve zajímavosti doprostřed, kde pak stojí panel.
 - **Devítidílný rám se nedá vzít rovnou z generovaného obrázku.** Strany
-  nejsou stejné a vnitřní otvor je nakřivo. `devitidil.py` proto vezme čtyři
-  rohy a **proužek hned vedle rohu** (ne ze středu strany — jen tak na sebe
-  zlaté linky navazují) a udělá z něj zrcadlovým prolnutím dlaždici bez švu.
+  nejsou stejné a vnitřní otvor je nakřivo. `devitidil.py` proto vezme jeden
+  roh a jeden **proužek hned vedle rohu** (ne ze středu strany — jen tak na
+  sebe zlaté linky navazují) a zbytek rámu z nich odvodí otáčením a zrcadlením.
+  Model maluje každou stranu trochu jinak; dokud se braly čtyři různé, dolní
+  hrana barevně nesedla se svislými. Proužek navíc projde srovnáním jasu podél
+  hrany (jinak z opakování vzniknou pruhy) a posunem tónu na poslední sloupec
+  rohu (jinak je na styku schod).
+- **Difuze neumí spočítat do dvou.** Lev na praporcích má mít dva ocasy;
+  z promptu i z editace hotového obrázku vycházel jeden. Když je ale lev
+  jediným motivem obrázku, model ho nakreslí správně. Poučení: **co musí
+  přesně sedět, se generuje zvlášť a skládá se to potom.**
 - **Klíčování prahem podle jasu nefunguje** na věcech, které mají vlastní
   tmavá místa. Záplava od rohů obrázku ano — ale práh je citlivý: praporec
   při `--prah 60` „vytekl“ do tmavě rudé látky a zbyly z něj cáry, při 18

@@ -1,0 +1,18 @@
+{
+  "namesti2": {
+    "prompt": "Wide painted background illustration: the market square of a Bohemian town at dusk, tall Gothic town hall with an astronomical clock and slender twin spires behind, gabled burgher houses with steep roofs, a stone fountain in the middle distance, rows of tall crimson banners on timber poles down both sides of the square. Every banner bears the arms of Bohemia: a silver white lion rampant wearing a golden crown, and the lion has a DOUBLE TAIL — two separate tails that rise behind its back, cross once and end in two tufts. Braziers and hanging lanterns burn warm orange, cobblestones wet with rain. The centre of the picture is calm open sky and haze, the detail sits at the left and right edges and in the lower corners. Painted concept art in the style of the Age of Empires II Definitive Edition main menu artwork, oil painting brushwork, warm light against a cold violet and indigo twilight sky, deep shadows at the picture edges, no text, no user interface",
+    "n": 6,
+    "width": 1536,
+    "height": 864,
+    "lora": 0.0,
+    "raw": true
+  },
+  "namesti2_detail": {
+    "prompt": "Wide painted background illustration seen from a Bohemian town square at dusk. In the foreground on the left and on the right hang two very large crimson heraldic banners with gold embroidered trim, each showing the arms of Bohemia in silver white: a lion rampant with a golden crown and a DOUBLE TAIL — two distinct tails rising behind the lion, crossing once, each ending in a tuft. Between them the square opens into calm misty air with a Gothic town hall, an astronomical clock and slender twin spires in the distance, braziers burning warm orange along the cobblestones. Painted concept art in the style of the Age of Empires II Definitive Edition main menu artwork, oil painting brushwork, cold violet and indigo twilight sky, deep shadows at the picture edges, no text, no user interface",
+    "n": 6,
+    "width": 1536,
+    "height": 864,
+    "lora": 0.0,
+    "raw": true
+  }
+}
