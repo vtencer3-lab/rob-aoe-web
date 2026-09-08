@@ -110,8 +110,10 @@ h1, h2, h3, h4, legend, .nadpis-seznamu {
    takže se nemá čím dorovnávat. */
 header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.4rem; }
 /* Štít nesedí vedle praporce, ale NA něm: přesahuje přes jeho levý konec
-   a vrhá na látku vlastní stín. Bez toho vypadal odloženě vedle. */
+   a vrhá na látku vlastní stín. Bez toho vypadal odloženě vedle.
+   Je to odkaz na kanál, takže rozměry drží obal a obrázek ho vyplní. */
 header .logo {
+  display: block;
   width: 172px;
   height: auto;
   flex: none;
@@ -121,6 +123,13 @@ header .logo {
      má zůstat vidět, že látka někde začíná. */
   margin: -0.5rem -60px 0 0;
   filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 22px rgba(0, 0, 0, 0.45));
+  transition: filter 0.2s;
+}
+header .logo img { display: block; width: 100%; height: auto; }
+/* Pod kurzorem štít o kousek prosvětlí — jinak by na něm nešlo poznat, že
+   někam vede. */
+header .logo:hover, header .logo:focus-visible {
+  filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 26px rgba(216, 168, 58, 0.5)) brightness(1.08);
 }
 /* Nadpis sedí na praporci. Krajní díly obrázku (zlaté nárožníky s cípy)
    zůstávají v původním poměru, prostředek se vodorovně DLAŽDICUJE — kdyby se

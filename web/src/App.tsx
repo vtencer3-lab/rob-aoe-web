@@ -23,6 +23,9 @@ import { ZkusebniLista } from "./views/ZkusebniLista.js";
 import crashoutUrl from "./assets/crashout.mp3";
 import logoUrl from "./assets/logo.webp";
 
+/** Kanál, na který vede štít v záhlaví. */
+const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
+
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
 function useUlozenyPrepinac(klic: string): [boolean, (v: boolean) => void] {
   const [hodnota, setHodnota] = useState(() => {
@@ -258,7 +261,17 @@ export function App() {
       ) : null}
     <main>
       <header>
-        <img className="logo" src={logoUrl} alt="" width={64} height={67} />
+        {/* Štít vede na kanál Brohemians. Nová záložka schválně: rozehraný
+            večer se nemá zavírat kvůli prokliku na YouTube. */}
+        <a
+          className="logo"
+          href={KANAL_BROHEMIANS}
+          target="_blank"
+          rel="noreferrer noopener"
+          title="Kanál Brohemians na YouTube"
+        >
+          <img src={logoUrl} alt="Brohemians" width={64} height={67} />
+        </a>
         <h1>
           Komunitní hry —{" "}
           <button

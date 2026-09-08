@@ -522,3 +522,17 @@ it("hráči vidí historii zápasů jen ke čtení", async () => {
   // Sbalit smí každý.
   expect(screen.getByRole("button", { name: /sbalit zápas #7/i })).toBeInTheDocument();
 });
+
+// Štít v záhlaví vede na kanál. Nová záložka schválně: rozehraný večer se nemá
+// zavírat kvůli prokliku na YouTube.
+it("logo odkazuje na kanál Brohemians do nové záložky", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  const odkaz = await screen.findByRole("link", { name: /brohemians/i });
+  expect(odkaz).toHaveAttribute("href", "https://www.youtube.com/@BrohemiansAoE");
+  expect(odkaz).toHaveAttribute("target", "_blank");
+  expect(odkaz.getAttribute("rel")).toContain("noreferrer");
+});
