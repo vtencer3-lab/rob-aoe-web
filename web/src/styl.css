@@ -236,6 +236,32 @@ button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
 .seznam tbody tr:hover { background: rgba(216, 168, 58, 0.10); }
 
 .prazdno, .ceka, .spojeni { color: var(--tlumene); }
+
+/* Když neběží akce, je tahle věta na stránce jediná. Drobným písmem vlevo
+   pod praporcem vypadala jako chybová hláška; uprostřed na desce vypadá
+   jako vývěska u brány, což je přesně to, co to je. */
+main > .prazdno {
+  max-width: 34rem;
+  margin: 4rem auto;
+  padding: 1.6rem 2rem;
+  text-align: center;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 1.25rem;
+  color: var(--zlato-svetle);
+  border: 1px solid rgba(216, 168, 58, 0.35);
+  border-radius: 2px;
+  background: linear-gradient(rgba(32, 19, 13, 0.88), rgba(18, 11, 7, 0.94));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8);
+}
+main > .prazdno::after {
+  content: "";
+  display: block;
+  height: 0.95rem;
+  margin: 0.9rem auto 0;
+  width: min(100%, 18rem);
+  background: url(./assets/ui/oddelovac.webp) center / 100% 100% no-repeat;
+}
 .varovani { color: var(--akcent); margin-left: 0.35rem; cursor: help; }
 .chyba { color: var(--chyba); }
 .potvrzeno { color: var(--ok); }
