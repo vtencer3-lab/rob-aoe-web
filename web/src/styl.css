@@ -693,7 +693,7 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 .chyba-pole { margin: 0.4rem 0 0; }
 
 /* Dohrany nebo zruseny zapas v rezii: zaznam, ne ovladaci pult. */
-.zapas.odepsany { opacity: 0.75; }
+.zapas.odepsany { opacity: 0.85; }
 .verejny-zapas .verdikt { color: var(--zlato-svetle); }
 
 /* Host taky hraje, takze i on ma svoji barvu videt jako pruh, ne jen jako
@@ -1006,7 +1006,13 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam .mece { font-size: 1.2rem; color: var(--akcent); }
 
 /* Kdo se dlouho neozval, ztmavne a propadne na konec seznamu. Zůstává čitelný
-   — je to informace „asi tu není“, ne škrtnutí. */
+   — je to informace „asi tu není“, ne škrtnutí. Ztmavnutí se prolne, přejezd
+   na nové místo obstará FLIP v komponentě (jen `transform` se tu nepřechází,
+   ať si ho animace řídí sama). */
+.seznam > tbody > tr { opacity: 1; transition: opacity 340ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .seznam > tbody > tr { transition: none; }
+}
 .seznam > tbody > tr.spici { opacity: 0.52; }
 .seznam > tbody > tr.spici:hover { opacity: 0.78; }
 
@@ -1020,6 +1026,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam > tbody > tr.muj-radek .jmeno-hrace { color: var(--zlato-svetle); font-weight: 700; }
 .seznam > tbody > tr.spici.muj-radek { opacity: 0.78; }
 .seznam > tbody > tr.spici.muj-radek:hover { opacity: 1; }
+
+/* Ukončení akce stojí samo nad panelem, vpravo pod přepínačem pohledu. */
+.ukonceni-akce { display: flex; justify-content: flex-end; margin: 0 0 0.6rem; }
 
 /* Nadpis a tlačítka tabulky přihlášených na jednom řádku; nadpis si nese
    ozdobu, takže se zarovnává shora, ne na střed. */

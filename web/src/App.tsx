@@ -306,6 +306,24 @@ export function App() {
         <>
           {/* Admin má název akce v záhlaví panelu; ostatním zůstává tady. */}
           {!admin ? <h2>{akce.nazev}</h2> : null}
+          {/* Ukončení akce stojí nad panelem, ne v něm: je to jediné tlačítko
+              nad celým večerem, ne nad seznamem lidí, a v řadě s ostatními by
+              se mu dalo omylem kliknout. */}
+          {admin && akce ? (
+            <div className="ukonceni-akce">
+              <button
+                onClick={() => {
+                  // Nevratné: po „konec“ akce zmizí všem naráz ze streamu,
+                  // včetně rozehraných zápasů. Proto potvrzení.
+                  if (window.confirm(`Ukončit akci „${akce.nazev}“? Zpátky to nejde.`)) {
+                    void hlidej(() => api.akceStav(akce.id, "konec"));
+                  }
+                }}
+              >
+                Ukončit akci
+              </button>
+            </div>
+          ) : null}
           {/* Obal je jen kvůli vzhledu: nadpis a tabulka mají sedět na jedné
               desce s rámem, ne se vznášet na pozadí. Rozvržení nemění. */}
           <section className="panel-prihlaseni">
@@ -331,22 +349,6 @@ export function App() {
                 {me ? (
                   <button onClick={() => void prepnout()}>
                     {jsemPrihlaseny ? "Odhlásit se z akce" : "Přihlásit se do akce"}
-                  </button>
-                ) : null}
-                {/* Ukončení akce bývalo v záhlaví panelu níž. Patří k seznamu
-                    lidí: končí se, když se rozejdou, ne když se dohraje. */}
-                {admin && akce ? (
-                  <button
-                    className="ukoncit-akci"
-                    onClick={() => {
-                      // Nevratné: po „konec“ akce zmizí všem naráz ze streamu,
-                      // včetně rozehraných zápasů. Proto potvrzení.
-                      if (window.confirm(`Ukončit akci „${akce.nazev}“? Zpátky to nejde.`)) {
-                        void hlidej(() => api.akceStav(akce.id, "konec"));
-                      }
-                    }}
-                  >
-                    Ukončit akci
                   </button>
                 ) : null}
               </div>

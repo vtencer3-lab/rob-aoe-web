@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { jeAktivni } from "../../../src/shared/aktivita.js";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
@@ -95,6 +95,47 @@ function useTed(): number {
   return ted;
 }
 
+/** Doba přejezdu řádku na nové místo. Delší už působí, že tabulka zlobí. */
+const PRESUN_MS = 340;
+
+/**
+ * Přejezd řádků na nové místo místo skoku (technika FLIP).
+ *
+ * Když hráč usne, propadne na konec seznamu — a bez animace to vypadá, jako by
+ * se tabulka sama přeskládala. Změřit se to musí ve stejném snímku, ve kterém
+ * React vykreslil nové pořadí: řádek se posune zpátky tam, kde byl, a hned se
+ * nechá dojet na nové místo.
+ *
+ * `poradi` je otisk pořadí; efekt se pouští jen když se opravdu změnilo.
+ */
+function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi: string) {
+  const drive = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const prvek = tabulka.current;
+    if (!prvek) return;
+    // Kdo si nepřeje pohyb, dostane přeskládání naráz.
+    const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const nynejsi = new Map<string, number>();
+    for (const radek of prvek.querySelectorAll<HTMLTableRowElement>("tbody > tr[data-hrac]")) {
+      const kdo = radek.dataset["hrac"];
+      if (!kdo) continue;
+      const ted = radek.getBoundingClientRect().top;
+      nynejsi.set(kdo, ted);
+      const predtim = drive.current.get(kdo);
+      // Nový řádek nemá odkud přijet; nulový posun není co animovat. V testovacím
+      // DOM jsou všechny souřadnice nulové, takže se animace nepustí vůbec.
+      if (bezPohybu || predtim === undefined || predtim === ted) continue;
+      radek.style.transition = "none";
+      radek.style.transform = `translateY(${predtim - ted}px)`;
+      requestAnimationFrame(() => {
+        radek.style.transition = `transform ${PRESUN_MS}ms ease`;
+        radek.style.transform = "";
+      });
+    }
+    drive.current = nynejsi;
+  }, [tabulka, poradi]);
+}
+
 export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, onJsemTu }: Props) {
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
@@ -115,6 +156,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, onJsemTu
   // konec za všech okolností — i za seřazeného seznamu.
   const ted = useTed();
   const radky = podleAktivity(skladani ? serad(skladani.nevybrani, razeni) : prihlaseni, ted);
+  usePresouvani(tabulka, radky.map((h) => h.steamId).join(","));
 
   const prepni = (sloupec: Sloupec) => {
     const nove = dalsiRazeni(razeni, sloupec);
@@ -174,6 +216,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, onJsemTu
           return (
             <tr
               key={hrac.steamId}
+              data-hrac={hrac.steamId}
               className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : ""]
                 .filter(Boolean)
                 .join(" ")}

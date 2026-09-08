@@ -218,3 +218,12 @@ it("bez přihlášení není označený nikdo", () => {
   render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a" })]} ja={null} />);
   expect(screen.getByText("TenceR").closest("tr")).not.toHaveClass("muj-radek");
 });
+
+// Animace přejezdu si řádky hledá podle `data-hrac`; bez toho by neměla co
+// měřit a přeskládání by zase skákalo.
+it("řádky nesou značku, podle které je animace najde", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a" }), hrac({ steamId: "b" })]} />);
+  const znacky = document.querySelectorAll("tbody > tr[data-hrac]");
+  expect([...znacky].map((r) => r.getAttribute("data-hrac"))).toEqual(["a", "b"]);
+});
