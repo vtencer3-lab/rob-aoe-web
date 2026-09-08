@@ -962,11 +962,21 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .staty-hrace header img { border: 1px solid var(--akcent); border-radius: 3px; }
 .staty-hrace header strong { font-size: 1.25rem; font-weight: 400; letter-spacing: 0.02em; }
 .staty-hrace table { width: 100%; border-collapse: collapse; font-variant: small-caps; }
-.staty-hrace th { text-align: left; font-weight: 400; font-size: 1rem; color: var(--text); border-bottom: 1px solid var(--akcent); padding: 0.15rem 0.5rem; }
+.staty-hrace th {
+  text-align: left;
+  font-family: "Cinzel", Georgia, serif;
+  font-weight: 400;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--zlato);
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(216, 168, 58, 0.45);
+}
 .staty-hrace th:not(:first-child), .staty-hrace td:not(:first-child) { text-align: center; }
-.staty-hrace td { padding: 0.32rem 0.5rem; font-size: 1rem; color: var(--text); border-bottom: 1px solid rgba(216, 168, 58, 0.14); }
-.staty-hrace tbody tr:nth-child(even) { background: rgba(216, 168, 58, 0.05); }
-.staty-hrace tbody tr:last-child td { border-bottom: none; }
+.staty-hrace td { padding: 0.5rem 0.6rem; font-size: 1rem; color: var(--text); border-bottom: 1px solid rgba(216, 168, 58, 0.16); }
+.staty-hrace tbody tr:nth-child(even) { background: rgba(216, 168, 58, 0.045); }
+.staty-hrace tbody tr:hover { background: rgba(216, 168, 58, 0.10); }
 .staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
 .staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
 /* Jméno s avatarem jako blok (flex), buňky zarovnané na střed — inline-flex
