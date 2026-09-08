@@ -18,17 +18,25 @@ export function NazevAkce({ nazev, onPrejmenovat }: { nazev: string; onPrejmenov
     return (
       <h2 className="nadpis-akce" data-testid="nazev-akce">
         {onPrejmenovat ? (
-          <button
-            type="button"
-            className="nazev-akce-tlacitko"
-            title="Upravit název akce"
-            onClick={() => {
-              setText(nazev);
-              setUpravuje(true);
-            }}
-          >
-            {nazev}
-          </button>
+          <>
+            <button
+              type="button"
+              className="nazev-akce-tlacitko"
+              title="Upravit název akce"
+              onClick={() => {
+                setText(nazev);
+                setUpravuje(true);
+              }}
+            >
+              {nazev}
+            </button>
+            {/* Tužka se vedle nadpisu objeví až pod kurzorem. Není to ovládací
+                prvek, jen znamení, co kliknutí udělá — klikat jde na celý
+                nadpis, tak ať ji předčítač nehlásí jako další tlačítko. */}
+            <span className="tuzka-napovedy" aria-hidden="true">
+              ✎
+            </span>
+          </>
         ) : (
           nazev
         )}

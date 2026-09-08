@@ -464,6 +464,9 @@ h2.nadpis-akce::after {
   top: 100%;
   left: 0;
   margin-top: 0.5rem;
+  /* Ozdoba je široká přes půl řádku; bez tohohle by najetí na ni rozsvěcovalo
+     nadpis, aniž by kurzor byl na textu. */
+  pointer-events: none;
 }
 .historie-zapasu > .nadpis-seznamu { margin-top: 2.4rem; }
 
@@ -1122,11 +1125,15 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    malý terč hned vedle velkého nápisu, na který se stejně chtělo klikat.
    Tlačítko nesmí být vidět jako tlačítko — dědí písmo i barvu nadpisu a pod
    kurzorem jen zezlátne. */
-/* Pod kurzorem se pod nadpisem načrtne to pole, ve které se po kliknutí
-   promění: tmavší prohlubeň s tenkým zlatým rámečkem. Říká to, co se stane,
-   líp než pouhé přebarvení. Odsazení a rámeček má stejné jako to pole, jen
-   průhledné, aby nápis při přepnutí nepodskočil; záporný levý okraj to
-   odsazení vyruší, ať nadpis začíná tam, kde ostatní. */
+/* Pod kurzorem se kolem nadpisu načrtne pole, ve které se po kliknutí promění:
+   průsvitný zlatý rámeček, a vedle něj tužka. Říká to, co se stane, líp než
+   pouhé přebarvení — psát se pak začne přesně do toho rámečku. Odsazení
+   a rámeček má stejné jako to pole, jen průhledné, aby nápis při přepnutí
+   nepodskočil; záporný levý okraj to odsazení vyruší, ať nadpis začíná tam,
+   kde ostatní.
+
+   Rozsvěcuje to najetí na celý nadpis, ne jen na tlačítko: tužka stojí vedle
+   něj a couvala by pod kurzorem sama před sebou. */
 h2 button.nazev-akce-tlacitko {
   all: unset;
   cursor: pointer;
@@ -1136,13 +1143,27 @@ h2 button.nazev-akce-tlacitko {
   border-radius: 2px;
   transition: background-color 0.18s, border-color 0.18s, color 0.18s;
 }
-h2 button.nazev-akce-tlacitko:hover,
+h2.nadpis-akce:hover button.nazev-akce-tlacitko,
 h2 button.nazev-akce-tlacitko:focus-visible {
   color: var(--zlato-svetle);
-  background-color: rgba(12, 7, 4, 0.35);
-  border-color: var(--zlato-tmave);
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.55);
+  background-color: rgba(12, 7, 4, 0.16);
+  border-color: rgba(216, 168, 58, 0.5);
 }
+
+/* Tužka vedle nadpisu: v klidu není, pod kurzorem svítí naplno. */
+h2 .tuzka-napovedy {
+  margin-left: 0.7rem;
+  font-size: 0.62em;
+  line-height: 1;
+  vertical-align: 0.22em;
+  color: var(--zlato);
+  opacity: 0;
+  transition: opacity 0.18s;
+  text-shadow: 0 0 12px rgba(216, 168, 58, 0.6);
+  pointer-events: none;
+}
+h2.nadpis-akce:hover .tuzka-napovedy,
+h2 button.nazev-akce-tlacitko:focus-visible + .tuzka-napovedy { opacity: 1; }
 /* Pole i jeho neviditelná míra musí mít stejné písmo, odsazení i rámeček,
    jinak by se šířky rozešly. Míra drží obal, pole ho vyplní. */
 h2 .nazev-akce-obal { position: relative; display: inline-block; max-width: 100%; }
