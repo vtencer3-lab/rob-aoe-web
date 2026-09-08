@@ -9,14 +9,40 @@ import { createSession } from "../../db/sessions.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import { hub, KANAL_AKCE } from "../../realtime/hub.js";
 import type { AkceStavPayload } from "../../shared/types.js";
+import { VERZE } from "../../shared/verze.js";
 import { buildServer } from "../server.js";
 
-/** Přečte první `data:` rámec ze SSE streamu a rozbalí payload. */
-async function prvniPayload(stream: NodeJS.ReadableStream): Promise<AkceStavPayload> {
-  const ramec = await new Promise<string>((resolve, reject) => {
-    stream.once("data", (chunk: Buffer) => resolve(chunk.toString()));
+/**
+ * Přečte první rámec se stavem. Pojmenované události přeskočí — stream jimi
+ * začíná (`event: verze`) a posílá je i za běhu (`event: puls`), takže „první
+ * chunk“ dávno není totéž co „první stav“. Dokud tenhle test četl chunk
+ * naslepo, celý soubor spadl hned po přidání verze do streamu (0.16.0).
+ */
+async function prvniStavovyRamec(stream: NodeJS.ReadableStream): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    let zbytek = "";
+    const naData = (chunk: Buffer) => {
+      zbytek += chunk.toString();
+      let konec = zbytek.indexOf("\n\n");
+      while (konec !== -1) {
+        const ramec = zbytek.slice(0, konec);
+        zbytek = zbytek.slice(konec + 2);
+        if (ramec.startsWith("data: ")) {
+          stream.off("data", naData);
+          resolve(ramec);
+          return;
+        }
+        konec = zbytek.indexOf("\n\n");
+      }
+    };
+    stream.on("data", naData);
     stream.once("error", reject);
   });
+}
+
+/** Přečte první rámec se stavem ze SSE streamu a rozbalí payload. */
+async function prvniPayload(stream: NodeJS.ReadableStream): Promise<AkceStavPayload> {
+  const ramec = await prvniStavovyRamec(stream);
   return JSON.parse(ramec.replace(/^data: /, "")) as AkceStavPayload;
 }
 
@@ -112,12 +138,36 @@ it("pošle úvodní stav a přihlásí odběratele", async () => {
   expect(res.headers["cache-control"]).toBe("no-cache");
   expect(res.headers["x-accel-buffering"]).toBe("no");
 
-  const uvodniZprava = await new Promise<string>((resolve, reject) => {
+  const uvodniZprava = await prvniStavovyRamec(res.stream());
+  expect(uvodniZprava).toContain(`"nazev":"večer"`);
+
+  controller.abort();
+  await app.close();
+});
+
+// Stream začíná verzí serveru. Podle ní pozná otevřená stránka se starým
+// bundlem, že se web mezitím nasadil znovu, a nabídne obnovení. Bez tohohle
+// testu by se rámec dal odstranit, aniž by to cokoliv chytilo.
+it("stream začíná pojmenovanou událostí s verzí serveru", async () => {
+  await createAkce("večer");
+  const app = buildServer();
+  await app.ready();
+
+  const controller = new AbortController();
+  const res = await app.inject({
+    method: "GET",
+    url: "/api/stream",
+    payloadAsStream: true,
+    signal: controller.signal,
+  });
+
+  const prvni = await new Promise<string>((resolve, reject) => {
     const stream = res.stream();
     stream.once("data", (chunk: Buffer) => resolve(chunk.toString()));
     stream.once("error", reject);
   });
-  expect(uvodniZprava).toContain(`"nazev":"večer"`);
+  expect(prvni).toContain("event: verze");
+  expect(prvni).toContain(`"verze":"${VERZE}"`);
 
   controller.abort();
   await app.close();
@@ -136,11 +186,7 @@ it("po odpojení klienta se odběratel odhlásí z hubu", async () => {
     payloadAsStream: true,
     signal: controller.signal,
   });
-  await new Promise<void>((resolve, reject) => {
-    const stream = res.stream();
-    stream.once("data", () => resolve());
-    stream.once("error", reject);
-  });
+  await prvniStavovyRamec(res.stream());
 
   expect(hub.subscriberCount(KANAL_AKCE)).toBe(1);
 
@@ -252,18 +298,9 @@ it("broadcast doručený během sestavování úvodního stavu se pošle až po 
     zapasy: [],
   });
 
-  const zpravy = await new Promise<string[]>((resolve, reject) => {
-    const prijate: string[] = [];
-    const stream = res.stream();
-    stream.on("data", (chunk: Buffer) => {
-      prijate.push(chunk.toString());
-      if (prijate.length === 2) resolve(prijate);
-    });
-    stream.once("error", reject);
-  });
-
-  expect(zpravy[0]).toContain(`"nazev":"večer"`);
-  expect(zpravy[1]).toContain("broadcast-behem-snapshotu");
+  const sber = sberac(res.stream());
+  expect(JSON.stringify(await sber.ramec(0))).toContain(`"nazev":"večer"`);
+  expect(JSON.stringify(await sber.ramec(1))).toContain("broadcast-behem-snapshotu");
 
   controller.abort();
   await app.close();
