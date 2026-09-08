@@ -1175,7 +1175,16 @@ h2 button.nazev-akce-tlacitko:hover .tuzka-napovedy,
 h2 button.nazev-akce-tlacitko:focus-visible .tuzka-napovedy { opacity: 1; }
 /* Pole i jeho neviditelná míra musí mít stejné písmo, odsazení i rámeček,
    jinak by se šířky rozešly. Míra drží obal, pole ho vyplní. */
-h2 .nazev-akce-obal { position: relative; display: inline-block; max-width: 100%; }
+h2 .nazev-akce-obal {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  /* Pole je o své svislé odsazení a rámeček vyšší než nadpis v klidu (naměřeno
+     8,38 px). Bez vyrovnání by kliknutí do názvu posunulo celý zbytek stránky.
+     Počítá se ze stejných hodnot jako to odsazení, ať to drží i po jejich
+     změně; rozměry pole zůstávají, jen se nezapočítají do výšky řádku. */
+  margin-block: calc((0.2rem + 1px) * -1);
+}
 h2 .nazev-akce-mira,
 h2 input.nazev-akce-pole {
   font: inherit;
