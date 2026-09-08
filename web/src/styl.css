@@ -112,14 +112,14 @@ header { display: flex; justify-content: space-between; align-items: flex-start;
 /* Štít nesedí vedle praporce, ale NA něm: přesahuje přes jeho levý konec
    a vrhá na látku vlastní stín. Bez toho vypadal odloženě vedle. */
 header .logo {
-  width: 160px;
+  width: 172px;
   height: auto;
   flex: none;
   position: relative;
   z-index: 2;
   /* Přesah jen přes zlatý nárožník, ne přes celý konec praporce — pod štítem
      má zůstat vidět, že látka někde začíná. */
-  margin: 0.4rem -60px 0 0;
+  margin: -0.5rem -60px 0 0;
   filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 22px rgba(0, 0, 0, 0.45));
 }
 /* Nadpis sedí na praporci. Krajní díly obrázku (zlaté nárožníky s cípy)
