@@ -6,8 +6,6 @@ import { NastaveniLobby } from "./NastaveniLobby.js";
 interface Props {
   akce: AkceView | null;
   onZalozit: (nazev: string) => void;
-  /** Přejmenování běžící akce tužkou u nadpisu. */
-  onPrejmenovat: (nazev: string) => void;
   /** Živá změna nastavení lobby (každé kliknutí). */
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
   /** „Uložit preset lobby“: snímek na serveru. */
@@ -27,15 +25,15 @@ interface Props {
  * vybraní hráči (sestava), vpravo Game Settings. Tlačítka zkušebních hráčů
  * jsou pod záhlavím a jen v debug módu.
  */
-export function SpravaAkce({ akce, onZalozit, onPrejmenovat, onNastaveniLobby, onUlozitNastaveni, zkusebni, ladeni = false, children, zvyraznitNastaveni }: Props) {
+export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, zkusebni, ladeni = false, children, zvyraznitNastaveni }: Props) {
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
   return (
     <section className="sprava-akce">
-      {/* „Ukončit akci“ bývalo tady vpravo; přestěhovalo se nahoru k tabulce
-          přihlášených, kde jsou i ostatní tlačítka na úrovni akce. */}
+      {/* Panel se jmenuje po tom, co v něm je. Název akce odsud odešel nahoru
+          nad tabulku přihlášených: patří k celému večeru, ne k nastavení hry. */}
       <header className="hlavicka-akce">
-        <NazevAkce nazev={akce.nazev} onPrejmenovat={onPrejmenovat} />
+        <h2>Nastavení Lobby</h2>
       </header>
       {/* Zkušební hráči: Rob si složí plnou sestavu bez čtyř lidí. Kreslí se
           jen tam, kde to server povolil (vývojová verze), a jen v debug módu. */}
@@ -82,62 +80,5 @@ function ZalozeniAkce({ onZalozit }: Pick<Props, "onZalozit">) {
         Založit akci
       </button>
     </form>
-  );
-}
-
-/**
- * Název akce s tužkou. Večer se často jmenuje podle toho, co se zrovna hraje,
- * a přepsat ho jde bez zakládání nové akce.
- *
- * Uloží se odchodem z pole nebo Enterem, Escape změnu zahodí. Prázdný název
- * se neuloží — server by ho stejně odmítl a Rob by koukal na chybu místo na
- * to, že se prostě nic nestalo.
- */
-function NazevAkce({ nazev, onPrejmenovat }: { nazev: string; onPrejmenovat: (nazev: string) => void }) {
-  const [upravuje, setUpravuje] = useState(false);
-  const [text, setText] = useState(nazev);
-
-  if (!upravuje) {
-    return (
-      <h2 data-testid="nazev-akce">
-        {nazev}
-        <button
-          type="button"
-          className="prejmenovat"
-          aria-label="Přejmenovat akci"
-          title="Přejmenovat akci"
-          onClick={() => {
-            setText(nazev);
-            setUpravuje(true);
-          }}
-        >
-          ✎
-        </button>
-      </h2>
-    );
-  }
-
-  const uloz = () => {
-    setUpravuje(false);
-    const cisty = text.trim();
-    if (cisty !== "" && cisty !== nazev) onPrejmenovat(cisty);
-  };
-
-  return (
-    <h2 data-testid="nazev-akce">
-      <input
-        className="nazev-akce-pole"
-        aria-label="Název akce"
-        value={text}
-        autoFocus
-        maxLength={120}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={uloz}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") uloz();
-          if (e.key === "Escape") setUpravuje(false);
-        }}
-      />
-    </h2>
   );
 }

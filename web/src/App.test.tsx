@@ -271,13 +271,15 @@ it("admin si přepne na pohled uživatele a adminské části zmizí", async () 
   render(<App />);
 
   expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
-  expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Akce 1");
+  expect(screen.getByRole("heading", { name: "Nastavení Lobby" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Přihlášení hráči" })).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("switch", { name: /pohled uživatele/i }));
   expect(screen.queryByRole("button", { name: /vytvořit zápas/i })).not.toBeInTheDocument();
-  expect(screen.queryByTestId("nazev-akce")).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Akce 1" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Nastavení Lobby" })).not.toBeInTheDocument();
+  // Název akce zůstává: patří celému večeru, ne režii. Tužka u něj mizí.
+  expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Akce 1");
+  expect(screen.queryByRole("button", { name: /přejmenovat akci/i })).not.toBeInTheDocument();
   // Přepínač zpátky zůstává, ať se admin dostane ven.
   expect(screen.getByRole("switch", { name: /pohled uživatele/i })).toBeInTheDocument();
 });
@@ -412,7 +414,7 @@ it("přihlášení hráči stojí nad panelem akce", async () => {
   render(<App />);
 
   const tabulka = await screen.findByRole("heading", { name: "Přihlášení hráči" });
-  const panel = screen.getByTestId("nazev-akce");
+  const panel = screen.getByRole("heading", { name: "Nastavení Lobby" });
   // Node.compareDocumentPosition: 4 = druhý uzel je v dokumentu za prvním.
   expect(tabulka.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });

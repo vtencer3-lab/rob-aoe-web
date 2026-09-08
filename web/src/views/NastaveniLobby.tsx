@@ -158,7 +158,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
 
   return (
     <form className="nastaveni-lobby" data-testid="nastaveni-lobby" onSubmit={(e) => e.preventDefault()} ref={formular}>
-      <h3>Nastavení Lobby</h3>
+      {/* Nadpis nese záhlaví panelu (SpravaAkce), tady by stál dvakrát. */}
       <div className="radky">
         <div className="radek" role="radiogroup" aria-label="Civilization Set" data-klic="sadaCivilizaci">
           <span>Civilization Set:</span>

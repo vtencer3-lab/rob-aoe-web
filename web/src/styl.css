@@ -1096,10 +1096,11 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam > tbody > tr.spici.muj-radek { opacity: 0.78; }
 .seznam > tbody > tr.spici.muj-radek:hover { opacity: 1; }
 
-/* Tužka u názvu akce. Vedle nadpisu jen tiše čeká — je to nabídka, ne výzva —
+/* Tužka u názvu akce. Selektor není vázaný na panel: nadpis se přestěhoval
+   nad tabulku přihlášených a tužka jde s ním. Vedle nadpisu jen tiše čeká — je to nabídka, ne výzva —
    a rozsvítí se až pod kurzorem. Rozměry jsou svázané na čtverec, aby rámeček
    pod kurzorem nebyl podlouhlý podle šířky znaku. */
-.hlavicka-akce h2 button.prejmenovat {
+h2 button.prejmenovat {
   margin-left: 0.6rem;
   padding: 0;
   width: 1.55rem;
@@ -1116,14 +1117,14 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
   box-shadow: none;
   text-shadow: none;
 }
-.hlavicka-akce h2 button.prejmenovat:hover:enabled,
-.hlavicka-akce h2 button.prejmenovat:focus-visible {
+h2 button.prejmenovat:hover:enabled,
+h2 button.prejmenovat:focus-visible {
   opacity: 1;
   color: var(--akcent);
   border-color: var(--zlato-tmave);
   background: none;
 }
-.hlavicka-akce h2 input.nazev-akce-pole {
+h2 input.nazev-akce-pole {
   font: inherit;
   color: inherit;
   width: min(100%, 22rem);

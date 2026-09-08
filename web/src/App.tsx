@@ -12,6 +12,7 @@ import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./z
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
+import { NazevAkce } from "./views/NazevAkce.js";
 import { HistorieZapasu, Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { Skladani } from "./views/Skladani.js";
@@ -304,8 +305,14 @@ export function App() {
           stojí nad panelem akce, ne pod ním. */}
       {akce ? (
         <>
-          {/* Admin má název akce v záhlaví panelu; ostatním zůstává tady. */}
-          {!admin ? <h2>{akce.nazev}</h2> : null}
+          {/* Název akce nad tabulkou přihlášených, stejně pro všechny: patří
+              k celému večeru, ne k nastavení hry. Tužku má jen admin. */}
+          <NazevAkce
+            nazev={akce.nazev}
+            onPrejmenovat={
+              admin ? (novy) => void hlidej(() => api.prejmenovatAkci(akce.id, novy)) : undefined
+            }
+          />
           {/* Ukončení akce stojí nad panelem, ne v něm: je to jediné tlačítko
               nad celým večerem, ne nad seznamem lidí, a v řadě s ostatními by
               se mu dalo omylem kliknout. */}
@@ -381,9 +388,6 @@ export function App() {
           akce={akce}
           ladeni={ladeni}
           onZalozit={(nazev) => void hlidej(() => api.vytvoritAkce(nazev))}
-          onPrejmenovat={(nazev) => {
-            if (akce) void hlidej(() => api.prejmenovatAkci(akce.id, nazev));
-          }}
           onNastaveniLobby={(n) => {
             if (!akce) return;
             const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
