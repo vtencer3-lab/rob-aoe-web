@@ -308,6 +308,45 @@ nejsou dostupné ani ve vývojové verzi. Zkouška večera nasucho se dělá lok
 
 ---
 
+## 3.7 Návrat na předchozí verzi
+
+Před každým releasem do `main` se na dosavadní stav `main` pověsí značka
+`vX.Y.Z`. Návrat pak není pátrání v historii, ale jeden příkaz.
+
+**Nejdřív zjisti, jestli mezi verzemi přibyla migrace:**
+
+```bash
+git diff --name-only vX.Y.Z..main -- migrations/
+```
+
+Když je výpis prázdný, je návrat čistě otázka kódu a nic se neztratí. Když
+prázdný není, databáze už je napřed a **samotné vrácení kódu nestačí** —
+migrace se nevrací samy a stará verze nemusí novou strukturu unést. To je
+případ na rozmyšlenou, ne na rychlý příkaz.
+
+**Vrácení, které nechává historii být** (doporučené, `main` jde dál dopředu):
+
+```bash
+git checkout main && git pull
+git revert -m 1 <hash merge commitu releasu>   # -m 1 = vrátit se na stav main před mergem
+git push origin main
+curl -s https://jouki.cz/aoe/api/health        # musí hlásit starou verzi
+```
+
+Revert merge commitu má jeden háček: až se stejná práce bude vydávat znovu,
+git ji považuje za už sloučenou a `main` by ji nedostal. Musí se proto před
+dalším releasem vrátit i ten revert (`git revert <hash revertu>` na `dev`).
+
+**Tvrdý návrat** (jen když je potřeba mít `main` přesně jako předtím):
+
+```bash
+git checkout main && git reset --hard vX.Y.Z && git push --force-with-lease origin main
+```
+
+Přepisuje historii sdílené větve, takže jen po dohodě s ostatními adminy.
+
+V obou případech se `dev` nechává být — chyba se opraví tam a vydá znovu.
+
 ## 4. Když se něco nepovede
 
 - **Po pushi se nic nezměnilo.** Počkej tři minuty a zkus `/api/health`.

@@ -33,7 +33,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 0.17.0, nasazeno na <https://jouki.cz/aoe>; **nemá** velikost mapy podle barev (§3.13) |
+| `origin/main` | 0.18.0, nasazeno na <https://jouki.cz/aoe> (PR #9, 8. 9. 2026); stav před ním nese značka `v0.17.0` |
 | `origin/dev` | 0.18.0, nasazeno na <https://jouki.cz/aoe/dev>; nese grafický kabátek (§3.12) |
 | `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; zatím prázdné kolo |
 | Migrace | 001–012, poslední `012_zavreny_zapas.sql`; aplikované na všech třech databázích |
@@ -41,8 +41,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
-Releasy do `main` proběhly čtyři: PR #4 (0.11.2, 7. 9. večer), PR #5
-(0.16.0), PR #6 (0.16.2), PR #7 (0.16.3), všechny 8. 9. po půlnoci.
+Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
+PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix a PR #9 (0.18.0, grafický
+kabátek), zbytek 8. 9. Před releasem se na dosavadní `main` věší značka
+`vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
+[`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
 **Release se dělá jen na výslovný pokyn** („pushni do mainu“).
 
 **Tři větve, tři nasazení (od 8. 9. 2026).** `main` = ostrá,
@@ -425,8 +428,8 @@ ne jen na dvojici (`src/shared/sestava.ts`). Vydáno jako 0.17.0 do `main`.
 
 **Velikost mapy.** Volba „podle počtu hráčů“ počítá unikátní barvy, ne hlavy
 (`src/shared/lobbyKontrola.ts`). Tři lidi na jedné barvě proti jednomu jsou
-ve hře 1v1, ne 4hráčová mapa. Vydáno jako 0.17.1 do `dev`; **v `main` to
-zatím není**, release nebyl zadán.
+ve hře 1v1, ne 4hráčová mapa. Vydáno jako 0.17.1 do `dev` a do `main` spolu
+s kabátkem v 0.18.0.
 
 ### 3.11 Drobnosti a easter egg
 
