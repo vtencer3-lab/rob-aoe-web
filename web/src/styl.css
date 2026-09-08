@@ -37,6 +37,13 @@
   --drevo: #241610;
   --drevo-tmave: #160d08;
 
+  /* Významové barvy. Zelená a červená jsou ztlumené do teplé palety —
+     signální odstíny z původního návrhu tu působily jako semafor. */
+  --chyba: #e2695c;
+  --varovani: #e0c46a;
+  --ok: #a8c47c;
+  --ok-svetle: #bcd694;
+
   --pozadi: #150d07;
   --text: #f0e2c0;
   --tlumene: #a89066;
@@ -147,10 +154,10 @@ header h1 {
 /* Nadpis seznamu se zlatou ozdobou pod ním. Ozdoba je obrázek, ne čára —
    tenká linka pod kapitálkou vypadá jako podtržení, ne jako výzdoba. */
 .nadpis-seznamu, main > h2 {
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.7rem;
   font-size: 1.1rem;
-  padding-bottom: 0.7rem;
-  background: url(./assets/ui/oddelovac.webp) bottom left / min(100%, 26rem) auto no-repeat;
+  padding-bottom: 1.15rem;
+  background: url(./assets/ui/oddelovac.webp) bottom left / min(100%, 24rem) 0.95rem no-repeat;
 }
 
 /* Tlačítka se kreslí v CSS, ne z obrázku: zůstanou ostrá v každé velikosti
@@ -230,8 +237,8 @@ button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
 
 .prazdno, .ceka, .spojeni { color: var(--tlumene); }
 .varovani { color: var(--akcent); margin-left: 0.35rem; cursor: help; }
-.chyba { color: #e07a6a; }
-.potvrzeno { color: #7fb96a; }
+.chyba { color: var(--chyba); }
+.potvrzeno { color: var(--ok); }
 
 /* Rám panelu je devítidílný obrázek (`nastroje/grafika/devitidil.py`): rohy
    se nekreslí znovu, strany se opakují. Výplň drží `background-clip:
@@ -323,10 +330,10 @@ button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
 }
 .skladani .radek .odebrat { grid-column: 8; }
 .skladani .radek:active { cursor: grabbing; }
-.skladani .uchyt { color: #5a5040; font-size: 0.9rem; letter-spacing: -0.2em; width: 1rem; }
+.skladani .uchyt { color: rgba(216, 168, 58, 0.45); font-size: 0.9rem; letter-spacing: -0.2em; width: 1rem; }
 .skladani .nevybrani { margin-top: 0.8rem; opacity: 0.5; }
 .skladani .nevybrani:not(:empty)::before { content: "Nevybraní"; display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); padding: 0.2rem 0.2rem; }
-.skladani button.jmeno { background: none; border: none; padding: 0.2rem 0.4rem; font: inherit; color: var(--text); text-align: left; }
+.skladani button.jmeno { background: none; border: none; box-shadow: none; padding: 0.2rem 0.4rem; font: inherit; color: var(--text); text-align: left; }
 .skladani button.jmeno small { color: var(--tlumene); }
 .skladani .nevybrany button.jmeno:hover { color: var(--akcent); }
 /* Čtvercová tlačítka jako ve hře: barva s číslem, tým béžový s číslem nebo „–“. */
@@ -441,8 +448,8 @@ input:focus, select:focus { outline: none; border-color: var(--zlato); box-shado
 .hlavicka-akce { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
 .hlavicka-akce h2 {
   margin: 0;
-  padding-bottom: 0.65rem;
-  background: url(./assets/ui/oddelovac.webp) bottom left / min(100%, 22rem) auto no-repeat;
+  padding-bottom: 1.1rem;
+  background: url(./assets/ui/oddelovac.webp) bottom left / min(100%, 20rem) 0.9rem no-repeat;
 }
 .sprava-akce .ovladani.ladeni { margin: 0 0 0.6rem; }
 .lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: stretch; }
@@ -493,14 +500,14 @@ input:focus, select:focus { outline: none; border-color: var(--zlato); box-shado
 }
 .zkusebni { margin: 2rem 0 0; padding: 0.8rem 1rem; }
 .zkusebni .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-.zkusebni a:not(.tlacitko) { color: var(--text); border: 1px solid #4a4133; background: #3a3126; border-radius: 4px; padding: 0.4rem 0.7rem; text-decoration: none; font-size: 0.9rem; }
+.zkusebni a:not(.tlacitko) { color: var(--zlato-svetle); border: 1px solid var(--zlato-tmave); background: linear-gradient(#4a2a1c, #2c1710 60%, #200f0a); border-radius: 3px; padding: 0.4rem 0.7rem; text-decoration: none; font-size: 0.9rem; }
 /* Zlatý „hlavní“ odkaz si musí nechat svoje pozadí. Dokud ho přebíjelo
    pravidlo výše, měl tmavé písmo na tmavém podkladu a vypadal zakázaně. */
 .zkusebni a.tlacitko { font-size: 0.9rem; padding: 0.4rem 0.7rem; }
 
 /* Veřejný řádek zápasu: kdo proti komu, pro lidi, kteří se jen dívají. */
 .verejny-zapas { padding: 0.7rem 1rem; margin: 0.8rem 0; color: var(--text); }
-.verejny-zapas .strany { color: #cbbfa8; }
+.verejny-zapas .strany { color: var(--tlumene); }
 
 /* Kopírování názvu lobby a hesla kliknutím na samotnou hodnotu. Tlačítko
    vypadá jako text s ikonou, ne jako tlačítko; toast vyskočí nad ním, aby se
@@ -512,6 +519,7 @@ button.kopirovatelne {
   gap: 0.3rem;
   background: none;
   border: none;
+  box-shadow: none;
   padding: 0.1rem 0.2rem;
   margin: 0;
   color: var(--text);
@@ -519,7 +527,7 @@ button.kopirovatelne {
   cursor: pointer;
   border-radius: 3px;
 }
-button.kopirovatelne:hover { background: #2c2620; }
+button.kopirovatelne:hover { background: rgba(216, 168, 58, 0.16); }
 button.kopirovatelne strong { color: var(--text); }
 .ikona-kopie { color: var(--tlumene); flex: none; }
 button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
@@ -557,7 +565,7 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 
 /* Dohrany nebo zruseny zapas v rezii: zaznam, ne ovladaci pult. */
 .zapas.odepsany { opacity: 0.75; }
-.verejny-zapas .verdikt { color: #e0c893; }
+.verejny-zapas .verdikt { color: var(--zlato-svetle); }
 
 /* Host taky hraje, takze i on ma svoji barvu videt jako pruh, ne jen jako
    radek v zrcadle. Stejny utvar jako na karte hrace. */
@@ -606,7 +614,7 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 .dialog-kopirovani { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin-top: 0.6rem; }
 .dialog-kopirovani strong { color: var(--text); }
 
-.dialog-legenda { color: #b3a68d; font-size: 0.92rem; margin-top: 0.5rem; }
+.dialog-legenda { color: var(--tlumene); font-size: 0.92rem; margin-top: 0.5rem; }
 .dialog-legenda strong { color: var(--text); }
 
 /* Verze v patičce — nenápadná, ale čitelná i na streamu. */
@@ -630,7 +638,7 @@ button.vytvorit {
   font-size: 1rem;
   padding: 0.7rem 1.3rem;
 }
-button.vytvorit:disabled { background: #2c2620; border-color: #4a4133; color: #6d6455; opacity: 1; }
+button.vytvorit:disabled { background: linear-gradient(#3a2f22, #241c14); border-color: #4a3a24; color: #7a6b52; text-shadow: none; box-shadow: inset 0 1px 0 rgba(255, 235, 190, 0.08); opacity: 1; }
 
 /* Tlačítka výsledku v barvě týmu; hráči drobně pod hlavním textem. */
 button.vysledek { display: inline-flex; flex-direction: column; align-items: center; color: #fff; font-weight: 700; padding: 0.5rem 0.9rem; line-height: 1.2; }
@@ -686,12 +694,12 @@ button.plus {
   border-color: var(--akcent);
   color: #241d10;
 }
-button.plus:hover { filter: brightness(1.1); }
+
 .skladani .jmeno { padding: 0.2rem 0.4rem; max-width: 16rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .skladani .jmeno small { color: var(--tlumene); }
 .skladani .elo { text-align: right; color: var(--tlumene); font-variant-numeric: tabular-nums; white-space: nowrap; }
 button.odebrat { width: 1.9rem; height: 1.9rem; min-width: 1.9rem; box-sizing: border-box; padding: 0; margin: 0; font-size: 1.1rem; line-height: 1; color: var(--tlumene); justify-self: end; }
-button.odebrat:hover { color: #e07a6a; }
+button.odebrat:hover { color: var(--chyba); }
 
 /* Tlačítka hosta nad snímkem dialogu. */
 .hostovi { display: flex; gap: 0.6rem; flex-wrap: wrap; margin: 0.6rem 0 0.9rem; }
@@ -700,12 +708,12 @@ button.odebrat:hover { color: #e07a6a; }
    (chybějící heslo) žlutě — nebrání hře. */
 .kontroly { list-style: none; padding: 0; margin: 0.4rem 0 0; columns: 2; column-gap: 1.5rem; }
 .kontroly li { break-inside: avoid; padding: 0.15rem 0; }
-.kontroly li.ok { color: #92c47e; }
-.kontroly li.spatne { color: #e2695c; font-weight: 700; }
-.kontroly li.varovani { color: #e0c46a; }
+.kontroly li.ok { color: var(--ok); }
+.kontroly li.spatne { color: var(--chyba); font-weight: 700; }
+.kontroly li.varovani { color: var(--varovani); }
 .kontroly li.jedno { color: var(--tlumene); }
 .kontroly .znak { display: inline-block; width: 1.2rem; }
-.varovani { color: #e0c46a; }
+.varovani { color: var(--varovani); }
 .dalsi-nastaveni { margin-top: 0.6rem; }
 .dalsi-nastaveni summary { cursor: pointer; color: var(--tlumene); }
 .dalsi-nastaveni summary .zaloha { margin: 0; }
@@ -722,7 +730,7 @@ button.odebrat:hover { color: #e07a6a; }
 
 /* Vyber civilizace s erbem (48 px) jako ve hre: tlacitko + vlastni seznam. */
 .vyber-civ { position: relative; }
-.vyber-civ-tlacitko { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; font-size: 1rem; }
+.vyber-civ-tlacitko { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; font-size: 1rem; font-family: "Cinzel", Georgia, serif; }
 .vyber-civ-tlacitko > span:first-of-type { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vyber-civ-tlacitko .sipka { margin-left: auto; color: var(--tlumene); }
 .vyber-civ .erb { height: 48px; width: auto; flex: none; }
@@ -763,16 +771,16 @@ button.odebrat:hover { color: #e07a6a; }
 .sekce-kontrola, .sekce-krok { border-top: 1px solid rgba(216, 168, 58, 0.3); margin-top: 1rem; padding-top: 0.6rem; }
 .zahlavi-sekce { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .zahlavi-sekce h3 { margin: 0 0 0.3rem; font-size: 1.15rem; }
-.zahlavi-sekce .fajfka { font-size: 2.2rem; line-height: 1; font-weight: 700; color: #9ccf8a; }
-.sekce-krok.finale { border-color: #9ccf8a; }
-.sekce-krok.finale h3 { color: #9ccf8a; font-size: 1.4rem; }
+.zahlavi-sekce .fajfka { font-size: 2.2rem; line-height: 1; font-weight: 700; color: var(--ok); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
+.sekce-krok.finale { border-color: rgba(168, 196, 124, 0.55); }
+.sekce-krok.finale h3 { color: var(--ok-svetle); font-size: 1.4rem; }
 .sekce-krok .zahlavi-sekce { justify-content: center; position: relative; }
 .sekce-krok .zahlavi-sekce .fajfka { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .sekce-krok .hostovi { justify-content: center; }
 .sekce-krok .hostovi .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .sekce-kontrola .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 button.odebrat-zapas { color: var(--tlumene); }
-button.odebrat-zapas:hover { color: #e07a6a; }
+button.odebrat-zapas:hover { color: var(--chyba); }
 .hledani-lobby .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 .stav-lobby { display: inline-flex; align-items: center; gap: 0.3rem; }
 button.kopirovatelne.jen-ikona { padding: 0.15rem 0.3rem; }
@@ -817,7 +825,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .skladani.jen-ke-cteni .vyber-civ-tlacitko .sipka { visibility: hidden; }
 
 /* Řazení tabulky přihlášených v režii: hlavička je tlačítko, šipka říká směr. */
-.seznam th button.razeni { background: none; border: none; padding: 0; margin: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
+.seznam th button.razeni { background: none; border: none; box-shadow: none; padding: 0; margin: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
 .seznam th button.razeni:hover, .seznam th button.razeni.aktivni { color: var(--akcent); }
 .seznam th .sipka-razeni { font-size: 0.7rem; opacity: 0.6; }
 .seznam th button.razeni.aktivni .sipka-razeni { opacity: 1; }
@@ -917,15 +925,15 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible { color: var(--ak
 .toast-zmeny { display: flex; align-items: center; gap: 0.6rem; background: linear-gradient(rgba(46, 27, 18, 0.97), rgba(26, 15, 10, 0.98)); border: 1px solid var(--zlato); border-radius: 2px; padding: 0.5rem 0.6rem 0.5rem 0.8rem; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6); animation: toast-nahoru 0.2s ease-out; }
 .toast-zmeny > span { flex: 1; }
 .toast-zmeny button.zavrit { padding: 0 0.4rem; font-size: 1.1rem; line-height: 1; color: var(--tlumene); background: none; border: none; }
-.toast-zmeny button.zavrit:hover { color: #e07a6a; }
+.toast-zmeny button.zavrit:hover { color: var(--chyba); }
 @keyframes toast-nahoru { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* Křížek na zavření dohraného zápasu v pravém horním rohu karty; zavřený
    zápas (jen v debug módu) je zašedlý s tlačítkem na otevření. */
 .zapas { position: relative; }
-.zapas button.zavrit-zapas { position: absolute; top: 0.7rem; right: 0.7rem; width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; }
-.zapas button.zavrit-zapas:hover { color: #e07a6a; border-color: #4a4133; }
-.zapas button.zavrit-zapas.otevrit { width: auto; height: auto; padding: 0.3rem 0.6rem; font-size: 0.85rem; background: #3a3126; border-color: #4a4133; }
+.zapas button.zavrit-zapas { position: absolute; top: 0.7rem; right: 0.7rem; width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.zavrit-zapas:hover { color: var(--chyba); border-color: var(--zlato-tmave); }
+.zapas button.zavrit-zapas.otevrit { width: auto; height: auto; padding: 0.3rem 0.6rem; font-size: 0.85rem; background: linear-gradient(#4a2a1c, #2c1710); border-color: var(--zlato-tmave); }
 .zapas.zavreny { opacity: 0.45; }
 
 /* ------------------------------------------------------------------ *
@@ -958,9 +966,3 @@ a:hover { color: var(--zlato-svetle); }
 .prepinac {
   font-family: "Cinzel", Georgia, serif;
 }
-
-/* Sekce „Výborně, můžete hrát!“ — zelená z původního návrhu je v téhle
-   paletě cizí; zlatá se zeleným nádechem drží s ostatním. */
-.zahlavi-sekce .fajfka { color: #a8c47c; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
-.sekce-krok.finale { border-color: rgba(168, 196, 124, 0.55); }
-.sekce-krok.finale h3 { color: #bcd694; }

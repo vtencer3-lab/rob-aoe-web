@@ -18,6 +18,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | Jak večer probíhá, co který uživatel vidí | `README.md`, sekce „Jak večer probíhá“ |
 | Které větve kam nasazují a jak se pracuje s `experimental` | `docs/nasazeni-jouki-cz.md` §1, §1.1 |
 | Verzování včetně tvaru `X.Y.Z-A.B` na pokusné větvi a pravidel při mergi | `docs/nasazeni-jouki-cz.md` §2, §2.1; kód `scripts/verze.ts` |
+| Vzhled: paleta, písmo, rámy, generování obrázků | `docs/grafika.md` |
 | Rozjetí, mapa kódu, pasti, kontrolní seznam před pushem | `CONTRIBUTING.md` |
 | Architektura, datový model, API, bezpečnostní hranice (k 6. 9.) | `docs/analyza-projektu.md` |
 | Pracovní postup dev → main, verzování, Coolify, migrace | `docs/nasazeni-jouki-cz.md` |

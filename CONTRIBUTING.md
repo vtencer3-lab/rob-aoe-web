@@ -13,6 +13,7 @@ Co kde hledat:
 | **tenhle soubor** | jak to rozjet na cizím stroji, jak je to uvnitř poskládané a o co se nezakopnout |
 | `docs/nasazeni-jouki-cz.md` | **jak se pracuje: větev `dev`, verze, release do `main`, automatické nasazení na jouki.cz** |
 | `docs/prehled-praci-a-zameru.md` | **navazuješ na rozdělanou práci?** záměry a rozhodnutí za každou funkcí, co se zamítlo, co čeká na rozhodnutí, historie verzí, poučení |
+| `docs/grafika.md` | **vzhled:** paleta, písmo, rámy, odkud jsou obrázky a jak je vygenerovat znovu; pravidla pro nové UI |
 | `docs/analyza-projektu.md` | technická analýza: architektura, datový model, API, rizika |
 | `docs/analyza-automaticke-hledani-lobby.md` | seznam lobby ze hry (Worlds Edge): jak se hledá lobby, **§6 tabulka klíčů nastavení lobby a slotů** |
 | `docs/nasazeni-u-roba.md` | alternativní nasazení na Robův vlastní stroj |
