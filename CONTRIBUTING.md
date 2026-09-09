@@ -110,12 +110,13 @@ Backend, `src/`:
 | `auth/` | Steam OpenID (`steamOpenId.ts`), sezení, `devRoutes.ts` |
 | `db/` | přístup k databázi, jedna tabulka = jeden modul |
 | `http/routes/` | `events.ts` (akce, nastavení lobby), `matches.ts` (zápasy, hledání lobby, `DELETE /api/zapas/:id`), `kontrolaLobby.ts` („Zkontrolovat lobby“), `zkusebni.ts` (zkušební hráči na dev), `stream.ts` (SSE) |
-| `realtime/` | `hub.ts` (jeden kanál), `akceStav.ts` (staví stav), `redakce.ts` (zaslepení), `fazeLobby.ts` (lobby / hraje se, s pojistkou proti výpadku v seznamu) |
+| `realtime/` | `hub.ts` (jeden kanál), `akceStav.ts` (staví stav), `redakce.ts` (zaslepení), `fazeLobby.ts` (lobby / hraje se, s pojistkou proti výpadku v seznamu), `pritomnost.ts` (zavření poslední karty odhlásí z akce) |
 | `matches/` | `composition.ts` (sedadla, PIN), `stateMachine.ts`, `hledaniLobby.ts` (výběr lobby podle Steam ID), `seznamLobby.ts` (cache seznamu), `sledovaniLobby.ts` (každých 10 s hlídá, jestli lobby ještě stojí), `zkusebniHraci.ts` |
 | `external/worldsEdgeLobby.ts` | stahuje a rozbaluje seznam otevřených lobby ze hry (stránkované po 100, sloty i nastavení) — klíče viz `docs/analyza-automaticke-hledani-lobby.md` §6 |
 | `aoe/lobbyUri.ts` | rozbor a stavba `aoe2de://` — malé a důležité |
 | `shared/types.ts` | typy sdílené s frontendem, importuje se přímo z `web/` |
 | `shared/verze.ts` | verze webu; mění se jen přes `npm run verze` |
+| `shared/aktivita.ts` | lhůty přihlášky (15 min, +5 za kliknutí, odstup 4 min) a `jeAktivni()`/`nabidnoutJsemTu()` — jedno místo pro server i prohlížeč |
 | `shared/sestava.ts`, `shared/strany.ts` | pravidla sestavy (barvy, týmy, civilizace, Coop Kings) a strany zápasu — jedno místo pro server i režii |
 | `shared/lobbyKontrola.ts` | očekávané nastavení lobby, číselníky hodnot a `zkontrolujLobby()` — řádky ve čtyřech stavech (ok / spatne / varovani / jedno) |
 | `shared/mapy.ts`, `shared/civilizace.ts` | tabulky id → název vygenerované z jazykového souboru hry (viz „Data ze hry“) |
@@ -127,11 +128,14 @@ Frontend, `web/src/`:
 |---|---|
 | `App.tsx` | rozhoduje, kdo vidí kterou obrazovku |
 | `useAkceStav.ts` | SSE a záložní dotazování — **přečti si komentář nahoře** |
-| `views/SpravaAkce.tsx` | panel akce jako herní lobby: název + Ukončit v záhlaví, vlevo sestava (children), vpravo `NastaveniLobby.tsx` (jako herní Game Settings, „–“ = je to jedno; každá změna se propíše hned, „Uložit“ dělá snímek) |
+| `views/SpravaAkce.tsx` | panel akce jako herní lobby: v záhlaví „Nastavení Lobby“, vlevo sestava (children), vpravo `NastaveniLobby.tsx` (jako herní Game Settings, „–“ = je to jedno; každá změna se propíše hned, „Uložit“ dělá snímek preset) |
+| `views/NazevAkce.tsx` | název akce nad tabulkou přihlášených; adminovi je celý nadpis tlačítkem, které ho promění v pole rostoucí s textem |
+| `vyska.ts` | plynulá změna výšky panelu, když v něm přibude nebo ubude řádek (měří spočtenou výšku, ne obalový obdélník) |
+| `views/SeznamPrihlasenych.tsx` | tabulka přihlášených: řazení, tažení, karta statistik, sloupec stavu (meče / odpočet / „Zzz“), tlačítko „Jsem tu!“ ve vlastním sloupci, přejezd řádků při usínání |
 | `views/StatistikyHrace.tsx` | karta se všemi žebříčky hráče v pravém dolním rohu po najetí na jméno v tabulce přihlášených |
 | `historie.ts`, `views/Toasty.tsx` | historie kroků (Ctrl+Z / Ctrl+Y) nad sestavou a nastavením lobby: věty o změně, zvýraznění (`blikni`), toasty vpravo dole nad kartou statistik |
 | `views/Prepinac.tsx` | přepínač s knoflíkem (Admin/User View v záhlaví, Debug u verze) — jen pro adminy, stav v localStorage |
-| `views/Rezie.tsx` | panel režie: zápasy, Spectate, kontrola lobby, výsledky po stranách, odebrání zrušeného zápasu |
+| `views/Rezie.tsx` | zápasy: nahoře běžící (`Rezie`), pod stránkou dohrané a zrušené (`HistorieZapasu`). Karta je jedna; bez `obsluha` se vykreslí jen ke čtení, takže ji vidí i hráči. Sbalit ji může každý |
 | `views/Skladani.tsx`, `skladani.ts`, `tahani.ts` | skládání sestavy: barva a tým jako ve hře, civilizace přes `VyberCivilizace.tsx` (erby z `civErby.ts`), pořadí slotů přetažením. Rozpracovaná sestava je **na serveru u akce** (`akce.skladani`, `PUT /api/akce/:id/skladani`) a přes SSE ji vidí všichni admini; `useSkladani` drží lokální kopii jen do potvrzení serverem |
 | `views/ObrazovkaHosta.tsx` | obrazovka hosta: kroky „Zakládáš!“ → „Kontrola lobby“ → „Výborně, můžete hrát!“, snímek herního dialogu |
 | `views/KontrolaLobby.tsx` | sekce „Kontrola lobby“, **jedna a tatáž pro hosta i režii**; sama se opakuje po 5 s, dokud se v lobby sedí |

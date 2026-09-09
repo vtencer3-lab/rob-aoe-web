@@ -276,6 +276,49 @@ Naměřeno na prostřední dlaždici (detail = průměrný rozdíl sousedních s
 | bez srovnání (`--vyhlad 0`) | 2,40 | 5,75× | 7,29 |
 | **odečtená nízká frekvence (`--vyhlad 1.0`)** | **2,41** | **4,45×** | **5,93** |
 
+## 4.3 Praporec v záhlaví: vcelku, ne skládaný
+
+Do 0.24.3 se praporec v hlavičce skládal `border-image`em ze tří dílů: dva
+krajní nárožníky v původním poměru a prostřední dlaždice dokola. Mělo to dvě
+vady, které se nedaly odstranit najednou. Dlaždice je vidět — ať se srovná
+jakkoliv, na šířku hlavičky se opakuje třikrát a oko si toho všimne. A střed se
+svisle natahoval podle výšky nadpisu, takže se látka mačkala.
+
+Od 0.24.4 visí obrázek vcelku (`praporec-cely.webp`, 1600 × 502 po exportu).
+Uživatel k tomu dodal nový render s odstraněným pozadím; ten původní skládaný
+(`praporec.webp`) zůstává v repu, kdyby se k němu chtělo vrátit.
+
+**Ořez plátna.** Render měl nad látkou 116 px a pod ní 82 px prázdna. Přesně to
+se předtím dorovnávalo ručním posunem prvku. Po ořezu na kresbu (1962 × 444)
+sedí sám:
+
+```bash
+python - <<'PY'
+from PIL import Image
+im = Image.open("praporec_cely.png")
+im.crop((43, 116, 2005, 560)).save("praporec_cely_orez.png")
+PY
+python nastroje/grafika/export.py praporec_cely_orez.png     -o web/src/assets/ui/praporec-cely.webp -q 86 --sirka 1600
+```
+
+**Usazení v CSS.** Tři věci, každá kvůli konkrétní chybě:
+
+| Vlastnost | Proč |
+|---|---|
+| `background-size: contain` | `100% 100%` vyplní box, ať má jakýkoliv tvar, a látka se zmáčkne |
+| `box-sizing: border-box` | jinak se odsazení přičte k výšce spočítané z `aspect-ratio` |
+| `max-width: 860px` | poměr 4,42:1 znamená, že na 1920px okně by praporec vyrostl na 560 px |
+
+Poloha nadpisu je v procentech, ne v pixelech: bordura je v obrázku na 61,7 %
+výšky, látka začíná pod tyčí na 2 %, takže střed textu má vyjít ve 45 % té
+vzdálenosti. Spodní odsazení v procentech šířky to při poměru 4,42:1 zařídí
+v každé velikosti. Naměřeno po usazení: 46,2 % proti 45 v předloze uživatele.
+
+**Měřit, ne odhadovat.** Všechny tyhle hodnoty vznikly odečtem z renderu přes
+Playwright (`_grafika/nastroje/`, skripty `mereni.mjs`, `mezera.mjs`,
+`text_x.mjs`, `vysky.mjs`). Dvakrát se stalo, že odhad ze snímku ukázal opačný
+směr, než jaký měření potvrdilo.
+
 ## 5. Co se při tom naučilo
 
 - **Stylová LoRA `koshishatsi_flux2` scénu zabije.** Je natrénovaná na

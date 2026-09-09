@@ -18,7 +18,8 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | Jak večer probíhá, co který uživatel vidí | `README.md`, sekce „Jak večer probíhá“ |
 | Které větve kam nasazují a jak se pracuje s `experimental` | `docs/nasazeni-jouki-cz.md` §1, §1.1 |
 | Verzování včetně tvaru `X.Y.Z-A.B` na pokusné větvi a pravidel při mergi | `docs/nasazeni-jouki-cz.md` §2, §2.1; kód `scripts/verze.ts` |
-| Vzhled: paleta, písmo, rámy, generování obrázků | `docs/grafika.md` |
+| Vzhled: paleta, písmo, rámy, generování obrázků, praporec v záhlaví | `docs/grafika.md` |
+| Jak se vrátit vydaný release zpátky | `docs/nasazeni-jouki-cz.md` §3.7 |
 | Rozjetí, mapa kódu, pasti, kontrolní seznam před pushem | `CONTRIBUTING.md` |
 | Architektura, datový model, API, bezpečnostní hranice (k 6. 9.) | `docs/analyza-projektu.md` |
 | Pracovní postup dev → main, verzování, Coolify, migrace | `docs/nasazeni-jouki-cz.md` |
@@ -29,13 +30,13 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 ---
 
-## 1. Stav k 8. 9. 2026
+## 1. Stav k 9. 9. 2026
 
 | | |
 |---|---|
 | `origin/main` | 0.24.37, nasazeno na <https://jouki.cz/aoe> (PR #12, 9. 9. 2026); stav před ním nese značku `v0.19.1` |
 | `origin/dev` | 0.24.37, totéž co `main`, nasazeno na <https://jouki.cz/aoe/dev> |
-| `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; zatím prázdné kolo |
+| `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; od té doby prázdné a **zaostalé o celý `dev`** — před dalším pokusem přezaložit (§2.1 nasazení) |
 | Migrace | 001–014, poslední `014_archiv_zapasu.sql`; aplikované na všech třech databázích (ověřeno 9. 9. 2026 dotazem na `prihlaska` a `zapas`) |
 | Testy | backend hermetické 233, databázové 147, frontend 204 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -43,7 +44,8 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
 PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
-kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) 9. 9. Před releasem se na dosavadní `main` věší značka
+kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) 9. 9.
+Před releasem se na dosavadní `main` věší značka
 `vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
 [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
 **Release se dělá jen na výslovný pokyn** („pushni do mainu“).
@@ -380,7 +382,18 @@ přeskočí se, když je řádek mladší než 15 min **a má žebříčky**; po
 Worlds Edge `getPersonalStat` a Steam (profil, hodiny; skrytý profil =
 `null`, chybějící klíč = nesahat).
 
-### 3.12 Grafický kabátek (v `dev` od 0.18.0)
+### 3.11 Drobnosti a easter egg
+
+- Štít se lvem (od uživatele 8. 9.) v záhlaví vlevo, 172 px,
+  `web/src/assets/logo.webp`. Přesahuje přes levý konec praporce záporným
+  okrajem a **vede na kanál Brohemians** v nové záložce (od 0.24.15).
+- Kliknutí na „RobDiesALot“ v nadpisu přehraje `crashout.mp3`
+  (`web/src/assets/crashout.mp3`, verze z 8. 9. — „Rob - Crashout.mp3“
+  z uživatelovy složky zvuků). Bez autoplay práv ticho, žádná chyba.
+- Georgia v čtverečcích: `lining-nums`. Nadpisy sekcí sjednocené na jednu
+  velikost. Rovnoměrné velikosti křížků „×“.
+
+### 3.12 Grafický kabátek (v `main` od 0.18.0)
 
 **Záměr.** Uživatel doslova: „chtěl bych zkusit dát webové stránce kompletní
 grafický kabátek… layout chci aby prakticky zůstal 1:1, pouze na to chci
@@ -550,16 +563,72 @@ když spadne poslední, běží odklad 90 s. Obnovení stránky i krátký výpa
 se do odkladu vejdou a odhlášení zruší. Restart serveru mapu vyprázdní, takže
 po nasazení se neodhlásí nikdo — chyba na bezpečnou stranu.
 
-### 3.11 Drobnosti a easter egg
+### 3.18 Záhlaví: praporec vcelku, štít jako odkaz, název akce jako tlačítko
 
-- Logo (lev se štítem, od uživatele 8. 9.) v záhlaví vlevo od nadpisu,
-  64 px, `web/src/assets/logo.webp` (192 px, oříznuté o průhledný okraj,
-  17 kB).
-- Kliknutí na „RobDiesALot“ v nadpisu přehraje `crashout.mp3`
-  (`web/src/assets/crashout.mp3`, verze z 8. 9. — „Rob - Crashout.mp3“
-  z uživatelovy složky zvuků). Bez autoplay práv ticho, žádná chyba.
-- Georgia v čtverečcích: `lining-nums`. Nadpisy sekcí sjednocené na jednu
-  velikost. Rovnoměrné velikosti křížků „×“.
+**Praporec.** Do 0.24.3 byl skládaný z krajních dílů a dlaždicovaného středu
+(`border-image`). Ať se dlaždice udělala jakkoliv, na šířku hlavičky bylo vidět,
+kde začíná a končí, a látka se svisle mačkala podle výšky nadpisu. Od 0.24.4
+visí obrázek vcelku, v poměru předlohy: prvek nese `aspect-ratio`, kreslí se
+přes `contain` (to nedeformuje, ať má box jakýkoliv tvar) a `box-sizing:
+border-box`, jinak by se odsazení přičetlo k výšce spočítané z poměru.
+
+Obrázek je oříznutý na kresbu (1962 × 444). Předtím měl nad látkou 116 px
+prázdného plátna a pod ní 82 px — a přesně to se dorovnávalo ručním posunem.
+Šířka je zastropovaná na 860 px, jinak by praporec na širokém monitoru vyrostl
+přes půl obrazovky. Text sedí v látce podle poměru, ne v pixelech: bordura je
+na 61,7 % výšky, tyč zabírá vršek, takže střed nápisu vychází ve 45 % té
+vzdálenosti a drží v každé velikosti.
+
+**Štít** vede na kanál Brohemians v nové záložce (rozehraný večer se nemá
+zavírat kvůli prokliku). Přesahuje přes levý konec praporce záporným okrajem,
+takže zůstává v toku a nic pod ním nepřeskakuje.
+
+**Název akce** stojí od 0.24.11 nad tabulkou přihlášených, ne v panelu akce:
+patří celému večeru, ne nastavení hry. Vidí ho všichni; adminovi je celý nadpis
+tlačítkem, které ho promění v pole. Tužka vedle textu se objeví pod kurzorem
+a je klikací taky. Panel akce se místo toho jmenuje „Nastavení Lobby“ a stejný
+nadpis uvnitř sloupce s nastavením odešel — říkal totéž podruhé.
+
+Pole pro přejmenování roste s textem (šířku drží neviditelná kopie nápisu)
+a je vyrovnané tak, aby se při přepnutí nehnul ani text, ani zbytek stránky:
+záporný svislý okraj bere zpátky jeho odsazení a rámeček (naměřeno 8,38 px),
+záporný levý sedí na tomtéž vytažení, jaké má rámeček pod kurzorem.
+
+### 3.19 Sloupec stavu: odpočet, „Zzz“, meče a bublina
+
+Poslední dva sloupce tabulky přihlášených jsou oddělené schválně. V jednom by
+šířka tlačítka „Jsem tu!“ odsouvala odpočet a sloupec by se řádek od řádku
+neshodoval; a sloupec s tlačítkem má pevnou šířku, jinak by se při jeho
+objevení roztáhl z 20 na 91 px a posunul všechny ostatní.
+
+Značka je vždycky jedna ze tří a stojí na stejném místě: zkřížené meče (hraje
+zápas), odpočet, nebo „Zzz“. Odpočet vidí hráč u sebe a admin u všech —
+potřebuje přehled, kdo za chvíli usne. Minuty jsou na dvě číslice, aby se
+šířka buňky s každou vteřinou neměnila.
+
+**Bublina** je vlastní (`.napoveda`, text v `data-napoveda`), ne systémový
+`title`: ta systémová čeká vteřinu a vypadá jako z jiné stránky. U spáče říká,
+jak dlouho je pryč.
+
+### 3.20 Animace: přejezd řádků a výška panelu
+
+**Řádky** přejíždějí na nové místo technikou FLIP: ve stejném snímku, ve kterém
+React vykreslil nové pořadí, se řádek vrátí tam, kde byl, a nechá se dojet.
+Měří se poloha **vůči tabulce**, ne vůči oknu ani stránce — jinak se do uložené
+polohy promítne odrolování nebo cokoliv, co se nad tabulkou objeví, a řádek pak
+odlétá mimo seznam. Pojistkou je i zábradlí: posun delší než celá tabulka je
+známka staré polohy a animace se vynechá.
+
+Přejíždí se **jen přeskládání**. Když hráč přibude nebo zmizí, posunou se řádky
+z docela jiného důvodu a přejezd z toho dělal poskakující zmatek.
+
+**Výška panelu** přihlášených se při výběru hráče do sestavy zkracuje plynule
+(`web/src/vyska.ts`, 200 ms). Měří se spočtená výška, ne obalový obdélník:
+panel je `content-box` a jeho obdélník nese i 34px rám, takže dosadit jedno za
+druhé znamenalo pustit přejezd o 80 px vedle.
+
+Obojí respektuje `prefers-reduced-motion` a při tažení řádku myší se animace
+vynechá.
 
 ---
 
@@ -600,6 +669,17 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
    zatím uzavřeno jako nemožné.
 5. Schovaný odkaz „Kdyby to zamrzlo“ na obrazovce hosta — zatím schovat,
    možná vrátit jinde.
+6. **Archiv odehraných večerů** (uživatel 9. 9.): procházet akce a v nich
+   zápasy s kompletním nastavením, týmy a civilizacemi. Data pro to od 0.21.0
+   v databázi jsou — viz §3.16, včetně toho, co ještě chybí. Obrazovka
+   navržená není.
+7. **Lhůty aktivity nastavitelné adminem** (uživatel 8. 9.): dnes je patnáct
+   minut, pět za kliknutí a čtyřminutový odstup pevně v `shared/aktivita.ts`.
+   Práh pro „Jsem tu!“ se z lhůty už počítá, takže se změní jedním číslem.
+8. **Vlastní rozbalovací seznam místo `<select>`** (uživatel 8. 9.: „prostě
+   jsi měl udělat ul li seznamy, které by se chovali identicky, ale to teď
+   nedělejme“). Nativní `<select>` neumí obarvit zvýraznění položky a
+   `appearance: base-select` se neosvědčilo (viz komentář v `styl.css`).
 
 Drobné známé nedodělky:
 
@@ -613,7 +693,7 @@ Drobné známé nedodělky:
 
 ---
 
-## 6. Historie verzí (7.–8. 9. 2026)
+## 6. Historie verzí (7.–9. 9. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 
@@ -637,9 +717,37 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.16.1 | 00:37 | Dialog Create Lobby vycentrovaný |
 | 0.16.2 | 00:44 | Statistiky bez žebříčků se obnoví i v cache okně; **release PR #6** |
 | 0.16.3 | 00:54 | Lišta přes celou šířku, sticky; **release PR #7** |
+| 0.16.4-16.4 | 8. 9. ~01:30 | Založena větev `experimental`, verzování `X.Y.Z-A.B` |
+| 0.16.4-16.x | 02:00–19:00 | Grafický kabátek: paleta z loga, pozadí, rámy, praporec, ozdoby, písmo Cinzel; dvě kola připomínek |
+| 0.17.0 | 19:30 | Hotfix: žádný strop hráčů na barvě ani v týmu; **release do `main`** |
+| 0.17.1 | 19:40 | Velikost mapy podle unikátních barev, ne podle hlav |
+| 0.18.0 | 20:49 | Sloučení kabátku do `dev`; **release PR #9** |
+| 0.18.1 | 20:57 | Čitelnost obou řádků tlačítka Spectate; **release** |
+| 0.19.0 | 21:13 | Dohrané zápasy pod běžící, sekce „Historie zápasů“ |
+| 0.19.1 | 21:18 | Tmavý reliéf na zašedlém Spectate; **release PR #11** |
+| 0.20.0 | 22:01 | Lhůta aktivity přihlášek, „Jsem tu!“, tabulka nad panel, skok na nový zápas (migrace 013) |
+| 0.21.0 | 22:18 | Otisk nastavení a ELO k zápasu (migrace 014), vlastní řádek zvýrazněný, tlačítka do hlavičky |
+| 0.22.0 | 22:48 | Historie zápasů i pro hráče, sbalování karty, odchod ze stránky odhlašuje z akce |
+| 0.22.1 | 23:00 | „Ukončit akci“ nad panel, přejezd řádků při usínání |
+| 0.22.2 | 23:15 | Rám, praporec a oddělovač odklíčované přes Scenario |
+| 0.23.0 | 23:20 | Vlastní odpočet u hráče, „Jsem tu!“ už minutu po obnovení |
+| 0.23.1 | 23:24 | Lock Teams zapnutý ve výchozím presetu |
+| 0.23.2 | 23:30 | Prohlubeň panelu lícuje s rámem; oprava odlétajících řádků |
+| 0.23.3 | 23:40 | Praporec: srovnat tón, ne kresbu; posun času po minutě |
+| 0.24.0 | 23:45 | Přejmenování akce |
+| 0.24.1–0.24.3 | 23:47–23:55 | Odpočet nehýbe sloupcem; tužka tlumená; tón praporce |
+| 0.24.4–0.24.10 | 9. 9. 00:03–00:51 | Praporec vcelku a bez deformace, ořez plátna, kompozice záhlaví, odstupy nadpisu |
+| 0.24.11–0.24.16 | 01:01–01:23 | Název akce nad tabulku a klikací, panel „Nastavení Lobby“, štít 172 px a odkaz na kanál, rostoucí pole |
+| 0.24.17–0.24.24 | 01:27–01:48 | Pořadí ve stavovém sloupci, hover nadpisu, zkušební tlačítka nahoru, `bez-vzhledu` místo přebíjení |
+| 0.24.25–0.24.30 | 01:50–02:11 | Pole neposouvá stránku, stín ozdob v panelech, sloupce se nehýbou, vlastní bublina |
+| 0.24.31–0.24.37 | 02:13–02:31 | Opravy animací (FLIP vůči tabulce, jen přeskládání, výška v content-boxu), kratší hlášky; **release PR #12 (0.24.37)** |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
+
+Od 0.19.1 dál je většina řádků reakce na screenshot s připomínkou; proto jich
+je tolik a proto jsou po jedné věci. Verze se zvedá u každé změny chování,
+i když je to jen odstup nebo barva.
 
 ---
 
@@ -669,3 +777,36 @@ zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
   a nechat zkontrolovat, hlásit číslo verze.
 - Čas v databázi je UTC, uživatel je v CEST (UTC+2); při porovnávání
   s časem nasazení a screenshotů to sedí až po přepočtu.
+
+Přibylo 8.–9. 9. při kabátku a kolech připomínek:
+
+- **`all: unset` platí jen v klidovém stavu.** Tlačítko, které se nemá tvářit
+  jako tlačítko, dostane pod kurzorem hnědý přechod z obecného
+  `button:hover:enabled`. Dvakrát jsem to zkusil přebít vlastním pravidlem
+  a dvakrát to bylo špatně; správně je vyjmout ho z obecných pravidel
+  (třída `bez-vzhledu`).
+- **`:not(.trida)` zvedne váhu selektoru o třídu.** Vyjmutí přes `:not()`
+  přebilo pravidlo pro zlatá tlačítka, které stálo na tom, že je specifičtější,
+  a „+“ zhnědlo. Použít `:not(:where(.trida))` — `:where()` váhu nemění.
+- **Rozměry se musí měřit ve stejné veličině, v jaké se zapisují.** Panel je
+  `content-box`; jeho `getBoundingClientRect()` nese i 34px rám, takže dosazení
+  do `height` znamenalo o 80 px vedle. Na animaci výšky brát
+  `getComputedStyle(el).height`.
+- **FLIP měřit vůči rodiči, ne vůči oknu ani stránce.** Vůči oknu do polohy
+  vleze odrolování, vůči stránce cokoliv, co se nad prvkem objeví. Obojí se
+  projeví tak, že prvek přiletí odněkud úplně mimo.
+- **Animovat jen to, co je opravdu přeskládání.** Přibytí a úbytek řádku posune
+  ostatní z jiného důvodu; přejezd z toho udělá poskakující zmatek.
+- **Dvoje hodiny v jedné komponentě se rozejdou.** Odpočet tikal po vteřinách,
+  seznam po dvaceti — mezi tím byl řádek „aktivní“ bez odpočtu i bez „Zzz“,
+  tedy prázdný. Buď jedny hodiny, nebo krajní stav ošetřit (00:00).
+- **Textové pole si nad text drží rezervu** (naměřeno 10–11 px, nezávisle na
+  délce). Kdo šířku pole počítá z neviditelné kopie textu, musí ji připočíst,
+  jinak se text odroluje a první písmeno zmizí.
+- **Sloupce tabulky se mění podle obsahu.** Tlačítko, které se občas objeví,
+  potřebuje sloupec s pevnou šířkou, jinak přeskládá celou tabulku.
+- **Ověřovat hover skutečným najetím myší**, ne nasazením třídy: obecná
+  pravidla pro `:hover` se jinak nikdy neprojeví a chyba se najde až na dev.
+- **Zpětné uvozovky v bash heredocu.** `python -c "…"` s uvozovkami je nechá
+  vyhodnotit shellem a v komentáři pak zůstane díra. Psát skript do
+  scratchpadu heredocem s `<<'PYEOF'`.
