@@ -17,6 +17,7 @@ import {
   REZIMY,
   SADY_CIVILIZACI,
   SUROVINY,
+  VITEZSTVI,
   ZASKRTAVATKA,
   zkontrolujLobby,
   type KontrolaLobbyVysledek,
@@ -43,8 +44,12 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   // ne volné číslo, a co panel nenabízí, nemá projít ani přes API.
   const p = cislo(t["populace"]);
   if (p !== undefined && p in POPULACE) v.populace = p;
+  // Vítězství jen z herní nabídky. Do 9. 9. 2026 tu stálo `vit === 1 ||
+  // vit === 9`, takže Time Limit, Score a Last Man Standing server tiše
+  // zahodil — panel je poslal, zpátky přes SSE přišla stará hodnota a výběr
+  // se sám přepnul na původní.
   const vit = cislo(t["vitezstvi"]);
-  if (vit === 1 || vit === 9) v.vitezstvi = vit;
+  if (vit !== undefined && vit in VITEZSTVI) v.vitezstvi = vit;
   if (typeof t["cheaty"] === "boolean") v.cheaty = t["cheaty"];
 
   // Další nastavení: číselníky jen z hodnot, které hra opravdu vydává;

@@ -880,6 +880,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.25.10 | 13:35 | Sudden Death taky zamyká svoje zaškrtávátko a nasazuje Conquest; nastavení podle režimu je tabulka `NASTAVENI_REZIMU`. Ludicrous (480) ověřený naživo |
 | 0.25.11 | 14:05 | „Vyhrála AI“ místo „Vyhrál AI“ (AI je česky rodu ženského) |
 | 0.25.12 | 14:15 | Population je nabídka jako ve hře (po 25 do 250, pak po stovkách do 500) |
+| 0.25.13 | 14:40 | Server přijme i Time Limit, Score a Last Man Standing — dřív je zahodil a výběr se sám přepnul zpátky |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

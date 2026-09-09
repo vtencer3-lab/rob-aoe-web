@@ -25,8 +25,8 @@ export interface NastaveniLobby {
   rychlost: 1 | 2 | 3;
   /** Populační limit (options[28]). */
   populace: number;
-  /** 1 Conquest, 9 Standard (options[81]). */
-  vitezstvi: 1 | 9;
+  /** Druh vítězství (options[81]); hodnoty viz VITEZSTVI. */
+  vitezstvi: number;
   /** Allow Cheats (options[1]). */
   cheaty: boolean;
 
