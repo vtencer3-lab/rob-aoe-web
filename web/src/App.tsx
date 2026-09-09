@@ -249,7 +249,7 @@ export function App() {
   const rezieObsluha = {
     onStav: (zapasId: number, novyStav: string) => void hlidej(() => api.zapasStav(zapasId, novyStav)),
     onSmazat: (zapasId: number) => void hlidej(() => api.smazatZapas(zapasId)),
-    onZavrit: (zapasId: number, zavreny: boolean) => void hlidej(() => api.zavritZapas(zapasId, zavreny)),
+    onZavrit: (zapasId: number) => void hlidej(() => api.zavritZapas(zapasId)),
     onVysledek: (zapasId: number, vitez: Vitez) => void hlidej(() => api.vysledek(zapasId, vitez)),
     onHost: (zapasId: number, steamId: string) => void hlidej(() => api.zmenitHosta(zapasId, steamId)),
     onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
@@ -469,7 +469,7 @@ export function App() {
 
       {akce ? (
         <>
-          {admin && stav ? <Rezie stav={stav} ladeni={ladeni} obsluha={rezieObsluha} /> : null}
+          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} /> : null}
           {me
             ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
                 mujUcastnik(zapas, me.steamId)?.jeHost ? (
@@ -509,7 +509,7 @@ export function App() {
           {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
               má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
               karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}
-          {stav ? <HistorieZapasu stav={stav} ladeni={ladeni} obsluha={admin ? rezieObsluha : undefined} /> : null}
+          {stav ? <HistorieZapasu stav={stav} obsluha={admin ? rezieObsluha : undefined} /> : null}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>

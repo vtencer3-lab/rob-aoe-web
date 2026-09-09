@@ -270,22 +270,17 @@ it("u Spectate říká, jestli se sedí v lobby, nebo už se hraje", () => {
   expect(screen.getByTestId("faze-lobby")).toHaveTextContent("(Hraje se)");
 });
 
-// Dohraný zápas jde křížkem zavřít: zmizí z režie (výsledek zůstává). V debug
-// módu je vidět zašedlý a jde znovu otevřít; běžící ani zrušený křížek nemají.
-it("dohraný zápas má křížek na zavření, zavřený se ukáže jen v debug módu", () => {
+// Dohraný zápas jde křížkem zavřít: karta zmizí ze stránky úplně, i režii
+// (výsledek zůstává v databázi). Běžící ani zrušený křížek nemají.
+it("dohraný zápas má křížek na zavření, zavřený zmizí ze stránky", () => {
   const onZavrit = vi.fn();
   const { rerender } = render(<HistorieZapasu stav={dohrany} obsluha={{ ...props, onZavrit }} />);
   fireEvent.click(screen.getByRole("button", { name: /zavřít zápas #7/i }));
-  expect(onZavrit).toHaveBeenCalledWith(1, true);
+  expect(onZavrit).toHaveBeenCalledWith(1);
 
   const zavreny: AkceStavPayload = { ...stav, zapasy: [{ ...zapas, stav: "dohrano", vitez: { tym: 1 }, zavreny: true }] };
   rerender(<HistorieZapasu stav={zavreny} obsluha={{ ...props, onZavrit }} />);
   expect(screen.queryByTestId("zapas-hlavicka")).not.toBeInTheDocument();
-
-  rerender(<HistorieZapasu stav={zavreny} obsluha={{ ...props, onZavrit }} ladeni />);
-  expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("zavřeno");
-  fireEvent.click(screen.getByRole("button", { name: /znovu otevřít/i }));
-  expect(onZavrit).toHaveBeenCalledWith(1, false);
 
   rerender(<Rezie stav={stav} obsluha={{ ...props, onZavrit }} />);
   expect(screen.queryByRole("button", { name: /zavřít zápas/i })).not.toBeInTheDocument();

@@ -109,11 +109,11 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ stav }),
     }).then((r) => json<{ ok: true }>(r)),
-  zavritZapas: (zapasId: number, zavreny = true) =>
+  zavritZapas: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/zavrit`), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ zavreny }),
+      body: JSON.stringify({ zavreny: true }),
     }).then((r) => json<{ ok: true }>(r)),
   smazatZapas: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),

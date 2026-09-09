@@ -1537,8 +1537,6 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 .zapas button.sbalit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 0.95rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
 .zapas button.sbalit-zapas:hover:enabled { color: var(--akcent); border-color: var(--zlato-tmave); background: none; }
 .zapas button.zavrit-zapas:hover { color: var(--chyba); border-color: var(--zlato-tmave); }
-.zapas button.zavrit-zapas.otevrit { width: auto; height: auto; padding: 0.3rem 0.6rem; font-size: 0.85rem; background: linear-gradient(#4a2a1c, #2c1710); border-color: var(--zlato-tmave); }
-.zapas.zavreny { opacity: 0.45; }
 
 /* ------------------------------------------------------------------ *
  * Drobnosti kabátku: posuvník, výběr textu a odkazy.
