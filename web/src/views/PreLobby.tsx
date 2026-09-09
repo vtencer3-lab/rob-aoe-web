@@ -1,0 +1,193 @@
+import { useEffect, useRef } from "react";
+import {
+  DATA_MODY,
+  LOBBY_TYPY,
+  SERVERY,
+  VIDITELNOST,
+  ZPOZDENI_DIVAKU,
+  type NastaveniLobby as Nastaveni,
+} from "../../../src/shared/lobbyKontrola.js";
+import { MAX_HRACU, MIN_HRACU } from "../../../src/shared/sestava.js";
+
+interface Props {
+  /** Živé nastavení akce; pre-lobby klíče z něj okno čte a mění. */
+  nastaveni: Nastaveni;
+  /** Jméno, které dostane příští lobby — opisuje se do hry. */
+  nazevLobby: string;
+  /** Heslo připravené pro příští lobby; prázdné, dokud ho server nepošle. */
+  heslo: string;
+  onZmena: (nastaveni: Nastaveni) => void;
+  /** Kostka u hesla: server vygeneruje nové. */
+  onNoveHeslo: () => void;
+  onZavrit: () => void;
+}
+
+/**
+ * Okno „Create Lobby“ ze hry, řádek po řádku: co Rob naklikal tady, to pak
+ * opíše do hry. Proto je to modální okno a ne další sloupec v panelu —
+ * zakládání lobby je jeden krok mimo běžné nastavování hry a nastaví se
+ * jednou za večer.
+ *
+ * Hodnoty voleb jsou odečtené z herní nabídky (9. 9. 2026), včetně pořadí
+ * serverů. „–“ všude znamená „je to jedno“, stejně jako v panelu nastavení.
+ */
+export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo, onZavrit }: Props) {
+  const okno = useRef<HTMLDivElement>(null);
+
+  // Escape zavírá stejně jako kliknutí mimo okno — obojí je „nechci to“.
+  useEffect(() => {
+    const naKlavesu = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onZavrit();
+    };
+    window.addEventListener("keydown", naKlavesu);
+    return () => window.removeEventListener("keydown", naKlavesu);
+  }, [onZavrit]);
+
+  const cislo = (v: string) => (v === "" ? null : Number(v));
+  const zmen = (cast: Partial<Nastaveni>) => onZmena({ ...n, ...cast });
+
+  return (
+    <div
+      className="prelobby-stin"
+      data-testid="prelobby-stin"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onZavrit();
+      }}
+    >
+      <div className="prelobby-okno" role="dialog" aria-modal="true" aria-label="Pre-Lobby Nastavení" data-testid="prelobby" ref={okno}>
+        <header className="hlavicka-akce">
+          <h2>Create Lobby</h2>
+          <button type="button" className="zavrit" aria-label="Zavřít" onClick={onZavrit}>
+            ✕
+          </button>
+        </header>
+
+        <div className="radky">
+          {/* Jméno lobby ani heslo nejsou předvolba — jsou to hodnoty příští
+              lobby, které Rob opíše do hry. Reset nastavení se jich netýká. */}
+          <label className="radek" data-klic="nazevLobby">
+            <span>Lobby Name:</span>
+            <input type="text" value={nazevLobby} readOnly data-testid="prelobby-nazev" />
+          </label>
+          <label className="radek" data-klic="lobbyTyp">
+            <span>Lobby Type:</span>
+            <select value={n.lobbyTyp ?? ""} onChange={(e) => zmen({ lobbyTyp: cislo(e.target.value) })}>
+              <option value="">–</option>
+              {Object.entries(LOBBY_TYPY).map(([v, nazev]) => (
+                <option key={v} value={v}>
+                  {nazev}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="radek" data-klic="viditelnost">
+            <span>Visibility:</span>
+            <select value={n.viditelnost ?? ""} onChange={(e) => zmen({ viditelnost: cislo(e.target.value) })}>
+              <option value="">–</option>
+              {Object.entries(VIDITELNOST).map(([v, nazev]) => (
+                <option key={v} value={v}>
+                  {nazev}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="radek" data-klic="maxHracu">
+            <span>Players:</span>
+            <select value={n.maxHracu ?? ""} onChange={(e) => zmen({ maxHracu: cislo(e.target.value) })}>
+              <option value="">–</option>
+              {Array.from({ length: MAX_HRACU - MIN_HRACU + 1 }, (_, i) => i + MIN_HRACU).map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Zaskrtavatko klic="coopKampan" popis="Co-Op Campaign" hodnota={n.coopKampan} onZmena={(v) => zmen({ coopKampan: v })} />
+        </div>
+
+        {/* Věta z herního okna: tohle jsou volby, které se po založení lobby
+            už nedají změnit, takže se musí naklikat správně napoprvé. */}
+        <p className="prelobby-varovani">These Settings can not be changed after game creation.</p>
+
+        <div className="radky">
+          <label className="radek" data-klic="heslo">
+            <span>Set Password:</span>
+            <span className="prelobby-heslo">
+              <input type="text" value={heslo} readOnly data-testid="prelobby-heslo" />
+              <button type="button" className="kostka" title="Vygenerovat jiné heslo" aria-label="Vygenerovat jiné heslo" onClick={onNoveHeslo}>
+                🎲
+              </button>
+            </span>
+          </label>
+          <div className="radek prelobby-dvojice">
+            <Zaskrtavatko klic="povolitDivaky" popis="Allow Spectators" hodnota={n.povolitDivaky} onZmena={(v) => zmen({ povolitDivaky: v })} />
+            <Zaskrtavatko klic="skrytCivilizace" popis="Hide Civilizations" hodnota={n.skrytCivilizace} onZmena={(v) => zmen({ skrytCivilizace: v })} />
+          </div>
+          <label className="radek" data-klic="zpozdeniDivaku">
+            <span>Spectator Delay:</span>
+            <select value={n.zpozdeniDivaku ?? ""} onChange={(e) => zmen({ zpozdeniDivaku: cislo(e.target.value) })}>
+              <option value="">–</option>
+              {Object.entries(ZPOZDENI_DIVAKU).map(([v, nazev]) => (
+                <option key={v} value={v}>
+                  {nazev}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="radek" data-klic="server">
+            <span>Server:</span>
+            <select value={n.server ?? ""} onChange={(e) => zmen({ server: e.target.value === "" ? null : e.target.value })}>
+              <option value="">–</option>
+              {SERVERY.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="radek" data-klic="dataMod">
+            <span>Data Mod:</span>
+            <select value={n.dataMod ?? ""} onChange={(e) => zmen({ dataMod: e.target.value === "" ? null : e.target.value })}>
+              <option value="">–</option>
+              {DATA_MODY.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Zaškrtávátko se třemi stavy jako v panelu nastavení: vypnuto → zapnuto → „–“. */
+function Zaskrtavatko({
+  klic,
+  popis,
+  hodnota,
+  onZmena,
+}: {
+  klic: string;
+  popis: string;
+  hodnota: boolean | null;
+  onZmena: (v: boolean | null) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = hodnota === null;
+  }, [hodnota]);
+  return (
+    <label className="zaskrtavaci" data-klic={klic}>
+      <input
+        ref={ref}
+        type="checkbox"
+        checked={hodnota === true}
+        onChange={() => onZmena(hodnota === false ? true : hodnota === true ? null : false)}
+      />
+      {popis}
+      {hodnota === null ? <span className="zaloha jedno-znak">–</span> : null}
+    </label>
+  );
+}

@@ -434,6 +434,9 @@ export function App() {
           onUlozitNastaveni={() => {
             if (akce) void hlidej(() => api.ulozitNastaveniLobby(akce.id));
           }}
+          onNoveHeslo={() => {
+            if (akce) void hlidej(() => api.pristiHeslo(akce.id));
+          }}
         >
           {akce ? (
             <Skladani

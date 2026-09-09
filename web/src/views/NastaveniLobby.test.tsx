@@ -275,27 +275,22 @@ it("Population je nabídka jako ve hře", () => {
   expect(volby).toEqual(["25", "50", "75", "100", "125", "150", "175", "200", "225", "250", "300", "400", "500"]);
 });
 
-// Pre-lobby: co se nastavuje v okně zakládání lobby, ne v herním panelu.
-// Schované pod tlačítkem, protože se to nastaví jednou za večer a pak už do
-// něj nikdo nesahá — na rozdíl od mapy nebo populace.
-it("Pre-Lobby nastavení je schované pod tlačítkem", async () => {
-  render(<NastaveniLobby zive={{}} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
-  expect(screen.queryByLabelText(/max\. hráčů/i)).toBeNull();
-
-  fireEvent.click(screen.getByRole("button", { name: /pre-lobby nastavení/i }));
-
-  expect(screen.getByLabelText(/max\. hráčů/i)).toBeInTheDocument();
-  expect(screen.getByLabelText(/zpoždění diváků/i)).toBeInTheDocument();
-  expect(screen.getByLabelText(/heslo pro diváky/i)).toBeInTheDocument();
-  expect(screen.getByLabelText(/region/i)).toBeInTheDocument();
-});
-
-it("změna v Pre-Lobby jde na server jako zbytek nastavení", async () => {
+// Reset vrací na výchozí i volby z okna Pre-Lobby — jsou to předvolby jako
+// každá jiná. Jméno lobby a heslo se ho netýkají, ty u nastavení nejsou.
+it("Reset vyčistí i pre-lobby volby", () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{}} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
-  fireEvent.click(screen.getByRole("button", { name: /pre-lobby nastavení/i }));
+  render(
+    <NastaveniLobby
+      zive={{ populace: 300, maxHracu: 4, server: "westeurope", zpozdeniDivaku: 3, lobbyTyp: 0 }}
+      ulozene={null}
+      onZmena={onZmena}
+      onUlozit={nic}
+    />,
+  );
 
-  fireEvent.change(screen.getByLabelText(/max\. hráčů/i), { target: { value: "4" } });
+  fireEvent.click(screen.getByRole("button", { name: /reset nastavení/i }));
 
-  await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ maxHracu: 4 })));
+  expect(onZmena).toHaveBeenLastCalledWith(
+    expect.objectContaining({ maxHracu: null, server: null, zpozdeniDivaku: null, lobbyTyp: null, populace: 200 }),
+  );
 });

@@ -46,3 +46,30 @@ it("s běžící akcí ukáže název, sestavu i nastavení lobby, ne zakládán
   expect(screen.getByText("SESTAVA")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Založit akci" })).not.toBeInTheDocument();
 });
+
+// Pre-Lobby je okno „Create Lobby“ ze hry: modální, s ztmavlým okolím a
+// zavírá se kliknutím vedle. Zakládání lobby je krok mimo běžné nastavování.
+it("Pre-Lobby nastavení otevře modální okno a klik mimo ho zavře", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  render(
+    <SpravaAkce {...zaklad} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi", pristiNazevLobby: "ROB-03", pristiHeslo: "4207" }}>
+      <p>SESTAVA</p>
+    </SpravaAkce>,
+  );
+  expect(screen.queryByTestId("prelobby")).toBeNull();
+
+  fireEvent.click(screen.getByRole("button", { name: /pre-lobby nastavení/i }));
+
+  const okno = screen.getByTestId("prelobby");
+  expect(okno).toHaveAttribute("aria-modal", "true");
+  // Jméno a heslo příští lobby jsou k opsání do hry.
+  expect(screen.getByTestId("prelobby-nazev")).toHaveValue("ROB-03");
+  expect(screen.getByTestId("prelobby-heslo")).toHaveValue("4207");
+  // Herní řádky sedí.
+  for (const popis of [/lobby type/i, /visibility/i, /players/i, /co-op campaign/i, /allow spectators/i, /hide civilizations/i, /spectator delay/i, /server/i, /data mod/i]) {
+    expect(screen.getByLabelText(popis)).toBeInTheDocument();
+  }
+
+  fireEvent.click(screen.getByTestId("prelobby-stin"));
+  expect(screen.queryByTestId("prelobby")).toBeNull();
+});

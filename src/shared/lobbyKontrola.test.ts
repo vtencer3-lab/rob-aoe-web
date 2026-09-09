@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AI_OBTIZNOSTI, doplnNastaveni, type NastaveniLobby, type PreLobbyZeHry, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
+import { AI_OBTIZNOSTI, doplnNastaveni, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
 import { nazevMapy } from "./mapy.js";
 import type { Barva, Tym } from "./types.js";
 
@@ -35,16 +35,10 @@ describe("zkontrolujLobby", () => {
     expect(k.every((x) => x.stav === "ok" || x.stav === "jedno")).toBe(true);
     // „Je to jedno“ zůstala ve výchozím stavu jen AI obtížnost; Lock Teams se
     // od 9. 9. 2026 vyžaduje zapnutý (sestavu skládá Rob, v lobby se s ní nehýbe).
-    // Pre-lobby (okno zakládání) zatím nikdo nevymáhá, takže je celé „jedno“.
-    expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual([
-      "aiObtiznost", "zpozdeniDivaku", "maxHracu", "hesloDivaku", "region",
-    ]);
+    expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual(["aiObtiznost"]);
     expect(k.filter((x) => x.sekce === "hlavni").map((x) => x.klic)).toEqual([
       "divaci", "heslo", "hraci", `barva:${HOST}`, `tym:${HOST}`, `barva:${JA}`, `tym:${JA}`,
       "mapa", "velikost", "rychlost", "populace", "vitezstvi", "cheaty",
-    ]);
-    expect(k.filter((x) => x.sekce === "prelobby").map((x) => x.klic)).toEqual([
-      "zpozdeniDivaku", "maxHracu", "hesloDivaku", "region",
     ]);
     expect(k.filter((x) => x.sekce === "dalsi").map((x) => x.klic)).toEqual([
       "sadaCivilizaci", "rezim", "aiObtiznost", "suroviny", "odkrytiMapy", "pocatecniVek", "konecnyVek", "primeri",
@@ -275,41 +269,5 @@ describe("číselníky nastavení", () => {
 
   it("suroviny znají i Random", () => {
     expect(SUROVINY[6]).toBe("Random");
-  });
-});
-
-// Pre-lobby: co se nastavuje v okně zakládání, ne v herním panelu. Kontrola
-// to bere stejně jako zbytek — „–“ znamená je to jedno a nikdy to není chyba.
-describe("kontrola pre-lobby", () => {
-  const sPreLobby = (cast: Partial<PreLobbyZeHry> = {}) =>
-    lobby({ preLobby: { zpozdeniDivaku: 0, maxHracu: 8, hesloDivaku: false, region: "westeurope", ...cast } });
-  const ocekavanePre = (cast: Partial<NastaveniLobby>) => doplnNastaveni(cast);
-
-  it("bez očekávání jen vypíše, co hra hlásí", () => {
-    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sPreLobby());
-    const radky = k.filter((x) => x.sekce === "prelobby");
-    expect(radky.map((x) => x.klic)).toEqual(["zpozdeniDivaku", "maxHracu", "hesloDivaku", "region"]);
-    expect(radky.every((x) => x.stav === "jedno")).toBe(true);
-    expect(radky.find((x) => x.klic === "maxHracu")!.text).toBe("Max. hráčů: 8");
-  });
-
-  it("nesouhlasný strop hráčů označí a řekne, co má být", () => {
-    const k = zkontrolujLobby(sestava, ocekavanePre({ maxHracu: 4 }), sPreLobby({ maxHracu: 8 }));
-    expect(k.find((x) => x.klic === "maxHracu")).toMatchObject({ stav: "spatne", text: "Max. hráčů: 8, má být 4" });
-  });
-
-  it("shodu potvrdí zeleně", () => {
-    const k = zkontrolujLobby(sestava, ocekavanePre({ region: "westeurope" }), sPreLobby());
-    expect(k.find((x) => x.klic === "region")).toMatchObject({ stav: "ok", text: "Region: westeurope" });
-  });
-
-  it("heslo pro diváky umí i vypnuto", () => {
-    const k = zkontrolujLobby(sestava, ocekavanePre({ hesloDivaku: true }), sPreLobby({ hesloDivaku: false }));
-    expect(k.find((x) => x.klic === "hesloDivaku")!.text).toBe("Heslo pro diváky: vypnuto, má být zapnuto");
-  });
-
-  it("bez údajů ze hry řekne, že se nedají přečíst", () => {
-    const k = zkontrolujLobby(sestava, ocekavanePre({ maxHracu: 8 }), lobby());
-    expect(k.find((x) => x.klic === "maxHracu")!.text).toBe("Max. hráčů: ?, má být 8");
   });
 });

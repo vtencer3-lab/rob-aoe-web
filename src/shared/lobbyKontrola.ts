@@ -60,15 +60,25 @@ export interface NastaveniLobby {
   antiquity: boolean | null;
   recordGame: boolean | null;
 
-  // --- pre-lobby: okno zakládání, ne herní panel (null = je to jedno) ---
-  /** Zpoždění diváků; jednotka zatím neověřená (viz docs §6). */
-  zpozdeniDivaku: number | null;
-  /** Kolik slotů lobby má. */
+  // --- pre-lobby: okno „Create Lobby“, ne herní panel (null = je to jedno) ---
+  /** Lobby Type; hodnoty viz LOBBY_TYPY. */
+  lobbyTyp: number | null;
+  /** Visibility: Public / Private. */
+  viditelnost: number | null;
+  /** Players — kolik slotů lobby dostane (2 až 8). */
   maxHracu: number | null;
-  /** Heslo zvlášť pro diváky. */
-  hesloDivaku: boolean | null;
-  /** Region relay serveru, třeba „westeurope“. */
-  region: string | null;
+  /** Co-Op Campaign. */
+  coopKampan: boolean | null;
+  /** Allow Spectators. */
+  povolitDivaky: boolean | null;
+  /** Hide Civilizations. */
+  skrytCivilizace: boolean | null;
+  /** Spectator Delay v minutách; 0 = None. */
+  zpozdeniDivaku: number | null;
+  /** Server: „Default“, region, nebo „Use Local Lan Server“. */
+  server: string | null;
+  /** Data Mod; hra zatím nabízí jen Definitive Set. */
+  dataMod: string | null;
 }
 
 export const VYCHOZI_NASTAVENI: NastaveniLobby = {
@@ -103,10 +113,15 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   recordGame: true,
   // Pre-lobby nechává výchozí nastavení na Robovi: nic z toho zatím
   // nevymáháme, dokud si neřekne, co u toho večera chce.
-  zpozdeniDivaku: null,
+  lobbyTyp: null,
+  viditelnost: null,
   maxHracu: null,
-  hesloDivaku: null,
-  region: null,
+  coopKampan: null,
+  povolitDivaky: null,
+  skrytCivilizace: null,
+  zpozdeniDivaku: null,
+  server: null,
+  dataMod: null,
 };
 
 export const VELIKOSTI: Record<number, string> = {
@@ -207,6 +222,43 @@ export const POPULACE: Record<number, string> = {
  * a pak rovnou 90 (odečteno z herní nabídky 9. 9. 2026). Volné číslo tu
  * bylo do 9. 9. 2026 a svádělo nastavit minuty, které ve hře nejdou.
  */
+/** Nabídka okna „Create Lobby“, odečtená z hry 9. 9. 2026. */
+export const LOBBY_TYPY: Record<number, string> = {
+  0: "Unranked",
+  1: "Ranked 1v1 Death Match",
+  2: "Ranked Team Death Match",
+};
+/** Private lobby zároveň zakáže diváky, takže se pro večer nehodí. */
+export const VIDITELNOST: Record<number, string> = { 0: "Public", 1: "Private" };
+/** Spectator Delay v minutách; 0 je „None“. */
+export const ZPOZDENI_DIVAKU: Record<number, string> = {
+  0: "None",
+  1: "1 Minute",
+  2: "2 Minutes",
+  3: "3 Minutes",
+  4: "4 Minutes",
+  5: "5 Minutes",
+  10: "10 Minutes",
+};
+/** Servery přesně v pořadí, jak je hra nabízí. */
+export const SERVERY: readonly string[] = [
+  "Default",
+  "brazilsouth",
+  "centralindia",
+  "australiasoutheast",
+  "ukwest",
+  "southeastasia",
+  "westeurope",
+  "southcentralus",
+  "westus3",
+  "eastus",
+  "koreacentral",
+  "chilecentral",
+  "Use Local Lan Server",
+];
+/** Data Mod: hra zatím nabízí jedinou možnost. */
+export const DATA_MODY: readonly string[] = ["Definitive Set"];
+
 export const PRIMERI: Record<number, string> = {
   0: "[None]",
   ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [(i + 1) * 5, `${(i + 1) * 5} Minutes`])),
@@ -536,20 +588,5 @@ export function zkontrolujLobby(
     k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${zap(ve)}, má být ${zap(ma)}` : `${popis}: ${zap(ve)}`, sekce: "dalsi" });
   }
 
-  // Pre-lobby: co se nastavuje v okně zakládání lobby, ne v herním panelu.
-  // Hra to posílá vedle jména a hesla, ne v `options`. Stejné pravidlo jako
-  // u dalšího nastavení: „–“ (null) znamená je to jedno a nikdy to není chyba.
-  const pre = lobby.preLobby;
-  const preRadek = (klic: string, popis: string, ve: string | null, ma: string | null): void => {
-    const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : "spatne";
-    const videt = ve ?? "?";
-    k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${videt}, má být ${ma}` : `${popis}: ${videt}`, sekce: "prelobby" });
-  };
-  const cislem = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
-  const slovem = (v: boolean | null | undefined) => (v === null || v === undefined ? null : v ? "zapnuto" : "vypnuto");
-  preRadek("zpozdeniDivaku", "Zpoždění diváků", cislem(pre?.zpozdeniDivaku), cislem(ocekavane.zpozdeniDivaku));
-  preRadek("maxHracu", "Max. hráčů", cislem(pre?.maxHracu), cislem(ocekavane.maxHracu));
-  preRadek("hesloDivaku", "Heslo pro diváky", slovem(pre?.hesloDivaku), slovem(ocekavane.hesloDivaku));
-  preRadek("region", "Region", pre?.region ?? null, ocekavane.region);
   return k;
 }

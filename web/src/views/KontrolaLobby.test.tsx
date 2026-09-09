@@ -111,23 +111,3 @@ it("v automatickém režimu kontroluje sama a po odpojení přestane", async () 
   await new Promise((r) => setTimeout(r, 120));
   expect(onKontrola.mock.calls.length).toBe(po);
 });
-
-// Pre-lobby má vlastní rozbalovací sekci vedle „Dalšího nastavení“ — je to
-// nastavení z okna zakládání, které Rob za večer řeší jednou.
-it("pre-lobby řádky ukáže ve vlastní sekci", async () => {
-  const onKontrola = vi.fn().mockResolvedValue({
-    nalezeno: true,
-    kontroly: [
-      { klic: "divaci", stav: "ok", text: "Diváci povoleni", sekce: "hlavni" },
-      { klic: "maxHracu", stav: "spatne", text: "Max. hráčů: 8, má být 4", sekce: "prelobby" },
-      { klic: "region", stav: "jedno", text: "Region: westeurope", sekce: "prelobby" },
-    ],
-  });
-  render(<KontrolaLobby zapasId={1} onKontrola={onKontrola} automaticky />);
-
-  const sekce = await screen.findByTestId("kontroly-prelobby");
-  expect(sekce).toHaveTextContent("Max. hráčů: 8, má být 4");
-  expect(sekce).toHaveTextContent("Region: westeurope");
-  // Do hlavní sekce se nepletou.
-  expect(screen.getByTestId("kontroly")).not.toHaveTextContent("Max. hráčů");
-});

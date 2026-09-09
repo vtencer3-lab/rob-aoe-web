@@ -91,11 +91,16 @@ const POPISKY: Record<keyof NastaveniLobby, string> = {
   regicide: "Regicide Mode",
   antiquity: "Antiquity Mode",
   recordGame: "Record Game",
-  // Pre-lobby (okno zakládání lobby)
-  zpozdeniDivaku: "Spectator Delay",
+  // Pre-lobby (okno „Create Lobby“)
+  lobbyTyp: "Lobby Type",
+  viditelnost: "Visibility",
   maxHracu: "Players",
-  hesloDivaku: "Heslo pro diváky",
-  region: "Server",
+  coopKampan: "Co-Op Campaign",
+  povolitDivaky: "Allow Spectators",
+  skrytCivilizace: "Hide Civilizations",
+  zpozdeniDivaku: "Spectator Delay",
+  server: "Server",
+  dataMod: "Data Mod",
 };
 
 const TABULKY: Partial<Record<keyof NastaveniLobby, Record<number, string>>> = {

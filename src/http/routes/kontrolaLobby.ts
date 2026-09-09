@@ -11,13 +11,18 @@ import {
   doplnNastaveni,
   KONECNE_VEKY,
   ODKRYTI_MAPY,
+  DATA_MODY,
+  LOBBY_TYPY,
   POCATECNI_VEKY,
   POPULACE,
   PRIMERI,
   REZIMY,
   SADY_CIVILIZACI,
+  SERVERY,
   SUROVINY,
+  VIDITELNOST,
   VITEZSTVI,
+  ZPOZDENI_DIVAKU,
   ZASKRTAVATKA,
   zkontrolujLobby,
   type KontrolaLobbyVysledek,
@@ -70,17 +75,21 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   // Příměří jen v hodnotách, které hra nabízí (PRIMERI) — od 9. 9. 2026 je
   // to nabídka, ne volné číslo, a co panel neumí nabídnout, nemá ani projít.
   vyber("primeri", PRIMERI);
-  // Pre-lobby (okno zakládání lobby). Meze jsou dané tím, co hra umí:
-  // lobby má nejvýš osm slotů a zpoždění diváků je čas, ne záporné číslo.
-  const zpozdeni = cislo(t["zpozdeniDivaku"]);
-  if (t["zpozdeniDivaku"] === null) v.zpozdeniDivaku = null;
-  else if (zpozdeni !== undefined && Number.isInteger(zpozdeni) && zpozdeni >= 0 && zpozdeni <= 3600) v.zpozdeniDivaku = zpozdeni;
+  // Pre-lobby: okno „Create Lobby“ ve hře. Hodnoty jen z jeho nabídky —
+  // co panel nenabídne, nemá projít ani přes API.
+  vyber("lobbyTyp", LOBBY_TYPY);
+  vyber("viditelnost", VIDITELNOST);
+  vyber("zpozdeniDivaku", ZPOZDENI_DIVAKU);
   const maxHracu = cislo(t["maxHracu"]);
   if (t["maxHracu"] === null) v.maxHracu = null;
   else if (maxHracu !== undefined && Number.isInteger(maxHracu) && maxHracu >= MIN_HRACU && maxHracu <= MAX_HRACU) v.maxHracu = maxHracu;
-  if (typeof t["hesloDivaku"] === "boolean" || t["hesloDivaku"] === null) v.hesloDivaku = t["hesloDivaku"] as boolean | null;
-  if (t["region"] === null) v.region = null;
-  else if (typeof t["region"] === "string" && t["region"].length > 0 && t["region"].length <= 40) v.region = t["region"];
+  for (const klic of ["coopKampan", "povolitDivaky", "skrytCivilizace"] as const) {
+    if (typeof t[klic] === "boolean" || t[klic] === null) v[klic] = t[klic] as boolean | null;
+  }
+  if (t["server"] === null) v.server = null;
+  else if (typeof t["server"] === "string" && (SERVERY as readonly string[]).includes(t["server"])) v.server = t["server"];
+  if (t["dataMod"] === null) v.dataMod = null;
+  else if (typeof t["dataMod"] === "string" && (DATA_MODY as readonly string[]).includes(t["dataMod"])) v.dataMod = t["dataMod"];
 
   for (const { klic } of ZASKRTAVATKA) {
     if (typeof t[klic] === "boolean" || t[klic] === null) v[klic] = t[klic] as boolean | null;

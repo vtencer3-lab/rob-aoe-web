@@ -27,27 +27,48 @@ describe("prectiNastaveniLobby", () => {
   });
 });
 
-// Pre-lobby: nastavení z okna zakládání lobby. Stejná pravidla jako u zbytku
-// — null znamená „je to jedno“, nesmysl neprojde.
+// Pre-lobby: okno „Create Lobby“ ve hře. Stejná pravidla jako u zbytku —
+// null znamená „je to jedno“, co hra nenabízí, neprojde.
 describe("pre-lobby v nastavení", () => {
-  it("vezme zpoždění, strop hráčů, heslo diváků i region", () => {
+  it("vezme volby z herní nabídky", () => {
     expect(
-      prectiNastaveniLobby({ zpozdeniDivaku: 180, maxHracu: 8, hesloDivaku: true, region: "westeurope" }),
-    ).toEqual({ zpozdeniDivaku: 180, maxHracu: 8, hesloDivaku: true, region: "westeurope" });
-  });
-
-  it("„je to jedno“ projde u všech čtyř", () => {
-    expect(prectiNastaveniLobby({ zpozdeniDivaku: null, maxHracu: null, hesloDivaku: null, region: null })).toEqual({
-      zpozdeniDivaku: null,
-      maxHracu: null,
-      hesloDivaku: null,
-      region: null,
+      prectiNastaveniLobby({
+        lobbyTyp: 0,
+        viditelnost: 1,
+        maxHracu: 8,
+        coopKampan: false,
+        povolitDivaky: true,
+        skrytCivilizace: false,
+        zpozdeniDivaku: 10,
+        server: "westeurope",
+        dataMod: "Definitive Set",
+      }),
+    ).toEqual({
+      lobbyTyp: 0,
+      viditelnost: 1,
+      maxHracu: 8,
+      coopKampan: false,
+      povolitDivaky: true,
+      skrytCivilizace: false,
+      zpozdeniDivaku: 10,
+      server: "westeurope",
+      dataMod: "Definitive Set",
     });
   });
 
-  it("nesmyslné hodnoty nepustí", () => {
+  it("„je to jedno“ projde u všech", () => {
+    expect(prectiNastaveniLobby({ lobbyTyp: null, maxHracu: null, server: null, zpozdeniDivaku: null })).toEqual({
+      lobbyTyp: null,
+      maxHracu: null,
+      server: null,
+      zpozdeniDivaku: null,
+    });
+  });
+
+  it("co hra nenabízí, nepustí", () => {
     expect(prectiNastaveniLobby({ maxHracu: 99, populace: 200 })).toEqual({ populace: 200 });
-    expect(prectiNastaveniLobby({ zpozdeniDivaku: -5, populace: 200 })).toEqual({ populace: 200 });
-    expect(prectiNastaveniLobby({ region: "x".repeat(200), populace: 200 })).toEqual({ populace: 200 });
+    expect(prectiNastaveniLobby({ zpozdeniDivaku: 7, populace: 200 })).toEqual({ populace: 200 });
+    expect(prectiNastaveniLobby({ server: "marsnorth", populace: 200 })).toEqual({ populace: 200 });
+    expect(prectiNastaveniLobby({ dataMod: "vlastní mod", populace: 200 })).toEqual({ populace: 200 });
   });
 });
