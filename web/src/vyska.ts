@@ -15,6 +15,11 @@ export const ZMENA_VYSKY_MS = 200;
  * dojet na novou. `overflow` se po dobu přejezdu zavře, ať obsah nekouká ven
  * z rámu, a na konci se všechno uklidí, aby si panel dál řídil výšku sám.
  *
+ * Měří se spočtená výška, ne obalový obdélník: panel je `content-box` a jeho
+ * obdélník nese i 34px rám a odsazení. Dosadit jedno za druhé znamenalo pustit
+ * přejezd o 80 px vedle — deska se nafoukla, dojela a na konci se srazila zpět
+ * na svou skutečnou výšku.
+ *
  * `klic` je otisk obsahu; efekt se pouští, jen když se opravdu změnil.
  */
 export function useZmenaVysky(prvek: RefObject<HTMLElement | null>, klic: string): void {
@@ -23,14 +28,14 @@ export function useZmenaVysky(prvek: RefObject<HTMLElement | null>, klic: string
   useLayoutEffect(() => {
     const el = prvek.current;
     if (!el) return;
-    const nova = el.getBoundingClientRect().height;
+    const nova = parseFloat(window.getComputedStyle(el).height);
     const stara = drive.current;
     drive.current = nova;
 
     const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     // První vykreslení nemá odkud přijet; nulový rozdíl není co animovat.
     // V testovacím DOM jsou všechny rozměry nulové, takže se nespustí nic.
-    if (bezPohybu || stara === null || stara === nova) return;
+    if (bezPohybu || stara === null || !Number.isFinite(nova) || stara === nova) return;
 
     el.style.transition = "none";
     el.style.height = `${stara}px`;
