@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { jeAi } from "../../../src/shared/aiHraci.js";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type AkceStavPayload, type Vitez, type ZapasView } from "../../../src/shared/types.js";
@@ -176,7 +177,7 @@ function ZapasVRezii({ zapas, obsluha }: ZapasProps) {
             <span className="jmeno">
               {jmenoHrace(u)}
               {jeVitez(zapas, u) ? (
-                <strong className="odznak-vitez" data-testid="odznak-vitez" title="Vyhrál">
+                <strong className="odznak-vitez" data-testid="odznak-vitez" title={jeAi(u.steamId) ? "Vyhrála" : "Vyhrál"}>
                   VÍTĚZ
                 </strong>
               ) : null}

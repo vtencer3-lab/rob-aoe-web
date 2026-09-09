@@ -1,3 +1,4 @@
+import { jeAi } from "./aiHraci.js";
 import { BARVA_NAZEV, type Barva, type Tym, type Vitez } from "./types.js";
 
 /** Minimum, které strany potřebují vědět o hráči; sedí na UcastnikView i Seat. */
@@ -77,9 +78,16 @@ const PRIDAVNE: Record<Barva, string> = {
   8: "oranžový",
 };
 
-/** „Vyhrál Trokner“, „Vyhrál modrý tým“, „Vyhrál tým 3“. */
+/**
+ * „Vyhrál Trokner“, „Vyhrála AI“, „Vyhrál modrý tým“, „Vyhrál tým 3“.
+ *
+ * AI je česky rodu ženského, takže sloveso se u ní ohýbá. Týká se to jen
+ * strany o jednom členovi — tým zůstává mužský, i když jsou v něm samé AI.
+ */
 export function titulekViteze(strana: Strana): string {
-  return `Vyhrál ${nazevStrany(strana)}`;
+  const [prvni] = strana.clenove;
+  const zena = strana.clenove.length === 1 && prvni !== undefined && jeAi(prvni.steamId);
+  return `${zena ? "Vyhrála" : "Vyhrál"} ${nazevStrany(strana)}`;
 }
 
 /** Totéž do věty: „dohráno — vyhrál modrý tým“. */
