@@ -1569,24 +1569,21 @@ a:hover { color: var(--zlato-svetle); }
    --------------------------------------------------------------------------- */
 .okno-lobby {
   --lobby-text: #33240f;
-  --lobby-deska: #b39872;
-  /* Hra má písmo v XAML jako `Standard` = Times New Roman (Book Antiqua je
-     tam jen zakomentovaný z dřívějška). Nehostuje se: Times má každý
-     systém, na Linuxu ho zastoupí metricky shodné Liberation Serif. */
-  font-family: "Times New Roman", "Liberation Serif", "Nimbus Roman", Times, serif;
-  /* Šířka v rem, písmo v cqw: kdyby byla šířka v em, škrtila by se spolu
-     s písmem a texty by se lámaly. Takhle okno drží velikost herního
-     dialogu a písmo se veze podle skutečné šířky.  */
-  font-size: clamp(0.6rem, 1.45cqw, 0.84rem);
+  --lobby-deska: #b79579;
+  font-family: Georgia, "Times New Roman", "Liberation Serif", serif;
+  font-weight: 900;
+  /* Sazba má pevných 19 px jako v herním okně; šířka se od ní odvíjí, ale
+     drží se v rem, aby se nesmršťovala spolu s písmem. */
+  font-size: 19px;
   container-type: inline-size;
-  max-width: 40rem;
+  max-width: 44rem;
   margin: 1rem auto 0;
   padding: 1.6em 3.2em 3em;
   color: var(--lobby-text);
   background: url(./assets/ui/lobby-pergamen.webp) center / 100% 100% no-repeat;
   /* Předloha ze hry je sytější než holá textura; dorovnává se filtrem, ať se
      nemusí sahat do samotného assetu. */
-  filter: saturate(1.18) contrast(1.06);
+  filter: sepia(0.18) saturate(1.24) contrast(1.04);
 }
 .okno-lobby-zahlavi {
   display: flex;
@@ -1620,18 +1617,20 @@ a:hover { color: var(--zlato-svetle); }
   margin-top: 0.8em;
   padding: 1.8em 2em 2em;
   background: var(--lobby-deska);
-  border: 0.7em solid transparent;
-  border-image: url(./assets/ui/lobby-ram.webp) 18 / 0.7em stretch;
+  /* Výřez 26 je ten, při kterém rohové ozdoby sedí; menší je deformoval.
+     `stretch` roztáhne strany do jedné linky místo opakovaného vzoru. */
+  border: 0.55em solid transparent;
+  border-image: url(./assets/ui/lobby-ram.webp) 26 / 0.55em stretch;
 }
 /* Popisek vlevo, pole vpravo — jako ve hře, kde popisky začínají na jedné
    svislici a nejsou zarovnané na pravý okraj. */
-.okno-lobby-radek { display: grid; grid-template-columns: 10.5em 19em; justify-content: start; align-items: center; gap: 0.8em; margin-bottom: 0.3em; }
-.okno-lobby-popis { font-size: 1.35em; font-weight: 700; text-align: left; }
+.okno-lobby-radek { display: grid; grid-template-columns: 8.5em 14.5em; justify-content: start; align-items: center; gap: 0.7em; margin-bottom: 0.25em; }
+.okno-lobby-popis { font-size: 1em; font-weight: 700; text-align: left; }
 .okno-lobby-vyber {
   position: relative;
   display: block;
-  padding: 0.24em 2.2em 0.24em 0.45em;
-  font-size: 1.3em;
+  padding: 0.32em 2em 0.32em 0.5em;
+  font-size: 0.85em;
   font-weight: 700;
   line-height: 1.45;
   border: 7px solid transparent;
@@ -1654,9 +1653,9 @@ a:hover { color: var(--zlato-svetle); }
   gap: 0.4em;
   width: 100%;
   box-sizing: border-box;
-  padding: 0.24em 0.45em;
+  padding: 0.32em 0.5em;
   font-family: inherit;
-  font-size: 1.3em;
+  font-size: 0.85em;
   font-weight: 700;
   line-height: 1.45;
   color: #35e035;
@@ -1669,7 +1668,7 @@ a:hover { color: var(--zlato-svetle); }
 .okno-lobby button.okno-lobby-vstup,
 .okno-lobby button.okno-lobby-vstup strong { color: #35e035; font-weight: 700; }
 .okno-lobby button.okno-lobby-vstup .ikona-kopie { color: #35e035; opacity: 0.75; }
-.okno-lobby-zaskrtavatko { display: inline-flex; align-items: center; gap: 0.5em; margin: 0.45em 0 0.45em 4em; font-size: 1.35em; font-weight: 700; }
+.okno-lobby-zaskrtavatko { display: inline-flex; align-items: center; gap: 0.5em; margin: 0.4em 0 0.4em 3.4em; font-size: 1em; font-weight: 700; }
 .okno-lobby-dvojice { display: flex; gap: 3.5em; }
 .okno-lobby-dvojice .okno-lobby-zaskrtavatko { margin-left: 5.5em; }
 .okno-lobby-dvojice .okno-lobby-zaskrtavatko + .okno-lobby-zaskrtavatko { margin-left: 0; }
@@ -1680,4 +1679,4 @@ a:hover { color: var(--zlato-svetle); }
   background: url(./assets/ui/lobby-zaskrtavatko.webp) center / contain no-repeat;
 }
 .okno-lobby-zaskrtavatko.zapnuto .ctverec { background-image: url(./assets/ui/lobby-zaskrtnuto.webp); }
-.okno-lobby-varovani { margin: 1em 0 1.2em; text-align: center; font-size: 1.35em; font-weight: 700; }
+.okno-lobby-varovani { margin: 0.9em 0 1em; text-align: center; font-size: 1em; font-weight: 700; }
