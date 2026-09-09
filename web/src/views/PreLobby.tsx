@@ -8,6 +8,9 @@ import {
   type NastaveniLobby as Nastaveni,
 } from "../../../src/shared/lobbyKontrola.js";
 import { MAX_HRACU, MIN_HRACU } from "../../../src/shared/sestava.js";
+/** Ke zvolení Private patří kromě zatřesení a nadávky i zvuk. */
+import debilUrl from "../assets/debil.mp3";
+import { prehraj } from "../zvuk.js";
 
 interface Props {
   /** Živé nastavení akce; pre-lobby klíče z něj okno čte a mění. */
@@ -110,6 +113,7 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
                 if (v === 1) {
                   setDotceny("viditelnost");
                   setVynadano(true);
+                  prehraj(debilUrl);
                   return;
                 }
                 zmen({ viditelnost: v });

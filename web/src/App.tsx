@@ -23,6 +23,7 @@ import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
 import crashoutUrl from "./assets/crashout.mp3";
 import logoUrl from "./assets/logo.webp";
+import { prehraj } from "./zvuk.js";
 
 /** Kanál, na který vede štít v záhlaví. */
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
@@ -285,8 +286,7 @@ export function App() {
             className="bez-vzhledu jmeno-roba"
             title="RobDiesALot"
             onClick={() => {
-              // Prohlížeč bez autoplay nebo bez zvuku: ticho, žádná chyba.
-              void new Audio(crashoutUrl).play().catch(() => {});
+              prehraj(crashoutUrl);
             }}
           >
             RobDiesALot

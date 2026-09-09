@@ -1682,7 +1682,7 @@ a:hover { color: var(--zlato-svetle); }
   color: #35e035;
   background: none;
   border: 6px solid transparent;
-  border-image: url(./assets/ui/lobby-vstup.webp) 22 fill / 6px stretch;
+  border-image: url(./assets/ui/lobby-vstup.webp) 8 fill / 6px stretch;
   text-align: left;
 }
 .okno-lobby .okno-lobby-vstup strong,

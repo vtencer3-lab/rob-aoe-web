@@ -95,3 +95,21 @@ it("Private ve Visibility se nenastaví a okno vynadá", async () => {
   expect(screen.getByLabelText(/visibility/i)).toHaveValue("0");
   expect(onNastaveniLobby).not.toHaveBeenCalled();
 });
+
+// K Private patří i zvuk. Prohlížeč v testu zvuk nepřehraje, takže se
+// kontroluje, že se o to okno aspoň pokusilo.
+it("Private spustí i zvukovou hlášku", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  const prehrat = vi.fn().mockResolvedValue(undefined);
+  vi.spyOn(window.HTMLMediaElement.prototype, "play").mockImplementation(prehrat);
+  render(
+    <SpravaAkce {...zaklad} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }}>
+      <p>SESTAVA</p>
+    </SpravaAkce>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /pre-lobby nastavení/i }));
+
+  fireEvent.change(screen.getByLabelText(/visibility/i), { target: { value: "1" } });
+
+  expect(prehrat).toHaveBeenCalled();
+});
