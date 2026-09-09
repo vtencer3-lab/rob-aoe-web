@@ -256,6 +256,13 @@ je přitom v seznamu nejčastější (90 ze 114 lobby).
 `westeurope`), takže „Default“ se proti lobby porovnat nedá — ověřit jde jen
 konkrétní region.
 
+**Kvalita spojení na servery** (herní tabulka Connection Quality z Robova
+připojení, 9. 9. 2026, v ms): westeurope 32, ukwest 43, eastus 118,
+southcentralus 137, centralindia 145, westus3 156, southeastasia 177 (zelené);
+brazilsouth 216, chilecentral 225, koreacentral 240 (žluté);
+australiasoutheast 313 (červený). Je to všech 11 regionů z nabídky —
+zbylé dvě položky (`Default`, `Use Local Lan Server`) regiony nejsou.
+
 Nabídka okna (odečteno z hry 9. 9. 2026): Lobby Type Unranked / Ranked 1v1
 Death Match / Ranked Team Death Match; Visibility Public / Private (Private
 zakáže diváky); Players 2–8; Spectator Delay None / 1 / 2 / 3 / 4 / 5 / 10

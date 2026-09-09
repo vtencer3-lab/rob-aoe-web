@@ -293,6 +293,15 @@ it("Reset vyčistí i pre-lobby volby", () => {
   // Co má vždycky platit, se vrátí na svoje (Unranked, bez zpoždění, Definitive
   // Set); zbytek na „je to jedno“.
   expect(onZmena).toHaveBeenLastCalledWith(
-    expect.objectContaining({ maxHracu: null, server: null, zpozdeniDivaku: 0, lobbyTyp: 0, coopKampan: false, dataMod: "Definitive Set", populace: 200 }),
+    expect.objectContaining({
+      maxHracu: 2,
+      server: "Default",
+      viditelnost: 0,
+      zpozdeniDivaku: 0,
+      lobbyTyp: 0,
+      coopKampan: false,
+      dataMod: "Definitive Set",
+      populace: 200,
+    }),
   );
 });

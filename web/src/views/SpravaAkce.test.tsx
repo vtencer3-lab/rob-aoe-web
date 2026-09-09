@@ -73,3 +73,25 @@ it("Pre-Lobby nastavení otevře modální okno a klik mimo ho zavře", async ()
   fireEvent.click(screen.getByTestId("prelobby-stin"));
   expect(screen.queryByTestId("prelobby")).toBeNull();
 });
+
+// Private lobby zakáže diváky, takže by neměl kdo sledovat večer. Vybrat ji
+// jde, ale hra si to nenechá: vrátí se Public, řádek se zatřese a nad
+// formulářem se objeví, co si o tom web myslí.
+it("Private ve Visibility se nenastaví a okno vynadá", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  const onNastaveniLobby = vi.fn();
+  render(
+    <SpravaAkce {...zaklad} onNastaveniLobby={onNastaveniLobby} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }}>
+      <p>SESTAVA</p>
+    </SpravaAkce>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /pre-lobby nastavení/i }));
+  expect(screen.queryByTestId("prelobby-nadavka")).toBeNull();
+
+  fireEvent.change(screen.getByLabelText(/visibility/i), { target: { value: "1" } });
+
+  expect(screen.getByTestId("prelobby-nadavka")).toHaveTextContent("A tak jseš debil, nebo co?");
+  // Zůstalo Public a na server nic nešlo.
+  expect(screen.getByLabelText(/visibility/i)).toHaveValue("0");
+  expect(onNastaveniLobby).not.toHaveBeenCalled();
+});

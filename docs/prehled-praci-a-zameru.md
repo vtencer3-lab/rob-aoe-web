@@ -886,6 +886,8 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.26.1 | 15:45 | Pre-Lobby jako modální okno podle herního „Create Lobby“ |
 | 0.26.2 | 16:05 | Mřížka okna, tmavší pozadí, monochromatická kostka, výchozí Unranked / None / Definitive Set / Co-Op vypnutá (migrace 017) |
 | 0.26.3 | 16:30 | Kontrola dostala sekci Pre-Lobby; heslo a diváci se do ní přesunuli z hlavní |
+| 0.26.4 | 16:45 | Barva v 1v1 je jen upozornění |
+| 0.26.5 | 17:10 | Pre-Lobby: Public napevno (Private vynadá a zatřese), výchozí 2 hráči a Default server, závažnosti podle zpoždění a kvality serveru |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

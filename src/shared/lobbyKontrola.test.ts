@@ -323,9 +323,9 @@ describe("kontrola pre-lobby", () => {
     expect(k.find((x) => x.klic === "zpozdeniDivaku")).toMatchObject({ stav: "ok" });
   });
 
-  it("server „Default“ se ověřit nedá, hra hlásí skutečný region", () => {
+  it("Default nechá výběr na hře a je v pořádku", () => {
     const k = zkontrolujLobby(sestava, doplnNastaveni({ server: "Default" }), sHrou({ server: "ukwest" }));
-    expect(k.find((x) => x.klic === "server")).toMatchObject({ stav: "jedno", text: "Server: ukwest (Default se ověřit nedá)" });
+    expect(k.find((x) => x.klic === "server")).toMatchObject({ stav: "ok", text: "Server: ukwest (Default)" });
   });
 
   it("konkrétní server porovná", () => {
@@ -365,5 +365,56 @@ describe("barvy v 1v1", () => {
       ],
     }));
     expect(k.find((x) => x.klic === `barva:${HOST}`)).toMatchObject({ stav: "spatne" });
+  });
+});
+
+// Pre-lobby: co je jak vážné. Ne všechno, co nesedí, musí zápas zastavit.
+describe("závažnost pre-lobby", () => {
+  const pre = (cast: Partial<PreLobbyZeHry> = {}): PreLobbyZeHry => ({
+    lobbyTyp: 0,
+    viditelnost: 1,
+    maxHracu: 2,
+    zpozdeniDivakuSekund: 0,
+    server: "westeurope",
+    ...cast,
+  });
+
+  it("jiný počet slotů je jen upozornění", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ maxHracu: 8 }) }));
+    expect(k.find((x) => x.klic === "maxHracu")).toMatchObject({ stav: "varovani" });
+  });
+
+  it("zpoždění do tří minut je upozornění, od čtyř chyba", () => {
+    const stav = (sekund: number) =>
+      zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ zpozdeniDivakuSekund: sekund }) })).find(
+        (x) => x.klic === "zpozdeniDivaku",
+      )?.stav;
+    expect(stav(60)).toBe("varovani");
+    expect(stav(180)).toBe("varovani");
+    expect(stav(240)).toBe("spatne");
+    expect(stav(600)).toBe("spatne");
+    expect(stav(0)).toBe("ok");
+  });
+
+  it("server Default projde, zelený upozorní, žlutý a červený jsou chyba", () => {
+    const stav = (nastaveny: string) =>
+      zkontrolujLobby(sestava, doplnNastaveni({ server: nastaveny }), lobby({ preLobby: pre({ server: nastaveny === "Default" ? "westeurope" : nastaveny }) })).find(
+        (x) => x.klic === "server",
+      );
+    expect(stav("Default")).toMatchObject({ stav: "ok" });
+    expect(stav("ukwest")).toMatchObject({ stav: "varovani" });
+    expect(stav("koreacentral")).toMatchObject({ stav: "spatne" });
+    expect(stav("australiasoutheast")).toMatchObject({ stav: "spatne" });
+    expect(stav("australiasoutheast")!.text).toContain("313 ms");
+  });
+
+  it("lobby jinde, než je nastaveno, je chyba i u dobrého serveru", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ server: "ukwest" }), lobby({ preLobby: pre({ server: "westeurope" }) }));
+    expect(k.find((x) => x.klic === "server")).toMatchObject({ stav: "spatne", text: "Server: westeurope, má být ukwest" });
+  });
+
+  it("Private lobby je chyba", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ viditelnost: 0 }) }));
+    expect(k.find((x) => x.klic === "viditelnost")).toMatchObject({ stav: "spatne" });
   });
 });

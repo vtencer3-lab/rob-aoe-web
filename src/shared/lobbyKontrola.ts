@@ -115,13 +115,13 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   // vypnutá kampaň, žádné zpoždění diváků (ve vysílání by bylo proti smyslu)
   // a jediný Data Mod, který hra zná. Zbytek zůstává na Robovi.
   lobbyTyp: 0,
-  viditelnost: null,
-  maxHracu: null,
+  viditelnost: 0,
+  maxHracu: 2,
   coopKampan: false,
   povolitDivaky: null,
   skrytCivilizace: null,
   zpozdeniDivaku: 0,
-  server: null,
+  server: "Default",
   dataMod: "Definitive Set",
 };
 
@@ -257,6 +257,26 @@ export const SERVERY: readonly string[] = [
   "chilecentral",
   "Use Local Lan Server",
 ];
+/**
+ * Kvalita spojení na servery, jak ji hra měří (odečteno 9. 9. 2026, hodnoty
+ * jsou z Robova připojení v ms). Zelený server je použitelný, ale bezdůvodně
+ * se z Evropy nikam jinam přepínat nemá — proto upozornění; žlutý a červený
+ * už zápas kazí, a to je chyba.
+ */
+export const KVALITA_SERVERU: Record<string, { ping: number; stav: "zelena" | "zluta" | "cervena" }> = {
+  westeurope: { ping: 32, stav: "zelena" },
+  ukwest: { ping: 43, stav: "zelena" },
+  eastus: { ping: 118, stav: "zelena" },
+  southcentralus: { ping: 137, stav: "zelena" },
+  centralindia: { ping: 145, stav: "zelena" },
+  westus3: { ping: 156, stav: "zelena" },
+  southeastasia: { ping: 177, stav: "zelena" },
+  brazilsouth: { ping: 216, stav: "zluta" },
+  chilecentral: { ping: 225, stav: "zluta" },
+  koreacentral: { ping: 240, stav: "zluta" },
+  australiasoutheast: { ping: 313, stav: "cervena" },
+};
+
 /** Data Mod: hra zatím nabízí jedinou možnost. */
 export const DATA_MODY: readonly string[] = ["Definitive Set"];
 
@@ -599,8 +619,9 @@ export function zkontrolujLobby(
   // s nimi už nedá hnout. Co hra o lobby neposílá (Co-Op Campaign, Data Mod),
   // se nekontroluje vůbec.
   const pre = lobby.preLobby;
-  const preRadek = (klic: string, popis: string, ve: string | null, ma: string | null, varovani = false): void => {
-    const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : varovani ? "varovani" : "spatne";
+  const preRadek = (klic: string, popis: string, ve: string | null, ma: string | null, varovani: boolean | (() => boolean) = false): void => {
+    const jenVarovani = typeof varovani === "function" ? varovani() : varovani;
+    const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : jenVarovani ? "varovani" : "spatne";
     const videt = ve ?? "?";
     k.push({ klic, stav, text: stav === "ok" || stav === "jedno" ? `${popis}: ${videt}` : `${popis}: ${videt}, má být ${ma}`, sekce: "prelobby" });
   };
@@ -617,6 +638,8 @@ export function zkontrolujLobby(
     "Players",
     pre?.maxHracu === null || pre?.maxHracu === undefined ? null : String(pre.maxHracu),
     zHry(ocekavane.maxHracu === null ? null : String(ocekavane.maxHracu)),
+    // Kolik slotů lobby má, na hru nemá vliv — hráči se do ní stejně vejdou.
+    true,
   );
   // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
   k.push({
@@ -630,12 +653,32 @@ export function zkontrolujLobby(
   // Zpoždění hra posílá v sekundách, nabídka je v minutách. Vysílání kazí,
   // ale hře nevadí — proto žlutá, ne červená.
   const zeHryMinut = pre?.zpozdeniDivakuSekund === null || pre?.zpozdeniDivakuSekund === undefined ? null : pre.zpozdeniDivakuSekund / 60;
-  preRadek("zpozdeniDivaku", "Spectator Delay", jmenem(ZPOZDENI_DIVAKU)(zeHryMinut), zHry(jmenem(ZPOZDENI_DIVAKU)(ocekavane.zpozdeniDivaku)), true);
-  // „Default“ se v inzerátu objeví jako skutečný region, takže se ověřit nedá.
-  if (ocekavane.server === "Default") {
-    k.push({ klic: "server", stav: "jedno", text: `Server: ${pre?.server ?? "?"} (Default se ověřit nedá)`, sekce: "prelobby" });
+  // Krátké zpoždění vysílání jen otravuje, od čtyř minut už komentář utíká
+  // hře natolik, že to je chyba.
+  preRadek(
+    "zpozdeniDivaku",
+    "Spectator Delay",
+    jmenem(ZPOZDENI_DIVAKU)(zeHryMinut),
+    zHry(jmenem(ZPOZDENI_DIVAKU)(ocekavane.zpozdeniDivaku)),
+    () => zeHryMinut !== null && zeHryMinut <= 3,
+  );
+  // Server: „Default“ nechá výběr na hře a ta sáhne po nejbližším — nic
+  // lepšího se udělat nedá, takže je to v pořádku. Ruční volba se posuzuje
+  // podle kvality spojení: zelený server je zbytečný, ale hratelný, žlutý
+  // a červený už zápas kazí. A když lobby vznikla jinde, než bylo nastavené,
+  // je to chyba bez ohledu na to, jak je ten server rychlý.
+  const serverZeHry = pre?.server ?? null;
+  if (pre === undefined) {
+    k.push({ klic: "server", stav: "jedno", text: "Server: ?", sekce: "prelobby" });
+  } else if (ocekavane.server === "Default" || ocekavane.server === null) {
+    k.push({ klic: "server", stav: "ok", text: `Server: ${serverZeHry ?? "?"} (Default)`, sekce: "prelobby" });
+  } else if (serverZeHry !== ocekavane.server) {
+    k.push({ klic: "server", stav: "spatne", text: `Server: ${serverZeHry ?? "?"}, má být ${ocekavane.server}`, sekce: "prelobby" });
   } else {
-    preRadek("server", "Server", pre?.server ?? null, zHry(ocekavane.server));
+    const kvalita = KVALITA_SERVERU[ocekavane.server];
+    const stav: StavKontroly = kvalita === undefined ? "ok" : kvalita.stav === "zelena" ? "varovani" : "spatne";
+    const dovetek = kvalita === undefined ? "" : ` (${kvalita.ping} ms${kvalita.stav === "zelena" ? "" : ", pomalé spojení"})`;
+    k.push({ klic: "server", stav, text: `Server: ${ocekavane.server}${dovetek}`, sekce: "prelobby" });
   }
   return k;
 }

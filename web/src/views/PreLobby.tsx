@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DATA_MODY,
   LOBBY_TYPY,
@@ -31,8 +31,13 @@ interface Props {
  * Hodnoty voleb jsou odečtené z herní nabídky (9. 9. 2026), včetně pořadí
  * serverů. „–“ všude znamená „je to jedno“, stejně jako v panelu nastavení.
  */
+/** Jak dlouho se třese řádek, na kterém někdo zkusil nemožné. */
+const DOBA_ZATRESENI_MS = 600;
+
 export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo, onZavrit }: Props) {
   const okno = useRef<HTMLDivElement>(null);
+  const [dotceny, setDotceny] = useState<string | null>(null);
+  const [vynadano, setVynadano] = useState(false);
 
   // Escape zavírá stejně jako kliknutí mimo okno — obojí je „nechci to“.
   useEffect(() => {
@@ -42,6 +47,14 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
     window.addEventListener("keydown", naKlavesu);
     return () => window.removeEventListener("keydown", naKlavesu);
   }, [onZavrit]);
+
+  // Zatřesení řádkem trvá chvilku; potom se třída zase sundá, aby šlo
+  // zatřást znovu při dalším pokusu.
+  useEffect(() => {
+    if (dotceny === null) return;
+    const casovac = setTimeout(() => setDotceny(null), DOBA_ZATRESENI_MS);
+    return () => clearTimeout(casovac);
+  }, [dotceny]);
 
   const cislo = (v: string) => (v === "" ? null : Number(v));
   const zmen = (cast: Partial<Nastaveni>) => onZmena({ ...n, ...cast });
@@ -61,6 +74,11 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
             ✕
           </button>
         </header>
+        {vynadano ? (
+          <p className="prelobby-nadavka" role="alert" data-testid="prelobby-nadavka">
+            A tak jseš debil, nebo co?
+          </p>
+        ) : null}
 
         <div className="radky">
           {/* Jméno lobby ani heslo nejsou předvolba — jsou to hodnoty příští
@@ -80,10 +98,23 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
               ))}
             </select>
           </label>
-          <label className="radek" data-klic="viditelnost">
+          {/* Private lobby zakáže diváky, takže by celý večer neměl kdo
+              sledovat. Volba tu je jen proto, aby bylo vidět, že se s ní
+              nepočítá: vybrat ji jde, ale hned se vrátí zpátky na Public. */}
+          <label className={dotceny === "viditelnost" ? "radek zatrest" : "radek"} data-klic="viditelnost">
             <span>Visibility:</span>
-            <select value={n.viditelnost ?? ""} onChange={(e) => zmen({ viditelnost: cislo(e.target.value) })}>
-              <option value="">–</option>
+            <select
+              value={n.viditelnost ?? 0}
+              onChange={(e) => {
+                const v = cislo(e.target.value);
+                if (v === 1) {
+                  setDotceny("viditelnost");
+                  setVynadano(true);
+                  return;
+                }
+                zmen({ viditelnost: v });
+              }}
+            >
               {Object.entries(VIDITELNOST).map(([v, nazev]) => (
                 <option key={v} value={v}>
                   {nazev}
