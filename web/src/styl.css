@@ -1553,3 +1553,93 @@ a:hover { color: var(--zlato-svetle); }
 .prepinac {
   font-family: "Cinzel", Georgia, serif;
 }
+
+/* ---------------------------------------------------------------------------
+   Okno „Create Lobby“ postavené z herních assetů (widgetui/textures, viz
+   docs/grafika.md). Host má před sebou přesně to, co uvidí ve hře, jen
+   s vyplněnými hodnotami — opisuje z obrázku do obrázku.
+
+   Rozměry jsou v em, aby celé okno škálovalo jedním `font-size` na kořeni:
+   na mobilu se zmenší i s poli a zaškrtávátky.
+   --------------------------------------------------------------------------- */
+.okno-lobby {
+  --lobby-hneda: #4a3423;
+  font-family: "Trajan", Cinzel, Georgia, serif;
+  font-size: clamp(0.62rem, 1.6cqw, 0.95rem);
+  container-type: inline-size;
+  max-width: 44em;
+  margin: 1rem auto 0;
+  padding: 2.2em 3em 2.6em;
+  color: var(--lobby-hneda);
+  background: url(./assets/ui/lobby-pergamen.webp) center / 100% 100% no-repeat;
+}
+.okno-lobby-zahlavi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 3.4em;
+  background: url(./assets/ui/lobby-ozdoba.webp) center / contain no-repeat;
+}
+.okno-lobby-zahlavi h4 { margin: 0; font-size: 1.9em; font-weight: 700; color: var(--lobby-hneda); letter-spacing: 0.02em; }
+.okno-lobby-zavrit {
+  position: absolute;
+  top: 0;
+  right: -1.4em;
+  width: 2.2em;
+  height: 2.2em;
+  background: url(./assets/ui/lobby-zavrit.webp) center / contain no-repeat;
+}
+/* Deska s poli má vlastní zlatý rámeček jako ve hře. */
+.okno-lobby-telo {
+  margin-top: 1.2em;
+  padding: 1.6em 1.4em;
+  border: 2px solid rgba(122, 92, 44, 0.75);
+  box-shadow: inset 0 0 0 2px rgba(214, 186, 122, 0.5);
+}
+.okno-lobby-radek { display: grid; grid-template-columns: 11em 1fr; align-items: center; gap: 0.7em; margin-bottom: 0.55em; }
+.okno-lobby-popis { font-weight: 700; font-size: 1.15em; text-align: right; }
+/* Rozbalovátko: herní pole (levý díl, roztažitelný střed, pravý díl) plus
+   šipka. Border-image z pásu 66×45 složeného ze tří herních dílů. */
+.okno-lobby-vyber {
+  position: relative;
+  display: block;
+  padding: 0.25em 2.4em 0.25em 0.6em;
+  font-size: 1.1em;
+  font-weight: 700;
+  line-height: 1.5;
+  border: 6px solid transparent;
+  border-image: url(./assets/ui/lobby-pole.webp) 22 fill / 6px repeat;
+}
+.okno-lobby-vyber::after {
+  content: "";
+  position: absolute;
+  right: 0.5em;
+  top: 50%;
+  width: 1.3em;
+  height: 1.05em;
+  transform: translateY(-50%);
+  background: url(./assets/ui/lobby-sipka.webp) center / contain no-repeat;
+}
+/* Textové pole hra kreslí tmavou plochou, ne obrázkem — proto barvou. */
+.okno-lobby .okno-lobby-vstup {
+  display: block;
+  padding: 0.3em 0.6em;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #4ce04c;
+  background: #3b3b3b;
+  border: 2px solid #8a7a58;
+  text-align: left;
+}
+.okno-lobby-zaskrtavatko { display: inline-flex; align-items: center; gap: 0.55em; margin: 0.4em 0 0.4em 11.7em; font-size: 1.15em; font-weight: 700; }
+.okno-lobby-dvojice { display: flex; gap: 2.4em; }
+.okno-lobby-dvojice .okno-lobby-zaskrtavatko { margin-left: 11.7em; }
+.okno-lobby-dvojice .okno-lobby-zaskrtavatko + .okno-lobby-zaskrtavatko { margin-left: 0; }
+.okno-lobby-zaskrtavatko .ctverec {
+  width: 1.5em;
+  height: 1.5em;
+  background: url(./assets/ui/lobby-zaskrtavatko.webp) center / contain no-repeat;
+}
+.okno-lobby-zaskrtavatko.zapnuto .ctverec { background-image: url(./assets/ui/lobby-zaskrtnuto.webp); }
+.okno-lobby-varovani { margin: 1.1em 0; text-align: center; font-size: 1.15em; font-weight: 700; }

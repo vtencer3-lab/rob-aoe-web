@@ -21,8 +21,26 @@ znovu nebo dodělat nový kus ve stejném rukopisu.
 | **Barvy** | vytažené z loga Brohemians nástrojem `nastroje/grafika/paleta.py`, ne odhadnuté od oka |
 | **Písmo** | Cinzel (OFL, hostujeme si ho sami) na nadpisy, Georgia na text |
 | **Pozadí, rám, praporec, ozdoba, textury** | vygenerované lokálně (Flux.2-dev), viz §4 |
-| **Erby civilizací, ikony map, snímek dialogu Create Lobby, znak Bohemians** | přímo z instalace hry, viz `CONTRIBUTING.md` → „Data ze hry“ |
+| **Erby civilizací, ikony map, díly okna Create Lobby, znak Bohemians** | přímo z instalace hry, viz `CONTRIBUTING.md` → „Data ze hry“ |
 | **Tlačítka, pole, zaškrtávátka, přepínače, tabulky** | kreslené v CSS, žádné obrázky |
+
+**Výjimka: okno Create Lobby.** Od 9. 9. 2026 je postavené z herních dílů
+(`lobby-*.webp`), ne kreslené — host podle něj opisuje nastavení do hry, a
+tam je nejlepší, když se obrázek shoduje s obrázkem. Díly jsou
+z `AoE2DE\widgetui	extures`:
+
+| díl | zdroj ve hře |
+|---|---|
+| `lobby-pergamen.webp` | `backgrounds\popup_menu_bg_large.png` |
+| `lobby-ozdoba.webp` | `menu\decoration\header_ornaments.png` |
+| `lobby-pole.webp` | `menu\dropdowns\dropdown_{left,center,right}_4k_normal.png` spojené `spoj.py` do pásu pro `border-image` |
+| `lobby-sipka.webp` | `menuuttons\down_arrow_normal.png` |
+| `lobby-zaskrtavatko.webp`, `lobby-zaskrtnuto.webp` | `menu\checkboxes\checkbox_{unchecked,checked}_iron_4k_normal.png` |
+| `lobby-zavrit.webp` | `menuuttons\close_iron_4k_normal.png` |
+
+Převod dělá `nastroje/grafika/export.py` (pergamen 2,4 MB → 62 kB), spojení
+dílů `nastroje/grafika/spoj.py`. Textové pole obrázek nemá — hra ho kreslí
+plochou, tak je i tady barvou.
 
 **Proč tlačítka v CSS a ne z obrázku:** zůstanou ostrá v každé velikosti a
 při každém zvětšení stránky, nepotřebují devítidílný řez a nedělají další

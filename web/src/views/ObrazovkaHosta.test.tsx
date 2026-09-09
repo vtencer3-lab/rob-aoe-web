@@ -81,26 +81,29 @@ it("skutečné ovládání zůstává funkční", async () => {
   expect(screen.getByRole("button", { name: /kopírovat název lobby/i })).toBeInTheDocument();
 });
 
-it("posadí do dialogu jen ty tři hodnoty, které web řídí", () => {
+// Okno Create Lobby je od 9. 9. 2026 postavené z herních assetů, ne snímek:
+// ukazuje všechny volby z nastavení akce, ne jen tři přebité hodnoty.
+it("okno Create Lobby ukáže jméno, heslo a počet hráčů", () => {
   render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
-  expect(screen.getByTestId("pole-nazev-lobby")).toHaveTextContent("ROB-07");
-  expect(screen.getByTestId("pole-heslo")).toHaveTextContent("k7rm2xq9");
-  expect(screen.getByTestId("pole-players")).toHaveTextContent("4");
+  expect(screen.getByTestId("okno-nazev")).toHaveTextContent("ROB-07");
+  expect(screen.getByTestId("okno-heslo")).toHaveTextContent("k7rm2xq9");
+  // Bez vlastního nastavení Players platí, kolik hráčů zápas má.
+  expect(screen.getByTestId("okno-players")).toHaveTextContent("4");
 });
 
-// Zbytek dialogu je namalovaný v obrázku a je ve hře správně už tak: Public,
-// zaškrtnuté Allow Spectators, Unranked, None, Default, Definitive Set.
-// Přepisovat je nemá co.
-it("do ostatních polí dialogu nic nevkládá", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
-  expect(screen.getAllByTestId(/^pole-/)).toHaveLength(3);
-});
-
-it("obrázek dialogu popisuje pro čtečku tři hodnoty, které web řídí", () => {
-  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
-  const obrazek = screen.getByTestId("obrazek-dialogu");
-  expect(obrazek.getAttribute("alt")).toMatch(/Lobby Name ROB-07/);
-  expect(obrazek.getAttribute("src")).toMatch(/create-lobby/);
+it("co režie v pre-lobby změní, okno ukáže", () => {
+  render(
+    <ObrazovkaHosta
+      zapas={zaklad}
+      ja="ja"
+      nastaveniLobby={{ maxHracu: 8, server: "ukwest", zpozdeniDivaku: 3 }}
+      onHledatLobby={nehledat}
+      onKontrolaLobby={nekontroluj}
+    />,
+  );
+  expect(screen.getByTestId("okno-players")).toHaveTextContent("8");
+  expect(screen.getByTestId("okno-server")).toHaveTextContent("ukwest");
+  expect(screen.getByTestId("okno-create-lobby")).toHaveTextContent("3 Minutes");
 });
 
 // Kdyby se obrázek nenačetl, nebo se na něj někdo nedíval, nesmí s ním zmizet

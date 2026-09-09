@@ -477,6 +477,7 @@ export function App() {
                     key={zapas.id}
                     zapas={zapas}
                     ja={me.steamId}
+                    nastaveniLobby={akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                   />
