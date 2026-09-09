@@ -519,7 +519,9 @@ h2.nadpis-akce::after {
    Počítač se do akce nehlásí, takže se nebere z tabulky přihlášených jako lidi
    — přisedne odsud, jako když si ho host naklikne v lobby. */
 .skladani .hlavicka-sestavy { display: flex; align-items: center; gap: 0.9rem; }
-.skladani .hlavicka-sestavy .zaloha { margin-top: 0; }
+/* Odstavec má vlastní spodní okraj, takže by se s tlačítkem srovnal
+   krabicí, ne textem — a tlačítko by sedělo níž. */
+.skladani .hlavicka-sestavy .zaloha { margin: 0; }
 .skladani .pridat-ai { padding: 0.15rem 0.7rem; font-size: 0.8rem; }
 .skladani .sestava {
   list-style: none;
