@@ -220,8 +220,9 @@ Sloty hráčů (`slotinfo`, metadata slotu): `ScenarioPlayerIndex` 0–7 = barva
 slotu se plní nespolehlivě, kontrola ho nepoužívá.
 
 **Sloty AI** (ověřeno naživo 9. 9. 2026 na vlastní lobby): počítač má
-`profileInfo.id` = −1 stejně jako prázdný slot, pozná se až podle
-`status` — **0 sedí člověk, 1 slot je prázdný, 2 sedí AI** — a podle toho,
+`profileInfo.id` = −1 stejně jako volný slot, pozná se až podle
+`status` — **0 slot je v lobby (obsazený i volný), 1 slot je zavřený
+(uříznutý volbou Players), 2 sedí AI** — a podle toho,
 že má vyplněná `metaData` (prázdný slot má `"AA=="`). Barva, tým i
 civilizace se z nich čtou stejně jako u člověka; klíč `1` je herní id
 civilizace, hodnota s nastaveným horním slovem (65537 = 0x10001) znamená
@@ -236,7 +237,7 @@ neleží v `options`, ale přímo v inzerátu vedle jména. Změřeno naživo
 | Lobby Name | `description` | |
 | Lobby Type | `matchtype_id` | Unranked = 0 |
 | Visibility | `visible` | Public = 1 |
-| Players | `maxplayers` | 2–8 |
+| Players | **ne `maxplayers`** | `maxplayers` je vždycky 8 (kolik hráčů hra unese). Skutečný počet slotů = kolik slotů ve `slotinfo` **není zavřených** |
 | Set Password | `passwordprotected` | 0/1, samotné heslo se neposílá |
 | Allow Spectators | `isobservable` | |
 | Spectator Delay | `observerdelay` | **v sekundách** (3 minuty = 180) |

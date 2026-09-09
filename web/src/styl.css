@@ -212,6 +212,11 @@ header h1 {
    z výchozího stylu prohlížeče pro h2, takže vycházelo větší než „Přihlášení
    hráči“ vedle něj; teď je řečená u obou. */
 .nadpis-seznamu, .hlavicka-akce h2 { font-size: 1.4rem; }
+/* Text nadpisu odsazený od kraje desky, ozdoba pod ním ne: ta má začínat
+   u rámu. Proto odsazení na textu a záporné na ozdobě, ne padding na celém
+   nadpisu. */
+.nadpis-seznamu, h2.nadpis-akce, .hlavicka-akce h2 { padding-left: 20px; }
+.nadpis-seznamu::after, h2.nadpis-akce::after, .hlavicka-akce h2::after { margin-left: -20px; }
 .nadpis-seznamu::after, h2.nadpis-akce::after, .hlavicka-akce h2::after {
   content: "";
   display: block;
