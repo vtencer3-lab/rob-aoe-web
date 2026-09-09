@@ -246,3 +246,40 @@ it("pozdější změna nastavení akce zápasem nehne", async () => {
   );
   expect(rows[0]?.nastaveni).toMatchObject({ location: "Arabia" });
 });
+
+// AI do akce nikdo nepřihlašuje — sedí rovnou v sestavě. Kontrola „kdo se
+// mezitím odhlásil, do zápasu nepatří“ ji proto musí přeskočit, jinak by
+// zápas proti počítači nešel založit vůbec.
+it("založí zápas s AI, i když AI v akci přihlášená není", async () => {
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[0]!, "ai:1"]));
+
+  const { rows } = await getPool().query<{ steam_id: string; je_host: boolean; elo_pri_zapasu: number | null }>(
+    "SELECT steam_id, je_host, elo_pri_zapasu FROM ucastnik WHERE zapas_id = $1 ORDER BY steam_id",
+    [zapas.id],
+  );
+  expect(rows.map((r) => r.steam_id).sort()).toEqual([HRACI[0]!, "ai:1"].sort());
+  // Hostem je člověk: lobby zakládá někdo, kdo sedí u hry.
+  expect(rows.find((r) => r.je_host)?.steam_id).toBe(HRACI[0]);
+  expect(rows.find((r) => r.steam_id === "ai:1")?.elo_pri_zapasu).toBeNull();
+});
+
+// Účastník zápasu je cizím klíčem navázaný na player, takže AI tam řádek mít
+// musí. Zakládá si ho zápas sám ze seznamu v shared/aiHraci.ts — jeden zdroj
+// pravdy, žádný seed v migraci, který by se s ním mohl rozejít.
+it("AI si řádek v tabulce player založí sama při prvním zápase", async () => {
+  await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[0]!, "ai:3"]));
+
+  const { rows } = await getPool().query<{ steam_id: string; alias: string; elo_1v1: number | null }>(
+    "SELECT steam_id, alias, elo_1v1 FROM player WHERE steam_id = 'ai:3'",
+  );
+  expect(rows).toHaveLength(1);
+  expect(rows[0]!.alias).toBe("AI");
+  expect(rows[0]!.elo_1v1).toBeNull();
+});
+
+// Druhý zápas se stejnou AI nesmí spadnout na duplicitní klíč.
+it("opakované AI v dalším zápase projde", async () => {
+  await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[0]!, "ai:1"]));
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[1]!, "ai:1"]));
+  expect(druhy.poradi).toBe(2);
+});

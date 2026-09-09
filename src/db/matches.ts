@@ -1,4 +1,5 @@
 import { generatePassword, lobbyName, sestavSedadla } from "../matches/composition.js";
+import { jeAi, JMENO_AI } from "../shared/aiHraci.js";
 import {
   assertTransition,
   PrechodChyba,
@@ -90,6 +91,18 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
     // to, které platilo v okamžiku založení zápasu.
     const elo = new Map(prihlaseni.map((r) => [r.steam_id, r.elo_1v1]));
     for (const steamId of steamIds) {
+      // AI se do akce nehlásí — sedí rovnou v sestavě, takže tahle kontrola
+      // se jí netýká. Zato potřebuje řádek v player, jinak ji cizí klíč
+      // účastníka nepustí; zakládá se tady ze sdíleného seznamu, aby jméno
+      // AI existovalo v celém repu jen jednou (shared/aiHraci.ts).
+      if (jeAi(steamId)) {
+        await client.query(
+          `INSERT INTO player (steam_id, alias, steam_name) VALUES ($1, $2, $2)
+             ON CONFLICT (steam_id) DO NOTHING`,
+          [steamId, JMENO_AI],
+        );
+        continue;
+      }
       if (!odehrano.has(steamId)) {
         throw new UcastnikOdhlasenChyba(`Hráč ${steamId} už není přihlášený do akce.`);
       }

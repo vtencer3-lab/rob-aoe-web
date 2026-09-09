@@ -446,6 +446,15 @@ export function App() {
               }
               sadaCivilizaci={doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
               zvyraznit={zvyrazneni?.druh === "skladani" ? zvyrazneni : null}
+              onPrvniAi={() => {
+                // Bez AI v lobby na obtížnosti nezáleží a „–“ je v pořádku.
+                // S prvním počítačem už ne — políčko blikne, ať to admina
+                // trkne dřív, než lobby založí. Nastavit ho musí sám: který
+                // stupeň chce, web neuhodne.
+                if (doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).aiObtiznost === null) {
+                  zvyrazni("nastaveni", "aiObtiznost");
+                }
+              }}
             />
           ) : null}
         </SpravaAkce>

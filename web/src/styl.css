@@ -515,6 +515,12 @@ h2.nadpis-akce::after {
 /* Sloupce jsou na celém seznamu (subgrid), takže jméno má šířku podle
    nejdelšího jména v sestavě a ELO i civilizace sedí zarovnané hned za ním;
    křížek je až u pravého okraje za prázdným sloupcem. */
+/* Nadpisový řádek sestavy: nápověda k přetahování vlevo, „+ AI“ hned vedle ní.
+   Počítač se do akce nehlásí, takže se nebere z tabulky přihlášených jako lidi
+   — přisedne odsud, jako když si ho host naklikne v lobby. */
+.skladani .hlavicka-sestavy { display: flex; align-items: center; gap: 0.9rem; }
+.skladani .hlavicka-sestavy .zaloha { margin-top: 0; }
+.skladani .pridat-ai { padding: 0.15rem 0.7rem; font-size: 0.8rem; }
 .skladani .sestava {
   list-style: none;
   padding: 0;

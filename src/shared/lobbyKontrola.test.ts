@@ -58,6 +58,23 @@ describe("zkontrolujLobby", () => {
     expect(lobbyVPoradku(k)).toBe(false);
   });
 
+  // Seznam lobby ze hry vydává jen sloty se Steam účtem, takže AI v datech
+  // není vidět vůbec. Kontrola ji proto nesmí počítat mezi chybějící — jen
+  // řekne, kolik jich ověřit nejde.
+  it("AI v sestavě nehlásí jako chybějící, jen připíše kolik jich nejde ověřit", () => {
+    const sAi = [...sestava, u("ai:1", 2, 3, "AI")];
+    const k = zkontrolujLobby(sAi, ocekavane, lobby());
+    const hraci = k.find((x) => x.klic === "hraci")!;
+    expect(hraci.stav).toBe("ok");
+    expect(hraci.text).toBe("Hráči: všichni 2 uvnitř (+ 1 AI neověřeno)");
+    expect(k.some((x) => x.klic === "barva:ai:1")).toBe(false);
+  });
+
+  it("bez AI zůstává hlášení o hráčích beze změny", () => {
+    const hraci = zkontrolujLobby(sestava, ocekavane, lobby()).find((x) => x.klic === "hraci")!;
+    expect(hraci.text).toBe("Hráči: všech 2 uvnitř");
+  });
+
   it("špatná barva říká, co má být; v 1v1 tým nevadí, dokud není stejný jako soupeřův", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ steamId: HOST, barva: null, tym: "?", civ: null, pripraven: true }, { steamId: JA, barva: 4, tym: 2, civ: null, pripraven: true }] }));
     expect(k.find((x) => x.klic === `barva:${HOST}`)!.text).toBe("Trokner má náhodnou barvu, má mít modrá");

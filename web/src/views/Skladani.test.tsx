@@ -241,3 +241,51 @@ it("ukáže součet ELO za tým a jmenuje hráče bez ELO", () => {
   expect(tymy[1]).toHaveTextContent("Tým 2");
   expect(tymy[1]).toHaveTextContent("0");
 });
+
+const pridejAi = () => fireEvent.click(screen.getByRole("button", { name: "Přidat AI do sestavy" }));
+
+it("tlačítko „+ AI“ posadí do sestavy počítač se jménem AI", () => {
+  render(<Panel />);
+  pridejAi();
+
+  expect(vybraniJmena()).toEqual(["AI"]);
+  // AI se bere vlastním tlačítkem, ne z tabulky přihlášených — ta zůstane celá.
+  expect(nevybraniJmena()).toEqual(["TenceR", "Pepa", "Marek", "Lukas"]);
+  expect(screen.getByRole("button", { name: /barva ai: modrá/i })).toHaveTextContent("1");
+});
+
+it("víc AI se liší barvou a týmem, ne jménem", () => {
+  render(<Panel />);
+  pridejAi();
+  pridejAi();
+  expect(vybraniJmena()).toEqual(["AI", "AI"]);
+  expect(screen.getByRole("button", { name: /tým ai: 2/i })).toBeTruthy();
+});
+
+// Počítač žádné ELO nemá, takže karta se statistikami by u něj byla prázdná.
+it("nad AI se karta se statistikami neukáže", () => {
+  render(<Panel />);
+  vyber("TenceR");
+  pridejAi();
+  const jmena = screen.getAllByTestId("jmeno-vybraneho");
+
+  fireEvent.pointerEnter(jmena[0]!);
+  expect(screen.queryByTestId("staty-hrace")).toBeTruthy();
+  fireEvent.pointerLeave(jmena[0]!);
+
+  fireEvent.pointerEnter(jmena[1]!);
+  expect(screen.queryByTestId("staty-hrace")).toBeNull();
+});
+
+// Do součtu ELO počítač nevstupuje a nepatří ani mezi „bez ELO“ — tam se
+// vypisují lidé, kterým se statistiky nestáhly, a to je něco jiného.
+it("AI nezasahuje do součtu ELO týmu ani do seznamu bez ELO", () => {
+  render(<Panel />);
+  vyber("TenceR");
+  pridejAi();
+
+  const tymy = within(screen.getByTestId("elo-tymu")).getAllByRole("heading");
+  expect(tymy.map((h) => h.textContent)).toEqual(["Tým 1", "Tým 2"]);
+  expect(screen.getByTestId("elo-tymu").textContent).toContain("1136");
+  expect(screen.getByTestId("elo-tymu").textContent).not.toContain("bez ELO");
+});

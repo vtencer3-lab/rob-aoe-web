@@ -545,3 +545,28 @@ it("logo odkazuje na kanál Brohemians do nové záložky", async () => {
   expect(odkaz).toHaveAttribute("target", "_blank");
   expect(odkaz.getAttribute("rel")).toContain("noreferrer");
 });
+
+// Přidání prvního počítače do sestavy má adminovi připomenout AI Difficulty:
+// dokud v lobby žádná AI nesedí, je „–“ v pořádku, s prvním už ne. Blikne
+// stejně jako políčko po Ctrl+Z.
+it("první AI v sestavě blikne na AI Difficulty, když je nenastavená", async () => {
+  const { fireEvent, waitFor } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [], nastaveniLobby: { aiObtiznost: null } }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  fireEvent.click(await screen.findByRole("button", { name: "Přidat AI do sestavy" }));
+  await waitFor(() => expect(document.querySelector('[data-klic="aiObtiznost"].zmena')).toBeTruthy());
+});
+
+it("s nastavenou obtížností AI Difficulty nebliká", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [], nastaveniLobby: { aiObtiznost: 1 } }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  fireEvent.click(await screen.findByRole("button", { name: "Přidat AI do sestavy" }));
+  expect(document.querySelector('[data-klic="aiObtiznost"].zmena')).toBeNull();
+});

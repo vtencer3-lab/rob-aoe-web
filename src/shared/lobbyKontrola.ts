@@ -1,3 +1,4 @@
+import { jeAi } from "./aiHraci.js";
 import { nazevCivilizace } from "./civilizace.js";
 import { nazevMapy } from "./mapy.js";
 import { BARVA_NAZEV, type Barva, type Tym } from "./types.js";
@@ -288,17 +289,25 @@ export function zkontrolujLobby(
   // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
   hlavni("heslo", lobby.maHeslo, lobby.maHeslo ? "Heslo nastavené" : "Lobby nemá heslo — kdokoliv z lobby prohlížeče se může připojit", true);
 
-  const chybi = ucastnici.filter((u) => !vLobby.has(u.steamId));
+  // AI se v datech ze hry nepozná: seznam lobby vydává jen sloty se Steam
+  // účtem (worldsEdgeLobby.parseSloty), takže počítač do porovnání vůbec
+  // nevstupuje. Hlásit ho jako chybějícího by znamenalo trvale červený
+  // řádek u každého zápasu proti AI. Ověřit se AI zatím musí očima —
+  // až se podíváme, co hra o AI slotech opravdu posílá, dá se to dodělat.
+  const lide = ucastnici.filter((u) => !jeAi(u.steamId));
+  const pocetAi = ucastnici.length - lide.length;
+  const chybi = lide.filter((u) => !vLobby.has(u.steamId));
   const navic = lobby.sloty.filter((s) => !zapasu.has(s.steamId));
+  const dovetekAi = pocetAi > 0 ? ` (+ ${pocetAi} AI neověřeno)` : "";
   hlavni(
     "hraci",
     chybi.length === 0 && navic.length === 0,
     chybi.length === 0 && navic.length === 0
-      ? `Hráči: všech ${ucastnici.length} uvnitř`
+      ? `Hráči: ${pocetAi > 0 ? "všichni" : "všech"} ${lide.length} uvnitř${dovetekAi}`
       : [chybi.length > 0 ? `chybí ${chybi.map(jmeno).join(", ")}` : "", navic.length > 0 ? `navíc ${navic.length} cizí` : ""]
           .filter(Boolean)
           .join("; ")
-          .replace(/^./, (c) => c.toUpperCase()),
+          .replace(/^./, (c) => c.toUpperCase()) + dovetekAi,
   );
 
   // Týmová hra = některý tým z webu má víc než jednoho hráče. Jen tam záleží
