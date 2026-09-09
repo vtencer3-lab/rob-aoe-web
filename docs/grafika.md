@@ -38,7 +38,7 @@ z `AoE2DE\widgetui	extures`:
 | `lobby-zaskrtavatko.webp`, `lobby-zaskrtnuto.webp` | `menu\checkboxes\checkbox_{unchecked,checked}_iron_4k_normal.png` |
 | `lobby-zavrit.webp` | `menuuttons\close_iron_4k_normal.png` |
 
-| `lobby-ram.webp` | `menu\decorationoxstyle2_*` — devět dílů složených `mrizka.py --orez 22` do mřížky 3×3 pro `border-image`. Ořez je nutný: díly nesou kolem zlata i kus výplně, se kterou rám ztloustne, a zmenšit místo toho výřez nejde — zmáčklo by to rohové ozdoby do šmouhy |
+| `lobby-ram.webp` | `menu\decorationoxstyle2_*` — devět dílů složených `mrizka.py --orez 22 --klic 67` do mřížky 3×3 pro `border-image`. Ořez je nutný: díly nesou kolem zlata i kus výplně, se kterou rám ztloustne, a zmenšit místo toho výřez nejde — zmáčklo by to rohové ozdoby do šmouhy. Klíčování taky: uvnitř dílů je neprůhledná šedá `67,67,67`, což je vnitřek krabice pro tmavé menu. V okně je uvnitř pergamenová deska, takže se ta šedá odstraňuje a tmavší přechod pod zlatem se převádí na poloprůhledný stín. `klic.py` se sem nehodí — ten plaví černé pozadí od rohů, kdežto tady je plocha uvnitř |
 | `lobby-vstup.webp` | `menu\decoration\input_{left,center,right}_4k_normal.png` |
 
 Převod dělá `nastroje/grafika/export.py` (pergamen 2,4 MB → 62 kB), spojení

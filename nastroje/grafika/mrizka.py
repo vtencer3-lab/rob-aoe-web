@@ -26,12 +26,42 @@ def main() -> None:
     p.add_argument("-o", "--out", required=True, type=Path)
     p.add_argument("--bunka", type=int, default=0, help="strana buňky; výchozí = šířka levého horního rohu")
     p.add_argument(
+        "--klic",
+        type=int,
+        default=0,
+        help="odklíčovat plochou šedou výplň téhle světlosti (v herních dílech 67): stejná barva zmizí, tmavší přechod se změní ve stín",
+    )
+    p.add_argument(
         "--orez",
         type=int,
         default=0,
         help="vzít z každého dílu jen vnější pás téhle šířky (zbytek dílu je výplň, která do rámu nepatří)",
     )
     a = p.parse_args()
+
+    def odklicuj(im: Image.Image) -> Image.Image:
+        """Vyřízne plochou výplň krabice, aby rám zůstal jen rámem.
+
+        Díly nesou uvnitř neprůhlednou šedou — to je vnitřek krabice, kterou
+        hra kreslí na tmavém pozadí menu. V okně Create Lobby je uvnitř
+        pergamenová deska, takže tahle šedá tam nemá co dělat. Pixely přesně
+        té světlosti mizí; tmavší šedé pod zlatem jsou stín výplně, ten se
+        převede na černou s odpovídající průhledností, aby rám dál vrhal
+        stín i na desku.
+        """
+        if a.klic <= 0:
+            return im
+        v = im.load()
+        for y in range(im.height):
+            for x in range(im.width):
+                r, g, b, alfa = v[x, y]
+                if alfa != 255 or abs(r - g) > 4 or abs(g - b) > 4 or abs(r - b) > 4:
+                    continue  # barevné (zlato, ozdoba) i měkký vnější stín zůstávají
+                if r >= a.klic:
+                    v[x, y] = (0, 0, 0, 0)
+                elif r > 8:  # černý obrys ozdob (skoro nula) není stín výplně
+                    v[x, y] = (0, 0, 0, round(255 * (a.klic - r) / a.klic))
+        return im
 
     def nacti(cesta: Path, kde: tuple[int, int]) -> Image.Image:
         """Načte díl a s `--orez` z něj vezme jen vnější pás.
@@ -41,7 +71,7 @@ def main() -> None:
         (−1 vlevo/nahoře, 0 uprostřed, 1 vpravo/dole), aby se ořezávalo
         na správnou stranu.
         """
-        im = Image.open(cesta).convert("RGBA")
+        im = odklicuj(Image.open(cesta).convert("RGBA"))
         if a.orez <= 0:
             return im
         o = a.orez
