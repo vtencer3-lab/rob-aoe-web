@@ -84,6 +84,8 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
   const kOprave = nalezena?.kontroly.filter((k) => k.stav === "spatne").length ?? 0;
   const vPoradku = nalezena ? lobbyVPoradku(nalezena.kontroly) : null;
   const dalsiJinak = dalsi.filter((k) => k.stav === "spatne").length;
+  const prelobby = nalezena?.kontroly.filter((k) => k.sekce === "prelobby") ?? [];
+  const prelobbyJinak = prelobby.filter((k) => k.stav === "spatne").length;
 
   useEffect(() => {
     onVerdikt?.(vPoradku);
@@ -137,6 +139,19 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
                 </span>
               </summary>
               <SeznamKontrol kontroly={dalsi} testId="kontroly-dalsi" />
+            </details>
+          ) : null}
+          {/* Pre-Lobby: co se naklikalo v okně zakládání lobby. Po založení
+              se s tím už nedá hnout, takže sedí zvlášť od herního panelu. */}
+          {prelobby.length > 0 ? (
+            <details className="dalsi-nastaveni" data-testid="prelobby-nastaveni">
+              <summary>
+                Pre-Lobby{" "}
+                <span className={prelobbyJinak === 0 ? "potvrzeno" : "chyba"}>
+                  {prelobbyJinak === 0 ? "— vše podle nastavení akce" : `— ${prelobbyJinak} jinak než v nastavení akce`}
+                </span>
+              </summary>
+              <SeznamKontrol kontroly={prelobby} testId="kontroly-prelobby" />
             </details>
           ) : null}
         </>

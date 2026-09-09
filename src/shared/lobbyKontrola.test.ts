@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AI_OBTIZNOSTI, doplnNastaveni, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
+import { AI_OBTIZNOSTI, doplnNastaveni, type PoznatekLobby as _PL, type PreLobbyZeHry, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
 import { nazevMapy } from "./mapy.js";
 import type { Barva, Tym } from "./types.js";
 
@@ -35,9 +35,12 @@ describe("zkontrolujLobby", () => {
     expect(k.every((x) => x.stav === "ok" || x.stav === "jedno")).toBe(true);
     // „Je to jedno“ zůstala ve výchozím stavu jen AI obtížnost; Lock Teams se
     // od 9. 9. 2026 vyžaduje zapnutý (sestavu skládá Rob, v lobby se s ní nehýbe).
-    expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual(["aiObtiznost"]);
+    // Pre-lobby: bez údajů ze hry se nekontroluje nic z okna zakládání.
+    expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual([
+      "aiObtiznost", "lobbyTyp", "viditelnost", "maxHracu", "skrytCivilizace", "zpozdeniDivaku", "server",
+    ]);
     expect(k.filter((x) => x.sekce === "hlavni").map((x) => x.klic)).toEqual([
-      "divaci", "heslo", "hraci", `barva:${HOST}`, `tym:${HOST}`, `barva:${JA}`, `tym:${JA}`,
+      "hraci", `barva:${HOST}`, `tym:${HOST}`, `barva:${JA}`, `tym:${JA}`,
       "mapa", "velikost", "rychlost", "populace", "vitezstvi", "cheaty",
     ]);
     expect(k.filter((x) => x.sekce === "dalsi").map((x) => x.klic)).toEqual([
@@ -132,10 +135,10 @@ describe("zkontrolujLobby", () => {
 
   // Heslo není povinné: bez něj se hrát dá, jen do lobby může vlézt někdo
   // cizí. Je to upozornění, ne chyba — „lobby v pořádku“ na něm nestojí.
-  it("diváci jsou chyba, chybějící heslo jen upozornění", () => {
+  it("zakázaní diváci jsou chyba, chybějící heslo jen upozornění", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({ povolujeDivaky: false, maHeslo: false }));
-    expect(k.find((x) => x.klic === "divaci")).toMatchObject({ stav: "spatne", text: /Allow Spectators/ });
-    expect(k.find((x) => x.klic === "heslo")).toMatchObject({ stav: "varovani", sekce: "hlavni" });
+    expect(k.find((x) => x.klic === "povolitDivaky")).toMatchObject({ stav: "spatne", text: /Allow Spectators/ });
+    expect(k.find((x) => x.klic === "heslo")).toMatchObject({ stav: "varovani", sekce: "prelobby" });
     expect(lobbyVPoradku(k)).toBe(false);
     const jenBezHesla = zkontrolujLobby(sestava, ocekavane, lobby({ maHeslo: false }));
     expect(lobbyVPoradku(jenBezHesla)).toBe(true);
@@ -269,5 +272,69 @@ describe("číselníky nastavení", () => {
 
   it("suroviny znají i Random", () => {
     expect(SUROVINY[6]).toBe("Random");
+  });
+});
+
+// Pre-lobby: okno „Create Lobby“. Heslo a diváci sem patří taky — nastavují
+// se při zakládání lobby, ne v herním panelu.
+describe("kontrola pre-lobby", () => {
+  const preLobby = (cast: Partial<PreLobbyZeHry> = {}): PreLobbyZeHry => ({
+    lobbyTyp: 0,
+    viditelnost: 1,
+    maxHracu: 8,
+    zpozdeniDivakuSekund: 0,
+    server: "westeurope",
+    ...cast,
+  });
+  const sHrou = (cast: Partial<PreLobbyZeHry> = {}, dalsi: Partial<PoznatekLobby> = {}) =>
+    lobby({ preLobby: preLobby(cast), ...dalsi });
+
+  it("heslo a diváci se přesunuli z hlavní sekce do pre-lobby", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sHrou());
+    expect(k.filter((x) => x.sekce === "hlavni").map((x) => x.klic)).not.toContain("heslo");
+    expect(k.filter((x) => x.sekce === "prelobby").map((x) => x.klic)).toContain("heslo");
+    expect(k.filter((x) => x.sekce === "prelobby").map((x) => x.klic)).toContain("povolitDivaky");
+  });
+
+  it("výchozí Unranked lobby bez zpoždění projde", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sHrou());
+    expect(k.filter((x) => x.sekce === "prelobby" && x.stav === "spatne")).toHaveLength(0);
+  });
+
+  it("jiný typ lobby než nastavený je chyba", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sHrou({ lobbyTyp: 1 }));
+    expect(k.find((x) => x.klic === "lobbyTyp")).toMatchObject({
+      stav: "spatne",
+      text: "Lobby Type: Ranked 1v1 Death Match, má být Unranked",
+    });
+  });
+
+  // Zpoždění diváků hře nevadí, jen kazí vysílání — proto žlutá, ne červená.
+  it("zpoždění diváků je jen upozornění", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sHrou({ zpozdeniDivakuSekund: 180 }));
+    expect(k.find((x) => x.klic === "zpozdeniDivaku")).toMatchObject({
+      stav: "varovani",
+      text: "Spectator Delay: 3 Minutes, má být None",
+    });
+  });
+
+  it("sekundy ze hry se počítají na minuty z nabídky", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ zpozdeniDivaku: 3 }), sHrou({ zpozdeniDivakuSekund: 180 }));
+    expect(k.find((x) => x.klic === "zpozdeniDivaku")).toMatchObject({ stav: "ok" });
+  });
+
+  it("server „Default“ se ověřit nedá, hra hlásí skutečný region", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ server: "Default" }), sHrou({ server: "ukwest" }));
+    expect(k.find((x) => x.klic === "server")).toMatchObject({ stav: "jedno", text: "Server: ukwest (Default se ověřit nedá)" });
+  });
+
+  it("konkrétní server porovná", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ server: "westeurope" }), sHrou({ server: "ukwest" }));
+    expect(k.find((x) => x.klic === "server")).toMatchObject({ stav: "spatne", text: "Server: ukwest, má být westeurope" });
+  });
+
+  it("skryté civilizace bere z nastavení hry", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ skrytCivilizace: false }), lobby({ preLobby: preLobby(), nastaveni: { ...podleOcekavani, skrytCivilizace: true } }));
+    expect(k.find((x) => x.klic === "skrytCivilizace")).toMatchObject({ stav: "spatne", text: "Hide Civilizations: zapnuto, má být vypnuto" });
   });
 });

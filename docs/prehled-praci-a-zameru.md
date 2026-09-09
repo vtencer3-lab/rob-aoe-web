@@ -881,6 +881,11 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.25.11 | 14:05 | „Vyhrála AI“ místo „Vyhrál AI“ (AI je česky rodu ženského) |
 | 0.25.12 | 14:15 | Population je nabídka jako ve hře (po 25 do 250, pak po stovkách do 500) |
 | 0.25.13 | 14:40 | Server přijme i Time Limit, Score a Last Man Standing — dřív je zahodil a výběr se sám přepnul zpátky |
+| 0.25.14 | 14:55 | Přepínače Civilization Set přes celou šířku; čtení pre-lobby polí z inzerátu |
+| 0.26.0 | 15:20 | Heslo příští lobby vzniká dopředu u akce (migrace 016), zápas si ho vezme |
+| 0.26.1 | 15:45 | Pre-Lobby jako modální okno podle herního „Create Lobby“ |
+| 0.26.2 | 16:05 | Mřížka okna, tmavší pozadí, monochromatická kostka, výchozí Unranked / None / Definitive Set / Co-Op vypnutá (migrace 017) |
+| 0.26.3 | 16:30 | Kontrola dostala sekci Pre-Lobby; heslo a diváci se do ní přesunuli z hlavní |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

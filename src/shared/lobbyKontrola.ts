@@ -331,14 +331,16 @@ export type AiSlot = Omit<SlotLobby, "steamId">;
  * Co inzerát nenese, je null.
  */
 export interface PreLobbyZeHry {
-  /** `observerdelay` — zpoždění diváků. Jednotka zatím neověřená. */
-  zpozdeniDivaku: number | null;
+  /** `matchtype_id` — Lobby Type; 0 je Unranked. */
+  lobbyTyp: number | null;
+  /** `visible` — Visibility; 1 je Public. */
+  viditelnost: number | null;
   /** `maxplayers` — kolik slotů lobby má. */
   maxHracu: number | null;
-  /** `hasobserverpassword` — heslo zvlášť pro diváky. */
-  hesloDivaku: boolean | null;
-  /** `relayserver_region` — třeba „westeurope“. */
-  region: string | null;
+  /** `observerdelay` — zpoždění diváků **v sekundách** (3 minuty = 180). */
+  zpozdeniDivakuSekund: number | null;
+  /** `relayserver_region`; „Default“ se sem propíše jako skutečný region. */
+  server: string | null;
 }
 
 /** Nastavení hry, jak ho seznam lobby vydává; co nešlo přečíst, je null (nebo chybí). */
@@ -364,6 +366,8 @@ export interface NastaveniZeHry {
   lockSpeed?: boolean | null;
   turbo?: boolean | null;
   fullTechTree?: boolean | null;
+  /** Hide Civilizations z options[85]. */
+  skrytCivilizace?: boolean | null;
   empireWars?: boolean | null;
   suddenDeath?: boolean | null;
   regicide?: boolean | null;
@@ -450,9 +454,6 @@ export function zkontrolujLobby(
   const vLobby = new Map(lobby.sloty.map((s) => [s.steamId, s]));
   const zapasu = new Set(ucastnici.map((u) => u.steamId));
 
-  hlavni("divaci", lobby.povolujeDivaky, lobby.povolujeDivaky ? "Diváci povoleni" : "Diváci nejsou povoleni — zaškrtni Allow Spectators");
-  // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
-  hlavni("heslo", lobby.maHeslo, lobby.maHeslo ? "Heslo nastavené" : "Lobby nemá heslo — kdokoliv z lobby prohlížeče se může připojit", true);
 
   // Lidi porovnává Steam ID, AI barva: počítač žádné id nemá, takže se dvě
   // AI od sebe v datech nepoznají. Napřed se spárují ty, které barvu mají
@@ -589,5 +590,48 @@ export function zkontrolujLobby(
     k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${zap(ve)}, má být ${zap(ma)}` : `${popis}: ${zap(ve)}`, sekce: "dalsi" });
   }
 
+  // Pre-lobby: okno „Create Lobby“ ve hře. Heslo a diváci sem patří taky —
+  // nastavují se při zakládání lobby, ne v herním panelu, a po založení se
+  // s nimi už nedá hnout. Co hra o lobby neposílá (Co-Op Campaign, Data Mod),
+  // se nekontroluje vůbec.
+  const pre = lobby.preLobby;
+  const preRadek = (klic: string, popis: string, ve: string | null, ma: string | null, varovani = false): void => {
+    const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : varovani ? "varovani" : "spatne";
+    const videt = ve ?? "?";
+    k.push({ klic, stav, text: stav === "ok" || stav === "jedno" ? `${popis}: ${videt}` : `${popis}: ${videt}, má být ${ma}`, sekce: "prelobby" });
+  };
+  const jmenem = (tabulka: Record<number, string>) => (v: number | null | undefined) =>
+    v === null || v === undefined ? null : (tabulka[v] ?? String(v));
+  const zap = (v: boolean | null | undefined) => (v === null || v === undefined ? null : v ? "zapnuto" : "vypnuto");
+
+  // Starší snímky (a testy) pre-lobby data nenesou; co není, se nekontroluje.
+  const zHry = <T,>(hodnota: T | null | undefined): T | null => (pre === undefined ? null : (hodnota ?? null));
+  preRadek("lobbyTyp", "Lobby Type", jmenem(LOBBY_TYPY)(pre?.lobbyTyp), zHry(jmenem(LOBBY_TYPY)(ocekavane.lobbyTyp)));
+  preRadek("viditelnost", "Visibility", jmenem(VIDITELNOST)(pre?.viditelnost === 1 ? 0 : pre?.viditelnost === 0 ? 1 : null), zHry(jmenem(VIDITELNOST)(ocekavane.viditelnost)));
+  preRadek(
+    "maxHracu",
+    "Players",
+    pre?.maxHracu === null || pre?.maxHracu === undefined ? null : String(pre.maxHracu),
+    zHry(ocekavane.maxHracu === null ? null : String(ocekavane.maxHracu)),
+  );
+  // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
+  k.push({
+    klic: "heslo",
+    stav: lobby.maHeslo ? "ok" : "varovani",
+    text: lobby.maHeslo ? "Set Password: nastavené" : "Set Password: prázdné — kdokoliv z lobby prohlížeče se může připojit",
+    sekce: "prelobby",
+  });
+  preRadek("povolitDivaky", "Allow Spectators", zap(lobby.povolujeDivaky), zap(ocekavane.povolitDivaky ?? true));
+  preRadek("skrytCivilizace", "Hide Civilizations", zap(lobby.nastaveni?.skrytCivilizace), zap(ocekavane.skrytCivilizace));
+  // Zpoždění hra posílá v sekundách, nabídka je v minutách. Vysílání kazí,
+  // ale hře nevadí — proto žlutá, ne červená.
+  const zeHryMinut = pre?.zpozdeniDivakuSekund === null || pre?.zpozdeniDivakuSekund === undefined ? null : pre.zpozdeniDivakuSekund / 60;
+  preRadek("zpozdeniDivaku", "Spectator Delay", jmenem(ZPOZDENI_DIVAKU)(zeHryMinut), zHry(jmenem(ZPOZDENI_DIVAKU)(ocekavane.zpozdeniDivaku)), true);
+  // „Default“ se v inzerátu objeví jako skutečný region, takže se ověřit nedá.
+  if (ocekavane.server === "Default") {
+    k.push({ klic: "server", stav: "jedno", text: `Server: ${pre?.server ?? "?"} (Default se ověřit nedá)`, sekce: "prelobby" });
+  } else {
+    preRadek("server", "Server", pre?.server ?? null, zHry(ocekavane.server));
+  }
   return k;
 }

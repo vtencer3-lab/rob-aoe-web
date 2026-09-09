@@ -241,7 +241,12 @@ neleží v `options`, ale přímo v inzerátu vedle jména. Změřeno naživo
 | Allow Spectators | `isobservable` | |
 | Spectator Delay | `observerdelay` | **v sekundách** (3 minuty = 180) |
 | Server | `relayserver_region` | „Default“ se propíše na skutečný region |
-| Co-Op Campaign, Hide Civilizations, Data Mod | — | v inzerátu se neobjevily |
+| Hide Civilizations | `options[85]` | 1 = zapnuto; hra totéž posílá i obráceně v `options[96]` (y = civilizace vidět) |
+| Co-Op Campaign, Data Mod | — | neposílají se nikam |
+
+`Server` = „Default“ se v inzerátu objeví jako skutečný region (u nás
+`westeurope`), takže „Default“ se proti lobby porovnat nedá — ověřit jde jen
+konkrétní region.
 
 Nabídka okna (odečteno z hry 9. 9. 2026): Lobby Type Unranked / Ranked 1v1
 Death Match / Ranked Team Death Match; Visibility Public / Private (Private

@@ -87,6 +87,8 @@ describe("parseAdvertisements — sloty a nastavení", () => {
       lockSpeed: true,
       turbo: false,
       fullTechTree: false,
+      // Hide Civilizations z options[85] (ve fixtuře 0 = vypnuto).
+      skrytCivilizace: false,
       empireWars: false,
       suddenDeath: false,
       regicide: false,
@@ -181,6 +183,8 @@ describe("pre-lobby z inzerátu", () => {
           observerdelay: 180,
           observermax: 512,
           maxplayers: 8,
+          matchtype_id: 0,
+          visible: 1,
           hasobserverpassword: 1,
           relayserver_region: "westeurope",
           matchmembers: [],
@@ -189,15 +193,16 @@ describe("pre-lobby z inzerátu", () => {
       avatars: [],
     });
     expect(lobby!.preLobby).toEqual({
-      zpozdeniDivaku: 180,
+      lobbyTyp: 0,
+      viditelnost: 1,
       maxHracu: 8,
-      hesloDivaku: true,
-      region: "westeurope",
+      zpozdeniDivakuSekund: 180,
+      server: "westeurope",
     });
   });
 
   it("co inzerát nenese, zůstane null", () => {
     const [lobby] = parseAdvertisements({ matches: [{ id: 1, matchmembers: [] }], avatars: [] });
-    expect(lobby!.preLobby).toEqual({ zpozdeniDivaku: null, maxHracu: null, hesloDivaku: null, region: null });
+    expect(lobby!.preLobby).toEqual({ lobbyTyp: null, viditelnost: null, maxHracu: null, zpozdeniDivakuSekund: null, server: null });
   });
 });

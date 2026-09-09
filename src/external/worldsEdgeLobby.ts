@@ -130,6 +130,9 @@ export function nastaveniZOptions(o: Map<string, string>): NonNullable<PoznatekL
     lockSpeed: ano("65"),
     turbo: ano("79"),
     fullTechTree: ano("62"),
+    // Hide Civilizations: hra ho posílá dvakrát — 85 přímo (1 = zapnuto)
+    // a 96 obráceně (y = civilizace vidět). Bereme to přímé.
+    skrytCivilizace: cislo(o.get("85")) === null ? null : cislo(o.get("85")) === 1,
     empireWars: ano("89"),
     suddenDeath: ano("90"),
     regicide: ano("91"),
@@ -253,11 +256,11 @@ export function parseAdvertisements(json: unknown): LobbyInzerat[] {
       clenoveSteamIds: clenove,
       ...(({ lide, ai }) => ({ sloty: lide, aiSloty: ai }))(parseSloty(m["slotinfo"], steam)),
       preLobby: {
-        zpozdeniDivaku: typeof m["observerdelay"] === "number" ? m["observerdelay"] : null,
+        lobbyTyp: typeof m["matchtype_id"] === "number" ? m["matchtype_id"] : null,
+        viditelnost: typeof m["visible"] === "number" ? m["visible"] : null,
         maxHracu: typeof m["maxplayers"] === "number" ? m["maxplayers"] : null,
-        hesloDivaku:
-          m["hasobserverpassword"] === undefined ? null : m["hasobserverpassword"] === 1 || m["hasobserverpassword"] === true,
-        region: typeof m["relayserver_region"] === "string" ? m["relayserver_region"] : null,
+        zpozdeniDivakuSekund: typeof m["observerdelay"] === "number" ? m["observerdelay"] : null,
+        server: typeof m["relayserver_region"] === "string" ? m["relayserver_region"] : null,
       },
       nastaveni: options ? nastaveniZOptions(options) : null,
     });
