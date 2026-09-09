@@ -33,17 +33,17 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 0.19.1, nasazeno na <https://jouki.cz/aoe> (PR #11, 8. 9. 2026); stav před ním nese značku `v0.18.1` |
-| `origin/dev` | 0.22.0, nasazeno na <https://jouki.cz/aoe/dev>; nese §3.15–§3.17, do `main` zatím nešlo |
+| `origin/main` | 0.24.37, nasazeno na <https://jouki.cz/aoe> (PR #12, 9. 9. 2026); stav před ním nese značku `v0.19.1` |
+| `origin/dev` | 0.24.37, totéž co `main`, nasazeno na <https://jouki.cz/aoe/dev> |
 | `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; zatím prázdné kolo |
-| Migrace | 001–014, poslední `014_archiv_zapasu.sql`; na ostré databázi zatím **nejsou** 013 ani 014 |
-| Testy | backend hermetické 228, databázové 145, frontend 193 — všechny zelené |
+| Migrace | 001–014, poslední `014_archiv_zapasu.sql`; aplikované na všech třech databázích (ověřeno 9. 9. 2026 dotazem na `prihlaska` a `zapas`) |
+| Testy | backend hermetické 233, databázové 147, frontend 204 — všechny zelené |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
-PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix a PR #9 (0.18.0, grafický
-kabátek), zbytek 8. 9. Před releasem se na dosavadní `main` věší značka
+PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
+kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) 9. 9. Před releasem se na dosavadní `main` věší značka
 `vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
 [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
 **Release se dělá jen na výslovný pokyn** („pushni do mainu“).
@@ -510,6 +510,10 @@ ukazoval dnešní čísla.
 (snímek nastavení v okamžiku založení) a `ucastnik.elo_pri_zapasu`. Otisk se
 bere v `createZapas`, v téže transakci jako zápas sám. Do přenosu stavu nic
 z toho nejde — je to zásoba pro archiv, ne údaj pro stránku.
+
+**Akce samotná** má v `akce` název, stav a `vytvorena` (datum), takže archiv
+má co ukázat v záhlaví večera. Přejmenování název přepíše — historii jmen nikdo
+nedrží a pro archiv to nevadí, večer se pojmenuje jednou nadobro.
 
 **Co archivu pořád chybí** (až se bude stavět): obrazovka nad těmi daty,
 a rozhodnutí, co se zrušenými zápasy — „Odebrat úplně“ je maže z databáze
