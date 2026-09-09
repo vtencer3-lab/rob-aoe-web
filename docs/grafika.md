@@ -38,9 +38,26 @@ z `AoE2DE\widgetui	extures`:
 | `lobby-zaskrtavatko.webp`, `lobby-zaskrtnuto.webp` | `menu\checkboxes\checkbox_{unchecked,checked}_iron_4k_normal.png` |
 | `lobby-zavrit.webp` | `menuuttons\close_iron_4k_normal.png` |
 
+| `lobby-ram.webp` | `menu\decorationoxstyle2_*` — devět dílů složených `mrizka.py` do mřížky 3×3 pro `border-image` |
+| `lobby-vstup.webp` | `menu\decoration\input_{left,center,right}_4k_normal.png` |
+
 Převod dělá `nastroje/grafika/export.py` (pergamen 2,4 MB → 62 kB), spojení
-dílů `nastroje/grafika/spoj.py`. Textové pole obrázek nemá — hra ho kreslí
-plochou, tak je i tady barvou.
+pásů `spoj.py`, složení rámu `mrizka.py`.
+
+**Písmo okna** hra bere z `BKANT.TTF` (Book Antiqua). Nehostujeme ho —
+je to komerční font Monotype. Sazba se proto vyžádá ze systému
+(`"Book Antiqua", "Palatino Linotype", Palatino, …, Georgia`), což na
+Windows vyjde stejně; kdo ho nemá, dostane Georgii s podobnou kresbou.
+
+**Porovnání s předlohou**: `web/nahled/okno.html` vykreslí okno samo o sobě,
+takže se dá postavit vedle snímku ze hry:
+
+```
+npm --prefix web run dev
+chrome --headless=new --screenshot=okno.png --window-size=880,960     http://localhost:5173/nahled/okno.html
+```
+
+Do produkčního balíčku stránka nejde — Vite bere jen `index.html`.
 
 **Proč tlačítka v CSS a ne z obrázku:** zůstanou ostrá v každé velikosti a
 při každém zvětšení stránky, nepotřebují devítidílný řez a nedělají další
