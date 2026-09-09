@@ -111,3 +111,24 @@ it("v automatickém režimu kontroluje sama a po odpojení přestane", async () 
   await new Promise((r) => setTimeout(r, 120));
   expect(onKontrola.mock.calls.length).toBe(po);
 });
+
+// Pre-Lobby je to, co se dělá jako první (zakládání lobby), takže stojí
+// nahoře — a rozbalené, protože po založení už se s tím nedá hnout a Rob
+// to má vidět hned.
+it("Pre-Lobby stojí nad ostatními a je rozbalené", async () => {
+  const onKontrola = vi.fn().mockResolvedValue({
+    nalezeno: true,
+    kontroly: [
+      { klic: "hraci", stav: "ok", text: "Hráči: všichni 2 uvnitř", sekce: "hlavni" },
+      { klic: "rezim", stav: "ok", text: "Game Mode: Random Map", sekce: "dalsi" },
+      { klic: "lobbyTyp", stav: "ok", text: "Lobby Type: Unranked", sekce: "prelobby" },
+    ],
+  });
+  render(<KontrolaLobby zapasId={1} onKontrola={onKontrola} automaticky />);
+
+  const prelobby = await screen.findByTestId("prelobby-nastaveni");
+  expect(prelobby).toHaveAttribute("open");
+  // V dokumentu stojí dřív než hlavní seznam i než další nastavení.
+  const poradi = prelobby.compareDocumentPosition(screen.getByTestId("kontroly"));
+  expect(poradi & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});

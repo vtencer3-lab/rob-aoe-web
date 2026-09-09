@@ -124,6 +124,19 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
       ) : null}
       {nalezena ? (
         <>
+          {/* Pre-Lobby: co se naklikalo v okně zakládání lobby. Po založení
+              se s tím už nedá hnout, takže sedí zvlášť od herního panelu. */}
+          {prelobby.length > 0 ? (
+            <details className="dalsi-nastaveni" data-testid="prelobby-nastaveni" open>
+              <summary>
+                Pre-Lobby{" "}
+                <span className={prelobbyJinak === 0 ? "potvrzeno" : "chyba"}>
+                  {prelobbyJinak === 0 ? "— vše podle nastavení akce" : `— ${prelobbyJinak} jinak než v nastavení akce`}
+                </span>
+              </summary>
+              <SeznamKontrol kontroly={prelobby} testId="kontroly-prelobby" />
+            </details>
+          ) : null}
           <SeznamKontrol kontroly={hlavni} testId="kontroly" />
           {dalsi.length > 0 ? (
             <details
@@ -139,19 +152,6 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
                 </span>
               </summary>
               <SeznamKontrol kontroly={dalsi} testId="kontroly-dalsi" />
-            </details>
-          ) : null}
-          {/* Pre-Lobby: co se naklikalo v okně zakládání lobby. Po založení
-              se s tím už nedá hnout, takže sedí zvlášť od herního panelu. */}
-          {prelobby.length > 0 ? (
-            <details className="dalsi-nastaveni" data-testid="prelobby-nastaveni">
-              <summary>
-                Pre-Lobby{" "}
-                <span className={prelobbyJinak === 0 ? "potvrzeno" : "chyba"}>
-                  {prelobbyJinak === 0 ? "— vše podle nastavení akce" : `— ${prelobbyJinak} jinak než v nastavení akce`}
-                </span>
-              </summary>
-              <SeznamKontrol kontroly={prelobby} testId="kontroly-prelobby" />
             </details>
           ) : null}
         </>
