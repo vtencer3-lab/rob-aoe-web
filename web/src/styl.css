@@ -1668,6 +1668,8 @@ a:hover { color: var(--zlato-svetle); }
 /* Textové pole má taky svůj herní díl; zeleným písmem jako ve hře. */
 .okno-lobby .okno-lobby-vstup {
   display: flex;
+  /* Hodnota vlevo, ikona kopírování na pravém konci pole jako ve hře. */
+  justify-content: space-between;
   align-items: center;
   gap: 0.4em;
   width: 100%;
