@@ -8,6 +8,7 @@ import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.
 import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
 import { useSkladani } from "./skladani.js";
+import { useZmenaVysky } from "./vyska.js";
 import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
@@ -189,6 +190,11 @@ export function App() {
     }
   }
 
+  // Panel přihlášených se při výběru hráče do sestavy o řádek zkrátí. Skok je
+  // nepříjemný hlavně tím, že je okamžitý, tak se výška srovná plynule.
+  const panelPrihlasenych = useRef<HTMLElement>(null);
+  useZmenaVysky(panelPrihlasenych, String((admin ? skladani.nevybrani : (stav?.prihlaseni ?? [])).length));
+
   // Zápas se zakládá dole pod tabulkou přihlášených, takže z něj po kliknutí
   // nebyl vidět ani kus. Číslo si tu počká, než ho stav přinese, a karta se
   // pak najede doprostřed obrazovky.
@@ -346,7 +352,7 @@ export function App() {
           </div>
           {/* Obal je jen kvůli vzhledu: nadpis a tabulka mají sedět na jedné
               desce s rámem, ne se vznášet na pozadí. Rozvržení nemění. */}
-          <section className="panel-prihlaseni">
+          <section className="panel-prihlaseni" ref={panelPrihlasenych}>
             {/* Tlačítka patří k tabulce, ne nad ni: přihlášení do akce i
                 přetočení času jsou o tom, kdo je v seznamu. */}
             <header className="hlavicka-prihlasenych">
