@@ -192,10 +192,11 @@ describe("pre-lobby z inzerátu", () => {
       ],
       avatars: [],
     });
+    // maxplayers je vždycky 8; bez slotinfo se počet slotů nedá zjistit.
     expect(lobby!.preLobby).toEqual({
       lobbyTyp: 0,
       viditelnost: 1,
-      maxHracu: 8,
+      maxHracu: null,
       zpozdeniDivakuSekund: 180,
       server: "westeurope",
     });
@@ -204,5 +205,35 @@ describe("pre-lobby z inzerátu", () => {
   it("co inzerát nenese, zůstane null", () => {
     const [lobby] = parseAdvertisements({ matches: [{ id: 1, matchmembers: [] }], avatars: [] });
     expect(lobby!.preLobby).toEqual({ lobbyTyp: null, viditelnost: null, maxHracu: null, zpozdeniDivakuSekund: null, server: null });
+  });
+});
+
+// „Players“ z okna zakládání se v inzerátu nepozná: maxplayers je vždycky 8,
+// tedy kapacita hry. Skutečný počet slotů říká až slotinfo — zavřené sloty
+// mají status 1, otevřené 0 (i když v nich nikdo nesedí) a AI 2.
+describe("počet slotů lobby", () => {
+  const slot = (status: number, id = -1, meta = "IkFBPT0i") => ({ "profileInfo.id": id, isReady: 0, status, metaData: meta });
+
+  it("spočítá otevřené sloty, zavřené vynechá", () => {
+    const dva = [slot(0, 15260548, SLOTY_S_AI[0]!.metaData), slot(0), slot(1), slot(1), slot(1), slot(1), slot(1), slot(1)];
+    const [lobby] = parseAdvertisements({
+      matches: [{ id: 1, maxplayers: 8, matchmembers: [], slotinfo: zabalSloty(dva) }],
+      avatars: [],
+    });
+    expect(lobby!.preLobby!.maxHracu).toBe(2);
+  });
+
+  it("AI se do počtu slotů počítá", () => {
+    const ctyri = [slot(0, 15260548, SLOTY_S_AI[0]!.metaData), slot(2, -1, SLOTY_S_AI[1]!.metaData), slot(2, -1, SLOTY_S_AI[1]!.metaData), slot(0), slot(1), slot(1), slot(1), slot(1)];
+    const [lobby] = parseAdvertisements({
+      matches: [{ id: 1, maxplayers: 8, matchmembers: [], slotinfo: zabalSloty(ctyri) }],
+      avatars: [],
+    });
+    expect(lobby!.preLobby!.maxHracu).toBe(4);
+  });
+
+  it("bez slotinfo zůstane počet neznámý", () => {
+    const [lobby] = parseAdvertisements({ matches: [{ id: 1, maxplayers: 8, matchmembers: [] }], avatars: [] });
+    expect(lobby!.preLobby!.maxHracu).toBeNull();
   });
 });

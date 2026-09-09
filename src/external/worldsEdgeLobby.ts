@@ -182,6 +182,13 @@ function slotZMetadat(slot: Record<string, unknown>): AiSlot {
 const STAV_AI = 2;
 
 /**
+ * Zavřený slot — ten, který se v okně zakládání „uřízl“ volbou Players.
+ * Pozor: volný slot, do kterého se ještě někdo může posadit, má stav 0
+ * stejně jako obsazený; jedničku má jen slot, který v lobby vůbec není.
+ */
+const STAV_ZAVRENY = 1;
+
+/**
  * slotinfo: zlib → „N,[sloty…]“. Lidi a AI zvlášť.
  *
  * AI má stejně jako prázdný slot `profileInfo.id` −1, takže se pozná až
@@ -191,8 +198,8 @@ const STAV_AI = 2;
 export function parseSloty(
   zabalene: unknown,
   steam: Map<number, string>,
-): { lide: SlotLobby[]; ai: AiSlot[] } {
-  const prazdne = { lide: [], ai: [] };
+): { lide: SlotLobby[]; ai: AiSlot[]; pocetSlotu: number | null } {
+  const prazdne = { lide: [], ai: [], pocetSlotu: null };
   const text = rozbal(zabalene);
   if (text === null) return prazdne;
   const carka = text.indexOf(",");
@@ -211,8 +218,10 @@ export function parseSloty(
   if (!Array.isArray(pole)) return prazdne;
   const lide: SlotLobby[] = [];
   const ai: AiSlot[] = [];
+  let pocetSlotu = 0;
   for (const s of pole) {
     if (!jeObjekt(s)) continue;
+    if (s["status"] !== STAV_ZAVRENY) pocetSlotu++;
     const pid = s["profileInfo.id"];
     const steamId = typeof pid === "number" ? steam.get(pid) : undefined;
     if (steamId) {
@@ -221,7 +230,7 @@ export function parseSloty(
     }
     if (s["status"] === STAV_AI) ai.push(slotZMetadat(s));
   }
-  return { lide, ai };
+  return { lide, ai, pocetSlotu };
 }
 
 export function parseAdvertisements(json: unknown): LobbyInzerat[] {
@@ -254,11 +263,13 @@ export function parseAdvertisements(json: unknown): LobbyInzerat[] {
       maHeslo: m["passwordprotected"] === 1 || m["passwordprotected"] === true,
       povolujeDivaky: m["isobservable"] === 1 || m["isobservable"] === true,
       clenoveSteamIds: clenove,
-      ...(({ lide, ai }) => ({ sloty: lide, aiSloty: ai }))(parseSloty(m["slotinfo"], steam)),
+      ...(({ lide, ai, pocetSlotu }) => ({ sloty: lide, aiSloty: ai, pocetSlotu }))(parseSloty(m["slotinfo"], steam)),
       preLobby: {
         lobbyTyp: typeof m["matchtype_id"] === "number" ? m["matchtype_id"] : null,
         viditelnost: typeof m["visible"] === "number" ? m["visible"] : null,
-        maxHracu: typeof m["maxplayers"] === "number" ? m["maxplayers"] : null,
+        // Ne maxplayers: to je vždycky 8, tedy kolik hráčů hra unese. Kolik
+        // slotů lobby doopravdy má, se pozná až podle nezavřených slotů.
+        maxHracu: parseSloty(m["slotinfo"], steam).pocetSlotu,
         zpozdeniDivakuSekund: typeof m["observerdelay"] === "number" ? m["observerdelay"] : null,
         server: typeof m["relayserver_region"] === "string" ? m["relayserver_region"] : null,
       },
