@@ -211,7 +211,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
               </th>
             );
           })}
-          <th aria-label="Návrat mezi aktivní" />
+          <th className="jsem-tu-bunka" aria-label="Návrat mezi aktivní" />
           <th aria-label="Stav hráče" />
         </tr>
       </thead>

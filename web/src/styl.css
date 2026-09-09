@@ -1257,8 +1257,20 @@ h2 input.nazev-akce-pole {
    tabulce — a odpočet nehýbe ničím, když se změní počet číslic. */
 .seznam .stav-znacka { display: inline-block; min-width: 4.6ch; text-align: right; }
 /* Vlastní sloupec pro „Jsem tu!“: v jednom se značkou by jeho šířka odpočet
-   odsouvala a sloupec by se řádek od řádku neshodoval. */
-.seznam > tbody > tr > td.jsem-tu-bunka { width: 1px; padding-right: 0.6rem; text-align: right; white-space: nowrap; }
+   odsouvala a sloupec by se řádek od řádku neshodoval.
+
+   Šířka je pevná, ne podle obsahu: bez ní se sloupec při objevení tlačítka
+   roztáhl z 20 na 91 px a všechny ostatní sloupce se o kus posunuly. Tlačítko
+   měří 72 px, s odsazením se do 5,7 rem vejde a zbytek tabulky se nehne, ať
+   tam tlačítko je, nebo ne. */
+.seznam th.jsem-tu-bunka,
+.seznam > tbody > tr > td.jsem-tu-bunka {
+  width: 5.7rem;
+  min-width: 5.7rem;
+  padding-right: 0.6rem;
+  text-align: right;
+  white-space: nowrap;
+}
 .seznam .muj-cas {
   /* Číslice stejné šíře: jinak by se čas při každé vteřině mírně přeléval. */
   display: inline-block;
