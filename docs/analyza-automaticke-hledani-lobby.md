@@ -193,7 +193,7 @@ web proto stahuje všechny stránky.
 | Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant, 480 Ludicrous (120 a 480 ověřené naživo 9. 9. 2026) |
 | AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, **−1 Extreme** (ne 5, jak tu stálo do 9. 9. 2026 — ověřeno naživo 9. 9. 2026, kdy lobby s Extreme poslala `-1`; dřív ověřeno 3 a 1) |
 | Resources | `37` | 0 Standard, 1 Low, 2 Medium, 3 High, 4 Ultra High, 5 Infinite, 6 Random (ověřeno 0 a 3) |
-| Population | `28` | číslo |
+| Population | `28` | jen z herní nabídky: po 25 do 250, pak 300, 400, 500 (odečteno z herní nabídky 9. 9. 2026) |
 | Game Speed | `41` | 1 Slow, 2 Normal, 3 Fast |
 | Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible (ověřeno; „No Fog“ jako 3 tu stálo do 9. 9. 2026, hra ho nezná) |
 | Starting Age | `0` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial, 6 Post-Imperial (ověřeno 0, 3, 6) |

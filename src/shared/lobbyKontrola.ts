@@ -176,6 +176,17 @@ export const AI_OBTIZNOSTI: Record<number, string> = { "-1": "Extreme", 0: "Hard
 export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite", 6: "Random" };
 export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible" };
 /**
+ * Population: hra nabízí po pětadvaceti do 250 a pak po stovkách do 500
+ * (odečteno z herní nabídky 9. 9. 2026). Volné číslo tu bylo do 9. 9. 2026.
+ */
+export const POPULACE: Record<number, string> = {
+  ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [(i + 1) * 25, String((i + 1) * 25)])),
+  300: "300",
+  400: "400",
+  500: "500",
+};
+
+/**
  * Treaty Length: hra nabízí jen tyhle hodnoty — po pěti minutách do hodiny
  * a pak rovnou 90 (odečteno z herní nabídky 9. 9. 2026). Volné číslo tu
  * bylo do 9. 9. 2026 a svádělo nastavit minuty, které ve hře nejdou.

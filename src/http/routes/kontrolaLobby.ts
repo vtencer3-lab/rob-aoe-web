@@ -12,6 +12,7 @@ import {
   KONECNE_VEKY,
   ODKRYTI_MAPY,
   POCATECNI_VEKY,
+  POPULACE,
   PRIMERI,
   REZIMY,
   SADY_CIVILIZACI,
@@ -38,8 +39,10 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   else if (cislo(t["velikost"]) !== undefined) v.velikost = cislo(t["velikost"])!;
   const r = cislo(t["rychlost"]);
   if (r === 1 || r === 2 || r === 3) v.rychlost = r;
+  // Populace jen z herní nabídky (POPULACE) — od 9. 9. 2026 je to výběr,
+  // ne volné číslo, a co panel nenabízí, nemá projít ani přes API.
   const p = cislo(t["populace"]);
-  if (p !== undefined && p > 0 && p <= 1000) v.populace = p;
+  if (p !== undefined && p in POPULACE) v.populace = p;
   const vit = cislo(t["vitezstvi"]);
   if (vit === 1 || vit === 9) v.vitezstvi = vit;
   if (typeof t["cheaty"] === "boolean") v.cheaty = t["cheaty"];

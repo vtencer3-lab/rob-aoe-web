@@ -5,6 +5,7 @@ import {
   KONECNE_VEKY,
   ODKRYTI_MAPY,
   POCATECNI_VEKY,
+  POPULACE,
   PRIMERI,
   REZIM_EMPIRE_WARS,
   REZIM_REGICIDE,
@@ -253,10 +254,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
         </label>
         <Vyber klic="aiObtiznost" popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno poradi={PORADI_AI} onZmena={(v) => zmen({ ...n, aiObtiznost: v })} />
         <Vyber klic="suroviny" popis="Resources" hodnota={n.suroviny} tabulka={SUROVINY} jedno onZmena={(v) => zmen({ ...n, suroviny: v })} />
-        <label className="radek" data-klic="populace">
-          <span>Population:</span>
-          <input type="number" min={25} max={1000} step={25} value={n.populace} onChange={(e) => zmen({ ...n, populace: Number(e.target.value) })} />
-        </label>
+        <Vyber klic="populace" popis="Population" hodnota={n.populace} tabulka={POPULACE} onZmena={(v) => zmen({ ...n, populace: v ?? VYCHOZI_NASTAVENI.populace })} />
         <Vyber klic="rychlost" popis="Game Speed" hodnota={n.rychlost} tabulka={RYCHLOSTI} onZmena={(v) => zmen({ ...n, rychlost: v as 1 | 2 | 3 })} />
         <Vyber klic="odkrytiMapy" popis="Reveal Map" hodnota={n.odkrytiMapy} tabulka={ODKRYTI_MAPY} jedno onZmena={(v) => zmen({ ...n, odkrytiMapy: v })} />
         <Vyber klic="pocatecniVek" popis="Starting Age" hodnota={n.pocatecniVek} tabulka={POCATECNI_VEKY} jedno onZmena={(v) => zmen({ ...n, pocatecniVek: v })} />

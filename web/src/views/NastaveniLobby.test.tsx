@@ -10,7 +10,7 @@ it("bez uloženého nastavení nabídne výchozí: Arabia, Normal, 200, Conquest
   expect(screen.getByLabelText(/location/i)).toHaveValue("10875");
   expect(screen.getByLabelText(/map size/i)).toHaveValue("");
   expect(screen.getByLabelText(/game speed/i)).toHaveValue("2");
-  expect(screen.getByLabelText(/population/i)).toHaveValue(200);
+  expect(screen.getByLabelText(/population/i)).toHaveValue("200");
   expect(screen.getByLabelText(/allow cheats/i)).not.toBeChecked();
 });
 
@@ -35,7 +35,7 @@ it("živé hodnoty převezme a každou změnu pošle sama", async () => {
 it("změna ze serveru (druhý admin) se převezme, když tu nic nečeká", () => {
   const { rerender } = render(<NastaveniLobby zive={{ populace: 150 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
   rerender(<NastaveniLobby zive={{ populace: 300 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
-  expect(screen.getByLabelText(/population/i)).toHaveValue(300);
+  expect(screen.getByLabelText(/population/i)).toHaveValue("300");
 });
 
 // Rozložení kopíruje herní panel: řádky v pořadí hry, pak Team Settings a
@@ -71,7 +71,7 @@ it("Reset nasadí výchozí nastavení hned", () => {
   render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} onZmena={onZmena} onUlozit={vi.fn()} />);
 
   fireEvent.click(screen.getByRole("button", { name: /reset nastavení/i }));
-  expect(screen.getByLabelText(/population/i)).toHaveValue(200);
+  expect(screen.getByLabelText(/population/i)).toHaveValue("200");
   expect(onZmena).toHaveBeenLastCalledWith(VYCHOZI_NASTAVENI);
 });
 
@@ -261,4 +261,16 @@ it("Game Mode Sudden Death zamkne svoje zaškrtávátko a nasadí Conquest", asy
   await waitFor(() =>
     expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 11, vitezstvi: 1, cheaty: false, turbo: false, antiquity: true })),
   );
+});
+
+// Population taky není volné číslo: hra nabízí po pětadvaceti do 250 a pak
+// po stovkách do 500.
+it("Population je nabídka jako ve hře", () => {
+  render(<NastaveniLobby zive={{ populace: 200 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  const pole = screen.getByLabelText(/population/i) as HTMLSelectElement;
+  expect(pole.tagName).toBe("SELECT");
+  expect(pole).toHaveValue("200");
+
+  const volby = Array.from(pole.options).map((o) => o.text);
+  expect(volby).toEqual(["25", "50", "75", "100", "125", "150", "175", "200", "225", "250", "300", "400", "500"]);
 });
