@@ -499,6 +499,7 @@ export function zkontrolujLobby(
   // hraje každý sám za sebe (1v1, FFA), je jedno, co si nastaví — „–“, „?“
   // i číslo — jen dva soupeři nesmí mít stejné číslo, to by je hra spojila.
   const tymova = ucastnici.some((u) => u.tym !== 0 && ucastnici.filter((x) => x.tym === u.tym).length > 1);
+  const jedenNaJednoho = ucastnici.length === 2 && !tymova;
   const cisloTymu = (t: SlotLobby["tym"]) => (typeof t === "number" && t >= 1 ? t : null);
 
   for (const u of ucastnici) {
@@ -511,6 +512,9 @@ export function zkontrolujLobby(
       barvaOk
         ? `${jmeno(u)}: ${BARVA_NAZEV[u.barva]}`
         : `${jmeno(u)} má ${s.barva === null ? "náhodnou barvu" : BARVA_NAZEV[s.barva]}, má mít ${BARVA_NAZEV[u.barva]}`,
+      // V 1v1 je barva kosmetika: nejsou týmy a dva hráči se na mapě
+      // nespletou. Žlutá to připomene, ale zápas kvůli ní nestojí.
+      jedenNaJednoho,
     );
     if (u.civ !== undefined && u.civ !== null) {
       const civOk = s.civ === u.civ;

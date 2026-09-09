@@ -338,3 +338,32 @@ describe("kontrola pre-lobby", () => {
     expect(k.find((x) => x.klic === "skrytCivilizace")).toMatchObject({ stav: "spatne", text: "Hide Civilizations: zapnuto, má být vypnuto" });
   });
 });
+
+// V 1v1 je barva kosmetika: týmy nejsou, na mapě se dva hráči nespletou.
+// Rob kvůli ní nemá mít červený řádek, který by zápas držel — stačí žlutá.
+describe("barvy v 1v1", () => {
+  it("špatná barva je jen upozornění", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({
+      sloty: [
+        { steamId: HOST, barva: 5, tym: 1, civ: null, pripraven: true },
+        { steamId: JA, barva: 2, tym: 0, civ: null, pripraven: true },
+      ],
+    }));
+    expect(k.find((x) => x.klic === `barva:${HOST}`)).toMatchObject({ stav: "varovani" });
+    expect(lobbyVPoradku(k)).toBe(true);
+  });
+
+  // Ve víc než dvou už barvu potřebujeme: podle ní se poznává, kdo je kdo.
+  it("ve větším zápase zůstává barva chybou", () => {
+    const ctyri = [u(HOST, 1, 1, "Trokner"), u(JA, 1, 2, "Jouki"), u("A", 2, 3, "A"), u("B", 2, 4, "B")];
+    const k = zkontrolujLobby(ctyri, ocekavane, lobby({
+      sloty: [
+        { steamId: HOST, barva: 5, tym: 1, civ: null, pripraven: true },
+        { steamId: JA, barva: 2, tym: 1, civ: null, pripraven: true },
+        { steamId: "A", barva: 3, tym: 2, civ: null, pripraven: true },
+        { steamId: "B", barva: 4, tym: 2, civ: null, pripraven: true },
+      ],
+    }));
+    expect(k.find((x) => x.klic === `barva:${HOST}`)).toMatchObject({ stav: "spatne" });
+  });
+});
