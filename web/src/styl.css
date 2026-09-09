@@ -1591,13 +1591,14 @@ a:hover { color: var(--zlato-svetle); }
   justify-content: center;
   position: relative;
   min-height: 4em;
-  margin: 0 -3.4em;
-  background: url(./assets/ui/lobby-ozdoba.webp) center / contain no-repeat;
+  margin: -5px -0.7em 0;
+  padding-bottom: 15px;
+  background: url(./assets/ui/lobby-ozdoba.webp) 50% / 92% no-repeat;
 }
 .okno-lobby-zahlavi h4 {
-  margin: 0;
+  margin-top: 11px;
   font-family: inherit;
-  font-size: 2em;
+  font-size: 26px;
   font-weight: 700;
   color: var(--lobby-text);
   letter-spacing: 0;
@@ -1606,21 +1607,22 @@ a:hover { color: var(--zlato-svetle); }
 .okno-lobby-zahlavi h4::after { content: none; }
 .okno-lobby-zavrit {
   position: absolute;
-  top: 0.1em;
-  right: 0.2em;
-  width: 2.1em;
+  top: 0.8em;
+  right: -0.7em;
+  width: 1.7em;
   height: 2.1em;
   background: url(./assets/ui/lobby-zavrit.webp) center / contain no-repeat;
 }
 /* Deska s poli: herní zlatý rám (boxstyle2) a béžová plocha pod ním. */
 .okno-lobby-telo {
-  margin-top: 0.8em;
+  margin-top: 0;
   padding: 1.2em 5em 2em;
   background: var(--lobby-deska);
-  /* Výřez 26 je ten, při kterém rohové ozdoby sedí; menší je deformoval.
-     `stretch` roztáhne strany do jedné linky místo opakovaného vzoru. */
-  border: 7px solid transparent;
-  border-image: url(./assets/ui/lobby-ram.webp) 26 / 7px stretch;
+  /* Rám má díly ořezané jen na zlatý pás (mrizka.py --orez 22) a prázdný
+     střed. Dokud v nich byla i výplň, rám s ní ztloustl; a když se místo
+     toho zmenšil výřez, zmáčkly se rohové ozdoby do šmouhy. */
+  border: 11px solid transparent;
+  border-image: url(./assets/ui/lobby-ram.webp) 22 / 11px stretch;
 }
 /* Popisek vlevo, pole vpravo — jako ve hře, kde popisky začínají na jedné
    svislici a nejsou zarovnané na pravý okraj. */

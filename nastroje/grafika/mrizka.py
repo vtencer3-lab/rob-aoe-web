@@ -25,24 +25,53 @@ def main() -> None:
         p.add_argument(f"--{prepinac}", required=True, type=Path)
     p.add_argument("-o", "--out", required=True, type=Path)
     p.add_argument("--bunka", type=int, default=0, help="strana buňky; výchozí = šířka levého horního rohu")
+    p.add_argument(
+        "--orez",
+        type=int,
+        default=0,
+        help="vzít z každého dílu jen vnější pás téhle šířky (zbytek dílu je výplň, která do rámu nepatří)",
+    )
     a = p.parse_args()
 
-    nacti = lambda c: Image.open(c).convert("RGBA")
-    lh = nacti(a.roh_lh)
+    def nacti(cesta: Path, kde: tuple[int, int]) -> Image.Image:
+        """Načte díl a s `--orez` z něj vezme jen vnější pás.
+
+        Díly rámu nesou kolem ozdoby i kus výplně, která patří dovnitř
+        desky, ne do rámečku. `kde` říká, ke které straně díl přiléhá
+        (−1 vlevo/nahoře, 0 uprostřed, 1 vpravo/dole), aby se ořezávalo
+        na správnou stranu.
+        """
+        im = Image.open(cesta).convert("RGBA")
+        if a.orez <= 0:
+            return im
+        o = a.orez
+        vx, vy = kde
+        levo = 0 if vx <= 0 else im.width - o
+        horu = 0 if vy <= 0 else im.height - o
+        sirka = o if vx != 0 else im.width
+        vyska = o if vy != 0 else im.height
+        if vx == 0:
+            levo = 0
+        if vy == 0:
+            horu = 0
+        return im.crop((levo, horu, levo + sirka, horu + vyska))
+
+    lh = nacti(a.roh_lh, (-1, -1))
     b = a.bunka or lh.width
 
     # Rohy zůstávají, jak jsou; strany a výplň se roztáhnou na buňku, protože
     # v předloze mají vlastní rozměry a v mřížce musí sedět na pixel.
     dily = {
         (0, 0): lh,
-        (2, 0): nacti(a.roh_ph),
-        (0, 2): nacti(a.roh_ld),
-        (2, 2): nacti(a.roh_pd),
-        (1, 0): nacti(a.hore).resize((b, b)),
-        (1, 2): nacti(a.dole).resize((b, b)),
-        (0, 1): nacti(a.vlevo).resize((b, b)),
-        (2, 1): nacti(a.vpravo).resize((b, b)),
-        (1, 1): nacti(a.vypln).resize((b, b)),
+        (2, 0): nacti(a.roh_ph, (1, -1)),
+        (0, 2): nacti(a.roh_ld, (-1, 1)),
+        (2, 2): nacti(a.roh_pd, (1, 1)),
+        (1, 0): nacti(a.hore, (0, -1)).resize((b, b)),
+        (1, 2): nacti(a.dole, (0, 1)).resize((b, b)),
+        (0, 1): nacti(a.vlevo, (-1, 0)).resize((b, b)),
+        (2, 1): nacti(a.vpravo, (1, 0)).resize((b, b)),
+        # Výplň do rámu nepatří — barvu desky kreslí CSS pod ním.
+        (1, 1): Image.new("RGBA", (b, b), (0, 0, 0, 0)),
     }
 
     ram = Image.new("RGBA", (b * 3, b * 3), (0, 0, 0, 0))
