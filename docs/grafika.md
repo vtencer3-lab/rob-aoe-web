@@ -21,8 +21,86 @@ znovu nebo dodělat nový kus ve stejném rukopisu.
 | **Barvy** | vytažené z loga Brohemians nástrojem `nastroje/grafika/paleta.py`, ne odhadnuté od oka |
 | **Písmo** | Cinzel (OFL, hostujeme si ho sami) na nadpisy, Georgia na text |
 | **Pozadí, rám, praporec, ozdoba, textury** | vygenerované lokálně (Flux.2-dev), viz §4 |
-| **Erby civilizací, ikony map, snímek dialogu Create Lobby, znak Bohemians** | přímo z instalace hry, viz `CONTRIBUTING.md` → „Data ze hry“ |
+| **Erby civilizací, ikony map, díly okna Create Lobby, znak Bohemians** | přímo z instalace hry, viz `CONTRIBUTING.md` → „Data ze hry“ |
 | **Tlačítka, pole, zaškrtávátka, přepínače, tabulky** | kreslené v CSS, žádné obrázky |
+
+**Výjimka: okno Create Lobby.** Od 9. 9. 2026 je postavené z herních dílů
+(`lobby-*.webp`), ne kreslené — host podle něj opisuje nastavení do hry, a
+tam je nejlepší, když se obrázek shoduje s obrázkem. Díly jsou
+z `AoE2DE\widgetui\textures`:
+
+| díl | zdroj ve hře |
+|---|---|
+| `lobby-pergamen.webp` | `backgrounds\popup_menu_bg_small.png` — ze čtyř papírů v `backgrounds\` sedí tenhle: siluetu okrajů ve snímku ze hry (jasový práh + teplota barvy) proti alfa masce každého kandidáta, korelace po sloupcích — spodní okraj 0,94, pravý 0,88, ostatní pod 0,5. Poznávací znamení je zub dole. `popup_menu_bg_large.png` tam byl původně a je to jiný papír |
+| `lobby-ozdoba.webp` | `menu\decoration\header_ornaments.png` |
+| `lobby-pole.webp` | `menu\dropdowns\dropdown_{left,center,right}_4k_normal.png` spojené `spoj.py` do pásu pro `border-image` |
+| `lobby-sipka.webp` | `menu\buttons\down_arrow_normal.png` |
+| `lobby-zaskrtavatko.webp`, `lobby-zaskrtnuto.webp` | `menu\checkboxes\checkbox_{unchecked,checked}_iron_4k_normal.png` |
+| `lobby-zavrit.webp` | `menu\buttons\close_iron_4k_normal.png` |
+| `lobby-ram.webp` | `menu\decoration\boxstyle2_*` — devět dílů složených `mrizka.py --orez 22` do mřížky 3×3 pro `border-image`. Ořez je nutný: díly nesou kolem zlata i kus výplně, se kterou rám ztloustne, a zmenšit místo toho výřez nejde — zmáčklo by to rohové ozdoby do šmouhy. Uvnitř dílů je navíc neprůhledná šedá `67,67,67` — vnitřek krabice pro tmavé menu, který v okně přebíjí pergamenovou desku. Odstranit ji umí `mrizka.py --klic 67` (tmavší přechod pod zlatem převede na poloprůhledný stín), nasazený rám ji zatím **má** — uživatel si ho ladí ve Photoshopu a odklíčovanou variantu dostal jako podklad. `klic.py` se sem nehodí — ten plaví černé pozadí od rohů, kdežto tahle plocha je uvnitř dílu |
+| `lobby-vstup.webp` | `menu\decoration\input_{left,center,right}_4k_normal.png` |
+
+Převod dělá `nastroje/grafika/export.py` (pergamen 1,4 MB → 70 kB), spojení
+pásů `spoj.py`, složení rámu `mrizka.py`.
+
+**Písmo okna** je **Times Ten** (`web/src/assets/font/timesten*.woff2`),
+ořezaný na latinku, české znaky a číslice: 356 kB → 26 kB, tučný řez 19 kB.
+Ořez i převod dělá `fontTools`:
+
+```python
+s = Subsetter(); s.populate(unicodes=[...]); s.subset(font)
+font.flavor = "woff2"; font.save("timesten.woff2")
+```
+
+Hra sází Times — v XAML má `Standard` = Times New Roman (Book Antiqua je
+tam jen zakomentovaný z dřívějška, proto `BKANT.TTF` v adresáři fontů
+plete). Times Ten je řez téhož písma kreslený pro malé velikosti, takže
+drobný text v okně drží líp.
+
+**Sazba okna.** Text má pevných 19 px, popisky 21 px a zesiluje se stínem
+o půl pixelu vedle sebe ve **vlastní barvě** (`text-shadow: 0.5px 0 0
+var(--lobby-text)`, nadpis 0,6 px, zelená pole `var(--lobby-zelena)`). Hra
+sází tučněji, než jaký řez písma je k mání, a rozmazaný stín by text
+zašpinil. Barvu desky dorovnává `filter: sepia(.18) saturate(1.24)
+contrast(1.04)` na celém okně — předloha ze hry je sytější než holá textura.
+
+**Devítidílné rámy ve hře.** Kdyby bylo někdy potřeba jiný, tohle jsou
+všechny (každý = devět souborů, složí je `mrizka.py`):
+
+| rám | cesta | vzhled |
+|---|---|---|
+| `boxstyle1` | `menu\decoration\` | tlustý dřevěný s ozdobnými rohy, díly 64×64 |
+| `boxstyle2` | `menu\decoration\` | **použitý v okně** — zlatá linka s rohovými trojúhelníky |
+| `boxstyle3`, `boxstyle3a` | `menu\decoration\` | tenká zlatá linka bez ozdob |
+| `tablestyle1` | `menu\table\` | rám tabulky, díly 150×150 a jiná jména (`angle_left`, `_alt`, `_top2`) |
+| `listbox`, `ttlistbox` | `menu\listboxes\` | rám seznamu, díly 22×22 (`_tl_`, `_tc_`, … `_4k`) |
+| `npanel` | `ingame\panels\` | herní panel, hnědý, díly 22×22 |
+
+**Náhledová stránka.** `web/nahled/okno.html` (mimo build, `npm --prefix web
+run dev` na `/nahled/okno.html`) vykreslí postavené okno a nad ním modál
+režie; `?bezmodalu` modál vypne. Porovnává se se snímkem ze hry přes
+headless Chrome:
+
+```
+chrome --headless=new --screenshot=okno.png --window-size=980,900 \
+  http://localhost:5173/nahled/okno.html?bezmodalu
+```
+
+
+**Pozor na licenci:** Times Ten je majetek Monotype (má to ve vlastních
+metadatech, `nameID` 7 a 13) a v repu leží na rozhodnutí vlastníka webu.
+Kdyby to někdy vadilo, volná náhrada s prakticky stejnou kresbou je Tinos
+(Apache 2.0) nebo TeX Gyre Termes (GUST FL) — obojí metricky sedí na Times.
+
+**Porovnání s předlohou**: `web/nahled/okno.html` vykreslí okno samo o sobě,
+takže se dá postavit vedle snímku ze hry:
+
+```
+npm --prefix web run dev
+chrome --headless=new --screenshot=okno.png --window-size=880,960     http://localhost:5173/nahled/okno.html
+```
+
+Do produkčního balíčku stránka nejde — Vite bere jen `index.html`.
 
 **Proč tlačítka v CSS a ne z obrázku:** zůstanou ostrá v každé velikosti a
 při každém zvětšení stránky, nepotřebují devítidílný řez a nedělají další
@@ -275,6 +353,49 @@ Naměřeno na prostřední dlaždici (detail = průměrný rozdíl sousedních s
 | míchání s průměrem řádku (`--vyhlad 0.55`) | 1,09 | 5,74× | 3,32 |
 | bez srovnání (`--vyhlad 0`) | 2,40 | 5,75× | 7,29 |
 | **odečtená nízká frekvence (`--vyhlad 1.0`)** | **2,41** | **4,45×** | **5,93** |
+
+## 4.3 Praporec v záhlaví: vcelku, ne skládaný
+
+Do 0.24.3 se praporec v hlavičce skládal `border-image`em ze tří dílů: dva
+krajní nárožníky v původním poměru a prostřední dlaždice dokola. Mělo to dvě
+vady, které se nedaly odstranit najednou. Dlaždice je vidět — ať se srovná
+jakkoliv, na šířku hlavičky se opakuje třikrát a oko si toho všimne. A střed se
+svisle natahoval podle výšky nadpisu, takže se látka mačkala.
+
+Od 0.24.4 visí obrázek vcelku (`praporec-cely.webp`, 1600 × 502 po exportu).
+Uživatel k tomu dodal nový render s odstraněným pozadím; ten původní skládaný
+(`praporec.webp`) zůstává v repu, kdyby se k němu chtělo vrátit.
+
+**Ořez plátna.** Render měl nad látkou 116 px a pod ní 82 px prázdna. Přesně to
+se předtím dorovnávalo ručním posunem prvku. Po ořezu na kresbu (1962 × 444)
+sedí sám:
+
+```bash
+python - <<'PY'
+from PIL import Image
+im = Image.open("praporec_cely.png")
+im.crop((43, 116, 2005, 560)).save("praporec_cely_orez.png")
+PY
+python nastroje/grafika/export.py praporec_cely_orez.png     -o web/src/assets/ui/praporec-cely.webp -q 86 --sirka 1600
+```
+
+**Usazení v CSS.** Tři věci, každá kvůli konkrétní chybě:
+
+| Vlastnost | Proč |
+|---|---|
+| `background-size: contain` | `100% 100%` vyplní box, ať má jakýkoliv tvar, a látka se zmáčkne |
+| `box-sizing: border-box` | jinak se odsazení přičte k výšce spočítané z `aspect-ratio` |
+| `max-width: 860px` | poměr 4,42:1 znamená, že na 1920px okně by praporec vyrostl na 560 px |
+
+Poloha nadpisu je v procentech, ne v pixelech: bordura je v obrázku na 61,7 %
+výšky, látka začíná pod tyčí na 2 %, takže střed textu má vyjít ve 45 % té
+vzdálenosti. Spodní odsazení v procentech šířky to při poměru 4,42:1 zařídí
+v každé velikosti. Naměřeno po usazení: 46,2 % proti 45 v předloze uživatele.
+
+**Měřit, ne odhadovat.** Všechny tyhle hodnoty vznikly odečtem z renderu přes
+Playwright (`_grafika/nastroje/`, skripty `mereni.mjs`, `mezera.mjs`,
+`text_x.mjs`, `vysky.mjs`). Dvakrát se stalo, že odhad ze snímku ukázal opačný
+směr, než jaký měření potvrdilo.
 
 ## 5. Co se při tom naučilo
 

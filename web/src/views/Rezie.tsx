@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { jeAi } from "../../../src/shared/aiHraci.js";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type AkceStavPayload, type Vitez, type ZapasView } from "../../../src/shared/types.js";
@@ -18,20 +19,22 @@ export interface Obsluha {
   onHost: (zapasId: number, steamId: string) => void;
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
   /** Dohraný zápas zavřít křížkem (true), nebo z debug módu znovu otevřít (false). */
-  onZavrit: (zapasId: number, zavreny: boolean) => void;
+  onZavrit: (zapasId: number) => void;
 }
 
 interface Props {
   stav: AkceStavPayload;
   /** Chybí u hráčů: karty jsou pak jen ke čtení. */
   obsluha?: Obsluha;
-  /** Debug mód: ukázat i zavřené zápasy, zašedlé, s tlačítkem na otevření. */
-  ladeni?: boolean;
 }
 
-/** Zápasy, na které se vůbec kouká: zavřený se ukáže jen v debug módu. */
-function vRezii(stav: AkceStavPayload, ladeni: boolean): ZapasView[] {
-  return stav.zapasy.filter((z) => !z.zavreny || ladeni);
+/**
+ * Zápasy, na které se vůbec kouká. Zavřený zmizí všem včetně režie: křížek je
+ * od toho, aby karta ze stránky zmizela, a zašedlá karta s nápisem „zavřeno“
+ * zabírala řádek přesně tak jako předtím. Výsledek zůstává v databázi.
+ */
+function vRezii(stav: AkceStavPayload): ZapasView[] {
+  return stav.zapasy.filter((z) => !z.zavreny);
 }
 
 function karty(zapasy: ZapasView[], obsluha: Obsluha | undefined) {
@@ -46,8 +49,8 @@ function karty(zapasy: ZapasView[], obsluha: Obsluha | undefined) {
  * zápas — tedy to jediné, co Rob právě řeší — pod okraj obrazovky. Mají vlastní
  * sekci `HistorieZapasu` až pod ním.
  */
-export function Rezie({ stav, obsluha, ladeni = false }: Props) {
-  return <section className="rezie">{karty(vRezii(stav, ladeni).filter(jeVeHre), obsluha)}</section>;
+export function Rezie({ stav, obsluha }: Props) {
+  return <section className="rezie">{karty(vRezii(stav).filter(jeVeHre), obsluha)}</section>;
 }
 
 /**
@@ -56,8 +59,8 @@ export function Rezie({ stav, obsluha, ladeni = false }: Props) {
  * křížkem, a hráči je bez obsluhy vidí jen ke čtení. Dokud se nic nedohrálo,
  * sekce se nevykreslí vůbec.
  */
-export function HistorieZapasu({ stav, obsluha, ladeni = false }: Props) {
-  const historie = vRezii(stav, ladeni).filter((z) => !jeVeHre(z));
+export function HistorieZapasu({ stav, obsluha }: Props) {
+  const historie = vRezii(stav).filter((z) => !jeVeHre(z));
   if (historie.length === 0) return null;
   return (
     <section className="rezie historie-zapasu">
@@ -120,7 +123,7 @@ function ZapasVRezii({ zapas, obsluha }: ZapasProps) {
   return (
     <article
       data-zapas={zapas.id}
-      className={[bezi ? "zapas" : "zapas odepsany", zapas.zavreny ? "zavreny" : ""].filter(Boolean).join(" ")}
+      className={bezi ? "zapas" : "zapas odepsany"}
     >
       <h2 className="titulek-zapasu" data-testid="zapas-hlavicka">
         Zápas #{zapas.poradi}
@@ -128,7 +131,6 @@ function ZapasVRezii({ zapas, obsluha }: ZapasProps) {
           {" · "}
           {popisFormatu(zapas.ucastnici)}
           {popisStavu(zapas)}
-          {zapas.zavreny ? " · zavřeno" : ""}
         </small>
       </h2>
       {/* Sbalení má každý: hráč místo křížku (zavírat zápasy mu nepřísluší),
@@ -146,15 +148,11 @@ function ZapasVRezii({ zapas, obsluha }: ZapasProps) {
           {sbaleno ? "▸" : "▾"}
         </button>
       ) : null}
-      {/* Křížek zavře dohraný zápas: zmizí ze stránky všem, výsledek zůstává. */}
-      {obsluha && dohrano && !zapas.zavreny ? (
-        <button type="button" className="zavrit-zapas" aria-label={`Zavřít zápas #${zapas.poradi}`} title="Zavřít — zmizí ze stránky, výsledek zůstane" onClick={() => obsluha.onZavrit(zapas.id, true)}>
+      {/* Křížek zavře dohraný zápas: karta zmizí ze stránky všem včetně režie,
+          výsledek zůstává v databázi. */}
+      {obsluha && dohrano ? (
+        <button type="button" className="zavrit-zapas" aria-label={`Zavřít zápas #${zapas.poradi}`} title="Zavřít — karta zmizí ze stránky, výsledek zůstane" onClick={() => obsluha.onZavrit(zapas.id)}>
           ×
-        </button>
-      ) : null}
-      {obsluha && zapas.zavreny ? (
-        <button type="button" className="zavrit-zapas otevrit" onClick={() => obsluha.onZavrit(zapas.id, false)}>
-          Znovu otevřít
         </button>
       ) : null}
       </div>
@@ -176,7 +174,7 @@ function ZapasVRezii({ zapas, obsluha }: ZapasProps) {
             <span className="jmeno">
               {jmenoHrace(u)}
               {jeVitez(zapas, u) ? (
-                <strong className="odznak-vitez" data-testid="odznak-vitez" title="Vyhrál">
+                <strong className="odznak-vitez" data-testid="odznak-vitez" title={jeAi(u.steamId) ? "Vyhrála" : "Vyhrál"}>
                   VÍTĚZ
                 </strong>
               ) : null}

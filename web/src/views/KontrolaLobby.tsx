@@ -83,7 +83,7 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
   const dalsi = nalezena?.kontroly.filter((k) => k.sekce === "dalsi") ?? [];
   const kOprave = nalezena?.kontroly.filter((k) => k.stav === "spatne").length ?? 0;
   const vPoradku = nalezena ? lobbyVPoradku(nalezena.kontroly) : null;
-  const dalsiJinak = dalsi.filter((k) => k.stav === "spatne").length;
+  const prelobby = nalezena?.kontroly.filter((k) => k.sekce === "prelobby") ?? [];
 
   useEffect(() => {
     onVerdikt?.(vPoradku);
@@ -122,26 +122,62 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
       ) : null}
       {nalezena ? (
         <>
-          <SeznamKontrol kontroly={hlavni} testId="kontroly" />
-          {dalsi.length > 0 ? (
-            <details
-              className="dalsi-nastaveni"
-              data-testid="dalsi-nastaveni"
-              open={rozbalene}
-              onToggle={(e) => setRozbalene(e.currentTarget.open)}
-            >
-              <summary>
-                Další nastavení{" "}
-                <span className={dalsiJinak === 0 ? "potvrzeno" : "chyba"}>
-                  {dalsiJinak === 0 ? "— vše podle nastavení akce" : `— ${dalsiJinak} jinak než v nastavení akce`}
-                </span>
-              </summary>
-              <SeznamKontrol kontroly={dalsi} testId="kontroly-dalsi" />
-            </details>
-          ) : null}
+          {/* Pre-Lobby: co se naklikalo v okně zakládání lobby. Po založení
+              se s tím už nedá hnout, takže sedí zvlášť od herního panelu. */}
+          <Sekce nazev="Pre-Lobby" kontroly={prelobby} testId="prelobby-nastaveni" seznamTestId="kontroly-prelobby" />
+          <Sekce nazev="Nastavení Lobby" kontroly={hlavni} testId="hlavni-nastaveni" seznamTestId="kontroly" />
+          <Sekce
+            nazev="Další nastavení"
+            kontroly={dalsi}
+            testId="dalsi-nastaveni"
+            seznamTestId="kontroly-dalsi"
+            otevreno={rozbalene}
+            onPrepnout={setRozbalene}
+          />
         </>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Jedna sekce kontroly: název, kolik v ní sedí jinak, a seznam řádků. Všechny
+ * tři sekce vypadají stejně, takže se kreslí jedním kusem kódu; „Další
+ * nastavení“ si navíc pamatuje, jestli je zabalené.
+ */
+function Sekce({
+  nazev,
+  kontroly,
+  testId,
+  seznamTestId,
+  otevreno,
+  onPrepnout,
+}: {
+  nazev: string;
+  kontroly: Kontrola[];
+  testId: string;
+  seznamTestId: string;
+  /** Chybí = sekce je rozbalená a nezapamatovává si nic. */
+  otevreno?: boolean;
+  onPrepnout?: (otevreno: boolean) => void;
+}) {
+  if (kontroly.length === 0) return null;
+  const jinak = kontroly.filter((k) => k.stav === "spatne").length;
+  return (
+    <details
+      className="dalsi-nastaveni"
+      data-testid={testId}
+      open={otevreno ?? true}
+      onToggle={onPrepnout === undefined ? undefined : (e) => onPrepnout(e.currentTarget.open)}
+    >
+      <summary>
+        {nazev}{" "}
+        <span className={jinak === 0 ? "potvrzeno" : "chyba"}>
+          {jinak === 0 ? "— vše podle nastavení akce" : `— ${jinak} jinak než v nastavení akce`}
+        </span>
+      </summary>
+      <SeznamKontrol kontroly={kontroly} testId={seznamTestId} />
+    </details>
   );
 }
 

@@ -79,3 +79,53 @@ it("bez ZKUSEBNI_HRACI je to 404 a nastavení říká vypnuto", async () => {
   expect(nastaveni.json()).toMatchObject({ zkusebniHraci: false });
   await app.close();
 });
+
+// Zkušební hráč je nástroj, ne účastník večera: po sobě nemá nechat vůbec nic.
+// Smaže se proto i každý zápas, ve kterém seděl — včetně dohraného a včetně
+// těch, kde vedle něj hráli skuteční lidé. Zápas se zkušebním hráčem stejně
+// není doklad o ničem a v historii by jen překážel.
+it("odebrání smaže i zápasy se zkušebním hráčem a jeho řádek v player", async () => {
+  const app = buildServer();
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/prihlaska`, cookies: { sid: hracSid } });
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/zkusebni-hraci`, cookies: { sid: robSid } });
+  const zkusebniId = (await listSignups(akceId)).find((h) => h.steamId.startsWith("test:"))!.steamId;
+
+  const zapas = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akceId}/zapas`,
+    cookies: { sid: robSid },
+    payload: { sestava: [{ steamId: HRAC, tym: 1, barva: 1 }, { steamId: zkusebniId, tym: 2, barva: 2 }] },
+  });
+  expect(zapas.statusCode).toBe(200);
+
+  await app.inject({ method: "DELETE", url: `/api/akce/${akceId}/zkusebni-hraci`, cookies: { sid: robSid } });
+
+  const { rows: zapasy } = await getPool().query("SELECT id FROM zapas WHERE akce_id = $1", [akceId]);
+  expect(zapasy).toHaveLength(0);
+  const { rows: hraci } = await getPool().query("SELECT steam_id FROM player WHERE steam_id LIKE 'test:%'");
+  expect(hraci).toHaveLength(0);
+  // Skutečný hráč zůstane i s přihláškou — mazal se zkušební, ne večer.
+  expect((await listSignups(akceId)).map((h) => h.steamId)).toEqual([HRAC]);
+  await app.close();
+});
+
+// Zápas, ve kterém žádný zkušební hráč nebyl, se odebráním nesmí dotknout.
+it("zápas bez zkušebních hráčů odebrání přežije", async () => {
+  const app = buildServer();
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/prihlaska`, cookies: { sid: hracSid } });
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/prihlaska`, cookies: { sid: robSid } });
+  await app.inject({ method: "POST", url: `/api/akce/${akceId}/zkusebni-hraci`, cookies: { sid: robSid } });
+
+  await app.inject({
+    method: "POST",
+    url: `/api/akce/${akceId}/zapas`,
+    cookies: { sid: robSid },
+    payload: { sestava: [{ steamId: HRAC, tym: 1, barva: 1 }, { steamId: ROB, tym: 2, barva: 2 }] },
+  });
+
+  await app.inject({ method: "DELETE", url: `/api/akce/${akceId}/zkusebni-hraci`, cookies: { sid: robSid } });
+
+  const { rows } = await getPool().query("SELECT id FROM zapas WHERE akce_id = $1", [akceId]);
+  expect(rows).toHaveLength(1);
+  await app.close();
+});

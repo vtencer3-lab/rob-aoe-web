@@ -1,4 +1,5 @@
 import { generatePassword, lobbyName, sestavSedadla } from "../matches/composition.js";
+import { jeAi, JMENO_AI } from "../shared/aiHraci.js";
 import {
   assertTransition,
   PrechodChyba,
@@ -90,6 +91,18 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
     // to, které platilo v okamžiku založení zápasu.
     const elo = new Map(prihlaseni.map((r) => [r.steam_id, r.elo_1v1]));
     for (const steamId of steamIds) {
+      // AI se do akce nehlásí — sedí rovnou v sestavě, takže tahle kontrola
+      // se jí netýká. Zato potřebuje řádek v player, jinak ji cizí klíč
+      // účastníka nepustí; zakládá se tady ze sdíleného seznamu, aby jméno
+      // AI existovalo v celém repu jen jednou (shared/aiHraci.ts).
+      if (jeAi(steamId)) {
+        await client.query(
+          `INSERT INTO player (steam_id, alias, steam_name) VALUES ($1, $2, $2)
+             ON CONFLICT (steam_id) DO NOTHING`,
+          [steamId, JMENO_AI],
+        );
+        continue;
+      }
       if (!odehrano.has(steamId)) {
         throw new UcastnikOdhlasenChyba(`Hráč ${steamId} už není přihlášený do akce.`);
       }
@@ -110,11 +123,21 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
       [akceId],
     );
 
+    // Heslo si Rob opsal do hry už při zakládání lobby (okno Pre-Lobby), takže
+    // zápas dostane přesně to připravené. Hned se chystá další, aby okno mělo
+    // co ukazovat pro příští lobby. Bez připraveného hesla (starší akce) se
+    // vygeneruje jako dřív.
+    const { rows: hesloRows } = await client.query<{ pristi_heslo: string | null }>(
+      "UPDATE akce SET pristi_heslo = $2 WHERE id = $1 RETURNING (SELECT pristi_heslo FROM akce WHERE id = $1) AS pristi_heslo",
+      [akceId, generatePassword()],
+    );
+    const heslo = hesloRows[0]?.pristi_heslo ?? generatePassword();
+
     const { rows } = await client.query(
       `INSERT INTO zapas (akce_id, poradi, nazev_lobby, heslo, nastaveni)
        VALUES ($1, $2, $3, $4, $5::jsonb)
        RETURNING ${SLOUPCE_ZAPASU}`,
-      [akceId, poradi, lobbyName(poradi), generatePassword(), JSON.stringify(nastaveniRows[0]?.nastaveni_lobby ?? {})],
+      [akceId, poradi, lobbyName(poradi), heslo, JSON.stringify(nastaveniRows[0]?.nastaveni_lobby ?? {})],
     );
     const zapas = mapujZapas(rows[0] as Record<string, unknown>);
 

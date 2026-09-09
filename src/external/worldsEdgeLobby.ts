@@ -1,5 +1,5 @@
 import { inflateSync } from "node:zlib";
-import type { PoznatekLobby, SlotLobby } from "../shared/lobbyKontrola.js";
+import type { AiSlot, PoznatekLobby, SlotLobby } from "../shared/lobbyKontrola.js";
 import type { Barva, Tym } from "../shared/types.js";
 
 /**
@@ -130,6 +130,9 @@ export function nastaveniZOptions(o: Map<string, string>): NonNullable<PoznatekL
     lockSpeed: ano("65"),
     turbo: ano("79"),
     fullTechTree: ano("62"),
+    // Hide Civilizations: hra ho posílá dvakrát — 85 přímo (1 = zapnuto)
+    // a 96 obráceně (y = civilizace vidět). Bereme to přímé.
+    skrytCivilizace: cislo(o.get("85")) === null ? null : cislo(o.get("85")) === 1,
     empireWars: ano("89"),
     suddenDeath: ano("90"),
     regicide: ano("91"),
@@ -140,9 +143,10 @@ export function nastaveniZOptions(o: Map<string, string>): NonNullable<PoznatekL
 
 /**
  * Metadata slotu: „ScenarioPlayerIndex“ 0–7 je barva 1–8 (−1 = random),
- * „Team“ 1 je „–“, 2–5 tým 1–4, 6 náhodný.
+ * „Team“ 1 je „–“, 2–5 tým 1–4, 6 náhodný. Čte se stejně u člověka i u AI —
+ * liší se jen tím, že u AI k tomu není žádné id.
  */
-function slotZMetadat(steamId: string, slot: Record<string, unknown>): SlotLobby {
+function slotZMetadat(slot: Record<string, unknown>): AiSlot {
   let barva: Barva | null = null;
   let tym: Tym | "?" | null = null;
   let civ: number | null = null;
@@ -168,36 +172,65 @@ function slotZMetadat(steamId: string, slot: Record<string, unknown>): SlotLobby
       // Nečitelná metadata: barva i tým zůstanou null a kontrola to řekne.
     }
   }
-  return { steamId, barva, tym, civ, pripraven: slot["isReady"] === 1 };
+  return { barva, tym, civ, pripraven: slot["isReady"] === 1 };
 }
 
-/** slotinfo: zlib → „N,[sloty…]“. Vrací jen obsazené sloty se Steam účtem. */
-export function parseSloty(zabalene: unknown, steam: Map<number, string>): SlotLobby[] {
+/**
+ * Stav slotu (`status`), jak ho posílá hra — odečteno z živé lobby
+ * 9. 9. 2026: 0 sedí člověk, 1 slot je prázdný, 2 sedí počítač.
+ */
+const STAV_AI = 2;
+
+/**
+ * Zavřený slot — ten, který se v okně zakládání „uřízl“ volbou Players.
+ * Pozor: volný slot, do kterého se ještě někdo může posadit, má stav 0
+ * stejně jako obsazený; jedničku má jen slot, který v lobby vůbec není.
+ */
+const STAV_ZAVRENY = 1;
+
+/**
+ * slotinfo: zlib → „N,[sloty…]“. Lidi a AI zvlášť.
+ *
+ * AI má stejně jako prázdný slot `profileInfo.id` −1, takže se pozná až
+ * podle stavu slotu a podle toho, že má vyplněná metadata (prázdný slot má
+ * `"AA=="`, tedy nic). Barvu a tým z nich přečte stejná funkce jako u lidí.
+ */
+export function parseSloty(
+  zabalene: unknown,
+  steam: Map<number, string>,
+): { lide: SlotLobby[]; ai: AiSlot[]; pocetSlotu: number | null } {
+  const prazdne = { lide: [], ai: [], pocetSlotu: null };
   const text = rozbal(zabalene);
-  if (text === null) return [];
+  if (text === null) return prazdne;
   const carka = text.indexOf(",");
-  if (carka === -1) return [];
+  if (carka === -1) return prazdne;
   const zbytek = text.slice(carka + 1);
   // Za polem může být ještě něco (nula) — JSON.parse by na tom spadl, takže
   // se vezme jen část po uzavírací hranaté závorce.
   const konec = zbytek.lastIndexOf("]");
-  if (konec === -1) return [];
+  if (konec === -1) return prazdne;
   let pole: unknown;
   try {
     pole = JSON.parse(zbytek.slice(0, konec + 1));
   } catch {
-    return [];
+    return prazdne;
   }
-  if (!Array.isArray(pole)) return [];
-  const sloty: SlotLobby[] = [];
+  if (!Array.isArray(pole)) return prazdne;
+  const lide: SlotLobby[] = [];
+  const ai: AiSlot[] = [];
+  let pocetSlotu = 0;
   for (const s of pole) {
     if (!jeObjekt(s)) continue;
+    if (s["status"] !== STAV_ZAVRENY) pocetSlotu++;
     const pid = s["profileInfo.id"];
     const steamId = typeof pid === "number" ? steam.get(pid) : undefined;
-    if (!steamId) continue;
-    sloty.push(slotZMetadat(steamId, s));
+    if (steamId) {
+      lide.push({ steamId, ...slotZMetadat(s) });
+      continue;
+    }
+    if (s["status"] === STAV_AI) ai.push(slotZMetadat(s));
   }
-  return sloty;
+  return { lide, ai, pocetSlotu };
 }
 
 export function parseAdvertisements(json: unknown): LobbyInzerat[] {
@@ -230,7 +263,16 @@ export function parseAdvertisements(json: unknown): LobbyInzerat[] {
       maHeslo: m["passwordprotected"] === 1 || m["passwordprotected"] === true,
       povolujeDivaky: m["isobservable"] === 1 || m["isobservable"] === true,
       clenoveSteamIds: clenove,
-      sloty: parseSloty(m["slotinfo"], steam),
+      ...(({ lide, ai, pocetSlotu }) => ({ sloty: lide, aiSloty: ai, pocetSlotu }))(parseSloty(m["slotinfo"], steam)),
+      preLobby: {
+        lobbyTyp: typeof m["matchtype_id"] === "number" ? m["matchtype_id"] : null,
+        viditelnost: typeof m["visible"] === "number" ? m["visible"] : null,
+        // Ne maxplayers: to je vždycky 8, tedy kolik hráčů hra unese. Kolik
+        // slotů lobby doopravdy má, se pozná až podle nezavřených slotů.
+        maxHracu: parseSloty(m["slotinfo"], steam).pocetSlotu,
+        zpozdeniDivakuSekund: typeof m["observerdelay"] === "number" ? m["observerdelay"] : null,
+        server: typeof m["relayserver_region"] === "string" ? m["relayserver_region"] : null,
+      },
       nastaveni: options ? nastaveniZOptions(options) : null,
     });
   }

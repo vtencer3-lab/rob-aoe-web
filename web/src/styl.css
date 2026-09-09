@@ -18,6 +18,23 @@
   font-display: swap;
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* Písmo okna Create Lobby: Times Ten, řez pro malé velikosti — hra sází
+   Times a tenhle je v drobném textu čitelnější. Ořezaný na latinku, české
+   znaky a číslice (356 kB → 26 kB, tučný řez 19 kB). */
+@font-face {
+  font-family: "Times Ten";
+  src: url(./assets/font/timesten.woff2) format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Times Ten";
+  src: url(./assets/font/timesten-bold.woff2) format("woff2");
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* Barvy jsou vytažené přímo z loga Brohemians (nástroj `nastroje/grafika/paleta.py`),
    ne odhadnuté. Proto do stránky logo zapadne, místo aby na ní leželo. */
@@ -56,7 +73,7 @@
   --b3: #2e9e4f;
   --b4: #d9b400;
   --b5: #23b5b5;
-  --b6: #a05bd6;
+  --b6: #e055a8;
   --b7: #8d8d8d;
   --b8: #e67e22;
   color-scheme: dark;
@@ -212,6 +229,11 @@ header h1 {
    z výchozího stylu prohlížeče pro h2, takže vycházelo větší než „Přihlášení
    hráči“ vedle něj; teď je řečená u obou. */
 .nadpis-seznamu, .hlavicka-akce h2 { font-size: 1.4rem; }
+/* Text nadpisu odsazený od kraje desky, ozdoba pod ním ne: ta má začínat
+   u rámu. Proto odsazení na textu a záporné na ozdobě, ne padding na celém
+   nadpisu. */
+.nadpis-seznamu, h2.nadpis-akce, .hlavicka-akce h2 { padding-left: 20px; }
+.nadpis-seznamu::after, h2.nadpis-akce::after, .hlavicka-akce h2::after { margin-left: -20px; }
 .nadpis-seznamu::after, h2.nadpis-akce::after, .hlavicka-akce h2::after {
   content: "";
   display: block;
@@ -515,6 +537,64 @@ h2.nadpis-akce::after {
 /* Sloupce jsou na celém seznamu (subgrid), takže jméno má šířku podle
    nejdelšího jména v sestavě a ELO i civilizace sedí zarovnané hned za ním;
    křížek je až u pravého okraje za prázdným sloupcem. */
+/* Nadpisový řádek sestavy: nápověda k přetahování vlevo, „+ AI“ hned vedle ní.
+   Počítač se do akce nehlásí, takže se nebere z tabulky přihlášených jako lidi
+   — přisedne odsud, jako když si ho host naklikne v lobby. */
+.skladani .hlavicka-sestavy { display: flex; align-items: center; gap: 0.9rem; }
+/* Odstavec má vlastní spodní okraj, takže by se s tlačítkem srovnal
+   krabicí, ne textem — a tlačítko by sedělo níž. */
+.skladani .hlavicka-sestavy .zaloha { margin: 0; }
+.skladani .pridat-ai { padding: 0.15rem 0.7rem; font-size: 0.8rem; }
+/* Pre-Lobby: okno „Create Lobby“ jako ve hře. Zakládání lobby je krok mimo
+   běžné nastavování, tak stojí v modálním okně — okolí ztmavne a kliknutí
+   vedle (nebo Escape) ho zavře. */
+.hlavicka-akce .prelobby-tlacitko { margin-left: auto; }
+.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); }
+.prelobby-okno {
+  width: min(34rem, 100%);
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  padding: 1.2rem 1.6rem 1.6rem;
+  border: 34px solid transparent;
+  border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
+  background:
+    linear-gradient(rgba(38, 22, 16, 0.96), rgba(20, 12, 8, 0.98)),
+    url(./assets/ui/drevo.webp) center / 380px repeat;
+  background-origin: border-box;
+}
+/* Nadpis nese pod sebou ozdobný oddělovač, takže je vyšší než sám text.
+   Křížek se proto zarovnává k hornímu okraji — jinak by klesl pod nadpis. */
+.prelobby-okno .hlavicka-akce { margin-bottom: 0.8rem; align-items: flex-start; }
+.prelobby-okno .zavrit { margin-left: auto; width: 2.3rem; height: 2.3rem; padding: 0; line-height: 1; }
+/* Stejná mřížka jako v panelu nastavení: popisek vpravo zarovnaný, pole
+   v druhém sloupci. Bez ní by řádky splynuly do jednoho odstavce. */
+.prelobby-okno .radky { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; align-items: center; }
+.prelobby-okno .radek { display: contents; }
+.prelobby-okno .radek > span:first-child { color: var(--tlumene); font-size: 0.9rem; text-align: right; }
+.prelobby-okno .radek > select, .prelobby-okno .radek > input { width: 100%; box-sizing: border-box; }
+/* Zaškrtávátka stojí přes oba sloupce, jako ve hře pod poli. */
+.prelobby-okno .radek-cely, .prelobby-okno .prelobby-dvojice { grid-column: 1 / -1; }
+.prelobby-okno .prelobby-dvojice { display: flex; gap: 1.6rem; padding-left: 0.2rem; }
+.prelobby-varovani { margin: 0.9rem 0; text-align: center; font-size: 0.85rem; color: var(--tlumene); }
+/* Vynadání za Private lobby: nad formulářem, ať se nedá přehlédnout. */
+.prelobby-nadavka { margin: 0 0 0.8rem; text-align: center; font-weight: 700; color: var(--chyba); }
+/* Řádek má display:contents, takže se třese jeho obsah, ne on sám. */
+.prelobby-okno .radek.zatrest > * { animation: zatreseni 0.6s ease; }
+@keyframes zatreseni {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-6px); }
+  30% { transform: translateX(6px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  80% { transform: translateX(-2px); }
+}
+/* Kostka je stejně vysoká jako pole vedle ní, tedy skoro čtvercová. */
+.prelobby-heslo { display: flex; align-items: stretch; gap: 0.4rem; }
+.prelobby-heslo input { flex: 1; letter-spacing: 0.2em; font-weight: 700; }
+.prelobby-heslo .kostka { display: inline-flex; align-items: center; justify-content: center; align-self: stretch; aspect-ratio: 1; padding: 0 0.4rem; color: var(--akcent); }
+.prelobby-okno input[readonly] { color: var(--akcent); font-weight: 700; }
+.prelobby-dvojice { display: flex; gap: 1.4rem; }
+.prelobby-okno label.zaskrtavaci { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
 .skladani .sestava {
   list-style: none;
   padding: 0;
@@ -987,9 +1067,11 @@ button.odebrat:hover { color: var(--chyba); }
 .kontroly li { break-inside: avoid; padding: 0.15rem 0; }
 .kontroly li.ok { color: var(--ok); }
 .kontroly li.spatne { color: var(--chyba); font-weight: 700; }
-.kontroly li.varovani { color: var(--varovani); }
+.kontroly li.varovani { color: var(--varovani); font-weight: 700; }
 .kontroly li.jedno { color: var(--tlumene); }
-.kontroly .znak { display: inline-block; width: 1.2rem; }
+/* Znak vycentrovaný: „!“ je v tomhle písmu o dost užší než „✓“, takže bez
+   zarovnání vypadalo varování odsazené jinak než zbytek seznamu. */
+.kontroly .znak { display: inline-block; width: 1.2rem; text-align: center; }
 .varovani { color: var(--varovani); }
 .dalsi-nastaveni { margin-top: 0.6rem; }
 .dalsi-nastaveni summary { cursor: pointer; color: var(--tlumene); }
@@ -1032,7 +1114,9 @@ button.odebrat:hover { color: var(--chyba); }
    seznamu — prohlížeč dává selectu vnitřní odsazení navíc. */
 .nastaveni-lobby .radek > input[type="number"] { padding-left: 0.85rem; }
 .nastaveni-lobby fieldset { border: none; padding: 0; margin: 0; min-width: 0; }
-.nastaveni-lobby .prepinace { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; }
+/* Přepínače sady civilizací zabírají celou šířku řádku jako rozbalovátka
+   pod nimi a rozprostřou se po ní rovnoměrně, ať panel drží mřížku. */
+.nastaveni-lobby .prepinace { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 0.3rem 0.9rem; width: 100%; }
 .nastaveni-lobby .prepinace label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.9rem; }
 .nastaveni-lobby .sloupce { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.6rem 2rem; margin-top: 1rem; max-width: 36rem; }
 .nastaveni-lobby .sloupce legend { font-weight: 700; font-size: 1rem; margin-bottom: 0.3rem; }
@@ -1455,8 +1539,6 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 .zapas button.sbalit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 0.95rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
 .zapas button.sbalit-zapas:hover:enabled { color: var(--akcent); border-color: var(--zlato-tmave); background: none; }
 .zapas button.zavrit-zapas:hover { color: var(--chyba); border-color: var(--zlato-tmave); }
-.zapas button.zavrit-zapas.otevrit { width: auto; height: auto; padding: 0.3rem 0.6rem; font-size: 0.85rem; background: linear-gradient(#4a2a1c, #2c1710); border-color: var(--zlato-tmave); }
-.zapas.zavreny { opacity: 0.45; }
 
 /* ------------------------------------------------------------------ *
  * Drobnosti kabátku: posuvník, výběr textu a odkazy.
@@ -1488,3 +1570,149 @@ a:hover { color: var(--zlato-svetle); }
 .prepinac {
   font-family: "Cinzel", Georgia, serif;
 }
+
+/* ---------------------------------------------------------------------------
+   Okno „Create Lobby“ postavené z herních dílů (widgetui/textures, viz
+   docs/grafika.md). Host podle něj opisuje nastavení do hry, takže se drží
+   předlohy co nejblíž: pergamen, ozdoba nadpisu, zlatý rám desky, herní
+   rozbalovátka, zaškrtávátka i tmavá pole.
+
+   Písmo: hra používá Book Antiqua (`BKANT.TTF`). Nehostujeme ho — je to
+   komerční font Monotype a šířit ho nesmíme; na Windows ho ale má každý
+   v systému, stejně jako Palatino Linotype, takže se jen vyžádá. Kdo ho
+   nemá, dostane Georgii, která má podobnou kresbu.
+
+   Rozměry jsou v em, aby celé okno škálovalo jedním `font-size` na kořeni.
+   --------------------------------------------------------------------------- */
+.okno-lobby {
+  --lobby-text: #33240f;
+  --lobby-deska: #b79579;
+  --lobby-zelena: #35e035;
+  font-family: "Times Ten", Georgia, "Times New Roman", serif;
+  font-weight: 900;
+  /* Sazba má pevných 19 px jako v herním okně; šířka se od ní odvíjí, ale
+     drží se v rem, aby se nesmršťovala spolu s písmem. */
+  font-size: 19px;
+  container-type: inline-size;
+  max-width: 44rem;
+  margin: 1rem auto 0;
+  padding: 1.6em 3.2em 3em;
+  color: var(--lobby-text);
+  /* Hra sází text o chlup tučněji, než jaký řez písma je k mání: stín o půl
+     pixelu vedle vlastní barvy text zesílí, aniž by se rozmazal. Dědí se do
+     všech popisků v okně; zelená pole si ho níž přebarvují na svou barvu. */
+  text-shadow: 0.5px 0 0 var(--lobby-text);
+  background: url(./assets/ui/lobby-pergamen.webp) center / 100% 100% no-repeat;
+  /* Předloha ze hry je sytější než holá textura; dorovnává se filtrem, ať se
+     nemusí sahat do samotného assetu. */
+  filter: sepia(0.18) saturate(1.24) contrast(1.04);
+}
+.okno-lobby-zahlavi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 4em;
+  margin: 0 -0.7em 0;
+  padding-bottom: 15px;
+  background: url(./assets/ui/lobby-ozdoba.webp) 50% / 92% no-repeat;
+}
+.okno-lobby-zahlavi h4 {
+  margin-top: 11px;
+  margin-bottom: 0;
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--lobby-text);
+  /* Nadpis unese o desetinu silnější stín než zbytek okna — je větší. */
+  text-shadow: 0.6px 0 0 var(--lobby-text);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.okno-lobby-zahlavi h4::after { content: none; }
+.okno-lobby-zavrit {
+  position: absolute;
+  top: 0.8em;
+  right: -0.7em;
+  width: 1.7em;
+  height: 2.1em;
+  background: url(./assets/ui/lobby-zavrit.webp) center / contain no-repeat;
+}
+/* Deska s poli: herní zlatý rám (boxstyle2) a béžová plocha pod ním. */
+.okno-lobby-telo {
+  margin-top: 0;
+  padding: 1.2em 5em 2em;
+  background: var(--lobby-deska);
+  /* Rám má díly ořezané jen na zlatý pás (mrizka.py --orez 22) a prázdný
+     střed. Dokud v nich byla i výplň, rám s ní ztloustl; a když se místo
+     toho zmenšil výřez, zmáčkly se rohové ozdoby do šmouhy. */
+  border: 11px solid transparent;
+  border-image: url(./assets/ui/lobby-ram.webp) 22 / 11px stretch;
+}
+/* Popisek vlevo, pole vpravo — jako ve hře, kde popisky začínají na jedné
+   svislici a nejsou zarovnané na pravý okraj. */
+.okno-lobby-radek { display: grid; grid-template-columns: 9.5em 15em; justify-content: space-between; align-items: center; gap: 0.7em; margin-bottom: 0.35em; }
+/* Popisky sází hra o dva body větší než hodnoty v polích. */
+.okno-lobby-popis { font-size: 21px; font-weight: 900; text-align: left; }
+.okno-lobby-vyber {
+  position: relative;
+  display: block;
+  padding: 0 2em 0 0.25em;
+  font-size: 1em;
+  font-weight: 900;
+  line-height: 1.3;
+  /* Rámeček pole je roztažený z herního dílu, ne opakovaná dlaždice. */
+  border: 5px solid transparent;
+  border-image: url(./assets/ui/lobby-pole.webp) 8 fill / 5px stretch;
+}
+.okno-lobby-vyber::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 1.2em;
+  height: 0.95em;
+  transform: translateY(-50%);
+  background: url(./assets/ui/lobby-sipka.webp) center / contain no-repeat;
+}
+/* Textové pole má taky svůj herní díl; zeleným písmem jako ve hře. */
+.okno-lobby .okno-lobby-vstup {
+  display: flex;
+  /* Hodnota vlevo, ikona kopírování na pravém konci pole jako ve hře. */
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4em;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 0.25em;
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--lobby-zelena);
+  text-shadow: 0.5px 0 0 var(--lobby-zelena);
+  background: none;
+  border: 6px solid transparent;
+  border-image: url(./assets/ui/lobby-vstup.webp) 8 fill / 6px stretch;
+  text-align: left;
+}
+.okno-lobby .okno-lobby-vstup strong,
+.okno-lobby button.okno-lobby-vstup,
+.okno-lobby button.okno-lobby-vstup strong { color: var(--lobby-zelena); font-weight: 900; }
+.okno-lobby button.okno-lobby-vstup .ikona-kopie { color: var(--lobby-zelena); opacity: 0.75; }
+/* Pole je vidět, že je klikací: podbarvit ho nejde (vnitřek kreslí `fill`
+   z border-image, který by tón překryl), tak se rozsvítí celé. */
+.okno-lobby button.okno-lobby-vstup:hover { filter: brightness(1.3); }
+.okno-lobby button.okno-lobby-vstup:hover .ikona-kopie { opacity: 1; }
+.okno-lobby-zaskrtavatko { display: inline-flex; align-items: center; gap: 0.5em; margin: 0.4em 0 0.4em 1em; font-size: 1em; font-weight: 900; }
+.okno-lobby-dvojice { display: flex; gap: 3.5em; }
+.okno-lobby-dvojice .okno-lobby-zaskrtavatko { margin-left: 0.8em; }
+.okno-lobby-dvojice .okno-lobby-zaskrtavatko + .okno-lobby-zaskrtavatko { margin-left: 0; }
+.okno-lobby-zaskrtavatko .ctverec {
+  width: 1.3em;
+  height: 1.3em;
+  flex: none;
+  background: url(./assets/ui/lobby-zaskrtavatko.webp) center / contain no-repeat;
+}
+.okno-lobby-zaskrtavatko.zapnuto .ctverec { background-image: url(./assets/ui/lobby-zaskrtnuto.webp); }
+.okno-lobby-varovani { margin: 0.9em 0 1em; text-align: center; font-size: 1em; font-weight: 900; }

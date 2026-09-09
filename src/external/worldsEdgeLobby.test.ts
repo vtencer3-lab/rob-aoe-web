@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import inzeraty from "./fixtures/worldsedge-advertisements.json" with { type: "json" };
 import robova from "./fixtures/worldsedge-lobby-robdiesalot.json" with { type: "json" };
-import { fetchAdvertisements, parseAdvertisements } from "./worldsEdgeLobby.js";
+import { deflateSync } from "node:zlib";
+import { fetchAdvertisements, parseAdvertisements, parseSloty } from "./worldsEdgeLobby.js";
 
 describe("parseAdvertisements", () => {
   it("převede inzerát na číslo lobby, hosta a členy podle Steam ID", () => {
@@ -86,6 +87,8 @@ describe("parseAdvertisements — sloty a nastavení", () => {
       lockSpeed: true,
       turbo: false,
       fullTechTree: false,
+      // Hide Civilizations z options[85] (ve fixtuře 0 = vypnuto).
+      skrytCivilizace: false,
       empireWars: false,
       suddenDeath: false,
       regicide: false,
@@ -123,5 +126,114 @@ describe("fetchAdvertisements", () => {
   it("neúspěšná odpověď vyhodí chybu se stavovým kódem", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response("", { status: 503 }));
     await expect(fetchAdvertisements(fetchImpl as unknown as typeof fetch)).rejects.toThrow(/503/);
+  });
+});
+
+// Vzorek z živé lobby (9. 9. 2026): host, dvě AI a pět prázdných slotů.
+// AI má stejně jako prázdný slot profileInfo.id = -1, ale status 2 a
+// vyplněná metadata; prázdný slot má status 1 a metadata prázdná.
+const SLOTY_S_AI = [
+  { "profileInfo.id": 15260548, isReady: 1, status: 0, metaData: "IkJBRUFBQUF4QWdBQUFERTRBUUFBQURBS0FBQUFOREk1TkRrMk56STVOUk1BQUFCVFkyVnVZWEpwYjFCc1lYbGxja2x1WkdWNENnQUFBRFF5T1RRNU5qY3lPVFVFQUFBQVZHVmhiUUVBQUFBMiI=" },
+  { "profileInfo.id": -1, isReady: 0, status: 2, metaData: "IkJBRUFBQUF4QlFBQUFEWTFOVE0zQVFBQUFEQUtBQUFBTkRJNU5EazJOekk1TlJNQUFBQlRZMlZ1WVhKcGIxQnNZWGxsY2tsdVpHVjRDZ0FBQURReU9UUTVOamN5T1RVRUFBQUFWR1ZoYlFFQUFBQTIi" },
+  { "profileInfo.id": -1, isReady: 0, status: 2, metaData: "IkJBRUFBQUF4QlFBQUFEWTFOVE0zQVFBQUFEQUtBQUFBTkRJNU5EazJOekk1TlJNQUFBQlRZMlZ1WVhKcGIxQnNZWGxsY2tsdVpHVjRDZ0FBQURReU9UUTVOamN5T1RVRUFBQUFWR1ZoYlFFQUFBQTIi" },
+  { "profileInfo.id": -1, isReady: 0, status: 1, metaData: "IkFBPT0i" },
+];
+
+function zabalSloty(sloty: unknown[]): string {
+  return deflateSync(Buffer.from(`8,${JSON.stringify(sloty)}`)).toString("base64");
+}
+
+describe("parseSloty s AI", () => {
+  it("AI pozná podle stavu slotu a vrátí ji zvlášť od lidí", () => {
+    const steam = new Map([[15260548, "76561198014056480"]]);
+    const { lide, ai } = parseSloty(zabalSloty(SLOTY_S_AI), steam);
+
+    expect(lide.map((s) => s.steamId)).toEqual(["76561198014056480"]);
+    expect(ai).toHaveLength(2);
+  });
+
+  it("AI má čitelnou barvu a tým jako člověk", () => {
+    const sAi = [
+      { "profileInfo.id": -1, isReady: 0, status: 2, metaData: "IkJBRUFBQUF4QlFBQUFEWTFOVE0zQVFBQUFEQUtBQUFBTkRJNU5EazJOekk1TlJNQUFBQlRZMlZ1WVhKcGIxQnNZWGxsY2tsdVpHVjRDZ0FBQURReU9UUTVOamN5T1RVRUFBQUFWR1ZoYlFFQUFBQTIi" },
+    ];
+    const { ai } = parseSloty(zabalSloty(sAi), new Map());
+    // Ve vzorku měla AI náhodnou barvu (ScenarioPlayerIndex −1) a tým „?“.
+    expect(ai[0]).toMatchObject({ barva: null, tym: "?" });
+  });
+
+  it("prázdný slot není ani člověk, ani AI", () => {
+    const prazdne = [{ "profileInfo.id": -1, isReady: 0, status: 1, metaData: "IkFBPT0i" }];
+    const { lide, ai } = parseSloty(zabalSloty(prazdne), new Map());
+    expect(lide).toHaveLength(0);
+    expect(ai).toHaveLength(0);
+  });
+});
+
+// Nastavení z okna zakládání lobby („pre-lobby“) hra neposílá v options, ale
+// přímo v inzerátu: zpoždění diváků, strop hráčů, heslo pro diváky a region.
+describe("pre-lobby z inzerátu", () => {
+  it("přečte zpoždění diváků, strop hráčů, heslo diváků a region", () => {
+    const [lobby] = parseAdvertisements({
+      matches: [
+        {
+          id: 1,
+          description: "ROB-01",
+          passwordprotected: 1,
+          isobservable: 1,
+          observerdelay: 180,
+          observermax: 512,
+          maxplayers: 8,
+          matchtype_id: 0,
+          visible: 1,
+          hasobserverpassword: 1,
+          relayserver_region: "westeurope",
+          matchmembers: [],
+        },
+      ],
+      avatars: [],
+    });
+    // maxplayers je vždycky 8; bez slotinfo se počet slotů nedá zjistit.
+    expect(lobby!.preLobby).toEqual({
+      lobbyTyp: 0,
+      viditelnost: 1,
+      maxHracu: null,
+      zpozdeniDivakuSekund: 180,
+      server: "westeurope",
+    });
+  });
+
+  it("co inzerát nenese, zůstane null", () => {
+    const [lobby] = parseAdvertisements({ matches: [{ id: 1, matchmembers: [] }], avatars: [] });
+    expect(lobby!.preLobby).toEqual({ lobbyTyp: null, viditelnost: null, maxHracu: null, zpozdeniDivakuSekund: null, server: null });
+  });
+});
+
+// „Players“ z okna zakládání se v inzerátu nepozná: maxplayers je vždycky 8,
+// tedy kapacita hry. Skutečný počet slotů říká až slotinfo — zavřené sloty
+// mají status 1, otevřené 0 (i když v nich nikdo nesedí) a AI 2.
+describe("počet slotů lobby", () => {
+  const slot = (status: number, id = -1, meta = "IkFBPT0i") => ({ "profileInfo.id": id, isReady: 0, status, metaData: meta });
+
+  it("spočítá otevřené sloty, zavřené vynechá", () => {
+    const dva = [slot(0, 15260548, SLOTY_S_AI[0]!.metaData), slot(0), slot(1), slot(1), slot(1), slot(1), slot(1), slot(1)];
+    const [lobby] = parseAdvertisements({
+      matches: [{ id: 1, maxplayers: 8, matchmembers: [], slotinfo: zabalSloty(dva) }],
+      avatars: [],
+    });
+    expect(lobby!.preLobby!.maxHracu).toBe(2);
+  });
+
+  it("AI se do počtu slotů počítá", () => {
+    const ctyri = [slot(0, 15260548, SLOTY_S_AI[0]!.metaData), slot(2, -1, SLOTY_S_AI[1]!.metaData), slot(2, -1, SLOTY_S_AI[1]!.metaData), slot(0), slot(1), slot(1), slot(1), slot(1)];
+    const [lobby] = parseAdvertisements({
+      matches: [{ id: 1, maxplayers: 8, matchmembers: [], slotinfo: zabalSloty(ctyri) }],
+      avatars: [],
+    });
+    expect(lobby!.preLobby!.maxHracu).toBe(4);
+  });
+
+  it("bez slotinfo zůstane počet neznámý", () => {
+    const [lobby] = parseAdvertisements({ matches: [{ id: 1, maxplayers: 8, matchmembers: [] }], avatars: [] });
+    expect(lobby!.preLobby!.maxHracu).toBeNull();
   });
 });

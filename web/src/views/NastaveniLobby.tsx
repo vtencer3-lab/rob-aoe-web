@@ -5,7 +5,13 @@ import {
   KONECNE_VEKY,
   ODKRYTI_MAPY,
   POCATECNI_VEKY,
+  POPULACE,
+  PRIMERI,
+  REZIM_EMPIRE_WARS,
+  REZIM_REGICIDE,
+  REZIM_SUDDEN_DEATH,
   REZIMY,
+  ZASKRTAVATKO_REZIMU,
   RYCHLOSTI,
   SADY_CIVILIZACI,
   SUROVINY,
@@ -15,6 +21,7 @@ import {
   type NastaveniLobby as Nastaveni,
 } from "../../../src/shared/lobbyKontrola.js";
 import { MAPY } from "../../../src/shared/mapy.js";
+import { MAX_HRACU, MIN_HRACU } from "../../../src/shared/sestava.js";
 import { blikni } from "../historie.js";
 
 interface Props {
@@ -29,6 +36,12 @@ interface Props {
   /** Klíč nastavení ke zvýraznění po změně / zpět / znovu. */
   zvyraznit?: { cil: string | null; cas: number } | null;
 }
+
+/**
+ * Mají se ukazovat tlačítka na uložení a načtení presetu? Od 9. 9. 2026 ne —
+ * schované, ne smazané, aby šla funkce vrátit jedním přepnutím.
+ */
+const PRESETY_VIDET = false;
 
 /** Jak dlouho se čeká na další klik, než se změna pošle na server. */
 export const ODKLAD_ZMENY_MS = 300;
@@ -58,8 +71,38 @@ const ADVANCED_SETTINGS: ReadonlyArray<{ klic: KlicTrojstavu | "cheaty"; popis: 
   { klic: "recordGame", popis: "Record Game" },
 ];
 
-/** AI podle obtížnosti, ne podle čísla ve hře (to jde obráceně a Extreme má 5). */
-const PORADI_AI = [4, 3, 2, 1, 0, 5];
+/** AI podle obtížnosti, ne podle čísla ve hře (to jde obráceně a Extreme má −1). */
+const PORADI_AI = [4, 3, 2, 1, 0, -1];
+
+/**
+ * Co s nastavením udělá přepnutí na Empire Wars — ověřeno 9. 9. 2026 na
+ * živé lobby: `Starting Age` = Feudal, `Victory` = Standard a odškrtnuté
+ * modifikátory hry (Empire Wars, Regicide, Allow Cheats, Turbo Mode, Full
+ * Tech Tree, Sudden Death). Antiquity zůstává, jak bylo.
+ *
+ * Zamyká se jedině zaškrtávátko Empire Wars — to už režim obsahuje.
+ * S ostatními se dá po přepnutí dál hýbat, tak to dělá i panel.
+ */
+const MODIFIKATORY_PRYC = {
+  cheaty: false,
+  turbo: false as boolean | null,
+  fullTechTree: false as boolean | null,
+  empireWars: false as boolean | null,
+  suddenDeath: false as boolean | null,
+  regicide: false as boolean | null,
+};
+
+/**
+ * Co s nastavením udělá přepnutí režimu, který v sobě něco už má. Ověřeno
+ * naživo 9. 9. 2026: Empire Wars nasadí Feudal a Standard victory, Sudden
+ * Death přehodí Victory na Conquest. Oba (a nejspíš i Regicide) k tomu
+ * shodí modifikátory hry; Antiquity zůstává, jak bylo.
+ */
+const NASTAVENI_REZIMU: Record<number, Partial<Nastaveni>> = {
+  [REZIM_EMPIRE_WARS]: { ...MODIFIKATORY_PRYC, pocatecniVek: 3, vitezstvi: 9 },
+  [REZIM_SUDDEN_DEATH]: { ...MODIFIKATORY_PRYC, vitezstvi: 1 },
+  [REZIM_REGICIDE]: { ...MODIFIKATORY_PRYC },
+};
 
 function Vyber({ klic, popis, hodnota, tabulka, jedno, poradi, onZmena }: { klic: string; popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; poradi?: number[]; onZmena: (v: number | null) => void }) {
   const polozky = poradi ? poradi.map((id) => [String(id), tabulka[id]!] as const) : Object.entries(tabulka);
@@ -177,7 +220,17 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
             ))}
           </div>
         </div>
-        <Vyber klic="rezim" popis="Game Mode" hodnota={n.rezim} tabulka={REZIMY} jedno onZmena={(v) => zmen({ ...n, rezim: v })} />
+        {/* Režim si nastavení přizpůsobí po svém (NASTAVENI_REZIMU) a svoje
+            zaškrtávátko navíc zamkne. Při odchodu z režimu se nic nevrací,
+            stejně jako ve hře: co je nastavené, zůstane. */}
+        <Vyber
+          klic="rezim"
+          popis="Game Mode"
+          hodnota={n.rezim}
+          tabulka={REZIMY}
+          jedno
+          onZmena={(v) => zmen({ ...n, ...(v === null ? {} : (NASTAVENI_REZIMU[v] ?? {})), rezim: v })}
+        />
         <label className="radek" data-klic="mapaId">
           <span>Location:</span>
           <select value={n.mapaId ?? ""} onChange={(e) => zmen({ ...n, mapaId: cislo(e.target.value) })}>
@@ -202,19 +255,13 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
         </label>
         <Vyber klic="aiObtiznost" popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno poradi={PORADI_AI} onZmena={(v) => zmen({ ...n, aiObtiznost: v })} />
         <Vyber klic="suroviny" popis="Resources" hodnota={n.suroviny} tabulka={SUROVINY} jedno onZmena={(v) => zmen({ ...n, suroviny: v })} />
-        <label className="radek" data-klic="populace">
-          <span>Population:</span>
-          <input type="number" min={25} max={1000} step={25} value={n.populace} onChange={(e) => zmen({ ...n, populace: Number(e.target.value) })} />
-        </label>
+        <Vyber klic="populace" popis="Population" hodnota={n.populace} tabulka={POPULACE} onZmena={(v) => zmen({ ...n, populace: v ?? VYCHOZI_NASTAVENI.populace })} />
         <Vyber klic="rychlost" popis="Game Speed" hodnota={n.rychlost} tabulka={RYCHLOSTI} onZmena={(v) => zmen({ ...n, rychlost: v as 1 | 2 | 3 })} />
         <Vyber klic="odkrytiMapy" popis="Reveal Map" hodnota={n.odkrytiMapy} tabulka={ODKRYTI_MAPY} jedno onZmena={(v) => zmen({ ...n, odkrytiMapy: v })} />
         <Vyber klic="pocatecniVek" popis="Starting Age" hodnota={n.pocatecniVek} tabulka={POCATECNI_VEKY} jedno onZmena={(v) => zmen({ ...n, pocatecniVek: v })} />
         <Vyber klic="konecnyVek" popis="Ending Age" hodnota={n.konecnyVek} tabulka={KONECNE_VEKY} jedno onZmena={(v) => zmen({ ...n, konecnyVek: v })} />
-        <label className="radek" data-klic="primeri">
-          <span>Treaty Length:</span>
-          <input type="number" min={0} max={180} step={5} value={n.primeri ?? ""} placeholder="– (je to jedno)" onChange={(e) => zmen({ ...n, primeri: cislo(e.target.value) })} />
-        </label>
-        <Vyber klic="vitezstvi" popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} onZmena={(v) => zmen({ ...n, vitezstvi: v as 1 | 9 })} />
+        <Vyber klic="primeri" popis="Treaty Length" hodnota={n.primeri} tabulka={PRIMERI} jedno onZmena={(v) => zmen({ ...n, primeri: v })} />
+        <Vyber klic="vitezstvi" popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} onZmena={(v) => zmen({ ...n, vitezstvi: v ?? VYCHOZI_NASTAVENI.vitezstvi })} />
       </div>
 
       <div className="sloupce">
@@ -240,29 +287,47 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
             klic === "cheaty" ? (
               <Zaskrtavatko key={klic} klic={klic} popis={popis} hodnota={n.cheaty} jedno={false} onZmena={(v) => zmen({ ...n, cheaty: v === true })} />
             ) : (
-              <Zaskrtavatko key={klic} klic={klic} popis={popis} hodnota={n[klic]} jedno onZmena={(v) => zmen({ ...n, [klic]: v })} />
+              <Zaskrtavatko
+                key={klic}
+                klic={klic}
+                popis={popis}
+                hodnota={n[klic]}
+                jedno
+                vypnuto={n.rezim !== null && ZASKRTAVATKO_REZIMU[n.rezim] === klic}
+                onZmena={(v) => zmen({ ...n, [klic]: v })}
+              />
             ),
           )}
         </fieldset>
       </div>
-      {/* Uložit = snímek na serveru; načtení presetu a Reset jen nasadí jiné
-          živé nastavení (hned, bez odkladu). */}
-      <div className="ovladani">
-        <button type="button" onClick={onUlozit}>
-          Uložit preset lobby
-        </button>
-        <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
-          Reset nastavení
-        </button>
-        <button
-          type="button"
-          disabled={ulozene === null || ulozene === undefined || jakoUlozene}
-          title={!ulozene ? "Zatím nic uloženého" : jakoUlozene ? "Nastavení je stejné jako uložené" : undefined}
-          onClick={() => zmen(doplnNastaveni(ulozene as Partial<Nastaveni>), true)}
-        >
-          Načíst uložený preset
-        </button>
-      </div>
+      {/* Preset se v praxi neukázal k ničemu: nastavení stejně žije na akci a
+          drží se mezi večery samo, takže snímek k ničemu nepřibyl. Tlačítka
+          jsou proto schovaná, ne smazaná — server obě cesty (`onUlozit`,
+          `ulozene`) umí dál a stačí přepnout tuhle konstantu zpátky. */}
+      {PRESETY_VIDET ? (
+        <div className="ovladani">
+          <button type="button" onClick={onUlozit}>
+            Uložit preset lobby
+          </button>
+          <button
+            type="button"
+            disabled={ulozene === null || ulozene === undefined || jakoUlozene}
+            title={!ulozene ? "Zatím nic uloženého" : jakoUlozene ? "Nastavení je stejné jako uložené" : undefined}
+            onClick={() => zmen(doplnNastaveni(ulozene as Partial<Nastaveni>), true)}
+          >
+            Načíst uložený preset
+          </button>
+          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+            Reset nastavení
+          </button>
+        </div>
+      ) : (
+        <div className="ovladani">
+          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+            Reset nastavení
+          </button>
+        </div>
+      )}
     </form>
   );
 }

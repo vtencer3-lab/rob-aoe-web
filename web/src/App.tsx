@@ -23,6 +23,7 @@ import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
 import crashoutUrl from "./assets/crashout.mp3";
 import logoUrl from "./assets/logo.webp";
+import { prehraj } from "./zvuk.js";
 
 /** Kanál, na který vede štít v záhlaví. */
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
@@ -248,7 +249,7 @@ export function App() {
   const rezieObsluha = {
     onStav: (zapasId: number, novyStav: string) => void hlidej(() => api.zapasStav(zapasId, novyStav)),
     onSmazat: (zapasId: number) => void hlidej(() => api.smazatZapas(zapasId)),
-    onZavrit: (zapasId: number, zavreny: boolean) => void hlidej(() => api.zavritZapas(zapasId, zavreny)),
+    onZavrit: (zapasId: number) => void hlidej(() => api.zavritZapas(zapasId)),
     onVysledek: (zapasId: number, vitez: Vitez) => void hlidej(() => api.vysledek(zapasId, vitez)),
     onHost: (zapasId: number, steamId: string) => void hlidej(() => api.zmenitHosta(zapasId, steamId)),
     onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
@@ -285,8 +286,7 @@ export function App() {
             className="bez-vzhledu jmeno-roba"
             title="RobDiesALot"
             onClick={() => {
-              // Prohlížeč bez autoplay nebo bez zvuku: ticho, žádná chyba.
-              void new Audio(crashoutUrl).play().catch(() => {});
+              prehraj(crashoutUrl);
             }}
           >
             RobDiesALot
@@ -434,6 +434,13 @@ export function App() {
           onUlozitNastaveni={() => {
             if (akce) void hlidej(() => api.ulozitNastaveniLobby(akce.id));
           }}
+          onNoveHeslo={() => {
+            if (!akce) return;
+            void hlidej(async () => {
+              await api.pristiHeslo(akce.id);
+              pridejToast("Nové heslo vygenerováno");
+            });
+          }}
         >
           {akce ? (
             <Skladani
@@ -446,6 +453,15 @@ export function App() {
               }
               sadaCivilizaci={doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
               zvyraznit={zvyrazneni?.druh === "skladani" ? zvyrazneni : null}
+              onPrvniAi={() => {
+                // Bez AI v lobby na obtížnosti nezáleží a „–“ je v pořádku.
+                // S prvním počítačem už ne — políčko blikne, ať to admina
+                // trkne dřív, než lobby založí. Nastavit ho musí sám: který
+                // stupeň chce, web neuhodne.
+                if (doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).aiObtiznost === null) {
+                  zvyrazni("nastaveni", "aiObtiznost");
+                }
+              }}
             />
           ) : null}
         </SpravaAkce>
@@ -453,7 +469,7 @@ export function App() {
 
       {akce ? (
         <>
-          {admin && stav ? <Rezie stav={stav} ladeni={ladeni} obsluha={rezieObsluha} /> : null}
+          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} /> : null}
           {me
             ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
                 mujUcastnik(zapas, me.steamId)?.jeHost ? (
@@ -461,6 +477,7 @@ export function App() {
                     key={zapas.id}
                     zapas={zapas}
                     ja={me.steamId}
+                    nastaveniLobby={akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                   />
@@ -492,7 +509,7 @@ export function App() {
           {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
               má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
               karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}
-          {stav ? <HistorieZapasu stav={stav} ladeni={ladeni} obsluha={admin ? rezieObsluha : undefined} /> : null}
+          {stav ? <HistorieZapasu stav={stav} obsluha={admin ? rezieObsluha : undefined} /> : null}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>

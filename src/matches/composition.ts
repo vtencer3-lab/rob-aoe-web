@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
 
+import { jeAi } from "../shared/aiHraci.js";
 import { zkontrolujSestavu } from "../shared/sestava.js";
 import type { Seat, SestavaVstup } from "../shared/types.js";
 
@@ -11,6 +12,10 @@ export class SestavaChyba extends Error {}
  * v lobby a hostem se stává ten, kdo má nejvíc odehraných her — má nejspíš
  * nejstabilnější připojení a lobby už zakládal. Kdo hry nemá, počítá se jako
  * nula; při shodě vyhrává dřívější slot.
+ *
+ * AI hostem být nemůže: lobby zakládá někdo, kdo sedí u hry. Vybírá se proto
+ * jen mezi lidmi, a když by v sestavě nebyl ani jeden (samé AI sestava
+ * nepustí, ale kód na to nespoléhá), zůstane host na prvním slotu.
  */
 export function sestavSedadla(
   sestava: SestavaVstup[],
@@ -19,8 +24,9 @@ export function sestavSedadla(
   const chyba = zkontrolujSestavu(sestava);
   if (chyba) throw new SestavaChyba(chyba);
 
-  let hostIndex = 0;
-  for (let i = 1; i < sestava.length; i++) {
+  const lide = sestava.map((s, i) => i).filter((i) => !jeAi(sestava[i]!.steamId));
+  let hostIndex = lide[0] ?? 0;
+  for (const i of lide) {
     const her = odehranoHer.get(sestava[i]!.steamId) ?? 0;
     const nejvic = odehranoHer.get(sestava[hostIndex]!.steamId) ?? 0;
     if (her > nejvic) hostIndex = i;

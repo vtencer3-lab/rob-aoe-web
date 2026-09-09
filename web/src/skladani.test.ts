@@ -64,3 +64,42 @@ it("nastavCelou vynechá hráče, kteří už nejsou přihlášení", async () =
   await waitFor(() => expect(odesli).toHaveBeenCalledTimes(1));
   expect(odesli.mock.calls[0]![0]).toEqual([{ steamId: "a", tym: 1, barva: 1, civ: null }]);
 });
+
+// AI se do akce nehlásí, takže v seznamu přihlášených nikdy není. Filtr „kdo
+// se odhlásil, ze sestavy vypadne“ ji přesto musí nechat být.
+it("AI v sestavě zůstane, i když v přihlášených není", () => {
+  const { result } = renderHook(() => useSkladani(prihlaseni));
+
+  act(() => result.current.pridejAi());
+  expect(ids(result.current)).toEqual(["ai:1"]);
+
+  act(() => result.current.vyber("a"));
+  expect(ids(result.current)).toEqual(["ai:1", "a"]);
+});
+
+it("další AI dostane volné id, dokud je v lobby místo", () => {
+  const { result } = renderHook(() => useSkladani(prihlaseni));
+  act(() => result.current.pridejAi());
+  act(() => result.current.pridejAi());
+  expect(ids(result.current)).toEqual(["ai:1", "ai:2"]);
+  // Odebráním se id uvolní a příště se použije znovu.
+  act(() => result.current.odeber("ai:1"));
+  act(() => result.current.pridejAi());
+  expect(ids(result.current)).toEqual(["ai:2", "ai:1"]);
+});
+
+it("odebraná AI nepadá mezi nevybrané — tam patří jen lidi", () => {
+  const { result } = renderHook(() => useSkladani(prihlaseni));
+  act(() => result.current.pridejAi());
+  act(() => result.current.odeber("ai:1"));
+  expect(result.current.nevybrani.map((h) => h.steamId)).toEqual(["a", "b", "c"]);
+});
+
+// Osm slotů je strop lobby; devátý klik už nesmí nic přidat.
+it("víc než osm účastníků nepustí", () => {
+  const { result } = renderHook(() => useSkladani(prihlaseni));
+  for (let i = 0; i < 9; i++) act(() => result.current.pridejAi());
+  expect(ids(result.current)).toHaveLength(7);
+  act(() => result.current.vyber("a"));
+  expect(ids(result.current)).toHaveLength(8);
+});

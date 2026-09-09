@@ -1,3 +1,4 @@
+import { lobbyName } from "../matches/composition.js";
 import { joinUri, spectatorUri } from "../aoe/lobbyUri.js";
 import { getAktivniAkce, listSignups } from "../db/events.js";
 import { listZapasy } from "../db/matches.js";
@@ -60,6 +61,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   const akce = await getAktivniAkce();
   if (!akce) return { akce: null, prihlaseni: [], zapasy: [] };
   const prihlaseni = await listSignups(akce.id);
+  const zapasy = await listZapasy(akce.id);
   return {
     akce: {
       id: akce.id,
@@ -68,10 +70,15 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       nastaveniLobby: akce.nastaveniLobby,
       ulozeneNastaveniLobby: akce.ulozeneNastaveniLobby,
       skladani: akce.skladani,
+      // Co bude mít příští lobby: jméno se odvodí z pořadí, heslo je
+      // připravené dopředu (viz db/events.pripravPristiHeslo). Heslo mimo
+      // adminy zaslepuje redakce.
+      pristiNazevLobby: lobbyName(zapasy.length + 1),
+      pristiHeslo: akce.pristiHeslo ?? "",
     },
     // Lhůta aktivity patří k přihlášce, ne k hráči: mimo akci nemá smysl.
     prihlaseni: prihlaseni.map((hrac) => ({ ...playerView(hrac), aktivniDo: hrac.aktivniDo.toISOString() })),
-    zapasy: (await listZapasy(akce.id)).map(zapasView),
+    zapasy: zapasy.map(zapasView),
   };
 }
 

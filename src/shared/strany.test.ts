@@ -83,3 +83,25 @@ describe("sdiliCivilizaci a popisFormatu", () => {
     expect(popisFormatu([])).toBe("");
   });
 });
+
+// AI je v češtině rodu ženského: „Vyhrála AI“, ne „Vyhrál AI“. Týká se to
+// jen strany o jednom členovi — tým je mužský rod pořád („vyhrál modrý tým“).
+describe("rod vítěze", () => {
+  it("u AI je vyhrála, u člověka vyhrál", () => {
+    const sestava = [c("ai:1", 0, 1, 0, "AI"), c("76561198000000001", 0, 2, 1, "Pepa")];
+    const [aiStrana, clovekStrana] = strany(sestava);
+    expect(titulekViteze(aiStrana!)).toBe("Vyhrála AI");
+    expect(titulekViteze(clovekStrana!)).toBe("Vyhrál Pepa");
+  });
+
+  it("tým s AI zůstává mužský", () => {
+    const sestava = [c("ai:1", 1, 1, 0, "AI"), c("ai:2", 1, 2, 1, "AI"), c("76561198000000001", 2, 3, 2, "Pepa")];
+    const [tym] = strany(sestava);
+    expect(titulekViteze(tym!)).toBe("Vyhrál tým 1");
+  });
+
+  it("ve větě se rod drží taky", () => {
+    const sestava = [c("ai:1", 0, 1, 0, "AI"), c("76561198000000001", 0, 2, 1, "Pepa")];
+    expect(vitezVeVete(sestava, { steamId: "ai:1" })).toBe("vyhrála AI");
+  });
+});

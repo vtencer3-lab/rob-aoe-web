@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { AI_HRACI, jeAi } from "../../src/shared/aiHraci.js";
+import { MAX_HRACU } from "../../src/shared/sestava.js";
 import { BARVY, type PlayerView, type SestavaVstup, type Tym } from "../../src/shared/types.js";
 
 export type Skupina = "vybrani" | "nevybrani";
@@ -14,6 +16,8 @@ export interface Skladani {
   nevybrani: PlayerView[];
   jeVybrany: (steamId: string) => boolean;
   vyber: (steamId: string) => void;
+  /** Přidá do sestavy počítačového protivníka; nad osm slotů už neudělá nic. */
+  pridejAi: () => void;
   odeber: (steamId: string) => void;
   uprav: (steamId: string, zmena: (v: SestavaVstup) => SestavaVstup) => void;
   presun: (skupina: Skupina, odId: string, naId: string) => void;
@@ -116,7 +120,10 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
   useEffect(() => () => clearTimeout(casovac.current), []);
 
   const vybrani = lokalni ?? zeServeru;
-  const podleId = new Map(prihlaseni.map((h) => [h.steamId, h]));
+  // AI se do akce nehlásí, takže v přihlášených nikdy není. Do mapy patří
+  // přesto: podle ní se poznává, kdo ze sestavy vypadl, a počítač z ní
+  // vypadnout nesmí.
+  const podleId = new Map([...prihlaseni, ...AI_HRACI].map((h) => [h.steamId, h]));
   // Kdo se odhlásil z akce, ze sestavy vypadne sám.
   const platni = vybrani.filter((v) => podleId.has(v.steamId));
   const vybraneId = new Set(platni.map((v) => v.steamId));
@@ -158,13 +165,23 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
     nevybrani,
     jeVybrany: (steamId) => vybraneId.has(steamId),
     vyber: (steamId) => {
-      if (vybraneId.has(steamId) || !podleId.has(steamId)) return;
+      if (vybraneId.has(steamId) || !podleId.has(steamId) || platni.length >= MAX_HRACU) return;
       nastav([...platni, vychoziVstup(steamId, platni)]);
+    },
+    pridejAi: () => {
+      if (platni.length >= MAX_HRACU) return;
+      // První AI, která v sestavě ještě není: odebráním se id uvolní a použije
+      // se znovu, takže čísla nerostou do nesmyslu.
+      const volna = AI_HRACI.find((a) => !vybraneId.has(a.steamId));
+      if (!volna) return;
+      nastav([...platni, vychoziVstup(volna.steamId, platni)]);
     },
     odeber: (steamId) => {
       nastav(platni.filter((v) => v.steamId !== steamId));
       // Vyřazený jde na konec nevybraných; kdo v uloženém pořadí nebyl (nově
-      // přihlášený), zůstává před ním v pořadí přihlášení.
+      // přihlášený), zůstává před ním v pořadí přihlášení. AI mezi nevybrané
+      // nepatří — ta se nebere z tabulky přihlášených, ale vlastním tlačítkem.
+      if (jeAi(steamId)) return;
       ulozNevybrane([...nevybrani.map((h) => h.steamId).filter((id) => id !== steamId), steamId]);
     },
     uprav: (steamId, zmena) => {

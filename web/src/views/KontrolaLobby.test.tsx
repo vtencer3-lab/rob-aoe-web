@@ -32,6 +32,10 @@ it("klik zkontroluje a vypíše čtyři stavy; souhrn počítá červené z obou
   expect(hlavni[2]).toHaveClass("spatne");
   expect(screen.getByTestId("kontrola-souhrn")).toHaveTextContent("3 věci k opravě");
   expect(screen.queryByTestId("fajfka-kontrola")).not.toBeInTheDocument();
+  // Hlavní nastavení má od 9. 9. 2026 vlastní záhlaví jako ostatní sekce.
+  const hlavniSekce = screen.getByTestId("hlavni-nastaveni");
+  expect(hlavniSekce).toHaveAttribute("open");
+  expect(hlavniSekce).toHaveTextContent("Nastavení Lobby");
   // Další nastavení ve vlastní, rozbalené sekci s počtem odchylek; „–“ je šedé.
   const dalsi = screen.getByTestId("dalsi-nastaveni");
   expect(dalsi).toHaveAttribute("open");
@@ -110,4 +114,25 @@ it("v automatickém režimu kontroluje sama a po odpojení přestane", async () 
   const po = onKontrola.mock.calls.length;
   await new Promise((r) => setTimeout(r, 120));
   expect(onKontrola.mock.calls.length).toBe(po);
+});
+
+// Pre-Lobby je to, co se dělá jako první (zakládání lobby), takže stojí
+// nahoře — a rozbalené, protože po založení už se s tím nedá hnout a Rob
+// to má vidět hned.
+it("Pre-Lobby stojí nad ostatními a je rozbalené", async () => {
+  const onKontrola = vi.fn().mockResolvedValue({
+    nalezeno: true,
+    kontroly: [
+      { klic: "hraci", stav: "ok", text: "Hráči: všichni 2 uvnitř", sekce: "hlavni" },
+      { klic: "rezim", stav: "ok", text: "Game Mode: Random Map", sekce: "dalsi" },
+      { klic: "lobbyTyp", stav: "ok", text: "Lobby Type: Unranked", sekce: "prelobby" },
+    ],
+  });
+  render(<KontrolaLobby zapasId={1} onKontrola={onKontrola} automaticky />);
+
+  const prelobby = await screen.findByTestId("prelobby-nastaveni");
+  expect(prelobby).toHaveAttribute("open");
+  // V dokumentu stojí dřív než hlavní seznam i než další nastavení.
+  const poradi = prelobby.compareDocumentPosition(screen.getByTestId("kontroly"));
+  expect(poradi & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });

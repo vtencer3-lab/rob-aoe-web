@@ -188,19 +188,19 @@ web proto stahuje všechny stránky.
 | Nastavení | Klíč v `options` | Hodnoty |
 |---|---|---|
 | Civilization Set | `101` | 0 All, 1 Age of Empires II, 2 Chronicles |
-| Game Mode | `5` | 0 Random Map, 2 Deathmatch, 3 Scenario (ověřeno); 4 King of the Hill, 5 Wonder Race, 6 Defend the Wonder, 7 Turbo Random Map, 8 Capture the Relic, 10 Battle Royale (podle aoe2.net, neověřeno) |
+| Game Mode | `5` | 0 Random Map, 1 Regicide, 2 Death Match, 3 Scenario, 5 King of the Hill, 6 Wonder Race, 7 Defend the Wonder, 8 Turbo Random Map, 10 Capture the Relic, 11 Sudden Death, 12 Battle Royale, 13 Empire Wars — podle herního `OptionsGameMode` (Control API hry), ověřeno 9. 9. 2026 dvěma nezávislými zdroji a živým seznamem lobby. **Do 9. 9. 2026 tu byla tabulka z aoe2.net, která od čtyřky výš seděla o jedna vedle** (4 byla „King of the Hill“ místo 5, „Capture the Relic“ posílalo 8 = Turbo Random Map) a režimy 1, 11, 12, 13 neznala vůbec |
 | Location (mapa) | `10` | id řetězce z jazykového souboru hry, viz `src/shared/mapy.ts` |
-| Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant |
-| AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, 5 Extreme (ověřeno 3 a 1) |
-| Resources | `37` | 0 Standard, 1 Low, 2 Medium, 3 High, 4 Ultra High, 5 Infinite (ověřeno 0 a 3) |
-| Population | `28` | číslo |
+| Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant, 480 Ludicrous (120 a 480 ověřené naživo 9. 9. 2026) |
+| AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, **−1 Extreme** (ne 5, jak tu stálo do 9. 9. 2026 — ověřeno naživo 9. 9. 2026, kdy lobby s Extreme poslala `-1`; dřív ověřeno 3 a 1) |
+| Resources | `37` | 0 Standard, 1 Low, 2 Medium, 3 High, 4 Ultra High, 5 Infinite, 6 Random (ověřeno 0 a 3) |
+| Population | `28` | jen z herní nabídky: po 25 do 250, pak 300, 400, 500 (odečteno z herní nabídky 9. 9. 2026) |
 | Game Speed | `41` | 1 Slow, 2 Normal, 3 Fast |
-| Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible, 3 No Fog (ověřeno 0–2) |
+| Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible (ověřeno; „No Fog“ jako 3 tu stálo do 9. 9. 2026, hra ho nezná) |
 | Starting Age | `0` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial, 6 Post-Imperial (ověřeno 0, 3, 6) |
 | Ending Age | `4` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial (ověřeno 0 a 4) |
-| Treaty Length | `57` | minuty |
-| Victory | `81` | 1 Conquest, 9 Standard |
-| Lock Teams | `66` | y/n |
+| Treaty Length | `57` | minuty, ale jen z herní nabídky: 0 „[None]“, pak po pěti až 60, a rovnou 90 (odečteno z herní nabídky 9. 9. 2026) |
+| Victory | `81` | 1 Conquest, 7 Time Limit, 8 Score, 9 Standard, 11 Last Man Standing (ověřeno 1 a 9) |
+| Lock Teams | `66` | y/n (ověřeno naživo 9. 9. 2026 přepnutím tam a zpět) |
 | Team Together | `78` | y/n |
 | Team Positions | `77` | y/n (jen s Team Together) |
 | Shared Exploration | `76` | y/n |
@@ -208,7 +208,7 @@ web proto stahuje všechny stránky.
 | Allow Cheats | `1` | y/n |
 | Turbo Mode | `79` | y/n |
 | Full Tech Tree | `62` | y/n |
-| Empire Wars | `89` | y/n |
+| Empire Wars | `89` | y/n; v režimu Empire Wars (`5` = 13) hra zaškrtávátko odškrtne a zamkne — panel to zrcadlí |
 | Sudden Death | `90` | y/n |
 | Regicide | `91` | y/n |
 | Antiquity Mode | `100` | y/n (Chronicles ho zapíná) |
@@ -218,6 +218,102 @@ web proto stahuje všechny stránky.
 Sloty hráčů (`slotinfo`, metadata slotu): `ScenarioPlayerIndex` 0–7 = barva
 1–8 (−1 = random), `Team` 1 = „–“, 2–5 = tým 1–4, 6 = „?“. Pole `teamID`
 slotu se plní nespolehlivě, kontrola ho nepoužívá.
+
+**Sloty AI** (ověřeno naživo 9. 9. 2026 na vlastní lobby): počítač má
+`profileInfo.id` = −1 stejně jako volný slot, pozná se až podle
+`status` — **0 slot je v lobby (obsazený i volný), 1 slot je zavřený
+(uříznutý volbou Players), 2 sedí AI** — a podle toho,
+že má vyplněná `metaData` (prázdný slot má `"AA=="`). Barva, tým i
+civilizace se z nich čtou stejně jako u člověka; klíč `1` je herní id
+civilizace, hodnota s nastaveným horním slovem (65537 = 0x10001) znamená
+náhodnou volbu. Vzájemně se AI rozlišit nedají — žádné id nemají.
+
+**Pre-lobby (okno „Create Lobby“) v inzerátu.** Nastavení ze zakládání lobby
+neleží v `options`, ale přímo v inzerátu vedle jména. Změřeno naživo
+9. 9. 2026 na lobby se zpožděním diváků 3 minuty:
+
+| Volba v okně | Pole inzerátu | Poznámka |
+|---|---|---|
+| Lobby Name | `description` | |
+| Lobby Type | `matchtype_id` | Unranked = 0 |
+| Visibility | `visible` | Public = 1 |
+| Players | **ne `maxplayers`** | `maxplayers` je vždycky 8 (kolik hráčů hra unese). Skutečný počet slotů = kolik slotů ve `slotinfo` **není zavřených** |
+| Set Password | `passwordprotected` | 0/1, samotné heslo se neposílá |
+| Allow Spectators | `isobservable` | |
+| Spectator Delay | `observerdelay` | **v sekundách** (3 minuty = 180) |
+| Server | `relayserver_region` | „Default“ se propíše na skutečný region |
+| Hide Civilizations | `options[85]` | 1 = zapnuto |
+| Co-Op Campaign, Data Mod | — | neposílají se nikam |
+
+`options[96]` **není** Hide Civilizations, jak to 9. 9. 2026 chvíli vypadalo:
+je to duplikát `passwordprotected` z inzerátu (y = lobby má heslo). Ověřeno
+statistikou přes 112 otevřených lobby, kde se obojí shoduje na 100 %.
+Zmatek vznikl tím, že se mezi dvěma měřeními změnilo Hide Civilizations
+i heslo naráz — dvě samostatné volby, které se hnuly zároveň. Kdyby `96`
+byl obrácený `85`, nemohla by existovat kombinace `85=0` a `96=n`, která
+je přitom v seznamu nejčastější (90 ze 114 lobby).
+
+`Server` = „Default“ se v inzerátu objeví jako skutečný region (u nás
+`westeurope`), takže „Default“ se proti lobby porovnat nedá — ověřit jde jen
+konkrétní region.
+
+**Kvalita spojení na servery** (herní tabulka Connection Quality z Robova
+připojení, 9. 9. 2026, v ms): westeurope 32, ukwest 43, eastus 118,
+southcentralus 137, centralindia 145, westus3 156, southeastasia 177 (zelené);
+brazilsouth 216, chilecentral 225, koreacentral 240 (žluté);
+australiasoutheast 313 (červený). Je to všech 11 regionů z nabídky —
+zbylé dvě položky (`Default`, `Use Local Lan Server`) regiony nejsou.
+
+Nabídka okna (odečteno z hry 9. 9. 2026): Lobby Type Unranked / Ranked 1v1
+Death Match / Ranked Team Death Match; Visibility Public / Private (Private
+zakáže diváky); Players 2–8; Spectator Delay None / 1 / 2 / 3 / 4 / 5 / 10
+minut; Server Default a 12 regionů plus „Use Local Lan Server“; Data Mod
+jen „Definitive Set“.
+
+**Panel hry se umí rozejít s tím, co hra posílá.** 9. 9. 2026 hlásila
+kontrola „Lock Teams: vypnuto, má být zapnuto“, zatímco v herním panelu
+bylo políčko zaškrtnuté. Inzerát měl pravdu: přepnutí Game Mode Lock Teams
+vnitřně shodilo (jako ostatní modifikátory), ale zaškrtnutí v UI zůstalo.
+Odškrtnutí a zaškrtnutí ve hře stav srovnalo a `66` se do inzerátu propsalo
+okamžitě — zpoždění tam žádné není, každá změna zaškrtávátka odchází hned.
+
+Pro kontrolu z toho plyne, že **ukazuje skutečný stav lobby, ne to, co je
+nakreslené v panelu hry** — a že takový rozpor umí odhalit. Hlášku proto
+brát vážně i tehdy, když se zdá, že v panelu je všechno správně; pomůže
+volbu ve hře přepnout tam a zpět.
+
+**Typ AI se nepropisuje.** Hra nabízí „AI“, „AI (CD version)“ a „AI (HD
+version)“; v lobby vypadají všechny tři úplně stejně (`status` 2, tatáž
+`metaData`), takže druh počítače z dat poznat nejde — kontrole to nevadí,
+bere všechny tři jako AI. Slot „Closed“ se od volného slotu taky nijak
+neliší (`status` 1), což nevadí: zajímají nás jen obsazené. Ověřeno
+naživo 9. 9. 2026 na lobby se všemi třemi druhy naráz.
+
+**Režim s vlastním zaškrtávátkem.** Empire Wars (`5` = 13), Regicide
+(`5` = 1) a Sudden Death (`5` = 11) mají v Advanced Settings i zaškrtávátko
+(`89`, `91`, `90`). V takovém režimu ho hra odškrtne a znepřístupní — režim
+ho už obsahuje. Ověřeno naživo 9. 9. 2026 u všech tří.
+
+**Co režim přepne** (ověřeno naživo 9. 9. 2026, měřeno rozdílem snímků
+`options` před a po přepnutí):
+
+| Režim | Co udělá |
+|---|---|
+| Empire Wars (13) | `Starting Age` (`0`) na Feudal (3), `Victory` (`81`) na Standard (9) |
+| Sudden Death (11) | `Victory` (`81`) na Conquest (1) |
+| všechny tři | odškrtne modifikátory: Allow Cheats (`1`), Turbo (`79`), Full Tech Tree (`62`), Empire Wars (`89`), Sudden Death (`90`), Regicide (`91`) |
+
+Antiquity (`100`) zůstává vždycky, jak bylo. Zamčené je jen zaškrtávátko
+toho režimu, s ostatními jde dál hýbat. **Neověřeno:** jestli modifikátory
+shazuje i přepnutí na obyčejný režim (Random Map, Death Match) — u
+Regicide se to odvozuje z chování zbylých dvou, přímo změřené to není.
+
+Čísla číselníků (režimy, obtížnost AI, věky, suroviny, odkrytí, vítězství,
+velikosti map) jsou od 9. 9. 2026 z herního `Options*` v Control API hry —
+`OptionsGameMode`, `OptionsAIDifficulty` a spol. Dřív pocházela z aoe2.net
+a část z nich seděla vedle. **Pozor:** `OptionsLocation` z téhož zdroje se
+pro mapy použít nedá — lobby v `options[10]` posílá id řetězce
+z jazykového souboru (Arabia = 10875), ne interní číslo mapy (Arabia = 9).
 
 Web klíče čte v `nastaveniZOptions` (`src/external/worldsEdgeLobby.ts`) a
 porovnává v `zkontrolujLobby` (`src/shared/lobbyKontrola.ts`): mapa, velikost,
@@ -232,5 +328,18 @@ Sledování fáze proto prohlásí „hraje_se“ až po třech nepřítomnostec
 
 Přímo v záznamu lobby: `visible`, `maxplayers`, `passwordprotected`,
 `isobservable`, `observerdelay`, `hasobserverpassword`, `relayserver_region`
-(Server), `matchtype_id`. Data Mod a Hide Civilizations se nastavují jen při
-založení lobby a zatím zmapované nejsou.
+(Server), `matchtype_id`.
+
+**Doplněno 9. 9. 2026 večer:**
+
+| Co | Kde | Jak se to ověřilo |
+|---|---|---|
+| Hide Civilizations | `options[85]` | přepnuto na vlastní lobby tam a zpět, hodnota šla 1 → 0 → 1 |
+| Ochrana heslem | `options[96]` **=** `passwordprotected` | agent nejdřív tvrdil, že 96 je Hide Civilizations. Uživatel to zpochybnil („všechny tři verze jsem zakládal bez hesla“) a pokus to vyvrátil: tatáž lobby bez hesla poslala `n`, s heslem `y`; statisticky obojí sedí napříč 112 lobby |
+| Počet hráčů z okna Create Lobby | **nikde v `options`** | napříč 83 živými lobby nesedí žádný klíč s počtem otevřených slotů líp než náhodou; nejlepší kandidáti (`17`, `74`) drží vždycky 8, tedy strop. Kontrola proto počítá nezavřené sloty a rozdíl vysvětluje jako prázdné otevřené sloty |
+| Data Mod | nezmapované | hra nabízí jedinou možnost („Definitive Set“), takže není co porovnávat |
+
+**Chybná domněnka, ať se neopakuje.** Agent si vymyslel, že hra cachuje
+heslo lobby, aby obhájil špatné čtení klíče 96. Uživatel to zamítl („to sis
+vymyslel“) a měření mu dalo za pravdu. Když klíč nesedí, patří se udělat
+pokus, ne postavit vysvětlení.

@@ -31,6 +31,18 @@ describe("sestavSedadla", () => {
     expect(seats.filter((s) => s.jeHost)).toHaveLength(1);
   });
 
+  // AI nemá hru, ze které by lobby zakládala — hostem musí být člověk, i
+  // kdyby AI měla v tabulce víc odehraných her (nemá, ale mapa ji unese).
+  it("hostem nikdy není AI", () => {
+    const seats = sestavSedadla([h("ai:1", 1, 1), h("A", 2, 2)], her({ "ai:1": 9000, A: 1 }));
+    expect(seats.filter((s) => s.jeHost).map((s) => s.steamId)).toEqual(["A"]);
+  });
+
+  it("při samých AI vedle jednoho člověka je host ten člověk", () => {
+    const seats = sestavSedadla([h("ai:1", 1, 1), h("ai:2", 1, 2), h("A", 2, 3)], her({}));
+    expect(seats.filter((s) => s.jeHost).map((s) => s.steamId)).toEqual(["A"]);
+  });
+
   it("neplatnou sestavu odmítne českou větou", () => {
     expect(() => sestavSedadla([h("A", 1, 1)], her({}))).toThrow(/aspoň 2/);
     expect(() => sestavSedadla([h("A", 1, 1), h("A", 2, 2)], her({}))).toThrow(/dvakrát/);

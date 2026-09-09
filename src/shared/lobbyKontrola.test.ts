@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doplnNastaveni, lobbyVPoradku, velikostProHrace, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
+import { AI_OBTIZNOSTI, doplnNastaveni, type PoznatekLobby as _PL, type PreLobbyZeHry, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
 import { nazevMapy } from "./mapy.js";
 import type { Barva, Tym } from "./types.js";
 
@@ -35,9 +35,14 @@ describe("zkontrolujLobby", () => {
     expect(k.every((x) => x.stav === "ok" || x.stav === "jedno")).toBe(true);
     // „Je to jedno“ zůstala ve výchozím stavu jen AI obtížnost; Lock Teams se
     // od 9. 9. 2026 vyžaduje zapnutý (sestavu skládá Rob, v lobby se s ní nehýbe).
-    expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual(["aiObtiznost"]);
+    // Pre-lobby: bez údajů ze hry se nekontroluje nic z okna zakládání. Výjimka
+    // je Hide Civilizations — to hra posílá v nastavení, ne v pre-lobby, a od
+    // 9. 9. 2026 se vyžaduje vypnuté (se skrytými civilizacemi nemá komentář o čem).
+    expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual([
+      "aiObtiznost", "lobbyTyp", "viditelnost", "maxHracu", "zpozdeniDivaku", "server",
+    ]);
     expect(k.filter((x) => x.sekce === "hlavni").map((x) => x.klic)).toEqual([
-      "divaci", "heslo", "hraci", `barva:${HOST}`, `tym:${HOST}`, `barva:${JA}`, `tym:${JA}`,
+      "hraci", `barva:${HOST}`, `tym:${HOST}`, `barva:${JA}`, `tym:${JA}`,
       "mapa", "velikost", "rychlost", "populace", "vitezstvi", "cheaty",
     ]);
     expect(k.filter((x) => x.sekce === "dalsi").map((x) => x.klic)).toEqual([
@@ -58,10 +63,45 @@ describe("zkontrolujLobby", () => {
     expect(lobbyVPoradku(k)).toBe(false);
   });
 
+  // Seznam lobby ze hry vydává jen sloty se Steam účtem, takže AI v datech
+  // není vidět vůbec. Kontrola ji proto nesmí počítat mezi chybějící — jen
+  // řekne, kolik jich ověřit nejde.
+  // Od 9. 9. 2026 hra AI ve slotech prozradí (status 2), takže se dá ověřit
+  // jako člověk: kolik jich sedí uvnitř, jakou mají barvu a tým. Rozlišit je
+  // mezi sebou nejde — nemají id — takže se párují podle barvy.
+  it("AI v lobby spáruje podle barvy a hlásí ji jako hráče", () => {
+    const sAi = [...sestava, u("ai:1", 2, 3, "AI")];
+    const k = zkontrolujLobby(sAi, ocekavane, lobby({ aiSloty: [{ barva: 3, tym: 3, civ: null, pripraven: true }] }));
+    expect(k.find((x) => x.klic === "hraci")).toMatchObject({ stav: "ok", text: "Hráči: všichni 3 uvnitř (1 AI)" });
+    expect(k.find((x) => x.klic === "barva:ai:1")).toMatchObject({ stav: "ok", text: "AI: zelená" });
+  });
+
+  it("chybějící AI pozná stejně jako chybějícího člověka", () => {
+    const sAi = [...sestava, u("ai:1", 2, 3, "AI")];
+    const k = zkontrolujLobby(sAi, ocekavane, lobby({ aiSloty: [] }));
+    expect(k.find((x) => x.klic === "hraci")).toMatchObject({ stav: "spatne", text: "Chybí AI" });
+  });
+
+  it("AI navíc v lobby je taky chyba", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ aiSloty: [{ barva: 3, tym: 3, civ: null, pripraven: true }] }));
+    expect(k.find((x) => x.klic === "hraci")).toMatchObject({ stav: "spatne", text: "Navíc 1 AI" });
+  });
+
+  it("špatná barva AI se pojmenuje jako u člověka", () => {
+    const sAi = [...sestava, u("ai:1", 2, 3, "AI")];
+    const k = zkontrolujLobby(sAi, ocekavane, lobby({ aiSloty: [{ barva: null, tym: 3, civ: null, pripraven: true }] }));
+    expect(k.find((x) => x.klic === "barva:ai:1")!.text).toBe("AI má náhodnou barvu, má mít zelenou");
+  });
+
+  it("bez AI zůstává hlášení o hráčích beze změny", () => {
+    const hraci = zkontrolujLobby(sestava, ocekavane, lobby()).find((x) => x.klic === "hraci")!;
+    expect(hraci.text).toBe("Hráči: všech 2 uvnitř");
+  });
+
   it("špatná barva říká, co má být; v 1v1 tým nevadí, dokud není stejný jako soupeřův", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ steamId: HOST, barva: null, tym: "?", civ: null, pripraven: true }, { steamId: JA, barva: 4, tym: 2, civ: null, pripraven: true }] }));
-    expect(k.find((x) => x.klic === `barva:${HOST}`)!.text).toBe("Trokner má náhodnou barvu, má mít modrá");
-    expect(k.find((x) => x.klic === `barva:${JA}`)!.text).toBe("Jouki má žlutá, má mít červená");
+    expect(k.find((x) => x.klic === `barva:${HOST}`)!.text).toBe("Trokner má náhodnou barvu, má mít modrou");
+    expect(k.find((x) => x.klic === `barva:${JA}`)!.text).toBe("Jouki má žlutou, má mít červenou");
     expect(k.find((x) => x.klic === `tym:${HOST}`)).toMatchObject({ stav: "ok", text: "Trokner: náhodný" });
     expect(k.find((x) => x.klic === `tym:${JA}`)).toMatchObject({ stav: "ok", text: "Jouki: tým 2" });
   });
@@ -97,10 +137,10 @@ describe("zkontrolujLobby", () => {
 
   // Heslo není povinné: bez něj se hrát dá, jen do lobby může vlézt někdo
   // cizí. Je to upozornění, ne chyba — „lobby v pořádku“ na něm nestojí.
-  it("diváci jsou chyba, chybějící heslo jen upozornění", () => {
+  it("zakázaní diváci jsou chyba, chybějící heslo jen upozornění", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({ povolujeDivaky: false, maHeslo: false }));
-    expect(k.find((x) => x.klic === "divaci")).toMatchObject({ stav: "spatne", text: /Allow Spectators/ });
-    expect(k.find((x) => x.klic === "heslo")).toMatchObject({ stav: "varovani", sekce: "hlavni" });
+    expect(k.find((x) => x.klic === "povolitDivaky")).toMatchObject({ stav: "spatne", text: /Allow Spectators/ });
+    expect(k.find((x) => x.klic === "heslo")).toMatchObject({ stav: "varovani", sekce: "prelobby" });
     expect(lobbyVPoradku(k)).toBe(false);
     const jenBezHesla = zkontrolujLobby(sestava, ocekavane, lobby({ maHeslo: false }));
     expect(lobbyVPoradku(jenBezHesla)).toBe(true);
@@ -178,5 +218,210 @@ describe("pomocné tabulky", () => {
     expect(nazevMapy(301112)).toBe("Earth");
     expect(nazevMapy(1)).toBe("mapa č. 1");
     expect(nazevMapy(null)).toBe("libovolná");
+  });
+});
+
+// Čísla režimů byla převzatá z aoe2.net a od čtyřky výš seděla o jedna vedle:
+// „Capture the Relic“ posílalo 8, což je ve hře Turbo Random Map. Ověřeno
+// 9. 9. 2026 proti definici herního Control API (aoe2control) i proti
+// živému seznamu lobby, kde běžely režimy 1 a 13, které tabulka neznala.
+describe("REZIMY", () => {
+  it("čísla sedí s herním OptionsGameMode", () => {
+    expect(REZIMY[0]).toBe("Random Map");
+    expect(REZIMY[1]).toBe("Regicide");
+    expect(REZIMY[2]).toBe("Death Match");
+    expect(REZIMY[3]).toBe("Scenario");
+    expect(REZIMY[5]).toBe("King of the Hill");
+    expect(REZIMY[6]).toBe("Wonder Race");
+    expect(REZIMY[7]).toBe("Defend the Wonder");
+    expect(REZIMY[8]).toBe("Turbo Random Map");
+    expect(REZIMY[10]).toBe("Capture the Relic");
+    expect(REZIMY[11]).toBe("Sudden Death");
+    expect(REZIMY[12]).toBe("Battle Royale");
+    expect(REZIMY[REZIM_EMPIRE_WARS]).toBe("Empire Wars");
+  });
+
+  it("Empire Wars je režim 13", () => {
+    expect(REZIM_EMPIRE_WARS).toBe(13);
+  });
+});
+
+// Zbylé číselníky proti témuž zdroji (herní Control API, 9. 9. 2026).
+describe("číselníky nastavení", () => {
+  it("Extreme je u AI obtížnosti −1, ne 5", () => {
+    expect(AI_OBTIZNOSTI[-1]).toBe("Extreme");
+    expect(AI_OBTIZNOSTI[5]).toBeUndefined();
+    expect(AI_OBTIZNOSTI[0]).toBe("Hardest");
+    expect(AI_OBTIZNOSTI[4]).toBe("Easiest");
+  });
+
+  it("velikosti mapy znají i Ludicrous", () => {
+    expect(VELIKOSTI[240]).toBe("Giant");
+    expect(VELIKOSTI[480]).toBe("Ludicrous");
+  });
+
+  it("odkrytí mapy má jen tři stupně — No Fog hra nezná", () => {
+    expect(Object.keys(ODKRYTI_MAPY)).toEqual(["0", "1", "2"]);
+  });
+
+  it("vítězství zná i Time Limit, Score a Last Man Standing", () => {
+    expect(VITEZSTVI[1]).toBe("Conquest");
+    expect(VITEZSTVI[9]).toBe("Standard");
+    expect(VITEZSTVI[7]).toBe("Time Limit");
+    expect(VITEZSTVI[8]).toBe("Score");
+    expect(VITEZSTVI[11]).toBe("Last Man Standing");
+  });
+
+  it("suroviny znají i Random", () => {
+    expect(SUROVINY[6]).toBe("Random");
+  });
+});
+
+// Pre-lobby: okno „Create Lobby“. Heslo a diváci sem patří taky — nastavují
+// se při zakládání lobby, ne v herním panelu.
+describe("kontrola pre-lobby", () => {
+  const preLobby = (cast: Partial<PreLobbyZeHry> = {}): PreLobbyZeHry => ({
+    lobbyTyp: 0,
+    viditelnost: 1,
+    maxHracu: 8,
+    zpozdeniDivakuSekund: 0,
+    server: "westeurope",
+    ...cast,
+  });
+  const sHrou = (cast: Partial<PreLobbyZeHry> = {}, dalsi: Partial<PoznatekLobby> = {}) =>
+    lobby({ preLobby: preLobby(cast), ...dalsi });
+
+  it("heslo a diváci se přesunuli z hlavní sekce do pre-lobby", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sHrou());
+    expect(k.filter((x) => x.sekce === "hlavni").map((x) => x.klic)).not.toContain("heslo");
+    expect(k.filter((x) => x.sekce === "prelobby").map((x) => x.klic)).toContain("heslo");
+    expect(k.filter((x) => x.sekce === "prelobby").map((x) => x.klic)).toContain("povolitDivaky");
+  });
+
+  it("výchozí Unranked lobby bez zpoždění projde", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sHrou());
+    expect(k.filter((x) => x.sekce === "prelobby" && x.stav === "spatne")).toHaveLength(0);
+  });
+
+  it("jiný typ lobby než nastavený je chyba", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sHrou({ lobbyTyp: 1 }));
+    expect(k.find((x) => x.klic === "lobbyTyp")).toMatchObject({
+      stav: "spatne",
+      text: "Lobby Type: Ranked 1v1 Death Match, má být Unranked",
+    });
+  });
+
+  // Zpoždění diváků hře nevadí, jen kazí vysílání — proto žlutá, ne červená.
+  it("zpoždění diváků je jen upozornění", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), sHrou({ zpozdeniDivakuSekund: 180 }));
+    expect(k.find((x) => x.klic === "zpozdeniDivaku")).toMatchObject({
+      stav: "varovani",
+      text: "Spectator Delay: 3 Minutes, má být None",
+    });
+  });
+
+  it("sekundy ze hry se počítají na minuty z nabídky", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ zpozdeniDivaku: 3 }), sHrou({ zpozdeniDivakuSekund: 180 }));
+    expect(k.find((x) => x.klic === "zpozdeniDivaku")).toMatchObject({ stav: "ok" });
+  });
+
+  it("Default nechá výběr na hře a je v pořádku", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ server: "Default" }), sHrou({ server: "ukwest" }));
+    expect(k.find((x) => x.klic === "server")).toMatchObject({ stav: "ok", text: "Server: ukwest (Default)" });
+  });
+
+  it("konkrétní server porovná", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ server: "westeurope" }), sHrou({ server: "ukwest" }));
+    expect(k.find((x) => x.klic === "server")).toMatchObject({ stav: "spatne", text: "Server: ukwest, má být westeurope" });
+  });
+
+  it("skryté civilizace bere z nastavení hry", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ skrytCivilizace: false }), lobby({ preLobby: preLobby(), nastaveni: { ...podleOcekavani, skrytCivilizace: true } }));
+    expect(k.find((x) => x.klic === "skrytCivilizace")).toMatchObject({ stav: "spatne", text: "Hide Civilizations: zapnuto, má být vypnuto" });
+  });
+});
+
+// V 1v1 je barva kosmetika: týmy nejsou, na mapě se dva hráči nespletou.
+// Rob kvůli ní nemá mít červený řádek, který by zápas držel — stačí žlutá.
+describe("barvy v 1v1", () => {
+  it("špatná barva je jen upozornění", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({
+      sloty: [
+        { steamId: HOST, barva: 5, tym: 1, civ: null, pripraven: true },
+        { steamId: JA, barva: 2, tym: 0, civ: null, pripraven: true },
+      ],
+    }));
+    expect(k.find((x) => x.klic === `barva:${HOST}`)).toMatchObject({ stav: "varovani" });
+    expect(lobbyVPoradku(k)).toBe(true);
+  });
+
+  // Ve víc než dvou už barvu potřebujeme: podle ní se poznává, kdo je kdo.
+  it("ve větším zápase zůstává barva chybou", () => {
+    const ctyri = [u(HOST, 1, 1, "Trokner"), u(JA, 1, 2, "Jouki"), u("A", 2, 3, "A"), u("B", 2, 4, "B")];
+    const k = zkontrolujLobby(ctyri, ocekavane, lobby({
+      sloty: [
+        { steamId: HOST, barva: 5, tym: 1, civ: null, pripraven: true },
+        { steamId: JA, barva: 2, tym: 1, civ: null, pripraven: true },
+        { steamId: "A", barva: 3, tym: 2, civ: null, pripraven: true },
+        { steamId: "B", barva: 4, tym: 2, civ: null, pripraven: true },
+      ],
+    }));
+    expect(k.find((x) => x.klic === `barva:${HOST}`)).toMatchObject({ stav: "spatne" });
+  });
+});
+
+// Pre-lobby: co je jak vážné. Ne všechno, co nesedí, musí zápas zastavit.
+describe("závažnost pre-lobby", () => {
+  const pre = (cast: Partial<PreLobbyZeHry> = {}): PreLobbyZeHry => ({
+    lobbyTyp: 0,
+    viditelnost: 1,
+    maxHracu: 2,
+    zpozdeniDivakuSekund: 0,
+    server: "westeurope",
+    ...cast,
+  });
+
+  it("jiný počet slotů je jen upozornění a řekne, kolik jich je prázdných", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ maxHracu: 8 }) }));
+    // Dva hráči sedí v lobby, takže šest slotů zbývá prázdných a otevřených —
+    // „Players: 8“ samo o sobě znělo jako špatně nastavený počet hráčů.
+    expect(k.find((x) => x.klic === "maxHracu")).toMatchObject({
+      stav: "varovani",
+      text: "Players: 8, má být 2 (6 slotů je prázdných a otevřených — zavři je ve hře)",
+    });
+  });
+
+  it("zpoždění do tří minut je upozornění, od čtyř chyba", () => {
+    const stav = (sekund: number) =>
+      zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ zpozdeniDivakuSekund: sekund }) })).find(
+        (x) => x.klic === "zpozdeniDivaku",
+      )?.stav;
+    expect(stav(60)).toBe("varovani");
+    expect(stav(180)).toBe("varovani");
+    expect(stav(240)).toBe("spatne");
+    expect(stav(600)).toBe("spatne");
+    expect(stav(0)).toBe("ok");
+  });
+
+  it("server Default projde, zelený upozorní, žlutý a červený jsou chyba", () => {
+    const stav = (nastaveny: string) =>
+      zkontrolujLobby(sestava, doplnNastaveni({ server: nastaveny }), lobby({ preLobby: pre({ server: nastaveny === "Default" ? "westeurope" : nastaveny }) })).find(
+        (x) => x.klic === "server",
+      );
+    expect(stav("Default")).toMatchObject({ stav: "ok" });
+    expect(stav("ukwest")).toMatchObject({ stav: "varovani" });
+    expect(stav("koreacentral")).toMatchObject({ stav: "spatne" });
+    expect(stav("australiasoutheast")).toMatchObject({ stav: "spatne" });
+    expect(stav("australiasoutheast")!.text).toContain("313 ms");
+  });
+
+  it("lobby jinde, než je nastaveno, je chyba i u dobrého serveru", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni({ server: "ukwest" }), lobby({ preLobby: pre({ server: "westeurope" }) }));
+    expect(k.find((x) => x.klic === "server")).toMatchObject({ stav: "spatne", text: "Server: westeurope, má být ukwest" });
+  });
+
+  it("Private lobby je chyba", () => {
+    const k = zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ viditelnost: 0 }) }));
+    expect(k.find((x) => x.klic === "viditelnost")).toMatchObject({ stav: "spatne" });
   });
 });

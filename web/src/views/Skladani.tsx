@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { blikni } from "../historie.js";
-import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
+import { jeAi } from "../../../src/shared/aiHraci.js";
+import { MAX_HRACU, zkontrolujSestavu } from "../../../src/shared/sestava.js";
 import { popisFormatu } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
 import type { VybranyHrac } from "../skladani.js";
@@ -16,6 +17,11 @@ interface Props {
   sadaCivilizaci: number | null;
   /** Řádek (steamId) ke zvýraznění po změně / zpět / znovu; `cas` odliší opakování. */
   zvyraznit?: { cil: string | null; cas: number } | null;
+  /**
+   * První AI v sestavě. Volá se proto, aby šlo upozornit na AI Difficulty:
+   * dokud v lobby žádný počítač nesedí, je „–“ v pořádku, s prvním už ne.
+   */
+  onPrvniAi?: () => void;
 }
 
 /** Další hodnota v kruhu: levé tlačítko dopředu, pravé zpátky. */
@@ -31,10 +37,14 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
     if (tym === 0) continue;
     const clenove = vybrani.filter((v) => v.vstup.tym === tym);
     if (clenove.length === 0) continue;
+    // AI do součtu nevstupuje a nepatří ani mezi „bez ELA“: tam se vypisují
+    // lidé, kterým se statistiky nestáhly, a to je jiná informace. Tým, který
+    // je celý AI, se ale v souhrnu ukáže — jinak by strany zmizely.
+    const lide = clenove.filter((v) => !jeAi(v.hrac.steamId));
     vysledek.push({
       tym,
-      soucet: clenove.reduce((s, v) => s + (v.hrac.elo1v1 ?? 0), 0),
-      bezEla: clenove.filter((v) => v.hrac.elo1v1 === null).map((v) => v.hrac.alias ?? v.hrac.steamName ?? v.hrac.steamId),
+      soucet: lide.reduce((s, v) => s + (v.hrac.elo1v1 ?? 0), 0),
+      bezEla: lide.filter((v) => v.hrac.elo1v1 === null).map((v) => v.hrac.alias ?? v.hrac.steamName ?? v.hrac.steamId),
     });
   }
   return vysledek;
@@ -46,7 +56,7 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
  * tabulce přihlášených nad tím, odkud se berou tlačítkem „+“. Pořadí tady je
  * pořadí slotů v lobby a dá se přetahovat. Formát se odvodí, nevybírá se.
  */
-export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit }: Props) {
+export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit, onPrvniAi }: Props) {
   const tahani = useTahani(skladani.presun);
   const seznam = useRef<HTMLUListElement>(null);
   useEffect(() => {
@@ -57,7 +67,8 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit 
   useEffect(() => {
     const srovnej = (e: Event) => {
       const id = jmenoPodKurzorem(e, seznam.current);
-      setNahled(id ? (skladani.vybrani.find((v) => v.hrac.steamId === id)?.hrac ?? null) : null);
+      const hrac = id ? (skladani.vybrani.find((v) => v.hrac.steamId === id)?.hrac ?? null) : null;
+      setNahled(hrac && jeAi(hrac.steamId) ? null : hrac);
     };
     window.addEventListener(KONEC_TAHU, srovnej);
     return () => window.removeEventListener(KONEC_TAHU, srovnej);
@@ -68,7 +79,25 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit 
 
   return (
     <div className="skladani">
-      <p className="zaloha">Pořadí hráčů můžeš přetáhnout myší.</p>
+      {/* AI se nebere z tabulky přihlášených — počítač se do akce nehlásí,
+          přisedne rovnou k sestavě, jako když si ho host naklikne v lobby. */}
+      <div className="hlavicka-sestavy">
+        <p className="zaloha">Pořadí hráčů můžeš přetáhnout myší.</p>
+        <button
+          type="button"
+          className="pridat-ai"
+          disabled={vstupy.length >= MAX_HRACU}
+          aria-label="Přidat AI do sestavy"
+          title={vstupy.length >= MAX_HRACU ? "Lobby je plná" : "Přisadí k sestavě počítačového protivníka"}
+          onClick={() => {
+            const prvni = !vstupy.some((v) => jeAi(v.steamId));
+            skladani.pridejAi();
+            if (prvni) onPrvniAi?.();
+          }}
+        >
+          + AI
+        </button>
+      </div>
 
       <ul className="sestava" data-testid="vybrani" ref={seznam}>
         {skladani.vybrani.map(({ vstup: v, hrac }) => {
@@ -109,7 +138,8 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit 
                 data-jmeno-hrace={hrac.steamId}
                 data-testid="jmeno-vybraneho"
                 onPointerEnter={() => {
-                  if (!tahneSe()) setNahled(hrac);
+                  // Počítač žádné žebříčky nemá, karta by u něj byla prázdná.
+                  if (!tahneSe() && !jeAi(hrac.steamId)) setNahled(hrac);
                 }}
                 onPointerLeave={() => {
                   if (!tahneSe()) setNahled(null);

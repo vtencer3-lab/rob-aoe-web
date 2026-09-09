@@ -11,15 +11,24 @@ import {
   doplnNastaveni,
   KONECNE_VEKY,
   ODKRYTI_MAPY,
+  DATA_MODY,
+  LOBBY_TYPY,
   POCATECNI_VEKY,
+  POPULACE,
+  PRIMERI,
   REZIMY,
   SADY_CIVILIZACI,
+  SERVERY,
   SUROVINY,
+  VIDITELNOST,
+  VITEZSTVI,
+  ZPOZDENI_DIVAKU,
   ZASKRTAVATKA,
   zkontrolujLobby,
   type KontrolaLobbyVysledek,
   type NastaveniLobby,
 } from "../../shared/lobbyKontrola.js";
+import { MAX_HRACU, MIN_HRACU } from "../../shared/sestava.js";
 import { HttpError, requireId, requireUser } from "../guards.js";
 import type { MatchDeps } from "./matches.js";
 
@@ -37,10 +46,16 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   else if (cislo(t["velikost"]) !== undefined) v.velikost = cislo(t["velikost"])!;
   const r = cislo(t["rychlost"]);
   if (r === 1 || r === 2 || r === 3) v.rychlost = r;
+  // Populace jen z herní nabídky (POPULACE) — od 9. 9. 2026 je to výběr,
+  // ne volné číslo, a co panel nenabízí, nemá projít ani přes API.
   const p = cislo(t["populace"]);
-  if (p !== undefined && p > 0 && p <= 1000) v.populace = p;
+  if (p !== undefined && p in POPULACE) v.populace = p;
+  // Vítězství jen z herní nabídky. Do 9. 9. 2026 tu stálo `vit === 1 ||
+  // vit === 9`, takže Time Limit, Score a Last Man Standing server tiše
+  // zahodil — panel je poslal, zpátky přes SSE přišla stará hodnota a výběr
+  // se sám přepnul na původní.
   const vit = cislo(t["vitezstvi"]);
-  if (vit === 1 || vit === 9) v.vitezstvi = vit;
+  if (vit !== undefined && vit in VITEZSTVI) v.vitezstvi = vit;
   if (typeof t["cheaty"] === "boolean") v.cheaty = t["cheaty"];
 
   // Další nastavení: číselníky jen z hodnot, které hra opravdu vydává;
@@ -57,9 +72,25 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   vyber("odkrytiMapy", ODKRYTI_MAPY);
   vyber("pocatecniVek", POCATECNI_VEKY);
   vyber("konecnyVek", KONECNE_VEKY);
-  const primeri = cislo(t["primeri"]);
-  if (t["primeri"] === null) v.primeri = null;
-  else if (primeri !== undefined && Number.isInteger(primeri) && primeri >= 0 && primeri <= 180) v.primeri = primeri;
+  // Příměří jen v hodnotách, které hra nabízí (PRIMERI) — od 9. 9. 2026 je
+  // to nabídka, ne volné číslo, a co panel neumí nabídnout, nemá ani projít.
+  vyber("primeri", PRIMERI);
+  // Pre-lobby: okno „Create Lobby“ ve hře. Hodnoty jen z jeho nabídky —
+  // co panel nenabídne, nemá projít ani přes API.
+  vyber("lobbyTyp", LOBBY_TYPY);
+  vyber("viditelnost", VIDITELNOST);
+  vyber("zpozdeniDivaku", ZPOZDENI_DIVAKU);
+  const maxHracu = cislo(t["maxHracu"]);
+  if (t["maxHracu"] === null) v.maxHracu = null;
+  else if (maxHracu !== undefined && Number.isInteger(maxHracu) && maxHracu >= MIN_HRACU && maxHracu <= MAX_HRACU) v.maxHracu = maxHracu;
+  for (const klic of ["coopKampan", "povolitDivaky", "skrytCivilizace"] as const) {
+    if (typeof t[klic] === "boolean" || t[klic] === null) v[klic] = t[klic] as boolean | null;
+  }
+  if (t["server"] === null) v.server = null;
+  else if (typeof t["server"] === "string" && (SERVERY as readonly string[]).includes(t["server"])) v.server = t["server"];
+  if (t["dataMod"] === null) v.dataMod = null;
+  else if (typeof t["dataMod"] === "string" && (DATA_MODY as readonly string[]).includes(t["dataMod"])) v.dataMod = t["dataMod"];
+
   for (const { klic } of ZASKRTAVATKA) {
     if (typeof t[klic] === "boolean" || t[klic] === null) v[klic] = t[klic] as boolean | null;
   }

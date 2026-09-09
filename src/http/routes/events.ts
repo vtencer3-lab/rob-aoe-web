@@ -4,6 +4,7 @@ import {
   getAktivniAkce,
   obnovAktivitu,
   prejmenujAkci,
+  pripravPristiHeslo,
   pulsAktivity,
   setAkceStav,
   setNastaveniLobby,
@@ -92,6 +93,17 @@ export function registerEventRoutes(app: FastifyInstance): void {
     const akce = await setNastaveniLobby(akceId, prectiNastaveniLobby(request.body));
     await broadcastAkce();
     return { akce };
+  });
+
+  // Kostka u hesla v okně Pre-Lobby: nové heslo pro příští lobby. Vrací se
+  // přes SSE jako zbytek stavu, samotné heslo tady v odpovědi nemá co dělat.
+  app.post("/api/akce/:id/pristi-heslo", async (request) => {
+    await requireAdmin(request);
+    const akceId = requireId(request);
+    const akce = await pripravPristiHeslo(akceId, true);
+    if (!akce) throw new HttpError(404, "Akce neexistuje.");
+    await broadcastAkce();
+    return { ok: true };
   });
 
   // „Uložit nastavení lobby“: snímek živého nastavení, ke kterému se admin

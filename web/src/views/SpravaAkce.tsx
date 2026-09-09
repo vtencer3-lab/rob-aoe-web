@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
-import type { NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
+import { doplnNastaveni, type NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
 import type { AkceView } from "../../../src/shared/types.js";
 import { NastaveniLobby } from "./NastaveniLobby.js";
+import { PreLobby } from "./PreLobby.js";
 
 interface Props {
   akce: AkceView | null;
@@ -14,6 +15,8 @@ interface Props {
   children?: ReactNode;
   /** Klíč nastavení ke zvýraznění (historie kroků). */
   zvyraznitNastaveni?: { cil: string | null; cas: number } | null;
+  /** Kostka u hesla v okně Pre-Lobby: server vygeneruje nové. */
+  onNoveHeslo?: () => void;
 }
 
 /**
@@ -21,16 +24,32 @@ interface Props {
  * vybraní hráči (sestava), vpravo Game Settings. Tlačítka debug módu stojí
  * nahoře u tabulky přihlášených — týkají se toho, kdo je v seznamu.
  */
-export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, children, zvyraznitNastaveni }: Props) {
+export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, children, zvyraznitNastaveni, onNoveHeslo }: Props) {
+  const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
   return (
     <section className="sprava-akce">
       {/* Panel se jmenuje po tom, co v něm je. Název akce odsud odešel nahoru
-          nad tabulku přihlášených: patří k celému večeru, ne k nastavení hry. */}
+          nad tabulku přihlášených: patří k celému večeru, ne k nastavení hry.
+          Vedle nadpisu stojí zakládání lobby — krok, který přijde před vším
+          ostatním a odehraje se v samostatném okně jako ve hře. */}
       <header className="hlavicka-akce">
         <h2>Nastavení Lobby</h2>
+        <button type="button" className="prelobby-tlacitko" onClick={() => setPreLobbyVidet(true)}>
+          Pre-Lobby Nastavení
+        </button>
       </header>
+      {preLobbyVidet ? (
+        <PreLobby
+          nastaveni={doplnNastaveni(akce.nastaveniLobby as Partial<Nastaveni>)}
+          nazevLobby={akce.pristiNazevLobby ?? ""}
+          heslo={akce.pristiHeslo ?? ""}
+          onZmena={onNastaveniLobby}
+          onNoveHeslo={() => onNoveHeslo?.()}
+          onZavrit={() => setPreLobbyVidet(false)}
+        />
+      ) : null}
       <div className="lobby-rozlozeni">
         <div className="leva">{children}</div>
         <NastaveniLobby zive={akce.nastaveniLobby} ulozene={akce.ulozeneNastaveniLobby} onZmena={onNastaveniLobby} onUlozit={onUlozitNastaveni} zvyraznit={zvyraznitNastaveni} />

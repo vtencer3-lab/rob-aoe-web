@@ -5,16 +5,13 @@ import { mujUcastnik, popisTymu } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 import { Kopirovatelne } from "./Kopirovatelne.js";
-/**
- * Výřez dialogu Create Lobby ze hry. Importuje se, aby mu Vite dal do jména
- * hash: se stálým jménem by prohlížeč po každé úpravě obrázku vytáhl z
- * mezipaměti ten starý a vypadalo by to, že se nasazení nepovedlo.
- */
-import dialogUrl from "../assets/create-lobby.webp";
+import { OknoCreateLobby } from "./OknoCreateLobby.js";
 
 interface Props {
   zapas: ZapasView;
   ja: string;
+  /** Očekávané nastavení akce — okno Create Lobby z něj bere pre-lobby volby. */
+  nastaveniLobby?: Record<string, unknown>;
   onHledatLobby: (zapasId: number) => Promise<HledaniLobbyVysledek>;
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
 }
@@ -26,7 +23,7 @@ interface Props {
  * tak i uprostřed streamu vidí, kde je. Tlačítko do lobby tu není: host ji
  * zakládá, do lobby se odkazem připojují ostatní (KartaHrace).
  */
-export function ObrazovkaHosta({ zapas, ja, onHledatLobby, onKontrolaLobby }: Props) {
+export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby }: Props) {
   // Po kliknutí na „Spustit hru“ host lobby zakládá právě teď: hledání zrychlí
   // ze 4 s na 2 s, ať hráči dostanou odkaz, sotva lobby vznikne.
   const [hraSpustena, setHraSpustena] = useState(false);
@@ -71,7 +68,12 @@ export function ObrazovkaHosta({ zapas, ja, onHledatLobby, onKontrolaLobby }: Pr
             Spustit hru
           </a>
         </div>
-        <DialogCreateLobby zapas={zapas} />
+        <OknoCreateLobby
+          nazevLobby={zapas.nazevLobby}
+          heslo={zapas.heslo}
+          nastaveni={nastaveniLobby}
+          pocetHracu={zapas.ucastnici.length}
+        />
 
         {/* Web si lobby najde sám podle Steam ID hosta; tlačítko je pro
             netrpělivé a pro případ, že lobby ze seznamu vypadla. */}
@@ -103,53 +105,3 @@ export function ObrazovkaHosta({ zapas, ja, onHledatLobby, onKontrolaLobby }: Pr
   );
 }
 
-/**
- * Zrcadlo dialogu Create Lobby: skutečný snímek dialogu ze hry, do kterého se
- * na místa tří polí posadí hodnoty z webu. Kreslit dialog v CSS znamenalo
- * pořád jen odhadovat barvy a rozestupy; takhle to sedí, protože to je ono.
- *
- * Přepisují se **jen tři pole**. Zbytek dialogu je na snímku nastavený tak,
- * jak má být — Public, zaškrtnuté Allow Spectators, Unranked, None, Default,
- * Definitive Set — takže se na něj nesahá. Název a heslo se kopírují kliknutím
- * přímo v poli.
- *
- * Souřadnice jsou v procentech výřezu (1400 × 1292 px), aby držely při každé
- * šířce. Vycházejí z pixelů změřených ve snímku: pole mají x 665–1164 a
- * řádky jdou po 80 px.
- */
-function DialogCreateLobby({ zapas }: { zapas: ZapasView }) {
-  const pocetHracu = String(zapas.ucastnici.length);
-  return (
-    <div className="dialog-lobby">
-      <div className="dialog-snimek">
-        <img
-          className="dialog-obrazek"
-          data-testid="obrazek-dialogu"
-          src={dialogUrl}
-          alt={`Dialog Create Lobby: Lobby Name ${zapas.nazevLobby}, Players ${pocetHracu}, Set Password ${zapas.heslo}, Visibility Public, Allow Spectators zaškrtnuté`}
-          width={1400}
-          height={1292}
-        />
-        {/* Klik na hodnotu přímo v poli dialogu ji zkopíruje — host má
-            před sebou totéž, co ve hře, a bere si to rovnou odtud. */}
-        <Kopirovatelne
-          hodnota={zapas.nazevLobby}
-          popis="název lobby"
-          className="vsazeno vsazeno-vstup vsazeno-nazev"
-          testId="pole-nazev-lobby"
-        />
-        {/* Rozbalovací seznam: přebíjí se jen část se jménem, šipka vpravo ve
-            snímku zůstává vidět. */}
-        <span className="vsazeno vsazeno-vyber vsazeno-players" data-testid="pole-players">
-          {pocetHracu}
-        </span>
-        <Kopirovatelne
-          hodnota={zapas.heslo}
-          popis="heslo"
-          className="vsazeno vsazeno-vstup vsazeno-heslo"
-          testId="pole-heslo"
-        />
-      </div>
-    </div>
-  );
-}

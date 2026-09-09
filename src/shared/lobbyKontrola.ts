@@ -1,6 +1,7 @@
+import { jeAi } from "./aiHraci.js";
 import { nazevCivilizace } from "./civilizace.js";
 import { nazevMapy } from "./mapy.js";
-import { BARVA_NAZEV, type Barva, type Tym } from "./types.js";
+import { BARVA_KOHO_CO, BARVA_NAZEV, type Barva, type Tym } from "./types.js";
 
 export { MAPY, nazevMapy } from "./mapy.js";
 
@@ -24,8 +25,8 @@ export interface NastaveniLobby {
   rychlost: 1 | 2 | 3;
   /** Populační limit (options[28]). */
   populace: number;
-  /** 1 Conquest, 9 Standard (options[81]). */
-  vitezstvi: 1 | 9;
+  /** Druh vítězství (options[81]); hodnoty viz VITEZSTVI. */
+  vitezstvi: number;
   /** Allow Cheats (options[1]). */
   cheaty: boolean;
 
@@ -58,6 +59,26 @@ export interface NastaveniLobby {
   regicide: boolean | null;
   antiquity: boolean | null;
   recordGame: boolean | null;
+
+  // --- pre-lobby: okno „Create Lobby“, ne herní panel (null = je to jedno) ---
+  /** Lobby Type; hodnoty viz LOBBY_TYPY. */
+  lobbyTyp: number | null;
+  /** Visibility: Public / Private. */
+  viditelnost: number | null;
+  /** Players — kolik slotů lobby dostane (2 až 8). */
+  maxHracu: number | null;
+  /** Co-Op Campaign. */
+  coopKampan: boolean | null;
+  /** Allow Spectators. */
+  povolitDivaky: boolean | null;
+  /** Hide Civilizations. */
+  skrytCivilizace: boolean | null;
+  /** Spectator Delay v minutách; 0 = None. */
+  zpozdeniDivaku: number | null;
+  /** Server: „Default“, region, nebo „Use Local Lan Server“. */
+  server: string | null;
+  /** Data Mod; hra zatím nabízí jen Definitive Set. */
+  dataMod: string | null;
 }
 
 export const VYCHOZI_NASTAVENI: NastaveniLobby = {
@@ -90,6 +111,20 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   regicide: false,
   antiquity: false,
   recordGame: true,
+  // Pre-lobby: co má vždycky platit, je nastavené napevno — Unranked lobby,
+  // vypnutá kampaň, žádné zpoždění diváků (ve vysílání by bylo proti smyslu)
+  // a jediný Data Mod, který hra zná. Zbytek zůstává na Robovi.
+  lobbyTyp: 0,
+  viditelnost: 0,
+  maxHracu: 2,
+  coopKampan: false,
+  // Diváci jsou smysl celého večera (Rob vysílá), takže zapnuto napevno;
+  // skryté civilizace by naopak zabily komentář, takže vypnuto.
+  povolitDivaky: true,
+  skrytCivilizace: false,
+  zpozdeniDivaku: 0,
+  server: "Default",
+  dataMod: "Definitive Set",
 };
 
 export const VELIKOSTI: Record<number, string> = {
@@ -99,32 +134,159 @@ export const VELIKOSTI: Record<number, string> = {
   200: "Normal (6)",
   220: "Large (8)",
   240: "Giant",
+  480: "Ludicrous",
 };
 
 export const RYCHLOSTI: Record<number, string> = { 1: "Slow", 2: "Normal", 3: "Fast" };
-export const VITEZSTVI: Record<number, string> = { 1: "Conquest", 9: "Standard" };
+export const VITEZSTVI: Record<number, string> = {
+  1: "Conquest",
+  7: "Time Limit",
+  8: "Score",
+  9: "Standard",
+  11: "Last Man Standing",
+};
 /**
- * Číselníky dalších nastavení. Naživo ověřené hodnoty (7. 9. 2026): sada
- * civilizací celá, režim 0/2/3, AI 3/1, suroviny 0/3, odkrytí 0/1/2, věky
- * 0/3/6 a 0/4. Zbytek je doplněný podle pořadí v herním jazykovém souboru a
- * podle historického číslování aoe2.net (stejný backend) — kdyby seděl
- * špatně, kontrola vypíše špatné jméno, ale porovnává pořád čísla.
+ * Číselníky dalších nastavení. Čísla jsou od 9. 9. 2026 z herního
+ * `Options*` (Control API hry), ne z aoe2.net — to sedělo u režimů o jedna
+ * vedle a u AI obtížnosti dávalo Extreme 5 místo −1.
+ *
+ * Naživo ověřené hodnoty: sada civilizací celá, režimy 0 a 13 (Empire Wars,
+ * 9. 9. 2026 z vlastní lobby), AI 3/1, suroviny 0/3, odkrytí 0/1/2, věky
+ * 0/3/6 a 0/4, vítězství 1 a 9. Zbytek zatím jen z Control API; kdyby
+ * číslo sedělo špatně, kontrola vypíše cizí jméno, ale porovnává pořád čísla.
  */
 export const SADY_CIVILIZACI: Record<number, string> = { 0: "All", 1: "Age of Empires II", 2: "Chronicles" };
+/**
+ * Game Mode (options[5]). Čísla jsou z herního `OptionsGameMode` (Control API
+ * hry, ověřeno 9. 9. 2026 dvěma nezávislými zdroji a potvrzené živým
+ * seznamem lobby, kde běžely režimy 1 a 13).
+ *
+ * Do 9. 9. 2026 tu byla tabulka převzatá z aoe2.net, která od čtyřky výš
+ * seděla o jedna vedle: „Capture the Relic“ posílalo 8, což je ve hře Turbo
+ * Random Map, a režimy 1, 11, 12 a 13 chyběly úplně. Kontrola lobby tak
+ * u těchhle režimů hlásila cizí jméno a Rob nastavoval jiný režim, než
+ * vybral.
+ */
 export const REZIMY: Record<number, string> = {
   0: "Random Map",
-  2: "Deathmatch",
+  1: "Regicide",
+  2: "Death Match",
   3: "Scenario",
-  4: "King of the Hill",
-  5: "Wonder Race",
-  6: "Defend the Wonder",
-  7: "Turbo Random Map",
-  8: "Capture the Relic",
-  10: "Battle Royale",
+  5: "King of the Hill",
+  6: "Wonder Race",
+  7: "Defend the Wonder",
+  8: "Turbo Random Map",
+  10: "Capture the Relic",
+  11: "Sudden Death",
+  12: "Battle Royale",
+  13: "Empire Wars",
 };
-export const AI_OBTIZNOSTI: Record<number, string> = { 4: "Easiest", 3: "Standard", 2: "Moderate", 1: "Hard", 0: "Hardest", 5: "Extreme" };
-export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite" };
-export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible", 3: "No Fog" };
+
+/**
+ * Empire Wars jako **režim** (Game Mode), ne jako zaškrtávátko v Advanced
+ * Settings. Hra obojí spojuje: v tomhle režimu je Empire Wars daný a
+ * zaškrtávátko `empireWars` (options[89]) je odškrtnuté a nepřístupné.
+ */
+export const REZIM_EMPIRE_WARS = 13;
+
+/** Regicide jako režim; zaškrtávátko `regicide` (options[91]) u něj platí totéž. */
+export const REZIM_REGICIDE = 1;
+
+/** Sudden Death jako režim; zaškrtávátko `suddenDeath` (options[90]) taky. */
+export const REZIM_SUDDEN_DEATH = 11;
+
+/**
+ * Režimy, které mají v Advanced Settings vlastní zaškrtávátko: hra ho
+ * v takovém režimu odškrtne a znepřístupní, protože režim ho už obsahuje.
+ * Ověřeno naživo 9. 9. 2026 pro všechny tři.
+ */
+export const ZASKRTAVATKO_REZIMU: Record<number, "empireWars" | "regicide" | "suddenDeath"> = {
+  [REZIM_EMPIRE_WARS]: "empireWars",
+  [REZIM_REGICIDE]: "regicide",
+  [REZIM_SUDDEN_DEATH]: "suddenDeath",
+};
+/** Pozor: Extreme je −1, ne 5 — čísla jdou od nejtěžšího k nejlehčímu. */
+export const AI_OBTIZNOSTI: Record<number, string> = { "-1": "Extreme", 0: "Hardest", 1: "Hard", 2: "Moderate", 3: "Standard", 4: "Easiest" };
+export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite", 6: "Random" };
+export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible" };
+/**
+ * Population: hra nabízí po pětadvaceti do 250 a pak po stovkách do 500
+ * (odečteno z herní nabídky 9. 9. 2026). Volné číslo tu bylo do 9. 9. 2026.
+ */
+export const POPULACE: Record<number, string> = {
+  ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [(i + 1) * 25, String((i + 1) * 25)])),
+  300: "300",
+  400: "400",
+  500: "500",
+};
+
+/**
+ * Treaty Length: hra nabízí jen tyhle hodnoty — po pěti minutách do hodiny
+ * a pak rovnou 90 (odečteno z herní nabídky 9. 9. 2026). Volné číslo tu
+ * bylo do 9. 9. 2026 a svádělo nastavit minuty, které ve hře nejdou.
+ */
+/** Nabídka okna „Create Lobby“, odečtená z hry 9. 9. 2026. */
+export const LOBBY_TYPY: Record<number, string> = {
+  0: "Unranked",
+  1: "Ranked 1v1 Death Match",
+  2: "Ranked Team Death Match",
+};
+/** Private lobby zároveň zakáže diváky, takže se pro večer nehodí. */
+export const VIDITELNOST: Record<number, string> = { 0: "Public", 1: "Private" };
+/** Spectator Delay v minutách; 0 je „None“. */
+export const ZPOZDENI_DIVAKU: Record<number, string> = {
+  0: "None",
+  1: "1 Minute",
+  2: "2 Minutes",
+  3: "3 Minutes",
+  4: "4 Minutes",
+  5: "5 Minutes",
+  10: "10 Minutes",
+};
+/** Servery přesně v pořadí, jak je hra nabízí. */
+export const SERVERY: readonly string[] = [
+  "Default",
+  "brazilsouth",
+  "centralindia",
+  "australiasoutheast",
+  "ukwest",
+  "southeastasia",
+  "westeurope",
+  "southcentralus",
+  "westus3",
+  "eastus",
+  "koreacentral",
+  "chilecentral",
+  "Use Local Lan Server",
+];
+/**
+ * Kvalita spojení na servery, jak ji hra měří (odečteno 9. 9. 2026, hodnoty
+ * jsou z Robova připojení v ms). Zelený server je použitelný, ale bezdůvodně
+ * se z Evropy nikam jinam přepínat nemá — proto upozornění; žlutý a červený
+ * už zápas kazí, a to je chyba.
+ */
+export const KVALITA_SERVERU: Record<string, { ping: number; stav: "zelena" | "zluta" | "cervena" }> = {
+  westeurope: { ping: 32, stav: "zelena" },
+  ukwest: { ping: 43, stav: "zelena" },
+  eastus: { ping: 118, stav: "zelena" },
+  southcentralus: { ping: 137, stav: "zelena" },
+  centralindia: { ping: 145, stav: "zelena" },
+  westus3: { ping: 156, stav: "zelena" },
+  southeastasia: { ping: 177, stav: "zelena" },
+  brazilsouth: { ping: 216, stav: "zluta" },
+  chilecentral: { ping: 225, stav: "zluta" },
+  koreacentral: { ping: 240, stav: "zluta" },
+  australiasoutheast: { ping: 313, stav: "cervena" },
+};
+
+/** Data Mod: hra zatím nabízí jedinou možnost. */
+export const DATA_MODY: readonly string[] = ["Definitive Set"];
+
+export const PRIMERI: Record<number, string> = {
+  0: "[None]",
+  ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [(i + 1) * 5, `${(i + 1) * 5} Minutes`])),
+  90: "90 Minutes",
+};
 export const POCATECNI_VEKY: Record<number, string> = { 0: "Standard", 2: "Dark Age", 3: "Feudal Age", 4: "Castle Age", 5: "Imperial Age", 6: "Post-Imperial Age" };
 export const KONECNE_VEKY: Record<number, string> = { 0: "Standard", 2: "Dark Age", 3: "Feudal Age", 4: "Castle Age", 5: "Imperial Age" };
 
@@ -164,7 +326,14 @@ export function velikostProHrace(pocet: number): number {
 }
 
 export function doplnNastaveni(cast: Partial<NastaveniLobby> | null | undefined): NastaveniLobby {
-  return { ...VYCHOZI_NASTAVENI, ...(cast ?? {}) };
+  const n = { ...VYCHOZI_NASTAVENI, ...(cast ?? {}) };
+  // Diváci bývali tříbodoví („je to jedno“) a nastavení z té doby v sobě mají
+  // null; doplnění vyplňuje jen chybějící klíče, ne prázdné hodnoty, takže by
+  // se stará akce tvářila dál po starém. Zapnuté diváky dneska vyžaduje večer
+  // sám, tak se to tady dorovná. Skryté civilizace „je to jedno“ mít smí —
+  // uložené null je platná volba, ne pozůstatek.
+  if (n.povolitDivaky === null) n.povolitDivaky = true;
+  return n;
 }
 
 /** Jeden hráč tak, jak sedí v lobby: barva a tým podle metadat slotu. */
@@ -177,6 +346,30 @@ export interface SlotLobby {
   /** Herní id civilizace; null = náhodná nebo nečitelná. */
   civ: number | null;
   pripraven: boolean;
+}
+
+/**
+ * Počítačový protivník v lobby. Hra u AI slotů žádné id neposílá, takže se
+ * mezi sebou nedají rozlišit — pozná se jen barva, tým a civilizace.
+ */
+export type AiSlot = Omit<SlotLobby, "steamId">;
+
+/**
+ * Nastavení z okna zakládání lobby („pre-lobby“). Hra ho neposílá v
+ * `options` jako herní panel, ale přímo v inzerátu vedle jména a hesla.
+ * Co inzerát nenese, je null.
+ */
+export interface PreLobbyZeHry {
+  /** `matchtype_id` — Lobby Type; 0 je Unranked. */
+  lobbyTyp: number | null;
+  /** `visible` — Visibility; 1 je Public. */
+  viditelnost: number | null;
+  /** `maxplayers` — kolik slotů lobby má. */
+  maxHracu: number | null;
+  /** `observerdelay` — zpoždění diváků **v sekundách** (3 minuty = 180). */
+  zpozdeniDivakuSekund: number | null;
+  /** `relayserver_region`; „Default“ se sem propíše jako skutečný region. */
+  server: string | null;
 }
 
 /** Nastavení hry, jak ho seznam lobby vydává; co nešlo přečíst, je null (nebo chybí). */
@@ -202,6 +395,8 @@ export interface NastaveniZeHry {
   lockSpeed?: boolean | null;
   turbo?: boolean | null;
   fullTechTree?: boolean | null;
+  /** Hide Civilizations z options[85]. */
+  skrytCivilizace?: boolean | null;
   empireWars?: boolean | null;
   suddenDeath?: boolean | null;
   regicide?: boolean | null;
@@ -216,6 +411,10 @@ export interface PoznatekLobby {
   maHeslo: boolean;
   povolujeDivaky: boolean;
   sloty: SlotLobby[];
+  /** Počítačoví protivníci; chybí ve starších snímcích a v testech. */
+  aiSloty?: AiSlot[];
+  /** Nastavení z okna zakládání; chybí ve starších snímcích a v testech. */
+  preLobby?: PreLobbyZeHry;
   nastaveni: NastaveniZeHry | null;
 }
 
@@ -230,8 +429,8 @@ export interface Kontrola {
   klic: string;
   stav: StavKontroly;
   text: string;
-  /** Hlavní sekce (hráči, diváci, mapa…) nebo „Další nastavení“. */
-  sekce: "hlavni" | "dalsi";
+  /** Hlavní sekce (hráči, diváci, mapa…), „Další nastavení“, nebo pre-lobby. */
+  sekce: "hlavni" | "dalsi" | "prelobby";
 }
 
 export interface KontrolaLobbyVysledek {
@@ -284,18 +483,41 @@ export function zkontrolujLobby(
   const vLobby = new Map(lobby.sloty.map((s) => [s.steamId, s]));
   const zapasu = new Set(ucastnici.map((u) => u.steamId));
 
-  hlavni("divaci", lobby.povolujeDivaky, lobby.povolujeDivaky ? "Diváci povoleni" : "Diváci nejsou povoleni — zaškrtni Allow Spectators");
-  // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
-  hlavni("heslo", lobby.maHeslo, lobby.maHeslo ? "Heslo nastavené" : "Lobby nemá heslo — kdokoliv z lobby prohlížeče se může připojit", true);
 
-  const chybi = ucastnici.filter((u) => !vLobby.has(u.steamId));
+  // Lidi porovnává Steam ID, AI barva: počítač žádné id nemá, takže se dvě
+  // AI od sebe v datech nepoznají. Napřed se spárují ty, které barvu mají
+  // podle sestavy, zbylé se doplní v pořadí — aby se u nich dala vypsat
+  // aspoň hláška „má náhodnou barvu, má mít žlutá“ jako u člověka.
+  const lide = ucastnici.filter((u) => !jeAi(u.steamId));
+  const aiVSestave = ucastnici.filter((u) => jeAi(u.steamId));
+  const aiVLobby = lobby.aiSloty ?? [];
+  const parAi = new Map<string, AiSlot>();
+  const volneAi = [...aiVLobby];
+  for (const u of aiVSestave) {
+    const i = volneAi.findIndex((s) => s.barva === u.barva);
+    if (i !== -1) parAi.set(u.steamId, volneAi.splice(i, 1)[0]!);
+  }
+  for (const u of aiVSestave) {
+    if (!parAi.has(u.steamId) && volneAi.length > 0) parAi.set(u.steamId, volneAi.shift()!);
+  }
+
+  const chybi = lide.filter((u) => !vLobby.has(u.steamId));
+  const chybiAi = aiVSestave.length - parAi.size;
   const navic = lobby.sloty.filter((s) => !zapasu.has(s.steamId));
+  const navicAi = volneAi.length;
+  const vsePasuje = chybi.length === 0 && navic.length === 0 && chybiAi === 0 && navicAi === 0;
+  const kolikAi = aiVSestave.length > 0 ? ` (${aiVSestave.length} AI)` : "";
   hlavni(
     "hraci",
-    chybi.length === 0 && navic.length === 0,
-    chybi.length === 0 && navic.length === 0
-      ? `Hráči: všech ${ucastnici.length} uvnitř`
-      : [chybi.length > 0 ? `chybí ${chybi.map(jmeno).join(", ")}` : "", navic.length > 0 ? `navíc ${navic.length} cizí` : ""]
+    vsePasuje,
+    vsePasuje
+      ? `Hráči: ${aiVSestave.length > 0 ? "všichni" : "všech"} ${ucastnici.length} uvnitř${kolikAi}`
+      : [
+          chybi.length > 0 ? `chybí ${chybi.map(jmeno).join(", ")}` : "",
+          chybiAi > 0 ? `chybí ${chybiAi === 1 ? "AI" : `${chybiAi} AI`}` : "",
+          navic.length > 0 ? `navíc ${navic.length} cizí` : "",
+          navicAi > 0 ? `navíc ${navicAi} AI` : "",
+        ]
           .filter(Boolean)
           .join("; ")
           .replace(/^./, (c) => c.toUpperCase()),
@@ -306,10 +528,11 @@ export function zkontrolujLobby(
   // hraje každý sám za sebe (1v1, FFA), je jedno, co si nastaví — „–“, „?“
   // i číslo — jen dva soupeři nesmí mít stejné číslo, to by je hra spojila.
   const tymova = ucastnici.some((u) => u.tym !== 0 && ucastnici.filter((x) => x.tym === u.tym).length > 1);
+  const jedenNaJednoho = ucastnici.length === 2 && !tymova;
   const cisloTymu = (t: SlotLobby["tym"]) => (typeof t === "number" && t >= 1 ? t : null);
 
   for (const u of ucastnici) {
-    const s = vLobby.get(u.steamId);
+    const s = jeAi(u.steamId) ? parAi.get(u.steamId) : vLobby.get(u.steamId);
     if (!s) continue;
     const barvaOk = s.barva === u.barva;
     hlavni(
@@ -317,7 +540,11 @@ export function zkontrolujLobby(
       barvaOk,
       barvaOk
         ? `${jmeno(u)}: ${BARVA_NAZEV[u.barva]}`
-        : `${jmeno(u)} má ${s.barva === null ? "náhodnou barvu" : BARVA_NAZEV[s.barva]}, má mít ${BARVA_NAZEV[u.barva]}`,
+        : // Obě barvy jsou ve větě předmět, takže čtvrtý pád: „má červenou, má mít modrou“.
+          `${jmeno(u)} má ${s.barva === null ? "náhodnou barvu" : BARVA_KOHO_CO[s.barva]}, má mít ${BARVA_KOHO_CO[u.barva]}`,
+      // V 1v1 je barva kosmetika: nejsou týmy a dva hráči se na mapě
+      // nespletou. Žlutá to připomene, ale zápas kvůli ní nestojí.
+      jedenNaJednoho,
     );
     if (u.civ !== undefined && u.civ !== null) {
       const civOk = s.civ === u.civ;
@@ -330,9 +557,10 @@ export function zkontrolujLobby(
       );
     }
 
-    const ostatni = ucastnici.filter((x) => x.steamId !== u.steamId && vLobby.has(x.steamId));
+    const vLobbySlot = (steamId: string) => (jeAi(steamId) ? parAi.get(steamId) : vLobby.get(steamId));
+    const ostatni = ucastnici.filter((x) => x.steamId !== u.steamId && vLobbySlot(x.steamId) !== undefined);
     if (!tymova) {
-      const stejny = ostatni.find((x) => cisloTymu(vLobby.get(x.steamId)!.tym) !== null && vLobby.get(x.steamId)!.tym === s.tym);
+      const stejny = ostatni.find((x) => cisloTymu(vLobbySlot(x.steamId)!.tym) !== null && vLobbySlot(x.steamId)!.tym === s.tym);
       hlavni(
         `tym:${u.steamId}`,
         !stejny,
@@ -341,11 +569,11 @@ export function zkontrolujLobby(
     } else {
       const moje = cisloTymu(s.tym);
       const spoluhrac = ostatni.find((x) => x.tym === u.tym);
-      const souperStejny = ostatni.find((x) => x.tym !== u.tym && moje !== null && cisloTymu(vLobby.get(x.steamId)!.tym) === moje);
-      const spoluhracJiny = ostatni.find((x) => x.tym === u.tym && cisloTymu(vLobby.get(x.steamId)!.tym) !== moje);
+      const souperStejny = ostatni.find((x) => x.tym !== u.tym && moje !== null && cisloTymu(vLobbySlot(x.steamId)!.tym) === moje);
+      const spoluhracJiny = ostatni.find((x) => x.tym === u.tym && cisloTymu(vLobbySlot(x.steamId)!.tym) !== moje);
       let text: string | null = null;
       if (moje === null) text = `${jmeno(u)} má ${popisTymu(s.tym)}, v týmové hře musí mít číslo týmu${spoluhrac ? ` (stejné jako ${jmeno(spoluhrac)})` : ""}`;
-      else if (spoluhracJiny) text = `${jmeno(u)} má tým ${moje}, ${jmeno(spoluhracJiny)} ze stejného týmu má ${popisTymu(vLobby.get(spoluhracJiny.steamId)!.tym)}`;
+      else if (spoluhracJiny) text = `${jmeno(u)} má tým ${moje}, ${jmeno(spoluhracJiny)} ze stejného týmu má ${popisTymu(vLobbySlot(spoluhracJiny.steamId)!.tym)}`;
       else if (souperStejny) text = `${jmeno(u)} a soupeř ${jmeno(souperStejny)} mají oba tým ${moje}`;
       hlavni(`tym:${u.steamId}`, text === null, text ?? `${jmeno(u)}: tým ${moje}`);
     }
@@ -394,6 +622,89 @@ export function zkontrolujLobby(
     const zap = (v: boolean | null | undefined) => (v === null || v === undefined ? "?" : v ? "zapnuto" : "vypnuto");
     const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : "spatne";
     k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${zap(ve)}, má být ${zap(ma)}` : `${popis}: ${zap(ve)}`, sekce: "dalsi" });
+  }
+
+  // Pre-lobby: okno „Create Lobby“ ve hře. Heslo a diváci sem patří taky —
+  // nastavují se při zakládání lobby, ne v herním panelu, a po založení se
+  // s nimi už nedá hnout. Co hra o lobby neposílá (Co-Op Campaign, Data Mod),
+  // se nekontroluje vůbec.
+  const pre = lobby.preLobby;
+  const preRadek = (
+    klic: string,
+    popis: string,
+    ve: string | null,
+    ma: string | null,
+    varovani: boolean | (() => boolean) = false,
+    /** Věta navíc, když hodnota nesedí — vysvětlí, co s tím. */
+    poznamka?: string,
+  ): void => {
+    const jenVarovani = typeof varovani === "function" ? varovani() : varovani;
+    const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : jenVarovani ? "varovani" : "spatne";
+    const videt = ve ?? "?";
+    const konec = poznamka === undefined ? "" : ` (${poznamka})`;
+    k.push({ klic, stav, text: stav === "ok" || stav === "jedno" ? `${popis}: ${videt}` : `${popis}: ${videt}, má být ${ma}${konec}`, sekce: "prelobby" });
+  };
+  const jmenem = (tabulka: Record<number, string>) => (v: number | null | undefined) =>
+    v === null || v === undefined ? null : (tabulka[v] ?? String(v));
+  const zap = (v: boolean | null | undefined) => (v === null || v === undefined ? null : v ? "zapnuto" : "vypnuto");
+
+  // Starší snímky (a testy) pre-lobby data nenesou; co není, se nekontroluje.
+  const zHry = <T,>(hodnota: T | null | undefined): T | null => (pre === undefined ? null : (hodnota ?? null));
+  preRadek("lobbyTyp", "Lobby Type", jmenem(LOBBY_TYPY)(pre?.lobbyTyp), zHry(jmenem(LOBBY_TYPY)(ocekavane.lobbyTyp)));
+  preRadek("viditelnost", "Visibility", jmenem(VIDITELNOST)(pre?.viditelnost === 1 ? 0 : pre?.viditelnost === 0 ? 1 : null), zHry(jmenem(VIDITELNOST)(ocekavane.viditelnost)));
+  // Hra neposílá, co bylo v okně Create Lobby navolené za počet hráčů — jen
+  // sloty. „Players“ v lobby je tedy kolik slotů není zavřených, a rozdíl
+  // proti zápasu jsou skoro vždycky prázdné otevřené sloty, do kterých může
+  // vlézt kdokoliv. Řádek proto rovnou říká, kolik jich je a co s nimi.
+  const obsazenych = lobby.sloty.length + (lobby.aiSloty?.length ?? 0);
+  const prazdnych = pre?.maxHracu === null || pre?.maxHracu === undefined ? 0 : pre.maxHracu - obsazenych;
+  preRadek(
+    "maxHracu",
+    "Players",
+    pre?.maxHracu === null || pre?.maxHracu === undefined ? null : String(pre.maxHracu),
+    zHry(ocekavane.maxHracu === null ? null : String(ocekavane.maxHracu)),
+    // Kolik slotů lobby má, na hru nemá vliv — hráči se do ní stejně vejdou.
+    true,
+    prazdnych > 0 ? `${prazdnych} ${prazdnych === 1 ? "slot je prázdný a otevřený" : prazdnych < 5 ? "sloty jsou prázdné a otevřené" : "slotů je prázdných a otevřených"} — zavři je ve hře` : undefined,
+  );
+  // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
+  k.push({
+    klic: "heslo",
+    stav: lobby.maHeslo ? "ok" : "varovani",
+    text: lobby.maHeslo ? "Set Password: nastavené" : "Set Password: prázdné — kdokoliv z lobby prohlížeče se může připojit",
+    sekce: "prelobby",
+  });
+  preRadek("povolitDivaky", "Allow Spectators", zap(lobby.povolujeDivaky), zap(ocekavane.povolitDivaky ?? true));
+  preRadek("skrytCivilizace", "Hide Civilizations", zap(lobby.nastaveni?.skrytCivilizace), zap(ocekavane.skrytCivilizace));
+  // Zpoždění hra posílá v sekundách, nabídka je v minutách. Vysílání kazí,
+  // ale hře nevadí — proto žlutá, ne červená.
+  const zeHryMinut = pre?.zpozdeniDivakuSekund === null || pre?.zpozdeniDivakuSekund === undefined ? null : pre.zpozdeniDivakuSekund / 60;
+  // Krátké zpoždění vysílání jen otravuje, od čtyř minut už komentář utíká
+  // hře natolik, že to je chyba.
+  preRadek(
+    "zpozdeniDivaku",
+    "Spectator Delay",
+    jmenem(ZPOZDENI_DIVAKU)(zeHryMinut),
+    zHry(jmenem(ZPOZDENI_DIVAKU)(ocekavane.zpozdeniDivaku)),
+    () => zeHryMinut !== null && zeHryMinut <= 3,
+  );
+  // Server: „Default“ nechá výběr na hře a ta sáhne po nejbližším — nic
+  // lepšího se udělat nedá, takže je to v pořádku. Ruční volba se posuzuje
+  // podle kvality spojení: zelený server je zbytečný, ale hratelný, žlutý
+  // a červený už zápas kazí. A když lobby vznikla jinde, než bylo nastavené,
+  // je to chyba bez ohledu na to, jak je ten server rychlý.
+  const serverZeHry = pre?.server ?? null;
+  if (pre === undefined) {
+    k.push({ klic: "server", stav: "jedno", text: "Server: ?", sekce: "prelobby" });
+  } else if (ocekavane.server === "Default" || ocekavane.server === null) {
+    k.push({ klic: "server", stav: "ok", text: `Server: ${serverZeHry ?? "?"} (Default)`, sekce: "prelobby" });
+  } else if (serverZeHry !== ocekavane.server) {
+    k.push({ klic: "server", stav: "spatne", text: `Server: ${serverZeHry ?? "?"}, má být ${ocekavane.server}`, sekce: "prelobby" });
+  } else {
+    const kvalita = KVALITA_SERVERU[ocekavane.server];
+    const stav: StavKontroly = kvalita === undefined ? "ok" : kvalita.stav === "zelena" ? "varovani" : "spatne";
+    const dovetek = kvalita === undefined ? "" : ` (${kvalita.ping} ms${kvalita.stav === "zelena" ? "" : ", pomalé spojení"})`;
+    k.push({ klic: "server", stav, text: `Server: ${ocekavane.server}${dovetek}`, sekce: "prelobby" });
   }
   return k;
 }

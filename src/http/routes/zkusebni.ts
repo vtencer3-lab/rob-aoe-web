@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { config } from "../../config.js";
-import { getAktivniAkce, listSignups, pretocCas, signUp, withdraw } from "../../db/events.js";
+import { getAktivniAkce, listSignups, pretocCas, signUp, smazZkusebniHrace } from "../../db/events.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
-import { jeZkusebni, ZKUSEBNI_HRACI, zkusebniId } from "../../matches/zkusebniHraci.js";
+import { ZKUSEBNI_HRACI, zkusebniId } from "../../matches/zkusebniHraci.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import { AKTIVITA_MINUT } from "../../shared/aktivita.js";
 import { VERZE } from "../../shared/verze.js";
@@ -77,15 +77,17 @@ export function registerZkusebniRoutes(app: FastifyInstance): void {
     return { minut, dotcenych };
   });
 
-  // Odhlásí z akce všechny zkušební hráče. Řádky v player zůstávají — jsou
-  // neškodné a příště se jen znovu přihlásí.
+  // Smaže zkušební hráče z databáze úplně — i se zápasy, ve kterých seděli.
+  // Podrobnosti a proč to není jen odhlášení: db/events.smazZkusebniHrace.
   app.delete("/api/akce/:id/zkusebni-hraci", async (request) => {
     zkontroluj();
     await requireAdmin(request);
     const akceId = requireId(request);
-    const zkusebni = (await listSignups(akceId)).filter((h) => jeZkusebni(h.steamId));
-    for (const h of zkusebni) await withdraw(akceId, h.steamId);
-    if (zkusebni.length > 0) await broadcastAkce();
-    return { odebrano: zkusebni.length };
+    const odebrano = await smazZkusebniHrace(akceId);
+    // Rozeslat i po prázdném úklidu nemá smysl, ale zápas mohl padnout
+    // i bez přihlášeného zkušebního hráče (odhlásil se dřív), takže se
+    // stav rozesílá pokaždé, když se něco smazalo.
+    await broadcastAkce();
+    return { odebrano };
   });
 }
