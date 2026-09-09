@@ -117,6 +117,11 @@ const PRESUN_MS = 340;
  * nebo objeví (další zápas, panel), protože uložená poloha z minula pak už
  * neplatí. V obou případech řádek odlétal daleko mimo seznam.
  *
+ * Přejíždí se jen přeskládání, ne přibytí nebo úbytek hráče. Když někdo do
+ * seznamu přijde, posunou se řádky pod ním z docela jiného důvodu než že by
+ * si vyměnily místa — a přejezd z toho udělá zmatek, ve kterém celý seznam
+ * poskočí a zase se vrátí. V takovém kole se polohy jen zapíšou.
+ *
  * `poradi` je otisk pořadí; efekt se pouští jen když se opravdu změnilo.
  */
 function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi: string) {
@@ -131,7 +136,10 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
     const vrchTabulky = ramecek.top;
     const vyskaTabulky = ramecek.height;
     const nynejsi = new Map<string, number>();
-    for (const radek of prvek.querySelectorAll<HTMLTableRowElement>("tbody > tr[data-hrac]")) {
+    const radky = [...prvek.querySelectorAll<HTMLTableRowElement>("tbody > tr[data-hrac]")];
+    const stejnaSestava =
+      radky.length === drive.current.size && radky.every((r) => drive.current.has(r.dataset["hrac"] ?? ""));
+    for (const radek of radky) {
       const kdo = radek.dataset["hrac"];
       if (!kdo) continue;
       const ted = radek.getBoundingClientRect().top - vrchTabulky;
@@ -139,7 +147,7 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
       const predtim = drive.current.get(kdo);
       // Nový řádek nemá odkud přijet; nulový posun není co animovat. V testovacím
       // DOM jsou všechny souřadnice nulové, takže se animace nepustí vůbec.
-      if (bezPohybu || predtim === undefined || predtim === ted) continue;
+      if (bezPohybu || !stejnaSestava || predtim === undefined || predtim === ted) continue;
       // Zábradlí: dál než přes celou tabulku se řádek posunout nemohl. Když
       // takový posun vyjde, je uložená poloha z jiného rozvržení a přejezd by
       // řádek poslal mimo seznam — v tom případě se prostě přeskládá.
