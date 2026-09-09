@@ -90,7 +90,7 @@ describe("zkontrolujLobby", () => {
   it("špatná barva AI se pojmenuje jako u člověka", () => {
     const sAi = [...sestava, u("ai:1", 2, 3, "AI")];
     const k = zkontrolujLobby(sAi, ocekavane, lobby({ aiSloty: [{ barva: null, tym: 3, civ: null, pripraven: true }] }));
-    expect(k.find((x) => x.klic === "barva:ai:1")!.text).toBe("AI má náhodnou barvu, má mít zelená");
+    expect(k.find((x) => x.klic === "barva:ai:1")!.text).toBe("AI má náhodnou barvu, má mít zelenou");
   });
 
   it("bez AI zůstává hlášení o hráčích beze změny", () => {
@@ -100,8 +100,8 @@ describe("zkontrolujLobby", () => {
 
   it("špatná barva říká, co má být; v 1v1 tým nevadí, dokud není stejný jako soupeřův", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ steamId: HOST, barva: null, tym: "?", civ: null, pripraven: true }, { steamId: JA, barva: 4, tym: 2, civ: null, pripraven: true }] }));
-    expect(k.find((x) => x.klic === `barva:${HOST}`)!.text).toBe("Trokner má náhodnou barvu, má mít modrá");
-    expect(k.find((x) => x.klic === `barva:${JA}`)!.text).toBe("Jouki má žlutá, má mít červená");
+    expect(k.find((x) => x.klic === `barva:${HOST}`)!.text).toBe("Trokner má náhodnou barvu, má mít modrou");
+    expect(k.find((x) => x.klic === `barva:${JA}`)!.text).toBe("Jouki má žlutou, má mít červenou");
     expect(k.find((x) => x.klic === `tym:${HOST}`)).toMatchObject({ stav: "ok", text: "Trokner: náhodný" });
     expect(k.find((x) => x.klic === `tym:${JA}`)).toMatchObject({ stav: "ok", text: "Jouki: tým 2" });
   });

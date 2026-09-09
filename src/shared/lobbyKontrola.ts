@@ -1,7 +1,7 @@
 import { jeAi } from "./aiHraci.js";
 import { nazevCivilizace } from "./civilizace.js";
 import { nazevMapy } from "./mapy.js";
-import { BARVA_NAZEV, type Barva, type Tym } from "./types.js";
+import { BARVA_KOHO_CO, BARVA_NAZEV, type Barva, type Tym } from "./types.js";
 
 export { MAPY, nazevMapy } from "./mapy.js";
 
@@ -540,7 +540,8 @@ export function zkontrolujLobby(
       barvaOk,
       barvaOk
         ? `${jmeno(u)}: ${BARVA_NAZEV[u.barva]}`
-        : `${jmeno(u)} má ${s.barva === null ? "náhodnou barvu" : BARVA_NAZEV[s.barva]}, má mít ${BARVA_NAZEV[u.barva]}`,
+        : // Obě barvy jsou ve větě předmět, takže čtvrtý pád: „má červenou, má mít modrou“.
+          `${jmeno(u)} má ${s.barva === null ? "náhodnou barvu" : BARVA_KOHO_CO[s.barva]}, má mít ${BARVA_KOHO_CO[u.barva]}`,
       // V 1v1 je barva kosmetika: nejsou týmy a dva hráči se na mapě
       // nespletou. Žlutá to připomene, ale zápas kvůli ní nestojí.
       jedenNaJednoho,

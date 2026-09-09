@@ -10,9 +10,24 @@ export const BARVA_NAZEV: Record<Barva, string> = {
   3: "zelená",
   4: "žlutá",
   5: "tyrkysová",
-  6: "fialová",
+  6: "růžová",
   7: "šedá",
   8: "oranžová",
+};
+
+/**
+ * Táž barva ve čtvrtém pádě: „má mít modrou“, ne „má mít modrá“. Skloňovat
+ * strojově nemá cenu — barev je osm a všechny se vejdou sem.
+ */
+export const BARVA_KOHO_CO: Record<Barva, string> = {
+  1: "modrou",
+  2: "červenou",
+  3: "zelenou",
+  4: "žlutou",
+  5: "tyrkysovou",
+  6: "růžovou",
+  7: "šedou",
+  8: "oranžovou",
 };
 
 /** Tým jako ve hře: 0 je „–“ (bez týmu, hráč sám za sebe), 1 až 4 týmy. */

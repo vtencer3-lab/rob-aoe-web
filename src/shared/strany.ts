@@ -73,7 +73,7 @@ const PRIDAVNE: Record<Barva, string> = {
   3: "zelený",
   4: "žlutý",
   5: "tyrkysový",
-  6: "fialový",
+  6: "růžový",
   7: "šedý",
   8: "oranžový",
 };
