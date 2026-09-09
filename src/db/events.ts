@@ -1,6 +1,6 @@
 import { AKTIVITA_MINUT, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT } from "../shared/aktivita.js";
 import type { SestavaVstup } from "../shared/types.js";
-import { getPool } from "./pool.js";
+import { getPool, withTransaction } from "./pool.js";
 import { mapuj, PLAYER_SLOUPEC_NAZVY, type DbRow, type PlayerRow } from "./players.js";
 
 /** Akce buď běží, nebo skončila. Mezistavy zmizely i s tlačítky, která je nastavovala. */
@@ -168,6 +168,43 @@ export async function withdraw(akceId: number, steamId: string): Promise<void> {
     "UPDATE prihlaska SET stav = 'odhlasen' WHERE akce_id = $1 AND steam_id = $2",
     [akceId, steamId],
   );
+}
+
+/**
+ * Vymaže zkušební hráče z databáze, jako by nikdy nebyli. Ne odhlášení jako
+ * u člověka, který odešel domů — smazání: zkušební hráč je nástroj na
+ * zkoušení večera nasucho a po sobě nemá nechat nic, co by se pak pletlo
+ * mezi skutečnými daty.
+ *
+ * Padají s ním i zápasy, ve kterých seděl — **včetně dohraných a včetně
+ * těch, kde vedle něj hráli skuteční lidé**. Zápas se zkušebním hráčem
+ * stejně není doklad o ničem, a nechat ho v historii by znamenalo věčný
+ * zmatek. Zápasů, kde žádný zkušební nebyl, se úklid nedotkne.
+ *
+ * Pořadí kroků je dané cizími klíči: `ucastnik.steam_id` ani `udalost.kdo`
+ * nemají ON DELETE, takže dokud existují, `DELETE FROM player` neprojde.
+ * Účastníky smaže kaskáda po zápase, události se mažou zvlášť; přihlášky
+ * a sezení padnou kaskádou s hráčem. Všechno v jedné transakci, ať po
+ * nezdaru nezůstane půl smazaného hráče.
+ *
+ * Vrací, kolik zkušebních hráčů bylo v akci přihlášených — to je číslo,
+ * které Rob na tlačítku čeká.
+ */
+export async function smazZkusebniHrace(akceId: number): Promise<number> {
+  return withTransaction(async (client) => {
+    const { rows } = await client.query<{ pocet: string }>(
+      "SELECT count(*) AS pocet FROM prihlaska WHERE akce_id = $1 AND stav = 'prihlasen' AND steam_id LIKE 'test:%'",
+      [akceId],
+    );
+    const prihlasenych = Number(rows[0]?.pocet ?? 0);
+
+    await client.query(
+      "DELETE FROM zapas WHERE id IN (SELECT zapas_id FROM ucastnik WHERE steam_id LIKE 'test:%')",
+    );
+    await client.query("DELETE FROM udalost WHERE kdo LIKE 'test:%'");
+    await client.query("DELETE FROM player WHERE steam_id LIKE 'test:%'");
+    return prihlasenych;
+  });
 }
 
 /**
