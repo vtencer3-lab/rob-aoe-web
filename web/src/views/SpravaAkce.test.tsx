@@ -96,6 +96,27 @@ it("Private ve Visibility se nenastaví a okno vynadá", async () => {
   expect(onNastaveniLobby).not.toHaveBeenCalled();
 });
 
+// Staré akce mají v nastavení uložené null z doby, kdy obě zaškrtávátka měla
+// i „je to jedno“. Okno je nesmí ukazovat neurčitá — diváci zapnutí, skryté
+// civilizace vypnuté.
+it("uložené „je to jedno“ u diváků a civilizací se srovná na pevné hodnoty", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  render(
+    <SpravaAkce
+      {...zaklad}
+      akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi", nastaveniLobby: { povolitDivaky: null, skrytCivilizace: null } }}
+    >
+      <p>SESTAVA</p>
+    </SpravaAkce>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /pre-lobby nastavení/i }));
+
+  expect(screen.getByLabelText(/allow spectators/i)).toBeChecked();
+  const civ = screen.getByLabelText(/hide civilizations/i) as HTMLInputElement;
+  expect(civ).not.toBeChecked();
+  expect(civ.indeterminate).toBe(false);
+});
+
 // Bez diváků nemá Robovo vysílání koho pustit dovnitř, takže odškrtnout
 // Allow Spectators nejde: zaškrtávátko zůstane zapnuté a ozve se totéž co
 // u Private — zatřesení, nadávka a stopa.

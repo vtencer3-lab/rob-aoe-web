@@ -1613,7 +1613,7 @@ a:hover { color: var(--zlato-svetle); }
   justify-content: center;
   position: relative;
   min-height: 4em;
-  margin: -5px -0.7em 0;
+  margin: 0 -0.7em 0;
   padding-bottom: 15px;
   background: url(./assets/ui/lobby-ozdoba.webp) 50% / 92% no-repeat;
 }

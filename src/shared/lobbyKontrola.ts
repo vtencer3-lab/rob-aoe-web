@@ -326,7 +326,14 @@ export function velikostProHrace(pocet: number): number {
 }
 
 export function doplnNastaveni(cast: Partial<NastaveniLobby> | null | undefined): NastaveniLobby {
-  return { ...VYCHOZI_NASTAVENI, ...(cast ?? {}) };
+  const n = { ...VYCHOZI_NASTAVENI, ...(cast ?? {}) };
+  // Diváci a skryté civilizace bývaly tříbodové („je to jedno“) a uložená
+  // nastavení z té doby v sobě mají null. Doplnění vyplňuje jen chybějící
+  // klíče, ne prázdné hodnoty, takže by se stará akce tvářila dál po starém.
+  // Obojí má dneska jedinou správnou polohu, tak se to sem dorovná.
+  if (n.povolitDivaky === null) n.povolitDivaky = true;
+  if (n.skrytCivilizace === null) n.skrytCivilizace = false;
+  return n;
 }
 
 /** Jeden hráč tak, jak sedí v lobby: barva a tým podle metadat slotu. */
