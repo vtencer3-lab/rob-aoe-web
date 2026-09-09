@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doplnNastaveni, lobbyVPoradku, REZIM_EMPIRE_WARS, REZIMY, velikostProHrace, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
+import { AI_OBTIZNOSTI, doplnNastaveni, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
 import { nazevMapy } from "./mapy.js";
 import type { Barva, Tym } from "./types.js";
 
@@ -61,13 +61,31 @@ describe("zkontrolujLobby", () => {
   // Seznam lobby ze hry vydává jen sloty se Steam účtem, takže AI v datech
   // není vidět vůbec. Kontrola ji proto nesmí počítat mezi chybějící — jen
   // řekne, kolik jich ověřit nejde.
-  it("AI v sestavě nehlásí jako chybějící, jen připíše kolik jich nejde ověřit", () => {
+  // Od 9. 9. 2026 hra AI ve slotech prozradí (status 2), takže se dá ověřit
+  // jako člověk: kolik jich sedí uvnitř, jakou mají barvu a tým. Rozlišit je
+  // mezi sebou nejde — nemají id — takže se párují podle barvy.
+  it("AI v lobby spáruje podle barvy a hlásí ji jako hráče", () => {
     const sAi = [...sestava, u("ai:1", 2, 3, "AI")];
-    const k = zkontrolujLobby(sAi, ocekavane, lobby());
-    const hraci = k.find((x) => x.klic === "hraci")!;
-    expect(hraci.stav).toBe("ok");
-    expect(hraci.text).toBe("Hráči: všichni 2 uvnitř (+ 1 AI neověřeno)");
-    expect(k.some((x) => x.klic === "barva:ai:1")).toBe(false);
+    const k = zkontrolujLobby(sAi, ocekavane, lobby({ aiSloty: [{ barva: 3, tym: 3, civ: null, pripraven: true }] }));
+    expect(k.find((x) => x.klic === "hraci")).toMatchObject({ stav: "ok", text: "Hráči: všichni 3 uvnitř (1 AI)" });
+    expect(k.find((x) => x.klic === "barva:ai:1")).toMatchObject({ stav: "ok", text: "AI: zelená" });
+  });
+
+  it("chybějící AI pozná stejně jako chybějícího člověka", () => {
+    const sAi = [...sestava, u("ai:1", 2, 3, "AI")];
+    const k = zkontrolujLobby(sAi, ocekavane, lobby({ aiSloty: [] }));
+    expect(k.find((x) => x.klic === "hraci")).toMatchObject({ stav: "spatne", text: "Chybí AI" });
+  });
+
+  it("AI navíc v lobby je taky chyba", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ aiSloty: [{ barva: 3, tym: 3, civ: null, pripraven: true }] }));
+    expect(k.find((x) => x.klic === "hraci")).toMatchObject({ stav: "spatne", text: "Navíc 1 AI" });
+  });
+
+  it("špatná barva AI se pojmenuje jako u člověka", () => {
+    const sAi = [...sestava, u("ai:1", 2, 3, "AI")];
+    const k = zkontrolujLobby(sAi, ocekavane, lobby({ aiSloty: [{ barva: null, tym: 3, civ: null, pripraven: true }] }));
+    expect(k.find((x) => x.klic === "barva:ai:1")!.text).toBe("AI má náhodnou barvu, má mít zelená");
   });
 
   it("bez AI zůstává hlášení o hráčích beze změny", () => {
@@ -220,5 +238,36 @@ describe("REZIMY", () => {
 
   it("Empire Wars je režim 13", () => {
     expect(REZIM_EMPIRE_WARS).toBe(13);
+  });
+});
+
+// Zbylé číselníky proti témuž zdroji (herní Control API, 9. 9. 2026).
+describe("číselníky nastavení", () => {
+  it("Extreme je u AI obtížnosti −1, ne 5", () => {
+    expect(AI_OBTIZNOSTI[-1]).toBe("Extreme");
+    expect(AI_OBTIZNOSTI[5]).toBeUndefined();
+    expect(AI_OBTIZNOSTI[0]).toBe("Hardest");
+    expect(AI_OBTIZNOSTI[4]).toBe("Easiest");
+  });
+
+  it("velikosti mapy znají i Ludicrous", () => {
+    expect(VELIKOSTI[240]).toBe("Giant");
+    expect(VELIKOSTI[480]).toBe("Ludicrous");
+  });
+
+  it("odkrytí mapy má jen tři stupně — No Fog hra nezná", () => {
+    expect(Object.keys(ODKRYTI_MAPY)).toEqual(["0", "1", "2"]);
+  });
+
+  it("vítězství zná i Time Limit, Score a Last Man Standing", () => {
+    expect(VITEZSTVI[1]).toBe("Conquest");
+    expect(VITEZSTVI[9]).toBe("Standard");
+    expect(VITEZSTVI[7]).toBe("Time Limit");
+    expect(VITEZSTVI[8]).toBe("Score");
+    expect(VITEZSTVI[11]).toBe("Last Man Standing");
+  });
+
+  it("suroviny znají i Random", () => {
+    expect(SUROVINY[6]).toBe("Random");
   });
 });

@@ -670,12 +670,13 @@ nebylo v repu na dvou místech a nemohlo se rozejít.
 (stejné `blikni()` jako po Ctrl+Z), pokud je na „–“. Bez AI v lobby na
 obtížnosti nezáleží, s AI ano; nastavit stupeň musí admin sám.
 
-**Čeká na ověření.** Seznam lobby ze hry vydává jen sloty se Steam účtem
-(`worldsEdgeLobby.parseSloty`), takže AI v datech není vidět a kontrola ji
-nemůže ověřit. Uživatel: „my jsme ani tu AI netestovali, takže je dost
-možný že to tam je, ale pro teď to můžeme vyřadit z kontroly, přidáme to
-později.“ Až se někdo podívá naživo, co hra o AI slotech posílá, dá se
-kontrola dodělat.
+**Kontrola AI (dodělané v 0.25.6).** Původně se AI z kontroly vyřadila
+s dovětkem „+ N AI neověřeno“, protože se zdálo, že ji hra v datech
+neukazuje. Živá lobby 9. 9. 2026 ukázala opak: AI má `profileInfo.id` −1
+jako prázdný slot, ale `status` 2 (člověk 0, prázdno 1) a vyplněná
+metadata. Kontrola ji proto ověřuje jako člověka — počet, barvu i tým.
+Rozlišit dvě AI mezi sebou nejde (nemají id), takže se páruje podle barvy:
+napřed AI, které barvu ze sestavy mají, zbylé v pořadí.
 
 ### 3.21 Zkušební hráči se mažou, ne odhlašují (od 0.25.1, 9. 9. 2026)
 
@@ -720,10 +721,23 @@ to zrcadlilo chování ve hře.“ Výběr režimu 13 (`REZIM_EMPIRE_WARS`) prot
 nastaví `empireWars: false` a zaškrtávátko zašedne — stejný vzor jako
 Team Positions bez Team Together. Odchod z režimu ho zase odemkne.
 
+**Ověřeno naživo (9. 9. 2026, vlastní lobby uživatele).** Empire Wars je
+opravdu režim 13 a `89` u něj zůstává `n`. Navíc se ukázalo, že režim
+přehodí i `Starting Age` na Feudal a `Victory` na Standard — panel to od
+0.25.6 dělá taky. Při odchodu z režimu se nic nevrací, stejně jako ve hře.
+
+**Opravené číselníky (0.25.6).** Proti témuž zdroji se prošla všechna
+nastavení a našly se další tři vady: **Extreme u AI obtížnosti je −1, ne
+5**; `Reveal Map` žádné „No Fog“ (3) nemá; `Victory` zná i Time Limit (7),
+Score (8) a Last Man Standing (11), `Resources` i Random (6) a velikosti
+map i Ludicrous (480).
+
 **Nedodělané.** Stejnou vazbu by nejspíš chtěly i režimy Regicide (1) a
 Sudden Death (11), které mají v Advanced Settings vlastní zaškrtávátko.
 Uživatel žádal jen Empire Wars a jestli se hra chová u ostatních dvou
-stejně, nebylo ověřeno.
+stejně, nebylo ověřeno. Neověřené zůstávají i hodnoty číselníků, které se
+v lobby zatím neobjevily (Extreme = −1, Ludicrous, Random suroviny,
+Time Limit / Score / Last Man Standing).
 
 ### 3.22 Preset lobby schovaný (od 0.25.2, 9. 9. 2026)
 
@@ -851,6 +865,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.25.3 | 11:47 | Úklid nepoužitého importu |
 | 0.25.4 | 11:58 | Tlačítko `+ AI` vycentrované vůči textu vedle |
 | 0.25.5 | 12:07 | Opravená čísla režimů (byla o jedna vedle) a Empire Wars zamyká svoje zaškrtávátko (§3.23) |
+| 0.25.6 | 12:35 | Kontrola ověřuje AI sloty (status 2), opravené číselníky (Extreme = −1 a další), Empire Wars nasadí i Feudal a Standard victory (§3.20, §3.23) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

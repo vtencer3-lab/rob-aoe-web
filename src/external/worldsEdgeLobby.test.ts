@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import inzeraty from "./fixtures/worldsedge-advertisements.json" with { type: "json" };
 import robova from "./fixtures/worldsedge-lobby-robdiesalot.json" with { type: "json" };
-import { fetchAdvertisements, parseAdvertisements } from "./worldsEdgeLobby.js";
+import { deflateSync } from "node:zlib";
+import { fetchAdvertisements, parseAdvertisements, parseSloty } from "./worldsEdgeLobby.js";
 
 describe("parseAdvertisements", () => {
   it("převede inzerát na číslo lobby, hosta a členy podle Steam ID", () => {
@@ -123,5 +124,45 @@ describe("fetchAdvertisements", () => {
   it("neúspěšná odpověď vyhodí chybu se stavovým kódem", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response("", { status: 503 }));
     await expect(fetchAdvertisements(fetchImpl as unknown as typeof fetch)).rejects.toThrow(/503/);
+  });
+});
+
+// Vzorek z živé lobby (9. 9. 2026): host, dvě AI a pět prázdných slotů.
+// AI má stejně jako prázdný slot profileInfo.id = -1, ale status 2 a
+// vyplněná metadata; prázdný slot má status 1 a metadata prázdná.
+const SLOTY_S_AI = [
+  { "profileInfo.id": 15260548, isReady: 1, status: 0, metaData: "IkJBRUFBQUF4QWdBQUFERTRBUUFBQURBS0FBQUFOREk1TkRrMk56STVOUk1BQUFCVFkyVnVZWEpwYjFCc1lYbGxja2x1WkdWNENnQUFBRFF5T1RRNU5qY3lPVFVFQUFBQVZHVmhiUUVBQUFBMiI=" },
+  { "profileInfo.id": -1, isReady: 0, status: 2, metaData: "IkJBRUFBQUF4QlFBQUFEWTFOVE0zQVFBQUFEQUtBQUFBTkRJNU5EazJOekk1TlJNQUFBQlRZMlZ1WVhKcGIxQnNZWGxsY2tsdVpHVjRDZ0FBQURReU9UUTVOamN5T1RVRUFBQUFWR1ZoYlFFQUFBQTIi" },
+  { "profileInfo.id": -1, isReady: 0, status: 2, metaData: "IkJBRUFBQUF4QlFBQUFEWTFOVE0zQVFBQUFEQUtBQUFBTkRJNU5EazJOekk1TlJNQUFBQlRZMlZ1WVhKcGIxQnNZWGxsY2tsdVpHVjRDZ0FBQURReU9UUTVOamN5T1RVRUFBQUFWR1ZoYlFFQUFBQTIi" },
+  { "profileInfo.id": -1, isReady: 0, status: 1, metaData: "IkFBPT0i" },
+];
+
+function zabalSloty(sloty: unknown[]): string {
+  return deflateSync(Buffer.from(`8,${JSON.stringify(sloty)}`)).toString("base64");
+}
+
+describe("parseSloty s AI", () => {
+  it("AI pozná podle stavu slotu a vrátí ji zvlášť od lidí", () => {
+    const steam = new Map([[15260548, "76561198014056480"]]);
+    const { lide, ai } = parseSloty(zabalSloty(SLOTY_S_AI), steam);
+
+    expect(lide.map((s) => s.steamId)).toEqual(["76561198014056480"]);
+    expect(ai).toHaveLength(2);
+  });
+
+  it("AI má čitelnou barvu a tým jako člověk", () => {
+    const sAi = [
+      { "profileInfo.id": -1, isReady: 0, status: 2, metaData: "IkJBRUFBQUF4QlFBQUFEWTFOVE0zQVFBQUFEQUtBQUFBTkRJNU5EazJOekk1TlJNQUFBQlRZMlZ1WVhKcGIxQnNZWGxsY2tsdVpHVjRDZ0FBQURReU9UUTVOamN5T1RVRUFBQUFWR1ZoYlFFQUFBQTIi" },
+    ];
+    const { ai } = parseSloty(zabalSloty(sAi), new Map());
+    // Ve vzorku měla AI náhodnou barvu (ScenarioPlayerIndex −1) a tým „?“.
+    expect(ai[0]).toMatchObject({ barva: null, tym: "?" });
+  });
+
+  it("prázdný slot není ani člověk, ani AI", () => {
+    const prazdne = [{ "profileInfo.id": -1, isReady: 0, status: 1, metaData: "IkFBPT0i" }];
+    const { lide, ai } = parseSloty(zabalSloty(prazdne), new Map());
+    expect(lide).toHaveLength(0);
+    expect(ai).toHaveLength(0);
   });
 });

@@ -100,16 +100,26 @@ export const VELIKOSTI: Record<number, string> = {
   200: "Normal (6)",
   220: "Large (8)",
   240: "Giant",
+  480: "Ludicrous",
 };
 
 export const RYCHLOSTI: Record<number, string> = { 1: "Slow", 2: "Normal", 3: "Fast" };
-export const VITEZSTVI: Record<number, string> = { 1: "Conquest", 9: "Standard" };
+export const VITEZSTVI: Record<number, string> = {
+  1: "Conquest",
+  7: "Time Limit",
+  8: "Score",
+  9: "Standard",
+  11: "Last Man Standing",
+};
 /**
- * Číselníky dalších nastavení. Naživo ověřené hodnoty (7. 9. 2026): sada
- * civilizací celá, režim 0/2/3, AI 3/1, suroviny 0/3, odkrytí 0/1/2, věky
- * 0/3/6 a 0/4. Zbytek je doplněný podle pořadí v herním jazykovém souboru a
- * podle historického číslování aoe2.net (stejný backend) — kdyby seděl
- * špatně, kontrola vypíše špatné jméno, ale porovnává pořád čísla.
+ * Číselníky dalších nastavení. Čísla jsou od 9. 9. 2026 z herního
+ * `Options*` (Control API hry), ne z aoe2.net — to sedělo u režimů o jedna
+ * vedle a u AI obtížnosti dávalo Extreme 5 místo −1.
+ *
+ * Naživo ověřené hodnoty: sada civilizací celá, režimy 0 a 13 (Empire Wars,
+ * 9. 9. 2026 z vlastní lobby), AI 3/1, suroviny 0/3, odkrytí 0/1/2, věky
+ * 0/3/6 a 0/4, vítězství 1 a 9. Zbytek zatím jen z Control API; kdyby
+ * číslo sedělo špatně, kontrola vypíše cizí jméno, ale porovnává pořád čísla.
  */
 export const SADY_CIVILIZACI: Record<number, string> = { 0: "All", 1: "Age of Empires II", 2: "Chronicles" };
 /**
@@ -144,9 +154,10 @@ export const REZIMY: Record<number, string> = {
  * zaškrtávátko `empireWars` (options[89]) je odškrtnuté a nepřístupné.
  */
 export const REZIM_EMPIRE_WARS = 13;
-export const AI_OBTIZNOSTI: Record<number, string> = { 4: "Easiest", 3: "Standard", 2: "Moderate", 1: "Hard", 0: "Hardest", 5: "Extreme" };
-export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite" };
-export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible", 3: "No Fog" };
+/** Pozor: Extreme je −1, ne 5 — čísla jdou od nejtěžšího k nejlehčímu. */
+export const AI_OBTIZNOSTI: Record<number, string> = { "-1": "Extreme", 0: "Hardest", 1: "Hard", 2: "Moderate", 3: "Standard", 4: "Easiest" };
+export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite", 6: "Random" };
+export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible" };
 export const POCATECNI_VEKY: Record<number, string> = { 0: "Standard", 2: "Dark Age", 3: "Feudal Age", 4: "Castle Age", 5: "Imperial Age", 6: "Post-Imperial Age" };
 export const KONECNE_VEKY: Record<number, string> = { 0: "Standard", 2: "Dark Age", 3: "Feudal Age", 4: "Castle Age", 5: "Imperial Age" };
 
@@ -201,6 +212,12 @@ export interface SlotLobby {
   pripraven: boolean;
 }
 
+/**
+ * Počítačový protivník v lobby. Hra u AI slotů žádné id neposílá, takže se
+ * mezi sebou nedají rozlišit — pozná se jen barva, tým a civilizace.
+ */
+export type AiSlot = Omit<SlotLobby, "steamId">;
+
 /** Nastavení hry, jak ho seznam lobby vydává; co nešlo přečíst, je null (nebo chybí). */
 export interface NastaveniZeHry {
   mapaId: number | null;
@@ -238,6 +255,8 @@ export interface PoznatekLobby {
   maHeslo: boolean;
   povolujeDivaky: boolean;
   sloty: SlotLobby[];
+  /** Počítačoví protivníci; chybí ve starších snímcích a v testech. */
+  aiSloty?: AiSlot[];
   nastaveni: NastaveniZeHry | null;
 }
 
@@ -310,25 +329,43 @@ export function zkontrolujLobby(
   // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
   hlavni("heslo", lobby.maHeslo, lobby.maHeslo ? "Heslo nastavené" : "Lobby nemá heslo — kdokoliv z lobby prohlížeče se může připojit", true);
 
-  // AI se v datech ze hry nepozná: seznam lobby vydává jen sloty se Steam
-  // účtem (worldsEdgeLobby.parseSloty), takže počítač do porovnání vůbec
-  // nevstupuje. Hlásit ho jako chybějícího by znamenalo trvale červený
-  // řádek u každého zápasu proti AI. Ověřit se AI zatím musí očima —
-  // až se podíváme, co hra o AI slotech opravdu posílá, dá se to dodělat.
+  // Lidi porovnává Steam ID, AI barva: počítač žádné id nemá, takže se dvě
+  // AI od sebe v datech nepoznají. Napřed se spárují ty, které barvu mají
+  // podle sestavy, zbylé se doplní v pořadí — aby se u nich dala vypsat
+  // aspoň hláška „má náhodnou barvu, má mít žlutá“ jako u člověka.
   const lide = ucastnici.filter((u) => !jeAi(u.steamId));
-  const pocetAi = ucastnici.length - lide.length;
+  const aiVSestave = ucastnici.filter((u) => jeAi(u.steamId));
+  const aiVLobby = lobby.aiSloty ?? [];
+  const parAi = new Map<string, AiSlot>();
+  const volneAi = [...aiVLobby];
+  for (const u of aiVSestave) {
+    const i = volneAi.findIndex((s) => s.barva === u.barva);
+    if (i !== -1) parAi.set(u.steamId, volneAi.splice(i, 1)[0]!);
+  }
+  for (const u of aiVSestave) {
+    if (!parAi.has(u.steamId) && volneAi.length > 0) parAi.set(u.steamId, volneAi.shift()!);
+  }
+
   const chybi = lide.filter((u) => !vLobby.has(u.steamId));
+  const chybiAi = aiVSestave.length - parAi.size;
   const navic = lobby.sloty.filter((s) => !zapasu.has(s.steamId));
-  const dovetekAi = pocetAi > 0 ? ` (+ ${pocetAi} AI neověřeno)` : "";
+  const navicAi = volneAi.length;
+  const vsePasuje = chybi.length === 0 && navic.length === 0 && chybiAi === 0 && navicAi === 0;
+  const kolikAi = aiVSestave.length > 0 ? ` (${aiVSestave.length} AI)` : "";
   hlavni(
     "hraci",
-    chybi.length === 0 && navic.length === 0,
-    chybi.length === 0 && navic.length === 0
-      ? `Hráči: ${pocetAi > 0 ? "všichni" : "všech"} ${lide.length} uvnitř${dovetekAi}`
-      : [chybi.length > 0 ? `chybí ${chybi.map(jmeno).join(", ")}` : "", navic.length > 0 ? `navíc ${navic.length} cizí` : ""]
+    vsePasuje,
+    vsePasuje
+      ? `Hráči: ${aiVSestave.length > 0 ? "všichni" : "všech"} ${ucastnici.length} uvnitř${kolikAi}`
+      : [
+          chybi.length > 0 ? `chybí ${chybi.map(jmeno).join(", ")}` : "",
+          chybiAi > 0 ? `chybí ${chybiAi === 1 ? "AI" : `${chybiAi} AI`}` : "",
+          navic.length > 0 ? `navíc ${navic.length} cizí` : "",
+          navicAi > 0 ? `navíc ${navicAi} AI` : "",
+        ]
           .filter(Boolean)
           .join("; ")
-          .replace(/^./, (c) => c.toUpperCase()) + dovetekAi,
+          .replace(/^./, (c) => c.toUpperCase()),
   );
 
   // Týmová hra = některý tým z webu má víc než jednoho hráče. Jen tam záleží
@@ -339,7 +376,7 @@ export function zkontrolujLobby(
   const cisloTymu = (t: SlotLobby["tym"]) => (typeof t === "number" && t >= 1 ? t : null);
 
   for (const u of ucastnici) {
-    const s = vLobby.get(u.steamId);
+    const s = jeAi(u.steamId) ? parAi.get(u.steamId) : vLobby.get(u.steamId);
     if (!s) continue;
     const barvaOk = s.barva === u.barva;
     hlavni(
@@ -360,9 +397,10 @@ export function zkontrolujLobby(
       );
     }
 
-    const ostatni = ucastnici.filter((x) => x.steamId !== u.steamId && vLobby.has(x.steamId));
+    const vLobbySlot = (steamId: string) => (jeAi(steamId) ? parAi.get(steamId) : vLobby.get(steamId));
+    const ostatni = ucastnici.filter((x) => x.steamId !== u.steamId && vLobbySlot(x.steamId) !== undefined);
     if (!tymova) {
-      const stejny = ostatni.find((x) => cisloTymu(vLobby.get(x.steamId)!.tym) !== null && vLobby.get(x.steamId)!.tym === s.tym);
+      const stejny = ostatni.find((x) => cisloTymu(vLobbySlot(x.steamId)!.tym) !== null && vLobbySlot(x.steamId)!.tym === s.tym);
       hlavni(
         `tym:${u.steamId}`,
         !stejny,
@@ -371,11 +409,11 @@ export function zkontrolujLobby(
     } else {
       const moje = cisloTymu(s.tym);
       const spoluhrac = ostatni.find((x) => x.tym === u.tym);
-      const souperStejny = ostatni.find((x) => x.tym !== u.tym && moje !== null && cisloTymu(vLobby.get(x.steamId)!.tym) === moje);
-      const spoluhracJiny = ostatni.find((x) => x.tym === u.tym && cisloTymu(vLobby.get(x.steamId)!.tym) !== moje);
+      const souperStejny = ostatni.find((x) => x.tym !== u.tym && moje !== null && cisloTymu(vLobbySlot(x.steamId)!.tym) === moje);
+      const spoluhracJiny = ostatni.find((x) => x.tym === u.tym && cisloTymu(vLobbySlot(x.steamId)!.tym) !== moje);
       let text: string | null = null;
       if (moje === null) text = `${jmeno(u)} má ${popisTymu(s.tym)}, v týmové hře musí mít číslo týmu${spoluhrac ? ` (stejné jako ${jmeno(spoluhrac)})` : ""}`;
-      else if (spoluhracJiny) text = `${jmeno(u)} má tým ${moje}, ${jmeno(spoluhracJiny)} ze stejného týmu má ${popisTymu(vLobby.get(spoluhracJiny.steamId)!.tym)}`;
+      else if (spoluhracJiny) text = `${jmeno(u)} má tým ${moje}, ${jmeno(spoluhracJiny)} ze stejného týmu má ${popisTymu(vLobbySlot(spoluhracJiny.steamId)!.tym)}`;
       else if (souperStejny) text = `${jmeno(u)} a soupeř ${jmeno(souperStejny)} mají oba tým ${moje}`;
       hlavni(`tym:${u.steamId}`, text === null, text ?? `${jmeno(u)}: tým ${moje}`);
     }

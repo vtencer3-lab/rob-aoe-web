@@ -136,6 +136,31 @@ it("Game Mode Empire Wars odškrtne a zamkne zaškrtávátko Empire Wars", async
   await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 13, empireWars: false })));
 });
 
+// Ověřeno naživo 9. 9. 2026 z vlastní lobby: přepnutí na Empire Wars
+// přehodilo i Starting Age na Feudal a Victory na Standard.
+it("Empire Wars nasadí i Feudal a Standard victory, jak to dělá hra", async () => {
+  const onZmena = vi.fn();
+  render(<NastaveniLobby zive={{ rezim: 0, pocatecniVek: 0, vitezstvi: 1 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "13" } });
+
+  expect(screen.getByLabelText(/starting age/i)).toHaveValue("3");
+  expect(screen.getByLabelText(/victory/i)).toHaveValue("9");
+  await waitFor(() =>
+    expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 13, pocatecniVek: 3, vitezstvi: 9, empireWars: false })),
+  );
+});
+
+it("odchod z Empire Wars nastavení nevrací — jen odemkne zaškrtávátko", () => {
+  const onZmena = vi.fn();
+  render(<NastaveniLobby zive={{ rezim: 13, pocatecniVek: 3, vitezstvi: 9 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "0" } });
+
+  expect(screen.getByLabelText(/empire wars mode/i)).toBeEnabled();
+  expect(screen.getByLabelText(/starting age/i)).toHaveValue("3");
+});
+
 it("odchod z Empire Wars zaškrtávátko zase odemkne", () => {
   render(<NastaveniLobby zive={{ rezim: 13 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
   expect(screen.getByLabelText(/empire wars mode/i)).toBeDisabled();

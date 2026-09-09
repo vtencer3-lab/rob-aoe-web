@@ -65,8 +65,15 @@ const ADVANCED_SETTINGS: ReadonlyArray<{ klic: KlicTrojstavu | "cheaty"; popis: 
   { klic: "recordGame", popis: "Record Game" },
 ];
 
-/** AI podle obtížnosti, ne podle čísla ve hře (to jde obráceně a Extreme má 5). */
-const PORADI_AI = [4, 3, 2, 1, 0, 5];
+/** AI podle obtížnosti, ne podle čísla ve hře (to jde obráceně a Extreme má −1). */
+const PORADI_AI = [4, 3, 2, 1, 0, -1];
+
+/**
+ * Co s nastavením udělá přepnutí na Empire Wars — ověřeno 9. 9. 2026 na
+ * živé lobby: `Starting Age` = Feudal, `Victory` = Standard a zaškrtávátko
+ * Empire Wars odškrtnuté (režim ho už obsahuje).
+ */
+const NASTAVENI_EMPIRE_WARS = { empireWars: false as boolean | null, pocatecniVek: 3, vitezstvi: 9 as 1 | 9 };
 
 function Vyber({ klic, popis, hodnota, tabulka, jedno, poradi, onZmena }: { klic: string; popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; poradi?: number[]; onZmena: (v: number | null) => void }) {
   const polozky = poradi ? poradi.map((id) => [String(id), tabulka[id]!] as const) : Object.entries(tabulka);
@@ -184,15 +191,17 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
             ))}
           </div>
         </div>
-        {/* Empire Wars je v tomhle režimu dané: hra zaškrtávátko v Advanced
-            Settings odškrtne a zamkne, takže se to zrcadlí i tady. */}
+        {/* Empire Wars si režim nastaví po svém — ověřeno naživo z lobby:
+            zaškrtávátko odškrtne a zamkne, Starting Age přehodí na Feudal a
+            Victory na Standard. Při odchodu z režimu se nic nevrací, stejně
+            jako ve hře: co je nastavené, zůstane. */}
         <Vyber
           klic="rezim"
           popis="Game Mode"
           hodnota={n.rezim}
           tabulka={REZIMY}
           jedno
-          onZmena={(v) => zmen(v === REZIM_EMPIRE_WARS ? { ...n, rezim: v, empireWars: false } : { ...n, rezim: v })}
+          onZmena={(v) => zmen(v === REZIM_EMPIRE_WARS ? { ...n, ...NASTAVENI_EMPIRE_WARS, rezim: v } : { ...n, rezim: v })}
         />
         <label className="radek" data-klic="mapaId">
           <span>Location:</span>
