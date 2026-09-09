@@ -198,7 +198,7 @@ web proto stahuje všechny stránky.
 | Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible (ověřeno; „No Fog“ jako 3 tu stálo do 9. 9. 2026, hra ho nezná) |
 | Starting Age | `0` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial, 6 Post-Imperial (ověřeno 0, 3, 6) |
 | Ending Age | `4` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial (ověřeno 0 a 4) |
-| Treaty Length | `57` | minuty |
+| Treaty Length | `57` | minuty, ale jen z herní nabídky: 0 „[None]“, pak po pěti až 60, a rovnou 90 (odečteno z herní nabídky 9. 9. 2026) |
 | Victory | `81` | 1 Conquest, 7 Time Limit, 8 Score, 9 Standard, 11 Last Man Standing (ověřeno 1 a 9) |
 | Lock Teams | `66` | y/n |
 | Team Together | `78` | y/n |

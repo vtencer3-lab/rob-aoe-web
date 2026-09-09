@@ -203,3 +203,25 @@ it("odchod z Empire Wars zaškrtávátko zase odemkne", () => {
   fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "0" } });
   expect(screen.getByLabelText(/empire wars mode/i)).toBeEnabled();
 });
+
+// Treaty Length není volné číslo: hra nabízí jen [None] a pak pětiminutové
+// kroky do hodiny, po nich rovnou 90 minut. Volné pole svádělo k hodnotě,
+// kterou ve hře nejde nastavit.
+it("Treaty Length je nabídka, ne volné číslo", () => {
+  render(<NastaveniLobby zive={{ primeri: 30 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  const pole = screen.getByLabelText(/treaty length/i) as HTMLSelectElement;
+  expect(pole.tagName).toBe("SELECT");
+  expect(pole).toHaveValue("30");
+
+  const volby = Array.from(pole.options).map((o) => o.text);
+  expect(volby).toEqual(["–", "[None]", "5 Minutes", "10 Minutes", "15 Minutes", "20 Minutes", "25 Minutes", "30 Minutes", "35 Minutes", "40 Minutes", "45 Minutes", "50 Minutes", "55 Minutes", "60 Minutes", "90 Minutes"]);
+});
+
+it("výběr příměří pošle minuty jako číslo", async () => {
+  const onZmena = vi.fn();
+  render(<NastaveniLobby zive={{ primeri: 0 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+
+  fireEvent.change(screen.getByLabelText(/treaty length/i), { target: { value: "90" } });
+
+  await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ primeri: 90 })));
+});

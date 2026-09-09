@@ -12,6 +12,7 @@ import {
   KONECNE_VEKY,
   ODKRYTI_MAPY,
   POCATECNI_VEKY,
+  PRIMERI,
   REZIMY,
   SADY_CIVILIZACI,
   SUROVINY,
@@ -57,9 +58,9 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   vyber("odkrytiMapy", ODKRYTI_MAPY);
   vyber("pocatecniVek", POCATECNI_VEKY);
   vyber("konecnyVek", KONECNE_VEKY);
-  const primeri = cislo(t["primeri"]);
-  if (t["primeri"] === null) v.primeri = null;
-  else if (primeri !== undefined && Number.isInteger(primeri) && primeri >= 0 && primeri <= 180) v.primeri = primeri;
+  // Příměří jen v hodnotách, které hra nabízí (PRIMERI) — od 9. 9. 2026 je
+  // to nabídka, ne volné číslo, a co panel neumí nabídnout, nemá ani projít.
+  vyber("primeri", PRIMERI);
   for (const { klic } of ZASKRTAVATKA) {
     if (typeof t[klic] === "boolean" || t[klic] === null) v[klic] = t[klic] as boolean | null;
   }

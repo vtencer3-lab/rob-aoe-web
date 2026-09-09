@@ -158,6 +158,16 @@ export const REZIM_EMPIRE_WARS = 13;
 export const AI_OBTIZNOSTI: Record<number, string> = { "-1": "Extreme", 0: "Hardest", 1: "Hard", 2: "Moderate", 3: "Standard", 4: "Easiest" };
 export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite", 6: "Random" };
 export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible" };
+/**
+ * Treaty Length: hra nabízí jen tyhle hodnoty — po pěti minutách do hodiny
+ * a pak rovnou 90 (odečteno z herní nabídky 9. 9. 2026). Volné číslo tu
+ * bylo do 9. 9. 2026 a svádělo nastavit minuty, které ve hře nejdou.
+ */
+export const PRIMERI: Record<number, string> = {
+  0: "[None]",
+  ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [(i + 1) * 5, `${(i + 1) * 5} Minutes`])),
+  90: "90 Minutes",
+};
 export const POCATECNI_VEKY: Record<number, string> = { 0: "Standard", 2: "Dark Age", 3: "Feudal Age", 4: "Castle Age", 5: "Imperial Age", 6: "Post-Imperial Age" };
 export const KONECNE_VEKY: Record<number, string> = { 0: "Standard", 2: "Dark Age", 3: "Feudal Age", 4: "Castle Age", 5: "Imperial Age" };
 
