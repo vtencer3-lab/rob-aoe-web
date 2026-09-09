@@ -1585,6 +1585,7 @@ a:hover { color: var(--zlato-svetle); }
 .okno-lobby {
   --lobby-text: #33240f;
   --lobby-deska: #b79579;
+  --lobby-zelena: #35e035;
   font-family: "Times Ten", Georgia, "Times New Roman", serif;
   font-weight: 900;
   /* Sazba má pevných 19 px jako v herním okně; šířka se od ní odvíjí, ale
@@ -1595,6 +1596,10 @@ a:hover { color: var(--zlato-svetle); }
   margin: 1rem auto 0;
   padding: 1.6em 3.2em 3em;
   color: var(--lobby-text);
+  /* Hra sází text o chlup tučněji, než jaký řez písma je k mání: stín o půl
+     pixelu vedle vlastní barvy text zesílí, aniž by se rozmazal. Dědí se do
+     všech popisků v okně; zelená pole si ho níž přebarvují na svou barvu. */
+  text-shadow: 0.5px 0 0 var(--lobby-text);
   background: url(./assets/ui/lobby-pergamen.webp) center / 100% 100% no-repeat;
   /* Předloha ze hry je sytější než holá textura; dorovnává se filtrem, ať se
      nemusí sahat do samotného assetu. */
@@ -1617,6 +1622,8 @@ a:hover { color: var(--zlato-svetle); }
   font-size: 26px;
   font-weight: 700;
   color: var(--lobby-text);
+  /* Nadpis unese o desetinu silnější stín než zbytek okna — je větší. */
+  text-shadow: 0.6px 0 0 var(--lobby-text);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -1679,7 +1686,8 @@ a:hover { color: var(--zlato-svetle); }
   font-size: 1em;
   font-weight: 700;
   line-height: 1.3;
-  color: #35e035;
+  color: var(--lobby-zelena);
+  text-shadow: 0.5px 0 0 var(--lobby-zelena);
   background: none;
   border: 6px solid transparent;
   border-image: url(./assets/ui/lobby-vstup.webp) 8 fill / 6px stretch;
@@ -1687,8 +1695,8 @@ a:hover { color: var(--zlato-svetle); }
 }
 .okno-lobby .okno-lobby-vstup strong,
 .okno-lobby button.okno-lobby-vstup,
-.okno-lobby button.okno-lobby-vstup strong { color: #35e035; font-weight: 900; }
-.okno-lobby button.okno-lobby-vstup .ikona-kopie { color: #35e035; opacity: 0.75; }
+.okno-lobby button.okno-lobby-vstup strong { color: var(--lobby-zelena); font-weight: 900; }
+.okno-lobby button.okno-lobby-vstup .ikona-kopie { color: var(--lobby-zelena); opacity: 0.75; }
 .okno-lobby-zaskrtavatko { display: inline-flex; align-items: center; gap: 0.5em; margin: 0.4em 0 0.4em 1em; font-size: 1em; font-weight: 900; }
 .okno-lobby-dvojice { display: flex; gap: 3.5em; }
 .okno-lobby-dvojice .okno-lobby-zaskrtavatko { margin-left: 0.8em; }
