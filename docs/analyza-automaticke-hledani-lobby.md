@@ -227,6 +227,13 @@ civilizace se z nich čtou stejně jako u člověka; klíč `1` je herní id
 civilizace, hodnota s nastaveným horním slovem (65537 = 0x10001) znamená
 náhodnou volbu. Vzájemně se AI rozlišit nedají — žádné id nemají.
 
+**Typ AI se nepropisuje.** Hra nabízí „AI“, „AI (CD version)“ a „AI (HD
+version)“; v lobby vypadají všechny tři úplně stejně (`status` 2, tatáž
+`metaData`), takže druh počítače z dat poznat nejde — kontrole to nevadí,
+bere všechny tři jako AI. Slot „Closed“ se od volného slotu taky nijak
+neliší (`status` 1), což nevadí: zajímají nás jen obsazené. Ověřeno
+naživo 9. 9. 2026 na lobby se všemi třemi druhy naráz.
+
 **Režim s vlastním zaškrtávátkem.** Empire Wars (`5` = 13), Regicide
 (`5` = 1) a Sudden Death (`5` = 11) mají v Advanced Settings i zaškrtávátko
 (`89`, `91`, `90`). V takovém režimu ho hra odškrtne a znepřístupní — režim
