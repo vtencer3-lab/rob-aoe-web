@@ -225,3 +225,18 @@ it("výběr příměří pošle minuty jako číslo", async () => {
 
   await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ primeri: 90 })));
 });
+
+// Totéž co Empire Wars, ověřeno naživo: režim Regicide svoje zaškrtávátko
+// odškrtne a zamkne. Ostatního nastavení se nedotýká.
+it("Game Mode Regicide odškrtne a zamkne zaškrtávátko Regicide", async () => {
+  const onZmena = vi.fn();
+  render(<NastaveniLobby zive={{ rezim: 0, regicide: true, cheaty: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "1" } });
+
+  expect(screen.getByLabelText(/regicide mode/i)).toBeDisabled();
+  expect(screen.getByLabelText(/regicide mode/i)).not.toBeChecked();
+  // Empire Wars zůstane přístupné a cheaty Regicide neshazuje.
+  expect(screen.getByLabelText(/empire wars mode/i)).toBeEnabled();
+  await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 1, regicide: false, cheaty: true })));
+});

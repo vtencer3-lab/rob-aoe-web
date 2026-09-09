@@ -154,6 +154,19 @@ export const REZIMY: Record<number, string> = {
  * zaškrtávátko `empireWars` (options[89]) je odškrtnuté a nepřístupné.
  */
 export const REZIM_EMPIRE_WARS = 13;
+
+/** Regicide jako režim; zaškrtávátko `regicide` (options[91]) u něj platí totéž. */
+export const REZIM_REGICIDE = 1;
+
+/**
+ * Režimy, které mají v Advanced Settings vlastní zaškrtávátko: hra ho
+ * v takovém režimu odškrtne a znepřístupní, protože režim ho už obsahuje.
+ * Ověřeno naživo 9. 9. 2026 pro Empire Wars i Regicide.
+ */
+export const ZASKRTAVATKO_REZIMU: Record<number, "empireWars" | "regicide"> = {
+  [REZIM_EMPIRE_WARS]: "empireWars",
+  [REZIM_REGICIDE]: "regicide",
+};
 /** Pozor: Extreme je −1, ne 5 — čísla jdou od nejtěžšího k nejlehčímu. */
 export const AI_OBTIZNOSTI: Record<number, string> = { "-1": "Extreme", 0: "Hardest", 1: "Hard", 2: "Moderate", 3: "Standard", 4: "Easiest" };
 export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite", 6: "Random" };

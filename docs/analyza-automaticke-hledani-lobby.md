@@ -227,6 +227,12 @@ civilizace se z nich čtou stejně jako u člověka; klíč `1` je herní id
 civilizace, hodnota s nastaveným horním slovem (65537 = 0x10001) znamená
 náhodnou volbu. Vzájemně se AI rozlišit nedají — žádné id nemají.
 
+**Režim s vlastním zaškrtávátkem.** Empire Wars (`5` = 13) a Regicide
+(`5` = 1) mají v Advanced Settings i zaškrtávátko (`89`, `91`). V takovém
+režimu ho hra odškrtne a znepřístupní — režim ho už obsahuje. Ověřeno
+naživo 9. 9. 2026 pro oba. U Sudden Death (`5` = 11, zaškrtávátko `90`) se
+to nezkoušelo.
+
 **Empire Wars jako režim** (`5` = 13) hra spojuje s dalšími nastaveními
 (ověřeno naživo 9. 9. 2026): přehodí `Starting Age` (`0`) na Feudal (3),
 `Victory` (`81`) na Standard (9) a odškrtne modifikátory hry — Empire Wars

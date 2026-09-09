@@ -7,4 +7,4 @@
  * ze které pokus vyšel, za ní vlastní verzování pokusu. Pravidla jsou
  * v `scripts/verze.ts` a v `docs/nasazeni-jouki-cz.md` §2.1.
  */
-export const VERZE = "0.25.8";
+export const VERZE = "0.25.9";

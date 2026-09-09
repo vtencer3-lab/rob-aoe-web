@@ -8,6 +8,7 @@ import {
   PRIMERI,
   REZIM_EMPIRE_WARS,
   REZIMY,
+  ZASKRTAVATKO_REZIMU,
   RYCHLOSTI,
   SADY_CIVILIZACI,
   SUROVINY,
@@ -215,7 +216,12 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
           hodnota={n.rezim}
           tabulka={REZIMY}
           jedno
-          onZmena={(v) => zmen(v === REZIM_EMPIRE_WARS ? { ...n, ...NASTAVENI_EMPIRE_WARS, rezim: v } : { ...n, rezim: v })}
+          onZmena={(v) => {
+            if (v === REZIM_EMPIRE_WARS) return zmen({ ...n, ...NASTAVENI_EMPIRE_WARS, rezim: v });
+            // Ostatní režimy s vlastním zaškrtávátkem ho jen shodí (Regicide).
+            const svoje = v === null ? undefined : ZASKRTAVATKO_REZIMU[v];
+            zmen(svoje ? { ...n, rezim: v, [svoje]: false } : { ...n, rezim: v });
+          }}
         />
         <label className="radek" data-klic="mapaId">
           <span>Location:</span>
@@ -282,7 +288,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
                 popis={popis}
                 hodnota={n[klic]}
                 jedno
-                vypnuto={klic === "empireWars" && n.rezim === REZIM_EMPIRE_WARS}
+                vypnuto={n.rezim !== null && ZASKRTAVATKO_REZIMU[n.rezim] === klic}
                 onZmena={(v) => zmen({ ...n, [klic]: v })}
               />
             ),
