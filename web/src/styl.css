@@ -18,6 +18,15 @@
   font-display: swap;
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* Písmo herního okna Create Lobby (Book Antiqua z instalace hry). Ořezané
+   jen na latinku a číslice, které okno potřebuje — 151 kB → 24 kB. */
+@font-face {
+  font-family: "Lobby Antiqua";
+  src: url(./assets/font/bookantiqua-lobby.woff2) format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* Barvy jsou vytažené přímo z loga Brohemians (nástroj `nastroje/grafika/paleta.py`),
    ne odhadnuté. Proto do stránky logo zapadne, místo aby na ní leželo. */
@@ -1568,16 +1577,22 @@ a:hover { color: var(--zlato-svetle); }
    Rozměry jsou v em, aby celé okno škálovalo jedním `font-size` na kořeni.
    --------------------------------------------------------------------------- */
 .okno-lobby {
-  --lobby-text: #3f2d1c;
-  --lobby-deska: #b39c85;
-  font-family: "Book Antiqua", "Palatino Linotype", Palatino, "URW Palladio L", Georgia, serif;
-  font-size: clamp(0.75rem, 1.7cqw, 1.15rem);
+  --lobby-text: #33240f;
+  --lobby-deska: #a8937b;
+  font-family: "Lobby Antiqua", "Book Antiqua", "Palatino Linotype", Palatino, Georgia, serif;
+  /* Šířka v rem, písmo v cqw: kdyby byla šířka v em, škrtila by se spolu
+     s písmem a texty by se lámaly. Takhle okno drží velikost herního
+     dialogu a písmo se veze podle skutečné šířky.  */
+  font-size: clamp(0.6rem, 1.45cqw, 0.84rem);
   container-type: inline-size;
-  max-width: 46em;
+  max-width: 40rem;
   margin: 1rem auto 0;
   padding: 1.6em 3.2em 3em;
   color: var(--lobby-text);
   background: url(./assets/ui/lobby-pergamen.webp) center / 100% 100% no-repeat;
+  /* Předloha ze hry je sytější než holá textura; dorovnává se filtrem, ať se
+     nemusí sahat do samotného assetu. */
+  filter: saturate(1.18) contrast(1.06);
 }
 .okno-lobby-zahlavi {
   display: flex;
