@@ -18,6 +18,23 @@
   font-display: swap;
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* Písmo okna Create Lobby: Times Ten, řez pro malé velikosti — hra sází
+   Times a tenhle je v drobném textu čitelnější. Ořezaný na latinku, české
+   znaky a číslice (356 kB → 26 kB, tučný řez 19 kB). */
+@font-face {
+  font-family: "Times Ten";
+  src: url(./assets/font/timesten.woff2) format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Times Ten";
+  src: url(./assets/font/timesten-bold.woff2) format("woff2");
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* Barvy jsou vytažené přímo z loga Brohemians (nástroj `nastroje/grafika/paleta.py`),
    ne odhadnuté. Proto do stránky logo zapadne, místo aby na ní leželo. */
@@ -1570,7 +1587,7 @@ a:hover { color: var(--zlato-svetle); }
 .okno-lobby {
   --lobby-text: #33240f;
   --lobby-deska: #b79579;
-  font-family: Georgia, "Times New Roman", "Liberation Serif", serif;
+  font-family: "Times Ten", Georgia, "Times New Roman", serif;
   font-weight: 900;
   /* Sazba má pevných 19 px jako v herním okně; šířka se od ní odvíjí, ale
      drží se v rem, aby se nesmršťovala spolu s písmem. */

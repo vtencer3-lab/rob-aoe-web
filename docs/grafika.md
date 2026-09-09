@@ -44,17 +44,24 @@ z `AoE2DE\widgetui	extures`:
 Převod dělá `nastroje/grafika/export.py` (pergamen 2,4 MB → 62 kB), spojení
 pásů `spoj.py`, složení rámu `mrizka.py`.
 
-**Písmo okna** je **Times New Roman**, ne Book Antiqua, jak to na první
-pohled vypadá. Hra si ho říká v XAML:
+**Písmo okna** je **Times Ten** (`web/src/assets/font/timesten*.woff2`),
+ořezaný na latinku, české znaky a číslice: 356 kB → 26 kB, tučný řez 19 kB.
+Ořez i převod dělá `fontTools`:
 
-```xml
-<FontFamily x:Key="Standard">pack://application:,,,/Fonts/#Times New Roman</FontFamily>
-<!--<FontFamily x:Key="Body">pack://application:,,,/Fonts/#Book Antiqua</FontFamily>-->
+```python
+s = Subsetter(); s.populate(unicodes=[...]); s.subset(font)
+font.flavor = "woff2"; font.save("timesten.woff2")
 ```
 
-Book Antiqua je tam jen zakomentovaný z dřívějška — proto `BKANT.TTF` leží
-v adresáři fontů a plete. Nehostujeme nic: Times má každý systém a na Linuxu
-ho zastoupí metricky shodné Liberation Serif.
+Hra sází Times — v XAML má `Standard` = Times New Roman (Book Antiqua je
+tam jen zakomentovaný z dřívějška, proto `BKANT.TTF` v adresáři fontů
+plete). Times Ten je řez téhož písma kreslený pro malé velikosti, takže
+drobný text v okně drží líp.
+
+**Pozor na licenci:** Times Ten je majetek Monotype (má to ve vlastních
+metadatech, `nameID` 7 a 13) a v repu leží na rozhodnutí vlastníka webu.
+Kdyby to někdy vadilo, volná náhrada s prakticky stejnou kresbou je Tinos
+(Apache 2.0) nebo TeX Gyre Termes (GUST FL) — obojí metricky sedí na Times.
 
 **Porovnání s předlohou**: `web/nahled/okno.html` vykreslí okno samo o sobě,
 takže se dá postavit vedle snímku ze hry:
