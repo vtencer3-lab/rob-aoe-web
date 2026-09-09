@@ -132,3 +132,27 @@ describe("redigujProDivaka", () => {
     expect(videny.zapasy[1]!.spectatorUri).toBeNull();
   });
 });
+
+// Heslo příští lobby je stejné tajemství jako heslo hotového zápasu: vidí ho
+// jen admin, kdo si ho v okně Pre-Lobby chystá.
+it("příští heslo lobby vidí jen admin", () => {
+  const stav: AkceStavPayload = {
+    akce: { id: 1, nazev: "večer", stav: "bezi", pristiHeslo: "4207", pristiNazevLobby: "ROB-03" },
+    prihlaseni: [],
+    zapasy: [],
+  };
+
+  expect(redigujProDivaka(stav, { steamId: "rob", jeAdmin: true }).akce).toMatchObject({ pristiHeslo: "4207" });
+  expect(redigujProDivaka(stav, { steamId: "kdokoliv", jeAdmin: false }).akce).toMatchObject({ pristiHeslo: "" });
+  expect(redigujProDivaka(stav, { steamId: null, jeAdmin: false }).akce).toMatchObject({ pristiHeslo: "" });
+});
+
+// Název příští lobby tajemství není — z něj se nikam nedostane.
+it("název příští lobby zůstane všem", () => {
+  const stav: AkceStavPayload = {
+    akce: { id: 1, nazev: "večer", stav: "bezi", pristiHeslo: "4207", pristiNazevLobby: "ROB-03" },
+    prihlaseni: [],
+    zapasy: [],
+  };
+  expect(redigujProDivaka(stav, { steamId: null, jeAdmin: false }).akce).toMatchObject({ pristiNazevLobby: "ROB-03" });
+});

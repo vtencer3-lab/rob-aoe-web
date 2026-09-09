@@ -1,5 +1,6 @@
 import { AKTIVITA_MINUT, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT } from "../shared/aktivita.js";
 import type { SestavaVstup } from "../shared/types.js";
+import { generatePassword } from "../matches/composition.js";
 import { getPool, withTransaction } from "./pool.js";
 import { mapuj, PLAYER_SLOUPEC_NAZVY, type DbRow, type PlayerRow } from "./players.js";
 
@@ -16,6 +17,8 @@ export interface AkceRow {
   ulozeneNastaveniLobby: Record<string, unknown> | null;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy přes SSE. */
   skladani: SestavaVstup[];
+  /** Heslo připravené pro příští lobby; null, dokud si o něj nikdo neřekl. */
+  pristiHeslo: string | null;
 }
 
 interface AkceDbRow {
@@ -25,9 +28,10 @@ interface AkceDbRow {
   nastaveni_lobby: Record<string, unknown> | null;
   ulozene_nastaveni_lobby: Record<string, unknown> | null;
   skladani: SestavaVstup[] | null;
+  pristi_heslo: string | null;
 }
 
-const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani";
+const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani, pristi_heslo";
 
 function mapujAkci(r: AkceDbRow): AkceRow {
   return {
@@ -37,7 +41,25 @@ function mapujAkci(r: AkceDbRow): AkceRow {
     nastaveniLobby: r.nastaveni_lobby ?? {},
     ulozeneNastaveniLobby: r.ulozene_nastaveni_lobby,
     skladani: Array.isArray(r.skladani) ? r.skladani : [],
+    pristiHeslo: r.pristi_heslo,
   };
+}
+
+/**
+ * Heslo pro příští lobby. Vzniká dřív, než zápas — Rob ho opisuje do hry už
+ * při zakládání lobby, takže musí být na co se dívat. `nahod` ho přegeneruje
+ * (kostka v okně Pre-Lobby), jinak se jen doplní, když ještě žádné není.
+ */
+export async function pripravPristiHeslo(akceId: number, nahod = false): Promise<AkceRow | null> {
+  const { rows } = await getPool().query<AkceDbRow>(
+    `UPDATE akce SET pristi_heslo = $2
+      WHERE id = $1 AND ($3::boolean OR pristi_heslo IS NULL)
+      RETURNING ${SLOUPCE_AKCE}`,
+    [akceId, generatePassword(), nahod],
+  );
+  if (rows[0]) return mapujAkci(rows[0]);
+  const { rows: beze } = await getPool().query<AkceDbRow>(`SELECT ${SLOUPCE_AKCE} FROM akce WHERE id = $1`, [akceId]);
+  return beze[0] ? mapujAkci(beze[0]) : null;
 }
 
 export async function createAkce(nazev: string): Promise<AkceRow> {

@@ -123,11 +123,21 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
       [akceId],
     );
 
+    // Heslo si Rob opsal do hry už při zakládání lobby (okno Pre-Lobby), takže
+    // zápas dostane přesně to připravené. Hned se chystá další, aby okno mělo
+    // co ukazovat pro příští lobby. Bez připraveného hesla (starší akce) se
+    // vygeneruje jako dřív.
+    const { rows: hesloRows } = await client.query<{ pristi_heslo: string | null }>(
+      "UPDATE akce SET pristi_heslo = $2 WHERE id = $1 RETURNING (SELECT pristi_heslo FROM akce WHERE id = $1) AS pristi_heslo",
+      [akceId, generatePassword()],
+    );
+    const heslo = hesloRows[0]?.pristi_heslo ?? generatePassword();
+
     const { rows } = await client.query(
       `INSERT INTO zapas (akce_id, poradi, nazev_lobby, heslo, nastaveni)
        VALUES ($1, $2, $3, $4, $5::jsonb)
        RETURNING ${SLOUPCE_ZAPASU}`,
-      [akceId, poradi, lobbyName(poradi), generatePassword(), JSON.stringify(nastaveniRows[0]?.nastaveni_lobby ?? {})],
+      [akceId, poradi, lobbyName(poradi), heslo, JSON.stringify(nastaveniRows[0]?.nastaveni_lobby ?? {})],
     );
     const zapas = mapujZapas(rows[0] as Record<string, unknown>);
 

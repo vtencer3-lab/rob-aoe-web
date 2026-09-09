@@ -283,3 +283,25 @@ it("opakované AI v dalším zápase projde", async () => {
   const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[1]!, "ai:1"]));
   expect(druhy.poradi).toBe(2);
 });
+
+// Heslo si Rob opisuje do hry ještě před založením zápasu (okno Pre-Lobby),
+// takže zápas musí dostat přesně to připravené — jinak by hráči dostali jiné
+// heslo, než jaké host do lobby naklikal.
+it("zápas si vezme heslo připravené pro příští lobby a hned chystá další", async () => {
+  const { pripravPristiHeslo, getAktivniAkce } = await import("./events.js");
+  const pripravene = (await pripravPristiHeslo(akceId))!.pristiHeslo;
+  expect(pripravene).toMatch(/^[0-9]{4}$/);
+
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  expect(zapas.heslo).toBe(pripravene);
+
+  // Pro další lobby už zase čeká heslo, a jiné.
+  const dalsi = (await getAktivniAkce())!.pristiHeslo;
+  expect(dalsi).toMatch(/^[0-9]{4}$/);
+  expect(dalsi).not.toBe(pripravene);
+});
+
+it("bez připraveného hesla si zápas vygeneruje vlastní", async () => {
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  expect(zapas.heslo).toMatch(/^[0-9]{4}$/);
+});

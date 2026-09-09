@@ -31,6 +31,9 @@ export async function zjistiDivaka(request: FastifyRequest): Promise<Divak> {
 export function redigujProDivaka(payload: AkceStavPayload, divak: Divak): AkceStavPayload {
   return {
     ...payload,
+    // Heslo chystané pro příští lobby je stejné tajemství jako heslo hotového
+    // zápasu; jméno lobby tajné není, z něj se nikam nedostane.
+    akce: payload.akce && !divak.jeAdmin ? { ...payload.akce, pristiHeslo: "" } : payload.akce,
     zapasy: payload.zapasy.map((zapas) => redigujZapas(zapas, divak)),
   };
 }

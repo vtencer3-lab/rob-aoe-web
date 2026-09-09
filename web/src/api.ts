@@ -82,6 +82,9 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(nastaveni),
     }).then((r) => json<{ akce: { id: number } }>(r)),
+  /** Kostka u hesla v okně Pre-Lobby: nové heslo pro příští lobby. */
+  pristiHeslo: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/pristi-heslo`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   ulozitNastaveniLobby: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby/ulozit`), { method: "POST" }).then((r) => json<{ akce: { id: number } }>(r)),
   skladani: (akceId: number, sestava: SestavaVstup[]) =>

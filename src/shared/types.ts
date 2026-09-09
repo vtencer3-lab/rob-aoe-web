@@ -67,6 +67,16 @@ export interface AkceView {
   ulozeneNastaveniLobby?: Record<string, unknown> | null;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
   skladani?: SestavaVstup[];
+  /**
+   * Jméno, které dostane příští založená lobby (ROB-NN). Odvozené z pořadí,
+   * ne tajné — okno Pre-Lobby ho ukazuje, aby ho host opsal do hry.
+   */
+  pristiNazevLobby?: string;
+  /**
+   * Heslo připravené pro příští lobby. Tajemství jako heslo hotového zápasu:
+   * mimo adminy se zaslepuje (realtime/redakce.ts).
+   */
+  pristiHeslo?: string;
 }
 
 export interface UcastnikView {
