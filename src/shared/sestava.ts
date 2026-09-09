@@ -37,7 +37,7 @@ export function zkontrolujSestavu(sestava: SestavaVstup[]): string | null {
       return "Hráči se stejnou barvou musí být ve stejném týmu.";
     }
     if (dalsi.some((s) => (s.civ ?? null) !== (prvni.civ ?? null))) {
-      return "Hráči se stejnou barvou sdílejí civilizaci, musí mít předepsanou tutéž.";
+      return "Hráči se stejnou barvou musí mít i stejnou civilizaci.";
     }
   }
 
