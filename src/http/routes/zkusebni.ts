@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { config } from "../../config.js";
 import { getAktivniAkce, listSignups, pretocCas, signUp, smazZkusebniHrace } from "../../db/events.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
-import { jeZkusebni, ZKUSEBNI_HRACI, zkusebniId } from "../../matches/zkusebniHraci.js";
+import { ZKUSEBNI_HRACI, zkusebniId } from "../../matches/zkusebniHraci.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import { AKTIVITA_MINUT } from "../../shared/aktivita.js";
 import { VERZE } from "../../shared/verze.js";
