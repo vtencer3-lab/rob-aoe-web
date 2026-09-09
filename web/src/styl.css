@@ -272,11 +272,13 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
 
 /* Tlačítka, která se jako tlačítka nemají tvářit (nadpis akce, jméno Roba
    v záhlaví), nesou `bez-vzhledu` a vypadávají ze všech obecných pravidel
-   níž. Do 9. 9. 2026 se místo toho vzhled přebíjel u každého zvlášť — jenže
+   níž. Vyjímá je `:not(:where(...))`, ne prosté `:not(...)`: to druhé zvedne
+   váhu selektoru o třídu, obecné pravidlo tím přebije to pro zlatá tlačítka
+   (`button.plus:hover`) a „+“ zhnědne. `:where()` váhu nemění. Do 9. 9. 2026 se místo toho vzhled přebíjel u každého zvlášť — jenže
    `all: unset` platí jen v klidu a hnědá deska se vracela pod kurzorem. */
 button.bez-vzhledu { all: unset; cursor: pointer; }
 
-button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(.bez-vzhledu),
+button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(:where(.bez-vzhledu)),
 a.tlacitko, .cta:not(.spectate) {
   display: inline-flex;
   align-items: center;
@@ -284,7 +286,7 @@ a.tlacitko, .cta:not(.spectate) {
   line-height: 1.15;
 }
 
-button:not(.bez-vzhledu) {
+button:not(:where(.bez-vzhledu)) {
   background: linear-gradient(#4a2a1c, #2c1710 60%, #200f0a);
   color: var(--zlato-svetle);
   border: 1px solid var(--zlato-tmave);
@@ -300,7 +302,7 @@ button:not(.bez-vzhledu) {
     inset 0 -2px 6px rgba(0, 0, 0, 0.45),
     0 1px 2px rgba(0, 0, 0, 0.5);
 }
-button:hover:enabled:not(.bez-vzhledu) {
+button:hover:enabled:not(:where(.bez-vzhledu)) {
   background: linear-gradient(#5e3724, #3a1e14 60%, #2a1410);
   border-color: var(--zlato);
 }
@@ -1201,7 +1203,16 @@ h2 input.nazev-akce-pole {
   border: 1px solid var(--zlato-tmave);
   box-sizing: border-box;
 }
-h2 .nazev-akce-mira { display: block; visibility: hidden; white-space: pre; min-width: 6ch; }
+h2 .nazev-akce-mira {
+  display: block;
+  visibility: hidden;
+  white-space: pre;
+  min-width: 6ch;
+  /* Pole si nad text drží pevnou rezervu (naměřeno 10-11 px, nezávisle na
+     délce — nejspíš místo pro kurzor). Bez ní se text v poli odroloval a
+     první písmeno zmizelo za okrajem, takže ji míra musí započítat. */
+  padding-right: calc(0.65rem + 12px);
+}
 h2 input.nazev-akce-pole {
   position: absolute;
   inset: 0;
