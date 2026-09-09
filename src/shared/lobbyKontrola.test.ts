@@ -381,9 +381,14 @@ describe("závažnost pre-lobby", () => {
     ...cast,
   });
 
-  it("jiný počet slotů je jen upozornění", () => {
+  it("jiný počet slotů je jen upozornění a řekne, kolik jich je prázdných", () => {
     const k = zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ maxHracu: 8 }) }));
-    expect(k.find((x) => x.klic === "maxHracu")).toMatchObject({ stav: "varovani" });
+    // Dva hráči sedí v lobby, takže šest slotů zbývá prázdných a otevřených —
+    // „Players: 8“ samo o sobě znělo jako špatně nastavený počet hráčů.
+    expect(k.find((x) => x.klic === "maxHracu")).toMatchObject({
+      stav: "varovani",
+      text: "Players: 8, má být 2 (6 slotů je prázdných a otevřených — zavři je ve hře)",
+    });
   });
 
   it("zpoždění do tří minut je upozornění, od čtyř chyba", () => {

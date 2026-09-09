@@ -629,11 +629,20 @@ export function zkontrolujLobby(
   // s nimi už nedá hnout. Co hra o lobby neposílá (Co-Op Campaign, Data Mod),
   // se nekontroluje vůbec.
   const pre = lobby.preLobby;
-  const preRadek = (klic: string, popis: string, ve: string | null, ma: string | null, varovani: boolean | (() => boolean) = false): void => {
+  const preRadek = (
+    klic: string,
+    popis: string,
+    ve: string | null,
+    ma: string | null,
+    varovani: boolean | (() => boolean) = false,
+    /** Věta navíc, když hodnota nesedí — vysvětlí, co s tím. */
+    poznamka?: string,
+  ): void => {
     const jenVarovani = typeof varovani === "function" ? varovani() : varovani;
     const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : jenVarovani ? "varovani" : "spatne";
     const videt = ve ?? "?";
-    k.push({ klic, stav, text: stav === "ok" || stav === "jedno" ? `${popis}: ${videt}` : `${popis}: ${videt}, má být ${ma}`, sekce: "prelobby" });
+    const konec = poznamka === undefined ? "" : ` (${poznamka})`;
+    k.push({ klic, stav, text: stav === "ok" || stav === "jedno" ? `${popis}: ${videt}` : `${popis}: ${videt}, má být ${ma}${konec}`, sekce: "prelobby" });
   };
   const jmenem = (tabulka: Record<number, string>) => (v: number | null | undefined) =>
     v === null || v === undefined ? null : (tabulka[v] ?? String(v));
@@ -643,6 +652,12 @@ export function zkontrolujLobby(
   const zHry = <T,>(hodnota: T | null | undefined): T | null => (pre === undefined ? null : (hodnota ?? null));
   preRadek("lobbyTyp", "Lobby Type", jmenem(LOBBY_TYPY)(pre?.lobbyTyp), zHry(jmenem(LOBBY_TYPY)(ocekavane.lobbyTyp)));
   preRadek("viditelnost", "Visibility", jmenem(VIDITELNOST)(pre?.viditelnost === 1 ? 0 : pre?.viditelnost === 0 ? 1 : null), zHry(jmenem(VIDITELNOST)(ocekavane.viditelnost)));
+  // Hra neposílá, co bylo v okně Create Lobby navolené za počet hráčů — jen
+  // sloty. „Players“ v lobby je tedy kolik slotů není zavřených, a rozdíl
+  // proti zápasu jsou skoro vždycky prázdné otevřené sloty, do kterých může
+  // vlézt kdokoliv. Řádek proto rovnou říká, kolik jich je a co s nimi.
+  const obsazenych = lobby.sloty.length + (lobby.aiSloty?.length ?? 0);
+  const prazdnych = pre?.maxHracu === null || pre?.maxHracu === undefined ? 0 : pre.maxHracu - obsazenych;
   preRadek(
     "maxHracu",
     "Players",
@@ -650,6 +665,7 @@ export function zkontrolujLobby(
     zHry(ocekavane.maxHracu === null ? null : String(ocekavane.maxHracu)),
     // Kolik slotů lobby má, na hru nemá vliv — hráči se do ní stejně vejdou.
     true,
+    prazdnych > 0 ? `${prazdnych} ${prazdnych === 1 ? "slot je prázdný a otevřený" : prazdnych < 5 ? "sloty jsou prázdné a otevřené" : "slotů je prázdných a otevřených"} — zavři je ve hře` : undefined,
   );
   // Heslo není povinné: bez něj se dá hrát, jen dovnitř může vlézt cizí člověk.
   k.push({
