@@ -96,6 +96,31 @@ it("Private ve Visibility se nenastaví a okno vynadá", async () => {
   expect(onNastaveniLobby).not.toHaveBeenCalled();
 });
 
+// Bez diváků nemá Robovo vysílání koho pustit dovnitř, takže odškrtnout
+// Allow Spectators nejde: zaškrtávátko zůstane zapnuté a ozve se totéž co
+// u Private — zatřesení, nadávka a stopa.
+it("Allow Spectators nejde odškrtnout a okno vynadá", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  const onNastaveniLobby = vi.fn();
+  const prehrat = vi.fn().mockResolvedValue(undefined);
+  vi.spyOn(window.HTMLMediaElement.prototype, "play").mockImplementation(prehrat);
+  render(
+    <SpravaAkce {...zaklad} onNastaveniLobby={onNastaveniLobby} akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi" }}>
+      <p>SESTAVA</p>
+    </SpravaAkce>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /pre-lobby nastavení/i }));
+  const divaci = screen.getByLabelText(/allow spectators/i);
+  expect(divaci).toBeChecked();
+
+  fireEvent.click(divaci);
+
+  expect(divaci).toBeChecked();
+  expect(screen.getByTestId("prelobby-nadavka")).toHaveTextContent("A tak jseš debil, nebo co?");
+  expect(prehrat).toHaveBeenCalled();
+  expect(onNastaveniLobby).not.toHaveBeenCalled();
+});
+
 // K Private patří i zvuk. Prohlížeč v testu zvuk nepřehraje, takže se
 // kontroluje, že se o to okno aspoň pokusilo.
 it("Private spustí i zvukovou hlášku", async () => {

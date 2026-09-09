@@ -562,8 +562,10 @@ h2.nadpis-akce::after {
     url(./assets/ui/drevo.webp) center / 380px repeat;
   background-origin: border-box;
 }
-.prelobby-okno .hlavicka-akce { margin-bottom: 0.8rem; }
-.prelobby-okno .zavrit { margin-left: auto; padding: 0.1rem 0.55rem; line-height: 1.2; }
+/* Nadpis nese pod sebou ozdobný oddělovač, takže je vyšší než sám text.
+   Křížek se proto zarovnává k hornímu okraji — jinak by klesl pod nadpis. */
+.prelobby-okno .hlavicka-akce { margin-bottom: 0.8rem; align-items: flex-start; }
+.prelobby-okno .zavrit { margin-left: auto; width: 2.3rem; height: 2.3rem; padding: 0; line-height: 1; }
 /* Stejná mřížka jako v panelu nastavení: popisek vpravo zarovnaný, pole
    v druhém sloupci. Bez ní by řádky splynuly do jednoho odstavce. */
 .prelobby-okno .radky { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; align-items: center; }

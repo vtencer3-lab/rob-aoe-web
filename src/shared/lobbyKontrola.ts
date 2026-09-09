@@ -118,8 +118,10 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   viditelnost: 0,
   maxHracu: 2,
   coopKampan: false,
-  povolitDivaky: null,
-  skrytCivilizace: null,
+  // Diváci jsou smysl celého večera (Rob vysílá), takže zapnuto napevno;
+  // skryté civilizace by naopak zabily komentář, takže vypnuto.
+  povolitDivaky: true,
+  skrytCivilizace: false,
   zpozdeniDivaku: 0,
   server: "Default",
   dataMod: "Definitive Set",

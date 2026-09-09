@@ -35,9 +35,11 @@ describe("zkontrolujLobby", () => {
     expect(k.every((x) => x.stav === "ok" || x.stav === "jedno")).toBe(true);
     // „Je to jedno“ zůstala ve výchozím stavu jen AI obtížnost; Lock Teams se
     // od 9. 9. 2026 vyžaduje zapnutý (sestavu skládá Rob, v lobby se s ní nehýbe).
-    // Pre-lobby: bez údajů ze hry se nekontroluje nic z okna zakládání.
+    // Pre-lobby: bez údajů ze hry se nekontroluje nic z okna zakládání. Výjimka
+    // je Hide Civilizations — to hra posílá v nastavení, ne v pre-lobby, a od
+    // 9. 9. 2026 se vyžaduje vypnuté (se skrytými civilizacemi nemá komentář o čem).
     expect(k.filter((x) => x.stav === "jedno").map((x) => x.klic)).toEqual([
-      "aiObtiznost", "lobbyTyp", "viditelnost", "maxHracu", "skrytCivilizace", "zpozdeniDivaku", "server",
+      "aiObtiznost", "lobbyTyp", "viditelnost", "maxHracu", "zpozdeniDivaku", "server",
     ]);
     expect(k.filter((x) => x.sekce === "hlavni").map((x) => x.klic)).toEqual([
       "hraci", `barva:${HOST}`, `tym:${HOST}`, `barva:${JA}`, `tym:${JA}`,

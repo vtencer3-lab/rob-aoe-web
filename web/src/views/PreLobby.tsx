@@ -59,6 +59,13 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
     return () => clearTimeout(casovac);
   }, [dotceny]);
 
+  /** Volba, která se pro večer nehodí: zatřást řádkem, vynadat, pustit stopu. */
+  const odmitni = (klic: string) => {
+    setDotceny(klic);
+    setVynadano(true);
+    prehraj(debilUrl);
+  };
+
   const cislo = (v: string) => (v === "" ? null : Number(v));
   const zmen = (cast: Partial<Nastaveni>) => onZmena({ ...n, ...cast });
 
@@ -72,7 +79,7 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
     >
       <div className="prelobby-okno" role="dialog" aria-modal="true" aria-label="Pre-Lobby Nastavení" data-testid="prelobby" ref={okno}>
         <header className="hlavicka-akce">
-          <h2>Create Lobby</h2>
+          <h2>Create Lobby Nastavení</h2>
           <button type="button" className="zavrit" aria-label="Zavřít" onClick={onZavrit}>
             ✕
           </button>
@@ -111,9 +118,7 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
               onChange={(e) => {
                 const v = cislo(e.target.value);
                 if (v === 1) {
-                  setDotceny("viditelnost");
-                  setVynadano(true);
-                  prehraj(debilUrl);
+                  odmitni("viditelnost");
                   return;
                 }
                 zmen({ viditelnost: v });
@@ -162,8 +167,23 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
               </button>
             </span>
           </label>
-          <div className="radek prelobby-dvojice">
-            <Zaskrtavatko klic="povolitDivaky" popis="Allow Spectators" hodnota={n.povolitDivaky} onZmena={(v) => zmen({ povolitDivaky: v })} />
+          <div className={dotceny === "povolitDivaky" ? "radek prelobby-dvojice zatrest" : "radek prelobby-dvojice"}>
+            {/* Bez diváků nemá Robovo vysílání koho pustit dovnitř, takže tohle
+                zaškrtávátko nemá ani „je to jedno“, ani cestu k vypnutí. */}
+            <label className="zaskrtavaci" data-klic="povolitDivaky">
+              <input
+                type="checkbox"
+                checked={n.povolitDivaky !== false}
+                onChange={(e) => {
+                  if (!e.target.checked) {
+                    odmitni("povolitDivaky");
+                    return;
+                  }
+                  zmen({ povolitDivaky: true });
+                }}
+              />
+              Allow Spectators
+            </label>
             <Zaskrtavatko klic="skrytCivilizace" popis="Hide Civilizations" hodnota={n.skrytCivilizace} onZmena={(v) => zmen({ skrytCivilizace: v })} />
           </div>
           <label className="radek" data-klic="zpozdeniDivaku">
