@@ -200,7 +200,7 @@ web proto stahuje všechny stránky.
 | Ending Age | `4` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial (ověřeno 0 a 4) |
 | Treaty Length | `57` | minuty, ale jen z herní nabídky: 0 „[None]“, pak po pěti až 60, a rovnou 90 (odečteno z herní nabídky 9. 9. 2026) |
 | Victory | `81` | 1 Conquest, 7 Time Limit, 8 Score, 9 Standard, 11 Last Man Standing (ověřeno 1 a 9) |
-| Lock Teams | `66` | y/n |
+| Lock Teams | `66` | y/n (ověřeno naživo 9. 9. 2026 přepnutím tam a zpět) |
 | Team Together | `78` | y/n |
 | Team Positions | `77` | y/n (jen s Team Together) |
 | Shared Exploration | `76` | y/n |
@@ -226,6 +226,18 @@ slotu se plní nespolehlivě, kontrola ho nepoužívá.
 civilizace se z nich čtou stejně jako u člověka; klíč `1` je herní id
 civilizace, hodnota s nastaveným horním slovem (65537 = 0x10001) znamená
 náhodnou volbu. Vzájemně se AI rozlišit nedají — žádné id nemají.
+
+**Panel hry se umí rozejít s tím, co hra posílá.** 9. 9. 2026 hlásila
+kontrola „Lock Teams: vypnuto, má být zapnuto“, zatímco v herním panelu
+bylo políčko zaškrtnuté. Inzerát měl pravdu: přepnutí Game Mode Lock Teams
+vnitřně shodilo (jako ostatní modifikátory), ale zaškrtnutí v UI zůstalo.
+Odškrtnutí a zaškrtnutí ve hře stav srovnalo a `66` se do inzerátu propsalo
+okamžitě — zpoždění tam žádné není, každá změna zaškrtávátka odchází hned.
+
+Pro kontrolu z toho plyne, že **ukazuje skutečný stav lobby, ne to, co je
+nakreslené v panelu hry** — a že takový rozpor umí odhalit. Hlášku proto
+brát vážně i tehdy, když se zdá, že v panelu je všechno správně; pomůže
+volbu ve hře přepnout tam a zpět.
 
 **Typ AI se nepropisuje.** Hra nabízí „AI“, „AI (CD version)“ a „AI (HD
 version)“; v lobby vypadají všechny tři úplně stejně (`status` 2, tatáž
