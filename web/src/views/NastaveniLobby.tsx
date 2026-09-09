@@ -246,13 +246,12 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
         </fieldset>
       </div>
       {/* Uložit = snímek na serveru; načtení presetu a Reset jen nasadí jiné
-          živé nastavení (hned, bez odkladu). */}
+          živé nastavení (hned, bez odkladu). Pořadí je podle toho, jak často
+          se maČká: uložit, načíst zpátky, a Reset až nakonec — ten zahazuje
+          všechno, takže má být nejdál od ostatních dvou. */}
       <div className="ovladani">
         <button type="button" onClick={onUlozit}>
           Uložit preset lobby
-        </button>
-        <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
-          Reset nastavení
         </button>
         <button
           type="button"
@@ -261,6 +260,9 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
           onClick={() => zmen(doplnNastaveni(ulozene as Partial<Nastaveni>), true)}
         >
           Načíst uložený preset
+        </button>
+        <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+          Reset nastavení
         </button>
       </div>
     </form>
