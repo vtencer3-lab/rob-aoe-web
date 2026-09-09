@@ -44,17 +44,17 @@ z `AoE2DE\widgetui	extures`:
 Převod dělá `nastroje/grafika/export.py` (pergamen 2,4 MB → 62 kB), spojení
 pásů `spoj.py`, složení rámu `mrizka.py`.
 
-**Písmo okna** je `BKANT.TTF` (Book Antiqua) z instalace hry, ořezaný jen na
-latinku a číslice, které okno potřebuje, a převedený do woff2 —
-151 kB → 24 kB. Ořez i převod dělá `fontTools`:
+**Písmo okna** je **Times New Roman**, ne Book Antiqua, jak to na první
+pohled vypadá. Hra si ho říká v XAML:
 
-```python
-s = Subsetter(); s.populate(unicodes=list(range(0x20, 0x7F)) + [0x2013, 0x2014, 0x2019])
-s.subset(font); font.flavor = "woff2"; font.save("bookantiqua-lobby.woff2")
+```xml
+<FontFamily x:Key="Standard">pack://application:,,,/Fonts/#Times New Roman</FontFamily>
+<!--<FontFamily x:Key="Body">pack://application:,,,/Fonts/#Book Antiqua</FontFamily>-->
 ```
 
-Používá se **jen pro tohle okno** (`--lobby-*`), zbytek webu má dál Cinzel
-a Georgii.
+Book Antiqua je tam jen zakomentovaný z dřívějška — proto `BKANT.TTF` leží
+v adresáři fontů a plete. Nehostujeme nic: Times má každý systém a na Linuxu
+ho zastoupí metricky shodné Liberation Serif.
 
 **Porovnání s předlohou**: `web/nahled/okno.html` vykreslí okno samo o sobě,
 takže se dá postavit vedle snímku ze hry:
