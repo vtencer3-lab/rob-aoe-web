@@ -328,5 +328,18 @@ Sledování fáze proto prohlásí „hraje_se“ až po třech nepřítomnostec
 
 Přímo v záznamu lobby: `visible`, `maxplayers`, `passwordprotected`,
 `isobservable`, `observerdelay`, `hasobserverpassword`, `relayserver_region`
-(Server), `matchtype_id`. Data Mod a Hide Civilizations se nastavují jen při
-založení lobby a zatím zmapované nejsou.
+(Server), `matchtype_id`.
+
+**Doplněno 9. 9. 2026 večer:**
+
+| Co | Kde | Jak se to ověřilo |
+|---|---|---|
+| Hide Civilizations | `options[85]` | přepnuto na vlastní lobby tam a zpět, hodnota šla 1 → 0 → 1 |
+| Ochrana heslem | `options[96]` **=** `passwordprotected` | agent nejdřív tvrdil, že 96 je Hide Civilizations. Uživatel to zpochybnil („všechny tři verze jsem zakládal bez hesla“) a pokus to vyvrátil: tatáž lobby bez hesla poslala `n`, s heslem `y`; statisticky obojí sedí napříč 112 lobby |
+| Počet hráčů z okna Create Lobby | **nikde v `options`** | napříč 83 živými lobby nesedí žádný klíč s počtem otevřených slotů líp než náhodou; nejlepší kandidáti (`17`, `74`) drží vždycky 8, tedy strop. Kontrola proto počítá nezavřené sloty a rozdíl vysvětluje jako prázdné otevřené sloty |
+| Data Mod | nezmapované | hra nabízí jedinou možnost („Definitive Set“), takže není co porovnávat |
+
+**Chybná domněnka, ať se neopakuje.** Agent si vymyslel, že hra cachuje
+heslo lobby, aby obhájil špatné čtení klíče 96. Uživatel to zamítl („to sis
+vymyslel“) a měření mu dalo za pravdu. Když klíč nesedí, patří se udělat
+pokus, ne postavit vysvětlení.

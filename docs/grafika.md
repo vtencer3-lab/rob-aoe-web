@@ -27,21 +27,20 @@ znovu nebo dodělat nový kus ve stejném rukopisu.
 **Výjimka: okno Create Lobby.** Od 9. 9. 2026 je postavené z herních dílů
 (`lobby-*.webp`), ne kreslené — host podle něj opisuje nastavení do hry, a
 tam je nejlepší, když se obrázek shoduje s obrázkem. Díly jsou
-z `AoE2DE\widgetui	extures`:
+z `AoE2DE\widgetui\textures`:
 
 | díl | zdroj ve hře |
 |---|---|
 | `lobby-pergamen.webp` | `backgrounds\popup_menu_bg_small.png` — ze čtyř papírů v `backgrounds\` sedí tenhle: siluetu okrajů ve snímku ze hry (jasový práh + teplota barvy) proti alfa masce každého kandidáta, korelace po sloupcích — spodní okraj 0,94, pravý 0,88, ostatní pod 0,5. Poznávací znamení je zub dole. `popup_menu_bg_large.png` tam byl původně a je to jiný papír |
 | `lobby-ozdoba.webp` | `menu\decoration\header_ornaments.png` |
 | `lobby-pole.webp` | `menu\dropdowns\dropdown_{left,center,right}_4k_normal.png` spojené `spoj.py` do pásu pro `border-image` |
-| `lobby-sipka.webp` | `menuuttons\down_arrow_normal.png` |
+| `lobby-sipka.webp` | `menu\buttons\down_arrow_normal.png` |
 | `lobby-zaskrtavatko.webp`, `lobby-zaskrtnuto.webp` | `menu\checkboxes\checkbox_{unchecked,checked}_iron_4k_normal.png` |
-| `lobby-zavrit.webp` | `menuuttons\close_iron_4k_normal.png` |
-
-| `lobby-ram.webp` | `menu\decorationoxstyle2_*` — devět dílů složených `mrizka.py --orez 22` do mřížky 3×3 pro `border-image`. Ořez je nutný: díly nesou kolem zlata i kus výplně, se kterou rám ztloustne, a zmenšit místo toho výřez nejde — zmáčklo by to rohové ozdoby do šmouhy. Uvnitř dílů je navíc neprůhledná šedá `67,67,67` — vnitřek krabice pro tmavé menu, který v okně přebíjí pergamenovou desku. Odstranit ji umí `mrizka.py --klic 67` (tmavší přechod pod zlatem převede na poloprůhledný stín), ale nasazený rám je zatím bez ní: uživatel si ho ladí ve Photoshopu. `klic.py` se sem nehodí — ten plaví černé pozadí od rohů, kdežto tahle plocha je uvnitř dílu |
+| `lobby-zavrit.webp` | `menu\buttons\close_iron_4k_normal.png` |
+| `lobby-ram.webp` | `menu\decoration\boxstyle2_*` — devět dílů složených `mrizka.py --orez 22` do mřížky 3×3 pro `border-image`. Ořez je nutný: díly nesou kolem zlata i kus výplně, se kterou rám ztloustne, a zmenšit místo toho výřez nejde — zmáčklo by to rohové ozdoby do šmouhy. Uvnitř dílů je navíc neprůhledná šedá `67,67,67` — vnitřek krabice pro tmavé menu, který v okně přebíjí pergamenovou desku. Odstranit ji umí `mrizka.py --klic 67` (tmavší přechod pod zlatem převede na poloprůhledný stín), nasazený rám ji zatím **má** — uživatel si ho ladí ve Photoshopu a odklíčovanou variantu dostal jako podklad. `klic.py` se sem nehodí — ten plaví černé pozadí od rohů, kdežto tahle plocha je uvnitř dílu |
 | `lobby-vstup.webp` | `menu\decoration\input_{left,center,right}_4k_normal.png` |
 
-Převod dělá `nastroje/grafika/export.py` (pergamen 2,4 MB → 62 kB), spojení
+Převod dělá `nastroje/grafika/export.py` (pergamen 1,4 MB → 70 kB), spojení
 pásů `spoj.py`, složení rámu `mrizka.py`.
 
 **Písmo okna** je **Times Ten** (`web/src/assets/font/timesten*.woff2`),
@@ -57,6 +56,36 @@ Hra sází Times — v XAML má `Standard` = Times New Roman (Book Antiqua je
 tam jen zakomentovaný z dřívějška, proto `BKANT.TTF` v adresáři fontů
 plete). Times Ten je řez téhož písma kreslený pro malé velikosti, takže
 drobný text v okně drží líp.
+
+**Sazba okna.** Text má pevných 19 px, popisky 21 px a zesiluje se stínem
+o půl pixelu vedle sebe ve **vlastní barvě** (`text-shadow: 0.5px 0 0
+var(--lobby-text)`, nadpis 0,6 px, zelená pole `var(--lobby-zelena)`). Hra
+sází tučněji, než jaký řez písma je k mání, a rozmazaný stín by text
+zašpinil. Barvu desky dorovnává `filter: sepia(.18) saturate(1.24)
+contrast(1.04)` na celém okně — předloha ze hry je sytější než holá textura.
+
+**Devítidílné rámy ve hře.** Kdyby bylo někdy potřeba jiný, tohle jsou
+všechny (každý = devět souborů, složí je `mrizka.py`):
+
+| rám | cesta | vzhled |
+|---|---|---|
+| `boxstyle1` | `menu\decoration\` | tlustý dřevěný s ozdobnými rohy, díly 64×64 |
+| `boxstyle2` | `menu\decoration\` | **použitý v okně** — zlatá linka s rohovými trojúhelníky |
+| `boxstyle3`, `boxstyle3a` | `menu\decoration\` | tenká zlatá linka bez ozdob |
+| `tablestyle1` | `menu\table\` | rám tabulky, díly 150×150 a jiná jména (`angle_left`, `_alt`, `_top2`) |
+| `listbox`, `ttlistbox` | `menu\listboxes\` | rám seznamu, díly 22×22 (`_tl_`, `_tc_`, … `_4k`) |
+| `npanel` | `ingame\panels\` | herní panel, hnědý, díly 22×22 |
+
+**Náhledová stránka.** `web/nahled/okno.html` (mimo build, `npm --prefix web
+run dev` na `/nahled/okno.html`) vykreslí postavené okno a nad ním modál
+režie; `?bezmodalu` modál vypne. Porovnává se se snímkem ze hry přes
+headless Chrome:
+
+```
+chrome --headless=new --screenshot=okno.png --window-size=980,900 \
+  http://localhost:5173/nahled/okno.html?bezmodalu
+```
+
 
 **Pozor na licenci:** Times Ten je majetek Monotype (má to ve vlastních
 metadatech, `nameID` 7 a 13) a v repu leží na rozhodnutí vlastníka webu.

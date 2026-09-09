@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 9. 9. 2026, dev 0.25.2)
+# Přehled prací a záměrů (stav k 9. 9. 2026, dev 0.28.3)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -34,18 +34,19 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 0.24.37, nasazeno na <https://jouki.cz/aoe> (PR #12, 9. 9. 2026); stav před ním nese značku `v0.19.1` |
-| `origin/dev` | 0.25.2, nasazeno na <https://jouki.cz/aoe/dev> — AI v sestavě, mazání zkušebních hráčů, schované presety (§3.20, §3.21); **před `main`** |
+| `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
+| `origin/dev` | 0.28.3, nasazeno na <https://jouki.cz/aoe/dev> — AI v sestavě, mazání zkušebních hráčů, Pre-Lobby nastavení a postavené okno Create Lobby (§3.20–§3.27); po releasu **shodné s `main`** |
 | `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; od té doby prázdné a **zaostalé o celý `dev`** — před dalším pokusem přezaložit (§2.1 nasazení) |
-| Migrace | 001–014, poslední `014_archiv_zapasu.sql`; aplikované na všech třech databázích (ověřeno 9. 9. 2026 dotazem na `prihlaska` a `zapas`) |
-| Testy | backend hermetické 241, databázové 152, frontend 215 — všechny zelené (9. 9. 2026) |
+| Migrace | 001–018, poslední `018_skryte_civilizace_vypnute.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
+| Testy | backend hermetické 286, databázové 154, frontend 233 — všechny zelené (9. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
+| Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
 PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
-kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) 9. 9.
+kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) a PR #13 (0.28.3) 9. 9.
 Před releasem se na dosavadní `main` věší značka
 `vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
 [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
@@ -350,9 +351,16 @@ na založení lobby („čeká se na založení Lobby“), výsledek po stranác
 příznaku, `NULL` = otevřený), `POST /api/zapas/:id/zavrit` s tělem
 `{ zavreny?: boolean }` (admin; 409 „Zavřít jde jen dohraný zápas.“),
 `ZapasView.zavreny`. Zavřený zápas zmizí z veřejného seznamu
-(`verejneZapasy` v `web/src/zapas.ts`) i z režie; s **Debug** zapnutým je
-v režii zašedlý (`.zapas.zavreny`, opacity .45) s poznámkou „· zavřeno“ a
-tlačítkem „Znovu otevřít“. Výsledek zůstává v databázi, nic se nemaže.
+(`verejneZapasy` v `web/src/zapas.ts`) i z režie. Výsledek zůstává
+v databázi, nic se nemaže.
+
+**Od 0.27.13 mizí úplně.** Do té doby se v Debug módu kreslil zašedlý,
+s poznámkou „· zavřeno“ a tlačítkem „Znovu otevřít“ — jenže zabíral přesně
+tolik místa jako předtím, takže křížek nic neuklidil. Uživatel: „křížek má
+odebrat tu sekci, k čemu je kurva že se tam napíše ‚zavřeno‘ (výsledky
+v DB zůstanou)“. Filtr `vRezii` proto zavřené zahazuje vždycky, prop
+`ladeni` v `Rezie.tsx` zanikl a s ním i CSS `.zapas.zavreny`. Otevřít
+zpátky jde pořád přes API (`{ zavreny: false }`) — jen na to není tlačítko.
 
 ### 3.9 SSE: puls, hlídka, obnova po akci, lišta s novou verzí
 
@@ -755,6 +763,145 @@ cesty (`onUlozit`, `ulozene`) umí dál, takže se vrací přepnutím jedné
 konstanty. „Reset nastavení“ zůstal. Důvod: nastavení žije na akci a drží
 se mezi večery samo, takže snímek nikdy nic nepřidal.
 
+### 3.24 Pre-Lobby nastavení: modální okno a jeho závažnosti (0.26.0–0.28.1)
+
+**Záměr.** Okno „Create Lobby“ ve hře se nastavuje **před** založením lobby
+a po založení už s ním nejde hnout. Rob si ho tedy musí naklikat správně
+napoprvé — a web mu má napřed říct, co tam má nastavit, a pak zkontrolovat,
+že to tak opravdu je.
+
+**Kde to je.** Tlačítko „Pre-Lobby Nastavení“ je v záhlaví panelu vedle
+nadpisu „Nastavení Lobby“; otevře **modální okno** (`PreLobby.tsx`,
+`.prelobby-stin` přes celou obrazovku, zavírá Escape i kliknutí mimo).
+Není to další sloupec v panelu schválně: zakládání lobby je jeden krok
+mimo běžné nastavování hry a řeší se jednou za večer. Nadpis okna je
+„Create Lobby Nastavení“, křížek čtvercový v úrovni nadpisu.
+
+**Co okno nese.** Řádek po řádku podle hry: Lobby Name (jméno příští
+lobby, jen ke čtení), Lobby Type, Visibility, Players, Co-Op Campaign,
+věta „These Settings can not be changed after game creation.“, Set
+Password s kostkou na přegenerování, Allow Spectators, Hide Civilizations,
+Spectator Delay, Server, Data Mod. Hodnoty nabídek jsou odečtené z herní
+nabídky (9. 9. 2026) včetně pořadí serverů; „–“ znamená „je to jedno“
+stejně jako v panelu.
+
+**Heslo vzniká dopředu (0.26.0, migrace 016 + 017).** Sloupec
+`akce.pristi_heslo` drží heslo pro **příští** lobby, takže ho jde ukázat
+dřív, než zápas vůbec vznikne. `createZapas` si ho vezme a rovnou uloží
+nové; kostka v okně volá `pripravPristiHeslo`. Migrace 017 doplnila heslo
+akcím, které už existovaly.
+
+**Závažnosti (0.26.5, 0.27.17, 0.28.0).** Nejsou stejné pro všechno:
+
+| Volba | Pravidlo |
+|---|---|
+| Visibility | Public napevno. Private jde vybrat, ale hned se vrátí zpátky, řádek se zatřese, nad formulářem se objeví „A tak jseš debil, nebo co?“ a od 0.27.11 se k tomu přehraje `debil.mp3` |
+| Allow Spectators | jen zapnuto/vypnuto, výchozí zapnuto; odškrtnout nejde — odmítne to stejně jako Private (Rob vysílá, bez diváků by neměl kdo koukat) |
+| Hide Civilizations | tři stavy jako v panelu, výchozí **odškrtnuto** (se skrytými civilizacemi nemá komentář o čem) |
+| Players | výchozí 2, rozdíl je jen upozornění |
+| Spectator Delay | výchozí None; do 3 minut upozornění, od 4 chyba (komentář utíká hře) |
+| Server | výchozí „Default“; ostatní podle tabulky `KVALITA_SERVERU` — zelené upozornění, žluté a červené chyba |
+| Lobby Type | Unranked, jiná hodnota je chyba |
+| Data Mod | „Definitive Set“, hra jinou možnost nemá |
+
+**Uložené `null` z dřívějška (0.28.0, migrace 018).** Diváci i skryté
+civilizace bývaly tříbodové, takže akce z té doby mají v nastavení `null`.
+`doplnNastaveni` vyplňuje jen chybějící klíče, ne prázdné hodnoty —
+u diváků se proto `null` srovná na zapnuto rovnou při čtení (jiná poloha
+stejně není přípustná), u civilizací by ale přepis při čtení zabil možnost
+zvolit „je to jedno“, tak to jednorázově srovnala migrace.
+
+**Zamítnuto.** Vlastní panel místo modálu (uživatel: „Jak jsem říkal chci
+to jako MODÁLNÍ OKNO!“) a přebírání hesla z předchozí lobby — hra si
+heslo nikam necachuje, což byla chybná domněnka agenta, kterou uživatel
+vyvrátil.
+
+### 3.25 Okno Create Lobby postavené z herních dílů (0.27.0–0.28.x)
+
+**Záměr.** Host má před sebou vidět **přesně to, co uvidí ve hře**, jen
+s vyplněnými hodnotami — aby jen opisoval. Do 9. 9. 2026 tu byl snímek
+obrazovky s přebitými třemi poli (`web/src/assets/create-lobby.webp`,
+v repu zůstal); jenže když režie změnila třeba server nebo zpoždění
+diváků, snímek dál tvrdil své.
+
+**Jak to je.** `OknoCreateLobby.tsx` a blok `.okno-lobby*` ve `styl.css`.
+Okno je jen obrázek k opsání, ne formulář — nastavuje se v `PreLobby.tsx`.
+Klikací je jedině jméno a heslo (`Kopirovatelne`); od 0.27.19 se pole při
+najetí rozsvítí (podbarvit je nejde, vnitřek kreslí `fill` z `border-image`).
+
+**Herní díly.** Pergamen, ozdoba záhlaví, rozbalovátko, šipka,
+zaškrtávátka, křížek, rám a vstupní pole — všechno z
+`AoE2DE\widgetui\textures`, seznam a příkazy jsou v
+[`docs/grafika.md`](grafika.md). Písmo je **Times Ten** (hra v XAML
+předepisuje Times New Roman; Book Antiqua je tam jen zakomentovaná
+z dřívějška), ořezané `fontTools` na 26 kB. Sazba má pevných 19 px, popisky
+21 px a text zesiluje stín o půl pixelu vedle sebe ve vlastní barvě
+(u zelených polí zeleně) — hra sází tučněji, než jaký řez písma je k mání.
+
+**Který pergamen (0.27.16).** Původně `popup_menu_bg_large.png`, což je
+jiný list. Správný se našel měřením: ze snímku ze hry se vytáhla silueta
+okna (jasový práh plus teplota barvy) a porovnala se sloupec po sloupci
+s alfa maskou každého kandidáta — `popup_menu_bg_small.png` má na spodním
+okraji korelaci 0,94 a na pravém 0,88, ostatní zůstaly pod 0,5. Poznávací
+znamení je zub na spodním okraji.
+
+**Rám a jeho výplň (0.27.12, vráceno).** Rám je `boxstyle2_*` — devět dílů
+64×64 složených `mrizka.py` do mřížky 3×3. Uvnitř dílů je **neprůhledná
+šedá 67,67,67**, což je vnitřek krabice pro tmavé menu; v okně přebíjí
+pergamenovou desku. `mrizka.py --klic 67` ji odstraní a tmavší přechod pod
+zlatem převede na poloprůhledný stín. Nasazený rám ji zatím **má** —
+uživatel si ho ladí ve Photoshopu (podklady dostal do `Downloads`).
+Devítidílných rámů je ve hře osm; přehled je v `docs/grafika.md`.
+
+**Náhledová stránka.** `web/nahled/okno.html` (mimo build) vykreslí okno
+i modál nad ním; `?bezmodalu` modál vypne. Slouží k porovnání se snímkem
+ze hry přes headless Chrome, bez přihlášení jako admin.
+
+**Poučení.** Většina kol tady byla o tom, že se udělalo něco jiného, než co
+bylo v zadání: zvětšila se pole místo písma, ztenčil rám místo zesílení,
+postavil panel místo modálu. Rozměry, které uživatel odečte v DevTools,
+jsou vždycky rychlejší cesta než odhad.
+
+### 3.26 Kontrola lobby: tři sekce, Players ze slotů, skloňování (0.26.3–0.28.3)
+
+**Tři sekce.** Pre-Lobby (první, rozbalená), Nastavení Lobby a Další
+nastavení; všechny tři kreslí jedna komponenta `Sekce`
+(`KontrolaLobby.tsx`), jen „Další nastavení“ si pamatuje, že je sbalené.
+Hlavní sekce dostala vlastní záhlaví až v 0.28.2 — do té doby visela pod
+tlačítkem jako volný seznam.
+
+**Players jsou sloty, ne `maxplayers` (0.26.8, 0.28.3).** `maxplayers`
+v inzerátu je vždycky 8. Skutečný počet je kolik slotů **není zavřených**
+(`status !== 1`). Co bylo v okně Create Lobby navolené, hra neposílá
+vůbec: napříč 83 živými lobby nesedí žádný klíč `options` s počtem
+otevřených slotů líp než náhodou. Rozdíl proti zápasu jsou tedy prázdné
+otevřené sloty, do kterých může vlézt kdokoliv — řádek to od 0.28.3 říká
+naplno: „Players: 4, má být 2 (2 sloty jsou prázdné a otevřené — zavři je
+ve hře)“. Zůstává upozornění, ne chyba.
+
+**Skloňování a barvy (0.28.1).** „má mít modrá“ znělo jako nákupní
+seznam; obě barvy v té větě jsou předmět, takže se berou ze čtvrtého pádu
+(`BARVA_KOHO_CO` v `shared/types.ts` — osm barev, tabulka je levnější než
+pravidla). Barva 6 se navíc jmenovala fialová, ačkoliv je ve hře růžová
+(`#f955af`); přejmenovala se i se svým odstínem na webu (`--b6: #e055a8`).
+
+**Barva v 1v1 (0.26.4).** Ve dvou hráčích na barvě nezáleží, takže je to
+jen upozornění; číslo týmu vadí, jen když ho mají oba stejné.
+
+### 3.27 Zkušební hráči, AI a úklid dat (0.25.0–0.25.1, úklid 9. 9. 2026)
+
+Doplněk k §3.20 a §3.21: „Odebrat zkušební“ maže zkušební hráče **všude**
+— zápasy, ve kterých seděli (včetně dohraných a včetně těch, kde vedle nich
+hráli skuteční lidé), jejich události, přihlášky a nakonec řádky hráčů,
+v jedné transakci (`smazZkusebniHrace`). Pořadí kroků je dané cizími klíči.
+
+**9. 9. 2026 večer** se totéž pustilo ručně proti všem třem databázím
+(`DELETE ... WHERE steam_id LIKE 'test:%'`), protože zkušební data
+zůstávala z dřívějška: ostrá 1 zápas a 5 hráčů, dev 8 zápasů a 6 hráčů,
+experimental 2 zápasy a 5 hráčů. Dotčené řádky se předtím stáhly do CSV
+(u uživatele, ne v repu). AI hráčů (`ai:*`) se tenhle úklid netýká — jsou
+to plnohodnotní hráči a jejich zápasy mají zůstat.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -770,6 +917,18 @@ Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
 | leaderboard 1, 2, 13, 14, 27, 28 | **předpoklad** (Death Match, Team DM, Empire Wars, Team EW, Return of Rome, Team RoR) |
 | `getRecentMatchHistory` pro rozehranou hru | vrátilo nic — data o právě běžící hře přes veřejné API **nejsou** |
 | Limity dotazů | neznámé; proto cache 15 min u statistik a jedna sdílená cache seznamu lobby (`src/matches/seznamLobby.ts`), sledování po 10 s |
+
+**Doplněno 9. 9. 2026 (měřeno na živých lobby).**
+
+| Co | Stav |
+|---|---|
+| `options[96]` = `passwordprotected`, ne Hide Civilizations | ověřeno pokusem: tři lobby bez hesla měly `n`, tatáž lobby s heslem `y`; statisticky sedí přes 112 lobby |
+| `options[85]` = Hide Civilizations | ověřeno přepnutím tam a zpět na vlastní lobby |
+| `maxplayers` je vždycky 8 | ověřeno; skutečný počet je počet slotů se `status !== 1` |
+| Počet hráčů z okna Create Lobby | v `options` **není** — napříč 83 lobby žádný klíč nesedí s počtem otevřených slotů (§3.26) |
+| `status` slotu: 0 = otevřený (i obsazený člověkem), 1 = zavřený, 2 = AI | ověřeno |
+| Pre-lobby pole přímo v inzerátu: `matchtype_id`, `visible`, `observerdelay`, `relayserver_region` | ověřeno |
+| Herní panel může ukazovat něco jiného, než co lobby inzeruje | pozorováno u Lock Teams: hra si po přepnutí režimu nechala zaškrtnuté políčko, ale posílala vypnuto. Není to zpoždění přenosu — jedno přepnutí se propsalo okamžitě |
 
 Steam Web API: klíč od uživatele (7. 9.), jen v Coolify env obou aplikací.
 
@@ -798,6 +957,17 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
    zápasy s kompletním nastavením, týmy a civilizacemi. Data pro to od 0.21.0
    v databázi jsou — viz §3.16, včetně toho, co ještě chybí. Obrazovka
    navržená není.
+7. **Rám okna Create Lobby doladit ve Photoshopu** (uživatel 9. 9. večer):
+   podklady dostal — nasazená verze, varianta s odklíčovanou šedou výplní
+   a devět původních dílů ze hry. Až vrátí upravený obrázek, převede se
+   `nastroje/grafika/export.py` do `web/src/assets/ui/lobby-ram.webp`;
+   musí zůstat 66×66 a dělený na třetiny, jinak přestane sedět `slice`.
+8. **Vazba režimu na zaškrtávátko u Regicide a Sudden Death** je hotová
+   (§3.23), ale **nezjistilo se**, jestli odškrtnutí modifikátorů dělá
+   Empire Wars, nebo hra při každé změně Game Mode.
+9. **Zavřený zápas znovu otevřít z UI** — od 0.27.13 to jde jedině přes
+   API. Kdyby to někdy chybělo, tlačítko patří jinam než do režie (třeba
+   do archivu z bodu 6).
 7. **Lhůty aktivity nastavitelné adminem** (uživatel 8. 9.): dnes je patnáct
    minut, pět za kliknutí a čtyřminutový odstup pevně v `shared/aktivita.ts`.
    Práh pro „Jsem tu!“ se z lhůty už počítá, takže se změní jedním číslem.
@@ -888,6 +1058,25 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.26.3 | 16:30 | Kontrola dostala sekci Pre-Lobby; heslo a diváci se do ní přesunuli z hlavní |
 | 0.26.4 | 16:45 | Barva v 1v1 je jen upozornění |
 | 0.26.5 | 17:10 | Pre-Lobby: Public napevno (Private vynadá a zatřese), výchozí 2 hráči a Default server, závažnosti podle zpoždění a kvality serveru |
+| 0.26.6 | 16:17 | Pre-Lobby je v kontrole první a rozbalená |
+| 0.26.7 | 16:19 | Vykřičník upozornění zarovnaný jako ostatní značky a tučnější |
+| 0.26.8 | 16:22 | Players se čtou z nezavřených slotů — `maxplayers` je vždycky 8 |
+| 0.26.9 | 16:29 | Nadpisy panelů odsazené za rám |
+| 0.27.0 | 16:45 | Okno Create Lobby postavené z herních dílů místo snímku obrazovky |
+| 0.27.1–0.27.10 | 17:00–19:51 | Doladění okna proti hře: rozměry, rám, pole, tři pokusy o písmo (Cinzel → Book Antiqua → Georgia → Times Ten), výřezy `border-image` podle hodnot odečtených v DevTools |
+| 0.27.11 | 20:27 | K Private se kromě zatřesení a nadávky přehraje `debil.mp3`; přehrávání zvuku má jedno místo (`web/src/zvuk.ts`) |
+| 0.27.12 | 20:35 | `mrizka.py --klic` umí odstranit šedou výplň z rámu (nasazený rám ji zatím má, viz §3.25) |
+| 0.27.13 | 21:26 | Křížek zavřený zápas ze stránky opravdu odstraní, i v Debug módu |
+| 0.27.14 | 21:29 | Ikona kopírování u pravého okraje polí |
+| 0.27.15 | 21:36 | Text okna zesílený stínem o půl pixelu (nadpis 0,6 px, zbytek 0,5 px; zelená pole zeleně) |
+| 0.27.16 | 21:48 | Správný pergamen (`popup_menu_bg_small.png`), nalezený porovnáním siluety okrajů |
+| 0.27.17 | 22:09 | Allow Spectators zapnutý napevno, Hide Civilizations výchozí vypnuté; nadpis „Create Lobby Nastavení“, čtvercový křížek; náhledová stránka umí i modál |
+| 0.27.18 | 22:15 | Uložené `null` u diváků se srovná při čtení |
+| 0.27.19 | 22:19 | Hover na kopírovatelných polích, popisky 21 px, řádky s větším odstupem |
+| 0.28.0 | 22:21 | Hide Civilizations má zpátky „je to jedno“, výchozí odškrtnuto; migrace 018 srovná uložené `null` |
+| 0.28.1 | 22:35 | Barvy v kontrole ve čtvrtém pádě; barva 6 je růžová i odstínem |
+| 0.28.2 | 22:47 | Hlavní sekce kontroly má vlastní sbalitelné záhlaví; všechny tři sekce kreslí jedna komponenta |
+| **0.28.3** | 22:52 | Players vysvětlí, že rozdíl jsou prázdné otevřené sloty; **release PR #13** |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
