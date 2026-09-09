@@ -1651,8 +1651,9 @@ a:hover { color: var(--zlato-svetle); }
 }
 /* Popisek vlevo, pole vpravo — jako ve hře, kde popisky začínají na jedné
    svislici a nejsou zarovnané na pravý okraj. */
-.okno-lobby-radek { display: grid; grid-template-columns: 9.5em 15em; justify-content: space-between; align-items: center; gap: 0.7em; margin-bottom: 0.25em; }
-.okno-lobby-popis { font-size: 1em; font-weight: 900; text-align: left; }
+.okno-lobby-radek { display: grid; grid-template-columns: 9.5em 15em; justify-content: space-between; align-items: center; gap: 0.7em; margin-bottom: 0.35em; }
+/* Popisky sází hra o dva body větší než hodnoty v polích. */
+.okno-lobby-popis { font-size: 21px; font-weight: 900; text-align: left; }
 .okno-lobby-vyber {
   position: relative;
   display: block;
@@ -1699,6 +1700,10 @@ a:hover { color: var(--zlato-svetle); }
 .okno-lobby button.okno-lobby-vstup,
 .okno-lobby button.okno-lobby-vstup strong { color: var(--lobby-zelena); font-weight: 900; }
 .okno-lobby button.okno-lobby-vstup .ikona-kopie { color: var(--lobby-zelena); opacity: 0.75; }
+/* Pole je vidět, že je klikací: podbarvit ho nejde (vnitřek kreslí `fill`
+   z border-image, který by tón překryl), tak se rozsvítí celé. */
+.okno-lobby button.okno-lobby-vstup:hover { filter: brightness(1.3); }
+.okno-lobby button.okno-lobby-vstup:hover .ikona-kopie { opacity: 1; }
 .okno-lobby-zaskrtavatko { display: inline-flex; align-items: center; gap: 0.5em; margin: 0.4em 0 0.4em 1em; font-size: 1em; font-weight: 900; }
 .okno-lobby-dvojice { display: flex; gap: 3.5em; }
 .okno-lobby-dvojice .okno-lobby-zaskrtavatko { margin-left: 0.8em; }

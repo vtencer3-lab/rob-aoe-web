@@ -7,9 +7,14 @@ import { OknoCreateLobby } from "../src/views/OknoCreateLobby.js";
 import { PreLobby } from "../src/views/PreLobby.js";
 import "../src/styl.css";
 
+// Modál překrývá celou stránku, takže na samotné okno se dá kouknout jen bez
+// něj: `?modal=0`.
+const sModalem = !new URLSearchParams(location.search).has("bezmodalu");
+
 createRoot(document.getElementById("korel")!).render(
   <>
     <OknoCreateLobby nazevLobby="ROB-02" heslo="3792" nastaveni={{}} pocetHracu={2} />
+    {sModalem ? (
     <PreLobby
       nastaveni={doplnNastaveni({})}
       nazevLobby="ROB-03"
@@ -18,5 +23,6 @@ createRoot(document.getElementById("korel")!).render(
       onNoveHeslo={() => {}}
       onZavrit={() => {}}
     />
+    ) : null}
   </>,
 );
