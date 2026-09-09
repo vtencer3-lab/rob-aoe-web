@@ -241,8 +241,16 @@ neleží v `options`, ale přímo v inzerátu vedle jména. Změřeno naživo
 | Allow Spectators | `isobservable` | |
 | Spectator Delay | `observerdelay` | **v sekundách** (3 minuty = 180) |
 | Server | `relayserver_region` | „Default“ se propíše na skutečný region |
-| Hide Civilizations | `options[85]` | 1 = zapnuto; hra totéž posílá i obráceně v `options[96]` (y = civilizace vidět) |
+| Hide Civilizations | `options[85]` | 1 = zapnuto |
 | Co-Op Campaign, Data Mod | — | neposílají se nikam |
+
+`options[96]` **není** Hide Civilizations, jak to 9. 9. 2026 chvíli vypadalo:
+je to duplikát `passwordprotected` z inzerátu (y = lobby má heslo). Ověřeno
+statistikou přes 112 otevřených lobby, kde se obojí shoduje na 100 %.
+Zmatek vznikl tím, že se mezi dvěma měřeními změnilo Hide Civilizations
+i heslo naráz — dvě samostatné volby, které se hnuly zároveň. Kdyby `96`
+byl obrácený `85`, nemohla by existovat kombinace `85=0` a `96=n`, která
+je přitom v seznamu nejčastější (90 ze 114 lobby).
 
 `Server` = „Default“ se v inzerátu objeví jako skutečný region (u nás
 `westeurope`), takže „Default“ se proti lobby porovnat nedá — ověřit jde jen
