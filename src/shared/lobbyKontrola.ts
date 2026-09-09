@@ -158,14 +158,18 @@ export const REZIM_EMPIRE_WARS = 13;
 /** Regicide jako režim; zaškrtávátko `regicide` (options[91]) u něj platí totéž. */
 export const REZIM_REGICIDE = 1;
 
+/** Sudden Death jako režim; zaškrtávátko `suddenDeath` (options[90]) taky. */
+export const REZIM_SUDDEN_DEATH = 11;
+
 /**
  * Režimy, které mají v Advanced Settings vlastní zaškrtávátko: hra ho
  * v takovém režimu odškrtne a znepřístupní, protože režim ho už obsahuje.
- * Ověřeno naživo 9. 9. 2026 pro Empire Wars i Regicide.
+ * Ověřeno naživo 9. 9. 2026 pro všechny tři.
  */
-export const ZASKRTAVATKO_REZIMU: Record<number, "empireWars" | "regicide"> = {
+export const ZASKRTAVATKO_REZIMU: Record<number, "empireWars" | "regicide" | "suddenDeath"> = {
   [REZIM_EMPIRE_WARS]: "empireWars",
   [REZIM_REGICIDE]: "regicide",
+  [REZIM_SUDDEN_DEATH]: "suddenDeath",
 };
 /** Pozor: Extreme je −1, ne 5 — čísla jdou od nejtěžšího k nejlehčímu. */
 export const AI_OBTIZNOSTI: Record<number, string> = { "-1": "Extreme", 0: "Hardest", 1: "Hard", 2: "Moderate", 3: "Standard", 4: "Easiest" };

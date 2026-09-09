@@ -236,7 +236,29 @@ it("Game Mode Regicide odškrtne a zamkne zaškrtávátko Regicide", async () =>
 
   expect(screen.getByLabelText(/regicide mode/i)).toBeDisabled();
   expect(screen.getByLabelText(/regicide mode/i)).not.toBeChecked();
-  // Empire Wars zůstane přístupné a cheaty Regicide neshazuje.
+  // Zamyká se jen zaškrtávátko režimu; ostatní jdou dál přepnout.
   expect(screen.getByLabelText(/empire wars mode/i)).toBeEnabled();
-  await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 1, regicide: false, cheaty: true })));
+  await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 1, regicide: false, cheaty: false })));
+});
+
+// Sudden Death: zamkne svoje zaškrtávátko jako Empire Wars a Regicide,
+// shodí modifikátory a přehodí Victory na Conquest (ověřeno naživo —
+// lobby po přepnutí poslala 81 = 1).
+it("Game Mode Sudden Death zamkne svoje zaškrtávátko a nasadí Conquest", async () => {
+  const onZmena = vi.fn();
+  render(
+    <NastaveniLobby zive={{ rezim: 0, vitezstvi: 9, cheaty: true, turbo: true, antiquity: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} />,
+  );
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "11" } });
+
+  expect(screen.getByLabelText(/sudden death mode/i)).toBeDisabled();
+  expect(screen.getByLabelText(/sudden death mode/i)).not.toBeChecked();
+  expect(screen.getByLabelText(/victory/i)).toHaveValue("1");
+  expect(screen.getByLabelText(/allow cheats/i)).not.toBeChecked();
+  // Antiquity zůstává i tady.
+  expect(screen.getByLabelText(/antiquity mode/i)).toBeChecked();
+  await waitFor(() =>
+    expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 11, vitezstvi: 1, cheaty: false, turbo: false, antiquity: true })),
+  );
 });

@@ -877,6 +877,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.25.7 | 12:52 | Empire Wars odškrtne i Regicide, cheaty, Turbo, Full Tech Tree a Sudden Death; Extreme = −1 ověřené naživo |
 | 0.25.8 | 13:05 | Treaty Length je nabídka jako ve hře (po pěti do 60, pak 90), ne volné číslo — hlídá to i server |
 | 0.25.9 | 13:20 | Režim Regicide zamyká svoje zaškrtávátko stejně jako Empire Wars (vazba zobecněná do `ZASKRTAVATKO_REZIMU`) |
+| 0.25.10 | 13:35 | Sudden Death taky zamyká svoje zaškrtávátko a nasazuje Conquest; nastavení podle režimu je tabulka `NASTAVENI_REZIMU`. Ludicrous (480) ověřený naživo |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

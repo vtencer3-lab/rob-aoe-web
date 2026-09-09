@@ -7,6 +7,8 @@ import {
   POCATECNI_VEKY,
   PRIMERI,
   REZIM_EMPIRE_WARS,
+  REZIM_REGICIDE,
+  REZIM_SUDDEN_DEATH,
   REZIMY,
   ZASKRTAVATKO_REZIMU,
   RYCHLOSTI,
@@ -79,15 +81,25 @@ const PORADI_AI = [4, 3, 2, 1, 0, -1];
  * Zamyká se jedině zaškrtávátko Empire Wars — to už režim obsahuje.
  * S ostatními se dá po přepnutí dál hýbat, tak to dělá i panel.
  */
-const NASTAVENI_EMPIRE_WARS = {
-  empireWars: false as boolean | null,
-  regicide: false as boolean | null,
+const MODIFIKATORY_PRYC = {
   cheaty: false,
   turbo: false as boolean | null,
   fullTechTree: false as boolean | null,
+  empireWars: false as boolean | null,
   suddenDeath: false as boolean | null,
-  pocatecniVek: 3,
-  vitezstvi: 9 as 1 | 9,
+  regicide: false as boolean | null,
+};
+
+/**
+ * Co s nastavením udělá přepnutí režimu, který v sobě něco už má. Ověřeno
+ * naživo 9. 9. 2026: Empire Wars nasadí Feudal a Standard victory, Sudden
+ * Death přehodí Victory na Conquest. Oba (a nejspíš i Regicide) k tomu
+ * shodí modifikátory hry; Antiquity zůstává, jak bylo.
+ */
+const NASTAVENI_REZIMU: Record<number, Partial<Nastaveni>> = {
+  [REZIM_EMPIRE_WARS]: { ...MODIFIKATORY_PRYC, pocatecniVek: 3, vitezstvi: 9 },
+  [REZIM_SUDDEN_DEATH]: { ...MODIFIKATORY_PRYC, vitezstvi: 1 },
+  [REZIM_REGICIDE]: { ...MODIFIKATORY_PRYC },
 };
 
 function Vyber({ klic, popis, hodnota, tabulka, jedno, poradi, onZmena }: { klic: string; popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; poradi?: number[]; onZmena: (v: number | null) => void }) {
@@ -206,22 +218,16 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
             ))}
           </div>
         </div>
-        {/* Empire Wars si režim nastaví po svém — ověřeno naživo z lobby:
-            zaškrtávátko odškrtne a zamkne, Starting Age přehodí na Feudal a
-            Victory na Standard. Při odchodu z režimu se nic nevrací, stejně
-            jako ve hře: co je nastavené, zůstane. */}
+        {/* Režim si nastavení přizpůsobí po svém (NASTAVENI_REZIMU) a svoje
+            zaškrtávátko navíc zamkne. Při odchodu z režimu se nic nevrací,
+            stejně jako ve hře: co je nastavené, zůstane. */}
         <Vyber
           klic="rezim"
           popis="Game Mode"
           hodnota={n.rezim}
           tabulka={REZIMY}
           jedno
-          onZmena={(v) => {
-            if (v === REZIM_EMPIRE_WARS) return zmen({ ...n, ...NASTAVENI_EMPIRE_WARS, rezim: v });
-            // Ostatní režimy s vlastním zaškrtávátkem ho jen shodí (Regicide).
-            const svoje = v === null ? undefined : ZASKRTAVATKO_REZIMU[v];
-            zmen(svoje ? { ...n, rezim: v, [svoje]: false } : { ...n, rezim: v });
-          }}
+          onZmena={(v) => zmen({ ...n, ...(v === null ? {} : (NASTAVENI_REZIMU[v] ?? {})), rezim: v })}
         />
         <label className="radek" data-klic="mapaId">
           <span>Location:</span>
