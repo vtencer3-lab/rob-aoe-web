@@ -1,6 +1,6 @@
 {
   "name": "rob-aoe-web",
-  "version": "0.24.29",
+  "version": "0.24.30",
   "type": "module",
   "engines": {
     "node": ">=24"

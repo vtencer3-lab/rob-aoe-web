@@ -1256,6 +1256,40 @@ h2 input.nazev-akce-pole {
    takže odpočet, „Zzz“ i meče stojí na stejném místě a sloupec lícuje po celé
    tabulce — a odpočet nehýbe ničím, když se změní počet číslic. */
 .seznam .stav-znacka { display: inline-block; min-width: 4.6ch; text-align: right; }
+
+/* Vlastní bublina místo systémové: ta se objeví až po vteřině čekání a vypadá
+   jako z jiné stránky. Tahle naskočí hned a je ze stejného dřeva jako zbytek.
+   Text nese `data-napoveda`, takže se nikde nepíše dvakrát. */
+.napoveda { position: relative; }
+.napoveda::after {
+  content: attr(data-napoveda);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  z-index: 30;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--zlato-tmave);
+  border-radius: 3px;
+  background: linear-gradient(rgba(38, 22, 16, 0.98), rgba(20, 12, 8, 0.98));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  font-family: Georgia, serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-align: left;
+  text-shadow: none;
+  opacity: 0;
+  pointer-events: none;
+  /* Bez prodlevy: objeví se v okamžiku, kdy na značku najedeš. */
+  transition: opacity 0.1s;
+}
+.napoveda:hover::after, .napoveda:focus-visible::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .napoveda::after { transition: none; }
+}
 /* Vlastní sloupec pro „Jsem tu!“: v jednom se značkou by jeho šířka odpočet
    odsouvala a sloupec by se řádek od řádku neshodoval.
 

@@ -87,11 +87,15 @@ export function podleAktivity(hraci: PlayerView[], ted: number): PlayerView[] {
  * Hodiny, které tikají samy. Lhůta aktivity vyprší tichým během času, ne
  * zápisem do databáze — bez vlastního tikání by hráč ztmavl až s příští
  * zprávou ze serveru, tedy klidně za půl hodiny.
+ *
+ * Po pěti vteřinách, ne po dvaceti: odpočet vedle si tiká po vteřinách a
+ * doběhne na nulu dřív než tyhle hodiny. Do té doby se řádek tvářil jako
+ * aktivní a v místě značky nebylo nic.
  */
 function useTed(): number {
   const [ted, setTed] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setTed(Date.now()), 20_000);
+    const id = setInterval(() => setTed(Date.now()), 5_000);
     return () => clearInterval(id);
   }, []);
   return ted;
@@ -322,16 +326,32 @@ function MujCas({ aktivniDo }: { aktivniDo: string }) {
     return () => clearInterval(id);
   }, []);
   const zbyva = zbyvaMs(aktivniDo, ted) ?? 0;
-  if (zbyva <= 0) return null;
-  // Minuty vždy na dvě číslice: „09:59“ je stejně široké jako „14:56“, takže
-  // odpočet každou vteřinu nemění šířku sloupce a tabulka pod ním neposkakuje.
-  const vteriny = Math.ceil(zbyva / 1000);
-  const text = `${String(Math.floor(vteriny / 60)).padStart(2, "0")}:${String(vteriny % 60).padStart(2, "0")}`;
   return (
-    <span className="muj-cas" title="Za jak dlouho tě seznam odsune mezi neaktivní">
-      {text}
+    <span className="muj-cas napoveda" data-napoveda="Za jak dlouho tě seznam odsune mezi neaktivní">
+      {formatOdpoctu(zbyva)}
     </span>
   );
+}
+
+/**
+ * Odpočet jako „09:59“. Minuty vždy na dvě číslice, aby se šířka buňky s každou
+ * vteřinou neměnila a tabulka pod ní neposkakovala.
+ *
+ * Doběhlý odpočet ukazuje nuly, ne prázdno: značku „Zzz“ nasadí až seznam,
+ * který tiká pomaleji, a do té chvíle musí být vidět, že čas došel.
+ */
+export function formatOdpoctu(zbyvaMs: number): string {
+  const vteriny = Math.max(0, Math.ceil(zbyvaMs / 1000));
+  return `${String(Math.floor(vteriny / 60)).padStart(2, "0")}:${String(vteriny % 60).padStart(2, "0")}`;
+}
+
+/** Doba slovy: „7 min“, „1 h 20 min“. Pod minutu se přesnost nehodí ani nezajímá. */
+function trvani(ms: number): string {
+  const minut = Math.floor(ms / 60_000);
+  if (minut < 1) return "necelou minutu";
+  if (minut < 60) return `${minut} min`;
+  const zbytek = minut % 60;
+  return zbytek === 0 ? `${Math.floor(minut / 60)} h` : `${Math.floor(minut / 60)} h ${zbytek} min`;
 }
 
 /**
@@ -361,15 +381,19 @@ function ZnackaHrace({
 }) {
   const zapas = vZapase?.get(hrac.steamId);
   if (zapas !== undefined) {
+    const popis = `Právě hraje zápas #${zapas}`;
     return (
-      <span className="mece" role="img" aria-label={`Právě hraje zápas #${zapas}`} title={`Právě hraje zápas #${zapas}`}>
+      <span className="mece napoveda" role="img" aria-label={popis} data-napoveda={popis}>
         ⚔
       </span>
     );
   }
   if (!jeAktivni(hrac.aktivniDo, ted)) {
+    // Jak dlouho už spí: kladné číslo je doba od vypršení lhůty.
+    const pryc = -(zbyvaMs(hrac.aktivniDo, ted) ?? 0);
+    const popis = `Neaktivní ${trvani(pryc)}`;
     return (
-      <span className="spi" role="img" aria-label="Delší dobu neaktivní" title="Delší dobu neaktivní">
+      <span className="spi napoveda" role="img" aria-label={popis} data-napoveda={popis}>
         Zzz
       </span>
     );

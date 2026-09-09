@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { AKTIVITA_MINUT } from "../../../src/shared/aktivita.js";
-import { podleAktivity, SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
+import { formatOdpoctu, podleAktivity, SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
 
 const hrac = (prepis: Partial<PlayerView> = {}): PlayerView => ({
   steamId: "76561198000000001",
@@ -278,4 +278,28 @@ it("čas i Zzz stojí ve stejné značce", () => {
   );
   expect(screen.getByText("05:00").closest(".stav-znacka")).not.toBeNull();
   expect(screen.getByText("Zzz").closest(".stav-znacka")).not.toBeNull();
+});
+
+// Odpočet si tiká po vteřinách, seznam pomaleji. Než seznam stihne nasadit
+// „Zzz“, ukazuje doběhlý odpočet nuly — jinak by v buňce chvíli nebylo nic.
+it("doběhlý odpočet ukáže nuly, ne prázdno", () => {
+  expect(formatOdpoctu(-5_000)).toBe("00:00");
+  expect(formatOdpoctu(0)).toBe("00:00");
+  expect(formatOdpoctu(59_400)).toBe("01:00");
+  expect(formatOdpoctu(900_000)).toBe("15:00");
+});
+
+// Bublina říká, jak dlouho je hráč pryč, a nese ji `data-napoveda` — systémový
+// `title` čeká vteřinu a vypadá jako z jiné stránky.
+it("u spáče je v bublině doba nepřítomnosti", () => {
+  zmrazCas();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "a", alias: "A", aktivniDo: za(-7) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(-95) })]}
+    />,
+  );
+  const znacky = screen.getAllByText("Zzz");
+  expect(znacky[0]).toHaveAttribute("data-napoveda", "Neaktivní 7 min");
+  expect(znacky[1]).toHaveAttribute("data-napoveda", "Neaktivní 1 h 35 min");
+  expect(znacky[0]).not.toHaveAttribute("title");
 });
