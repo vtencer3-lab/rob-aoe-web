@@ -435,7 +435,11 @@ export function App() {
             if (akce) void hlidej(() => api.ulozitNastaveniLobby(akce.id));
           }}
           onNoveHeslo={() => {
-            if (akce) void hlidej(() => api.pristiHeslo(akce.id));
+            if (!akce) return;
+            void hlidej(async () => {
+              await api.pristiHeslo(akce.id);
+              pridejToast("Nové heslo vygenerováno");
+            });
           }}
         >
           {akce ? (

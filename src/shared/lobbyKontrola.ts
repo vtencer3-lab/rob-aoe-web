@@ -111,17 +111,18 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   regicide: false,
   antiquity: false,
   recordGame: true,
-  // Pre-lobby nechává výchozí nastavení na Robovi: nic z toho zatím
-  // nevymáháme, dokud si neřekne, co u toho večera chce.
-  lobbyTyp: null,
+  // Pre-lobby: co má vždycky platit, je nastavené napevno — Unranked lobby,
+  // vypnutá kampaň, žádné zpoždění diváků (ve vysílání by bylo proti smyslu)
+  // a jediný Data Mod, který hra zná. Zbytek zůstává na Robovi.
+  lobbyTyp: 0,
   viditelnost: null,
   maxHracu: null,
-  coopKampan: null,
+  coopKampan: false,
   povolitDivaky: null,
   skrytCivilizace: null,
-  zpozdeniDivaku: null,
+  zpozdeniDivaku: 0,
   server: null,
-  dataMod: null,
+  dataMod: "Definitive Set",
 };
 
 export const VELIKOSTI: Record<number, string> = {

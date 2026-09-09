@@ -63,9 +63,11 @@ export async function pripravPristiHeslo(akceId: number, nahod = false): Promise
 }
 
 export async function createAkce(nazev: string): Promise<AkceRow> {
+  // Heslo pro první lobby vzniká rovnou s akcí — okno Pre-Lobby ho ukazuje
+  // k opsání do hry a nemá čekat, až si o něj někdo řekne.
   const { rows } = await getPool().query<AkceDbRow>(
-    `INSERT INTO akce (nazev) VALUES ($1) RETURNING ${SLOUPCE_AKCE}`,
-    [nazev],
+    `INSERT INTO akce (nazev, pristi_heslo) VALUES ($1, $2) RETURNING ${SLOUPCE_AKCE}`,
+    [nazev, generatePassword()],
   );
   return mapujAkci(rows[0]!);
 }

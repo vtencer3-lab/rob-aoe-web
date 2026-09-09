@@ -527,7 +527,7 @@ h2.nadpis-akce::after {
    běžné nastavování, tak stojí v modálním okně — okolí ztmavne a kliknutí
    vedle (nebo Escape) ho zavře. */
 .hlavicka-akce .prelobby-tlacitko { margin-left: auto; }
-.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; background: rgba(8, 5, 3, 0.72); backdrop-filter: blur(2px); }
+.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); }
 .prelobby-okno {
   width: min(34rem, 100%);
   max-height: calc(100vh - 4rem);
@@ -542,11 +542,20 @@ h2.nadpis-akce::after {
 }
 .prelobby-okno .hlavicka-akce { margin-bottom: 0.8rem; }
 .prelobby-okno .zavrit { margin-left: auto; padding: 0.1rem 0.55rem; line-height: 1.2; }
-.prelobby-okno .radky { max-width: none; }
+/* Stejná mřížka jako v panelu nastavení: popisek vpravo zarovnaný, pole
+   v druhém sloupci. Bez ní by řádky splynuly do jednoho odstavce. */
+.prelobby-okno .radky { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; align-items: center; }
+.prelobby-okno .radek { display: contents; }
+.prelobby-okno .radek > span:first-child { color: var(--tlumene); font-size: 0.9rem; text-align: right; }
+.prelobby-okno .radek > select, .prelobby-okno .radek > input { width: 100%; box-sizing: border-box; }
+/* Zaškrtávátka stojí přes oba sloupce, jako ve hře pod poli. */
+.prelobby-okno .radek-cely, .prelobby-okno .prelobby-dvojice { grid-column: 1 / -1; }
+.prelobby-okno .prelobby-dvojice { display: flex; gap: 1.6rem; padding-left: 0.2rem; }
 .prelobby-varovani { margin: 0.9rem 0; text-align: center; font-size: 0.85rem; color: var(--tlumene); }
-.prelobby-heslo { display: flex; align-items: center; gap: 0.4rem; }
+/* Kostka je stejně vysoká jako pole vedle ní, tedy skoro čtvercová. */
+.prelobby-heslo { display: flex; align-items: stretch; gap: 0.4rem; }
 .prelobby-heslo input { flex: 1; letter-spacing: 0.2em; font-weight: 700; }
-.prelobby-heslo .kostka { padding: 0.1rem 0.5rem; font-size: 1rem; line-height: 1.4; }
+.prelobby-heslo .kostka { display: inline-flex; align-items: center; justify-content: center; align-self: stretch; aspect-ratio: 1; padding: 0 0.4rem; color: var(--akcent); }
 .prelobby-okno input[readonly] { color: var(--akcent); font-weight: 700; }
 .prelobby-dvojice { display: flex; gap: 1.4rem; }
 .prelobby-okno label.zaskrtavaci { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }

@@ -227,6 +227,28 @@ civilizace se z nich čtou stejně jako u člověka; klíč `1` je herní id
 civilizace, hodnota s nastaveným horním slovem (65537 = 0x10001) znamená
 náhodnou volbu. Vzájemně se AI rozlišit nedají — žádné id nemají.
 
+**Pre-lobby (okno „Create Lobby“) v inzerátu.** Nastavení ze zakládání lobby
+neleží v `options`, ale přímo v inzerátu vedle jména. Změřeno naživo
+9. 9. 2026 na lobby se zpožděním diváků 3 minuty:
+
+| Volba v okně | Pole inzerátu | Poznámka |
+|---|---|---|
+| Lobby Name | `description` | |
+| Lobby Type | `matchtype_id` | Unranked = 0 |
+| Visibility | `visible` | Public = 1 |
+| Players | `maxplayers` | 2–8 |
+| Set Password | `passwordprotected` | 0/1, samotné heslo se neposílá |
+| Allow Spectators | `isobservable` | |
+| Spectator Delay | `observerdelay` | **v sekundách** (3 minuty = 180) |
+| Server | `relayserver_region` | „Default“ se propíše na skutečný region |
+| Co-Op Campaign, Hide Civilizations, Data Mod | — | v inzerátu se neobjevily |
+
+Nabídka okna (odečteno z hry 9. 9. 2026): Lobby Type Unranked / Ranked 1v1
+Death Match / Ranked Team Death Match; Visibility Public / Private (Private
+zakáže diváky); Players 2–8; Spectator Delay None / 1 / 2 / 3 / 4 / 5 / 10
+minut; Server Default a 12 regionů plus „Use Local Lan Server“; Data Mod
+jen „Definitive Set“.
+
 **Panel hry se umí rozejít s tím, co hra posílá.** 9. 9. 2026 hlásila
 kontrola „Lock Teams: vypnuto, má být zapnuto“, zatímco v herním panelu
 bylo políčko zaškrtnuté. Inzerát měl pravdu: přepnutí Game Mode Lock Teams

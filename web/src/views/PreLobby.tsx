@@ -71,8 +71,8 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
           </label>
           <label className="radek" data-klic="lobbyTyp">
             <span>Lobby Type:</span>
+            {/* Bez „–“: nějaký typ lobby vybraný být musí, jinak to je chyba. */}
             <select value={n.lobbyTyp ?? ""} onChange={(e) => zmen({ lobbyTyp: cislo(e.target.value) })}>
-              <option value="">–</option>
               {Object.entries(LOBBY_TYPY).map(([v, nazev]) => (
                 <option key={v} value={v}>
                   {nazev}
@@ -102,7 +102,13 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
               ))}
             </select>
           </label>
-          <Zaskrtavatko klic="coopKampan" popis="Co-Op Campaign" hodnota={n.coopKampan} onZmena={(v) => zmen({ coopKampan: v })} />
+          {/* Co-Op Campaign se pro večer nehodí vůbec: buď je vypnutá (a tak
+              to má být), nebo je zapnutá a je to chyba. „Je to jedno“ nedává
+              smysl, takže je to obyčejné zaškrtávátko. */}
+          <label className="zaskrtavaci radek-cely" data-klic="coopKampan">
+            <input type="checkbox" checked={n.coopKampan === true} onChange={(e) => zmen({ coopKampan: e.target.checked })} />
+            Co-Op Campaign
+          </label>
         </div>
 
         {/* Věta z herního okna: tohle jsou volby, které se po založení lobby
@@ -113,9 +119,11 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
           <label className="radek" data-klic="heslo">
             <span>Set Password:</span>
             <span className="prelobby-heslo">
-              <input type="text" value={heslo} readOnly data-testid="prelobby-heslo" />
+              {/* Dokud server heslo nepřipravil, hvězdičky — ať je vidět, že
+                  tam něco bude, a ne prázdné pole. */}
+              <input type="text" value={heslo === "" ? "****" : heslo} readOnly data-testid="prelobby-heslo" />
               <button type="button" className="kostka" title="Vygenerovat jiné heslo" aria-label="Vygenerovat jiné heslo" onClick={onNoveHeslo}>
-                🎲
+                <Kostka />
               </button>
             </span>
           </label>
@@ -147,8 +155,8 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
           </label>
           <label className="radek" data-klic="dataMod">
             <span>Data Mod:</span>
+            {/* Hra nabízí jedinou možnost, takže tu není co nechávat otevřené. */}
             <select value={n.dataMod ?? ""} onChange={(e) => zmen({ dataMod: e.target.value === "" ? null : e.target.value })}>
-              <option value="">–</option>
               {DATA_MODY.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -189,5 +197,26 @@ function Zaskrtavatko({
       {popis}
       {hodnota === null ? <span className="zaloha jedno-znak">–</span> : null}
     </label>
+  );
+}
+
+/**
+ * Kostka jednou barvou (currentColor), ne emoji: barevné 🎲 se do zlatého
+ * panelu netrefí a v každém systému vypadá jinak.
+ */
+function Kostka() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+      <rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      {[
+        [8, 8],
+        [16, 8],
+        [12, 12],
+        [8, 16],
+        [16, 16],
+      ].map(([cx, cy]) => (
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.7" fill="currentColor" />
+      ))}
+    </svg>
   );
 }
