@@ -112,9 +112,10 @@ const PRESUN_MS = 340;
  * React vykreslil nové pořadí: řádek se posune zpátky tam, kde byl, a hned se
  * nechá dojet na nové místo.
  *
- * Měří se `offsetTop`, tedy poloha uvnitř tabulky, ne `getBoundingClientRect`.
- * Ta je vůči oknu, takže odrolování stránky mezi dvěma měřeními přičetlo všem
- * řádkům posun, který se nikdy nestal — a ty pak odlétaly ven ze seznamu.
+ * Měří se poloha vůči tabulce, ne vůči oknu ani stránce. Vůči oknu by posun
+ * přičetlo odrolování; vůči stránce zase cokoliv, co se nad tabulkou zvětší
+ * nebo objeví (další zápas, panel), protože uložená poloha z minula pak už
+ * neplatí. V obou případech řádek odlétal daleko mimo seznam.
  *
  * `poradi` je otisk pořadí; efekt se pouští jen když se opravdu změnilo.
  */
@@ -126,16 +127,23 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
     // Kdo si nepřeje pohyb, dostane přeskládání naráz. Během tažení taky ne:
     // řádek pod kurzorem má jít za myší, ne si dojíždět po svém.
     const bezPohybu = (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false) || tahneSe();
+    const ramecek = prvek.getBoundingClientRect();
+    const vrchTabulky = ramecek.top;
+    const vyskaTabulky = ramecek.height;
     const nynejsi = new Map<string, number>();
     for (const radek of prvek.querySelectorAll<HTMLTableRowElement>("tbody > tr[data-hrac]")) {
       const kdo = radek.dataset["hrac"];
       if (!kdo) continue;
-      const ted = radek.offsetTop;
+      const ted = radek.getBoundingClientRect().top - vrchTabulky;
       nynejsi.set(kdo, ted);
       const predtim = drive.current.get(kdo);
       // Nový řádek nemá odkud přijet; nulový posun není co animovat. V testovacím
       // DOM jsou všechny souřadnice nulové, takže se animace nepustí vůbec.
       if (bezPohybu || predtim === undefined || predtim === ted) continue;
+      // Zábradlí: dál než přes celou tabulku se řádek posunout nemohl. Když
+      // takový posun vyjde, je uložená poloha z jiného rozvržení a přejezd by
+      // řádek poslal mimo seznam — v tom případě se prostě přeskládá.
+      if (Math.abs(predtim - ted) > vyskaTabulky) continue;
       radek.style.transition = "none";
       radek.style.transform = `translateY(${predtim - ted}px)`;
       requestAnimationFrame(() => {
