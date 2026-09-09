@@ -1043,9 +1043,11 @@ button.odebrat:hover { color: var(--chyba); }
 .kontroly li { break-inside: avoid; padding: 0.15rem 0; }
 .kontroly li.ok { color: var(--ok); }
 .kontroly li.spatne { color: var(--chyba); font-weight: 700; }
-.kontroly li.varovani { color: var(--varovani); }
+.kontroly li.varovani { color: var(--varovani); font-weight: 700; }
 .kontroly li.jedno { color: var(--tlumene); }
-.kontroly .znak { display: inline-block; width: 1.2rem; }
+/* Znak vycentrovaný: „!“ je v tomhle písmu o dost užší než „✓“, takže bez
+   zarovnání vypadalo varování odsazené jinak než zbytek seznamu. */
+.kontroly .znak { display: inline-block; width: 1.2rem; text-align: center; }
 .varovani { color: var(--varovani); }
 .dalsi-nastaveni { margin-top: 0.6rem; }
 .dalsi-nastaveni summary { cursor: pointer; color: var(--tlumene); }
