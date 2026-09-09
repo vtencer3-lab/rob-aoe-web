@@ -31,7 +31,7 @@ z `AoE2DE\widgetui	extures`:
 
 | díl | zdroj ve hře |
 |---|---|
-| `lobby-pergamen.webp` | `backgrounds\popup_menu_bg_large.png` |
+| `lobby-pergamen.webp` | `backgrounds\popup_menu_bg_small.png` — ze čtyř papírů v `backgrounds\` sedí tenhle: siluetu okrajů ve snímku ze hry (jasový práh + teplota barvy) proti alfa masce každého kandidáta, korelace po sloupcích — spodní okraj 0,94, pravý 0,88, ostatní pod 0,5. Poznávací znamení je zub dole. `popup_menu_bg_large.png` tam byl původně a je to jiný papír |
 | `lobby-ozdoba.webp` | `menu\decoration\header_ornaments.png` |
 | `lobby-pole.webp` | `menu\dropdowns\dropdown_{left,center,right}_4k_normal.png` spojené `spoj.py` do pásu pro `border-image` |
 | `lobby-sipka.webp` | `menuuttons\down_arrow_normal.png` |
