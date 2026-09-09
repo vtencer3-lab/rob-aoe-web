@@ -32,6 +32,10 @@ it("klik zkontroluje a vypíše čtyři stavy; souhrn počítá červené z obou
   expect(hlavni[2]).toHaveClass("spatne");
   expect(screen.getByTestId("kontrola-souhrn")).toHaveTextContent("3 věci k opravě");
   expect(screen.queryByTestId("fajfka-kontrola")).not.toBeInTheDocument();
+  // Hlavní nastavení má od 9. 9. 2026 vlastní záhlaví jako ostatní sekce.
+  const hlavniSekce = screen.getByTestId("hlavni-nastaveni");
+  expect(hlavniSekce).toHaveAttribute("open");
+  expect(hlavniSekce).toHaveTextContent("Nastavení Lobby");
   // Další nastavení ve vlastní, rozbalené sekci s počtem odchylek; „–“ je šedé.
   const dalsi = screen.getByTestId("dalsi-nastaveni");
   expect(dalsi).toHaveAttribute("open");
