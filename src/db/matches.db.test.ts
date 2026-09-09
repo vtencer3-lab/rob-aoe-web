@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, expect, it, vi } from "vitest";
-import { createAkce } from "./events.js";
+import { createAkce, setNastaveniLobby } from "./events.js";
 import {
   createZapas,
   getZapas,
@@ -204,4 +204,45 @@ it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříč
   expect(host.alias).toBeNull();
   expect(host.steamName).toBe("TibbarZmr");
   expect(zapas.poradi).toBe(1);
+});
+
+// ---- Otisk pro archiv -------------------------------------------------------
+// Nastavení lobby žije na akci a přepisuje se každým kliknutím, ELO hráče se
+// přepisuje stažením statistik. Bez otisku by u loňského zápasu svítila dnešní
+// čísla a nešlo by zjistit, na jaké mapě se hrál.
+
+it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
+  await savePlayerStats(HRACI[0]!, { alias: "A", steamName: "A", elo1v1: 1234, eloNejvyssi: 1300, odehranoHer: 10, chyba: null });
+  await setNastaveniLobby(akceId, { location: "Arabia", population: 200 });
+
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+
+  const { rows } = await getPool().query<{ nastaveni: Record<string, unknown> }>(
+    "SELECT nastaveni FROM zapas WHERE id = $1",
+    [zapas.id],
+  );
+  expect(rows[0]?.nastaveni).toMatchObject({ location: "Arabia", population: 200 });
+
+  const { rows: ucastnici } = await getPool().query<{ steam_id: string; elo_pri_zapasu: number | null }>(
+    "SELECT steam_id, elo_pri_zapasu FROM ucastnik WHERE zapas_id = $1 ORDER BY steam_id",
+    [zapas.id],
+  );
+  const otisk = new Map(ucastnici.map((u) => [u.steam_id, u.elo_pri_zapasu]));
+  expect(otisk.get(HRACI[0]!)).toBe(1234);
+  expect(otisk.get(HRACI[1]!)).toBeNull();
+});
+
+// Otisk je snímek, ne odkaz: pozdější změna nastavení akce se do už založeného
+// zápasu nesmí promítnout.
+it("pozdější změna nastavení akce zápasem nehne", async () => {
+  await setNastaveniLobby(akceId, { location: "Arabia" });
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+
+  await setNastaveniLobby(akceId, { location: "Black Forest" });
+
+  const { rows } = await getPool().query<{ nastaveni: Record<string, unknown> }>(
+    "SELECT nastaveni FROM zapas WHERE id = $1",
+    [zapas.id],
+  );
+  expect(rows[0]?.nastaveni).toMatchObject({ location: "Arabia" });
 });

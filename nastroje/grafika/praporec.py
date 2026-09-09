@@ -77,14 +77,37 @@ def srovnej_na_kraj(dlazdice: Image.Image, cap: Image.Image) -> Image.Image:
     return Image.fromarray(a.astype("uint8"), "RGBA")
 
 
-def vyhlad_podel(pruh: Image.Image, sila: float) -> Image.Image:
-    """Odečte podélný světelný přechod, aby dlaždice nedělaly pruhy."""
+def vyhlad_podel(pruh: Image.Image, sila: float, okno: int = 0) -> Image.Image:
+    """Srovná podélný světelný přechod, ale nechá kresbu.
+
+    Původní verze mísila každý pixel s průměrem celého řádku. To sice přechod
+    odstranilo, ale spolu s ním i výšivku — růže uprostřed praporce se slily
+    do vodorovné šmouhy. Odečítá se proto jen nízkofrekvenční složka: klouzavý
+    průměr podél osy opakování. Přechod je pomalý, a tak v něm zůstane; růže
+    jsou rychlé a projdou beze změny.
+
+    Bez tohohle srovnání je na praporci vidět, kde dlaždice začíná a končí:
+    každá si nese vlastní světlo a přes celou šířku se to opakuje.
+    """
     if sila <= 0:
         return pruh
     a = np.asarray(pruh.convert("RGBA")).astype(np.float32)
-    radkovy = a[:, :, :3].mean(axis=1, keepdims=True)
-    a[:, :, :3] = np.clip((1 - sila) * a[:, :, :3] + sila * radkovy, 0, 255)
-    return Image.fromarray(a.astype("uint8"), "RGBA")
+    barva = a[:, :, :3]
+    sirka = barva.shape[1]
+    # Okno musí být širší než perioda vzoru, jinak by průměr sledoval i růže.
+    n = max(3, min(sirka, okno or sirka // 2))
+    if n % 2 == 0:
+        n += 1
+    okraj = n // 2
+    # Zrcadlově prodloužit, ať se okraje netáhnou k tmavé.
+    siroky = np.concatenate([barva[:, okraj:0:-1, :], barva, barva[:, -2 : -okraj - 2 : -1, :]], axis=1)
+    kumul = np.cumsum(np.concatenate([np.zeros_like(siroky[:, :1, :]), siroky], axis=1), axis=1)
+    profil = (kumul[:, n:, :] - kumul[:, :-n, :]) / n
+    profil = profil[:, :sirka, :]
+    radkovy = barva.mean(axis=1, keepdims=True)
+    srovnane = np.clip(barva * (radkovy / np.maximum(profil, 1.0)), 0, 255)
+    a[:, :, :3] = (1 - sila) * barva + sila * srovnane
+    return Image.fromarray(np.clip(a, 0, 255).astype("uint8"), "RGBA")
 
 
 def main() -> None:
@@ -97,13 +120,19 @@ def main() -> None:
     ap.add_argument("--vyhlad", type=float, default=0.75)
     ap.add_argument("--prah", type=int, default=26)
     ap.add_argument("--nahled", type=Path, default=None)
+    ap.add_argument("--alfa-ze-vstupu", action="store_true",
+                    help="pozadí už odstranil někdo jiný (Scenario); vlastní klíčování neprovádět")
     args = ap.parse_args()
 
     im = Image.open(args.vstup)
     if args.orez:
         x1, x2 = (int(v) for v in args.orez.split(","))
         im = im.crop((x1, 0, x2, im.height))
-    im = klicuj(im, args.prah)
+    # Pozadí buď odstraní Scenario (--alfa-ze-vstupu), nebo záplava tady.
+    if not args.alfa_ze_vstupu:
+        im = klicuj(im, args.prah)
+    else:
+        im = im.convert("RGBA")
     bbox = im.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
     if bbox:
         im = im.crop(bbox)

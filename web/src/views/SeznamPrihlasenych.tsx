@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { jeAktivni, nabidnoutJsemTu, zbyvaMs } from "../../../src/shared/aktivita.js";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
@@ -18,6 +19,12 @@ interface Props {
    * nesestavuje další zápas z lidí, kteří jsou zrovna ve hře.
    */
   vZapase?: Map<string, number>;
+  /** Steam ID přihlášeného návštěvníka: jen on u sebe vidí „Jsem tu!“. */
+  ja?: string | null;
+  /** Admin vidí odpočet u všech, ať má přehled, kdo za chvíli usne. */
+  admin?: boolean;
+  /** Kliknutí na „Jsem tu!“ — vrátí hráči plnou lhůtu aktivity. */
+  onJsemTu?: () => void;
 }
 
 type Sloupec = "elo1v1" | "eloNejvyssi" | "odehranoHer" | "steamHodiny";
@@ -66,7 +73,97 @@ export function serad(hraci: PlayerView[], razeni: Razeni | null): PlayerView[] 
   });
 }
 
-export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
+/**
+ * Neaktivní hráči na konec, mezi sebou i uvnitř aktivních pořadí zůstává.
+ * Vrací původní pole, když nikdo neusnul — ať se seznam zbytečně nepřekresluje.
+ */
+export function podleAktivity(hraci: PlayerView[], ted: number): PlayerView[] {
+  const spici = hraci.filter((h) => !jeAktivni(h.aktivniDo, ted));
+  if (spici.length === 0) return hraci;
+  return [...hraci.filter((h) => jeAktivni(h.aktivniDo, ted)), ...spici];
+}
+
+/**
+ * Hodiny, které tikají samy. Lhůta aktivity vyprší tichým během času, ne
+ * zápisem do databáze — bez vlastního tikání by hráč ztmavl až s příští
+ * zprávou ze serveru, tedy klidně za půl hodiny.
+ *
+ * Po pěti vteřinách, ne po dvaceti: odpočet vedle si tiká po vteřinách a
+ * doběhne na nulu dřív než tyhle hodiny. Do té doby se řádek tvářil jako
+ * aktivní a v místě značky nebylo nic.
+ */
+function useTed(): number {
+  const [ted, setTed] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setTed(Date.now()), 5_000);
+    return () => clearInterval(id);
+  }, []);
+  return ted;
+}
+
+/** Doba přejezdu řádku na nové místo. Delší už působí, že tabulka zlobí. */
+const PRESUN_MS = 340;
+
+/**
+ * Přejezd řádků na nové místo místo skoku (technika FLIP).
+ *
+ * Když hráč usne, propadne na konec seznamu — a bez animace to vypadá, jako by
+ * se tabulka sama přeskládala. Změřit se to musí ve stejném snímku, ve kterém
+ * React vykreslil nové pořadí: řádek se posune zpátky tam, kde byl, a hned se
+ * nechá dojet na nové místo.
+ *
+ * Měří se poloha vůči tabulce, ne vůči oknu ani stránce. Vůči oknu by posun
+ * přičetlo odrolování; vůči stránce zase cokoliv, co se nad tabulkou zvětší
+ * nebo objeví (další zápas, panel), protože uložená poloha z minula pak už
+ * neplatí. V obou případech řádek odlétal daleko mimo seznam.
+ *
+ * Přejíždí se jen přeskládání, ne přibytí nebo úbytek hráče. Když někdo do
+ * seznamu přijde, posunou se řádky pod ním z docela jiného důvodu než že by
+ * si vyměnily místa — a přejezd z toho udělá zmatek, ve kterém celý seznam
+ * poskočí a zase se vrátí. V takovém kole se polohy jen zapíšou.
+ *
+ * `poradi` je otisk pořadí; efekt se pouští jen když se opravdu změnilo.
+ */
+function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi: string) {
+  const drive = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const prvek = tabulka.current;
+    if (!prvek) return;
+    // Kdo si nepřeje pohyb, dostane přeskládání naráz. Během tažení taky ne:
+    // řádek pod kurzorem má jít za myší, ne si dojíždět po svém.
+    const bezPohybu = (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false) || tahneSe();
+    const ramecek = prvek.getBoundingClientRect();
+    const vrchTabulky = ramecek.top;
+    const vyskaTabulky = ramecek.height;
+    const nynejsi = new Map<string, number>();
+    const radky = [...prvek.querySelectorAll<HTMLTableRowElement>("tbody > tr[data-hrac]")];
+    const stejnaSestava =
+      radky.length === drive.current.size && radky.every((r) => drive.current.has(r.dataset["hrac"] ?? ""));
+    for (const radek of radky) {
+      const kdo = radek.dataset["hrac"];
+      if (!kdo) continue;
+      const ted = radek.getBoundingClientRect().top - vrchTabulky;
+      nynejsi.set(kdo, ted);
+      const predtim = drive.current.get(kdo);
+      // Nový řádek nemá odkud přijet; nulový posun není co animovat. V testovacím
+      // DOM jsou všechny souřadnice nulové, takže se animace nepustí vůbec.
+      if (bezPohybu || !stejnaSestava || predtim === undefined || predtim === ted) continue;
+      // Zábradlí: dál než přes celou tabulku se řádek posunout nemohl. Když
+      // takový posun vyjde, je uložená poloha z jiného rozvržení a přejezd by
+      // řádek poslal mimo seznam — v tom případě se prostě přeskládá.
+      if (Math.abs(predtim - ted) > vyskaTabulky) continue;
+      radek.style.transition = "none";
+      radek.style.transform = `translateY(${predtim - ted}px)`;
+      requestAnimationFrame(() => {
+        radek.style.transition = `transform ${PRESUN_MS}ms ease`;
+        radek.style.transform = "";
+      });
+    }
+    drive.current = nynejsi;
+  }, [tabulka, poradi]);
+}
+
+export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu }: Props) {
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
   const tabulka = useRef<HTMLTableElement>(null);
@@ -82,8 +179,11 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
     window.addEventListener(KONEC_TAHU, srovnej);
     return () => window.removeEventListener(KONEC_TAHU, srovnej);
   }, [prihlaseni]);
-  // Řazení je jen pro režii; hráči vidí pořadí přihlášení.
-  const radky = skladani ? serad(skladani.nevybrani, razeni) : prihlaseni;
+  // Řazení je jen pro režii; hráči vidí pořadí přihlášení. Usnulí jdou na
+  // konec za všech okolností — i za seřazeného seznamu.
+  const ted = useTed();
+  const radky = podleAktivity(skladani ? serad(skladani.nevybrani, razeni) : prihlaseni, ted);
+  usePresouvani(tabulka, radky.map((h) => h.steamId).join(","));
 
   const prepni = (sloupec: Sloupec) => {
     const nove = dalsiRazeni(razeni, sloupec);
@@ -131,7 +231,8 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
               </th>
             );
           })}
-          {skladani ? <th aria-label="Právě hraje" /> : null}
+          <th className="jsem-tu-bunka" aria-label="Návrat mezi aktivní" />
+          <th aria-label="Stav hráče" />
         </tr>
       </thead>
       <tbody>
@@ -141,7 +242,14 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
           // přesun nebyl vidět.
           const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId) : {};
           return (
-            <tr key={hrac.steamId} {...tah}>
+            <tr
+              key={hrac.steamId}
+              data-hrac={hrac.steamId}
+              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : ""]
+                .filter(Boolean)
+                .join(" ")}
+              {...tah}
+            >
               {skladani ? (
                 <td className="vybrat">
                   <button
@@ -185,15 +293,27 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
               {/* Bez avataru se Steamu nikdo neptal (chybí klíč, nebo dotaz
                   selhal) — pak NULL neznamená skrytý profil, ale „nevíme“. */}
               <td>{hrac.steamHodiny !== null || hrac.avatarUrl ? formatHodiny(hrac.steamHodiny) : "—"}</td>
-              {skladani ? (
-                <td className="hraje">
-                  {vZapase?.has(hrac.steamId) ? (
-                    <span className="mece" role="img" aria-label={`Právě hraje zápas #${vZapase.get(hrac.steamId)}`} title={`Právě hraje zápas #${vZapase.get(hrac.steamId)}`}>
-                      ⚔
-                    </span>
-                  ) : null}
-                </td>
-              ) : null}
+              {/* Tlačítko a značka mají vlastní sloupce. V jednom by šířka
+                  tlačítka odsouvala odpočet a ten by se řádek od řádku
+                  neshodoval. */}
+              <td className="jsem-tu-bunka">
+                {ja === hrac.steamId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted) ? (
+                  <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
+                    Jsem tu!
+                  </button>
+                ) : null}
+              </td>
+              <td className="hraje">
+                <span className="stav-znacka">
+                  <ZnackaHrace
+                    hrac={hrac}
+                    ted={ted}
+                    vlastni={ja !== null && ja !== undefined && ja === hrac.steamId}
+                    admin={admin}
+                    vZapase={vZapase}
+                  />
+                </span>
+              </td>
             </tr>
           );
         })}
@@ -209,4 +329,91 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase }: Props) {
       ) : null}
     </table>
   );
+}
+
+/**
+ * Odpočet vlastní lhůty. Tiká po vteřinách sám za sebe: tabulka se překresluje
+ * po dvaceti a odpočet po vteřinách by ji hnal zbytečně celou.
+ */
+function MujCas({ aktivniDo }: { aktivniDo: string }) {
+  const [ted, setTed] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setTed(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const zbyva = zbyvaMs(aktivniDo, ted) ?? 0;
+  return (
+    <span className="muj-cas napoveda" data-napoveda="Za jak dlouho tě seznam odsune mezi neaktivní">
+      {formatOdpoctu(zbyva)}
+    </span>
+  );
+}
+
+/**
+ * Odpočet jako „09:59“. Minuty vždy na dvě číslice, aby se šířka buňky s každou
+ * vteřinou neměnila a tabulka pod ní neposkakovala.
+ *
+ * Doběhlý odpočet ukazuje nuly, ne prázdno: značku „Zzz“ nasadí až seznam,
+ * který tiká pomaleji, a do té chvíle musí být vidět, že čas došel.
+ */
+export function formatOdpoctu(zbyvaMs: number): string {
+  const vteriny = Math.max(0, Math.ceil(zbyvaMs / 1000));
+  return `${String(Math.floor(vteriny / 60)).padStart(2, "0")}:${String(vteriny % 60).padStart(2, "0")}`;
+}
+
+/** Doba slovy: „7 min“, „1 h 20 min“. Pod minutu se přesnost nehodí ani nezajímá. */
+function trvani(ms: number): string {
+  const minut = Math.floor(ms / 60_000);
+  if (minut < 1) return "necelou minutu";
+  if (minut < 60) return `${minut} min`;
+  const zbytek = minut % 60;
+  return zbytek === 0 ? `${Math.floor(minut / 60)} h` : `${Math.floor(minut / 60)} h ${zbytek} min`;
+}
+
+/**
+ * Značka stavu v posledním sloupci: meče, odpočet, nebo „Zzz“.
+ *
+ * Sloupec je jen pro ni a má pevnou šířku, takže značky stojí pod sebou, ať je
+ * u koho která. Tlačítko „Jsem tu!“ má vlastní sloupec vedle — v jednom by
+ * jeho šířka odpočet odsouvala.
+ *
+ * Odpočet vidí hráč u sebe a admin u všech: potřebuje přehled, kdo za chvíli
+ * usne, a zkušební hráči mají lhůtu jako každý jiný. Kdo už spí, má místo
+ * čísel „Zzz“; zkřížené meče jdou před obojím, protože „hraje zápas“ je pro
+ * sestavování důležitější než lhůta.
+ */
+function ZnackaHrace({
+  hrac,
+  ted,
+  vlastni,
+  admin,
+  vZapase,
+}: {
+  hrac: PlayerView;
+  ted: number;
+  vlastni: boolean;
+  admin: boolean;
+  vZapase?: Map<string, number>;
+}) {
+  const zapas = vZapase?.get(hrac.steamId);
+  if (zapas !== undefined) {
+    const popis = `Právě hraje zápas #${zapas}`;
+    return (
+      <span className="mece napoveda" role="img" aria-label={popis} data-napoveda={popis}>
+        ⚔
+      </span>
+    );
+  }
+  if (!jeAktivni(hrac.aktivniDo, ted)) {
+    // Jak dlouho už spí: kladné číslo je doba od vypršení lhůty.
+    const pryc = -(zbyvaMs(hrac.aktivniDo, ted) ?? 0);
+    const popis = `Neaktivní ${trvani(pryc)}`;
+    return (
+      <span className="spi napoveda" role="img" aria-label={popis} data-napoveda={popis}>
+        Zzz
+      </span>
+    );
+  }
+  if ((vlastni || admin) && hrac.aktivniDo) return <MujCas aktivniDo={hrac.aktivniDo} />;
+  return null;
 }

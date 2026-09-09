@@ -28,6 +28,8 @@ import urllib.request
 from pathlib import Path
 
 API = "https://api.cloud.scenario.com/v1"
+# Projekt, do kterého uživatel určil nahrávat (zadání grafického kabátku).
+PROJEKT = "proj_9Epp9mVRGdKPcaiZwwQ9JjMS"
 CRED_FILE = Path.home() / ".scenario_api.json"
 POLL_S = 3
 TIMEOUT_S = 300
@@ -61,6 +63,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Remove background přes Scenario API (stojí kredity!)")
     ap.add_argument("input", type=Path)
     ap.add_argument("-o", "--output", type=Path, default=None)
+    ap.add_argument("--projekt", default=PROJEKT, help="ID projektu na Scenariu, kam asset patří")
     args = ap.parse_args()
 
     src: Path = args.input
@@ -71,8 +74,11 @@ def main() -> None:
 
     print(f"1/4 upload {src.name} ({src.stat().st_size // 1024} kB)...")
     b64 = base64.b64encode(src.read_bytes()).decode()
-    asset = _call(auth, "POST", "/assets", {
-        "image": f"data:image/png;base64,{b64}", "name": src.name})
+    # Projekt se předává parametrem adresy. V těle požadavku ho server tiše
+    # ignoruje a asset spadne do projektu, ke kterému patří API klíč — což se
+    # pozná až zpětně podle `ownerId`.
+    cesta = "/assets" + (f"?projectId={args.projekt}" if args.projekt else "")
+    asset = _call(auth, "POST", cesta, {"image": f"data:image/png;base64,{b64}", "name": src.name})
     asset_id = asset.get("asset", {}).get("id") or asset.get("assetId")
     if not asset_id:
         sys.exit(f"CHYBA: upload nevrátil assetId: {json.dumps(asset)[:500]}")

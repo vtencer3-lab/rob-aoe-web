@@ -213,3 +213,36 @@ it("přihlásit se jde do každé běžící akce, i když už jsou zápasy slo�
   expect(await listSignups(akce.id)).toHaveLength(1);
   await app.close();
 });
+
+// Název akce jde přepsat za běhu; je to jediná vlastnost akce, která se mění.
+it("přejmenování akce projde a ořízne mezery", async () => {
+  const akce = await createAkce("Čtvrtek");
+  const { sid } = await prihlasenyKlient(ROB, true);
+  const app = buildServer();
+
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akce.id}/nazev`,
+    cookies: { sid },
+    payload: { nazev: "  Pátkový večer  " },
+  });
+
+  expect(res.statusCode).toBe(200);
+  expect((await getAktivniAkce())?.nazev).toBe("Pátkový večer");
+});
+
+it("prázdný název akce se odmítne", async () => {
+  const akce = await createAkce("Čtvrtek");
+  const { sid } = await prihlasenyKlient(ROB, true);
+  const app = buildServer();
+
+  const res = await app.inject({
+    method: "POST",
+    url: `/api/akce/${akce.id}/nazev`,
+    cookies: { sid },
+    payload: { nazev: "   " },
+  });
+
+  expect(res.statusCode).toBe(400);
+  expect((await getAktivniAkce())?.nazev).toBe("Čtvrtek");
+});

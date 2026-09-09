@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { buildAkceStav } from "../../realtime/akceStav.js";
 import { hub, KANAL_AKCE } from "../../realtime/hub.js";
+import { sledujPritomnost } from "../../realtime/pritomnost.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import type { AkceStavPayload } from "../../shared/types.js";
 import { VERZE } from "../../shared/verze.js";
@@ -16,6 +17,8 @@ export function registerStreamRoutes(app: FastifyInstance): void {
     // navěsit — a bez posluchače tady by odběratel i puls unikaly navždy.
     let odhlas: (() => void) | undefined;
     let puls: NodeJS.Timeout | undefined;
+    // Zavření poslední karty znamená odchod z akce (pritomnost.ts).
+    let odesel: (() => void) | undefined;
     // Volatelné opakovaně a bezpečně: druhé volání (ať už z 'close', nebo
     // z chybové větve níže) už nic nedělá, takže nikdy neuvolní odběratele,
     // který mezitím vznikl znovu se stejným akceId.
@@ -25,6 +28,7 @@ export function registerStreamRoutes(app: FastifyInstance): void {
       const fn = odhlas;
       odhlas = undefined;
       fn?.();
+      odesel?.();
     };
     request.raw.on("close", uklid);
 
@@ -57,6 +61,8 @@ export function registerStreamRoutes(app: FastifyInstance): void {
       }
 
       const divak = await zjistiDivaka(request);
+      // Anonymní divák se z ničeho odhlašovat nemusí.
+      if (divak.steamId) odesel = sledujPritomnost(divak.steamId);
 
       const posli = (payload: AkceStavPayload) =>
         reply.raw.write(`data: ${JSON.stringify(redigujProDivaka(payload, divak))}\n\n`);

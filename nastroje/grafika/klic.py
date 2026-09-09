@@ -51,6 +51,8 @@ def main() -> None:
     ap.add_argument("--prah", type=int, default=70)
     ap.add_argument("--rozmaz", type=float, default=0.8)
     ap.add_argument("--bez-orezu", action="store_true")
+    ap.add_argument("--alfa-ze-vstupu", action="store_true",
+                    help="pozadí už odstranil někdo jiný (Scenario); jen ořezat na obsah")
     args = ap.parse_args()
 
     cesty: list[Path] = []
@@ -63,7 +65,9 @@ def main() -> None:
         args.out.mkdir(parents=True, exist_ok=True)
 
     for cesta in cesty:
-        im = klicuj(Image.open(cesta), args.prah, args.rozmaz)
+        im = Image.open(cesta).convert("RGBA")
+        if not args.alfa_ze_vstupu:
+            im = klicuj(im, args.prah, args.rozmaz)
         if not args.bez_orezu:
             im = orez(im)
         cil = args.out / f"{cesta.stem}.png" if do_slozky else args.out

@@ -75,13 +75,20 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
     // Kdo se mezitím odhlásil, do zápasu nepatří. Kontrola i vložení jsou v jedné transakci,
     // takže neúspěch nezanechá poloviční zápas.
     const steamIds = sestava.map((s) => s.steamId);
-    const { rows: prihlaseni } = await client.query<{ steam_id: string; odehrano_her: number | null }>(
-      `SELECT p.steam_id, p.odehrano_her
+    const { rows: prihlaseni } = await client.query<{
+      steam_id: string;
+      odehrano_her: number | null;
+      elo_1v1: number | null;
+    }>(
+      `SELECT p.steam_id, p.odehrano_her, p.elo_1v1
          FROM prihlaska pr JOIN player p ON p.steam_id = pr.steam_id
         WHERE pr.akce_id = $1 AND pr.stav = 'prihlasen' AND pr.steam_id = ANY($2::text[])`,
       [akceId, steamIds],
     );
     const odehrano = new Map(prihlaseni.map((r) => [r.steam_id, r.odehrano_her]));
+    // ELO se hráči přepisuje s každým stažením statistik; pro archiv se otiskne
+    // to, které platilo v okamžiku založení zápasu.
+    const elo = new Map(prihlaseni.map((r) => [r.steam_id, r.elo_1v1]));
     for (const steamId of steamIds) {
       if (!odehrano.has(steamId)) {
         throw new UcastnikOdhlasenChyba(`Hráč ${steamId} už není přihlášený do akce.`);
@@ -96,18 +103,26 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
     );
     const poradi = poradiRows[0]!.dalsi;
 
+    // Nastavení lobby žije na akci a mění se každým kliknutím. Zápas si ho
+    // proto obtiskne, jinak by po večeru nešlo zjistit, s čím se hrál.
+    const { rows: nastaveniRows } = await client.query<{ nastaveni_lobby: unknown }>(
+      "SELECT nastaveni_lobby FROM akce WHERE id = $1",
+      [akceId],
+    );
+
     const { rows } = await client.query(
-      `INSERT INTO zapas (akce_id, poradi, nazev_lobby, heslo)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO zapas (akce_id, poradi, nazev_lobby, heslo, nastaveni)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
        RETURNING ${SLOUPCE_ZAPASU}`,
-      [akceId, poradi, lobbyName(poradi), generatePassword()],
+      [akceId, poradi, lobbyName(poradi), generatePassword(), JSON.stringify(nastaveniRows[0]?.nastaveni_lobby ?? {})],
     );
     const zapas = mapujZapas(rows[0] as Record<string, unknown>);
 
     for (const seat of seats) {
       await client.query(
-        "INSERT INTO ucastnik (zapas_id, steam_id, tym, barva, civ, je_host, poradi) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-        [zapas.id, seat.steamId, seat.tym, seat.barva, seat.civ, seat.jeHost, seat.poradi],
+        `INSERT INTO ucastnik (zapas_id, steam_id, tym, barva, civ, je_host, poradi, elo_pri_zapasu)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [zapas.id, seat.steamId, seat.tym, seat.barva, seat.civ, seat.jeHost, seat.poradi, elo.get(seat.steamId) ?? null],
       );
     }
     return zapas;

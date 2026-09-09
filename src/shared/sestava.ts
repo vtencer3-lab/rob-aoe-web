@@ -34,10 +34,10 @@ export function zkontrolujSestavu(sestava: SestavaVstup[]): string | null {
     if (stejni.length < 2) continue;
     const [prvni, ...dalsi] = stejni as [SestavaVstup, ...SestavaVstup[]];
     if (prvni.tym === 0 || dalsi.some((s) => s.tym !== prvni.tym)) {
-      return "Hráči se stejnou barvou sdílejí civilizaci, musí být ve stejném týmu.";
+      return "Hráči se stejnou barvou musí být ve stejném týmu.";
     }
     if (dalsi.some((s) => (s.civ ?? null) !== (prvni.civ ?? null))) {
-      return "Hráči se stejnou barvou sdílejí civilizaci, musí mít předepsanou tutéž.";
+      return "Hráči se stejnou barvou musí mít i stejnou civilizaci.";
     }
   }
 

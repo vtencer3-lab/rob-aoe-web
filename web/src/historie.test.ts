@@ -23,7 +23,7 @@ describe("popisZmenyNastaveni", () => {
   it("pojmenuje první změněný klíč s hodnotami jako v panelu", () => {
     expect(popisZmenyNastaveni(VYCHOZI_NASTAVENI, { ...VYCHOZI_NASTAVENI, populace: 150 })).toEqual({ text: "Population: 200 → 150", cil: "populace" });
     expect(popisZmenyNastaveni(VYCHOZI_NASTAVENI, { ...VYCHOZI_NASTAVENI, mapaId: 10878 })).toEqual({ text: "Location: Arabia → Black Forest", cil: "mapaId" });
-    expect(popisZmenyNastaveni(VYCHOZI_NASTAVENI, { ...VYCHOZI_NASTAVENI, lockTeams: true })).toEqual({ text: "Lock Teams: – → zapnuto", cil: "lockTeams" });
+    expect(popisZmenyNastaveni(VYCHOZI_NASTAVENI, { ...VYCHOZI_NASTAVENI, lockTeams: false })).toEqual({ text: "Lock Teams: zapnuto → vypnuto", cil: "lockTeams" });
     expect(popisZmenyNastaveni(VYCHOZI_NASTAVENI, { ...VYCHOZI_NASTAVENI, rychlost: 3, cheaty: true }).text).toBe("Game Speed: Normal → Fast (+1 dalších)");
   });
 });

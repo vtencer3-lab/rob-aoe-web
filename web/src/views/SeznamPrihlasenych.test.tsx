@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import type { PlayerView } from "../../../src/shared/types.js";
-import { SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
+import { AKTIVITA_MINUT } from "../../../src/shared/aktivita.js";
+import { formatOdpoctu, podleAktivity, SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
 
 const hrac = (prepis: Partial<PlayerView> = {}): PlayerView => ({
   steamId: "76561198000000001",
@@ -118,4 +119,187 @@ it("po najetí na jméno ukáže kartu se všemi žebříčky", () => {
   expect(radky[0]).toHaveTextContent("---");
   fireEvent.pointerLeave(screen.getByTestId("jmeno-hrace"));
   expect(screen.queryByTestId("staty-hrace")).not.toBeInTheDocument();
+});
+
+// ---- Aktivita přihlášených -------------------------------------------------
+// Přihláška platí jen chvíli (shared/aktivita.ts). Kdo se dlouho neozval,
+// ztmavne, propadne na konec a u sebe vidí cestu zpátky.
+
+const TED = Date.parse("2026-09-08T20:00:00.000Z");
+const za = (minut: number) => new Date(TED + minut * 60_000).toISOString();
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+/** Čas je v komponentě z `Date.now()`; testy si ho postaví na pevný okamžik. */
+function zmrazCas() {
+  vi.useFakeTimers();
+  vi.setSystemTime(TED);
+}
+
+it("spáči padají na konec, mezi sebou si pořadí drží", () => {
+  const a = hrac({ steamId: "a", aktivniDo: za(-1) });
+  const b = hrac({ steamId: "b", aktivniDo: za(5) });
+  const c = hrac({ steamId: "c", aktivniDo: za(-9) });
+  const d = hrac({ steamId: "d", aktivniDo: za(1) });
+  expect(podleAktivity([a, b, c, d], TED).map((h) => h.steamId)).toEqual(["b", "d", "a", "c"]);
+});
+
+it("když nikdo nespí, pořadí zůstává beze změny", () => {
+  const hraci = [hrac({ steamId: "a", aktivniDo: za(3) }), hrac({ steamId: "b" })];
+  expect(podleAktivity(hraci, TED)).toBe(hraci);
+});
+
+it("spící řádek ztmavne a nese ikonu Zzz", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ aktivniDo: za(-1) })]} />);
+  expect(screen.getByText("Zzz")).toBeInTheDocument();
+  expect(screen.getByText("TenceR").closest("tr")).toHaveClass("spici");
+});
+
+it("aktivní hráč ikonu ani třídu nemá", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ aktivniDo: za(5) })]} />);
+  expect(screen.queryByText("Zzz")).not.toBeInTheDocument();
+  expect(screen.getByText("TenceR").closest("tr")).not.toHaveClass("spici");
+});
+
+it("u vlastního spícího řádku je tlačítko Jsem tu!, u cizího ne", () => {
+  zmrazCas();
+  const onJsemTu = vi.fn();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(-1) }), hrac({ steamId: "cizi", alias: "Cizí", aktivniDo: za(-1) })]}
+      ja="ja"
+      onJsemTu={onJsemTu}
+    />,
+  );
+
+  const tlacitko = screen.getByRole("button", { name: /jsem tu/i });
+  expect(screen.getAllByRole("button", { name: /jsem tu/i })).toHaveLength(1);
+  // Značka „spí“ zůstává u obou; tlačítko stojí vedle ní, ne místo ní.
+  expect(screen.getAllByText("Zzz")).toHaveLength(2);
+
+  fireEvent.click(tlacitko);
+  expect(onJsemTu).toHaveBeenCalledTimes(1);
+});
+
+// Čerstvě obnovená lhůta tlačítko nenabízí: není co resetovat.
+it("s plnou lhůtou se tlačítko nenabízí, jen odpočet", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", aktivniDo: za(AKTIVITA_MINUT) })]} ja="ja" onJsemTu={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: /jsem tu/i })).not.toBeInTheDocument();
+  expect(screen.getByText("15:00")).toBeInTheDocument();
+});
+
+// Minutu po obnovení už tlačítko je — kdo vidí čas ubývat, má si umět sáhnout
+// na reset dřív, než ho seznam odsune dolů.
+it("po minutě se tlačítko nabídne, i když hráč ještě neusnul", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", aktivniDo: za(AKTIVITA_MINUT - 1.5) })]} ja="ja" onJsemTu={vi.fn()} />);
+  expect(screen.getByRole("button", { name: /jsem tu/i })).toBeInTheDocument();
+});
+
+// Odpočet je jen vlastní; cizí lhůta nikomu nic neříká.
+it("odpočet vidí hráč jen u sebe", () => {
+  zmrazCas();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(5) }), hrac({ steamId: "cizi", alias: "Cizí", aktivniDo: za(5) })]}
+      ja="ja"
+    />,
+  );
+  // Dvě číslice i pod deset minut — šířka sloupce se pak nemění.
+  expect(screen.getAllByText("05:00")).toHaveLength(1);
+});
+
+// V tabulce o dvaceti jménech se člověk hledá první. Vlastní řádek proto nese
+// třídu, na kterou se věší zvýraznění — a nese ji i tehdy, když hráč usnul.
+it("vlastní řádek je označený, aktivní i usnulý", () => {
+  zmrazCas();
+  const { rerender } = render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(5) }), hrac({ steamId: "cizi", alias: "Cizí", aktivniDo: za(5) })]}
+      ja="ja"
+    />,
+  );
+  expect(screen.getByText("Já").closest("tr")).toHaveClass("muj-radek");
+  expect(screen.getByText("Cizí").closest("tr")).not.toHaveClass("muj-radek");
+
+  rerender(
+    <SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(-1) })]} ja="ja" />,
+  );
+  const radek = screen.getByText("Já").closest("tr");
+  expect(radek).toHaveClass("muj-radek");
+  expect(radek).toHaveClass("spici");
+});
+
+// Nepřihlášený návštěvník žádný vlastní řádek nemá.
+it("bez přihlášení není označený nikdo", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a" })]} ja={null} />);
+  expect(screen.getByText("TenceR").closest("tr")).not.toHaveClass("muj-radek");
+});
+
+// Animace přejezdu si řádky hledá podle `data-hrac`; bez toho by neměla co
+// měřit a přeskládání by zase skákalo.
+it("řádky nesou značku, podle které je animace najde", () => {
+  zmrazCas();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a" }), hrac({ steamId: "b" })]} />);
+  const znacky = document.querySelectorAll("tbody > tr[data-hrac]");
+  expect([...znacky].map((r) => r.getAttribute("data-hrac"))).toEqual(["a", "b"]);
+});
+
+// Admin potřebuje přehled, kdo za chvíli usne — odpočet proto vidí u všech,
+// zkušební hráče nevyjímaje. Hráč vidí jen ten svůj.
+it("adminovi běží odpočet u všech řádků", () => {
+  zmrazCas();
+  const hraci = [hrac({ steamId: "a", alias: "A", aktivniDo: za(5) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(9) })];
+  const { rerender } = render(<SeznamPrihlasenych prihlaseni={hraci} ja="a" admin />);
+  expect(screen.getByText("05:00")).toBeInTheDocument();
+  expect(screen.getByText("09:00")).toBeInTheDocument();
+
+  rerender(<SeznamPrihlasenych prihlaseni={hraci} ja="a" />);
+  expect(screen.getByText("05:00")).toBeInTheDocument();
+  expect(screen.queryByText("09:00")).not.toBeInTheDocument();
+});
+
+// Značka stojí ve vlastním sloupci s pevnou šířkou, ať je to čas, „Zzz“ nebo
+// meče — jinak by se sloupec s každým stavem posouval.
+it("čas i Zzz stojí ve stejné značce", () => {
+  zmrazCas();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "a", alias: "A", aktivniDo: za(5) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(-1) })]}
+      ja="a"
+      admin
+    />,
+  );
+  expect(screen.getByText("05:00").closest(".stav-znacka")).not.toBeNull();
+  expect(screen.getByText("Zzz").closest(".stav-znacka")).not.toBeNull();
+});
+
+// Odpočet si tiká po vteřinách, seznam pomaleji. Než seznam stihne nasadit
+// „Zzz“, ukazuje doběhlý odpočet nuly — jinak by v buňce chvíli nebylo nic.
+it("doběhlý odpočet ukáže nuly, ne prázdno", () => {
+  expect(formatOdpoctu(-5_000)).toBe("00:00");
+  expect(formatOdpoctu(0)).toBe("00:00");
+  expect(formatOdpoctu(59_400)).toBe("01:00");
+  expect(formatOdpoctu(900_000)).toBe("15:00");
+});
+
+// Bublina říká, jak dlouho je hráč pryč, a nese ji `data-napoveda` — systémový
+// `title` čeká vteřinu a vypadá jako z jiné stránky.
+it("u spáče je v bublině doba nepřítomnosti", () => {
+  zmrazCas();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ steamId: "a", alias: "A", aktivniDo: za(-7) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(-95) })]}
+    />,
+  );
+  const znacky = screen.getAllByText("Zzz");
+  expect(znacky[0]).toHaveAttribute("data-napoveda", "Neaktivní 7 min");
+  expect(znacky[1]).toHaveAttribute("data-napoveda", "Neaktivní 1 h 35 min");
+  expect(znacky[0]).not.toHaveAttribute("title");
 });

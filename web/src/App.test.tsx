@@ -30,6 +30,9 @@ vi.mock("./api.js", () => ({
     zapasStav: vi.fn(),
     vysledek: vi.fn(),
     zmenitHosta: vi.fn(),
+    jsemTu: vi.fn(),
+    aktivita: vi.fn(),
+    pretocitCas: vi.fn(),
   },
 }));
 
@@ -241,9 +244,9 @@ it("účastníkovi se jeho vlastní běžící zápas nezdvojí", async () => {
   expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
 });
 
-// Dohraný zápas z karty vypadne, protože mojeZapasy() filtruje `dohrano`.
-// Bez veřejného řádku by hráči po zapsání výsledku zmizel z obrazovky beze
-// stopy a nedozvěděl by se, jak zápas dopadl.
+// Dohraný zápas z vlastní karty vypadne, protože mojeZapasy() filtruje
+// `dohrano`. Bez historie by hráči po zapsání výsledku zmizel z obrazovky
+// beze stopy a nedozvěděl by se, jak dopadl.
 it("hráči po zapsání výsledku zápas nezmizí", async () => {
   vi.mocked(api.me).mockResolvedValue({
     hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false },
@@ -253,7 +256,8 @@ it("hráči po zapsání výsledku zápas nezmizí", async () => {
 
   render(<App />);
 
-  expect(await screen.findByTestId("verejny-zapas")).toHaveTextContent("vyhrál modrý tým");
+  expect(await screen.findByTestId("zapas-hlavicka")).toHaveTextContent("vyhrál modrý tým");
+  expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
 });
 
 // Přepínače jen pro adminy: „User View“ schová všechno adminské (panel akce,
@@ -267,13 +271,15 @@ it("admin si přepne na pohled uživatele a adminské části zmizí", async () 
   render(<App />);
 
   expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
-  expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Akce 1");
+  expect(screen.getByRole("heading", { name: "Nastavení Lobby" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Přihlášení hráči" })).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("switch", { name: /pohled uživatele/i }));
   expect(screen.queryByRole("button", { name: /vytvořit zápas/i })).not.toBeInTheDocument();
-  expect(screen.queryByTestId("nazev-akce")).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Akce 1" })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Nastavení Lobby" })).not.toBeInTheDocument();
+  // Název akce zůstává: patří celému večeru, ne režii. Přestane být tlačítkem.
+  expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Akce 1");
+  expect(screen.queryByRole("button", { name: "Akce 1" })).not.toBeInTheDocument();
   // Přepínač zpátky zůstává, ať se admin dostane ven.
   expect(screen.getByRole("switch", { name: /pohled uživatele/i })).toBeInTheDocument();
 });
@@ -395,4 +401,147 @@ it("admin má dohrané zápasy až pod běžícím a bez zkráceného řádku", 
   const poradi = screen.getAllByTestId("zapas-hlavicka").map((h) => h.textContent ?? "");
   expect(poradi[0]).toContain("Zápas #7");
   expect(poradi[1]).toContain("Zápas #8");
+});
+
+// Tabulka přihlášených patří nad panel akce: kdo dorazil, se čte dřív, než se
+// z toho staví zápas.
+it("přihlášení hráči stojí nad panelem akce", async () => {
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  const tabulka = await screen.findByRole("heading", { name: "Přihlášení hráči" });
+  const panel = screen.getByRole("heading", { name: "Nastavení Lobby" });
+  // Node.compareDocumentPosition: 4 = druhý uzel je v dokumentu za prvním.
+  expect(tabulka.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+// Zápas se zakládá dole pod tabulkou, takže z něj po kliknutí nebyl vidět ani
+// kus. Karta se musí najet doprostřed obrazovky, jakmile dorazí ve stavu.
+it("po založení zápasu se stránka posune na jeho kartu", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  const posun = vi.fn();
+  Element.prototype.scrollIntoView = posun;
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  vi.mocked(api.vytvoritZapas).mockResolvedValue({ zapas: { id: 42 } });
+  const hraci = [
+    { steamId: "a", alias: "A", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null },
+    { steamId: "b", alias: "B", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null },
+  ];
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [{ steamId: "a", tym: 1, barva: 1, civ: null }, { steamId: "b", tym: 2, barva: 2, civ: null }] },
+    prihlaseni: hraci,
+    zapasy: [],
+  });
+
+  const { rerender } = render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /vytvořit zápas/i }));
+  await vi.waitFor(() => expect(api.vytvoritZapas).toHaveBeenCalled());
+  // Do téhle chvíle karta na stránce není, takže není kam posouvat.
+  expect(posun).not.toHaveBeenCalled();
+
+  nastavStav({
+    akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] },
+    prihlaseni: hraci,
+    zapasy: [{ ...zapas([u("a", 1, 1, true), u("b", 2, 2)]), id: 42 }],
+  });
+  rerender(<App />);
+
+  await vi.waitFor(() => expect(posun).toHaveBeenCalledWith({ behavior: "smooth", block: "center" }));
+});
+
+// Debug mód na vývojové verzi: zkušební hráči a posun času. Lhůta aktivity je
+// čtvrt hodiny, takže bez posunu by se usínání dalo zkoušet jen čekáním.
+it("debug mód nabízí zkušební hráče i posun času", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  vi.mocked(api.nastaveni).mockResolvedValue({ verze: "0.0.0", zkusebniHraci: true });
+  vi.mocked(api.pretocitCas).mockResolvedValue({ minut: 15, dotcenych: 3 });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  // Bez debug módu tam nic z toho není, ať v ostrém večeru nezavazí.
+  expect(screen.queryByRole("button", { name: /zkušební hráč/i })).not.toBeInTheDocument();
+
+  fireEvent.click(await screen.findByRole("switch", { name: /debug/i }));
+  fireEvent.click(screen.getByRole("button", { name: /\+ zkušební hráč/i }));
+  await vi.waitFor(() => expect(api.pridatZkusebniho).toHaveBeenCalledWith(1));
+
+  fireEvent.click(screen.getByRole("button", { name: /odebrat zkušební/i }));
+  await vi.waitFor(() => expect(api.odebratZkusebni).toHaveBeenCalledWith(1));
+
+  fireEvent.click(screen.getByRole("button", { name: /posunout o 15 min/i }));
+  await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1, 15));
+
+  fireEvent.click(screen.getByRole("button", { name: /posunout o 1 min/i }));
+  await vi.waitFor(() => expect(api.pretocitCas).toHaveBeenCalledWith(1, 1));
+});
+
+// „Ukončit akci“ se přestěhovalo z panelu akce nahoru k tabulce přihlášených.
+// Je nevratné: po „konec“ akce zmizí všem naráz i s rozehranými zápasy.
+it("ukončení akce se ptá a při odmítnutí nic nepošle", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true },
+  });
+  nastavStav({ akce: { id: 1, nazev: "Čtvrtek", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+  const potvrzeni = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+  render(<App />);
+
+  const tlacitko = await screen.findByRole("button", { name: "Ukončit akci" });
+  fireEvent.click(tlacitko);
+  expect(potvrzeni).toHaveBeenCalled();
+  expect(api.akceStav).not.toHaveBeenCalled();
+
+  potvrzeni.mockReturnValue(true);
+  fireEvent.click(tlacitko);
+  await vi.waitFor(() => expect(api.akceStav).toHaveBeenCalledWith(1, "konec"));
+  potvrzeni.mockRestore();
+});
+
+// Hráč vidí tytéž karty historie jako Rob, ale nesmí do nich sáhnout.
+it("hráči vidí historii zápasů jen ke čtení", async () => {
+  vi.mocked(api.me).mockResolvedValue({
+    hrac: { steamId: "divak", alias: "Divak", steamName: null, jeAdmin: false },
+  });
+  const dohrany: ZapasView = {
+    ...zapas([u("a", 1, 1, true), u("c", 2, 2)]),
+    stav: "dohrano",
+    vitez: { tym: 1 },
+  };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [dohrany] });
+
+  render(<App />);
+
+  expect(await screen.findByRole("heading", { name: /historie zápasů/i })).toBeInTheDocument();
+  expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("Zápas #7");
+  // Karta místo zkráceného řádku, bez zásahů do výsledku a bez zavírání.
+  expect(screen.queryByTestId("verejny-zapas")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /změnit výsledek/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /zavřít zápas/i })).not.toBeInTheDocument();
+  // Sbalit smí každý.
+  expect(screen.getByRole("button", { name: /sbalit zápas #7/i })).toBeInTheDocument();
+});
+
+// Štít v záhlaví vede na kanál. Nová záložka schválně: rozehraný večer se nemá
+// zavírat kvůli prokliku na YouTube.
+it("logo odkazuje na kanál Brohemians do nové záložky", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  const odkaz = await screen.findByRole("link", { name: /brohemians/i });
+  expect(odkaz).toHaveAttribute("href", "https://www.youtube.com/@BrohemiansAoE");
+  expect(odkaz).toHaveAttribute("target", "_blank");
+  expect(odkaz.getAttribute("rel")).toContain("noreferrer");
 });

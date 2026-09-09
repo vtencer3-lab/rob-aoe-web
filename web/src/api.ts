@@ -43,6 +43,26 @@ export const api = {
     fetch(cesta(`/api/akce/${akceId}/prihlaska`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   odhlasit: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/prihlaska`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+  /** Přejmenování běžící akce (tužka u nadpisu panelu). */
+  prejmenovatAkci: (akceId: number, nazev: string) =>
+    fetch(cesta(`/api/akce/${akceId}/nazev`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nazev }),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
+  /** „Jsem tu!“ — vrátí přihlášce plnou lhůtu aktivity. */
+  jsemTu: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/jsem-tu`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
+  /** Debug mód: přetočí lhůty aktivity o daný počet minut dopředu. */
+  pretocitCas: (akceId: number, minut: number) =>
+    fetch(cesta(`/api/akce/${akceId}/pretocit-cas`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ minut }),
+    }).then((r) => json<{ minut: number; dotcenych: number }>(r)),
+  /** Puls od kliknutí do stránky. Server sám rozhodne, jestli lhůtu posune. */
+  aktivita: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/aktivita`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   odhlasitSe: () => fetch(cesta("/api/auth/logout"), { method: "POST" }),
   pripojeni: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/pripojeni`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),

@@ -69,7 +69,8 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       ulozeneNastaveniLobby: akce.ulozeneNastaveniLobby,
       skladani: akce.skladani,
     },
-    prihlaseni: prihlaseni.map(playerView),
+    // Lhůta aktivity patří k přihlášce, ne k hráči: mimo akci nemá smysl.
+    prihlaseni: prihlaseni.map((hrac) => ({ ...playerView(hrac), aktivniDo: hrac.aktivniDo.toISOString() })),
     zapasy: (await listZapasy(akce.id)).map(zapasView),
   };
 }

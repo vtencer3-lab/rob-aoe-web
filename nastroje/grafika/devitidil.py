@@ -17,16 +17,23 @@ sežralo tmavé dřevo rámu.
 import argparse
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 
-def zaplav_pozadi(im: Image.Image, prah: int = 70) -> Image.Image:
-    """Vrátí masku (L): 255 = obsah rámu, 0 = černé pozadí venku i otvor uvnitř."""
+def zaplav_pozadi(im: Image.Image, prah: int = 70, jen_stred: bool = False) -> Image.Image:
+    """Vrátí masku (L): 255 = obsah rámu, 0 = černé pozadí venku i otvor uvnitř.
+
+    `jen_stred` zaplavuje pouze otvor uprostřed. Hodí se, když okolí odstranil
+    někdo jiný: v obrázku s vyříznutým pozadím je venek dokonale černý a záplava
+    od rohů by po něm protekla i do tmavého dřeva rámu. Maska otvoru se proto
+    počítá z původního renderu, kde má kde skončit.
+    """
     sedy = im.convert("L")
     # Záplava pracuje nad kopií, do které si značí navštívené pixely bílou.
     znacka = sedy.copy()
-    body = [(0, 0), (im.width - 1, 0), (0, im.height - 1), (im.width - 1, im.height - 1),
-            (im.width // 2, im.height // 2)]
+    stred = [(im.width // 2, im.height // 2)]
+    body = stred if jen_stred else [
+        (0, 0), (im.width - 1, 0), (0, im.height - 1), (im.width - 1, im.height - 1), *stred]
     for bod in body:
         if znacka.getpixel(bod) < 255:
             ImageDraw.floodfill(znacka, bod, 255, thresh=prah)
@@ -205,12 +212,27 @@ def main() -> None:
     ap.add_argument("--nesymetricky", action="store_true",
                     help="strany brát každou z její vlastní hrany předlohy (model je maluje jinak)")
     ap.add_argument("--bez-orezu", action="store_true")
+    ap.add_argument("--alfa-ze-vstupu", action="store_true",
+                    help="pozadí už odstranil někdo jiný (Scenario); vlastní záplavu neprovádět")
+    ap.add_argument("--otvor-z", type=Path, default=None,
+                    help="původní render (stejný rozměr), ze kterého se vezme otvor uprostřed rámu")
     ap.add_argument("--nahled", type=Path, default=None, help="kam uložit zkoušku poskládání")
     args = ap.parse_args()
 
     im = Image.open(args.vstup).convert("RGBA")
-    maska = zaplav_pozadi(im, args.prah).filter(ImageFilter.GaussianBlur(0.8))
-    im.putalpha(maska)
+    # Vlastní záplava od rohů je náhrada za to, že difuze neumí průhlednost.
+    # Když ji udělal někdo lepší (Scenario), přepsat cizí masku vlastní by
+    # výsledek jen zhoršilo — dodělá se jen otvor uprostřed. Odstraňovač pozadí
+    # totiž vyřízne předmět z okolí, ale díru uvnitř rámu za pozadí nepovažuje,
+    # a devítidílný rám by pak měl v rozích neprůhledné cáry.
+    if args.alfa_ze_vstupu:
+        if args.otvor_z:
+            otvor = zaplav_pozadi(Image.open(args.otvor_z), args.prah, jen_stred=True)
+            otvor = otvor.filter(ImageFilter.GaussianBlur(0.8))
+            im.putalpha(ImageChops.darker(im.getchannel("A"), otvor))
+    else:
+        maska = zaplav_pozadi(im, args.prah).filter(ImageFilter.GaussianBlur(0.8))
+        im.putalpha(maska)
     if not args.bez_orezu:
         im = orez_na_obsah(im)
     print(f"po ořezu: {im.size[0]}x{im.size[1]}")

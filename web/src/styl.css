@@ -93,7 +93,8 @@ body::before {
 main { max-width: calc(62rem + 250px); margin: 0 auto; padding: 1.5rem; position: relative; }
 /* Nadpis akce mimo panel (pohled hráče) stojí přímo na scéně — bez stínu by
    se ztratil v obloze nad náměstím. */
-main > h2 { margin: 0.6rem 0 1rem; font-size: 1.5rem; }
+/* Odstup od praporce: nalepený hned pod látku vypadal jako její součást. */
+h2.nadpis-akce { margin: 20px 0 1rem; font-size: 1.5rem; }
 
 /* Nadpisy kapitálkou jako nápisy ve hře. Georgia zůstává na běžný text —
    kapitálka se v odstavci čte špatně. */
@@ -103,19 +104,32 @@ h1, h2, h3, h4, legend, .nadpis-seznamu {
   color: var(--zlato-svetle);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 14px rgba(216, 168, 58, 0.18);
 }
-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+/* Zarovnání shora, ne na střed: praporec je nejvyšší prvek řady a uživatelský
+   blok vedle něj patří k hornímu okraji. Prázdné místo nad i pod praporcem
+   zmizelo s ořezem obrázku — dřív ho tvořilo jeho prázdné plátno, ne odsazení,
+   takže se nemá čím dorovnávat. */
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.4rem; }
 /* Štít nesedí vedle praporce, ale NA něm: přesahuje přes jeho levý konec
-   a vrhá na látku vlastní stín. Bez toho vypadal odloženě vedle. */
+   a vrhá na látku vlastní stín. Bez toho vypadal odloženě vedle.
+   Je to odkaz na kanál, takže rozměry drží obal a obrázek ho vyplní. */
 header .logo {
-  width: 142px;
+  display: block;
+  width: 172px;
   height: auto;
   flex: none;
   position: relative;
   z-index: 2;
   /* Přesah jen přes zlatý nárožník, ne přes celý konec praporce — pod štítem
      má zůstat vidět, že látka někde začíná. */
-  margin: -0.2rem -46px 0 0;
+  margin: -0.5rem -60px 0 0;
   filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 22px rgba(0, 0, 0, 0.45));
+  transition: filter 0.2s;
+}
+header .logo img { display: block; width: 100%; height: auto; }
+/* Pod kurzorem štít o kousek prosvětlí — jinak by na něm nešlo poznat, že
+   někam vede. */
+header .logo:hover, header .logo:focus-visible {
+  filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 26px rgba(216, 168, 58, 0.5)) brightness(1.08);
 }
 /* Nadpis sedí na praporci. Krajní díly obrázku (zlaté nárožníky s cípy)
    zůstávají v původním poměru, prostředek se vodorovně DLAŽDICUJE — kdyby se
@@ -126,18 +140,44 @@ header .logo {
    praporec má vlaštovčí cípy a průhledné pozadí, takže obdélníkový stín by
    visel ve vzduchu vedle nich. */
 header h1 {
-  margin: 0 auto 0 0;
-  /* Svislé odsazení je v pixelech schválně: výška praporce musí přesně
-     odpovídat poměru předlohy (463 px při šířce nárožníku 336 px), jinak se
-     látka i výšivka svisle zmáčknou. Nárožník 104 px dává výšku 143 px —
-     dost na to, aby samet nepůsobil jako tenký pásek, a text sedí v něm nad
-     zlatou bordurou. */
-  padding: 34px 2.8rem 74px 0.6rem;
-  font-size: 2.05rem;
-  line-height: 35px;
-  border-style: solid;
-  border-width: 0 104px;
-  border-image: url(./assets/ui/praporec.webp) 0 336 fill / 0 104px repeat stretch;
+  /* Záporný levý okraj zasune praporec za štít. Spodní zůstává na nule: pod
+     praporcem teď stojí název akce a stlačovat ho k látce se neosvědčilo. */
+  margin: 0 auto 0 -30px;
+  /* Praporec vcelku, v poměru předlohy (1600 × 502). Žádné dělení na krajní
+     díly a dlaždicovaný střed: ať se opakující dlaždice udělá jakkoliv, na
+     šířku hlavičky je jí vidět začátek i konec a látka se svisle mačká.
+     Kreslí se přes `contain`, ne `100% 100%`: to druhé vyplní box, ať má
+     jakýkoliv tvar, a stačí aby výška vyšla o kousek jinak (výška řádku,
+     odsazení, `align-items` v hlavičce) a látka se zmáčkne. `contain` poměr
+     drží za všech okolností; `aspect-ratio` říká, jak vysoký box má být, aby
+     kolem obrázku nezbývalo prázdno, a `box-sizing` musí být `border-box`,
+     jinak se odsazení k té výšce ještě přičte.
+
+     Obrázek je oříznutý na kresbu (1962 × 444). Dokud měl kolem sebe prázdné
+     plátno, musela se jeho poloha dorovnávat posunem — teď sedí sám.
+
+     Šířka je zastropovaná: praporec roste s oknem a na širokém monitoru by
+     zabral půl obrazovky. */
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 860px;
+  box-sizing: border-box;
+  aspect-ratio: 1962 / 444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Text patří do látky mezi tyčí a zlatou bordurou, ne doprostřed obrázku.
+     Naměřeno v obrázku: látka začíná pod tyčí na 2 % výšky, střed bordury je
+     na 61,7 %. Text má stát ve 45 % té vzdálenosti, tedy na 28,9 % celkové
+     výšky. Spodní odsazení tam obsah zvedne: procento se počítá ze šířky,
+     takže při poměru 4,42:1 odpovídá 7,6 % šířky 34 % výšky. Usazení tím drží
+     v každé velikosti, na rozdíl od posunu v pixelech. */
+  padding: 18px 4% 7.6% 4%;
+  /* Písmo roste s praporcem, ale nepřeroste ho: v plné šířce má zabírat asi
+     čtvrtinu vzdálenosti mezi tyčí a bordurou. */
+  font-size: 2rem;
+  line-height: 1.15;
+  background: url(./assets/ui/praporec-cely.webp) center / contain no-repeat;
   color: var(--zlato-svetle);
   text-shadow: 0 2px 4px rgba(40, 6, 6, 0.9), 0 0 20px rgba(0, 0, 0, 0.55);
   filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
@@ -167,9 +207,12 @@ header h1 {
    pod kapitálkou vypadá jako podtržení, ne jako výzdoba. Kreslí se do vlastního
    bloku, ne jako pozadí nadpisu: pozadí se ořezávalo šířkou nadpisu a u
    krátkého titulku z ozdoby zbyla půlka s rozetou mimo střed. */
-.nadpis-seznamu, main > h2, .hlavicka-akce h2 { margin: 0 0 0.7rem; }
-.nadpis-seznamu, main > h2 { font-size: 1.1rem; }
-.nadpis-seznamu::after, main > h2::after, .hlavicka-akce h2::after {
+.nadpis-seznamu, h2.nadpis-akce, .hlavicka-akce h2 { margin: 0 0 0.7rem; }
+/* Nadpisy panelů drží jednu velikost. „Nastavení Lobby“ ji dřív bralo
+   z výchozího stylu prohlížeče pro h2, takže vycházelo větší než „Přihlášení
+   hráči“ vedle něj; teď je řečená u obou. */
+.nadpis-seznamu, .hlavicka-akce h2 { font-size: 1.4rem; }
+.nadpis-seznamu::after, h2.nadpis-akce::after, .hlavicka-akce h2::after {
   content: "";
   display: block;
   width: 21rem;
@@ -177,6 +220,10 @@ header h1 {
   height: 1.37rem;
   margin-top: 0.35rem;
   background: url(./assets/ui/oddelovac.webp) left center / 100% 100% no-repeat;
+  /* Stín i uvnitř desky: bez něj ozdoba na dřevě plave. Je slabší než u nadpisů
+     venku na scéně — na desce stačí naznačit, že kov leží nad ní. Musí to být
+     `drop-shadow`, který obkreslí tvar; `box-shadow` by udělal obdélník. */
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
 }
 
 /* Tlačítka se kreslí v CSS, ne z obrázku: zůstanou ostrá v každé velikosti
@@ -223,7 +270,15 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
   cursor: not-allowed;
 }
 
-button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba),
+/* Tlačítka, která se jako tlačítka nemají tvářit (nadpis akce, jméno Roba
+   v záhlaví), nesou `bez-vzhledu` a vypadávají ze všech obecných pravidel
+   níž. Vyjímá je `:not(:where(...))`, ne prosté `:not(...)`: to druhé zvedne
+   váhu selektoru o třídu, obecné pravidlo tím přebije to pro zlatá tlačítka
+   (`button.plus:hover`) a „+“ zhnědne. `:where()` váhu nemění. Do 9. 9. 2026 se místo toho vzhled přebíjel u každého zvlášť — jenže
+   `all: unset` platí jen v klidu a hnědá deska se vracela pod kurzorem. */
+button.bez-vzhledu { all: unset; cursor: pointer; }
+
+button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(:where(.bez-vzhledu)),
 a.tlacitko, .cta:not(.spectate) {
   display: inline-flex;
   align-items: center;
@@ -231,7 +286,7 @@ a.tlacitko, .cta:not(.spectate) {
   line-height: 1.15;
 }
 
-button {
+button:not(:where(.bez-vzhledu)) {
   background: linear-gradient(#4a2a1c, #2c1710 60%, #200f0a);
   color: var(--zlato-svetle);
   border: 1px solid var(--zlato-tmave);
@@ -247,7 +302,7 @@ button {
     inset 0 -2px 6px rgba(0, 0, 0, 0.45),
     0 1px 2px rgba(0, 0, 0, 0.5);
 }
-button:hover:enabled {
+button:hover:enabled:not(:where(.bez-vzhledu)) {
   background: linear-gradient(#5e3724, #3a1e14 60%, #2a1410);
   border-color: var(--zlato);
 }
@@ -318,6 +373,22 @@ main > .prazdno::after {
   padding: 0.4rem 0.6rem;
   margin: 1.6rem 0;
   background:
+    /* Prohlubeň pod rámem. Nekreslí ji `box-shadow: inset`, protože ten začíná
+       až na vnitřní hraně rámečku (34 px), kdežto kresba rámu končí už na
+       21 px — mezi tím zůstával světlý pruh, ve kterém bylo vidět, že stín
+       s rámem nelícuje. Přechody se počítají od vnějšího okraje (viz
+       `background-origin` níž), takže se dají posadit přesně na hranu
+       kresby. 21 px je změřeno z `ram.webp`: 152 z 650 px řezu na 34 px. */
+    linear-gradient(
+      to bottom,
+      transparent 20px, rgba(0, 0, 0, 0.5) 22px, transparent 62px,
+      transparent calc(100% - 62px), rgba(0, 0, 0, 0.5) calc(100% - 22px), transparent calc(100% - 20px)
+    ),
+    linear-gradient(
+      to right,
+      transparent 20px, rgba(0, 0, 0, 0.42) 22px, transparent 62px,
+      transparent calc(100% - 62px), rgba(0, 0, 0, 0.42) calc(100% - 22px), transparent calc(100% - 20px)
+    ),
     linear-gradient(rgba(38, 22, 16, 0.90), rgba(20, 12, 8, 0.95)),
     radial-gradient(120% 90% at 50% 0%, rgba(168, 20, 25, 0.16), transparent 62%),
     url(./assets/ui/drevo.webp) center / 380px repeat;
@@ -325,6 +396,8 @@ main > .prazdno::after {
      (padding-box). Přechod pak pod rámem začínal znovu od své světlé strany
      a kolem panelu svítil světlý pruh. */
   background-origin: border-box;
+  /* Vnější stín desku zvedne nad scénu; prohlubeň uvnitř kreslí přechody
+     v pozadí, aby lícovala s rámem (viz výš). */
   box-shadow: 0 12px 38px rgba(0, 0, 0, 0.6);
 }
 .karta .hero, .host .hero {
@@ -369,9 +442,63 @@ main > .prazdno::after {
 .stavovy-radek { color: var(--tlumene); font-size: 0.85rem; margin: 0.3rem 0; }
 .rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
 
-/* Nadpis historie stojí na pozadí mezi kartami. Odstup shora si musí říct sám:
-   sekce žádný nemá, mezery mezi kartami dělají jejich vlastní okraje. */
+/* Nadpisy, které stojí přímo na malovaném pozadí (název akce, historie
+   zápasů), drží jednu velikost — stejnou jako titulek zápasu pod nimi. Uvnitř
+   panelu zůstává nadpis menší: tam ho nese deska, ne scéna.
+
+   Stín pod písmem i pod ozdobou je tu kvůli čitelnosti, ne pro efekt: na
+   vížkách a lucernách v pozadí se zlaté písmo bez něj ztrácí. Ozdoba je
+   obrázek, takže potřebuje `drop-shadow` (obkreslí tvar), ne `box-shadow`
+   (obkreslil by obdélník). */
+h2.nadpis-akce,
+.historie-zapasu > .nadpis-seznamu {
+  font-size: 1.8rem;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.75),
+    0 0 14px rgba(216, 168, 58, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.75),
+    0 0 26px rgba(0, 0, 0, 0.55);
+}
+h2.nadpis-akce::after,
+.historie-zapasu > .nadpis-seznamu::after,
+main > .prazdno::after {
+  width: 26rem;
+  height: 1.7rem;
+  margin-top: 0.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75));
+}
+/* Ozdoba pod názvem akce visí mimo tok: nadpis pak měří jen svůj řádek textu
+   a tlačítko vedle něj se má podle čeho vystředit. Místo pod ní drží spodní
+   okraj nadpisu (odstup + výška ozdoby + odstup od panelu). */
+h2.nadpis-akce { position: relative; margin-bottom: 0; }
+h2.nadpis-akce::after {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
+  /* Ozdoba je široká přes půl řádku; bez tohohle by najetí na ni rozsvěcovalo
+     nadpis, aniž by kurzor byl na textu. */
+  pointer-events: none;
+}
 .historie-zapasu > .nadpis-seznamu { margin-top: 2.4rem; }
+
+/* Vítěz dohraného zápasu. Zlatý odznak vedle jména a teplejší řádek — kdo
+   vyhrál, má být vidět dřív, než se přečte věta v hlavičce. */
+.sestava-zapasu .radek.vyhral { background: rgba(216, 168, 58, 0.09); }
+.sestava-zapasu .radek.vyhral .jmeno { color: var(--zlato-svetle); }
+.odznak-vitez {
+  margin-left: 0.5rem;
+  padding: 0.08rem 0.4rem;
+  border-radius: 2px;
+  background: linear-gradient(#e2c47c, #c99a35 55%, #9d7420);
+  color: #23150a;
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  vertical-align: 0.12em;
+  box-shadow: inset 0 1px 0 rgba(255, 245, 215, 0.7), 0 1px 2px rgba(0, 0, 0, 0.5);
+}
 .skladani {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
@@ -672,7 +799,7 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 .chyba-pole { margin: 0.4rem 0 0; }
 
 /* Dohrany nebo zruseny zapas v rezii: zaznam, ne ovladaci pult. */
-.zapas.odepsany { opacity: 0.75; }
+.zapas.odepsany { opacity: 0.85; }
 .verejny-zapas .verdikt { color: var(--zlato-svetle); }
 
 /* Host taky hraje, takze i on ma svoji barvu videt jako pruh, ne jen jako
@@ -981,8 +1108,227 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .seznam > thead > tr > th button.razeni.aktivni .sipka-razeni { opacity: 1; }
 
 /* Zkřížené meče u hráče, který právě hraje běžící zápas. */
-.seznam > tbody > tr > td.hraje { width: 2rem; text-align: center; }
+.seznam > tbody > tr > td.hraje { width: 2rem; text-align: center; white-space: nowrap; }
 .seznam .mece { font-size: 1.2rem; color: var(--akcent); }
+
+/* Kdo se dlouho neozval, ztmavne a propadne na konec seznamu. Zůstává čitelný
+   — je to informace „asi tu není“, ne škrtnutí. Ztmavnutí se prolne, přejezd
+   na nové místo obstará FLIP v komponentě (jen `transform` se tu nepřechází,
+   ať si ho animace řídí sama). */
+.seznam > tbody > tr { opacity: 1; transition: opacity 340ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  .seznam > tbody > tr { transition: none; }
+}
+.seznam > tbody > tr.spici { opacity: 0.52; }
+.seznam > tbody > tr.spici:hover { opacity: 0.78; }
+
+/* Vlastní řádek. V tabulce o dvaceti jménech se člověk hledá první, tak ať ho
+   najde bez čtení: zlatá zarážka u kraje, teplejší podklad a jméno o odstín
+   světlejší. Usnutý vlastní řádek se stmívá míň než cizí — pořád je to ten,
+   podle kterého se člověk orientuje. */
+.seznam > tbody > tr.muj-radek > td { background: rgba(216, 168, 58, 0.11); }
+.seznam > tbody > tr.muj-radek:hover > td { background: rgba(216, 168, 58, 0.16); }
+.seznam > tbody > tr.muj-radek > td:first-child { box-shadow: inset 3px 0 0 var(--zlato); }
+.seznam > tbody > tr.muj-radek .jmeno-hrace { color: var(--zlato-svetle); font-weight: 700; }
+.seznam > tbody > tr.spici.muj-radek { opacity: 0.78; }
+.seznam > tbody > tr.spici.muj-radek:hover { opacity: 1; }
+
+/* Přejmenování: adminovi je tlačítkem celý nadpis. Drobná tužka vedle něj byla
+   malý terč hned vedle velkého nápisu, na který se stejně chtělo klikat.
+   Tlačítko nesmí být vidět jako tlačítko — dědí písmo i barvu nadpisu a pod
+   kurzorem jen zezlátne. */
+/* Pod kurzorem se kolem nadpisu načrtne pole, ve které se po kliknutí promění:
+   průsvitný zlatý rámeček, a vedle něj tužka. Říká to, co se stane, líp než
+   pouhé přebarvení — psát se pak začne přesně do toho rámečku. Odsazení
+   a rámeček má stejné jako to pole, jen průhledné, aby nápis při přepnutí
+   nepodskočil; záporný levý okraj to odsazení vyruší, ať nadpis začíná tam,
+   kde ostatní.
+
+   Rozsvěcuje to najetí na celý nadpis, ne jen na tlačítko: tužka stojí vedle
+   něj a couvala by pod kurzorem sama před sebou. */
+/* Vzhled tlačítka nemá; obecná pravidla ho míjejí díky `bez-vzhledu` výš. */
+/* Rámeček obtahuje jen text a nechává mu kolem sebe vzduch — nalepený na
+   písmenech vypadá jako podtržení, ne jako pole. Pozadí zůstává průhledné:
+   je to náznak pole, ne deska. Odsazení i rámeček má stejné jako to pole, jen
+   průhledné, aby nápis při přepnutí nepodskočil; záporný levý okraj to
+   odsazení vyruší, ať nadpis začíná tam, kde ostatní nadpisy. */
+h2 .nazev-akce-text {
+  padding: 0.2rem 0.65rem;
+  margin-left: -0.65rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transition: border-color 0.18s, color 0.18s;
+}
+h2 button.nazev-akce-tlacitko:hover .nazev-akce-text,
+h2 button.nazev-akce-tlacitko:focus-visible .nazev-akce-text {
+  color: var(--zlato-svetle);
+  border-color: rgba(216, 168, 58, 0.5);
+}
+
+/* Tužka vedle nadpisu: v klidu není, pod kurzorem svítí naplno. Stojí uvnitř
+   tlačítka, takže je klikací jako nadpis sám. */
+h2 .tuzka-napovedy {
+  margin-left: 0.7rem;
+  font-size: 0.62em;
+  line-height: 1;
+  vertical-align: 0.22em;
+  color: var(--zlato);
+  opacity: 0;
+  transition: opacity 0.18s;
+  text-shadow: 0 0 12px rgba(216, 168, 58, 0.6);
+}
+h2 button.nazev-akce-tlacitko:hover .tuzka-napovedy,
+h2 button.nazev-akce-tlacitko:focus-visible .tuzka-napovedy { opacity: 1; }
+/* Pole i jeho neviditelná míra musí mít stejné písmo, odsazení i rámeček,
+   jinak by se šířky rozešly. Míra drží obal, pole ho vyplní. */
+h2 .nazev-akce-obal {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  /* Pole je o své svislé odsazení a rámeček vyšší než nadpis v klidu (naměřeno
+     8,38 px). Bez vyrovnání by kliknutí do názvu posunulo celý zbytek stránky.
+     Počítá se ze stejných hodnot jako to odsazení, ať to drží i po jejich
+     změně; rozměry pole zůstávají, jen se nezapočítají do výšky řádku. */
+  margin-block: calc((0.2rem + 1px) * -1);
+  /* A doleva o vlastní odsazení, ať písmena zůstanou tam, kde byla: naměřený
+     posun textu při přepnutí byl 10,4 px doprava. Rámeček pod kurzorem má
+     stejné vyrovnání, takže se nehne ani on. */
+  margin-inline-start: -0.65rem;
+}
+h2 .nazev-akce-mira,
+h2 input.nazev-akce-pole {
+  font: inherit;
+  letter-spacing: inherit;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--zlato-tmave);
+  box-sizing: border-box;
+}
+h2 .nazev-akce-mira {
+  display: block;
+  visibility: hidden;
+  white-space: pre;
+  min-width: 6ch;
+  /* Pole si nad text drží pevnou rezervu (naměřeno 10-11 px, nezávisle na
+     délce — nejspíš místo pro kurzor). Bez ní se text v poli odroloval a
+     první písmeno zmizelo za okrajem, takže ji míra musí započítat. */
+  padding-right: calc(0.65rem + 12px);
+}
+h2 input.nazev-akce-pole {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  color: inherit;
+}
+
+/* Nadpis akce a ukončení večera na jedné řádce, tlačítko svisle na střed textu.
+   Aby střed vycházel z písma a ne z ozdoby pod ním, je ozdoba vytažená z toku
+   (viz `h2.nadpis-akce::after` níž) — nadpis je pak vysoký přesně jako jeho
+   řádek. Kdyby ozdoba do výšky počítala, tlačítko by kleslo pod účaří. */
+.radek-akce {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  /* Odstup i místo pro ozdobu drží řádek, ne nadpis: pružné centrování počítá
+     i s okraji položky, takže spodní okraj nadpisu by tlačítko stáhl dolů. */
+  margin-bottom: calc(0.5rem + 1.7rem + 1rem);
+}
+.radek-akce > h2 { flex: 0 1 auto; }
+
+/* Nadpis a tlačítka tabulky přihlášených na jednom řádku; nadpis si nese
+   ozdobu, takže se zarovnává shora, ne na střed. */
+.panel-prihlaseni > .hlavicka-prihlasenych {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.panel-prihlaseni > .hlavicka-prihlasenych > .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.seznam .spi {
+  font-family: "Cinzel", Georgia, serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  color: var(--zlato-tmave);
+}
+/* Stav hráče: značka vpravo, tlačítko nalevo od ní. Značka má pevnou šířku,
+   takže odpočet, „Zzz“ i meče stojí na stejném místě a sloupec lícuje po celé
+   tabulce — a odpočet nehýbe ničím, když se změní počet číslic. */
+.seznam .stav-znacka { display: inline-block; min-width: 4.6ch; text-align: right; }
+
+/* Vlastní bublina místo systémové: ta se objeví až po vteřině čekání a vypadá
+   jako z jiné stránky. Tahle naskočí hned a je ze stejného dřeva jako zbytek.
+   Text nese `data-napoveda`, takže se nikde nepíše dvakrát. */
+.napoveda { position: relative; }
+.napoveda::after {
+  content: attr(data-napoveda);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  z-index: 30;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--zlato-tmave);
+  border-radius: 3px;
+  background: linear-gradient(rgba(30, 17, 12, 0.99), rgba(12, 7, 4, 0.99));
+  /* Bublina leží nad deskou z téhož dřeva, takže se bez pořádného stínu ztratí.
+     Dva stíny: široký ji odlepí od pozadí, těsný pod ní udělá hranu. Světlá
+     linka nahoře je totéž, co drží nad zemí desky panelů. */
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.8),
+    0 2px 6px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 220, 150, 0.14);
+  color: var(--text);
+  font-family: Georgia, serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-align: left;
+  text-shadow: none;
+  opacity: 0;
+  pointer-events: none;
+  /* Bez prodlevy: objeví se v okamžiku, kdy na značku najedeš. */
+  transition: opacity 0.1s;
+}
+.napoveda:hover::after, .napoveda:focus-visible::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .napoveda::after { transition: none; }
+}
+/* Vlastní sloupec pro „Jsem tu!“: v jednom se značkou by jeho šířka odpočet
+   odsouvala a sloupec by se řádek od řádku neshodoval.
+
+   Šířka je pevná, ne podle obsahu: bez ní se sloupec při objevení tlačítka
+   roztáhl z 20 na 91 px a všechny ostatní sloupce se o kus posunuly. Tlačítko
+   měří 72 px, s odsazením se do 5,7 rem vejde a zbytek tabulky se nehne, ať
+   tam tlačítko je, nebo ne. */
+.seznam th.jsem-tu-bunka,
+.seznam > tbody > tr > td.jsem-tu-bunka {
+  width: 5.7rem;
+  min-width: 5.7rem;
+  padding-right: 0.6rem;
+  text-align: right;
+  white-space: nowrap;
+}
+.seznam .muj-cas {
+  /* Číslice stejné šíře: jinak by se čas při každé vteřině mírně přeléval. */
+  display: inline-block;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--tlumene);
+  opacity: 0.75;
+}
+
+/* Drobné tlačítko, ať se sloupec kvůli němu neroztáhne přes půl tabulky. */
+.seznam button.jsem-tu {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
 
 /* Karta se statistikami hráče v pravém dolním rohu, jako ve hře po najetí
    na jméno v lobby. */
@@ -1042,7 +1388,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 
 /* Robovo jméno v záhlaví je tlačítko (easter egg), ale vypadá jako text;
    hover ho jen lehce zezlátne. */
-h1 button.jmeno-roba { all: unset; cursor: pointer; transition: color 0.2s; }
+/* Odsazení musí stát až za `all: unset` z `bez-vzhledu`, ten smaže i okraje.
+   Mezi pomlčkou a jménem jinak nezbyla mezera — tlačítko se lepilo na ni. */
+h1 button.jmeno-roba { margin-left: 10px; transition: color 0.2s; }
 h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
   color: var(--zlato);
   background: none;
@@ -1099,7 +1447,13 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 /* Křížek na zavření dohraného zápasu v pravém horním rohu karty; zavřený
    zápas (jen v debug módu) je zašedlý s tlačítkem na otevření. */
 .zapas { position: relative; }
-.zapas button.zavrit-zapas { position: absolute; top: 0.7rem; right: 0.7rem; width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+/* Rohová tlačítka karty (sbalit, zavřít) v jednom pruhu. Dřív si křížek
+   držel vlastní `right`, takže druhé tlačítko by se muselo umisťovat podle
+   toho, jestli křížek zrovna je — pruh to řeší sám. */
+.zapas .ovladani-karty { position: absolute; top: 0.7rem; right: 0.7rem; display: flex; align-items: center; gap: 0.2rem; }
+.zapas button.zavrit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.sbalit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 0.95rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.sbalit-zapas:hover:enabled { color: var(--akcent); border-color: var(--zlato-tmave); background: none; }
 .zapas button.zavrit-zapas:hover { color: var(--chyba); border-color: var(--zlato-tmave); }
 .zapas button.zavrit-zapas.otevrit { width: auto; height: auto; padding: 0.3rem 0.6rem; font-size: 0.85rem; background: linear-gradient(#4a2a1c, #2c1710); border-color: var(--zlato-tmave); }
 .zapas.zavreny { opacity: 0.45; }
