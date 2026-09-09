@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 8. 9. 2026, verze 0.16.3)
+# Přehled prací a záměrů (stav k 9. 9. 2026, dev 0.25.2)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,11 +35,12 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.24.37, nasazeno na <https://jouki.cz/aoe> (PR #12, 9. 9. 2026); stav před ním nese značku `v0.19.1` |
-| `origin/dev` | 0.24.37, totéž co `main`, nasazeno na <https://jouki.cz/aoe/dev> |
+| `origin/dev` | 0.25.2, nasazeno na <https://jouki.cz/aoe/dev> — AI v sestavě, mazání zkušebních hráčů, schované presety (§3.20, §3.21); **před `main`** |
 | `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; od té doby prázdné a **zaostalé o celý `dev`** — před dalším pokusem přezaložit (§2.1 nasazení) |
 | Migrace | 001–014, poslední `014_archiv_zapasu.sql`; aplikované na všech třech databázích (ověřeno 9. 9. 2026 dotazem na `prihlaska` a `zapas`) |
-| Testy | backend hermetické 233, databázové 147, frontend 204 — všechny zelené |
+| Testy | backend hermetické 241, databázové 152, frontend 215 — všechny zelené (9. 9. 2026) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
 
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
@@ -249,7 +250,10 @@ verze — „asymetrické / moc velké“ bylo zamítnuto). „Admin View / User
 pod přihlášením v záhlaví, „Debug“ u verze v patičce; oba jen pro adminy,
 stav v localStorage. Debug navíc ukáže zavřené zápasy v režii (3.8) a
 tlačítka zkušebních hráčů, pokud je server povolil (`DEV_PRISTUP`, jen na
-dev; přes https se zkušební dveře samy zavírají — nesahat).
+dev; přes https se zkušební dveře samy zavírají — nesahat). Proměnnou
+`ZKUSEBNI_HRACI` má od 9. 9. 2026 i ostrá aplikace, takže tlačítka jsou
+i tam — samotný přepínač Debug na ně nestačí, frontend se ptá serveru
+(`GET /api/nastaveni`).
 
 ### 3.5 Tabulka přihlášených, karta se statistikami
 
@@ -632,6 +636,79 @@ vynechá.
 
 ---
 
+### 3.20 AI v sestavě (od 0.25.0, 9. 9. 2026)
+
+**Záměr uživatele doslova:** „když kliknu přidat AI button, tak se v lobby
+objeví pseudo hráč, bude se jmenovat AI a všechno ostatní bude fungovat jak
+u normálního hráče (jen se jí nebude zobrazovat elo tabulka při najetí,
+protože AI nemá žádné elo)“. AI je **legitimní hráč**, ne berlička jako
+zkušební: „kdyby Admin chtěl utvořit hru proti AI, ať je to možné“.
+
+**Jak to je.** Tlačítko `+ AI` na řádku „Pořadí hráčů můžeš přetáhnout
+myší“ posadí do sestavy počítač. Odtud se chová jako každý jiný účastník:
+barva, tým, civilizace, přetahování, výsledek zápasu, archiv i historie.
+Karta se statistikami se u něj neukáže a do součtu ELO týmu nevstupuje —
+nepíše se ani mezi „bez ELO“, protože tam patří lidi, kterým se statistiky
+nestáhly, a to je jiná informace.
+
+**Identita.** `src/shared/aiHraci.ts`: sedm kusů `ai:1`…`ai:7`, všechny se
+jménem „AI“ (rozlišuje je barva a slot, jako ve hře; číslo je jen v id, aby
+šlo přidat víc AI naráz — sestava dvakrát totéž id nepustí). Prefix `ai:`
+je stejný trik jako `test:` u zkušebních. Řádek v `player` si zakládá sám
+`createZapas` ze sdíleného seznamu — **žádný seed v migraci**, aby jméno
+nebylo v repu na dvou místech a nemohlo se rozejít.
+
+**Tři místa, která předpokládala „účastník = přihlášený člověk“:**
+1. `createZapas` (`db/matches.ts`) — kontrola „už není přihlášený“ AI
+   přeskočí; AI se do akce nehlásí.
+2. `sestavSedadla` (`matches/composition.ts`) — host se vybírá jen mezi
+   lidmi. Lobby zakládá někdo, kdo sedí u hry.
+3. `zkontrolujLobby` (`shared/lobbyKontrola.ts`) — porovnávají se jen lidé
+   a k řádku „Hráči“ se připíše `(+ N AI neověřeno)`.
+
+**AI Difficulty.** Přidání *první* AI blikne na políčko `aiObtiznost`
+(stejné `blikni()` jako po Ctrl+Z), pokud je na „–“. Bez AI v lobby na
+obtížnosti nezáleží, s AI ano; nastavit stupeň musí admin sám.
+
+**Čeká na ověření.** Seznam lobby ze hry vydává jen sloty se Steam účtem
+(`worldsEdgeLobby.parseSloty`), takže AI v datech není vidět a kontrola ji
+nemůže ověřit. Uživatel: „my jsme ani tu AI netestovali, takže je dost
+možný že to tam je, ale pro teď to můžeme vyřadit z kontroly, přidáme to
+později.“ Až se někdo podívá naživo, co hra o AI slotech posílá, dá se
+kontrola dodělat.
+
+### 3.21 Zkušební hráči se mažou, ne odhlašují (od 0.25.1, 9. 9. 2026)
+
+**Záměr uživatele doslova:** „zkušební lidi se odstraní v momentě kdy
+kliknu na odstranit zkušební hráče, tak se prostě smažou všude (a všechny
+jejich hry s tím, včetně těch kde je reálný hráč, prostě jakmile je tam
+přítomen zkušební hráč, tak se jejich hra/záznam o hře smaže taky)“.
+
+**Jak to bylo.** `withdraw()` jen přepsal `prihlaska.stav` na `odhlasen`.
+Zápasy, řádky v `player` i vše ostatní zůstávalo — historie se plnila
+hrami, které nic nedokazují.
+
+**Jak to je.** `smazZkusebniHrace()` (`db/events.ts`) v jedné transakci
+smaže zápasy, ve kterých zkušební hráč seděl (**i dohrané, i ty s reálnými
+lidmi**), jejich události, přihlášky a řádky v `player`. Zápasů bez
+zkušebního hráče se to nedotkne. Pořadí kroků je dané cizími klíči:
+`ucastnik.steam_id` ani `udalost.kdo` nemají `ON DELETE`, takže `player`
+nemůže jít první. Vrací počet zkušebních, kteří byli v akci přihlášení.
+
+**Proč to nevadí.** Zkušební hráči nejsou náhodní — je to pevný seznam
+v `matches/zkusebniHraci.ts`, DB řádky jsou jen jeho otisk. Po smazání se
+příště založí znovu se stejnými čísly.
+
+### 3.22 Preset lobby schovaný (od 0.25.2, 9. 9. 2026)
+
+Tlačítka „Uložit preset lobby“ a „Načíst uložený preset“ jsou schovaná
+konstantou `PRESETY_VIDET` v `NastaveniLobby.tsx` — ne smazaná. Server obě
+cesty (`onUlozit`, `ulozene`) umí dál, takže se vrací přepnutím jedné
+konstanty. „Reset nastavení“ zůstal. Důvod: nastavení žije na akci a drží
+se mezi večery samo, takže snímek nikdy nic nepřidal.
+
+---
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -741,6 +818,10 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.24.17–0.24.24 | 01:27–01:48 | Pořadí ve stavovém sloupci, hover nadpisu, zkušební tlačítka nahoru, `bez-vzhledu` místo přebíjení |
 | 0.24.25–0.24.30 | 01:50–02:11 | Pole neposouvá stránku, stín ozdob v panelech, sloupce se nehýbou, vlastní bublina |
 | 0.24.31–0.24.37 | 02:13–02:31 | Opravy animací (FLIP vůči tabulce, jen přeskládání, výška v content-boxu), kratší hlášky; **release PR #12 (0.24.37)** |
+| 0.24.38 | 9. 9. 11:24 | Načtení presetu před Reset (pořadí tlačítek) |
+| 0.25.0 | 11:41 | AI v sestavě: tlačítko `+ AI`, sedm `ai:1`…`ai:7`, host jen z lidí, kontrola lobby počítá jen lidi, blikání AI Difficulty (§3.20) |
+| 0.25.1 | 11:41 | Zkušební hráči se mažou včetně svých zápasů a řádků v `player` (§3.21) |
+| 0.25.2 | 11:41 | Tlačítka presetu schovaná konstantou `PRESETY_VIDET` (§3.22) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
