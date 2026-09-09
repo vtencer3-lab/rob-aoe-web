@@ -184,12 +184,7 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
               />
               Allow Spectators
             </label>
-            {/* Ve hře je to obyčejné zaškrtávátko a pro večer má jedinou
-                správnou polohu: se skrytými civilizacemi nemá komentář o čem. */}
-            <label className="zaskrtavaci" data-klic="skrytCivilizace">
-              <input type="checkbox" checked={n.skrytCivilizace === true} onChange={(e) => zmen({ skrytCivilizace: e.target.checked })} />
-              Hide Civilizations
-            </label>
+            <Zaskrtavatko klic="skrytCivilizace" popis="Hide Civilizations" hodnota={n.skrytCivilizace} onZmena={(v) => zmen({ skrytCivilizace: v })} />
           </div>
           <label className="radek" data-klic="zpozdeniDivaku">
             <span>Spectator Delay:</span>
@@ -227,6 +222,36 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
         </div>
       </div>
     </div>
+  );
+}
+
+/** Zaškrtávátko se třemi stavy jako v panelu nastavení: vypnuto → zapnuto → „–“. */
+function Zaskrtavatko({
+  klic,
+  popis,
+  hodnota,
+  onZmena,
+}: {
+  klic: string;
+  popis: string;
+  hodnota: boolean | null;
+  onZmena: (v: boolean | null) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = hodnota === null;
+  }, [hodnota]);
+  return (
+    <label className="zaskrtavaci" data-klic={klic}>
+      <input
+        ref={ref}
+        type="checkbox"
+        checked={hodnota === true}
+        onChange={() => onZmena(hodnota === false ? true : hodnota === true ? null : false)}
+      />
+      {popis}
+      {hodnota === null ? <span className="zaloha jedno-znak">–</span> : null}
+    </label>
   );
 }
 

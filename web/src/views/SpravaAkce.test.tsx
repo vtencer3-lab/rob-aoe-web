@@ -96,10 +96,10 @@ it("Private ve Visibility se nenastaví a okno vynadá", async () => {
   expect(onNastaveniLobby).not.toHaveBeenCalled();
 });
 
-// Staré akce mají v nastavení uložené null z doby, kdy obě zaškrtávátka měla
-// i „je to jedno“. Okno je nesmí ukazovat neurčitá — diváci zapnutí, skryté
-// civilizace vypnuté.
-it("uložené „je to jedno“ u diváků a civilizací se srovná na pevné hodnoty", async () => {
+// Diváky vyžaduje večer sám, takže uložené „je to jedno“ z dřívějška okno
+// srovná na zapnuto. U skrytých civilizací je to naopak platná volba a okno
+// ji nechá být — výchozí je jen odškrtnuto, ne „nedá se nastavit“.
+it("uložené „je to jedno“ srovná u diváků, u civilizací ho nechá", async () => {
   const { fireEvent } = await import("@testing-library/react");
   render(
     <SpravaAkce
@@ -114,7 +114,26 @@ it("uložené „je to jedno“ u diváků a civilizací se srovná na pevné ho
   expect(screen.getByLabelText(/allow spectators/i)).toBeChecked();
   const civ = screen.getByLabelText(/hide civilizations/i) as HTMLInputElement;
   expect(civ).not.toBeChecked();
-  expect(civ.indeterminate).toBe(false);
+  expect(civ.indeterminate).toBe(true);
+});
+
+// Tři stavy po sobě: odškrtnuto → zaškrtnuto → „je to jedno“ → zase odškrtnuto.
+it("Hide Civilizations kolotočem projde všechny tři stavy", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  const onNastaveniLobby = vi.fn();
+  render(
+    <SpravaAkce
+      {...zaklad}
+      onNastaveniLobby={onNastaveniLobby}
+      akce={{ id: 1, nazev: "Čtvrtek", stav: "bezi", nastaveniLobby: { skrytCivilizace: false } }}
+    >
+      <p>SESTAVA</p>
+    </SpravaAkce>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: /pre-lobby nastavení/i }));
+
+  fireEvent.click(screen.getByLabelText(/hide civilizations/i));
+  expect(onNastaveniLobby).toHaveBeenLastCalledWith(expect.objectContaining({ skrytCivilizace: true }));
 });
 
 // Bez diváků nemá Robovo vysílání koho pustit dovnitř, takže odškrtnout

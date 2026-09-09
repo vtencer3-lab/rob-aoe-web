@@ -327,12 +327,12 @@ export function velikostProHrace(pocet: number): number {
 
 export function doplnNastaveni(cast: Partial<NastaveniLobby> | null | undefined): NastaveniLobby {
   const n = { ...VYCHOZI_NASTAVENI, ...(cast ?? {}) };
-  // Diváci a skryté civilizace bývaly tříbodové („je to jedno“) a uložená
-  // nastavení z té doby v sobě mají null. Doplnění vyplňuje jen chybějící
-  // klíče, ne prázdné hodnoty, takže by se stará akce tvářila dál po starém.
-  // Obojí má dneska jedinou správnou polohu, tak se to sem dorovná.
+  // Diváci bývali tříbodoví („je to jedno“) a nastavení z té doby v sobě mají
+  // null; doplnění vyplňuje jen chybějící klíče, ne prázdné hodnoty, takže by
+  // se stará akce tvářila dál po starém. Zapnuté diváky dneska vyžaduje večer
+  // sám, tak se to tady dorovná. Skryté civilizace „je to jedno“ mít smí —
+  // uložené null je platná volba, ne pozůstatek.
   if (n.povolitDivaky === null) n.povolitDivaky = true;
-  if (n.skrytCivilizace === null) n.skrytCivilizace = false;
   return n;
 }
 
