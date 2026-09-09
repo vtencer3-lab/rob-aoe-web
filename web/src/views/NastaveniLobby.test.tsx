@@ -119,3 +119,27 @@ it("pravé tlačítko na zaškrtávátku dělá opačný krok než levé", async
   await waitFor(() => expect(onZmena).toHaveBeenCalled());
   expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ turbo: true }));
 });
+
+// V režimu Empire Wars je Empire Wars dané samotným režimem: hra
+// zaškrtávátko v Advanced Settings odškrtne a znepřístupní. Panel to má
+// zrcadlit, ať Rob nenastaví kombinaci, která ve hře nejde.
+it("Game Mode Empire Wars odškrtne a zamkne zaškrtávátko Empire Wars", async () => {
+  const onZmena = vi.fn();
+  render(<NastaveniLobby zive={{ rezim: 0, empireWars: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  const zaskrtavatko = screen.getByLabelText(/empire wars mode/i) as HTMLInputElement;
+  expect(zaskrtavatko).toBeEnabled();
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "13" } });
+
+  expect(zaskrtavatko).toBeDisabled();
+  expect(zaskrtavatko).not.toBeChecked();
+  await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 13, empireWars: false })));
+});
+
+it("odchod z Empire Wars zaškrtávátko zase odemkne", () => {
+  render(<NastaveniLobby zive={{ rezim: 13 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  expect(screen.getByLabelText(/empire wars mode/i)).toBeDisabled();
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "0" } });
+  expect(screen.getByLabelText(/empire wars mode/i)).toBeEnabled();
+});

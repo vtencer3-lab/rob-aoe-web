@@ -5,6 +5,7 @@ import {
   KONECNE_VEKY,
   ODKRYTI_MAPY,
   POCATECNI_VEKY,
+  REZIM_EMPIRE_WARS,
   REZIMY,
   RYCHLOSTI,
   SADY_CIVILIZACI,
@@ -183,7 +184,16 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
             ))}
           </div>
         </div>
-        <Vyber klic="rezim" popis="Game Mode" hodnota={n.rezim} tabulka={REZIMY} jedno onZmena={(v) => zmen({ ...n, rezim: v })} />
+        {/* Empire Wars je v tomhle režimu dané: hra zaškrtávátko v Advanced
+            Settings odškrtne a zamkne, takže se to zrcadlí i tady. */}
+        <Vyber
+          klic="rezim"
+          popis="Game Mode"
+          hodnota={n.rezim}
+          tabulka={REZIMY}
+          jedno
+          onZmena={(v) => zmen(v === REZIM_EMPIRE_WARS ? { ...n, rezim: v, empireWars: false } : { ...n, rezim: v })}
+        />
         <label className="radek" data-klic="mapaId">
           <span>Location:</span>
           <select value={n.mapaId ?? ""} onChange={(e) => zmen({ ...n, mapaId: cislo(e.target.value) })}>
@@ -246,7 +256,15 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
             klic === "cheaty" ? (
               <Zaskrtavatko key={klic} klic={klic} popis={popis} hodnota={n.cheaty} jedno={false} onZmena={(v) => zmen({ ...n, cheaty: v === true })} />
             ) : (
-              <Zaskrtavatko key={klic} klic={klic} popis={popis} hodnota={n[klic]} jedno onZmena={(v) => zmen({ ...n, [klic]: v })} />
+              <Zaskrtavatko
+                key={klic}
+                klic={klic}
+                popis={popis}
+                hodnota={n[klic]}
+                jedno
+                vypnuto={klic === "empireWars" && n.rezim === REZIM_EMPIRE_WARS}
+                onZmena={(v) => zmen({ ...n, [klic]: v })}
+              />
             ),
           )}
         </fieldset>

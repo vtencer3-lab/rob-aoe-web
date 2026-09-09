@@ -112,17 +112,38 @@ export const VITEZSTVI: Record<number, string> = { 1: "Conquest", 9: "Standard" 
  * špatně, kontrola vypíše špatné jméno, ale porovnává pořád čísla.
  */
 export const SADY_CIVILIZACI: Record<number, string> = { 0: "All", 1: "Age of Empires II", 2: "Chronicles" };
+/**
+ * Game Mode (options[5]). Čísla jsou z herního `OptionsGameMode` (Control API
+ * hry, ověřeno 9. 9. 2026 dvěma nezávislými zdroji a potvrzené živým
+ * seznamem lobby, kde běžely režimy 1 a 13).
+ *
+ * Do 9. 9. 2026 tu byla tabulka převzatá z aoe2.net, která od čtyřky výš
+ * seděla o jedna vedle: „Capture the Relic“ posílalo 8, což je ve hře Turbo
+ * Random Map, a režimy 1, 11, 12 a 13 chyběly úplně. Kontrola lobby tak
+ * u těchhle režimů hlásila cizí jméno a Rob nastavoval jiný režim, než
+ * vybral.
+ */
 export const REZIMY: Record<number, string> = {
   0: "Random Map",
-  2: "Deathmatch",
+  1: "Regicide",
+  2: "Death Match",
   3: "Scenario",
-  4: "King of the Hill",
-  5: "Wonder Race",
-  6: "Defend the Wonder",
-  7: "Turbo Random Map",
-  8: "Capture the Relic",
-  10: "Battle Royale",
+  5: "King of the Hill",
+  6: "Wonder Race",
+  7: "Defend the Wonder",
+  8: "Turbo Random Map",
+  10: "Capture the Relic",
+  11: "Sudden Death",
+  12: "Battle Royale",
+  13: "Empire Wars",
 };
+
+/**
+ * Empire Wars jako **režim** (Game Mode), ne jako zaškrtávátko v Advanced
+ * Settings. Hra obojí spojuje: v tomhle režimu je Empire Wars daný a
+ * zaškrtávátko `empireWars` (options[89]) je odškrtnuté a nepřístupné.
+ */
+export const REZIM_EMPIRE_WARS = 13;
 export const AI_OBTIZNOSTI: Record<number, string> = { 4: "Easiest", 3: "Standard", 2: "Moderate", 1: "Hard", 0: "Hardest", 5: "Extreme" };
 export const SUROVINY: Record<number, string> = { 0: "Standard", 1: "Low", 2: "Medium", 3: "High", 4: "Ultra High", 5: "Infinite" };
 export const ODKRYTI_MAPY: Record<number, string> = { 0: "Normal", 1: "Explored", 2: "All Visible", 3: "No Fog" };

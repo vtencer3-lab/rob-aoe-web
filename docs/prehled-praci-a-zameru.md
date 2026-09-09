@@ -699,6 +699,32 @@ nemůže jít první. Vrací počet zkušebních, kteří byli v akci přihláš
 v `matches/zkusebniHraci.ts`, DB řádky jsou jen jeho otisk. Po smazání se
 příště založí znovu se stejnými čísly.
 
+### 3.23 Čísla režimů opravená, Empire Wars zamyká zaškrtávátko (0.25.5)
+
+**Nalezená vada.** Tabulka `REZIMY` (Game Mode, `options[5]`) byla převzatá
+z aoe2.net a od čtyřky výš seděla o jedna vedle: „King of the Hill“ mělo 4
+místo 5, „Capture the Relic“ posílalo 8, což je ve hře Turbo Random Map, a
+režimy 1 (Regicide), 11 (Sudden Death), 12 (Battle Royale) a 13 (Empire
+Wars) chyběly úplně. Kontrola lobby proto u těchhle režimů hlásila cizí
+jméno a Rob nastavoval jiný režim, než vybral.
+
+**Jak se to ověřilo.** Čísla jsou z herního `OptionsGameMode` (Control API
+hry) — dva nezávislé zdroje, a sedí i s živým seznamem lobby, kde běžely
+režimy 1 a 13, které stará tabulka neznala. Zapsáno v
+`docs/analyza-automaticke-hledani-lobby.md` §6.
+
+**Empire Wars.** Uživatel: „když se vybere Game Mode Empire wars, tak se
+natvrdo odškrtne v advanced settings Empire Wars mode a deaktivuje se — 
+v tomto modu toto nastavení je natvrdo takhle nastavené, tak potřebuju aby
+to zrcadlilo chování ve hře.“ Výběr režimu 13 (`REZIM_EMPIRE_WARS`) proto
+nastaví `empireWars: false` a zaškrtávátko zašedne — stejný vzor jako
+Team Positions bez Team Together. Odchod z režimu ho zase odemkne.
+
+**Nedodělané.** Stejnou vazbu by nejspíš chtěly i režimy Regicide (1) a
+Sudden Death (11), které mají v Advanced Settings vlastní zaškrtávátko.
+Uživatel žádal jen Empire Wars a jestli se hra chová u ostatních dvou
+stejně, nebylo ověřeno.
+
 ### 3.22 Preset lobby schovaný (od 0.25.2, 9. 9. 2026)
 
 Tlačítka „Uložit preset lobby“ a „Načíst uložený preset“ jsou schovaná
@@ -822,6 +848,9 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.25.0 | 11:41 | AI v sestavě: tlačítko `+ AI`, sedm `ai:1`…`ai:7`, host jen z lidí, kontrola lobby počítá jen lidi, blikání AI Difficulty (§3.20) |
 | 0.25.1 | 11:41 | Zkušební hráči se mažou včetně svých zápasů a řádků v `player` (§3.21) |
 | 0.25.2 | 11:41 | Tlačítka presetu schovaná konstantou `PRESETY_VIDET` (§3.22) |
+| 0.25.3 | 11:47 | Úklid nepoužitého importu |
+| 0.25.4 | 11:58 | Tlačítko `+ AI` vycentrované vůči textu vedle |
+| 0.25.5 | 12:07 | Opravená čísla režimů (byla o jedna vedle) a Empire Wars zamyká svoje zaškrtávátko (§3.23) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

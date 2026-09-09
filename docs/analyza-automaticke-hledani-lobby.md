@@ -188,7 +188,7 @@ web proto stahuje všechny stránky.
 | Nastavení | Klíč v `options` | Hodnoty |
 |---|---|---|
 | Civilization Set | `101` | 0 All, 1 Age of Empires II, 2 Chronicles |
-| Game Mode | `5` | 0 Random Map, 2 Deathmatch, 3 Scenario (ověřeno); 4 King of the Hill, 5 Wonder Race, 6 Defend the Wonder, 7 Turbo Random Map, 8 Capture the Relic, 10 Battle Royale (podle aoe2.net, neověřeno) |
+| Game Mode | `5` | 0 Random Map, 1 Regicide, 2 Death Match, 3 Scenario, 5 King of the Hill, 6 Wonder Race, 7 Defend the Wonder, 8 Turbo Random Map, 10 Capture the Relic, 11 Sudden Death, 12 Battle Royale, 13 Empire Wars — podle herního `OptionsGameMode` (Control API hry), ověřeno 9. 9. 2026 dvěma nezávislými zdroji a živým seznamem lobby. **Do 9. 9. 2026 tu byla tabulka z aoe2.net, která od čtyřky výš seděla o jedna vedle** (4 byla „King of the Hill“ místo 5, „Capture the Relic“ posílalo 8 = Turbo Random Map) a režimy 1, 11, 12, 13 neznala vůbec |
 | Location (mapa) | `10` | id řetězce z jazykového souboru hry, viz `src/shared/mapy.ts` |
 | Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant |
 | AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, 5 Extreme (ověřeno 3 a 1) |
@@ -208,7 +208,7 @@ web proto stahuje všechny stránky.
 | Allow Cheats | `1` | y/n |
 | Turbo Mode | `79` | y/n |
 | Full Tech Tree | `62` | y/n |
-| Empire Wars | `89` | y/n |
+| Empire Wars | `89` | y/n; v režimu Empire Wars (`5` = 13) hra zaškrtávátko odškrtne a zamkne — panel to zrcadlí |
 | Sudden Death | `90` | y/n |
 | Regicide | `91` | y/n |
 | Antiquity Mode | `100` | y/n (Chronicles ho zapíná) |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doplnNastaveni, lobbyVPoradku, velikostProHrace, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
+import { doplnNastaveni, lobbyVPoradku, REZIM_EMPIRE_WARS, REZIMY, velikostProHrace, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
 import { nazevMapy } from "./mapy.js";
 import type { Barva, Tym } from "./types.js";
 
@@ -195,5 +195,30 @@ describe("pomocné tabulky", () => {
     expect(nazevMapy(301112)).toBe("Earth");
     expect(nazevMapy(1)).toBe("mapa č. 1");
     expect(nazevMapy(null)).toBe("libovolná");
+  });
+});
+
+// Čísla režimů byla převzatá z aoe2.net a od čtyřky výš seděla o jedna vedle:
+// „Capture the Relic“ posílalo 8, což je ve hře Turbo Random Map. Ověřeno
+// 9. 9. 2026 proti definici herního Control API (aoe2control) i proti
+// živému seznamu lobby, kde běžely režimy 1 a 13, které tabulka neznala.
+describe("REZIMY", () => {
+  it("čísla sedí s herním OptionsGameMode", () => {
+    expect(REZIMY[0]).toBe("Random Map");
+    expect(REZIMY[1]).toBe("Regicide");
+    expect(REZIMY[2]).toBe("Death Match");
+    expect(REZIMY[3]).toBe("Scenario");
+    expect(REZIMY[5]).toBe("King of the Hill");
+    expect(REZIMY[6]).toBe("Wonder Race");
+    expect(REZIMY[7]).toBe("Defend the Wonder");
+    expect(REZIMY[8]).toBe("Turbo Random Map");
+    expect(REZIMY[10]).toBe("Capture the Relic");
+    expect(REZIMY[11]).toBe("Sudden Death");
+    expect(REZIMY[12]).toBe("Battle Royale");
+    expect(REZIMY[REZIM_EMPIRE_WARS]).toBe("Empire Wars");
+  });
+
+  it("Empire Wars je režim 13", () => {
+    expect(REZIM_EMPIRE_WARS).toBe(13);
   });
 });
