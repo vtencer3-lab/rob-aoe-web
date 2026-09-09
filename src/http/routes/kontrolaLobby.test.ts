@@ -26,3 +26,28 @@ describe("prectiNastaveniLobby", () => {
     expect(prectiNastaveniLobby({ aiObtiznost: -1 })).toEqual({ aiObtiznost: -1 });
   });
 });
+
+// Pre-lobby: nastavení z okna zakládání lobby. Stejná pravidla jako u zbytku
+// — null znamená „je to jedno“, nesmysl neprojde.
+describe("pre-lobby v nastavení", () => {
+  it("vezme zpoždění, strop hráčů, heslo diváků i region", () => {
+    expect(
+      prectiNastaveniLobby({ zpozdeniDivaku: 180, maxHracu: 8, hesloDivaku: true, region: "westeurope" }),
+    ).toEqual({ zpozdeniDivaku: 180, maxHracu: 8, hesloDivaku: true, region: "westeurope" });
+  });
+
+  it("„je to jedno“ projde u všech čtyř", () => {
+    expect(prectiNastaveniLobby({ zpozdeniDivaku: null, maxHracu: null, hesloDivaku: null, region: null })).toEqual({
+      zpozdeniDivaku: null,
+      maxHracu: null,
+      hesloDivaku: null,
+      region: null,
+    });
+  });
+
+  it("nesmyslné hodnoty nepustí", () => {
+    expect(prectiNastaveniLobby({ maxHracu: 99, populace: 200 })).toEqual({ populace: 200 });
+    expect(prectiNastaveniLobby({ zpozdeniDivaku: -5, populace: 200 })).toEqual({ populace: 200 });
+    expect(prectiNastaveniLobby({ region: "x".repeat(200), populace: 200 })).toEqual({ populace: 200 });
+  });
+});

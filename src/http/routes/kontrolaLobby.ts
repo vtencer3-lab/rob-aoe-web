@@ -23,6 +23,7 @@ import {
   type KontrolaLobbyVysledek,
   type NastaveniLobby,
 } from "../../shared/lobbyKontrola.js";
+import { MAX_HRACU, MIN_HRACU } from "../../shared/sestava.js";
 import { HttpError, requireId, requireUser } from "../guards.js";
 import type { MatchDeps } from "./matches.js";
 
@@ -69,6 +70,18 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   // Příměří jen v hodnotách, které hra nabízí (PRIMERI) — od 9. 9. 2026 je
   // to nabídka, ne volné číslo, a co panel neumí nabídnout, nemá ani projít.
   vyber("primeri", PRIMERI);
+  // Pre-lobby (okno zakládání lobby). Meze jsou dané tím, co hra umí:
+  // lobby má nejvýš osm slotů a zpoždění diváků je čas, ne záporné číslo.
+  const zpozdeni = cislo(t["zpozdeniDivaku"]);
+  if (t["zpozdeniDivaku"] === null) v.zpozdeniDivaku = null;
+  else if (zpozdeni !== undefined && Number.isInteger(zpozdeni) && zpozdeni >= 0 && zpozdeni <= 3600) v.zpozdeniDivaku = zpozdeni;
+  const maxHracu = cislo(t["maxHracu"]);
+  if (t["maxHracu"] === null) v.maxHracu = null;
+  else if (maxHracu !== undefined && Number.isInteger(maxHracu) && maxHracu >= MIN_HRACU && maxHracu <= MAX_HRACU) v.maxHracu = maxHracu;
+  if (typeof t["hesloDivaku"] === "boolean" || t["hesloDivaku"] === null) v.hesloDivaku = t["hesloDivaku"] as boolean | null;
+  if (t["region"] === null) v.region = null;
+  else if (typeof t["region"] === "string" && t["region"].length > 0 && t["region"].length <= 40) v.region = t["region"];
+
   for (const { klic } of ZASKRTAVATKA) {
     if (typeof t[klic] === "boolean" || t[klic] === null) v[klic] = t[klic] as boolean | null;
   }

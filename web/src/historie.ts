@@ -91,6 +91,11 @@ const POPISKY: Record<keyof NastaveniLobby, string> = {
   regicide: "Regicide Mode",
   antiquity: "Antiquity Mode",
   recordGame: "Record Game",
+  // Pre-lobby (okno zakládání lobby)
+  zpozdeniDivaku: "Spectator Delay",
+  maxHracu: "Players",
+  hesloDivaku: "Heslo pro diváky",
+  region: "Server",
 };
 
 const TABULKY: Partial<Record<keyof NastaveniLobby, Record<number, string>>> = {

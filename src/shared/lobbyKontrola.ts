@@ -59,6 +59,16 @@ export interface NastaveniLobby {
   regicide: boolean | null;
   antiquity: boolean | null;
   recordGame: boolean | null;
+
+  // --- pre-lobby: okno zakládání, ne herní panel (null = je to jedno) ---
+  /** Zpoždění diváků; jednotka zatím neověřená (viz docs §6). */
+  zpozdeniDivaku: number | null;
+  /** Kolik slotů lobby má. */
+  maxHracu: number | null;
+  /** Heslo zvlášť pro diváky. */
+  hesloDivaku: boolean | null;
+  /** Region relay serveru, třeba „westeurope“. */
+  region: string | null;
 }
 
 export const VYCHOZI_NASTAVENI: NastaveniLobby = {
@@ -91,6 +101,12 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   regicide: false,
   antiquity: false,
   recordGame: true,
+  // Pre-lobby nechává výchozí nastavení na Robovi: nic z toho zatím
+  // nevymáháme, dokud si neřekne, co u toho večera chce.
+  zpozdeniDivaku: null,
+  maxHracu: null,
+  hesloDivaku: null,
+  region: null,
 };
 
 export const VELIKOSTI: Record<number, string> = {
@@ -256,6 +272,22 @@ export interface SlotLobby {
  */
 export type AiSlot = Omit<SlotLobby, "steamId">;
 
+/**
+ * Nastavení z okna zakládání lobby („pre-lobby“). Hra ho neposílá v
+ * `options` jako herní panel, ale přímo v inzerátu vedle jména a hesla.
+ * Co inzerát nenese, je null.
+ */
+export interface PreLobbyZeHry {
+  /** `observerdelay` — zpoždění diváků. Jednotka zatím neověřená. */
+  zpozdeniDivaku: number | null;
+  /** `maxplayers` — kolik slotů lobby má. */
+  maxHracu: number | null;
+  /** `hasobserverpassword` — heslo zvlášť pro diváky. */
+  hesloDivaku: boolean | null;
+  /** `relayserver_region` — třeba „westeurope“. */
+  region: string | null;
+}
+
 /** Nastavení hry, jak ho seznam lobby vydává; co nešlo přečíst, je null (nebo chybí). */
 export interface NastaveniZeHry {
   mapaId: number | null;
@@ -295,6 +327,8 @@ export interface PoznatekLobby {
   sloty: SlotLobby[];
   /** Počítačoví protivníci; chybí ve starších snímcích a v testech. */
   aiSloty?: AiSlot[];
+  /** Nastavení z okna zakládání; chybí ve starších snímcích a v testech. */
+  preLobby?: PreLobbyZeHry;
   nastaveni: NastaveniZeHry | null;
 }
 
@@ -309,8 +343,8 @@ export interface Kontrola {
   klic: string;
   stav: StavKontroly;
   text: string;
-  /** Hlavní sekce (hráči, diváci, mapa…) nebo „Další nastavení“. */
-  sekce: "hlavni" | "dalsi";
+  /** Hlavní sekce (hráči, diváci, mapa…), „Další nastavení“, nebo pre-lobby. */
+  sekce: "hlavni" | "dalsi" | "prelobby";
 }
 
 export interface KontrolaLobbyVysledek {
@@ -501,5 +535,21 @@ export function zkontrolujLobby(
     const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : "spatne";
     k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${zap(ve)}, má být ${zap(ma)}` : `${popis}: ${zap(ve)}`, sekce: "dalsi" });
   }
+
+  // Pre-lobby: co se nastavuje v okně zakládání lobby, ne v herním panelu.
+  // Hra to posílá vedle jména a hesla, ne v `options`. Stejné pravidlo jako
+  // u dalšího nastavení: „–“ (null) znamená je to jedno a nikdy to není chyba.
+  const pre = lobby.preLobby;
+  const preRadek = (klic: string, popis: string, ve: string | null, ma: string | null): void => {
+    const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : "spatne";
+    const videt = ve ?? "?";
+    k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${videt}, má být ${ma}` : `${popis}: ${videt}`, sekce: "prelobby" });
+  };
+  const cislem = (v: number | null | undefined) => (v === null || v === undefined ? null : String(v));
+  const slovem = (v: boolean | null | undefined) => (v === null || v === undefined ? null : v ? "zapnuto" : "vypnuto");
+  preRadek("zpozdeniDivaku", "Zpoždění diváků", cislem(pre?.zpozdeniDivaku), cislem(ocekavane.zpozdeniDivaku));
+  preRadek("maxHracu", "Max. hráčů", cislem(pre?.maxHracu), cislem(ocekavane.maxHracu));
+  preRadek("hesloDivaku", "Heslo pro diváky", slovem(pre?.hesloDivaku), slovem(ocekavane.hesloDivaku));
+  preRadek("region", "Region", pre?.region ?? null, ocekavane.region);
   return k;
 }

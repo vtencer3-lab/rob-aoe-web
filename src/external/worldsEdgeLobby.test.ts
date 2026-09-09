@@ -166,3 +166,38 @@ describe("parseSloty s AI", () => {
     expect(ai).toHaveLength(0);
   });
 });
+
+// Nastavení z okna zakládání lobby („pre-lobby“) hra neposílá v options, ale
+// přímo v inzerátu: zpoždění diváků, strop hráčů, heslo pro diváky a region.
+describe("pre-lobby z inzerátu", () => {
+  it("přečte zpoždění diváků, strop hráčů, heslo diváků a region", () => {
+    const [lobby] = parseAdvertisements({
+      matches: [
+        {
+          id: 1,
+          description: "ROB-01",
+          passwordprotected: 1,
+          isobservable: 1,
+          observerdelay: 180,
+          observermax: 512,
+          maxplayers: 8,
+          hasobserverpassword: 1,
+          relayserver_region: "westeurope",
+          matchmembers: [],
+        },
+      ],
+      avatars: [],
+    });
+    expect(lobby!.preLobby).toEqual({
+      zpozdeniDivaku: 180,
+      maxHracu: 8,
+      hesloDivaku: true,
+      region: "westeurope",
+    });
+  });
+
+  it("co inzerát nenese, zůstane null", () => {
+    const [lobby] = parseAdvertisements({ matches: [{ id: 1, matchmembers: [] }], avatars: [] });
+    expect(lobby!.preLobby).toEqual({ zpozdeniDivaku: null, maxHracu: null, hesloDivaku: null, region: null });
+  });
+});

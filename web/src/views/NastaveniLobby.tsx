@@ -21,6 +21,7 @@ import {
   type NastaveniLobby as Nastaveni,
 } from "../../../src/shared/lobbyKontrola.js";
 import { MAPY } from "../../../src/shared/mapy.js";
+import { MAX_HRACU, MIN_HRACU } from "../../../src/shared/sestava.js";
 import { blikni } from "../historie.js";
 
 interface Props {
@@ -166,6 +167,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
   const ceka = useRef(false);
   const formular = useRef<HTMLFormElement>(null);
+  const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   useEffect(() => {
     if (zvyraznit?.cil) blikni(formular.current?.querySelector(`[data-klic="${zvyraznit.cil}"]`));
   }, [zvyraznit]);
@@ -201,6 +203,58 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
   return (
     <form className="nastaveni-lobby" data-testid="nastaveni-lobby" onSubmit={(e) => e.preventDefault()} ref={formular}>
       {/* Nadpis nese záhlaví panelu (SpravaAkce), tady by stál dvakrát. */}
+      {/* Pre-lobby je schované pod tlačítkem schválně: nastaví se jednou za
+          večer při zakládání lobby a pak už do něj nikdo nesahá, na rozdíl od
+          mapy nebo populace, které Rob přepíná mezi zápasy. */}
+      <div className="ovladani prelobby-prepinac">
+        <button type="button" aria-expanded={preLobbyVidet} onClick={() => setPreLobbyVidet((v) => !v)}>
+          Pre-Lobby Nastavení
+        </button>
+      </div>
+      {preLobbyVidet ? (
+        <fieldset className="radky prelobby" data-testid="prelobby">
+          <legend>Okno zakládání lobby</legend>
+          <Vyber
+            klic="maxHracu"
+            popis="Max. hráčů"
+            hodnota={n.maxHracu}
+            tabulka={Object.fromEntries(Array.from({ length: MAX_HRACU - MIN_HRACU + 1 }, (_, i) => [i + MIN_HRACU, String(i + MIN_HRACU)]))}
+            jedno
+            onZmena={(v) => zmen({ ...n, maxHracu: v })}
+          />
+          {/* Jednotku zpoždění hra zatím neprozradila (viděli jsme jen 0),
+              takže se porovnává holé číslo tak, jak přijde z inzerátu. */}
+          <label className="radek" data-klic="zpozdeniDivaku">
+            <span>Zpoždění diváků:</span>
+            <input
+              type="number"
+              min={0}
+              max={3600}
+              value={n.zpozdeniDivaku ?? ""}
+              placeholder="– (je to jedno)"
+              onChange={(e) => zmen({ ...n, zpozdeniDivaku: cislo(e.target.value) })}
+            />
+          </label>
+          <Vyber
+            klic="hesloDivaku"
+            popis="Heslo pro diváky"
+            hodnota={n.hesloDivaku === null ? null : n.hesloDivaku ? 1 : 0}
+            tabulka={{ 0: "vypnuto", 1: "zapnuto" }}
+            jedno
+            onZmena={(v) => zmen({ ...n, hesloDivaku: v === null ? null : v === 1 })}
+          />
+          <label className="radek" data-klic="region">
+            <span>Region:</span>
+            <input
+              type="text"
+              maxLength={40}
+              value={n.region ?? ""}
+              placeholder="– (je to jedno)"
+              onChange={(e) => zmen({ ...n, region: e.target.value.trim() === "" ? null : e.target.value })}
+            />
+          </label>
+        </fieldset>
+      ) : null}
       <div className="radky">
         <div className="radek" role="radiogroup" aria-label="Civilization Set" data-klic="sadaCivilizaci">
           <span>Civilization Set:</span>

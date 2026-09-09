@@ -252,6 +252,13 @@ export function parseAdvertisements(json: unknown): LobbyInzerat[] {
       povolujeDivaky: m["isobservable"] === 1 || m["isobservable"] === true,
       clenoveSteamIds: clenove,
       ...(({ lide, ai }) => ({ sloty: lide, aiSloty: ai }))(parseSloty(m["slotinfo"], steam)),
+      preLobby: {
+        zpozdeniDivaku: typeof m["observerdelay"] === "number" ? m["observerdelay"] : null,
+        maxHracu: typeof m["maxplayers"] === "number" ? m["maxplayers"] : null,
+        hesloDivaku:
+          m["hasobserverpassword"] === undefined ? null : m["hasobserverpassword"] === 1 || m["hasobserverpassword"] === true,
+        region: typeof m["relayserver_region"] === "string" ? m["relayserver_region"] : null,
+      },
       nastaveni: options ? nastaveniZOptions(options) : null,
     });
   }
