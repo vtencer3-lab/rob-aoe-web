@@ -726,6 +726,12 @@ opravdu režim 13 a `89` u něj zůstává `n`. Navíc se ukázalo, že režim
 přehodí i `Starting Age` na Feudal a `Victory` na Standard — panel to od
 0.25.6 dělá taky. Při odchodu z režimu se nic nevrací, stejně jako ve hře.
 
+**Co všechno Empire Wars přepne (ověřeno 9. 9. 2026).** Kromě věku a
+vítězství odškrtne i modifikátory hry: Regicide, Allow Cheats, Turbo Mode,
+Full Tech Tree a Sudden Death. Antiquity nechá být. Zamčené zůstane jedině
+zaškrtávátko Empire Wars — ostatní jdou po přepnutí dál měnit, takže je
+panel taky nezamyká.
+
 **Opravené číselníky (0.25.6).** Proti témuž zdroji se prošla všechna
 nastavení a našly se další tři vady: **Extreme u AI obtížnosti je −1, ne
 5**; `Reveal Map` žádné „No Fog“ (3) nemá; `Victory` zná i Time Limit (7),
@@ -735,9 +741,11 @@ map i Ludicrous (480).
 **Nedodělané.** Stejnou vazbu by nejspíš chtěly i režimy Regicide (1) a
 Sudden Death (11), které mají v Advanced Settings vlastní zaškrtávátko.
 Uživatel žádal jen Empire Wars a jestli se hra chová u ostatních dvou
-stejně, nebylo ověřeno. Neověřené zůstávají i hodnoty číselníků, které se
-v lobby zatím neobjevily (Extreme = −1, Ludicrous, Random suroviny,
-Time Limit / Score / Last Man Standing).
+stejně, nebylo ověřeno — stejně tak není jasné, jestli je odškrtnutí
+modifikátorů vlastnost Empire Wars, nebo to hra dělá při každé změně Game
+Mode. Neověřené zůstávají hodnoty číselníků, které se v lobby zatím
+neobjevily (Ludicrous, Random suroviny, Time Limit / Score / Last Man
+Standing); Extreme = −1 ověřené 9. 9. 2026 je.
 
 ### 3.22 Preset lobby schovaný (od 0.25.2, 9. 9. 2026)
 
@@ -866,6 +874,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.25.4 | 11:58 | Tlačítko `+ AI` vycentrované vůči textu vedle |
 | 0.25.5 | 12:07 | Opravená čísla režimů (byla o jedna vedle) a Empire Wars zamyká svoje zaškrtávátko (§3.23) |
 | 0.25.6 | 12:35 | Kontrola ověřuje AI sloty (status 2), opravené číselníky (Extreme = −1 a další), Empire Wars nasadí i Feudal a Standard victory (§3.20, §3.23) |
+| 0.25.7 | 12:52 | Empire Wars odškrtne i Regicide, cheaty, Turbo, Full Tech Tree a Sudden Death; Extreme = −1 ověřené naživo |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

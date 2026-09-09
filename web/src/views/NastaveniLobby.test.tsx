@@ -151,6 +151,41 @@ it("Empire Wars nasadí i Feudal a Standard victory, jak to dělá hra", async (
   );
 });
 
+// Ověřeno naživo: přechod na Empire Wars odškrtne i Regicide, Antiquity
+// nechá být, a ani jedno z nich (na rozdíl od Empire Wars) nezamkne.
+it("Empire Wars odškrtne modifikátory hry, Antiquity nechá být", async () => {
+  const onZmena = vi.fn();
+  render(
+    <NastaveniLobby
+      zive={{ rezim: 0, regicide: true, cheaty: true, turbo: true, fullTechTree: true, suddenDeath: true, antiquity: true }}
+      ulozene={null}
+      onZmena={onZmena}
+      onUlozit={nic}
+    />,
+  );
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "13" } });
+
+  for (const popis of [/regicide mode/i, /allow cheats/i, /turbo mode/i, /full tech tree/i, /sudden death mode/i]) {
+    expect(screen.getByLabelText(popis)).not.toBeChecked();
+    // Odškrtnout ano, zamknout ne — ve hře se s nimi dá dál hýbat.
+    expect(screen.getByLabelText(popis)).toBeEnabled();
+  }
+  expect(screen.getByLabelText(/antiquity mode/i)).toBeChecked();
+  await waitFor(() =>
+    expect(onZmena).toHaveBeenLastCalledWith(
+      expect.objectContaining({ regicide: false, cheaty: false, turbo: false, fullTechTree: false, suddenDeath: false, antiquity: true }),
+    ),
+  );
+});
+
+// Starting Age a Victory hra v Empire Wars nezamyká — jen je přepne.
+it("Starting Age a Victory zůstanou v Empire Wars nastavitelné", () => {
+  render(<NastaveniLobby zive={{ rezim: 13 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  expect(screen.getByLabelText(/starting age/i)).toBeEnabled();
+  expect(screen.getByLabelText(/victory/i)).toBeEnabled();
+});
+
 it("odchod z Empire Wars nastavení nevrací — jen odemkne zaškrtávátko", () => {
   const onZmena = vi.fn();
   render(<NastaveniLobby zive={{ rezim: 13, pocatecniVek: 3, vitezstvi: 9 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);

@@ -191,7 +191,7 @@ web proto stahuje všechny stránky.
 | Game Mode | `5` | 0 Random Map, 1 Regicide, 2 Death Match, 3 Scenario, 5 King of the Hill, 6 Wonder Race, 7 Defend the Wonder, 8 Turbo Random Map, 10 Capture the Relic, 11 Sudden Death, 12 Battle Royale, 13 Empire Wars — podle herního `OptionsGameMode` (Control API hry), ověřeno 9. 9. 2026 dvěma nezávislými zdroji a živým seznamem lobby. **Do 9. 9. 2026 tu byla tabulka z aoe2.net, která od čtyřky výš seděla o jedna vedle** (4 byla „King of the Hill“ místo 5, „Capture the Relic“ posílalo 8 = Turbo Random Map) a režimy 1, 11, 12, 13 neznala vůbec |
 | Location (mapa) | `10` | id řetězce z jazykového souboru hry, viz `src/shared/mapy.ts` |
 | Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant, 480 Ludicrous |
-| AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, **−1 Extreme** (ne 5, jak tu stálo do 9. 9. 2026; ověřeno naživo 3 a 1) |
+| AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, **−1 Extreme** (ne 5, jak tu stálo do 9. 9. 2026 — ověřeno naživo 9. 9. 2026, kdy lobby s Extreme poslala `-1`; dřív ověřeno 3 a 1) |
 | Resources | `37` | 0 Standard, 1 Low, 2 Medium, 3 High, 4 Ultra High, 5 Infinite, 6 Random (ověřeno 0 a 3) |
 | Population | `28` | číslo |
 | Game Speed | `41` | 1 Slow, 2 Normal, 3 Fast |
@@ -227,9 +227,12 @@ civilizace se z nich čtou stejně jako u člověka; klíč `1` je herní id
 civilizace, hodnota s nastaveným horním slovem (65537 = 0x10001) znamená
 náhodnou volbu. Vzájemně se AI rozlišit nedají — žádné id nemají.
 
-**Empire Wars jako režim** (`5` = 13) hra spojuje s dalšími nastaveními:
-odškrtne zaškrtávátko `89`, přehodí `Starting Age` (`0`) na Feudal (3) a
-`Victory` (`81`) na Standard (9). Ověřeno naživo 9. 9. 2026.
+**Empire Wars jako režim** (`5` = 13) hra spojuje s dalšími nastaveními
+(ověřeno naživo 9. 9. 2026): přehodí `Starting Age` (`0`) na Feudal (3),
+`Victory` (`81`) na Standard (9) a odškrtne modifikátory hry — Empire Wars
+(`89`), Regicide (`91`), Allow Cheats (`1`), Turbo Mode (`79`), Full Tech
+Tree (`62`) a Sudden Death (`90`). Antiquity (`100`) nechá být. Zamčené
+zůstane jen zaškrtávátko Empire Wars, s ostatními jde dál hýbat.
 
 Čísla číselníků (režimy, obtížnost AI, věky, suroviny, odkrytí, vítězství,
 velikosti map) jsou od 9. 9. 2026 z herního `Options*` v Control API hry —

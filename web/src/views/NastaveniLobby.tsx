@@ -70,10 +70,23 @@ const PORADI_AI = [4, 3, 2, 1, 0, -1];
 
 /**
  * Co s nastavením udělá přepnutí na Empire Wars — ověřeno 9. 9. 2026 na
- * živé lobby: `Starting Age` = Feudal, `Victory` = Standard a zaškrtávátko
- * Empire Wars odškrtnuté (režim ho už obsahuje).
+ * živé lobby: `Starting Age` = Feudal, `Victory` = Standard a odškrtnuté
+ * modifikátory hry (Empire Wars, Regicide, Allow Cheats, Turbo Mode, Full
+ * Tech Tree, Sudden Death). Antiquity zůstává, jak bylo.
+ *
+ * Zamyká se jedině zaškrtávátko Empire Wars — to už režim obsahuje.
+ * S ostatními se dá po přepnutí dál hýbat, tak to dělá i panel.
  */
-const NASTAVENI_EMPIRE_WARS = { empireWars: false as boolean | null, pocatecniVek: 3, vitezstvi: 9 as 1 | 9 };
+const NASTAVENI_EMPIRE_WARS = {
+  empireWars: false as boolean | null,
+  regicide: false as boolean | null,
+  cheaty: false,
+  turbo: false as boolean | null,
+  fullTechTree: false as boolean | null,
+  suddenDeath: false as boolean | null,
+  pocatecniVek: 3,
+  vitezstvi: 9 as 1 | 9,
+};
 
 function Vyber({ klic, popis, hodnota, tabulka, jedno, poradi, onZmena }: { klic: string; popis: string; hodnota: number | null; tabulka: Record<string, string>; jedno?: boolean; poradi?: number[]; onZmena: (v: number | null) => void }) {
   const polozky = poradi ? poradi.map((id) => [String(id), tabulka[id]!] as const) : Object.entries(tabulka);
