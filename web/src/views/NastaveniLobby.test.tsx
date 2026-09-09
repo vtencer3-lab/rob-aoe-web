@@ -12,8 +12,6 @@ it("bez uloženého nastavení nabídne výchozí: Arabia, Normal, 200, Conquest
   expect(screen.getByLabelText(/game speed/i)).toHaveValue("2");
   expect(screen.getByLabelText(/population/i)).toHaveValue(200);
   expect(screen.getByLabelText(/allow cheats/i)).not.toBeChecked();
-  // Bez snímku není co načítat.
-  expect(screen.getByRole("button", { name: /načíst uložený preset/i })).toBeDisabled();
 });
 
 // Nastavení se propisuje samo, po krátkém odkladu — žádné „Uložit“, aby se
@@ -66,24 +64,23 @@ it("volby mimo hlavní kontrolu jde nastavit na „–“, zaškrtávátka mají
   expect(onZmena).toHaveBeenLastCalledWith({ ...VYCHOZI_NASTAVENI, sadaCivilizaci: 2, primeri: 20, lockTeams: null, recordGame: null, cheaty: false });
 });
 
-// Uložit = snímek na serveru (jen zavolá rodiče). Načtení presetu a Reset
-// nasadí jiné živé nastavení hned, bez odkladu.
-it("Uložit dělá snímek, načtení presetu a Reset nasadí živé nastavení hned", () => {
+// Reset nasadí výchozí nastavení hned, bez odkladu — na rozdíl od psaní do
+// políček, které se posílá se zpožděním.
+it("Reset nasadí výchozí nastavení hned", () => {
   const onZmena = vi.fn();
-  const onUlozit = vi.fn();
-  render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} onZmena={onZmena} onUlozit={onUlozit} />);
-
-  fireEvent.click(screen.getByRole("button", { name: /uložit preset lobby/i }));
-  expect(onUlozit).toHaveBeenCalledTimes(1);
-  expect(onZmena).not.toHaveBeenCalled();
-
-  fireEvent.click(screen.getByRole("button", { name: /načíst uložený preset/i }));
-  expect(screen.getByLabelText(/population/i)).toHaveValue(150);
-  expect(onZmena).toHaveBeenLastCalledWith({ ...VYCHOZI_NASTAVENI, populace: 150 });
+  render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} onZmena={onZmena} onUlozit={vi.fn()} />);
 
   fireEvent.click(screen.getByRole("button", { name: /reset nastavení/i }));
   expect(screen.getByLabelText(/population/i)).toHaveValue(200);
   expect(onZmena).toHaveBeenLastCalledWith(VYCHOZI_NASTAVENI);
+});
+
+// Preset se neosvědčil a od 9. 9. 2026 je schovaný. Server obě cesty umí
+// dál, takže se dá vrátit přepnutím konstanty PRESETY_VIDET.
+it("tlačítka na preset zatím nejsou vidět", () => {
+  render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} onZmena={vi.fn()} onUlozit={vi.fn()} />);
+  expect(screen.queryByRole("button", { name: /uložit preset lobby/i })).toBeNull();
+  expect(screen.queryByRole("button", { name: /načíst uložený preset/i })).toBeNull();
 });
 
 it("bez Team Together je Team Positions zašedlé a nastavené na „–“", () => {

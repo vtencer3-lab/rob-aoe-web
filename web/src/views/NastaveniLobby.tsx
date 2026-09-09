@@ -30,6 +30,12 @@ interface Props {
   zvyraznit?: { cil: string | null; cas: number } | null;
 }
 
+/**
+ * Mají se ukazovat tlačítka na uložení a načtení presetu? Od 9. 9. 2026 ne —
+ * schované, ne smazané, aby šla funkce vrátit jedním přepnutím.
+ */
+const PRESETY_VIDET = false;
+
 /** Jak dlouho se čeká na další klik, než se změna pošle na server. */
 export const ODKLAD_ZMENY_MS = 300;
 
@@ -245,26 +251,34 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
           )}
         </fieldset>
       </div>
-      {/* Uložit = snímek na serveru; načtení presetu a Reset jen nasadí jiné
-          živé nastavení (hned, bez odkladu). Pořadí je podle toho, jak často
-          se maČká: uložit, načíst zpátky, a Reset až nakonec — ten zahazuje
-          všechno, takže má být nejdál od ostatních dvou. */}
-      <div className="ovladani">
-        <button type="button" onClick={onUlozit}>
-          Uložit preset lobby
-        </button>
-        <button
-          type="button"
-          disabled={ulozene === null || ulozene === undefined || jakoUlozene}
-          title={!ulozene ? "Zatím nic uloženého" : jakoUlozene ? "Nastavení je stejné jako uložené" : undefined}
-          onClick={() => zmen(doplnNastaveni(ulozene as Partial<Nastaveni>), true)}
-        >
-          Načíst uložený preset
-        </button>
-        <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
-          Reset nastavení
-        </button>
-      </div>
+      {/* Preset se v praxi neukázal k ničemu: nastavení stejně žije na akci a
+          drží se mezi večery samo, takže snímek k ničemu nepřibyl. Tlačítka
+          jsou proto schovaná, ne smazaná — server obě cesty (`onUlozit`,
+          `ulozene`) umí dál a stačí přepnout tuhle konstantu zpátky. */}
+      {PRESETY_VIDET ? (
+        <div className="ovladani">
+          <button type="button" onClick={onUlozit}>
+            Uložit preset lobby
+          </button>
+          <button
+            type="button"
+            disabled={ulozene === null || ulozene === undefined || jakoUlozene}
+            title={!ulozene ? "Zatím nic uloženého" : jakoUlozene ? "Nastavení je stejné jako uložené" : undefined}
+            onClick={() => zmen(doplnNastaveni(ulozene as Partial<Nastaveni>), true)}
+          >
+            Načíst uložený preset
+          </button>
+          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+            Reset nastavení
+          </button>
+        </div>
+      ) : (
+        <div className="ovladani">
+          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+            Reset nastavení
+          </button>
+        </div>
+      )}
     </form>
   );
 }

@@ -42,7 +42,7 @@ it("s běžící akcí ukáže název, sestavu i nastavení lobby, ne zakládán
 
   expect(screen.getByRole("heading", { name: "Nastavení Lobby" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Ukončit akci" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /uložit preset lobby/i })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /reset nastavení/i })).toBeInTheDocument();
   expect(screen.getByText("SESTAVA")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Založit akci" })).not.toBeInTheDocument();
 });
