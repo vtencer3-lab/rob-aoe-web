@@ -445,31 +445,52 @@ main > .prazdno::after {
      v pozadí, aby lícovala s rámem (viz výš). */
   box-shadow: 0 12px 38px rgba(0, 0, 0, 0.6);
 }
+/* Pruh s barvou a týmem jako praporec na kopí (pokus, experimental): jeden
+   šedý praporec (`praporec-tym.webp`, GPT Image přes Codex) a k němu maska
+   látky (`praporec-tym-maska.webp`). Barvu týmu nanese ::before přes masku
+   násobením, takže lem, kopí i lev zůstanou zlaté a látka vezme `--bN`
+   z palety. Text sedí na látce vpravo od lva. */
 .karta .hero, .host .hero {
-  border-radius: 2px;
-  padding: 1.1rem;
-  text-align: center;
-  color: #fff;
+  --barva-hero: var(--b1);
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1200 / 425;
   margin: 0.9rem 0;
-  border: 2px solid var(--zlato-tmave);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -3px 10px rgba(0, 0, 0, 0.45),
-    inset 0 0 0 4px rgba(0, 0, 0, 0.25),
-    0 4px 14px rgba(0, 0, 0, 0.5);
-  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.7);
-  background-image: linear-gradient(rgba(255, 255, 255, 0.20), rgba(0, 0, 0, 0.18));
+  padding: 0 8% 0 30%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: url(./assets/ui/praporec-tym.webp) center / 100% 100% no-repeat;
+  color: #fff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.45);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55));
+}
+.karta .hero::before, .host .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--barva-hero);
+  mix-blend-mode: multiply;
+  -webkit-mask: url(./assets/ui/praporec-tym-maska.webp) center / 100% 100% no-repeat;
+  mask: url(./assets/ui/praporec-tym-maska.webp) center / 100% 100% no-repeat;
+  -webkit-mask-mode: luminance;
+  mask-mode: luminance;
 }
 .karta .hero strong, .host .hero strong { font-family: "Cinzel", Georgia, serif; }
 .karta .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
-.karta.barva-1 .hero, .host.barva-1 .hero { background: var(--b1); }
-.karta.barva-2 .hero, .host.barva-2 .hero { background: var(--b2); }
-.karta.barva-3 .hero, .host.barva-3 .hero { background: var(--b3); }
-.karta.barva-4 .hero, .host.barva-4 .hero { background: var(--b4); color: #241d10; }
-.karta.barva-5 .hero, .host.barva-5 .hero { background: var(--b5); }
-.karta.barva-6 .hero, .host.barva-6 .hero { background: var(--b6); }
-.karta.barva-7 .hero, .host.barva-7 .hero { background: var(--b7); }
-.karta.barva-8 .hero, .host.barva-8 .hero { background: var(--b8); }
+.karta.barva-1 .hero, .host.barva-1 .hero { --barva-hero: var(--b1); }
+.karta.barva-2 .hero, .host.barva-2 .hero { --barva-hero: var(--b2); }
+.karta.barva-3 .hero, .host.barva-3 .hero { --barva-hero: var(--b3); }
+.karta.barva-4 .hero, .host.barva-4 .hero { --barva-hero: var(--b4); color: #241d10; text-shadow: 0 1px 2px rgba(255, 240, 200, 0.5); }
+.karta.barva-5 .hero, .host.barva-5 .hero { --barva-hero: var(--b5); }
+.karta.barva-6 .hero, .host.barva-6 .hero { --barva-hero: var(--b6); }
+.karta.barva-7 .hero, .host.barva-7 .hero { --barva-hero: var(--b7); }
+.karta.barva-8 .hero, .host.barva-8 .hero { --barva-hero: var(--b8); }
 
 .swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; }
 .barva-1 .swatch { background: var(--b1); }
@@ -937,7 +958,7 @@ button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
    radek v zrcadle. Stejny utvar jako na karte hrace. */
 .host .titulek-zapasu, .karta .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
 .host .zakladas, .karta .zakladas { font-size: 1.5rem; }
-.host .hero { border-radius: 6px; padding: 1.2rem; text-align: center; color: #fff; margin: 0.8rem 0; }
+.host .hero { margin: 0.8rem 0; }
 .host .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
 
 
