@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 12. 9. 2026, dev 0.28.4)
+# Přehled prací a záměrů (stav k 12. 9. 2026 odpoledne, dev 0.31.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.28.4, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc jen přepínač zkušebního pozadí v debug módu (§3.28) |
-| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, o 0.28.4 za `dev` |
-| Migrace | 001–018, poslední `018_skryte_civilizace_vypnute.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 286, databázové 154, frontend 233 — všechny zelené (9. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
+| `origin/dev` | 0.31.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová místo růžové, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32) |
+| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, zaostává za `dev` (0.31.0) — před bannery (§3.33) přezaložit |
+| Migrace | 001–019, poslední `019_steam_hra.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
+| Testy | backend hermetické 290, databázové 155, frontend 243 — všechny zelené (12. 9. 2026 odpoledne, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -919,9 +919,11 @@ správným ocasem, a nakonec zhrubnutý — ten je v repu.
 
 **Co je v kódu.** `web/src/assets/ui/pozadi-nove.webp` (99 kB, 1672×941)
 vedle původního `pozadi.webp`; třída `pozadi-nove` na `<html>` přepne
-`background-image` (`styl.css`). Admin ji přepíná v patičce přepínačem
-„Nové lvy“, který je vidět jen v debug módu; volba je v `localStorage`
-(`rezie.pozadi-nove`) jako ostatní přepínače. Test v `App.test.tsx`.
+`background-image` (`styl.css`). Od 0.29.0 jsou **nové lvy výchozí** a admin
+má v záhlaví pod Admin/User View přepínač „Původní lvi / Nové lvy“ (uživatel:
+„prozatím zkusíme nastavit ty nové lvy jako default“); volba je v
+`localStorage` (`rezie.pozadi-nove`), bez uložené hodnoty platí výchozí.
+Test v `App.test.tsx`.
 
 **Zdroje mimo repo.** `_grafika/final/pozadi_lvi_codex_v4.png` (vstup pro
 export) a všechna čtyři kola ve scratchpadu session (`codex-lev/`), prompty
@@ -929,6 +931,103 @@ export) a všechna čtyři kola ve scratchpadu session (`codex-lev/`), prompty
 
 **Co se rozhodne.** Které pozadí zůstane — pak druhý soubor, třída i přepínač
 zmizí (viz §5).
+
+---
+
+### 3.29 Heslo večera místo hesla na zápas (0.29.0, 12. 9. 2026)
+
+**Zadání.** Uživatel: „heslo bude per akce, ne per zápas … všechny lobby
+budou mít ten den stejné heslo“. Rob ho do hry opisuje při každém zakládání
+a hráči si ho pamatují z prvního zápasu; točení hesla po každém zápase jen
+nutilo lidi ptát se znovu.
+
+**Jak to je.** Sloupec `akce.pristi_heslo` (název zůstal) nese heslo večera:
+vzniká s akcí (migrace 017 ho doplnila starým), `createZapas` si ho **kopíruje
+a nepřepisuje** (`COALESCE`, akce bez hesla ho dostane s prvním zápasem).
+Kostka v Pre-Lobby ho přegeneruje jen pro lobby, které teprve vzniknou;
+založený zápas si drží své (`zapas.heslo` je obtisk), protože už je opsané
+ve hře. Testy v `matches.db.test.ts` (tři případy).
+
+### 3.30 Ikona hry vedle jména podle Steamu (0.30.0, 12. 9. 2026)
+
+**Zadání.** Uživatel: zkontrolovat, že přihlášený hráč hru má, a ukázat ikonu
+hry vedle jména; u soukromého profilu siluetu s jemným otazníkem a bublinou,
+u veřejného profilu bez hry výrazný vykřičník.
+
+**Jak to je.** Tatáž odpověď `GetOwnedGames`, ze které jdou hodiny, říká
+i vlastnictví — jen tvarem: skrytá knihovna vrací `response: {}` bez
+`game_count`, veřejná má `game_count` vždy, i nulový (`parseSteamHra` ve
+`steam.ts`). Dep `nactiHodiny` se přejmenoval na `nactiHru` a vrací obojí;
+`player.steam_hra` (migrace 019, `ma`/`nema`/`soukromy`) se ukládá při každém
+stažení statistik, takže **stávající hráči ikonu dostanou až po dalším
+přihlášení**. Ikona je Steam ikona aplikace 813780 (`aoe2-ikona.webp`, 32 px),
+komponenta `OdznakHry` v `SeznamPrihlasenych.tsx`, styly `.odznak-hry`.
+
+**DLC v bublině (3.1 ze zadání) nejde:** `GetOwnedGames` DLC nevrací a
+ověření vlastnictví DLC má jen vydavatelské API. Uzavřeno.
+
+### 3.31 Zvon z radnice (0.31.0, 12. 9. 2026)
+
+**Zadání.** Uživatel chtěl zvuk, „který hra používá když hráč odklikne
+poplach z TC (uvolnění, zpět do práce)“: pro zprávy admina v chatu (až bude),
+pro potvrzení založení lobby hráčům a pro admina, když se Spectate přepne na
+„Hraje se“.
+
+**Odkud.** Ve hře jsou dvě Wwise události, `Play_Townbell_Start` (poplach)
+a `Play_Townbell_Stop` (odvolání) — názvy v `resources/_common/dat/sounds.json`,
+zvuk v bance `232745270.bnk` uvnitř `wwise/Base.pck`, každá má jedinou
+variantu. Vytaženo vlastním parserem PCK + `wwiser` + `vgmstream-cli`
+(nainstalovaný přes scoop); postup a mapování ID jsou v `README.txt` vedle
+souborů ve scratchpadu session (`zvuky-hra/`). Uživatel potvrdil `Stop`.
+V repu je jako `web/src/assets/zvon.mp3` (41 kB, 1,1 s).
+
+**Kdy zvoní** (`App.tsx`, efekt nad `stav`): hráči-účastníkovi, když jeho
+zápas dostane `lobbyId` (host potvrdil) — **hostovi ne**, je to jeho vlastní
+potvrzení; adminovi, když `fazeLobby` některého zápasu přejde na `hraje_se`.
+První snímek stavu po načtení stránky mlčí. Rozhodnutí „jen účastníkům, ne
+všem přihlášeným“ je moje, uživatel ho výslovně neřekl.
+
+### 3.32 Výběr mapy z mřížky minimap s hledáním (0.31.0, 12. 9. 2026)
+
+**Zadání.** Uživatel: pole vypadá jako dropdown, po kliknutí modální okno
+s náhledy minimap ze hry (modální okno už je z Pre-Lobby), do map přidat
+vyhledávání; náhledy 192 px, a „aby se ty obrázky donačetly po tom, co se
+načte hlavní stránka … lazyloadem dostahovat dodatečné assety“.
+
+**Jak to je.** `nastroje/grafika/mapy_nahledy.py` spáruje názvy z
+`src/shared/mapy.ts` s ikonami hry (`mapicons/{rm_,rwm_,sm_,br_}*.png`,
+normalizace + ruční slovník `RUCNE` pro překlepy jako `rwm_phillipines`) a
+uloží `web/src/assets/mapy/<id>.webp` (192 px, q82): **195 ze 198 map, 1,6 MB**;
+bez ikony jsou King of the Hill, Great Wall a Network Test (zástupný obdélník).
+`web/src/mapyNahledy.ts` je přečte `import.meta.glob` (jen adresy) a
+`donactiDoplnkoveObrazky()` z `main.tsx` po události `load` a
+v `requestIdleCallback` přidá `<link rel="prefetch">` pro každý — hlavní
+stránka na ně nečeká, okno se pak otevře s hotovými obrázky. Tam patří i
+případné další doplňkové obrázky. Okno `VyberMapy.tsx` (třídy z Pre-Lobby +
+`.vyber-mapy`): vyhledávání s fokusem, filtr bez ohledu na diakritiku, Enter
+bere první nález, Escape/klik do stínu zavře; „libovolná“ jde první. Pole
+Location v `NastaveniLobby.tsx` je tlačítko převlečené za select
+(`.vyber-mapy-tlacitko`, s miniaturou vybrané mapy).
+
+### 3.33 Bannery barev pro obrazovku hráče — jen návrhy (12. 9. 2026)
+
+**Zadání.** Nahradit plochý barevný obdélník („ČERVENÁ / tým 2“) na
+obrazovce hráče praporcem; uživateli se z GPT ukázek líbila „Vlajka
+s větrem“ (látka vlající z kopí). Ideál: barevně neutrální praporec obarvený
+v CSS. Rozhodnuto: **generovat obojí a porovnat**, nasazení až jako poslední
+a **ve větvi `experimental`**, protože se to možná zahodí.
+
+**Co existuje** (nic v repu, vše ve scratchpadu session `bannery/`):
+GPT Image přes Codex — `gpt_neutralni_1.png` (s kopím), `gpt_neutralni_2.png`
+(bez kopí, kroužky na lemu) a na přání uživatele `gpt_neutralni_2_kopi.png`
+(totéž s dodaným kopím), `gpt_neutralni_pruhledna.png` (RGBA, alfa látky
+241–254), `gpt_modra.png`, `gpt_cervena.png`; látka měřena jako neutrální
+(chroma 1–6). Lokální ComfyUI (Flux.2-dev, `davka.py`) — `comfy_neutralni_1/2`,
+`comfy_modra`, `comfy_cervena`, `_nobg` verze (rembg + BiRefNet) a
+`comfy_neutralni_*_css_zkouska.png` se simulací obarvení `multiply` do čtyř
+barev. GPT má propracovanější kresbu i dvouocasého lva; Comfy je plošší a
+lev má jeden ocas. Poznatek pro nasazení: barva se nesmí lít na lem a kopí,
+takže je potřeba maska látky nebo kopí jako zvláštní vrstva.
 
 ---
 
@@ -969,11 +1068,7 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
 1. **Civilizace hráče z lobby na kartě hráče.** Sloty v seznamu lobby
    obsahují zvolenou civilizaci; šlo by ji ukazovat vedle předepsané. Kód
    parsování slotů existuje (`worldsEdgeLobby.ts`), UI ne.
-2. **Náhledy map vedle „Location“ v kontrole lobby.** Ikony map jsou ve hře
-   v `resources/_common/wpfg/resources/mapicons/{rm_,rwm_,sm_,br_}*.png`;
-   při zkoušce se spárovalo 194 z 198 map (chybí King of the Hill, BR Fall
-   of Rome, Great Wall, Network Test). **Do repa se nic nepřidalo**
-   (`web/src/assets/mapy` neexistuje) — postup by byl stejný jako u erbů.
+2. ~~Náhledy map~~ — hotovo v 0.31.0 (§3.32).
 3. **Indikátor „heslo funguje“.** Správnost hesla z API nejde přečíst;
    navrženo hlásit „heslo funguje“, jakmile do lobby vstoupí druhý hráč.
    Neimplementováno.
@@ -1005,9 +1100,34 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
    `appearance: base-select` se neosvědčilo (viz komentář v `styl.css`).
 
 10. **Které pozadí zůstane** (od 0.28.4, §3.28): původní lvi z GPT Image
-    z 8. 9., nebo překreslení podle státního znaku z 12. 9.? Uživatel si je
-    porovnává přepínačem „Nové lvy“ v debug módu. Po rozhodnutí smazat druhý
-    webp, třídu `pozadi-nove` a přepínač.
+    z 8. 9., nebo překreslení podle státního znaku z 12. 9.? Od 0.29.0 jsou
+    nové výchozí, přepínač je v záhlaví. Po rozhodnutí smazat druhý webp,
+    třídu `pozadi-nove` a přepínač.
+
+Zadané 12. 9. 2026, rozhodnuté, **ještě nezačaté** (v tomhle pořadí):
+
+11. **Editace založeného zápasu** (ozubené kolečko u zápasu): „prakticky
+    všechno, co je v samotném vytváření lobby“ — modální okno s kompletním
+    nastavením lobby zápasu a Pre-Lobby jako vnořený modal. Otevřené: co
+    přesně je „nastavení zápasu“, když kontrola lobby dnes porovnává proti
+    živému `akce.nastaveni_lobby` a zápas má jen obtisk `zapas.nastaveni`
+    (§3.16) — návrh před psaním kódu.
+12. **Chat v lobby** mezi hráči a adminem, per zápas, **do databáze**
+    (rozhodnuto), rozesílání přes stávající SSE. Jméno ze Steamu; barvy:
+    Rob výrazná fialová, Jouki výrazná oranžová, Tonner cihlová, hráči podle
+    týmu; admini s glow. Zpráva admina zazvoní ostatním zvonem (§3.31).
+13. **Bannery barev** (§3.33) — až jako poslední, ve větvi `experimental`
+    (nejdřív ji přezaložit z `dev`).
+
+Uzavřené 12. 9. 2026:
+
+- **DLC v bublině ikony hry nejde** (§3.30).
+- **Skript (.bat) místo companion appky na založení lobby nejde.** AOE URL
+  Helper (`HKCR\aoe2de\shell\open\command`) dělá jen
+  `steam.exe -applaunch 813780 aoe2de://…`; hra z argumentu umí připojit
+  (`0/`) nebo sledovat (`1/`) lobby podle ID, žádný příkaz na založení nebo
+  nastavení lobby zvenčí nepřijímá. Zbývá jen automatizace herního UI, a ta
+  je křehká.
 
 Drobné známé nedodělky:
 
@@ -1021,7 +1141,7 @@ Drobné známé nedodělky:
 
 ---
 
-## 6. Historie verzí (7.–9. 9. 2026)
+## 6. Historie verzí (7.–12. 9. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 
@@ -1110,6 +1230,10 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.28.1 | 22:35 | Barvy v kontrole ve čtvrtém pádě; barva 6 je růžová i odstínem |
 | 0.28.2 | 22:47 | Hlavní sekce kontroly má vlastní sbalitelné záhlaví; všechny tři sekce kreslí jedna komponenta |
 | **0.28.3** | 22:52 | Players vysvětlí, že rozdíl jsou prázdné otevřené sloty; **release PR #13** |
+| 0.28.4 | 12. 9. 13:02 | Zkušební pozadí s dvouocasými lvy, přepínač v debug módu (§3.28) |
+| 0.29.0 | 14:00 | Nové lvy výchozí, přepínač pod Admin/User View; fialová místo růžové; doba neaktivity v bublině meče; heslo večera (§3.29) |
+| 0.30.0 | 14:05 | Ikona vlastnictví hry podle Steamu, migrace 019 (§3.30) |
+| 0.31.0 | 14:35 | Zvon z radnice při založení lobby a při začátku hry (§3.31); výběr mapy z mřížky minimap s hledáním, náhledy donačítané po startu (§3.32) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
