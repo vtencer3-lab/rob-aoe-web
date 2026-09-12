@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 večer, dev 0.36.1)
+# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, dev 0.36.2)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.36.1, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 0.36.2, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, 0.33.0-33.1, přezaloženo z `dev` 12. 9. 2026 večer a nasazeno na <https://jouki.cz/aoe/experimental> — **pokus s praporcem místo barevného pruhu** (§3.33) |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 296, databázové 165, frontend 264 — všechny zelené (13. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
+| Testy | backend hermetické 296, databázové 165, frontend 265 — všechny zelené (13. 9. 2026 v noci, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -1244,6 +1244,21 @@ odhlašovat nikoho není potřeba.
   1440p a 4K zhruba 70 % výšky. Náhled v nastavení: zvonek menší pod „Jsem
   tu!“ (bez vodorovného posuvníku). Vykřičník jen s červenou září 1–3 px.
 
+### 3.41 Šesté kolo připomínek (0.36.2, 13. 9. 2026)
+
+- **Oddělovač „nové zprávy“** vzniká ve stejnou chvíli jako tlačítko (kdo je
+  odrolovaný, vidí obojí), roste animací `oddelovac-vznik`; `ODDELOVAC_MS`
+  je 6,2 s, tedy víc než animace zmizení (6 s), aby řádek nezmizel skokem.
+- **Debug svolání:** tlačítko „Svolat mě“ mezi debug tlačítky u tabulky
+  (pravý klik na „Jsem tu!“ nešel použít — tlačítko po kliknutí zmizí).
+- **Úprava zápasu:** levý sloupec je sloupec (`flex-direction: column`),
+  Uložit úplně vlevo pod sestavou; **kontroluje se jen sestava**
+  (`chybyNavrhu` → `zkontrolujSestavu`; Players v Pre-Lobby je jen počet
+  otevřených slotů a AI Difficulty není povinná — obojí zrušeno); důvod je
+  jen jednou, v souhrnu sestavy nad tlačítkem; hráči se stejnou barvou
+  v různých týmech dostanou třídu `chyba` (`[data-tah-id]`), červený rámeček.
+  Dotaz na zahození má větší mezeru a tlačítka min. 6,5 rem.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1451,6 +1466,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.35.0 | 13. 9. 09:30 | Třetí kolo: editace zpráv (migrace 022), twitch odznaky, modály v portálu, zvonek i pro spící, lhůta napříč akcemi, auto-scroll (§3.38) |
 | 0.36.0 | 10:45 | Čtvrté kolo: okno „X tě shání!“, cenzura s originálem a zpětně (migrace 023), oficiální odznaky, oddělovač nových zpráv, drobnosti (§3.39) |
 | 0.36.1 | 20:45 | Páté kolo: úprava zápasu jako návrh s Uložit, kontrolou a zahozením; odznaky lokálně; zkušební svolání v debugu; okno map podle výšky (§3.40) |
+| 0.36.2 | 21:40 | Šesté kolo: oddělovač s tlačítkem a bez skoku, „Svolat mě“, Uložit vlevo, kontrola jen sestavy se zvýrazněním hráčů (§3.41) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
