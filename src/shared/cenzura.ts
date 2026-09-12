@@ -11,6 +11,11 @@
 /** Jednotlivá slova bez diakritiky, malými písmeny. */
 const SLOVA: ReadonlySet<string> = new Set(["buzerant", "buzeranta", "buzerante", "buzeranti", "buzerantsky", "buzerantum", "buzeranty", "buzicci", "buziccich", "buzicek", "buzici", "buzicka", "buzickem", "buzickove", "buzickovi", "buzicku", "buzickum", "buzicky", "buzik", "buzika", "buziku", "buzikum", "buzna", "buznach", "buznam", "buznicce", "buznicek", "buznicka", "buznickach", "buznickam", "buznickami", "buznicko", "buznickou", "buznicku", "buznicky", "buzno", "buzny", "fag", "faggot", "faggota", "faggote", "faggoti", "faggotsky", "faggotu", "faggoty", "fagotici", "fagoticich", "fagotik", "fagotika", "fagotikem", "fagotikove", "fagotikovi", "fagotiku", "fagotikum", "fagotiky", "fagove", "fagy", "gas-the-jews", "gasthejews", "hail-hitler", "hailhitler", "heil-hitler", "heilhitler", "homous", "homousci", "homouscich", "homouse", "homousek", "homousi", "homouska", "homouskem", "homouskove", "homouskovi", "homousku", "homouskum", "homousky", "homousum", "kneegrow", "kneegurr", "negr", "negra", "negracek", "negracku", "negrak", "negraku", "negre", "negrech", "negri", "negrich", "negrici", "negricich", "negrik", "negriku", "negrikum", "negrisko", "negro", "negrousch", "negrousci", "negrouscich", "negrousek", "negrouska", "negrouski", "negrouskovi", "negrousku", "negrouskum", "negrousky", "negrovska", "negrovske", "negrovsky", "negrovskych", "negrovskym", "negrovsti", "negrum", "negry", "nickgurr", "nigga", "nigger", "niggera", "niggere", "niggerovi", "niggery", "niggo", "niggove", "niggr", "niggrem", "niggri", "niggrove", "nigguh", "sieg-heil", "siegheil", "teplous", "teplousci", "teplouse", "teplousek", "teplousi", "teplousku", "teplousum"]);
 
+/** Doplněno uživatelem 12. 9. 2026 nad rámec seznamu ze Streamer.bota. */
+for (const slovo of ["negroid", "negroida", "negroidovi", "negroidu", "negroidem", "negroide", "negroidi", "negroidove", "negroidu", "negroidum", "negroidy", "negroidech", "negroidama", "negroidum"]) {
+  (SLOVA as Set<string>).add(slovo);
+}
+
 /** Víceslovné výrazy, porovnávají se jako celek s libovolnými mezerami. */
 const FRAZE: readonly string[] = ["gas the jews", "hail hitler", "heil hitler", "knee grow", "knee gurr", "nick gurr", "sieg heil"];
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT } from "../../../src/shared/aktivita.js";
 import zvonUrl from "../assets/zvon.mp3";
 import { useZamekScrollu } from "../zamekScrollu.js";
@@ -50,6 +50,7 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta
             min={0}
             max={100}
             value={posun}
+            style={{ "--podil": `${posun}%` } as CSSProperties}
             aria-label="Hlasitost zvuků"
             onChange={(e) => {
               const v = Number(e.target.value);
@@ -69,7 +70,18 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta
               <button type="button" aria-label="O minutu méně" disabled={lhutaMinut <= LHUTA_MIN_MINUT} onClick={() => zmenLhutu(-1)}>
                 ▼
               </button>
-              <input type="text" readOnly value={`${lhutaMinut} min`} aria-label="Lhůta aktivity v minutách" data-testid="lhuta-minut" />
+              <input
+                type="text"
+                readOnly
+                value={`${lhutaMinut} min`}
+                aria-label="Lhůta aktivity v minutách"
+                data-testid="lhuta-minut"
+                onWheel={(e) => {
+                  // Kolečko myši nad polem: po minutě (uživatel), místo rolování stránky.
+                  e.preventDefault();
+                  zmenLhutu(e.deltaY < 0 ? 1 : -1);
+                }}
+              />
               <button type="button" aria-label="O minutu více" disabled={lhutaMinut >= LHUTA_MAX_MINUT} onClick={() => zmenLhutu(1)}>
                 ▲
               </button>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Chat } from "./Chat.js";
+import { Chat, UDALOST_SBALIT_CHAT } from "./Chat.js";
 import { jeAi } from "../../../src/shared/aiHraci.js";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
@@ -236,6 +236,9 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
             className="cta spectate"
             aria-disabled={muzeSpectate ? "false" : "true"}
             href={zapas.spectatorUri !== null ? zapas.spectatorUri : undefined}
+            onClick={() => {
+              if (muzeSpectate) window.dispatchEvent(new CustomEvent(UDALOST_SBALIT_CHAT, { detail: zapas.id }));
+            }}
           >
             {muzeSpectate ? (
               <>

@@ -20,3 +20,7 @@ describe("cenzura chatu", () => {
     expect(cenzuruj("siegfried")).toBe("siegfried");
   });
 });
+
+it("negroid je zakázaný ve všech pádech", () => {
+  for (const s of ["negroid", "Negroida", "negroidům", "negroidech", "negroidy"]) expect(jeZakazane(s)).toBe(true);
+});

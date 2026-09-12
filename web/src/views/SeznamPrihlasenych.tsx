@@ -3,7 +3,9 @@ import { Potvrzeni } from "./Potvrzeni.js";
 import type { SteamVlastnictvi } from "../../../src/shared/types.js";
 import ikonaHryUrl from "../assets/aoe2-ikona.png";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { jeAktivni, nabidnoutJsemTu, zbyvaMs } from "../../../src/shared/aktivita.js";
+import { jeAktivni, nabidnoutJsemTu, nabidnoutZvonek, zbyvaMs } from "../../../src/shared/aktivita.js";
+import poplachUrl from "../assets/poplach.mp3";
+import { hlasitost, prehraj } from "../zvuk.js";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
@@ -173,6 +175,9 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
   }, [tabulka, poradi]);
 }
 
+/** Jak dlouho po kliknutí je zvonek zašedlý. */
+const ZVONEK_CHLADNUTI_MS = 5_000;
+
 export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni, onSvolat, lhutaMinut }: Props) {
   // Debug: klik na ikonu hry přepne její stav jen v prohlížeči (má → nelze
   // ověřit → nemá), ať jde všechny tři podoby vidět bez cizího účtu.
@@ -185,6 +190,16 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   };
   // „Hráč nemá hru“: + zůstává klikací, ale napřed se ptá.
   const [potvrditVyber, setPotvrditVyber] = useState<PlayerView | null>(null);
+  // Zvonek jde použít jednou za pět vteřin (po tu dobu je zašedlý); admin
+  // sám ho slyší jen na desetinu své hlasitosti, ať ví, že odešel.
+  const [zvonekChladne, setZvonekChladne] = useState<Record<string, boolean>>({});
+  const zazvon = (steamId: string) => {
+    if (!onSvolat || zvonekChladne[steamId]) return;
+    onSvolat(steamId);
+    prehraj(poplachUrl, hlasitost() * 0.1);
+    setZvonekChladne((z) => ({ ...z, [steamId]: true }));
+    setTimeout(() => setZvonekChladne((z) => ({ ...z, [steamId]: false })), ZVONEK_CHLADNUTI_MS);
+  };
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
   const tabulka = useRef<HTMLTableElement>(null);
@@ -324,8 +339,15 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
                     Jsem tu!
                   </button>
-                ) : onSvolat && ja !== hrac.steamId && !jeAi(hrac.steamId) ? (
-                  <button type="button" className="zvonek" aria-label={`Svolat hráče ${jmeno}`} title="Svolat do radnice — hráči zazvoní poplach" onClick={() => onSvolat(hrac.steamId)}>
+                ) : onSvolat && ja !== hrac.steamId && !jeAi(hrac.steamId) && nabidnoutZvonek(hrac.aktivniDo, ted, lhutaMinut) ? (
+                  <button
+                    type="button"
+                    className={zvonekChladne[hrac.steamId] ? "zvonek chladne" : "zvonek"}
+                    aria-label={`Svolat hráče ${jmeno}`}
+                    title="Svolat do radnice — hráči zazvoní poplach a ubere mu to 3 minuty"
+                    disabled={Boolean(zvonekChladne[hrac.steamId])}
+                    onClick={() => zazvon(hrac.steamId)}
+                  >
                     🔔
                   </button>
                 ) : null}

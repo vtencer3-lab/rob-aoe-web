@@ -19,6 +19,9 @@ const ADMIN_JMENA: Readonly<Record<string, string>> = {
   "76561198014710095": "Tonner",
 };
 
+/** Událost okna, kterou režie sbalí chat zápasu (detail = id zápasu). */
+export const UDALOST_SBALIT_CHAT = "aoe:sbalit-chat";
+
 /** Nejdelší zpráva; totéž hlídá server i databáze. */
 export const MAX_DELKA_ZPRAVY = 500;
 
@@ -75,10 +78,23 @@ export function Chat({ zapas, ja, onOdeslat, onSmazat, ladeni }: Props) {
 
   const skocDolu = () => {
     const el = seznam.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     uDna.current = true;
     setNoveDole(false);
   };
+  // Sbalený chat: hlavička zůstane, zprávy i psaní se schovají (s animací).
+  // Kliknutí na Spectate v režii ho sbalí samo — Rob jde do hry a chat mu
+  // v tu chvíli jen zabírá místo (uživatel: „při kliknutí na Spectate se
+  // chat automaticky collapsne“).
+  const [sbaleny, setSbaleny] = useState(false);
+  useEffect(() => {
+    const sbal = (e: Event) => {
+      const id = (e as CustomEvent<number>).detail;
+      if (id === zapas.id || id === undefined) setSbaleny(true);
+    };
+    window.addEventListener(UDALOST_SBALIT_CHAT, sbal);
+    return () => window.removeEventListener(UDALOST_SBALIT_CHAT, sbal);
+  }, [zapas.id]);
 
   const odesli = async (e: FormEvent) => {
     e.preventDefault();
@@ -94,8 +110,16 @@ export function Chat({ zapas, ja, onOdeslat, onSmazat, ladeni }: Props) {
   };
 
   return (
-    <section className="chat" aria-label={`Chat zápasu #${zapas.poradi}`} data-testid="chat">
-      <h3 className="chat-nadpis">Chat</h3>
+    <section className={sbaleny ? "chat sbaleny" : "chat"} aria-label={`Chat zápasu #${zapas.poradi}`} data-testid="chat">
+      <button type="button" className="chat-nadpis" aria-expanded={!sbaleny} onClick={() => setSbaleny((s) => !s)}>
+        <span className="sipka" aria-hidden="true">
+          {sbaleny ? "▸" : "▾"}
+        </span>
+        Chat
+        {sbaleny && zpravy.length > 0 ? <small>{zpravy.length}</small> : null}
+      </button>
+      <div className="chat-telo" aria-hidden={sbaleny}>
+      <div className="chat-vnitrek">
       <ol
         className="zpravy"
         ref={seznam}
@@ -153,6 +177,8 @@ export function Chat({ zapas, ja, onOdeslat, onSmazat, ladeni }: Props) {
           Odeslat
         </button>
       </form>
+      </div>
+      </div>
     </section>
   );
 }

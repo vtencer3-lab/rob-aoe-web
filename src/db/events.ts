@@ -64,8 +64,12 @@ export async function setLhutaAktivity(akceId: number, minut: number): Promise<A
  * zazvoní poplach. Vrací false, když hráč v akci není.
  */
 export async function svolej(akceId: number, steamId: string): Promise<boolean> {
+  // Zvonek zároveň ubere tři minuty lhůty — kdo už usnul, o nic nepřijde.
   const { rowCount } = await getPool().query(
-    "UPDATE prihlaska SET svolan_v = now() WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'",
+    `UPDATE prihlaska
+        SET svolan_v = now(),
+            aktivni_do = CASE WHEN aktivni_do > now() THEN GREATEST(now(), aktivni_do - interval '3 minutes') ELSE aktivni_do END
+      WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'`,
     [akceId, steamId],
   );
   return (rowCount ?? 0) > 0;

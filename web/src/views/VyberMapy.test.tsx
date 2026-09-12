@@ -39,3 +39,11 @@ it("Escape a klik do stínu zavřou bez výběru", () => {
   expect(onZavrit).toHaveBeenCalledTimes(2);
   expect(onVybrat).not.toHaveBeenCalled();
 });
+
+it("pravé tlačítko do vyhledávání smaže text", () => {
+  render(<VyberMapy hodnota={null} onVybrat={vi.fn()} onZavrit={vi.fn()} />);
+  const pole = screen.getByRole("searchbox", { name: /hledat mapu/i });
+  fireEvent.change(pole, { target: { value: "ara" } });
+  fireEvent.contextMenu(pole);
+  expect(pole).toHaveValue("");
+});

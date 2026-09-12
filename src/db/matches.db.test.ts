@@ -383,7 +383,12 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   expect(radek.svolanV).toBeNull();
 
   expect(await svolej(akceId, HRACI[0]!)).toBe(true);
-  expect((await najdi()).svolanV).toBeInstanceOf(Date);
+  const poSvolani = await najdi();
+  expect(poSvolani.svolanV).toBeInstanceOf(Date);
+  // Zvonek ubral tři minuty: z ~30 na ~27.
+  const poMinut = (poSvolani.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(poMinut).toBeGreaterThan(25);
+  expect(poMinut).toBeLessThanOrEqual(27);
   expect(await svolej(akceId, "76561198000000999")).toBe(false);
   await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
 });

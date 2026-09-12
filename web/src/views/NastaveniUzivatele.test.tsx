@@ -27,3 +27,13 @@ it("admin krokuje lhůtu po minutě v mezích 2–120", () => {
   rerender(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} lhutaMinut={120} onLhuta={onLhuta} onZavrit={vi.fn()} />);
   expect(screen.getByRole("button", { name: /více/i })).toBeDisabled();
 });
+
+it("kolečko myši nad lhůtou krokuje po minutě", () => {
+  const onLhuta = vi.fn();
+  render(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} lhutaMinut={15} onLhuta={onLhuta} onZavrit={vi.fn()} />);
+  const pole = screen.getByTestId("lhuta-minut");
+  fireEvent.wheel(pole, { deltaY: -100 });
+  expect(onLhuta).toHaveBeenLastCalledWith(16);
+  fireEvent.wheel(pole, { deltaY: 100 });
+  expect(onLhuta).toHaveBeenLastCalledWith(14);
+});

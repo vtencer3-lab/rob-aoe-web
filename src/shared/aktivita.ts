@@ -53,6 +53,17 @@ export function zbyvaMs(aktivniDo: string | null | undefined, ted: number): numb
  * než ho seznam odsune dolů. Práh se počítá z lhůty, ať sedí i tehdy, až si ji
  * bude admin nastavovat sám.
  */
+/**
+ * Má admin u hráče vidět zvonek? Až po pěti minutách odpočtu (uživatel: „v tomto
+ * defaultním nastavení v 10. minutě“) a dokud hráč nespí — spícího zvonek
+ * nesvolá, ten má „Jsem tu!“. Po „Jsem tu!“ je lhůta plná a zvonek zmizí.
+ */
+export const ZVONEK_PO_MINUTACH = 5;
+export function nabidnoutZvonek(aktivniDo: string | null | undefined, ted: number, lhutaMinut = AKTIVITA_MINUT): boolean {
+  const zbyva = zbyvaMs(aktivniDo, ted);
+  return zbyva !== null && zbyva > 0 && zbyva <= (lhutaMinut - ZVONEK_PO_MINUTACH) * 60_000;
+}
+
 export function nabidnoutJsemTu(aktivniDo: string | null | undefined, ted: number, lhutaMinut = AKTIVITA_MINUT): boolean {
   const zbyva = zbyvaMs(aktivniDo, ted);
   return zbyva !== null && zbyva < (lhutaMinut - 1) * 60_000;

@@ -74,6 +74,11 @@ export function VyberMapy({ hodnota, onVybrat, onZavrit }: Props) {
           aria-label="Hledat mapu"
           value={hledani}
           onChange={(e) => setHledani(e.target.value)}
+          onContextMenu={(e) => {
+            // Pravé tlačítko do pole = smazat text (uživatel), místo nabídky prohlížeče.
+            e.preventDefault();
+            setHledani("");
+          }}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
             e.preventDefault();
