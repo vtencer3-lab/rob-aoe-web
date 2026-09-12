@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 12. 9. 2026, dev 0.28.3)
+# Přehled prací a záměrů (stav k 12. 9. 2026, dev 0.28.4)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,8 +35,8 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.28.3, nasazeno na <https://jouki.cz/aoe/dev> — AI v sestavě, mazání zkušebních hráčů, Pre-Lobby nastavení a postavené okno Create Lobby (§3.20–§3.27); po releasu **shodné s `main`** |
-| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, **shodné s `dev`** |
+| `origin/dev` | 0.28.4, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc jen přepínač zkušebního pozadí v debug módu (§3.28) |
+| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, o 0.28.4 za `dev` |
 | Migrace | 001–018, poslední `018_skryte_civilizace_vypnute.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 286, databázové 154, frontend 233 — všechny zelené (9. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -908,6 +908,30 @@ to plnohodnotní hráči a jejich zápasy mají zůstat.
 
 ---
 
+### 3.28 Zkušební pozadí s dvouocasými lvy (0.28.4, 12. 9. 2026)
+
+**Odkud.** Zkouška napojení na Codex (GPT Image) — postup a poučení v
+`grafika.md` §3 „Dvouocasý lev“ a v paměti. Lvi na praporcích jsou překreslení
+podle státního znaku (anatomie, dva ocasy, všichni natočení do náměstí) a pak
+o krok zhrubnutí, aby vypadali jako stará výšivka. Čtyři kola: erbovní
+(příliš čistý), zkroucený ocas (dlouhý prompt s „intertwine“), čistý se
+správným ocasem, a nakonec zhrubnutý — ten je v repu.
+
+**Co je v kódu.** `web/src/assets/ui/pozadi-nove.webp` (99 kB, 1672×941)
+vedle původního `pozadi.webp`; třída `pozadi-nove` na `<html>` přepne
+`background-image` (`styl.css`). Admin ji přepíná v patičce přepínačem
+„Nové lvy“, který je vidět jen v debug módu; volba je v `localStorage`
+(`rezie.pozadi-nove`) jako ostatní přepínače. Test v `App.test.tsx`.
+
+**Zdroje mimo repo.** `_grafika/final/pozadi_lvi_codex_v4.png` (vstup pro
+export) a všechna čtyři kola ve scratchpadu session (`codex-lev/`), prompty
+`prompt.txt`–`prompt4.txt` tamtéž; relace Codexu v `~/.codex/sessions/2026/09/12/`.
+
+**Co se rozhodne.** Které pozadí zůstane — pak druhý soubor, třída i přepínač
+zmizí (viz §5).
+
+---
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -979,6 +1003,11 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
    jsi měl udělat ul li seznamy, které by se chovali identicky, ale to teď
    nedělejme“). Nativní `<select>` neumí obarvit zvýraznění položky a
    `appearance: base-select` se neosvědčilo (viz komentář v `styl.css`).
+
+10. **Které pozadí zůstane** (od 0.28.4, §3.28): původní lvi z GPT Image
+    z 8. 9., nebo překreslení podle státního znaku z 12. 9.? Uživatel si je
+    porovnává přepínačem „Nové lvy“ v debug módu. Po rozhodnutí smazat druhý
+    webp, třídu `pozadi-nove` a přepínač.
 
 Drobné známé nedodělky:
 
