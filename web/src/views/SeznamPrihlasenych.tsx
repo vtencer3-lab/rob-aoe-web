@@ -33,7 +33,7 @@ interface Props {
   onSvolat?: (steamId: string) => void;
   /** Lhůta aktivity večera; z ní se počítá práh pro „Jsem tu!“. */
   lhutaMinut?: number;
-  /** Debug: pravé tlačítko na vlastním „Jsem tu!“ předvede svolání (totéž co tlačítko „Svolat mě“). */
+  /** Debug: pravé tlačítko na vlastním „Jsem tu!“ předvede svolání. */
   onZkusebniSvolani?: () => void;
   /** Admin vidí odpočet u všech, ať má přehled, kdo za chvíli usne. */
   admin?: boolean;
@@ -322,7 +322,9 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
           const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
           // Přetahovat jde jen ve vlastním pořadí — v seřazeném seznamu by
           // přesun nebyl vidět.
-          const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId) : {};
+          // Aktivní se řadí jen mezi aktivními, spící mezi spícími — v seznamu
+          // jsou tak stejně oddělení, ať je pořadí v paměti jakékoli.
+          const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId, jeAktivni(hrac.aktivniDo, ted) ? "aktivni" : "spici") : {};
           return (
             <tr
               key={hrac.steamId}

@@ -458,20 +458,6 @@ export function App() {
                     >
                       Odebrat zkušební
                     </button>
-                    {/* Předvedení svolání pro admina: zvuk jednou na plnou nastavenou
-                        hlasitost a totéž okno, co vidí hráč. */}
-                    {me ? (
-                      <button
-                        type="button"
-                        title="Předvede, co uvidí a uslyší hráč, když mu zazvoníš"
-                        onClick={() => {
-                          prehraj(poplachUrl);
-                          setSvolal(jmenoHrace(me));
-                        }}
-                      >
-                        Svolat mě
-                      </button>
-                    ) : null}
                     {/* Popisek je slovy, na tlačítku je jen dvojšipka: „posunout
                         čas“ se řekne rychleji symbolem než větou. */}
                     <button

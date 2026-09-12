@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, dev 0.36.7)
+# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, dev 0.36.8)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.36.7, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 0.36.8, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, 0.33.0-33.1, přezaloženo z `dev` 12. 9. 2026 večer a nasazeno na <https://jouki.cz/aoe/experimental> — **pokus s praporcem místo barevného pruhu** (§3.33) |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 296, databázové 165, frontend 265 — všechny zelené (13. 9. 2026 v noci, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
+| Testy | backend hermetické 296, databázové 165, frontend 266 — všechny zelené (13. 9. 2026 v noci, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -1277,6 +1277,14 @@ odhlašovat nikoho není potřeba.
   šířka liší, nastaví starou hodnotu a přejede na novou přechodem `width`
   za `PRESUN_MS`, po skončení inline styly smaže. Buňky pod hlavičkou jdou
   s ní (0.36.7). Při `prefers-reduced-motion` žádný přejezd.
+- **Tažení jen uvnitř zóny** (0.36.8): pořadí nevybraných v paměti prohlížeče
+  je promíchané (spící hráč může být uprostřed), zatímco tabulka spící řadí
+  na konec. Tažení aktivního přes spícího proto přeskládalo aktivní jinak, než
+  bylo vidět, a s dalším pohybem zase zpět — řádky „šílely“. `useTahani`
+  dostal třetí parametr `zona` (`data-tah-zona`, v tabulce „aktivni“ /
+  „spici“) a prohazuje jen sousedy se stejnou zónou; přetažený řádek nad
+  cizí zónou jen visí a po puštění se vrátí. Tlačítko „Svolat mě“ odebráno,
+  zůstává pravý klik na „Jsem tu!“.
 
 ---
 
@@ -1490,6 +1498,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.36.4–0.36.5 | 23:10 | Řádek tabulky při odchodu/příchodu: zbytek seznamu se plynule posune (§3.42) |
 | 0.36.6 | 23:25 | Přesouvací animace se během tažení nespouští — bez blikání řádků (§3.42) |
 | 0.36.7 | 23:30 | Sloupce tabulky přejíždějí na novou šířku plynule (§3.42) |
+| 0.36.8 | 23:50 | Tažení prohazuje jen řádky stejné zóny (aktivní/spící) — konec skákání; bez tlačítka „Svolat mě“ (§3.42) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
