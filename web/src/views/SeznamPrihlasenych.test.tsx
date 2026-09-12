@@ -387,3 +387,21 @@ it("admin má zvonek u hráče po pěti minutách odpočtu i u spícího, a po k
   fireEvent.click(zvonek);
   expect(onSvolat).toHaveBeenCalledTimes(1);
 });
+
+// Kdo ze seznamu zmizí, ještě chvíli zůstane s animací odchodu, pak teprve zmizí.
+it("odcházející řádek chvíli zůstane s třídou odchazi", async () => {
+  vi.useFakeTimers();
+  try {
+    const { rerender } = render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a", alias: "Adam" }), hrac({ steamId: "b", alias: "Bára" })]} />);
+    rerender(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "b", alias: "Bára" })]} />);
+    const adam = screen.getByText("Adam").closest("tr")!;
+    expect(adam).toHaveClass("odchazi");
+    const { act } = await import("@testing-library/react");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    expect(screen.queryByText("Adam")).not.toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
+});

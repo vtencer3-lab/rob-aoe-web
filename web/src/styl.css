@@ -1940,3 +1940,10 @@ body.bez-scrollu { overflow: hidden; }
 .editace-zapasu .prelobby-tlacitko.chyba { border-color: var(--cervena-varovani); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cervena-varovani) 45%, transparent); }
 .prelobby-okno .radek.chyba > span:first-child { color: var(--cervena-varovani); }
 .prelobby-okno .radek.chyba > select { border-color: var(--cervena-varovani); }
+
+/* Řádek, který ze seznamu odchází: chvíli zůstane, zprůhlední a odjede. */
+.seznam > tbody > tr.odchazi { animation: radek-odchod 0.38s ease-in forwards; pointer-events: none; }
+@keyframes radek-odchod {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(28px); }
+}

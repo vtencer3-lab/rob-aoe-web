@@ -177,6 +177,9 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
   }, [tabulka, poradi]);
 }
 
+/** Jak dlouho odcházející řádek ještě zůstane, než zmizí (délka animace). */
+const ODCHOD_RADKU_MS = 380;
+
 /** Jak dlouho po kliknutí je zvonek zašedlý. */
 const ZVONEK_CHLADNUTI_MS = 5_000;
 
@@ -221,7 +224,27 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   // konec za všech okolností — i za seřazeného seznamu.
   const ted = useTed();
   const radky = podleAktivity(skladani ? serad(skladani.nevybrani, razeni) : prihlaseni, ted);
-  usePresouvani(tabulka, radky.map((h) => h.steamId).join(","));
+  const klicRadku = radky.map((h) => h.steamId).join(",");
+  usePresouvani(tabulka, klicRadku);
+  // Kdo ze seznamu zmizel (odhlásil se, šel do sestavy), ještě chvíli zůstane
+  // na svém místě a odjede animací, ať řádek jen neprobleskne.
+  const [odchazejici, setOdchazejici] = useState<Array<{ hrac: PlayerView; index: number }>>([]);
+  const drivRadky = useRef<PlayerView[]>([]);
+  useEffect(() => {
+    const zustava = new Set(radky.map((h) => h.steamId));
+    const pryc = drivRadky.current.map((hrac, index) => ({ hrac, index })).filter(({ hrac }) => !zustava.has(hrac.steamId));
+    drivRadky.current = radky;
+    if (pryc.length === 0) return;
+    setOdchazejici((o) => [...o, ...pryc]);
+    setTimeout(() => setOdchazejici((o) => o.filter((x) => !pryc.includes(x))), ODCHOD_RADKU_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [klicRadku]);
+  const zobrazene = [...radky];
+  for (const o of odchazejici) {
+    if (zobrazene.some((h) => h.steamId === o.hrac.steamId)) continue;
+    zobrazene.splice(Math.min(o.index, zobrazene.length), 0, o.hrac);
+  }
+  const odchazi = (steamId: string) => odchazejici.some((o) => o.hrac.steamId === steamId) && !radky.some((h) => h.steamId === steamId);
 
   const prepni = (sloupec: Sloupec) => {
     const nove = dalsiRazeni(razeni, sloupec);
@@ -275,16 +298,18 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
         </tr>
       </thead>
       <tbody>
-        {radky.map((hrac) => {
+        {zobrazene.map((hrac) => {
           const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
+          const odchazejiciRadek = odchazi(hrac.steamId);
           // Přetahovat jde jen ve vlastním pořadí — v seřazeném seznamu by
           // přesun nebyl vidět.
-          const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId) : {};
+          const tah = skladani && !razeni && !odchazejiciRadek ? tahani("nevybrani", hrac.steamId) : {};
           return (
             <tr
               key={hrac.steamId}
-              data-hrac={hrac.steamId}
-              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : ""]
+              data-hrac={odchazejiciRadek ? undefined : hrac.steamId}
+              data-odchazi={odchazejiciRadek ? "" : undefined}
+              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : "", odchazejiciRadek ? "odchazi" : ""]
                 .filter(Boolean)
                 .join(" ")}
               {...tah}
