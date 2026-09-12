@@ -36,7 +36,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
 | `origin/dev` | 0.33.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová místo růžové, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu (§3.34), úprava založeného zápasu (§3.35) |
-| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, zaostává za `dev` (0.33.0) — před bannery (§3.33) přezaložit |
+| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, 0.33.0-33.1, přezaloženo z `dev` 12. 9. 2026 večer a nasazeno na <https://jouki.cz/aoe/experimental> — **pokus s praporcem místo barevného pruhu** (§3.33) |
 | Migrace | 001–020, poslední `020_chat.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 291, databázové 160, frontend 251 — všechny zelené (12. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -1017,7 +1017,18 @@ s větrem“ (látka vlající z kopí). Ideál: barevně neutrální praporec o
 v CSS. Rozhodnuto: **generovat obojí a porovnat**, nasazení až jako poslední
 a **ve větvi `experimental`**, protože se to možná zahodí.
 
-**Co existuje** (nic v repu, vše ve scratchpadu session `bannery/`):
+**Stav (12. 9. večer):** v `experimental` 0.33.0-33.1 je nasazená varianta
+GPT praporec 2 s dodaným kopím, obarvená v CSS: `web/src/assets/ui/praporec-tym.webp`
+(RGBA, 1200×425, 69 kB) a `praporec-tym-maska.webp` (maska látky, 6 kB); `.hero`
+karty hráče i hosta má praporec jako pozadí a `::before` s `background:
+var(--barva-hero)`, `mix-blend-mode: multiply` a `mask-mode: luminance`
+přes masku, takže lem, kopí i lev zůstanou zlaté a látka bere `--bN`.
+Text sedí na látce vpravo od lva (`padding: 0 8% 0 30%`). Assety vznikly
+skriptem ve scratchpadu (klíčování černé podle jasu, maska = neutrální
+pixely napravo od kopí); postup je i v commitu 329853a. Uživatel posoudí
+naživo; když projde, merge do `dev` přes `npm run verze -- z-experimentu`.
+
+**Co existuje** (nic dalšího v repu, vše ve scratchpadu session `bannery/`):
 GPT Image přes Codex — `gpt_neutralni_1.png` (s kopím), `gpt_neutralni_2.png`
 (bez kopí, kroužky na lemu) a na přání uživatele `gpt_neutralni_2_kopi.png`
 (totéž s dodaným kopím), `gpt_neutralni_pruhledna.png` (RGBA, alfa látky
@@ -1155,10 +1166,10 @@ Zadané 12. 9. 2026, rozhodnuté, **ještě nezačaté** (v tomhle pořadí):
 
 11. ~~Editace založeného zápasu~~ — hotovo v 0.33.0 (§3.35).
 12. ~~Chat v lobby~~ — hotovo v 0.32.1 (§3.34).
-13. **Bannery barev** (§3.33) — až jako poslední, ve větvi `experimental`
-    (nejdřív ji přezaložit z `dev`). Čeká na výběr varianty uživatelem
-    (kandidát: GPT praporec 2 s dodaným kopím) a na rozhodnutí, jestli
-    obarvovat v CSS (maska látky) nebo generovat osm barev nativně.
+13. **Bannery barev** (§3.33) — nasazeno v `experimental` 0.33.0-33.1
+    (GPT praporec 2 s kopím, obarvení v CSS přes masku). Čeká na posouzení
+    uživatelem naživo: nechat, doladit (výška pruhu, poloha textu, sytost
+    barev přes multiply), nebo zahodit `git reset --hard dev`.
 
 Uzavřené 12. 9. 2026:
 
