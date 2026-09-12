@@ -10,7 +10,7 @@ export const BARVA_NAZEV: Record<Barva, string> = {
   3: "zelená",
   4: "žlutá",
   5: "tyrkysová",
-  6: "růžová",
+  6: "fialová",
   7: "šedá",
   8: "oranžová",
 };
@@ -25,7 +25,7 @@ export const BARVA_KOHO_CO: Record<Barva, string> = {
   3: "zelenou",
   4: "žlutou",
   5: "tyrkysovou",
-  6: "růžovou",
+  6: "fialovou",
   7: "šedou",
   8: "oranžovou",
 };
