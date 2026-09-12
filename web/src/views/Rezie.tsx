@@ -21,8 +21,8 @@ export interface Obsluha {
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
   /** Dohraný zápas zavřít křížkem (true), nebo z debug módu znovu otevřít (false). */
   onZavrit: (zapasId: number) => void;
-  /** Zpráva do chatu zápasu. */
-  onZprava: (zapasId: number, text: string) => Promise<unknown> | void;
+  /** Zpráva do chatu zápasu; bez ní se chat v kartě nekreslí. */
+  onZprava?: (zapasId: number, text: string) => Promise<unknown> | void;
 }
 
 interface Props {
@@ -92,7 +92,7 @@ function popisUcastnika(zapas: ZapasView, u: ZapasView["ucastnici"][number]): st
   return u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl";
 }
 
-type ZapasProps = { zapas: ZapasView; obsluha?: Obsluha };
+type ZapasProps = { zapas: ZapasView; obsluha?: Obsluha; ja?: string };
 
 function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
   // Přepsat zapsaný výsledek jde, ale ne jedním kliknutím do prázdna: tlačítka
@@ -293,7 +293,7 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
         </>
       )}
     {/* Chat zápasu: admin píše odsud, hráči ze své karty. */}
-      {obsluha && ja ? <Chat zapas={zapas} ja={ja} onOdeslat={(text) => obsluha.onZprava(zapas.id, text)} /> : null}
+      {obsluha?.onZprava && ja ? <Chat zapas={zapas} ja={ja} onOdeslat={(text) => obsluha.onZprava!(zapas.id, text)} /> : null}
     </article>
   );
 }
