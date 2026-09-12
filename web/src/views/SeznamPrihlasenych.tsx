@@ -131,10 +131,11 @@ const PRESUN_MS = 340;
  * nebo objeví (další zápas, panel), protože uložená poloha z minula pak už
  * neplatí. V obou případech řádek odlétal daleko mimo seznam.
  *
- * Přejíždí se jen přeskládání, ne přibytí nebo úbytek hráče. Když někdo do
- * seznamu přijde, posunou se řádky pod ním z docela jiného důvodu než že by
- * si vyměnily místa — a přejezd z toho udělá zmatek, ve kterém celý seznam
- * poskočí a zase se vrátí. V takovém kole se polohy jen zapíšou.
+ * Přejíždí se i přibytí a úbytek hráče (uživatel 13. 9. 2026: „aby se zbytek
+ * listu posunul plynule, a stejně tak při přihlášení“): kdo v seznamu zůstal,
+ * dojede ze staré polohy na novou; kdo přibyl, se objeví prolnutím (třída
+ * `pribyl`); kdo odešel, zmizí hned a řádky pod ním dojedou nahoru. Polohy se
+ * měří vůči tabulce, takže změna její výšky přejezd nerozhodí.
  *
  * `poradi` je otisk pořadí; efekt se pouští jen když se opravdu změnilo.
  */
@@ -151,17 +152,24 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
     const vyskaTabulky = ramecek.height;
     const nynejsi = new Map<string, number>();
     const radky = [...prvek.querySelectorAll<HTMLTableRowElement>("tbody > tr[data-hrac]")];
-    const stejnaSestava =
-      radky.length === drive.current.size && radky.every((r) => drive.current.has(r.dataset["hrac"] ?? ""));
+    const prvniKolo = drive.current.size === 0;
     for (const radek of radky) {
       const kdo = radek.dataset["hrac"];
       if (!kdo) continue;
       const ted = radek.getBoundingClientRect().top - vrchTabulky;
       nynejsi.set(kdo, ted);
       const predtim = drive.current.get(kdo);
-      // Nový řádek nemá odkud přijet; nulový posun není co animovat. V testovacím
-      // DOM jsou všechny souřadnice nulové, takže se animace nepustí vůbec.
-      if (bezPohybu || !stejnaSestava || predtim === undefined || predtim === ted) continue;
+      // Nový řádek nemá odkud přijet — objeví se prolnutím (ne při prvním
+      // vykreslení tabulky, to by blikal celý seznam). V testovacím DOM jsou
+      // všechny souřadnice nulové, takže se přejezd nepustí vůbec.
+      if (predtim === undefined) {
+        if (!bezPohybu && !prvniKolo) {
+          radek.classList.add("pribyl");
+          radek.addEventListener("animationend", () => radek.classList.remove("pribyl"), { once: true });
+        }
+        continue;
+      }
+      if (bezPohybu || predtim === ted) continue;
       // Zábradlí: dál než přes celou tabulku se řádek posunout nemohl. Když
       // takový posun vyjde, je uložená poloha z jiného rozvržení a přejezd by
       // řádek poslal mimo seznam — v tom případě se prostě přeskládá.
@@ -176,9 +184,6 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
     drive.current = nynejsi;
   }, [tabulka, poradi]);
 }
-
-/** Jak dlouho odcházející řádek ještě zůstane, než zmizí (délka animace). */
-const ODCHOD_RADKU_MS = 380;
 
 /** Jak dlouho po kliknutí je zvonek zašedlý. */
 const ZVONEK_CHLADNUTI_MS = 5_000;
@@ -224,27 +229,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   // konec za všech okolností — i za seřazeného seznamu.
   const ted = useTed();
   const radky = podleAktivity(skladani ? serad(skladani.nevybrani, razeni) : prihlaseni, ted);
-  const klicRadku = radky.map((h) => h.steamId).join(",");
-  usePresouvani(tabulka, klicRadku);
-  // Kdo ze seznamu zmizel (odhlásil se, šel do sestavy), ještě chvíli zůstane
-  // na svém místě a odjede animací, ať řádek jen neprobleskne.
-  const [odchazejici, setOdchazejici] = useState<Array<{ hrac: PlayerView; index: number }>>([]);
-  const drivRadky = useRef<PlayerView[]>([]);
-  useEffect(() => {
-    const zustava = new Set(radky.map((h) => h.steamId));
-    const pryc = drivRadky.current.map((hrac, index) => ({ hrac, index })).filter(({ hrac }) => !zustava.has(hrac.steamId));
-    drivRadky.current = radky;
-    if (pryc.length === 0) return;
-    setOdchazejici((o) => [...o, ...pryc]);
-    setTimeout(() => setOdchazejici((o) => o.filter((x) => !pryc.includes(x))), ODCHOD_RADKU_MS);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [klicRadku]);
-  const zobrazene = [...radky];
-  for (const o of odchazejici) {
-    if (zobrazene.some((h) => h.steamId === o.hrac.steamId)) continue;
-    zobrazene.splice(Math.min(o.index, zobrazene.length), 0, o.hrac);
-  }
-  const odchazi = (steamId: string) => odchazejici.some((o) => o.hrac.steamId === steamId) && !radky.some((h) => h.steamId === steamId);
+  usePresouvani(tabulka, radky.map((h) => h.steamId).join(","));
 
   const prepni = (sloupec: Sloupec) => {
     const nove = dalsiRazeni(razeni, sloupec);
@@ -298,18 +283,16 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
         </tr>
       </thead>
       <tbody>
-        {zobrazene.map((hrac) => {
+        {radky.map((hrac) => {
           const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
-          const odchazejiciRadek = odchazi(hrac.steamId);
           // Přetahovat jde jen ve vlastním pořadí — v seřazeném seznamu by
           // přesun nebyl vidět.
-          const tah = skladani && !razeni && !odchazejiciRadek ? tahani("nevybrani", hrac.steamId) : {};
+          const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId) : {};
           return (
             <tr
               key={hrac.steamId}
-              data-hrac={odchazejiciRadek ? undefined : hrac.steamId}
-              data-odchazi={odchazejiciRadek ? "" : undefined}
-              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : "", odchazejiciRadek ? "odchazi" : ""]
+              data-hrac={hrac.steamId}
+              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : ""]
                 .filter(Boolean)
                 .join(" ")}
               {...tah}

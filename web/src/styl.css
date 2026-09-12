@@ -1941,9 +1941,10 @@ body.bez-scrollu { overflow: hidden; }
 .prelobby-okno .radek.chyba > span:first-child { color: var(--cervena-varovani); }
 .prelobby-okno .radek.chyba > select { border-color: var(--cervena-varovani); }
 
-/* Řádek, který ze seznamu odchází: chvíli zůstane, zprůhlední a odjede. */
-.seznam > tbody > tr.odchazi { animation: radek-odchod 0.38s ease-in forwards; pointer-events: none; }
-@keyframes radek-odchod {
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(28px); }
+/* Řádek, který do seznamu přibyl, se objeví prolnutím; kdo odešel, zmizí
+   hned a ostatní řádky za ním dojedou (FLIP v usePresouvani). */
+.seznam > tbody > tr.pribyl { animation: radek-prichod 0.3s ease; }
+@keyframes radek-prichod {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
