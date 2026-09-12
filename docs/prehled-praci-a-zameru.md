@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, dev 0.36.2)
+# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, dev 0.36.7)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,7 +35,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.36.2, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 0.36.7, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, 0.33.0-33.1, přezaloženo z `dev` 12. 9. 2026 večer a nasazeno na <https://jouki.cz/aoe/experimental> — **pokus s praporcem místo barevného pruhu** (§3.33) |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 296, databázové 165, frontend 265 — všechny zelené (13. 9. 2026 v noci, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
@@ -1259,6 +1259,25 @@ odhlašovat nikoho není potřeba.
   v různých týmech dostanou třídu `chyba` (`[data-tah-id]`), červený rámeček.
   Dotaz na zahození má větší mezeru a tlačítka min. 6,5 rem.
 
+### 3.42 Sedmé kolo: animace tabulky přihlášených (0.36.3–0.36.7, 13. 9. 2026)
+
+- **Chat:** při méně než 8 zprávách skáče „Nové zprávy“ na dno, ne
+  k oddělovači (0.36.3).
+- **Debug svolání** znovu pravým tlačítkem na „Jsem tu!“ (kontextová
+  nabídka se potlačí `onContextMenu` + `preventDefault`); tlačítko „Svolat
+  mě“ zůstává (0.36.3).
+- **Odchod a příchod řádku** (`usePresouvani` v `SeznamPrihlasenych.tsx`):
+  hook FLIP, který dosud přesouval jen přeřazené řádky, si pamatuje pozice
+  všech řádků; když někdo odejde, řádky pod ním sjedou nahoru plynule, nový
+  řádek dostane třídu `pribyl` (0.36.4–0.36.5). Během tažení se hook vůbec
+  nespouští (`tahneSe()`) a řádky s rozpracovaným transformem přeskakuje —
+  jinak blikaly řádky nad taženým (0.36.6).
+- **Šířky sloupců:** tabulka má automatické šířky, po odchodu nejdelšího
+  jména sloupce přeskočily. Hook teď měří `thead th` před a po změně; kde se
+  šířka liší, nastaví starou hodnotu a přejede na novou přechodem `width`
+  za `PRESUN_MS`, po skončení inline styly smaže. Buňky pod hlavičkou jdou
+  s ní (0.36.7). Při `prefers-reduced-motion` žádný přejezd.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1467,6 +1486,10 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.36.0 | 10:45 | Čtvrté kolo: okno „X tě shání!“, cenzura s originálem a zpětně (migrace 023), oficiální odznaky, oddělovač nových zpráv, drobnosti (§3.39) |
 | 0.36.1 | 20:45 | Páté kolo: úprava zápasu jako návrh s Uložit, kontrolou a zahozením; odznaky lokálně; zkušební svolání v debugu; okno map podle výšky (§3.40) |
 | 0.36.2 | 21:40 | Šesté kolo: oddělovač s tlačítkem a bez skoku, „Svolat mě“, Uložit vlevo, kontrola jen sestavy se zvýrazněním hráčů (§3.41) |
+| 0.36.3 | 22:40 | Krátký chat skáče na dno; pravý klik na „Jsem tu!“ v debugu = zkušební svolání (§3.42) |
+| 0.36.4–0.36.5 | 23:10 | Řádek tabulky při odchodu/příchodu: zbytek seznamu se plynule posune (§3.42) |
+| 0.36.6 | 23:25 | Přesouvací animace se během tažení nespouští — bez blikání řádků (§3.42) |
+| 0.36.7 | 23:30 | Sloupce tabulky přejíždějí na novou šířku plynule (§3.42) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
