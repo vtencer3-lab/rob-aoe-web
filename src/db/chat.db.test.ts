@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
 import { listZpravy, pridejZpravu } from "./chat.js";
-import { createAkce } from "./events.js";
+import { createAkce, signUp } from "./events.js";
 import { createZapas } from "./matches.js";
 import { closePool, getPool } from "./pool.js";
 import { upsertPlayer } from "./players.js";
@@ -12,7 +12,10 @@ let akceId: number;
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
   akceId = (await createAkce("večer")).id;
-  for (const s of HRACI) await upsertPlayer(s, false);
+  for (const s of HRACI) {
+    await upsertPlayer(s, false);
+    await signUp(akceId, s);
+  }
 });
 
 afterAll(async () => {
