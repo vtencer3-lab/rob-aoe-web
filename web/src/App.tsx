@@ -22,6 +22,7 @@ import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
 import crashoutUrl from "./assets/crashout.mp3";
+import zvonUrl from "./assets/zvon.mp3";
 import logoUrl from "./assets/logo.webp";
 import { prehraj } from "./zvuk.js";
 
@@ -69,6 +70,29 @@ export function App() {
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
+
+  // Zvon z radnice (odvolání poplachu, „zpět do práce“) jako ve hře: hráčům
+  // zazvoní, když host potvrdí založení jejich lobby — je čas se připojit;
+  // adminovi, když se v některé lobby začne hrát — je čas na Spectate. První
+  // snímek stavu po načtení stránky mlčí, jinak by zvonilo při každém
+  // obnovení; hostovi nezvoní vlastní potvrzení.
+  const predchoziLobby = useRef<Map<number, { lobbyId: string | null; faze: string | null }> | null>(null);
+  useEffect(() => {
+    const zapasy = stav?.zapasy ?? [];
+    const drive = predchoziLobby.current;
+    predchoziLobby.current = new Map(zapasy.map((z) => [z.id, { lobbyId: z.lobbyId, faze: z.fazeLobby ?? null }]));
+    if (!drive || !me) return;
+    for (const z of zapasy) {
+      const p = drive.get(z.id);
+      if (!p) continue;
+      if (me.jeAdmin) {
+        if (p.faze !== "hraje_se" && z.fazeLobby === "hraje_se") prehraj(zvonUrl);
+        continue;
+      }
+      const ja = mujUcastnik(z, me.steamId);
+      if (p.lobbyId === null && z.lobbyId !== null && ja && !ja.jeHost) prehraj(zvonUrl);
+    }
+  }, [stav, me]);
 
   // Historie kroků pro Ctrl+Z / Ctrl+Y: jen vlastní změny sestavy a nastavení
   // lobby. Zásobníky jsou v refech, ať je klávesová zkratka vidí aktuální.

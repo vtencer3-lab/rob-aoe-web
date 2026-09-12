@@ -3,8 +3,10 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { AkceStavPayload, UcastnikView, ZapasView } from "../../src/shared/types.js";
 import { App } from "./App.js";
 import { api } from "./api.js";
+import { prehraj } from "./zvuk.js";
 import { useAkceStav } from "./useAkceStav.js";
 
+vi.mock("./zvuk.js", () => ({ prehraj: vi.fn() }));
 vi.mock("./api.js", () => ({
   api: {
     me: vi.fn(),
@@ -584,4 +586,45 @@ it("s nastavenou obtížností AI Difficulty nebliká", async () => {
 
   fireEvent.click(await screen.findByRole("button", { name: "Přidat AI do sestavy" }));
   expect(document.querySelector('[data-klic="aiObtiznost"].zmena')).toBeNull();
+});
+
+// Zvon z radnice: hráči slyší, že host založil jejich lobby; admin, že se
+// v lobby začalo hrát. Host sám ani první načtení stránky nezvoní.
+it("hráči zazvoní založení jeho lobby, hostovi ne", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const bez = zapas([u("a", 1, 1, true), u("b", 2, 2)]);
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [bez] });
+  const { rerender } = render(<App />);
+  await screen.findByText(/spoluhrac/i);
+  expect(prehraj).not.toHaveBeenCalled();
+
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, lobbyId: "123", joinUri: "aoe2de://0/123" }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/zvon/);
+
+  // Host to samé nedostane — potvrzení je jeho vlastní.
+  vi.mocked(prehraj).mockClear();
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "a", alias: "Host", steamName: null, jeAdmin: false } });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [bez] });
+  const druhy = render(<App />);
+  await druhy.findByText(/zakládáš/i);
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, lobbyId: "123", joinUri: "aoe2de://0/123" }] });
+  druhy.rerender(<App />);
+  await new Promise((r) => setTimeout(r, 20));
+  expect(prehraj).not.toHaveBeenCalled();
+});
+
+it("adminovi zazvoní, když se v lobby začne hrát", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  const lobby = { ...zapas([u("a", 1, 1, true), u("b", 2, 2)]), lobbyId: "123", fazeLobby: "lobby" as const };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [lobby] });
+  const { rerender } = render(<App />);
+  await screen.findByRole("button", { name: /vytvořit zápas/i });
+  expect(prehraj).not.toHaveBeenCalled();
+
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...lobby, fazeLobby: "hraje_se" as const }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/zvon/);
 });
