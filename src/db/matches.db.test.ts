@@ -374,14 +374,16 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   const { setLhutaAktivity, signUp: prihlas, listSignups, svolej } = await import("./events.js");
   await setLhutaAktivity(akceId, 30);
   await prihlas(akceId, HRACI[0]!);
-  const [radek] = await listSignups(akceId);
-  const zaMinut = (radek!.aktivniDo.getTime() - Date.now()) / 60_000;
+  // Nové přihlášení posune hráče na konec seznamu (řadí se podle času), tak podle id.
+  const najdi = async () => (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
+  const radek = await najdi();
+  const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
   expect(zaMinut).toBeGreaterThan(28);
   expect(zaMinut).toBeLessThanOrEqual(30);
-  expect(radek!.svolanV).toBeNull();
+  expect(radek.svolanV).toBeNull();
 
   expect(await svolej(akceId, HRACI[0]!)).toBe(true);
-  expect((await listSignups(akceId))[0]!.svolanV).toBeInstanceOf(Date);
+  expect((await najdi()).svolanV).toBeInstanceOf(Date);
   expect(await svolej(akceId, "76561198000000999")).toBe(false);
   await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
 });
