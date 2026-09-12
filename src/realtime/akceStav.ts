@@ -97,6 +97,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       ...playerView(hrac),
       aktivniDo: hrac.aktivniDo.toISOString(),
       svolanV: hrac.svolanV?.toISOString() ?? null,
+      svolalJmeno: hrac.svolalJmeno,
     })),
     zapasy: zapasy.map((z) => zapasView(z, zpravy.get(z.zapas.id) ?? [])),
   };

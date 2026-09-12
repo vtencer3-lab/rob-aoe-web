@@ -1,3 +1,4 @@
+import { cenzurujZpetne } from "./db/chat.js";
 import { config, varovaniDevPristup, varovaniProstredi, varovaniSteamKlic, zkontrolujProstredi } from "./config.js";
 import { existujeAdmin } from "./db/players.js";
 import { deleteExpiredSessions } from "./db/sessions.js";
@@ -34,6 +35,10 @@ if (varovaniDev) console.warn(varovaniDev);
 
 const varovaniSteam = varovaniSteamKlic();
 if (varovaniSteam) console.warn(varovaniSteam);
+
+// Seznam zakázaných slov se občas rozšíří — staré zprávy projdou cenzurou znovu.
+const precenzurovano = await cenzurujZpetne();
+if (precenzurovano > 0) console.log(`Zpětná cenzura upravila ${precenzurovano} zpráv.`);
 
 const app = buildServer();
 await app.listen({ port: config.port, host: config.host });

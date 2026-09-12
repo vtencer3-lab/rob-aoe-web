@@ -407,8 +407,8 @@ main > .prazdno::after {
 .odznak-hry.soukromy .znacka { color: var(--text); opacity: 0.7; font-weight: 400; }
 .odznak-hry.nema .znacka { color: var(--cervena-varovani); font-size: 1.2rem; animation: zare-vykricnik 1.6s ease-in-out infinite; }
 @keyframes zare-vykricnik {
-  0%, 100% { text-shadow: 0 0 2px var(--cervena-varovani), 0 0 6px color-mix(in srgb, var(--cervena-varovani) 45%, transparent), 0 0 2px #000; }
-  50% { text-shadow: 0 0 4px var(--cervena-varovani), 0 0 14px var(--cervena-varovani), 0 0 2px #000; }
+  0%, 100% { text-shadow: 0 0 1px #fff, 0 0 2px var(--cervena-varovani), 0 0 6px color-mix(in srgb, var(--cervena-varovani) 45%, transparent), 0 0 2px #000; }
+  50% { text-shadow: 0 0 1px #fff, 0 0 4px var(--cervena-varovani), 0 0 14px var(--cervena-varovani), 0 0 2px #000; }
 }
 .chyba { color: var(--chyba); }
 .potvrzeno { color: var(--ok); }
@@ -726,7 +726,8 @@ select { color-scheme: dark; accent-color: var(--zlato-tmave); }
 .vyber-mapy-tlacitko .jmeno { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vyber-mapy-tlacitko .sipka { flex: none; width: 0; height: 0; border-left: 0.35rem solid transparent; border-right: 0.35rem solid transparent; border-top: 0.45rem solid currentColor; opacity: 0.8; }
 
-.vyber-mapy { width: min(96vw, max(70vw, 84rem)); height: min(calc(100vh - 4rem), 47rem); display: flex; flex-direction: column; }
+.vyber-mapy { width: min(96vw, max(70vw, 84rem)); height: calc(100vh - 6rem); display: flex; flex-direction: column; }
+@media (max-height: 1100px) { .vyber-mapy { height: min(calc(100vh - 4rem), 47rem); } }
 .vyber-mapy .hledani-map { width: 100%; box-sizing: border-box; margin-bottom: 0.8rem; font-size: 1.05rem; }
 .vyber-mapy .mrizka-map {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0.6rem;
@@ -1778,8 +1779,9 @@ a:hover { color: var(--zlato-svetle); }
 /* Chat zápasu: pod kartou hráče, hosta i pod kartou v režii. Jméno hráče
    v barvě jeho slotu, admin ve své barvě a se září, ať je v proudu vidět. */
 .chat { margin-top: 1rem; border-top: 1px solid rgba(255, 220, 150, 0.18); padding-top: 0.6rem; }
-.chat .chat-nadpis { display: flex; width: 100%; align-items: center; gap: 0.4rem; margin: 0 0 0.4rem; padding: 0.2rem 0; background: none; border: 0; box-shadow: none; cursor: pointer; text-align: left; font-family: "Cinzel", Georgia, "Times New Roman", serif; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; font-variant: small-caps; text-transform: none; color: var(--zlato-svetle); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 14px rgba(216, 168, 58, 0.18); }
-.chat .chat-nadpis:hover .chat-titulek { text-decoration: underline; text-underline-offset: 0.2em; }
+.chat .chat-nadpis { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.4rem; margin: 0 0 0.4rem; padding: 0.2rem 0; cursor: pointer; user-select: none; font-family: "Cinzel", Georgia, "Times New Roman", serif; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; font-variant: small-caps; color: var(--zlato-svetle); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 14px rgba(216, 168, 58, 0.18); }
+.chat .chat-nadpis:hover .chat-titulek { color: var(--zlato); }
+.chat .chat-nadpis:focus-visible { outline: 1px solid var(--zlato-tmave); outline-offset: 2px; }
 .chat .chat-nadpis .sipka { font-size: 0.8rem; width: 0.9rem; }
 .chat .chat-nadpis small { font-family: Georgia, serif; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--tlumene); }
 /* Sbalení: mřížka 1fr → 0fr, rychlé a bez poskoku. */
@@ -1817,7 +1819,7 @@ body.bez-scrollu { overflow: hidden; }
    ať okno kvůli němu neroste. */
 .editace-zapasu .prava { position: relative; padding-top: 0.2rem; }
 .editace-zapasu .prava .prelobby-tlacitko { position: absolute; right: 0; top: calc(-2.15rem + 8px); }
-@media (max-height: 1100px) { .editace-zapasu { zoom: 0.95; } }
+@media (max-height: 1100px) { .editace-zapasu { zoom: 0.99; } }
 .editace-zapasu .prava { padding-top: 0.6rem; }
 .editace-zapasu .skladani .radek { padding-top: 0.25rem; padding-bottom: 0.25rem; }
 
@@ -1847,7 +1849,8 @@ body.bez-scrollu { overflow: hidden; }
 .zvonek { display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; padding: 0; margin: 0; line-height: 1; font-size: 1rem; vertical-align: middle; transition: transform 0.08s ease; }
 .zvonek:active { transform: scale(0.86); }
 .zvonek:not(:disabled):active { animation: zvon-kyv 0.35s ease; }
-.zvonek.chladne, .zvonek:disabled { opacity: 0.4; filter: grayscale(0.7); cursor: default; }
+.zvonek { transition: transform 0.08s ease, opacity 0.6s ease, filter 0.6s ease; }
+.zvonek.chladne, .zvonek:disabled { opacity: 0.4; filter: grayscale(0.7); cursor: default; transition: transform 0.08s ease, opacity 0s, filter 0s; }
 @keyframes zvon-kyv {
   0% { transform: scale(0.86) rotate(0); }
   35% { transform: scale(0.95) rotate(-14deg); }
@@ -1859,7 +1862,8 @@ body.bez-scrollu { overflow: hidden; }
 .nastaveni-uzivatele .radek-nastaveni { display: grid; grid-template-columns: max-content 1fr max-content; gap: 0.4rem 0.9rem; align-items: center; margin: 0.8rem 0; }
 .nastaveni-uzivatele .radek-nastaveni > span:first-child { color: var(--tlumene); }
 .nastaveni-uzivatele .radek-nastaveni small { grid-column: 2 / -1; color: var(--tlumene); }
-.nastaveni-uzivatele input[type="range"] { --podil: 70%; width: 100%; height: 1.4rem; margin: 0; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }
+.nastaveni-uzivatele input[type="range"] { --podil: 70%; width: 100%; height: 1.4rem; margin: 0; padding: 0; border: 0; border-radius: 0.5rem; box-shadow: none; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }
+.nastaveni-uzivatele input[type="range"]:focus { outline: 1px solid var(--zlato); outline-offset: 3px; box-shadow: none; border: 0; }
 .nastaveni-uzivatele input[type="range"]::-webkit-slider-runnable-track { height: 0.55rem; border-radius: 0.3rem; border: 1px solid rgba(0, 0, 0, 0.6); background: linear-gradient(to right, var(--zlato) 0, var(--zlato) var(--podil), #3a2a18 var(--podil), #3a2a18 100%); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7); }
 .nastaveni-uzivatele input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 1.1rem; height: 1.1rem; margin-top: calc(-0.275rem - 1px); border-radius: 50%; background: var(--zlato-svetle); border: 1px solid var(--zlato-tmave); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
 .nastaveni-uzivatele input[type="range"]::-moz-range-track { height: 0.55rem; border-radius: 0.3rem; background: #3a2a18; border: 1px solid rgba(0, 0, 0, 0.6); }
@@ -1893,10 +1897,13 @@ body.bez-scrollu { overflow: hidden; }
 .chat .twitch-odznak.broadcaster rect { fill: #e91916; }
 .chat .twitch-odznak.moderator rect { fill: #00ad03; }
 .chat .editovano { margin-left: 0.4rem; font-size: 0.7rem; color: var(--tlumene); opacity: 0.6; font-style: italic; }
-.chat .zpravy li.nova { animation: nova-zprava 4.5s ease-out forwards; border-radius: 3px; }
-@keyframes nova-zprava {
-  0%, 66% { background: rgba(216, 168, 58, 0.22); box-shadow: inset 3px 0 0 var(--zlato); }
-  100% { background: transparent; box-shadow: inset 3px 0 0 transparent; }
+/* Oddělovač „nové zprávy“: dvě linky se zlatým nápisem uprostřed; po dorolování k němu zbledne a zmizí. */
+.chat .zpravy li.oddelovac-novych { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0; color: var(--zlato); font-family: "Cinzel", Georgia, serif; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.chat .zpravy li.oddelovac-novych::before, .chat .zpravy li.oddelovac-novych::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--zlato) 30%, var(--zlato) 70%, transparent); opacity: 0.7; }
+.chat .zpravy li.oddelovac-novych.bledne { animation: oddelovac-bledne 4.5s ease-out forwards; }
+@keyframes oddelovac-bledne {
+  0%, 66% { opacity: 1; }
+  100% { opacity: 0; }
 }
 .chat .zpravy li.upravuje-se { outline: 1px dashed var(--zlato-tmave); outline-offset: 1px; }
 .chat .psani.upravuje input { border-color: var(--zlato); }
@@ -1904,7 +1911,14 @@ body.bez-scrollu { overflow: hidden; }
 /* Host: drobná poznámka pod Spustit hru; náhled v nastavení. */
 .ovladani.hostovi { flex-direction: column; align-items: center; gap: 0.2rem; }
 .ovladani.hostovi .rucne { color: var(--tlumene); font-size: 0.75rem; opacity: 0.8; }
-.nastaveni-uzivatele .nahled-lhuty { grid-column: 2 / -1; display: flex; gap: 1.4rem; align-items: center; }
+.nastaveni-uzivatele .nahled-lhuty { grid-column: 3; display: flex; gap: 1.1rem; align-items: center; white-space: nowrap; }
 .nastaveni-uzivatele .nahled-lhuty .polozka { display: inline-flex; align-items: center; gap: 0.4rem; }
 .nastaveni-uzivatele .nahled-lhuty button:disabled { opacity: 0.55; cursor: default; }
+.nastaveni-uzivatele .nahled-lhuty button.jsem-tu { padding: 0.2rem 0.5rem; font-size: 0.76rem; letter-spacing: 0.04em; white-space: nowrap; }
 .nastaveni-uzivatele .nahled-lhuty small { color: var(--tlumene); }
+
+/* Okno „X tě shání!“ — bez zavření kliknutím vedle. */
+.svolani { width: min(26rem, 100%); text-align: center; }
+.svolani .otazka { font-size: 1.25rem; margin: 0.4rem 0 1.2rem; }
+.svolani .ovladani { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
+.chat img.twitch-odznak { width: 18px; height: 18px; vertical-align: -0.2em; margin-right: 0.3rem; border-radius: 3px; }

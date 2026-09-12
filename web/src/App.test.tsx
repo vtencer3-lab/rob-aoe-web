@@ -664,3 +664,22 @@ it("hráči zazvoní poplach, když ho admin svolá", async () => {
   await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
   expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/poplach/);
 });
+
+// Zvonek od admina otevře hráči okno „X tě shání!“; zavře ho jen Jsem tu! nebo odhlášení.
+it("po zvonku hráč dostane okno se jménem admina a Jsem tu! ho zavře", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  vi.mocked(api.jsemTu).mockResolvedValue({ ok: true } as never);
+  const ja = { steamId: "b", alias: "Spoluhrac", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null, svolanV: null, svolalJmeno: null };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [ja], zapasy: [] });
+  const { rerender } = render(<App />);
+  await screen.findByText(/spoluhrac/i);
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [{ ...ja, svolanV: "2026-09-13T10:00:00.000Z", svolalJmeno: "Rob" }], zapasy: [] });
+  rerender(<App />);
+  const okno = await screen.findByRole("alertdialog", { name: /rob tě shání/i });
+  expect(okno).toBeInTheDocument();
+  fireEvent.click(screen.getByTestId("svolani-stin"));
+  expect(screen.getByRole("alertdialog", { name: /rob tě shání/i })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /^jsem tu!$/i }));
+  await vi.waitFor(() => expect(api.jsemTu).toHaveBeenCalledWith(1));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+});

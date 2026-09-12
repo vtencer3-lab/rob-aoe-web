@@ -1,3 +1,4 @@
+import { cenzuruj } from "../shared/cenzura.js";
 import type { Barva, Tym } from "../shared/types.js";
 import { getPool } from "./pool.js";
 
@@ -23,9 +24,10 @@ export interface ZpravaRow {
 
 /** Přepíše vlastní zprávu; vrací false, když zpráva není autorova nebo není v zápase. */
 export async function upravZpravu(zapasId: number, zpravaId: number, steamId: string, text: string): Promise<boolean> {
+  const cisty = cenzuruj(text);
   const { rowCount } = await getPool().query(
-    "UPDATE zprava SET text = $4, upraveno_v = now() WHERE id = $1 AND zapas_id = $2 AND steam_id = $3",
-    [zpravaId, zapasId, steamId, text],
+    "UPDATE zprava SET text = $4, text_puvodni = $5, upraveno_v = now() WHERE id = $1 AND zapas_id = $2 AND steam_id = $3",
+    [zpravaId, zapasId, steamId, cisty, cisty === text ? null : text],
   );
   return (rowCount ?? 0) > 0;
 }
@@ -36,8 +38,34 @@ export async function smazZpravu(zapasId: number, zpravaId: number): Promise<boo
   return (rowCount ?? 0) > 0;
 }
 
+/**
+ * Uloží zprávu už cenzurovanou; když cenzura něco změnila, původní znění jde
+ * do `text_puvodni` (jen v databázi, do stavu nikdy) — ať se dá dohledat.
+ */
 export async function pridejZpravu(zapasId: number, steamId: string, text: string): Promise<void> {
-  await getPool().query("INSERT INTO zprava (zapas_id, steam_id, text) VALUES ($1, $2, $3)", [zapasId, steamId, text]);
+  const cisty = cenzuruj(text);
+  await getPool().query("INSERT INTO zprava (zapas_id, steam_id, text, text_puvodni) VALUES ($1, $2, $3, $4)", [
+    zapasId,
+    steamId,
+    cisty,
+    cisty === text ? null : text,
+  ]);
+}
+
+/**
+ * Zpětná cenzura při startu serveru: seznam slov roste, staré zprávy se
+ * prohlédnou znovu. Původní znění se schová jen tam, kde ještě není.
+ */
+export async function cenzurujZpetne(): Promise<number> {
+  const { rows } = await getPool().query<{ id: number; text: string }>("SELECT id, text FROM zprava");
+  let zmeneno = 0;
+  for (const r of rows) {
+    const cisty = cenzuruj(r.text);
+    if (cisty === r.text) continue;
+    await getPool().query("UPDATE zprava SET text = $2, text_puvodni = COALESCE(text_puvodni, $3) WHERE id = $1", [r.id, cisty, r.text]);
+    zmeneno += 1;
+  }
+  return zmeneno;
 }
 
 /**

@@ -63,6 +63,8 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta
             onKeyUp={() => prehraj(zvonUrl, posun)}
             onWheel={(e) => {
               // Kolečko po procentu (uživatel); hodnota se uloží jako při tažení.
+              // Fokus, ať se ukáže rámeček jako při kliknutí.
+              e.currentTarget.focus();
               e.preventDefault();
               const v = Math.min(100, Math.max(0, posun + (e.deltaY < 0 ? 1 : -1)));
               setPosun(v);

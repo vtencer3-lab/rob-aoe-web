@@ -196,7 +196,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   const zazvon = (steamId: string) => {
     if (!onSvolat || zvonekChladne[steamId]) return;
     onSvolat(steamId);
-    prehraj(poplachUrl, hlasitost() * 0.2);
+    prehraj(poplachUrl, hlasitost() * 0.3);
     setZvonekChladne((z) => ({ ...z, [steamId]: true }));
     setTimeout(() => setZvonekChladne((z) => ({ ...z, [steamId]: false })), ZVONEK_CHLADNUTI_MS);
   };
@@ -344,7 +344,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                     type="button"
                     className={zvonekChladne[hrac.steamId] ? "zvonek chladne" : "zvonek"}
                     aria-label={`Svolat hráče ${jmeno}`}
-                    title="Svolat do radnice — hráči zazvoní poplach a ubere mu to 3 minuty"
+                    title="Svolat do radnice — hráči zazvoní poplach"
                     disabled={Boolean(zvonekChladne[hrac.steamId])}
                     onClick={() => zazvon(hrac.steamId)}
                   >

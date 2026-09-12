@@ -113,10 +113,10 @@ export function registerEventRoutes(app: FastifyInstance): void {
 
   // Zvonek u hráče: svolání do radnice — hráči zazvoní poplach ze hry.
   app.post("/api/akce/:id/hraci/:steamId/svolat", async (request) => {
-    await requireAdmin(request);
+    const admin = await requireAdmin(request);
     const akceId = requireId(request);
     const steamId = String((request.params as { steamId?: string }).steamId ?? "");
-    if (!(await svolej(akceId, steamId))) throw new HttpError(404, "Hráč v akci není.");
+    if (!(await svolej(akceId, steamId, admin))) throw new HttpError(404, "Hráč v akci není.");
     await broadcastAkce();
     return { ok: true };
   });

@@ -71,14 +71,10 @@ export async function setLhutaAktivity(akceId: number, minut: number): Promise<A
  * Svolání do radnice: admin klikne na zvonek u hráče, hráči v prohlížeči
  * zazvoní poplach. Vrací false, když hráč v akci není.
  */
-export async function svolej(akceId: number, steamId: string): Promise<boolean> {
-  // Zvonek zároveň ubere tři minuty lhůty — kdo už usnul, o nic nepřijde.
+export async function svolej(akceId: number, steamId: string, kdoSteamId: string): Promise<boolean> {
   const { rowCount } = await getPool().query(
-    `UPDATE prihlaska
-        SET svolan_v = now(),
-            aktivni_do = CASE WHEN aktivni_do > now() THEN GREATEST(now(), aktivni_do - interval '3 minutes') ELSE aktivni_do END
-      WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'`,
-    [akceId, steamId],
+    "UPDATE prihlaska SET svolan_v = now(), svolal_steam_id = $3 WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'",
+    [akceId, steamId, kdoSteamId],
   );
   return (rowCount ?? 0) > 0;
 }
@@ -294,14 +290,16 @@ export async function pretocCas(akceId: number, minut: number): Promise<number> 
 }
 
 /** Přihlášený hráč i s tím, dokdy platí jeho přihláška (viz shared/aktivita.ts). */
-export type PrihlasenyRow = PlayerRow & { aktivniDo: Date; svolanV: Date | null };
+export type PrihlasenyRow = PlayerRow & { aktivniDo: Date; svolanV: Date | null; svolalJmeno: string | null };
 
 export async function listSignups(akceId: number): Promise<PrihlasenyRow[]> {
   const sloupce = PLAYER_SLOUPEC_NAZVY.map((sloupec) => `p.${sloupec}`).join(", ");
-  const { rows } = await getPool().query<DbRow & { aktivni_do: Date; svolan_v: Date | null }>(
-    `SELECT ${sloupce}, pr.aktivni_do, pr.svolan_v
+  const { rows } = await getPool().query<DbRow & { aktivni_do: Date; svolan_v: Date | null; svolal_jmeno: string | null }>(
+    `SELECT ${sloupce}, pr.aktivni_do, pr.svolan_v,
+            COALESCE(a.alias, a.steam_name, a.steam_id) AS svolal_jmeno
        FROM prihlaska pr
        JOIN player p ON p.steam_id = pr.steam_id
+       LEFT JOIN player a ON a.steam_id = pr.svolal_steam_id
       WHERE pr.akce_id = $1 AND pr.stav = 'prihlasen'
       ORDER BY pr.kdy ASC`,
     [akceId],
@@ -309,5 +307,5 @@ export async function listSignups(akceId: number): Promise<PrihlasenyRow[]> {
   // Pořadí zůstává podle času přihlášení. Neaktivní se propadají na konec až
   // v prohlížeči: lhůta vyprší sama od sebe, bez zápisu, který by šel poznat
   // na serveru a vyvolal rozeslání stavu.
-  return rows.map((row) => ({ ...mapuj(row), aktivniDo: row.aktivni_do, svolanV: row.svolan_v }));
+  return rows.map((row) => ({ ...mapuj(row), aktivniDo: row.aktivni_do, svolanV: row.svolan_v, svolalJmeno: row.svolal_jmeno }));
 }

@@ -13,6 +13,7 @@ import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./z
 import { Chat } from "./views/Chat.js";
 import { EditaceZapasu } from "./views/EditaceZapasu.js";
 import { NastaveniUzivatele } from "./views/NastaveniUzivatele.js";
+import { Svolani } from "./views/Svolani.js";
 import poplachUrl from "./assets/poplach.mp3";
 import { hlasitost as nactiHlasitost } from "./zvuk.js";
 import { KartaHrace } from "./views/KartaHrace.js";
@@ -90,12 +91,18 @@ export function App() {
   // Zvonek od admina: když se u mé přihlášky změní čas svolání, zazvoní poplach
   // (Play_Townbell_Start). První snímek po načtení mlčí jako u ostatních zvuků.
   const predchoziSvolani = useRef<string | null | undefined>(undefined);
+  // Okno „X tě shání!“ — zavře ho jen jedno ze dvou tlačítek.
+  const [svolal, setSvolal] = useState<string | null>(null);
   useEffect(() => {
     if (!me) return;
-    const moje = stav?.prihlaseni.find((h) => h.steamId === me.steamId)?.svolanV ?? null;
+    const ja = stav?.prihlaseni.find((h) => h.steamId === me.steamId);
+    const moje = ja?.svolanV ?? null;
     const drive = predchoziSvolani.current;
     predchoziSvolani.current = moje;
-    if (drive !== undefined && moje !== null && moje !== drive) prehraj(poplachUrl);
+    if (drive !== undefined && moje !== null && moje !== drive) {
+      prehraj(poplachUrl);
+      setSvolal(ja?.svolalJmeno ?? "Admin");
+    }
   }, [stav, me]);
   const predchoziLobby = useRef<Map<number, { lobbyId: string | null; faze: string | null; zprava: number }> | null>(null);
   useEffect(() => {
@@ -605,6 +612,19 @@ export function App() {
         <p className="prazdno">Právě neběží žádná akce.</p>
       )}
 
+      {svolal && akce ? (
+        <Svolani
+          kdo={svolal}
+          onJsemTu={() => {
+            setSvolal(null);
+            void hlidej(() => api.jsemTu(akce.id));
+          }}
+          onOdhlasit={() => {
+            setSvolal(null);
+            void hlidej(() => api.odhlasit(akce.id));
+          }}
+        />
+      ) : null}
       {nastaveniVidet ? (
         <NastaveniUzivatele
           hlasitost={hlasitostZvuku}

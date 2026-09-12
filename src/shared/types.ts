@@ -80,6 +80,8 @@ export interface PlayerView {
   aktivniDo?: string | null;
   /** Kdy admina naposledy svolal zvonkem (ISO); změna = zazvonit. Jen v seznamu přihlášených. */
   svolanV?: string | null;
+  /** Jméno admina, který zazvonil naposledy (okno „X tě shání!“). */
+  svolalJmeno?: string | null;
 }
 
 export interface AkceView {
