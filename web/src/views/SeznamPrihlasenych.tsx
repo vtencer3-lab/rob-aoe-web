@@ -141,9 +141,17 @@ const PRESUN_MS = 340;
  */
 function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi: string) {
   const drive = useRef(new Map<string, number>());
+  const driveSirky = useRef<number[]>([]);
   useLayoutEffect(() => {
     const prvek = tabulka.current;
     if (!prvek) return;
+    // Sloupce mají šířku podle obsahu; když odejde nejdelší jméno, přeskočí.
+    // Hlavičky se proto změří a šířka se přejede z původní na novou — tabulka
+    // si podle hlavičky srovná i buňky pod ní.
+    const hlavicky = [...prvek.querySelectorAll<HTMLTableCellElement>("thead th")];
+    const sirky = hlavicky.map((th) => th.getBoundingClientRect().width);
+    const bylySirky = driveSirky.current;
+    driveSirky.current = sirky;
     // Během tažení se sem nesahá vůbec: řádky si posouvá pomocník tažení sám
     // a polohy naměřené uprostřed tahu by po puštění poslaly řádky jinam.
     // Uložené polohy zůstanou z doby před tahem, takže po puštění řádky
@@ -151,6 +159,25 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
     if (tahneSe()) return;
     // Kdo si nepřeje pohyb, dostane přeskládání naráz.
     const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (!bezPohybu && bylySirky.length === hlavicky.length && sirky.some((s, i) => Math.abs(s - bylySirky[i]!) > 0.5)) {
+      hlavicky.forEach((th, i) => {
+        if (Math.abs(sirky[i]! - bylySirky[i]!) <= 0.5) return;
+        th.style.transition = "none";
+        th.style.width = `${bylySirky[i]}px`;
+        requestAnimationFrame(() => {
+          th.style.transition = `width ${PRESUN_MS}ms ease`;
+          th.style.width = `${sirky[i]}px`;
+          th.addEventListener(
+            "transitionend",
+            () => {
+              th.style.transition = "";
+              th.style.width = "";
+            },
+            { once: true },
+          );
+        });
+      });
+    }
     const ramecek = prvek.getBoundingClientRect();
     const vrchTabulky = ramecek.top;
     const vyskaTabulky = ramecek.height;
