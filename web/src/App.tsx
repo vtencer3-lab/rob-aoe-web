@@ -29,12 +29,13 @@ import { prehraj } from "./zvuk.js";
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
-function useUlozenyPrepinac(klic: string): [boolean, (v: boolean) => void] {
+function useUlozenyPrepinac(klic: string, vychozi = false): [boolean, (v: boolean) => void] {
   const [hodnota, setHodnota] = useState(() => {
     try {
-      return localStorage.getItem(klic) === "1";
+      const ulozeno = localStorage.getItem(klic);
+      return ulozeno === null ? vychozi : ulozeno === "1";
     } catch {
-      return false;
+      return vychozi;
     }
   });
   return [
@@ -58,9 +59,9 @@ export function App() {
   // očima hráče; debug mód ukáže tlačítka zkušebních hráčů.
   const [pohledUzivatele, setPohledUzivatele] = useUlozenyPrepinac("rezie.pohled-uzivatele");
   const [ladeni, setLadeni] = useUlozenyPrepinac("rezie.ladeni");
-  // Zkouška nového pozadí (lvi s dvěma ocasy z GPT Image): přepínač v debug
-  // módu, ať se dá porovnat se zbytkem stránky, než se rozhodne, které zůstane.
-  const [novePozadi, setNovePozadi] = useUlozenyPrepinac("rezie.pozadi-nove");
+  // Zkouška nového pozadí (lvi překreslení podle státního znaku): výchozí je
+  // nové, přepínač pod pohledem uživatele ho vrací na původní, ať jde porovnat.
+  const [novePozadi, setNovePozadi] = useUlozenyPrepinac("rezie.pozadi-nove", true);
   useEffect(() => {
     document.documentElement.classList.toggle("pozadi-nove", novePozadi);
   }, [novePozadi]);
@@ -320,6 +321,10 @@ export function App() {
               testId="prepinac-pohledu"
             />
           ) : null}
+          {/* Zkušební pozadí: nové lvy proti původním, dokud se nerozhodne. */}
+          {me?.jeAdmin ? (
+            <Prepinac popisek="Nové pozadí" vlevo="Původní lvi" vpravo="Nové lvy" zapnuto={novePozadi} onZmena={setNovePozadi} testId="prepinac-pozadi" />
+          ) : null}
         </div>
       </header>
 
@@ -529,9 +534,6 @@ export function App() {
       <footer className="verze">
         {me?.jeAdmin ? (
           <Prepinac popisek="Debug mód" vlevo="" vpravo="Debug" zapnuto={ladeni} onZmena={setLadeni} testId="prepinac-ladeni" />
-        ) : null}
-        {me?.jeAdmin && ladeni ? (
-          <Prepinac popisek="Nové pozadí" vlevo="" vpravo="Nové lvy" zapnuto={novePozadi} onZmena={setNovePozadi} testId="prepinac-pozadi" />
         ) : null}
         <span data-testid="verze">v{VERZE}</span>
       </footer>
