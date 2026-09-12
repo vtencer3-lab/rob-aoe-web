@@ -1235,10 +1235,17 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
   50% { content: ".."; }
   75% { content: "..."; }
 }
-.vs-rozlozeni { display: flex; align-items: center; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
-.vs-rozlozeni .vs { font-size: 2.2rem; font-weight: 800; color: var(--akcent); letter-spacing: 0.05em; }
+/* Strany zápasu vždy vedle sebe (uživatel 13. 9. 2026): každá strana dostane
+   polovinu šířky a její sloupce se přizpůsobí — jméno a civilizace se
+   zkracují výpustkou, místo aby druhý tým spadl pod první. Jen na úzkém
+   telefonu se strany skládají pod sebe. */
+.vs-rozlozeni { display: flex; align-items: center; justify-content: center; gap: 1.5rem; flex-wrap: nowrap; }
+.vs-rozlozeni > .skladani.jen-ke-cteni { flex: 1 1 0; min-width: 0; }
+.vs-rozlozeni .vs { flex: none; font-size: 2.2rem; font-weight: 800; color: var(--akcent); letter-spacing: 0.05em; }
+@media (max-width: 40rem) { .vs-rozlozeni { flex-wrap: wrap; } }
 .skladani.jen-ke-cteni { border: none; padding: 0; margin: 0; }
-.skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 17rem; column-gap: 0.5rem; }
+.skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem minmax(0, 1fr) auto minmax(9rem, 17rem); column-gap: 0.5rem; }
+.skladani.jen-ke-cteni .jmeno { max-width: none; }
 .skladani.jen-ke-cteni .radek { cursor: default; }
 .skladani.jen-ke-cteni .radek.ja .jmeno { font-weight: 700; color: var(--akcent); }
 .skladani.jen-ke-cteni .vyber-civ-tlacitko:disabled { opacity: 0.6; cursor: default; }
