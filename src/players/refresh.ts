@@ -1,3 +1,4 @@
+import type { SteamHra } from "../external/steam.js";
 import type { PlayerStatsUpdate } from "../db/players.js";
 import type { SteamProfile } from "../external/steam.js";
 import type { LeaderboardStats } from "../external/worldsEdge.js";
@@ -27,8 +28,8 @@ export function maCerstveStaty(
 export interface RefreshDeps {
   nactiZebricek: (steamId: string) => Promise<LeaderboardStats | null>;
   nactiProfil: (steamId: string) => Promise<SteamProfile | null>;
-  /** `undefined` = nevíme (chybí klíč), hodnotu v databázi nesaháme. `null` = skrytý profil. */
-  nactiHodiny: (steamId: string) => Promise<number | null | undefined>;
+  /** `undefined` = nevíme (chybí klíč), hodnoty v databázi nesaháme. Jinak hodiny (null = skryté) a vlastnictví. */
+  nactiHru: (steamId: string) => Promise<SteamHra | undefined>;
   uloz: (steamId: string, staty: PlayerStatsUpdate) => Promise<void>;
 }
 
@@ -43,7 +44,7 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
   try {
     const chyby: string[] = [];
 
-    const [zebricek, profil, hodiny] = await Promise.all([
+    const [zebricek, profil, hra] = await Promise.all([
       deps.nactiZebricek(steamId).catch((err: unknown) => {
         chyby.push(`Žebříček: ${popis(err)}`);
         return null;
@@ -52,7 +53,7 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
         chyby.push(`Steam profil: ${popis(err)}`);
         return null;
       }),
-      deps.nactiHodiny(steamId).catch((err: unknown) => {
+      deps.nactiHru(steamId).catch((err: unknown) => {
         chyby.push(`Steam hodiny: ${popis(err)}`);
         return undefined;
       }),
@@ -71,9 +72,13 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
       chyba: chyby.length > 0 ? chyby.join("; ") : null,
     };
 
-    // undefined = načtení selhalo, hodnotu v databázi nesaháme.
-    // null = profil je skrytý, a to se uložit musí.
-    if (hodiny !== undefined) staty.steamHodiny = hodiny;
+    // undefined = načtení selhalo, hodnoty v databázi nesaháme.
+    // null u hodin = knihovna je skrytá, a to se uložit musí; totéž říká
+    // vlastnictví `soukromy`, které vedle ikony hry dostane otazník.
+    if (hra !== undefined) {
+      staty.steamHodiny = hra.hodiny;
+      staty.steamHra = hra.vlastnictvi;
+    }
 
     await deps.uloz(steamId, staty);
   } catch (err: unknown) {

@@ -1,3 +1,4 @@
+import type { SteamVlastnictvi } from "../shared/types.js";
 import type { ZebricekRadek } from "../shared/zebricky.js";
 import { getPool } from "./pool.js";
 
@@ -12,6 +13,8 @@ export interface PlayerRow {
   odehranoHer: number | null;
   posledniZapas: Date | null;
   steamHodiny: number | null;
+  /** Vlastnictví hry podle Steamu; null = ještě nezjištěno. */
+  steamHra: SteamVlastnictvi | null;
   statyStazenyV: Date | null;
   statyChyba: string | null;
   /** Všechny žebříčky (karta se statistikami); null = ještě nestaženo. */
@@ -29,6 +32,7 @@ export interface PlayerStatsUpdate {
   odehranoHer?: number | null;
   posledniZapas?: Date | null;
   steamHodiny?: number | null;
+  steamHra?: SteamVlastnictvi | null;
   zebricky?: ZebricekRadek[] | null;
   chyba: string | null;
 }
@@ -47,6 +51,7 @@ export const PLAYER_SLOUPEC_NAZVY = [
   "odehrano_her",
   "posledni_zapas",
   "steam_hodiny",
+  "steam_hra",
   "staty_stazeny_v",
   "staty_chyba",
   "zebricky",
@@ -66,6 +71,7 @@ export interface DbRow {
   odehrano_her: number | null;
   posledni_zapas: Date | null;
   steam_hodiny: number | null;
+  steam_hra: SteamVlastnictvi | null;
   staty_stazeny_v: Date | null;
   staty_chyba: string | null;
   zebricky: ZebricekRadek[] | null;
@@ -84,6 +90,7 @@ export function mapuj(row: DbRow): PlayerRow {
     odehranoHer: row.odehrano_her,
     posledniZapas: row.posledni_zapas,
     steamHodiny: row.steam_hodiny,
+    steamHra: row.steam_hra,
     statyStazenyV: row.staty_stazeny_v,
     statyChyba: row.staty_chyba,
     zebricky: Array.isArray(row.zebricky) ? row.zebricky : null,
@@ -127,6 +134,7 @@ export async function savePlayerStats(steamId: string, staty: PlayerStatsUpdate)
        odehrano_her    = COALESCE($8, odehrano_her),
        posledni_zapas  = COALESCE($9, posledni_zapas),
        steam_hodiny    = CASE WHEN $10::boolean THEN $11::integer ELSE steam_hodiny END,
+       steam_hra       = CASE WHEN $14::boolean THEN $15::text ELSE steam_hra END,
        staty_stazeny_v = now(),
        staty_chyba     = $12,
        zebricky        = COALESCE($13::jsonb, zebricky)
@@ -145,6 +153,8 @@ export async function savePlayerStats(steamId: string, staty: PlayerStatsUpdate)
       staty.steamHodiny ?? null,
       staty.chyba,
       staty.zebricky ? JSON.stringify(staty.zebricky) : null,
+      "steamHra" in staty,
+      staty.steamHra ?? null,
     ],
   );
 }

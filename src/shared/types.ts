@@ -49,6 +49,12 @@ export interface Seat extends SestavaVstup {
   poradi: number;
 }
 
+/**
+ * Co Steam řekl o vlastnictví hry: `ma` (je v knihovně), `nema` (veřejný
+ * profil, hra v knihovně chybí), `soukromy` (knihovna je skrytá, nejde ověřit).
+ */
+export type SteamVlastnictvi = "ma" | "nema" | "soukromy";
+
 export interface PlayerView {
   steamId: string;
   alias: string | null;
@@ -59,6 +65,8 @@ export interface PlayerView {
   eloNejvyssi: number | null;
   odehranoHer: number | null;
   steamHodiny: number | null;
+  /** Vlastnictví hry podle Steamu; null = ještě nezjištěno (nebo bez klíče). */
+  steamHra?: SteamVlastnictvi | null;
   posledniZapas: string | null;
   statyStazenyV: string | null;
   statyChyba: string | null;

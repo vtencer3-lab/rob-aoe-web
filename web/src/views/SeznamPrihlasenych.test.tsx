@@ -87,6 +87,25 @@ it("hráči bez režie hlavičky klikat nemůžou", () => {
   expect(screen.queryByRole("button", { name: /1v1 elo/i })).not.toBeInTheDocument();
 });
 
+// Vedle jména je ikona hry podle Steamu: potvrzení, silueta s otazníkem u
+// skryté knihovny, vykřičník když hra chybí; bez údaje nic.
+it("ukazuje vlastnictví hry ze Steamu vedle jména", () => {
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[
+        hrac({ steamId: "a", alias: "Ma", steamHra: "ma" }),
+        hrac({ steamId: "b", alias: "Tajny", steamHra: "soukromy" }),
+        hrac({ steamId: "c", alias: "Nema", steamHra: "nema" }),
+        hrac({ steamId: "d", alias: "Nevime" }),
+      ]}
+    />,
+  );
+  expect(screen.getByRole("img", { name: /hru má na steamu/i })).toHaveClass("ma");
+  expect(screen.getByRole("img", { name: /soukromý steam profil/i })).toHaveClass("soukromy");
+  expect(screen.getByRole("img", { name: /nebyla nalezena/i })).toHaveClass("nema");
+  expect(screen.getAllByTestId("odznak-hry")).toHaveLength(3);
+});
+
 // Kdo právě hraje běžící zápas, má v režii zkřížené meče — ať Rob neskládá
 // další zápas z lidí, kteří jsou ve hře.
 it("v režii označí mečem hráče, kteří právě hrají", async () => {

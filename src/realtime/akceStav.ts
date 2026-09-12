@@ -18,6 +18,7 @@ export function playerView(hrac: PlayerRow): PlayerView {
     eloNejvyssi: hrac.eloNejvyssi,
     odehranoHer: hrac.odehranoHer,
     steamHodiny: hrac.steamHodiny,
+    steamHra: hrac.steamHra,
     posledniZapas: hrac.posledniZapas?.toISOString() ?? null,
     statyStazenyV: hrac.statyStazenyV?.toISOString() ?? null,
     statyChyba: hrac.statyChyba,

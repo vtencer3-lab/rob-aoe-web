@@ -387,6 +387,20 @@ main > .prazdno::after {
   background: url(./assets/ui/oddelovac.webp) center / 100% 100% no-repeat;
 }
 .varovani { color: var(--akcent); margin-left: 0.35rem; cursor: help; }
+
+/* Ikona hry vedle jména (vlastnictví podle Steamu). Silueta s otazníkem u
+   skryté knihovny je záměrně tichá — není to chyba hráče; vykřičník u chybějící
+   hry naopak křičí, protože ten člověk večer nezahraje. */
+.odznak-hry { position: relative; display: inline-block; margin-left: 0.35rem; vertical-align: middle; line-height: 0; cursor: help; }
+.odznak-hry img { border-radius: 3px; display: block; }
+.odznak-hry.soukromy img { filter: grayscale(1) brightness(0.45); opacity: 0.55; }
+.odznak-hry .znacka {
+  position: absolute; right: -0.35rem; bottom: -0.3rem;
+  font-size: 0.8rem; line-height: 1; font-weight: 700;
+  text-shadow: 0 0 3px #000, 0 0 3px #000;
+}
+.odznak-hry.soukromy .znacka { color: var(--text); opacity: 0.7; font-weight: 400; }
+.odznak-hry.nema .znacka { color: var(--varovani, #ff5a3c); font-size: 1rem; }
 .chyba { color: var(--chyba); }
 .potvrzeno { color: var(--ok); }
 

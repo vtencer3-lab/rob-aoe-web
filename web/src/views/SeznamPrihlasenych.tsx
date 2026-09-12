@@ -1,3 +1,5 @@
+import type { SteamVlastnictvi } from "../../../src/shared/types.js";
+import ikonaHryUrl from "../assets/aoe2-ikona.webp";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { jeAktivni, nabidnoutJsemTu, zbyvaMs } from "../../../src/shared/aktivita.js";
 import type { PlayerView } from "../../../src/shared/types.js";
@@ -281,6 +283,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={28} height={28} /> : null}
                   {jmeno}
                 </span>
+                <OdznakHry stav={hrac.steamHra ?? null} />
                 {hrac.statyChyba ? (
                   <span className="varovani" title={hrac.statyChyba}>
                     ⚠
@@ -420,4 +423,27 @@ function ZnackaHrace({
   }
   if ((vlastni || admin) && hrac.aktivniDo) return <MujCas aktivniDo={hrac.aktivniDo} />;
   return null;
+}
+
+/**
+ * Ikona hry vedle jména: potvrzení ze Steamu, že hráč AoE2 má. Skrytá knihovna
+ * dostane siluetu s tichým otazníkem (ověřit nejde), veřejná knihovna bez hry
+ * ikonu s vykřičníkem — to je stav, na který má Rob přijít před večerem, ne
+ * až v lobby. Dokud Steam nic neřekl (bez klíče, před prvním stažením), nic.
+ */
+function OdznakHry({ stav }: { stav: SteamVlastnictvi | null }) {
+  if (stav === null) return null;
+  const popis =
+    stav === "ma"
+      ? "Hru má na Steamu"
+      : stav === "soukromy"
+        ? "Soukromý Steam profil, nejde ověřit, že hru má"
+        : "Hra na Steam účtu nebyla nalezena";
+  return (
+    <span className={`odznak-hry ${stav} napoveda`} role="img" aria-label={popis} data-napoveda={popis} data-testid="odznak-hry">
+      <img src={ikonaHryUrl} alt="" width={18} height={18} />
+      {stav === "soukromy" ? <span className="znacka" aria-hidden="true">?</span> : null}
+      {stav === "nema" ? <span className="znacka" aria-hidden="true">!</span> : null}
+    </span>
+  );
 }
