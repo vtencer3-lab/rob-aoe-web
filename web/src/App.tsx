@@ -12,6 +12,9 @@ import { useZmenaVysky } from "./vyska.js";
 import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { Chat } from "./views/Chat.js";
 import { EditaceZapasu } from "./views/EditaceZapasu.js";
+import { NastaveniUzivatele } from "./views/NastaveniUzivatele.js";
+import poplachUrl from "./assets/poplach.mp3";
+import { hlasitost as nactiHlasitost } from "./zvuk.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
@@ -66,6 +69,9 @@ export function App() {
   // nové, přepínač pod pohledem uživatele ho vrací na původní, ať jde porovnat.
   const [novePozadi, setNovePozadi] = useUlozenyPrepinac("rezie.pozadi-nove", true);
   const [upravovany, setUpravovany] = useState<number | null>(null);
+  // Ozubené kolečko vedle jména: hlasitost (jen tenhle prohlížeč) a pro admina lhůta aktivity.
+  const [nastaveniVidet, setNastaveniVidet] = useState(false);
+  const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   useEffect(() => {
     document.documentElement.classList.toggle("pozadi-nove", novePozadi);
   }, [novePozadi]);
@@ -81,6 +87,16 @@ export function App() {
   // obnovení; hostovi nezvoní vlastní potvrzení.
   // Totéž zazvoní každému, komu v chatu zápasu přibyla zpráva od admina
   // (ne vlastní): admin v chatu je pokyn, ne řeč.
+  // Zvonek od admina: když se u mé přihlášky změní čas svolání, zazvoní poplach
+  // (Play_Townbell_Start). První snímek po načtení mlčí jako u ostatních zvuků.
+  const predchoziSvolani = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!me) return;
+    const moje = stav?.prihlaseni.find((h) => h.steamId === me.steamId)?.svolanV ?? null;
+    const drive = predchoziSvolani.current;
+    predchoziSvolani.current = moje;
+    if (drive !== undefined && moje !== null && moje !== drive) prehraj(poplachUrl);
+  }, [stav, me]);
   const predchoziLobby = useRef<Map<number, { lobbyId: string | null; faze: string | null; zprava: number }> | null>(null);
   useEffect(() => {
     const zapasy = stav?.zapasy ?? [];
@@ -298,7 +314,9 @@ export function App() {
     onHost: (zapasId: number, steamId: string) => void hlidej(() => api.zmenitHosta(zapasId, steamId)),
     onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
     onZprava: (zapasId: number, text: string) => hlidej(() => api.zprava(zapasId, text)),
+    onSmazatZpravu: (zapasId: number, zpravaId: number) => hlidej(() => api.smazatZpravu(zapasId, zpravaId)),
     onUpravit: (zapasId: number) => setUpravovany(zapasId),
+    ladeni: admin && ladeni,
   };
   // Ozubené kolečko: který zápas je zrovna otevřený k úpravě. Zápas se bere
   // živý ze stavu, takže okno ukazuje, co právě platí, a zmizí se zápasem.
@@ -344,6 +362,9 @@ export function App() {
         <div className="hlavicka-vpravo">
           {me ? (
             <span>
+              <button type="button" className="ozubene-kolecko" aria-label="Nastavení" title="Nastavení zvuků a večera" onClick={() => setNastaveniVidet(true)}>
+                ⚙
+              </button>{" "}
               {jmenoHrace(me)}{" "}
               <button onClick={() => void api.odhlasitSe().then(() => setMe(null))}>Odhlásit</button>
             </span>
@@ -460,6 +481,8 @@ export function App() {
             </header>
             <SeznamPrihlasenych
                 ladeni={admin && ladeni}
+              onSvolat={admin ? (steamId) => void hlidej(() => api.svolat(akce.id, steamId)) : undefined}
+              lhutaMinut={akce.lhutaAktivityMinut}
               prihlaseni={stav?.prihlaseni ?? []}
               skladani={admin ? skladani : undefined}
               vZapase={vZapase}
@@ -544,7 +567,7 @@ export function App() {
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} ladeni={admin && ladeni} />}
                   />
                 ) : (
                   <KartaHrace
@@ -553,7 +576,7 @@ export function App() {
                     ja={me.steamId}
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} ladeni={admin && ladeni} />}
                   />
                 ),
               )
@@ -581,6 +604,15 @@ export function App() {
         <p className="prazdno">Právě neběží žádná akce.</p>
       )}
 
+      {nastaveniVidet ? (
+        <NastaveniUzivatele
+          hlasitost={hlasitostZvuku}
+          onHlasitost={setHlasitostZvuku}
+          lhutaMinut={admin && akce ? (akce.lhutaAktivityMinut ?? 15) : undefined}
+          onLhuta={admin && akce ? (minut) => void hlidej(() => api.lhutaAktivity(akce.id, minut)) : undefined}
+          onZavrit={() => setNastaveniVidet(false)}
+        />
+      ) : null}
       <ZkusebniLista jaSteamId={me?.steamId ?? null} />
       {admin ? <Toasty toasty={toasty} onZavrit={zavriToast} /> : null}
       {/* Verze v patičce: po nasazení se jedním pohledem pozná, jestli

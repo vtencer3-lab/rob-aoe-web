@@ -715,3 +715,22 @@ it("Rob upraví nastavení, jméno lobby i sestavu zápasu; hráč nesmí", asyn
   expect(spatna.statusCode).toBe(400);
   await app.close();
 });
+
+// Cenzura běží na serveru před uložením; Rob smí zprávu smazat, hráč ne.
+it("chat: zakázané slovo se uloží s hvězdičkami a Rob zprávu smaže", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zprava`, cookies: { sid: hracSid }, payload: { text: "ty Buzerante" } });
+  let zpravy = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } })).json().zapasy[0].zpravy as Array<{ id: number; text: string }>;
+  expect(zpravy[0]!.text).toBe("ty *********");
+
+  const hracova = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}/zprava/${zpravy[0]!.id}`, cookies: { sid: hracSid } });
+  expect(hracova.statusCode).toBe(403);
+  const robova = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}/zprava/${zpravy[0]!.id}`, cookies: { sid: robSid } });
+  expect(robova.statusCode).toBe(200);
+  zpravy = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } })).json().zapasy[0].zpravy;
+  expect(zpravy).toEqual([]);
+  const znovu = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}/zprava/999999`, cookies: { sid: robSid } });
+  expect(znovu.statusCode).toBe(404);
+  await app.close();
+});

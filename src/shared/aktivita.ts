@@ -7,11 +7,14 @@
  * u sebe tlačítko „Jsem tu!“.
  *
  * Lhůty jsou tady, ne v SQL a v komponentě zvlášť, aby server i prohlížeč
- * počítaly s týmiž čísly. Později je má nastavovat admin; zatím jsou pevné.
+ * počítaly s týmiž čísly. Plnou lhůtu si od migrace 021 nastavuje admin u akce
+ * (`akce.lhuta_aktivity_minut`); tady zůstává výchozí hodnota a meze.
  */
 
-/** Jak dlouho platí přihláška od posledního projevu života. */
+/** Výchozí lhůta přihlášky od posledního projevu života; skutečnou nese akce. */
 export const AKTIVITA_MINUT = 15;
+export const LHUTA_MIN_MINUT = 2;
+export const LHUTA_MAX_MINUT = 120;
 
 /** Kolik přidá jedno kliknutí do stránky, dokud lhůta ještě běží. */
 export const PRODLOUZENI_MINUT = 5;
@@ -50,7 +53,7 @@ export function zbyvaMs(aktivniDo: string | null | undefined, ted: number): numb
  * než ho seznam odsune dolů. Práh se počítá z lhůty, ať sedí i tehdy, až si ji
  * bude admin nastavovat sám.
  */
-export function nabidnoutJsemTu(aktivniDo: string | null | undefined, ted: number): boolean {
+export function nabidnoutJsemTu(aktivniDo: string | null | undefined, ted: number, lhutaMinut = AKTIVITA_MINUT): boolean {
   const zbyva = zbyvaMs(aktivniDo, ted);
-  return zbyva !== null && zbyva < (AKTIVITA_MINUT - 1) * 60_000;
+  return zbyva !== null && zbyva < (lhutaMinut - 1) * 60_000;
 }

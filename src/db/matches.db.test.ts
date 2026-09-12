@@ -368,3 +368,20 @@ it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () =>
   expect((await getZapas(druhy.id))!.zapas.nastaveni).toEqual({ mapaId: 10875 });
   expect((await getZapas(druhy.id))!.zapas.nazevLobby).toBe("ROB-02");
 });
+
+// Lhůta aktivity je věcí akce: přihláška i „Jsem tu!“ ji berou z ní.
+it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", async () => {
+  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej } = await import("./events.js");
+  await setLhutaAktivity(akceId, 30);
+  await prihlas(akceId, HRACI[0]!);
+  const [radek] = await listSignups(akceId);
+  const zaMinut = (radek!.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(zaMinut).toBeGreaterThan(28);
+  expect(zaMinut).toBeLessThanOrEqual(30);
+  expect(radek!.svolanV).toBeNull();
+
+  expect(await svolej(akceId, HRACI[0]!)).toBe(true);
+  expect((await listSignups(akceId))[0]!.svolanV).toBeInstanceOf(Date);
+  expect(await svolej(akceId, "76561198000000999")).toBe(false);
+  await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
+});

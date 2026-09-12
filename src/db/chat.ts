@@ -20,6 +20,12 @@ export interface ZpravaRow {
   poslano: Date;
 }
 
+/** Smaže zprávu; vrací false, když v tomhle zápase žádná taková není. */
+export async function smazZpravu(zapasId: number, zpravaId: number): Promise<boolean> {
+  const { rowCount } = await getPool().query("DELETE FROM zprava WHERE id = $1 AND zapas_id = $2", [zpravaId, zapasId]);
+  return (rowCount ?? 0) > 0;
+}
+
 export async function pridejZpravu(zapasId: number, steamId: string, text: string): Promise<void> {
   await getPool().query("INSERT INTO zprava (zapas_id, steam_id, text) VALUES ($1, $2, $3)", [zapasId, steamId, text]);
 }

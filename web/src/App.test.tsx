@@ -6,7 +6,7 @@ import { api } from "./api.js";
 import { prehraj } from "./zvuk.js";
 import { useAkceStav } from "./useAkceStav.js";
 
-vi.mock("./zvuk.js", () => ({ prehraj: vi.fn() }));
+vi.mock("./zvuk.js", () => ({ prehraj: vi.fn(), hlasitost: () => 70, nastavHlasitost: vi.fn(), VYCHOZI_HLASITOST: 70 }));
 vi.mock("./api.js", () => ({
   api: {
     me: vi.fn(),
@@ -649,4 +649,18 @@ it("hráči zazvoní nová zpráva od admina, jeho vlastní ne", async () => {
   rerender(<App />);
   await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
   expect(screen.getByText("zakládám")).toBeInTheDocument();
+});
+
+// Zvonek od admina: změna času svolání u mé přihlášky zazvoní poplach; první snímek ne.
+it("hráči zazvoní poplach, když ho admin svolá", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const ja = { steamId: "b", alias: "Spoluhrac", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null, svolanV: null };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [ja], zapasy: [] });
+  const { rerender } = render(<App />);
+  await screen.findByText(/spoluhrac/i);
+  expect(prehraj).not.toHaveBeenCalled();
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [{ ...ja, svolanV: "2026-09-12T15:00:00.000Z" }], zapasy: [] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/poplach/);
 });

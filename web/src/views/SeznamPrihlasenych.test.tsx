@@ -369,3 +369,12 @@ it("v debug módu klik na ikonu hry přepíná má → nelze ověřit → nemá"
   fireEvent.click(ikona());
   expect(ikona()).toHaveClass("ma");
 });
+
+// Admin má u cizích hráčů zvonek (svolání do radnice), u sebe ne.
+it("admin má u ostatních hráčů zvonek", () => {
+  const onSvolat = vi.fn();
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "rob", alias: "Rob" }), hrac({ steamId: "a", alias: "Adam" })]} ja="rob" admin onSvolat={onSvolat} />);
+  expect(screen.queryByRole("button", { name: /svolat hráče rob/i })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /svolat hráče adam/i }));
+  expect(onSvolat).toHaveBeenCalledWith("a");
+});

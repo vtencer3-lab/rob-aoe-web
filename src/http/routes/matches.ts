@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { parseJoinUri, type LobbyUriError } from "../../aoe/lobbyUri.js";
-import { MAX_DELKA_ZPRAVY, pridejZpravu } from "../../db/chat.js";
+import { MAX_DELKA_ZPRAVY, pridejZpravu, smazZpravu } from "../../db/chat.js";
+import { cenzuruj } from "../../shared/cenzura.js";
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { setSkladani } from "../../db/events.js";
 import {
@@ -324,7 +325,19 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     const text = String((request.body as { text?: unknown })?.text ?? "").trim();
     if (text === "") throw new HttpError(400, "Prázdná zpráva.");
     if (text.length > MAX_DELKA_ZPRAVY) throw new HttpError(400, `Zpráva má nejvýš ${MAX_DELKA_ZPRAVY} znaků.`);
-    await pridejZpravu(zapasId, steamId, text);
+    // Cenzura ještě před uložením: hvězdičky vidí každý včetně autora.
+    await pridejZpravu(zapasId, steamId, cenzuruj(text));
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Admin smí zprávu smazat — zmizí všem s dalším stavem.
+  app.delete("/api/zapas/:id/zprava/:zpravaId", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const zpravaId = Number((request.params as { zpravaId?: string }).zpravaId);
+    if (!Number.isInteger(zpravaId) || zpravaId <= 0) throw new HttpError(400, "Špatné id zprávy.");
+    if (!(await smazZpravu(zapasId, zpravaId))) throw new HttpError(404, "Taková zpráva tu není.");
     await broadcastAkce();
     return { ok: true };
   });

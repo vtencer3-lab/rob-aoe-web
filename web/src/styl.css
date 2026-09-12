@@ -1812,3 +1812,23 @@ body.bez-scrollu { overflow: hidden; }
 .potvrzeni { width: min(28rem, 100%); text-align: center; }
 .potvrzeni .otazka { font-size: 1.1rem; margin: 0.4rem 0 1.2rem; }
 .potvrzeni .ovladani { display: flex; gap: 0.8rem; justify-content: center; }
+
+/* Chat: křížek admina, debug přepínač autora, značka nových zpráv dole. */
+.chat .zpravy li { grid-template-columns: max-content max-content 1fr auto auto; }
+.chat .smazat-zpravu { padding: 0 0.4rem; line-height: 1; font-size: 0.9rem; opacity: 0.55; }
+.chat .smazat-zpravu:hover { opacity: 1; }
+.chat .debug-autor { font-size: 0.75rem; padding: 0 0.2rem; }
+.chat .nove-zpravy { display: block; margin: -0.3rem auto 0.5rem; font-size: 0.8rem; padding: 0.2rem 0.8rem; }
+
+/* Zvonek admina v tabulce (čtvercové tlačítko jako plus) a kolečko nastavení v záhlaví. */
+.zvonek { width: 2.1rem; height: 2.1rem; padding: 0; line-height: 1; font-size: 1rem; }
+.ozubene-kolecko { width: 1.9rem; height: 1.9rem; padding: 0; line-height: 1; font-size: 1.05rem; margin-right: 0.3rem; vertical-align: middle; }
+.nastaveni-uzivatele { width: min(30rem, 100%); }
+.nastaveni-uzivatele .radek-nastaveni { display: grid; grid-template-columns: max-content 1fr max-content; gap: 0.4rem 0.9rem; align-items: center; margin: 0.8rem 0; }
+.nastaveni-uzivatele .radek-nastaveni > span:first-child { color: var(--tlumene); }
+.nastaveni-uzivatele .radek-nastaveni small { grid-column: 2 / -1; color: var(--tlumene); }
+.nastaveni-uzivatele input[type="range"] { width: 100%; accent-color: var(--zlato); }
+.nastaveni-uzivatele output { font-variant-numeric: tabular-nums; min-width: 3.2rem; text-align: right; }
+.nastaveni-uzivatele .krokovac { display: flex; gap: 0.3rem; align-items: center; }
+.nastaveni-uzivatele .krokovac input { width: 5.5rem; text-align: center; }
+.nastaveni-uzivatele .krokovac button { width: 2rem; height: 2rem; padding: 0; line-height: 1; font-size: 0.7rem; }

@@ -58,3 +58,16 @@ it("Enter odešle oříznutý text a pole vyprázdní", async () => {
   await vi.waitFor(() => expect(onOdeslat).toHaveBeenCalledWith("za chvíli"));
   await vi.waitFor(() => expect(pole).toHaveValue(""));
 });
+
+it("admin má u zprávy křížek, hráč ne; debug nabídne přepnutí autora", () => {
+  const onSmazat = vi.fn();
+  const zpravy = [{ id: 1, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3 as const, tym: 1 as const, text: "jdu", poslano: "2026-09-12T12:00:00.000Z" }];
+  const { rerender } = render(<Chat ja="a" onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
+  expect(screen.queryByRole("button", { name: /smazat zprávu/i })).not.toBeInTheDocument();
+  rerender(<Chat ja="rob" onOdeslat={vi.fn()} onSmazat={onSmazat} ladeni zapas={zapas(zpravy)} />);
+  fireEvent.click(screen.getByRole("button", { name: /smazat zprávu/i }));
+  expect(onSmazat).toHaveBeenCalledWith(1);
+  fireEvent.change(screen.getByRole("combobox", { name: /debug: autor/i }), { target: { value: "76561198147631465" } });
+  expect(screen.getByTestId("zprava").querySelector(".autor")).toHaveClass("admin", "rob");
+  expect(screen.getByTestId("zprava")).toHaveTextContent("Rob");
+});

@@ -25,6 +25,10 @@ export interface Obsluha {
   onZprava?: (zapasId: number, text: string) => Promise<unknown> | void;
   /** Ozubené kolečko: otevřít úpravu zápasu (nastavení, jméno lobby, sestava). */
   onUpravit?: (zapasId: number) => void;
+  /** Admin smaže zprávu v chatu. */
+  onSmazatZpravu?: (zapasId: number, zpravaId: number) => Promise<unknown> | void;
+  /** Debug mód pro chat (přepínání autora). */
+  ladeni?: boolean;
 }
 
 interface Props {
@@ -301,7 +305,15 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
         </>
       )}
     {/* Chat zápasu: admin píše odsud, hráči ze své karty. */}
-      {obsluha?.onZprava && ja ? <Chat zapas={zapas} ja={ja} onOdeslat={(text) => obsluha.onZprava!(zapas.id, text)} /> : null}
+      {obsluha?.onZprava && ja ? (
+        <Chat
+          zapas={zapas}
+          ja={ja}
+          onOdeslat={(text) => obsluha.onZprava!(zapas.id, text)}
+          onSmazat={obsluha.onSmazatZpravu ? (zpravaId) => obsluha.onSmazatZpravu!(zapas.id, zpravaId) : undefined}
+          ladeni={obsluha.ladeni}
+        />
+      ) : null}
     </article>
   );
 }

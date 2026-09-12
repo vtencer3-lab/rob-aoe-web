@@ -1,3 +1,4 @@
+import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT } from "../../shared/aktivita.js";
 import type { FastifyInstance } from "fastify";
 import {
   createAkce,
@@ -5,6 +6,8 @@ import {
   obnovAktivitu,
   prejmenujAkci,
   pripravPristiHeslo,
+  setLhutaAktivity,
+  svolej,
   pulsAktivity,
   setAkceStav,
   setNastaveniLobby,
@@ -93,6 +96,29 @@ export function registerEventRoutes(app: FastifyInstance): void {
     const akce = await setNastaveniLobby(akceId, prectiNastaveniLobby(request.body));
     await broadcastAkce();
     return { akce };
+  });
+
+  // Lhůta aktivity večera: admin si ji nastaví v okně nastavení (2–120 min).
+  app.put("/api/akce/:id/lhuta-aktivity", async (request) => {
+    await requireAdmin(request);
+    const akceId = requireId(request);
+    const minut = Number((request.body as { minut?: unknown })?.minut);
+    if (!Number.isInteger(minut) || minut < LHUTA_MIN_MINUT || minut > LHUTA_MAX_MINUT) {
+      throw new HttpError(400, `Lhůta je ${LHUTA_MIN_MINUT} až ${LHUTA_MAX_MINUT} minut.`);
+    }
+    const akce = await setLhutaAktivity(akceId, minut);
+    await broadcastAkce();
+    return { akce: { id: akce.id, lhutaAktivityMinut: akce.lhutaAktivityMinut } };
+  });
+
+  // Zvonek u hráče: svolání do radnice — hráči zazvoní poplach ze hry.
+  app.post("/api/akce/:id/hraci/:steamId/svolat", async (request) => {
+    await requireAdmin(request);
+    const akceId = requireId(request);
+    const steamId = String((request.params as { steamId?: string }).steamId ?? "");
+    if (!(await svolej(akceId, steamId))) throw new HttpError(404, "Hráč v akci není.");
+    await broadcastAkce();
+    return { ok: true };
   });
 
   // Kostka u hesla v okně Pre-Lobby: nové heslo pro příští lobby. Vrací se
