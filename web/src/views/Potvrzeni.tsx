@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import { useZamekScrollu } from "../zamekScrollu.js";
 
@@ -26,7 +27,7 @@ export function Potvrzeni({ text, potvrdit = "Ano", zrusit = "Ne", onPotvrdit, o
     return () => window.removeEventListener("keydown", klavesa);
   }, [onPotvrdit, onZrusit]);
 
-  return (
+  return createPortal(
     <div
       className="prelobby-stin"
       data-testid="potvrzeni-stin"
@@ -45,6 +46,7 @@ export function Potvrzeni({ text, potvrdit = "Ano", zrusit = "Ne", onPotvrdit, o
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

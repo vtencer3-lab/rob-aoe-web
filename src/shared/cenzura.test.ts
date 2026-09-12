@@ -24,3 +24,8 @@ describe("cenzura chatu", () => {
 it("negroid je zakázaný ve všech pádech", () => {
   for (const s of ["negroid", "Negroida", "negroidům", "negroidech", "negroidy"]) expect(jeZakazane(s)).toBe(true);
 });
+
+it("odvozeniny od negroid schová celé", () => {
+  expect(cenzuruj("negroidovy vtipy")).toBe("********** vtipy");
+  expect(jeZakazane("Negroidní")).toBe(true);
+});

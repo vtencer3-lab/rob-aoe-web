@@ -27,6 +27,8 @@ export interface Obsluha {
   onUpravit?: (zapasId: number) => void;
   /** Admin smaže zprávu v chatu. */
   onSmazatZpravu?: (zapasId: number, zpravaId: number) => Promise<unknown> | void;
+  /** Vlastní zprávu jde přepsat (šipka nahoru). */
+  onUpravitZpravu?: (zapasId: number, zpravaId: number, text: string) => Promise<unknown> | void;
   /** Debug mód pro chat (přepínání autora). */
   ladeni?: boolean;
 }
@@ -314,6 +316,7 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
           ja={ja}
           onOdeslat={(text) => obsluha.onZprava!(zapas.id, text)}
           onSmazat={obsluha.onSmazatZpravu ? (zpravaId) => obsluha.onSmazatZpravu!(zapas.id, zpravaId) : undefined}
+          onUpravit={obsluha.onUpravitZpravu ? (zpravaId, text) => obsluha.onUpravitZpravu!(zapas.id, zpravaId, text) : undefined}
           ladeni={obsluha.ladeni}
         />
       ) : null}

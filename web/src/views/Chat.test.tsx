@@ -71,3 +71,32 @@ it("admin má u zprávy křížek, hráč ne; debug nabídne přepnutí autora",
   expect(screen.getByTestId("zprava").querySelector(".autor")).toHaveClass("admin", "rob");
   expect(screen.getByTestId("zprava")).toHaveTextContent("Rob");
 });
+
+it("šipka nahoru v prázdném poli načte poslední vlastní zprávu, Uložit ji pošle k úpravě", async () => {
+  const onUpravit = vi.fn(async () => undefined);
+  const zpravy = [
+    { id: 1, steamId: "a", jmeno: "Já", jeAdmin: false, barva: 1 as const, tym: 1 as const, text: "prvni", poslano: "2026-09-12T12:00:00.000Z" },
+    { id: 2, steamId: "b", jmeno: "Jiný", jeAdmin: false, barva: 2 as const, tym: 2 as const, text: "cizi", poslano: "2026-09-12T12:01:00.000Z" },
+    { id: 3, steamId: "a", jmeno: "Já", jeAdmin: false, barva: 1 as const, tym: 1 as const, text: "moje posledni", poslano: "2026-09-12T12:02:00.000Z", upraveno: true },
+  ];
+  render(<Chat ja="a" onOdeslat={vi.fn()} onUpravit={onUpravit} zapas={zapas(zpravy)} />);
+  expect(screen.getAllByText("(editováno)")).toHaveLength(1);
+  const pole = screen.getByRole("textbox", { name: /zpráva do chatu/i });
+  fireEvent.keyDown(pole, { key: "ArrowUp" });
+  expect(pole).toHaveValue("moje posledni");
+  expect(screen.getByRole("button", { name: /uložit/i })).toBeInTheDocument();
+  fireEvent.change(pole, { target: { value: "opravena" } });
+  fireEvent.submit(pole.closest("form")!);
+  await vi.waitFor(() => expect(onUpravit).toHaveBeenCalledWith(3, "opravena"));
+  await vi.waitFor(() => expect(pole).toHaveValue(""));
+});
+
+it("admini mají twitch odznak: Rob vysílající, Jouki moderátor", () => {
+  const zpravy = [
+    { id: 1, steamId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "a", poslano: "2026-09-12T12:00:00.000Z" },
+    { id: 2, steamId: "76561198014056480", jmeno: "Jouki", jeAdmin: true, barva: null, tym: null, text: "b", poslano: "2026-09-12T12:01:00.000Z" },
+  ];
+  render(<Chat ja="x" onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
+  expect(screen.getByTestId("twitch-broadcaster")).toBeInTheDocument();
+  expect(screen.getByTestId("twitch-moderator")).toBeInTheDocument();
+});

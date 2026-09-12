@@ -56,6 +56,14 @@ export async function setLhutaAktivity(akceId: number, minut: number): Promise<A
     [akceId, minut],
   );
   if (!rows[0]) throw new Error(`Akce ${akceId} neexistuje.`);
+  // Platí hned: bdícím hráčům se lhůta přepočítá od posledního projevu života,
+  // takže kdo mlčí déle než nová lhůta, usne teď, a kdo ne, dostane víc času.
+  await getPool().query(
+    `UPDATE prihlaska
+        SET aktivni_do = COALESCE(posledni_puls, kdy) + $2 * interval '1 minute'
+      WHERE akce_id = $1 AND stav = 'prihlasen' AND aktivni_do > now()`,
+    [akceId, minut],
+  );
   return mapujAkci(rows[0]);
 }
 
@@ -97,7 +105,9 @@ export async function createAkce(nazev: string): Promise<AkceRow> {
   // Heslo večera vzniká rovnou s akcí — okno Pre-Lobby ho ukazuje k opsání
   // do hry a nemá čekat, až si o něj někdo řekne.
   const { rows } = await getPool().query<AkceDbRow>(
-    `INSERT INTO akce (nazev, pristi_heslo) VALUES ($1, $2) RETURNING ${SLOUPCE_AKCE}`,
+    `INSERT INTO akce (nazev, pristi_heslo, lhuta_aktivity_minut)
+     VALUES ($1, $2, COALESCE((SELECT lhuta_aktivity_minut FROM akce ORDER BY id DESC LIMIT 1), 15))
+     RETURNING ${SLOUPCE_AKCE}`,
     [nazev, generatePassword()],
   );
   return mapujAkci(rows[0]!);

@@ -392,3 +392,16 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   expect(await svolej(akceId, "76561198000000999")).toBe(false);
   await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
 });
+
+// Lhůta se dědí do další akce a změna platí hned i běžícím přihláškám.
+it("lhůta se dědí do nové akce a přepočítá běžící přihlášky", async () => {
+  const { setLhutaAktivity, createAkce: novaAkce, listSignups, signUp: prihlas } = await import("./events.js");
+  await prihlas(akceId, HRACI[0]!);
+  await setLhutaAktivity(akceId, 40);
+  const radek = (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
+  const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(zaMinut).toBeGreaterThan(38);
+  expect(zaMinut).toBeLessThanOrEqual(40);
+  const dalsi = await novaAkce("zítra");
+  expect(dalsi.lhutaAktivityMinut).toBe(40);
+});

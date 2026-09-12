@@ -315,6 +315,7 @@ export function App() {
     onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
     onZprava: (zapasId: number, text: string) => hlidej(() => api.zprava(zapasId, text)),
     onSmazatZpravu: (zapasId: number, zpravaId: number) => hlidej(() => api.smazatZpravu(zapasId, zpravaId)),
+    onUpravitZpravu: (zapasId: number, zpravaId: number, text: string) => hlidej(() => api.upravitZpravu(zapasId, zpravaId, text)),
     onUpravit: (zapasId: number) => setUpravovany(zapasId),
     ladeni: admin && ladeni,
   };
@@ -567,7 +568,7 @@ export function App() {
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} ladeni={admin && ladeni} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} />}
                   />
                 ) : (
                   <KartaHrace
@@ -576,7 +577,7 @@ export function App() {
                     ja={me.steamId}
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} ladeni={admin && ladeni} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} />}
                   />
                 ),
               )

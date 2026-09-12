@@ -33,8 +33,15 @@ export function zjednodus(text: string): string {
   return out;
 }
 
+/** Kmeny, u kterých je zakázané každé slovo, co jimi začíná (uživatel 12. 9.: „negroidovy“ prošlo). */
+const PREDPONY: readonly string[] = ["negroid"];
+
+function zakazanyKmen(prosty: string): boolean {
+  return SLOVA.has(prosty) || PREDPONY.some((p) => prosty.startsWith(p));
+}
+
 export function jeZakazane(slovo: string): boolean {
-  return SLOVA.has(zjednodus(slovo));
+  return zakazanyKmen(zjednodus(slovo));
 }
 
 /**
@@ -48,7 +55,7 @@ export function cenzuruj(text: string): string {
   const skryt = new Array<boolean>(znaky.length).fill(false);
   const proste = jednoduchy.join("");
   for (const m of proste.matchAll(/[\p{L}\p{N}]+/gu)) {
-    if (SLOVA.has(m[0])) for (let i = m.index; i < m.index + m[0].length; i++) skryt[i] = true;
+    if (zakazanyKmen(m[0])) for (let i = m.index; i < m.index + m[0].length; i++) skryt[i] = true;
   }
   for (const fraze of FRAZE) {
     const vzor = new RegExp("(?<![\\p{L}\\p{N}])" + fraze.split(" ").map(uniknout).join("\\s+") + "(?![\\p{L}\\p{N}])", "gu");

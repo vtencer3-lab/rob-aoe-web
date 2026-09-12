@@ -66,6 +66,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
       tym: z.tym,
       text: z.text,
       poslano: z.poslano.toISOString(),
+      upraveno: z.upravenoV !== null,
     })),
   };
 }

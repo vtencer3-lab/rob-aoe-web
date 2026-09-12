@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, type ReactNode } from "react";
 import { strany } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type UcastnikView, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik, popisTymu, sdiliCivilizaci } from "../zapas.js";
@@ -28,6 +28,17 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, chat }: Props
   const parta = sdiliCivilizaci(zapas.ucastnici, ja);
   const barva = BARVA_NAZEV[muj.barva];
   const nalezena = zapas.joinUri !== null;
+  // Jakmile host lobby založí, sjet na tlačítko Připojit; po kliknutí k chatu.
+  // Jen při změně, ne při načtení stránky s už nalezenou lobby.
+  const pripojit = useRef<HTMLAnchorElement>(null);
+  const dole = useRef<HTMLDivElement>(null);
+  const drivOdkaz = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const driv = drivOdkaz.current;
+    drivOdkaz.current = zapas.joinUri;
+    if (driv === undefined || driv !== null || zapas.joinUri === null) return;
+    setTimeout(() => pripojit.current?.scrollIntoView?.({ behavior: "smooth", block: "center" }), 50);
+  }, [zapas.joinUri]);
 
   return (
     <section className={`karta barva-${muj.barva}`}>
@@ -57,7 +68,16 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, chat }: Props
         </header>
         {zapas.joinUri ? (
           <div className="ovladani hostovi">
-            <a className="cta" href={zapas.joinUri} onClick={() => onPripojit(zapas.id)}>
+            <a
+              className="cta"
+              href={zapas.joinUri}
+              ref={pripojit}
+              onClick={() => {
+                onPripojit(zapas.id);
+                // Po kliknutí sjet k chatu a kontrole (uživatel).
+                setTimeout(() => dole.current?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 50);
+              }}
+            >
               Připojit se do hry
             </a>
           </div>
@@ -82,7 +102,7 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, chat }: Props
       <section className="sekce-krok" data-testid="strany-zapasu">
         <Strany ucastnici={zapas.ucastnici} ja={ja} />
       </section>
-    {chat}
+    <div ref={dole}>{chat}</div>
       </section>
   );
 }

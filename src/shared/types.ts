@@ -164,6 +164,8 @@ export interface ZpravaView {
   text: string;
   /** ISO čas odeslání. */
   poslano: string;
+  /** Autor ji po odeslání přepsal (šipka nahoru); ukazuje se „(editováno)“. */
+  upraveno?: boolean;
 }
 
 export interface AkceStavPayload {

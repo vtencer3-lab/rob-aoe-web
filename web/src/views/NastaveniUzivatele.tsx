@@ -1,5 +1,6 @@
+import { createPortal } from "react-dom";
 import { useState, type CSSProperties } from "react";
-import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT } from "../../../src/shared/aktivita.js";
+import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT, ZVONEK_PO_MINUTACH } from "../../../src/shared/aktivita.js";
 import zvonUrl from "../assets/zvon.mp3";
 import { useZamekScrollu } from "../zamekScrollu.js";
 import { nastavHlasitost, prehraj } from "../zvuk.js";
@@ -28,7 +29,7 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta
     if (nova !== lhutaMinut) onLhuta(nova);
   };
 
-  return (
+  return createPortal(
     <div
       className="prelobby-stin"
       data-testid="nastaveni-stin"
@@ -60,6 +61,14 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta
             }}
             onMouseUp={() => prehraj(zvonUrl, posun)}
             onKeyUp={() => prehraj(zvonUrl, posun)}
+            onWheel={(e) => {
+              // Kolečko po procentu (uživatel); hodnota se uloží jako při tažení.
+              e.preventDefault();
+              const v = Math.min(100, Math.max(0, posun + (e.deltaY < 0 ? 1 : -1)));
+              setPosun(v);
+              nastavHlasitost(v);
+              onHlasitost(v);
+            }}
           />
           <output>{posun} %</output>
         </label>
@@ -86,12 +95,26 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta
                 ▲
               </button>
             </div>
-            <small>
-              {LHUTA_MIN_MINUT}–{LHUTA_MAX_MINUT} minut; platí pro celý večer.
-            </small>
+            {/* Náhled, kdy se co objeví: „Jsem tu!“ minutu po začátku odpočtu,
+                zvonek po pěti minutách. Jen k podívání, ne ke kliknutí. */}
+            <div className="nahled-lhuty" aria-label="Kdy se co objeví" data-testid="nahled-lhuty">
+              <span className="polozka">
+                <button type="button" className="jsem-tu" disabled>
+                  Jsem tu!
+                </button>
+                <small>od {lhutaMinut - 1} min</small>
+              </span>
+              <span className="polozka">
+                <button type="button" className="zvonek" disabled aria-label="Zvonek">
+                  🔔
+                </button>
+                <small>od {lhutaMinut - ZVONEK_PO_MINUTACH} min</small>
+              </span>
+            </div>
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

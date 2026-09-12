@@ -734,3 +734,18 @@ it("chat: zakázané slovo se uloží s hvězdičkami a Rob zprávu smaže", asy
   expect(znovu.statusCode).toBe(404);
   await app.close();
 });
+
+// Šipka nahoru: autor přepíše svou zprávu, cizí ne; ve stavu je „upraveno“.
+it("chat: autor upraví svou zprávu, cizí zprávu ne", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zprava`, cookies: { sid: hracSid }, payload: { text: "puvodni" } });
+  const id = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } })).json().zapasy[0].zpravy[0].id as number;
+  const robova = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/zprava/${id}`, cookies: { sid: robSid }, payload: { text: "cizi" } });
+  expect(robova.statusCode).toBe(404);
+  const vlastni = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/zprava/${id}`, cookies: { sid: hracSid }, payload: { text: " nova verze " } });
+  expect(vlastni.statusCode).toBe(200);
+  const zprava = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } })).json().zapasy[0].zpravy[0];
+  expect(zprava).toMatchObject({ id, text: "nova verze", upraveno: true });
+  await app.close();
+});

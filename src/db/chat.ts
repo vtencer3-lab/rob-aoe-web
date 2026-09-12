@@ -18,6 +18,16 @@ export interface ZpravaRow {
   barva: Barva | null;
   text: string;
   poslano: Date;
+  upravenoV: Date | null;
+}
+
+/** Přepíše vlastní zprávu; vrací false, když zpráva není autorova nebo není v zápase. */
+export async function upravZpravu(zapasId: number, zpravaId: number, steamId: string, text: string): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    "UPDATE zprava SET text = $4, upraveno_v = now() WHERE id = $1 AND zapas_id = $2 AND steam_id = $3",
+    [zpravaId, zapasId, steamId, text],
+  );
+  return (rowCount ?? 0) > 0;
 }
 
 /** Smaže zprávu; vrací false, když v tomhle zápase žádná taková není. */
@@ -47,9 +57,10 @@ export async function listZpravy(akceId: number, limit = ZPRAV_NA_ZAPAS): Promis
     barva: number | null;
     text: string;
     poslano: Date;
+    upraveno_v: Date | null;
   }>(
-    `SELECT id, zapas_id, steam_id, alias, steam_name, je_admin, tym, barva, text, poslano FROM (
-       SELECT z.id, z.zapas_id, z.steam_id, z.text, z.poslano,
+    `SELECT id, zapas_id, steam_id, alias, steam_name, je_admin, tym, barva, text, poslano, upraveno_v FROM (
+       SELECT z.id, z.zapas_id, z.steam_id, z.text, z.poslano, z.upraveno_v,
               p.alias, p.steam_name, p.je_admin, u.tym, u.barva,
               row_number() OVER (PARTITION BY z.zapas_id ORDER BY z.id DESC) AS n
          FROM zprava z
@@ -74,6 +85,7 @@ export async function listZpravy(akceId: number, limit = ZPRAV_NA_ZAPAS): Promis
       barva: r.barva as Barva | null,
       text: r.text,
       poslano: r.poslano,
+      upravenoV: r.upraveno_v,
     });
     podleZapasu.set(r.zapas_id, seznam);
   }

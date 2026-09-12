@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useZamekScrollu } from "../zamekScrollu.js";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -82,7 +83,7 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
   const cislo = (v: string) => (v === "" ? null : Number(v));
   const zmen = (cast: Partial<Nastaveni>) => onZmena({ ...n, ...cast });
 
-  return (
+  return createPortal(
     <div
       className="prelobby-stin"
       data-testid="prelobby-stin"
@@ -253,7 +254,8 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
           </label>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

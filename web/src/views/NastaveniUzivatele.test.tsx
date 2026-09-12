@@ -37,3 +37,15 @@ it("kolečko myši nad lhůtou krokuje po minutě", () => {
   fireEvent.wheel(pole, { deltaY: 100 });
   expect(onLhuta).toHaveBeenLastCalledWith(14);
 });
+
+it("náhled ukazuje, od kolika minut je „Jsem tu!“ a zvonek; kolečko mění hlasitost po procentu", () => {
+  const onHlasitost = vi.fn();
+  render(<NastaveniUzivatele hlasitost={70} onHlasitost={onHlasitost} lhutaMinut={15} onLhuta={vi.fn()} onZavrit={vi.fn()} />);
+  const nahled = screen.getByTestId("nahled-lhuty");
+  expect(nahled).toHaveTextContent("od 14 min");
+  expect(nahled).toHaveTextContent("od 10 min");
+  expect(screen.queryByText(/platí pro celý večer/i)).not.toBeInTheDocument();
+  fireEvent.wheel(screen.getByRole("slider", { name: /hlasitost/i }), { deltaY: -100 });
+  expect(onHlasitost).toHaveBeenLastCalledWith(71);
+  localStorage.clear();
+});

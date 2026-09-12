@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useMemo, useState } from "react";
 import { doplnNastaveni, type NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
 import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
@@ -45,7 +46,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
   });
   const nastaveni = doplnNastaveni(zapas.nastaveni as Partial<Nastaveni>);
 
-  return (
+  return createPortal(
     <div
       className="prelobby-stin"
       data-testid="editace-stin"
@@ -86,6 +87,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -196,7 +196,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   const zazvon = (steamId: string) => {
     if (!onSvolat || zvonekChladne[steamId]) return;
     onSvolat(steamId);
-    prehraj(poplachUrl, hlasitost() * 0.1);
+    prehraj(poplachUrl, hlasitost() * 0.2);
     setZvonekChladne((z) => ({ ...z, [steamId]: true }));
     setTimeout(() => setZvonekChladne((z) => ({ ...z, [steamId]: false })), ZVONEK_CHLADNUTI_MS);
   };
@@ -464,9 +464,20 @@ function ZnackaHrace({
     const spi = !jeAktivni(hrac.aktivniDo, ted);
     const pryc = spi ? -(zbyvaMs(hrac.aktivniDo, ted) ?? 0) : 0;
     const popis = spi ? `Právě hraje zápas #${zapas}\nNeaktivní ${trvani(pryc)}` : `Právě hraje zápas #${zapas}`;
+    // Vlastní bublina místo `data-napoveda`: dvě informace v jedné bublině
+    // dostanou mezi sebou oddělovač, což atribut neumí.
     return (
-      <span className="mece napoveda" role="img" aria-label={popis} data-napoveda={popis}>
+      <span className="mece napoveda-vlastni" role="img" aria-label={popis}>
         ⚔
+        <span className="bublina" aria-hidden="true">
+          <span>Právě hraje zápas #{zapas}</span>
+          {spi ? (
+            <>
+              <hr />
+              <span>Neaktivní {trvani(pryc)}</span>
+            </>
+          ) : null}
+        </span>
       </span>
     );
   }

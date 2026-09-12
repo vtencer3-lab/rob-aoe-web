@@ -371,14 +371,14 @@ it("v debug módu klik na ikonu hry přepíná má → nelze ověřit → nemá"
 });
 
 // Admin má u cizích hráčů zvonek (svolání do radnice), u sebe ne.
-it("admin má zvonek jen u hráče, kterému už uběhlo pět minut, a po kliknutí zvonek na chvíli zešedne", () => {
+it("admin má zvonek u hráče po pěti minutách odpočtu i u spícího, a po kliknutí zvonek na chvíli zešedne", () => {
   zmrazCas();
   const onSvolat = vi.fn();
   const hraci = [hrac({ steamId: "rob", alias: "Rob", aktivniDo: za(8) }), hrac({ steamId: "a", alias: "Adam", aktivniDo: za(8) }), hrac({ steamId: "b", alias: "Bedřich", aktivniDo: za(14) }), hrac({ steamId: "c", alias: "Cyril", aktivniDo: za(-1) })];
   render(<SeznamPrihlasenych prihlaseni={hraci} ja="rob" admin onSvolat={onSvolat} lhutaMinut={15} />);
   expect(screen.queryByRole("button", { name: /svolat hráče rob/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /svolat hráče bedřich/i })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /svolat hráče cyril/i })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /svolat hráče cyril/i })).toBeInTheDocument();
   const zvonek = screen.getByRole("button", { name: /svolat hráče adam/i });
   fireEvent.click(zvonek);
   expect(onSvolat).toHaveBeenCalledWith("a");

@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useZamekScrollu } from "../zamekScrollu.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MAPY, nazevMapy } from "../../../src/shared/mapy.js";
@@ -51,7 +52,7 @@ export function VyberMapy({ hodnota, onVybrat, onZavrit }: Props) {
   );
   const libovolnaSedi = dotaz === "" || zjednodus("libovolná").includes(dotaz);
 
-  return (
+  return createPortal(
     <div
       className="prelobby-stin"
       data-testid="vyber-mapy-stin"
@@ -126,6 +127,7 @@ export function VyberMapy({ hodnota, onVybrat, onZavrit }: Props) {
           {!libovolnaSedi && nalezene.length === 0 ? <p className="nic">Žádná mapa neodpovídá.</p> : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

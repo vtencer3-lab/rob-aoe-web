@@ -609,7 +609,7 @@ it("hráči zazvoní založení jeho lobby, hostovi ne", async () => {
   vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "a", alias: "Host", steamName: null, jeAdmin: false } });
   nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [bez] });
   const druhy = render(<App />);
-  await druhy.findByText(/zakládáš/i);
+  await druhy.findByText(/^zakládáš!$/i);
   nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, lobbyId: "123", joinUri: "aoe2de://0/123" }] });
   druhy.rerender(<App />);
   await new Promise((r) => setTimeout(r, 20));

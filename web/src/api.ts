@@ -121,6 +121,12 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ sestava }),
     }).then((r) => json<{ ok: true }>(r)),
+  upravitZpravu: (zapasId: number, zpravaId: number, text: string) =>
+    fetch(cesta(`/api/zapas/${zapasId}/zprava/${zpravaId}`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }).then((r) => json<{ ok: true }>(r)),
   smazatZpravu: (zapasId: number, zpravaId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/zprava/${zpravaId}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   /** Zpráva do chatu zápasu; odpověď je jen ok, zpráva přijde přes SSE. */
