@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { ZapasView, ZpravaView } from "../../../src/shared/types.js";
+import twitchBroadcasterUrl from "../assets/twitch-broadcaster.png";
+import twitchModeratorUrl from "../assets/twitch-moderator.png";
 import { jmenoHrace } from "../zapas.js";
 
 interface Props {
@@ -50,43 +52,17 @@ const TWITCH_ROLE: Readonly<Record<string, "broadcaster" | "moderator">> = {
 };
 
 /**
- * Oficiální odznaky Twitche z jeho CDN (globální odznaky broadcaster a
- * moderator, verze 1, velikost 36 px). Když CDN nejede, zůstane nakreslený
- * náhradník níž, ať jméno nemá díru.
+ * Oficiální odznaky Twitche (globální broadcaster a moderator, verze 1,
+ * 72 px), stažené 13. 9. 2026 z Twitch CDN do assetů, ať jsou vždycky po ruce.
  */
-const TWITCH_ODZNAK_URL: Readonly<Record<"broadcaster" | "moderator", string>> = {
-  broadcaster: "https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/2",
-  moderator: "https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/2",
+const TWITCH_ODZNAK: Readonly<Record<"broadcaster" | "moderator", string>> = {
+  broadcaster: twitchBroadcasterUrl,
+  moderator: twitchModeratorUrl,
 };
 
 function OdznakTwitch({ role }: { role: "broadcaster" | "moderator" }) {
   const popis = role === "broadcaster" ? "Vysílající" : "Moderátor";
-  const [nahradnik, setNahradnik] = useState(false);
-  if (!nahradnik) {
-    return (
-      <img
-        className={`twitch-odznak ${role}`}
-        src={TWITCH_ODZNAK_URL[role]}
-        alt={popis}
-        title={popis}
-        width={18}
-        height={18}
-        data-testid={`twitch-${role}`}
-        onError={() => setNahradnik(true)}
-      />
-    );
-  }
-  return (
-    <svg className={`twitch-odznak ${role}`} viewBox="0 0 18 18" width="18" height="18" role="img" aria-label={popis} data-testid={`twitch-${role}`}>
-      <title>{popis}</title>
-      <rect x="0" y="0" width="18" height="18" rx="3" />
-      {role === "broadcaster" ? (
-        <path d="M3.5 5.5h7a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zm8.5 2.2 3-1.7v6l-3-1.7z" fill="#fff" />
-      ) : (
-        <path d="M13.2 3.3 15 5.1 8.6 11.5l1.1 1.1-1.3 1.3-1.1-1.1-1.5 1.5-1.4-1.4 1.5-1.5-1.1-1.1 1.3-1.3 1.1 1.1z" fill="#fff" />
-      )}
-    </svg>
-  );
+  return <img className={`twitch-odznak ${role}`} src={TWITCH_ODZNAK[role]} alt={popis} title={popis} width={18} height={18} data-testid={`twitch-${role}`} />;
 }
 
 function tridaAutora(z: ZpravaView): string {
@@ -170,14 +146,23 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni }: Prop
     };
   }, [oddelovacOd]);
 
+  // Po skoku dolů má být oddělovač vidět nahoře ve výřezu, ne pod ním — jinak
+  // není vidět, odkud číst. Sjede se tedy k němu, ne na dno; když se pod ním
+  // vejde všechno, je to zároveň dno.
   const skocDolu = () => {
-    const el = seznam.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    setOddelovacOd(posledniVidene.current);
+    const od = posledniVidene.current;
+    setOddelovacOd(od);
     setOddelovacBledne(false);
     uDna.current = true;
     posledniVidene.current = posledniId;
     setNoveDole(false);
+    setTimeout(() => {
+      const el = seznam.current;
+      const cara = oddelovac.current;
+      if (!el) return;
+      const cil = cara ? Math.max(0, cara.offsetTop - el.offsetTop - 6) : el.scrollHeight;
+      el.scrollTo({ top: Math.min(cil, el.scrollHeight), behavior: "smooth" });
+    }, 0);
   };
   // Sbalený chat: hlavička zůstane, zprávy i psaní se schovají (s animací).
   // Kliknutí na Spectate v režii ho sbalí samo — Rob jde do hry a chat mu
@@ -255,6 +240,11 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni }: Prop
               const el = e.currentTarget;
               uDna.current = el.scrollHeight - el.scrollTop - el.clientHeight < 8;
               if (uDna.current) {
+                // Kdo se dolů doroloval sám, dostane oddělovač taky — ať ví, kde nové začínají.
+                if (noveDole && oddelovacOd === null && posledniId > posledniVidene.current) {
+                  setOddelovacOd(posledniVidene.current);
+                  setOddelovacBledne(false);
+                }
                 posledniVidene.current = posledniId;
                 setNoveDole(false);
               }
