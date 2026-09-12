@@ -397,7 +397,11 @@ function ZnackaHrace({
 }) {
   const zapas = vZapase?.get(hrac.steamId);
   if (zapas !== undefined) {
-    const popis = `Právě hraje zápas #${zapas}`;
+    // Meče zaberou místo odpočtu i „Zzz“, tak lhůta zůstává aspoň v bublině:
+    // kdo v zápase usnul, má tam i jak dlouho. Kdo je v lhůtě, nic navíc.
+    const spi = !jeAktivni(hrac.aktivniDo, ted);
+    const pryc = spi ? -(zbyvaMs(hrac.aktivniDo, ted) ?? 0) : 0;
+    const popis = spi ? `Právě hraje zápas #${zapas}, neaktivní ${trvani(pryc)}` : `Právě hraje zápas #${zapas}`;
     return (
       <span className="mece napoveda" role="img" aria-label={popis} data-napoveda={popis}>
         ⚔

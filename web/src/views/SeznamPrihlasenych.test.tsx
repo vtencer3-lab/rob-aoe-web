@@ -303,3 +303,18 @@ it("u spáče je v bublině doba nepřítomnosti", () => {
   expect(znacky[1]).toHaveAttribute("data-napoveda", "Neaktivní 1 h 35 min");
   expect(znacky[0]).not.toHaveAttribute("title");
 });
+
+// Meče zaberou místo „Zzz“, tak lhůta zůstává v bublině: u usnulého hráče
+// v zápase je tam i jak dlouho, u hráče v lhůtě nic navíc.
+it("meč u usnulého hráče říká v bublině, jak dlouho je neaktivní", async () => {
+  zmrazCas();
+  const { useSkladani } = await import("../skladani.js");
+  const { renderHook } = await import("@testing-library/react");
+  const hraci = [hrac({ steamId: "a", alias: "Spi", aktivniDo: za(-9) }), hrac({ steamId: "b", alias: "Bdi", aktivniDo: za(5) })];
+  const { result } = renderHook(() => useSkladani(hraci));
+  render(
+    <SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} vZapase={new Map([["a", 2], ["b", 2]])} />,
+  );
+  expect(screen.getByRole("img", { name: /právě hraje zápas #2, neaktivní 9 min/i })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: /^právě hraje zápas #2$/i })).toBeInTheDocument();
+});
