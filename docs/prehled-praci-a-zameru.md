@@ -431,7 +431,7 @@ kolem nadpisu a tabulky přihlášených, aby seděly na jedné desce.
 - **Barvy hráčů (`--b1`…`--b8`) zůstaly beze změny** — musí sedět s barvami
   ve hře, jinak hráč nepozná, že je „modrý“.
 - **GPT Image se použilo jen jednou**: uživatel jím 8. 9. večer opravil lva na
-  praporcích v pozadí (dva ocasy), zdroj `_grafika/final/pozadi_zdroj.png`,
+  praporcích v pozadí (dva ocasy), zdroj `_grafika/final/namesti_2560.png`,
   viz `grafika.md` §3. Všechno ostatní vzniklo lokálně na RTX 5090. Od 12. 9.
   platí: **editace hotového obrázku přes GPT Image v Codexu** (má nástroj
   `image_gen`, `codex exec -i obrázek`), nové obrázky lokálně; když není jasné,

@@ -224,11 +224,12 @@ výsledek byl ale horší než původní vygenerovaná scéna — lvi seděli ji
 jinou barvu a celé to působilo slepené. Nástroj v repu zůstává, ale
 **nepoužívá se**.
 
-**Jak se to vyřešilo.** Uživatel nechal původní render (`namesti2` var. 04,
-bílý lev s jedním ocasem) přepracovat v GPT Image; výsledek je
-`_grafika/final/pozadi_zdroj.png` (1671×941, zlatý dvouocasý lev, jinak stejná
-kompozice) a z něj je `pozadi.webp` v repu od 0.18.x („take the plain
-background“, 8. 9. 2026 večer). Poučení, které od té doby platí obecně:
+**Jak se to vyřešilo.** Uživatel nechal původní render
+(`_grafika/navrhy/pozadi/pozadi_namesti_02.png`, zlatý lev s jedním ocasem a bez
+koruny) přepracovat v GPT Image; výsledek je `_grafika/final/namesti_2560.png`
+(korunovaný dvouocasý lev, jinak stejná kompozice), výřez z něj
+`final/pozadi_zdroj.png` (1671×941) a z toho je `pozadi.webp` v repu od 0.18.x
+(„take the plain background“, 8. 9. 2026 večer). Poučení, které od té doby platí obecně:
 **editace hotového obrázku se dělá modelem na cílenou editaci (GPT Image přes
 Codex), ne skládáním kusů ručně**; lokální generování slouží na nové obrázky.
 
@@ -244,7 +245,7 @@ ComfyUI a stažení vah).
 
 | Soubor ve `web/src/assets/ui/` | Předloha | Seed | Rozměr generování |
 |---|---|---|---|
-| `pozadi.webp` | `namesti2` var. 04, lev přepracovaný v GPT Image (`final/pozadi_zdroj.png`) | 4235347553055014676 | 1536×864 |
+| `pozadi.webp` | `pozadi` var. `namesti_02` (`navrhy/pozadi/pozadi_namesti_02.png`), lev přepracovaný v GPT Image (`final/namesti_2560.png`, výřez `final/pozadi_zdroj.png`) | viz manifest | 1536×864 |
 | `ram.webp` | `ram` var. 02 | 4923907625749824255 | 1024×1024 |
 | `praporec.webp` | `praporec2` var. 04 | 384470600565535280 | 2048×512 |
 | `oddelovac.webp` | `oddelovac` var. 03 | 6271939320368049132 | 1536×384 |
