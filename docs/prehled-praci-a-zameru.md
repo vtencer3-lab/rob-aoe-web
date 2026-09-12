@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 12. 9. 2026 v noci, dev 0.34.1)
+# Přehled prací a záměrů (stav k 13. 9. 2026 ráno, dev 0.35.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.34.1, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 0.35.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, 0.33.0-33.1, přezaloženo z `dev` 12. 9. 2026 večer a nasazeno na <https://jouki.cz/aoe/experimental> — **pokus s praporcem místo barevného pruhu** (§3.33) |
-| Migrace | 001–021, poslední `021_lhuta_a_svolani.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 295, databázové 162, frontend 260 — všechny zelené (12. 9. 2026 v noci, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
+| Migrace | 001–022, poslední `022_zprava_upravena.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
+| Testy | backend hermetické 296, databázové 164, frontend 263 — všechny zelené (13. 9. 2026 ráno, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -1163,6 +1163,37 @@ hry se obnovuje s `obnovStaty` — při přihlášení Steamem **i při každém
 načtení stránky** (`/api/me`), pokud jsou statistiky starší než 15 minut;
 odhlašovat nikoho není potřeba.
 
+### 3.38 Třetí kolo připomínek (0.35.0, 13. 9. 2026)
+
+- **Chat:** šipka nahoru v prázdném poli načte poslední vlastní zprávu,
+  Uložit ji pošle na `PUT /api/zapas/:id/zprava/:zpravaId` (jen autor,
+  cenzura platí), migrace 022 `zprava.upraveno_v` → `ZpravaView.upraveno`
+  a nenápadné „(editováno)“. Twitch odznaky u adminů kreslené inline SVG
+  (Rob vysílající, Jouki a Tonner moderátoři; `TWITCH_ROLE` v `Chat.tsx`).
+  „Nové zprávy (n) ↓“ na středu s počtem od poslední viděné; po skoku dolů
+  se nové zprávy zvýrazní (3 s + 1,5 s bledne, animace `nova-zprava`).
+  Nadpis „Chat“ je kapitálkový řádek na celou šířku ve stylu ostatních
+  nadpisů, klikací.
+- **Modály přes `createPortal` do `document.body`** (VyberMapy, PreLobby,
+  Potvrzeni, NastaveniUzivatele, EditaceZapasu) — dřív se okno map otevřené
+  z úpravy zápasu vnořilo do jejího okna.
+- **Zvonek** se ukazuje i u spících hráčů (to je jeho hlavní smysl; podmínka
+  je jen „uběhlo ≥ 5 minut odpočtu“), admin ho slyší na 20 %, je vycentrovaný.
+- **Lhůta aktivity** se dědí do nové akce (`createAkce` bere poslední) a
+  změna platí hned: bdícím se `aktivni_do` přepočítá od posledního pulsu.
+  V nastavení místo věty o rozsahu náhled „Jsem tu! od 14 min / 🔔 od 10 min“
+  (nekliknutelné), posuvník hlasitosti reaguje na kolečko po procentu.
+- **Ikona hry** 28 px jako avatar, vykřičník pulzuje (`zare-vykricnik`);
+  bublina meče je vlastní element (`.napoveda-vlastni .bublina`) se slabým
+  `<hr>` mezi dvěma informacemi.
+- **Okno map** 47 rem na výšku (tři řádky na Full HD); **úprava zápasu**
+  `zoom: 0.95` do výšky 1100 px, tlačítko Pre-Lobby o 8 px níž.
+- **Host** má pod „Spustit hru“ drobné „(Lobby zakládáš ručně)“; po nalezení
+  lobby stránka sjede ke kontrole a chatu, hráči na „Připojit se do hry“ a po
+  kliknutí k chatu (jen při změně, ne při načtení; admin jen jako účastník,
+  protože karty se kreslí jen účastníkům).
+- Cenzura: prefix `negroid*`; stín pergamenu slabší.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1367,6 +1398,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.33.1 | 17:15 | Připomínky: ikona hry inline a odklíčovaná, potvrzení u hráče bez hry, menší okno úpravy, zámek scrollu, dvojitá záře, fialová (§3.36) |
 | 0.34.0 | 17:40 | Moderace chatu (mazání, cenzura, nové zprávy, debug autor), zvonek admina, hlasitost, lhůta aktivity per akce, migrace 021 (§3.36) |
 | 0.34.1 | 18:30 | Druhé kolo: bubliny na řádek, sbalení chatu, okno map pevné a širší, zvonek s načasováním a chladnutím, posuvník, stín pergamenu (§3.37) |
+| 0.35.0 | 13. 9. 09:30 | Třetí kolo: editace zpráv (migrace 022), twitch odznaky, modály v portálu, zvonek i pro spící, lhůta napříč akcemi, auto-scroll (§3.38) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
