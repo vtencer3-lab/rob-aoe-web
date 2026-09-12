@@ -284,24 +284,42 @@ it("opakované AI v dalším zápase projde", async () => {
   expect(druhy.poradi).toBe(2);
 });
 
-// Heslo si Rob opisuje do hry ještě před založením zápasu (okno Pre-Lobby),
-// takže zápas musí dostat přesně to připravené — jinak by hráči dostali jiné
-// heslo, než jaké host do lobby naklikal.
-it("zápas si vezme heslo připravené pro příští lobby a hned chystá další", async () => {
+// Heslo je jedno na celý večer: Rob ho opisuje do hry při každém zakládání
+// a hráči si ho pamatují z prvního zápasu. Každý zápas proto dostane heslo
+// akce, a to zůstává i po založení.
+it("všechny zápasy večera sdílejí heslo akce", async () => {
   const { pripravPristiHeslo, getAktivniAkce } = await import("./events.js");
-  const pripravene = (await pripravPristiHeslo(akceId))!.pristiHeslo;
-  expect(pripravene).toMatch(/^[0-9]{4}$/);
+  const heslo = (await pripravPristiHeslo(akceId))!.pristiHeslo;
+  expect(heslo).toMatch(/^[0-9]{4}$/);
 
-  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
-  expect(zapas.heslo).toBe(pripravene);
-
-  // Pro další lobby už zase čeká heslo, a jiné.
-  const dalsi = (await getAktivniAkce())!.pristiHeslo;
-  expect(dalsi).toMatch(/^[0-9]{4}$/);
-  expect(dalsi).not.toBe(pripravene);
+  const prvni = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
+  expect(prvni.heslo).toBe(heslo);
+  expect(druhy.heslo).toBe(heslo);
+  expect((await getAktivniAkce())!.pristiHeslo).toBe(heslo);
 });
 
-it("bez připraveného hesla si zápas vygeneruje vlastní", async () => {
-  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
-  expect(zapas.heslo).toMatch(/^[0-9]{4}$/);
+// Kostka mění heslo jen pro lobby, které teprve vzniknou — už založený zápas
+// má svoje opsané ve hře a nesmí se mu pod rukama změnit.
+it("nové heslo z kostky dostanou až další zápasy, založené si drží své", async () => {
+  const { pripravPristiHeslo } = await import("./events.js");
+  const stare = (await pripravPristiHeslo(akceId))!.pristiHeslo;
+  const prvni = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+
+  const nove = (await pripravPristiHeslo(akceId, true))!.pristiHeslo;
+  expect(nove).not.toBe(stare);
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
+  expect(druhy.heslo).toBe(nove);
+  expect((await getZapas(prvni.id))!.zapas.heslo).toBe(stare);
+});
+
+it("akce bez hesla ho dostane s prvním zápasem a další zápas ho zdědí", async () => {
+  const { getAktivniAkce } = await import("./events.js");
+  // Akce z doby před migrací 017 heslo neměly.
+  await getPool().query("UPDATE akce SET pristi_heslo = NULL WHERE id = $1", [akceId]);
+  const prvni = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  expect(prvni.heslo).toMatch(/^[0-9]{4}$/);
+  expect((await getAktivniAkce())!.pristiHeslo).toBe(prvni.heslo);
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
+  expect(druhy.heslo).toBe(prvni.heslo);
 });

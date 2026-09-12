@@ -123,12 +123,12 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
       [akceId],
     );
 
-    // Heslo si Rob opsal do hry už při zakládání lobby (okno Pre-Lobby), takže
-    // zápas dostane přesně to připravené. Hned se chystá další, aby okno mělo
-    // co ukazovat pro příští lobby. Bez připraveného hesla (starší akce) se
-    // vygeneruje jako dřív.
-    const { rows: hesloRows } = await client.query<{ pristi_heslo: string | null }>(
-      "UPDATE akce SET pristi_heslo = $2 WHERE id = $1 RETURNING (SELECT pristi_heslo FROM akce WHERE id = $1) AS pristi_heslo",
+    // Heslo je jedno na celý večer: Rob ho do hry opisuje při každém
+    // zakládání lobby a hráči si ho pamatují z prvního zápasu. Zápas si ho
+    // obtiskne, aby ho přežil i případný hod kostkou (ten mění heslo jen pro
+    // lobby, které teprve vzniknou). Starší akce bez hesla ho dostane teď.
+    const { rows: hesloRows } = await client.query<{ pristi_heslo: string }>(
+      `UPDATE akce SET pristi_heslo = COALESCE(pristi_heslo, $2) WHERE id = $1 RETURNING pristi_heslo`,
       [akceId, generatePassword()],
     );
     const heslo = hesloRows[0]?.pristi_heslo ?? generatePassword();

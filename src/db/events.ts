@@ -17,7 +17,7 @@ export interface AkceRow {
   ulozeneNastaveniLobby: Record<string, unknown> | null;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy přes SSE. */
   skladani: SestavaVstup[];
-  /** Heslo připravené pro příští lobby; null, dokud si o něj nikdo neřekl. */
+  /** Heslo večera — společné všem lobby akce; null jen u akcí z doby, kdy ho neměly. */
   pristiHeslo: string | null;
 }
 
@@ -46,9 +46,10 @@ function mapujAkci(r: AkceDbRow): AkceRow {
 }
 
 /**
- * Heslo pro příští lobby. Vzniká dřív, než zápas — Rob ho opisuje do hry už
- * při zakládání lobby, takže musí být na co se dívat. `nahod` ho přegeneruje
- * (kostka v okně Pre-Lobby), jinak se jen doplní, když ještě žádné není.
+ * Heslo večera. Vzniká s akcí a je společné všem jejím lobby — Rob ho opisuje
+ * do hry při každém zakládání, hráči si ho pamatují z prvního zápasu. `nahod`
+ * ho přegeneruje (kostka v okně Pre-Lobby) pro lobby, které teprve vzniknou;
+ * už založené zápasy si drží svoje. Jinak se jen doplní, když ještě žádné není.
  */
 export async function pripravPristiHeslo(akceId: number, nahod = false): Promise<AkceRow | null> {
   const { rows } = await getPool().query<AkceDbRow>(
@@ -63,8 +64,8 @@ export async function pripravPristiHeslo(akceId: number, nahod = false): Promise
 }
 
 export async function createAkce(nazev: string): Promise<AkceRow> {
-  // Heslo pro první lobby vzniká rovnou s akcí — okno Pre-Lobby ho ukazuje
-  // k opsání do hry a nemá čekat, až si o něj někdo řekne.
+  // Heslo večera vzniká rovnou s akcí — okno Pre-Lobby ho ukazuje k opsání
+  // do hry a nemá čekat, až si o něj někdo řekne.
   const { rows } = await getPool().query<AkceDbRow>(
     `INSERT INTO akce (nazev, pristi_heslo) VALUES ($1, $2) RETURNING ${SLOUPCE_AKCE}`,
     [nazev, generatePassword()],

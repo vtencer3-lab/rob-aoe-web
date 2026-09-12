@@ -17,10 +17,10 @@ interface Props {
   nastaveni: Nastaveni;
   /** Jméno, které dostane příští lobby — opisuje se do hry. */
   nazevLobby: string;
-  /** Heslo připravené pro příští lobby; prázdné, dokud ho server nepošle. */
+  /** Heslo večera, společné všem lobby akce; prázdné, dokud ho server nepošle. */
   heslo: string;
   onZmena: (nastaveni: Nastaveni) => void;
-  /** Kostka u hesla: server vygeneruje nové. */
+  /** Kostka u hesla: server vygeneruje nové pro lobby, které teprve vzniknou. */
   onNoveHeslo: () => void;
   onZavrit: () => void;
 }
@@ -91,8 +91,8 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
         ) : null}
 
         <div className="radky">
-          {/* Jméno lobby ani heslo nejsou předvolba — jsou to hodnoty příští
-              lobby, které Rob opíše do hry. Reset nastavení se jich netýká. */}
+          {/* Jméno lobby ani heslo nejsou předvolba — jméno patří příští lobby,
+              heslo celému večeru; obojí Rob opíše do hry. Reset se jich netýká. */}
           <label className="radek" data-klic="nazevLobby">
             <span>Lobby Name:</span>
             <input type="text" value={nazevLobby} readOnly data-testid="prelobby-nazev" />
@@ -162,7 +162,7 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
               {/* Dokud server heslo nepřipravil, hvězdičky — ať je vidět, že
                   tam něco bude, a ne prázdné pole. */}
               <input type="text" value={heslo === "" ? "****" : heslo} readOnly data-testid="prelobby-heslo" />
-              <button type="button" className="kostka" title="Vygenerovat jiné heslo" aria-label="Vygenerovat jiné heslo" onClick={onNoveHeslo}>
+              <button type="button" className="kostka" title="Vygenerovat jiné heslo pro další lobby (založené si nechají své)" aria-label="Vygenerovat jiné heslo" onClick={onNoveHeslo}>
                 <Kostka />
               </button>
             </span>
