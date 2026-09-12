@@ -40,6 +40,10 @@
    ne odhadnuté. Proto do stránky logo zapadne, místo aby na ní leželo. */
 :root {
   --zlato-svetle: #f2dda6;
+  /* Barvy adminů v chatu (přání uživatele: Rob fialová, Jouki oranžová, Tonner cihlová). */
+  --chat-rob: #c77dff;
+  --chat-jouki: #ff9a2e;
+  --chat-tonner: #c9553d;
   --zlato: #d8a83a;
   --zlato-tmave: #9a6b18;
   --zlato-stin: #5a3208;
@@ -1763,3 +1767,24 @@ a:hover { color: var(--zlato-svetle); }
 }
 .okno-lobby-zaskrtavatko.zapnuto .ctverec { background-image: url(./assets/ui/lobby-zaskrtnuto.webp); }
 .okno-lobby-varovani { margin: 0.9em 0 1em; text-align: center; font-size: 1em; font-weight: 900; }
+
+/* Chat zápasu: pod kartou hráče, hosta i pod kartou v režii. Jméno hráče
+   v barvě jeho slotu, admin ve své barvě a se září, ať je v proudu vidět. */
+.chat { margin-top: 1rem; border-top: 1px solid rgba(255, 220, 150, 0.18); padding-top: 0.6rem; }
+.chat .zpravy { list-style: none; margin: 0 0 0.5rem; padding: 0.2rem 0.3rem; max-height: 14rem; overflow-y: auto; font-size: 0.92rem; }
+.chat .zpravy li { display: grid; grid-template-columns: max-content max-content 1fr; gap: 0 0.5rem; align-items: baseline; padding: 0.15rem 0; }
+.chat .zpravy li.prazdno { display: block; color: var(--tlumene); font-style: italic; }
+.chat .zpravy time { color: var(--tlumene); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.chat .autor { font-weight: 700; white-space: nowrap; }
+.chat .autor::after { content: ":"; }
+.chat .autor.admin { text-shadow: 0 0 6px currentColor, 0 0 12px currentColor; }
+.chat .autor.rob { color: var(--chat-rob); }
+.chat .autor.jouki { color: var(--chat-jouki); }
+.chat .autor.tonner { color: var(--chat-tonner); }
+.chat .autor.admin-jiny { color: var(--zlato); }
+.chat .autor.barva-1 { color: var(--b1); } .chat .autor.barva-2 { color: var(--b2); } .chat .autor.barva-3 { color: var(--b3); } .chat .autor.barva-4 { color: var(--b4); }
+.chat .autor.barva-5 { color: var(--b5); } .chat .autor.barva-6 { color: var(--b6); } .chat .autor.barva-7 { color: var(--b7); } .chat .autor.barva-8 { color: var(--b8); }
+.chat .text { overflow-wrap: anywhere; }
+.chat li.moje .text { color: var(--zlato-svetle); }
+.chat .psani { display: flex; gap: 0.5rem; }
+.chat .psani input { flex: 1; min-width: 0; }

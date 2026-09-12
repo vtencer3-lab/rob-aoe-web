@@ -1,3 +1,4 @@
+import { listZpravy, type ZpravaRow } from "../db/chat.js";
 import { lobbyName } from "../matches/composition.js";
 import { joinUri, spectatorUri } from "../aoe/lobbyUri.js";
 import { getAktivniAkce, listSignups } from "../db/events.js";
@@ -28,7 +29,7 @@ export function playerView(hrac: PlayerRow): PlayerView {
 
 export { joinUri, spectatorUri };
 
-function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): ZapasView {
+function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zpravy: ZpravaRow[]): ZapasView {
   const { zapas, ucastnici } = zaznam;
   return {
     id: zapas.id,
@@ -55,6 +56,16 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
       poradi: u.poradi,
       kliknulPripojit: u.kliknulPripojit?.toISOString() ?? null,
     })),
+    zpravy: zpravy.map((z) => ({
+      id: z.id,
+      steamId: z.steamId,
+      jmeno: z.alias ?? z.steamName ?? z.steamId,
+      jeAdmin: z.jeAdmin,
+      barva: z.barva,
+      tym: z.tym,
+      text: z.text,
+      poslano: z.poslano.toISOString(),
+    })),
   };
 }
 
@@ -63,6 +74,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   if (!akce) return { akce: null, prihlaseni: [], zapasy: [] };
   const prihlaseni = await listSignups(akce.id);
   const zapasy = await listZapasy(akce.id);
+  const zpravy = await listZpravy(akce.id);
   return {
     akce: {
       id: akce.id,
@@ -79,7 +91,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
     },
     // Lhůta aktivity patří k přihlášce, ne k hráči: mimo akci nemá smysl.
     prihlaseni: prihlaseni.map((hrac) => ({ ...playerView(hrac), aktivniDo: hrac.aktivniDo.toISOString() })),
-    zapasy: zapasy.map(zapasView),
+    zapasy: zapasy.map((z) => zapasView(z, zpravy.get(z.zapas.id) ?? [])),
   };
 }
 

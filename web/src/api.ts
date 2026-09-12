@@ -93,6 +93,13 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ sestava }),
     }).then((r) => json<{ akce: { id: number } }>(r)),
+  /** Zpráva do chatu zápasu; odpověď je jen ok, zpráva přijde přes SSE. */
+  zprava: (zapasId: number, text: string) =>
+    fetch(cesta(`/api/zapas/${zapasId}/zprava`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }).then((r) => json<{ ok: true }>(r)),
   hledatLobby: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>
       json<HledaniLobbyVysledek>(r),

@@ -156,3 +156,18 @@ it("název příští lobby zůstane všem", () => {
   };
   expect(redigujProDivaka(stav, { steamId: null, jeAdmin: false }).akce).toMatchObject({ pristiNazevLobby: "ROB-03" });
 });
+
+// Chat je pro lidi v zápase a adminy. Cizí divák nesmí dostat ani jednu
+// zprávu — heslo se v chatu klidně objeví.
+describe("redakce chatu", () => {
+  const sChatem: AkceStavPayload = {
+    ...stav,
+    zapasy: [{ ...zapas, zpravy: [{ id: 1, steamId: HRAC, jmeno: "TenceR", jeAdmin: false, barva: 1, tym: 1, text: "heslo je 1234", poslano: "2026-09-12T12:00:00.000Z" }] }],
+  };
+  it("účastník a admin zprávy dostanou, cizí divák prázdný seznam", () => {
+    expect(redigujProDivaka(sChatem, { steamId: HRAC, jeAdmin: false }).zapasy[0]!.zpravy).toHaveLength(1);
+    expect(redigujProDivaka(sChatem, { steamId: "rob", jeAdmin: true }).zapasy[0]!.zpravy).toHaveLength(1);
+    expect(redigujProDivaka(sChatem, { steamId: CIZI, jeAdmin: false }).zapasy[0]!.zpravy).toEqual([]);
+    expect(redigujProDivaka(sChatem, { steamId: null, jeAdmin: false }).zapasy[0]!.zpravy).toEqual([]);
+  });
+});

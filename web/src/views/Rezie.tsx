@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Chat } from "./Chat.js";
 import { jeAi } from "../../../src/shared/aiHraci.js";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
@@ -20,12 +21,16 @@ export interface Obsluha {
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
   /** Dohraný zápas zavřít křížkem (true), nebo z debug módu znovu otevřít (false). */
   onZavrit: (zapasId: number) => void;
+  /** Zpráva do chatu zápasu. */
+  onZprava: (zapasId: number, text: string) => Promise<unknown> | void;
 }
 
 interface Props {
   stav: AkceStavPayload;
   /** Chybí u hráčů: karty jsou pak jen ke čtení. */
   obsluha?: Obsluha;
+  /** Steam ID admina, který se dívá — kvůli chatu (vlastní zprávy). */
+  ja?: string;
 }
 
 /**
@@ -37,8 +42,8 @@ function vRezii(stav: AkceStavPayload): ZapasView[] {
   return stav.zapasy.filter((z) => !z.zavreny);
 }
 
-function karty(zapasy: ZapasView[], obsluha: Obsluha | undefined) {
-  return zapasy.map((zapas) => <ZapasVRezii key={zapas.id} zapas={zapas} obsluha={obsluha} />);
+function karty(zapasy: ZapasView[], obsluha: Obsluha | undefined, ja?: string) {
+  return zapasy.map((zapas) => <ZapasVRezii key={zapas.id} zapas={zapas} obsluha={obsluha} ja={ja} />);
 }
 
 /**
@@ -49,8 +54,8 @@ function karty(zapasy: ZapasView[], obsluha: Obsluha | undefined) {
  * zápas — tedy to jediné, co Rob právě řeší — pod okraj obrazovky. Mají vlastní
  * sekci `HistorieZapasu` až pod ním.
  */
-export function Rezie({ stav, obsluha }: Props) {
-  return <section className="rezie">{karty(vRezii(stav).filter(jeVeHre), obsluha)}</section>;
+export function Rezie({ stav, obsluha, ja }: Props) {
+  return <section className="rezie">{karty(vRezii(stav).filter(jeVeHre), obsluha, ja)}</section>;
 }
 
 /**
@@ -59,13 +64,13 @@ export function Rezie({ stav, obsluha }: Props) {
  * křížkem, a hráči je bez obsluhy vidí jen ke čtení. Dokud se nic nedohrálo,
  * sekce se nevykreslí vůbec.
  */
-export function HistorieZapasu({ stav, obsluha }: Props) {
+export function HistorieZapasu({ stav, obsluha, ja }: Props) {
   const historie = vRezii(stav).filter((z) => !jeVeHre(z));
   if (historie.length === 0) return null;
   return (
     <section className="rezie historie-zapasu">
       <h3 className="nadpis-seznamu">Historie zápasů</h3>
-      {karty(historie, obsluha)}
+      {karty(historie, obsluha, ja)}
     </section>
   );
 }
@@ -89,7 +94,7 @@ function popisUcastnika(zapas: ZapasView, u: ZapasView["ucastnici"][number]): st
 
 type ZapasProps = { zapas: ZapasView; obsluha?: Obsluha };
 
-function ZapasVRezii({ zapas, obsluha }: ZapasProps) {
+function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
   // Přepsat zapsaný výsledek jde, ale ne jedním kliknutím do prázdna: tlačítka
   // stran se odemknou až po „Změnit výsledek“ a to druhé kliknutí je samo o sobě
   // to potvrzení. Potvrzovací okno navíc by se muselo odškrtávat v přenosu.
@@ -287,6 +292,8 @@ function ZapasVRezii({ zapas, obsluha }: ZapasProps) {
       ) : null}
         </>
       )}
+    {/* Chat zápasu: admin píše odsud, hráči ze své karty. */}
+      {obsluha && ja ? <Chat zapas={zapas} ja={ja} onOdeslat={(text) => obsluha.onZprava(zapas.id, text)} /> : null}
     </article>
   );
 }

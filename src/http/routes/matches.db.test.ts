@@ -649,3 +649,35 @@ it("nastavení lobby smí jen Rob a ukládá jen známé klíče", async () => {
   expect(prazdne.statusCode).toBe(400);
   await app.close();
 });
+
+// Chat zápasu: účastník i Rob píšou, zpráva přijde v celém stavu s aktuálním
+// jménem a barvou slotu; kdo v zápase nehraje, nesmí psát ani číst.
+it("chat: účastník a Rob píšou, cizí hráč nesmí, anonym nic nevidí", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+
+  const hracova = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zprava`, cookies: { sid: hracSid }, payload: { text: "  jdu tam  " } });
+  expect(hracova.statusCode).toBe(200);
+  const robova = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zprava`, cookies: { sid: robSid }, payload: { text: "za minutu zakládám" } });
+  expect(robova.statusCode).toBe(200);
+
+  const CIZI = "76561198000000073";
+  await upsertPlayer(CIZI, false);
+  const ciziSid = await createSession(CIZI);
+  const cizi = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zprava`, cookies: { sid: ciziSid }, payload: { text: "ahoj" } });
+  expect(cizi.statusCode).toBe(403);
+  const prazdna = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zprava`, cookies: { sid: hracSid }, payload: { text: "   " } });
+  expect(prazdna.statusCode).toBe(400);
+
+  const ucastnik = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } });
+  const zpravy = ucastnik.json().zapasy[0].zpravy as Array<Record<string, unknown>>;
+  expect(zpravy.map((z) => z["text"])).toEqual(["jdu tam", "za minutu zakládám"]);
+  expect(zpravy[0]).toMatchObject({ steamId: HRACI[0], jeAdmin: false, barva: 1, tym: 1 });
+  expect(zpravy[1]).toMatchObject({ steamId: ROB, jeAdmin: true, barva: null, tym: null });
+
+  const anonym = await app.inject({ method: "GET", url: "/api/akce" });
+  expect(anonym.json().zapasy[0].zpravy).toEqual([]);
+  const ciziCte = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: ciziSid } });
+  expect(ciziCte.json().zapasy[0].zpravy).toEqual([]);
+  await app.close();
+});

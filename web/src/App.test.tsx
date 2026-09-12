@@ -628,3 +628,24 @@ it("adminovi zazvoní, když se v lobby začne hrát", async () => {
   await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
   expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/zvon/);
 });
+
+// Zpráva admina v chatu zazvoní ostatním (je to pokyn, ne řeč); vlastní ne.
+it("hráči zazvoní nová zpráva od admina, jeho vlastní ne", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const bez = { ...zapas([u("a", 1, 1, true), u("b", 2, 2)]), zpravy: [] };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [bez] });
+  const { rerender } = render(<App />);
+  await screen.findByTestId("chat");
+
+  const moje = { id: 1, steamId: "b", jmeno: "Spoluhrac", jeAdmin: false, barva: 2 as const, tym: 2 as const, text: "jdu", poslano: "2026-09-12T12:00:00.000Z" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, zpravy: [moje] }] });
+  rerender(<App />);
+  await new Promise((r) => setTimeout(r, 20));
+  expect(prehraj).not.toHaveBeenCalled();
+
+  const robova = { id: 2, steamId: "rob", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "zakládám", poslano: "2026-09-12T12:01:00.000Z" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, zpravy: [moje, robova] }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(screen.getByText("zakládám")).toBeInTheDocument();
+});

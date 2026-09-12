@@ -3,13 +3,14 @@ import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
 import { doplnNastaveni, type NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import { VERZE } from "../../src/shared/verze.js";
-import type { Vitez } from "../../src/shared/types.js";
+import type { Vitez, ZapasView } from "../../src/shared/types.js";
 import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.js";
 import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
 import { useSkladani } from "./skladani.js";
 import { useZmenaVysky } from "./vyska.js";
 import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
+import { Chat } from "./views/Chat.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
@@ -76,15 +77,25 @@ export function App() {
   // adminovi, když se v některé lobby začne hrát — je čas na Spectate. První
   // snímek stavu po načtení stránky mlčí, jinak by zvonilo při každém
   // obnovení; hostovi nezvoní vlastní potvrzení.
-  const predchoziLobby = useRef<Map<number, { lobbyId: string | null; faze: string | null }> | null>(null);
+  // Totéž zazvoní každému, komu v chatu zápasu přibyla zpráva od admina
+  // (ne vlastní): admin v chatu je pokyn, ne řeč.
+  const predchoziLobby = useRef<Map<number, { lobbyId: string | null; faze: string | null; zprava: number }> | null>(null);
   useEffect(() => {
     const zapasy = stav?.zapasy ?? [];
     const drive = predchoziLobby.current;
-    predchoziLobby.current = new Map(zapasy.map((z) => [z.id, { lobbyId: z.lobbyId, faze: z.fazeLobby ?? null }]));
+    const posledniZprava = (z: ZapasView) => z.zpravy?.at(-1)?.id ?? 0;
+    predchoziLobby.current = new Map(
+      zapasy.map((z) => [z.id, { lobbyId: z.lobbyId, faze: z.fazeLobby ?? null, zprava: posledniZprava(z) }]),
+    );
     if (!drive || !me) return;
     for (const z of zapasy) {
       const p = drive.get(z.id);
       if (!p) continue;
+      const novaOdAdmina = (z.zpravy ?? []).some((m) => m.id > p.zprava && m.jeAdmin && m.steamId !== me.steamId);
+      if (novaOdAdmina) {
+        prehraj(zvonUrl);
+        continue;
+      }
       if (me.jeAdmin) {
         if (p.faze !== "hraje_se" && z.fazeLobby === "hraje_se") prehraj(zvonUrl);
         continue;
@@ -284,6 +295,7 @@ export function App() {
     onVysledek: (zapasId: number, vitez: Vitez) => void hlidej(() => api.vysledek(zapasId, vitez)),
     onHost: (zapasId: number, steamId: string) => void hlidej(() => api.zmenitHosta(zapasId, steamId)),
     onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
+    onZprava: (zapasId: number, text: string) => hlidej(() => api.zprava(zapasId, text)),
   };
 
   return (
@@ -504,7 +516,7 @@ export function App() {
 
       {akce ? (
         <>
-          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} /> : null}
+          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.steamId} /> : null}
           {me
             ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
                 mujUcastnik(zapas, me.steamId)?.jeHost ? (
@@ -515,6 +527,7 @@ export function App() {
                     nastaveniLobby={akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} />}
                   />
                 ) : (
                   <KartaHrace
@@ -523,6 +536,7 @@ export function App() {
                     ja={me.steamId}
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} />}
                   />
                 ),
               )

@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { strany } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type UcastnikView, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik, popisTymu, sdiliCivilizaci } from "../zapas.js";
@@ -6,6 +6,8 @@ import { HledaniLobby } from "./HledaniLobby.js";
 import { VyberCivilizace } from "./VyberCivilizace.js";
 
 interface Props {
+  /** Chat zápasu (Chat.tsx); dodává App, ať karta nezná API. */
+  chat?: ReactNode;
   zapas: ZapasView;
   ja: string;
   onPripojit: (zapasId: number) => void;
@@ -19,7 +21,7 @@ interface Props {
  * jakmile je, je tu tlačítko do hry. Pod tím strany zápasu vedle sebe jako
  * v lobby, s velkým VS mezi nimi.
  */
-export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
+export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, chat }: Props) {
   const muj = mujUcastnik(zapas, ja);
   if (!muj) return null;
   // Civilizaci sdílí, kdo má stejnou barvu (Coop Kings) — ne kdo je ve stejném týmu.
@@ -80,7 +82,8 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby }: Props) {
       <section className="sekce-krok" data-testid="strany-zapasu">
         <Strany ucastnici={zapas.ucastnici} ja={ja} />
       </section>
-    </section>
+    {chat}
+      </section>
   );
 }
 

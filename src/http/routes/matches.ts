@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { parseJoinUri, type LobbyUriError } from "../../aoe/lobbyUri.js";
+import { MAX_DELKA_ZPRAVY, pridejZpravu } from "../../db/chat.js";
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { setSkladani } from "../../db/events.js";
 import {
@@ -255,6 +256,25 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
       throw new HttpError(403, "V tomhle zápase nehraješ.");
     }
     await oznacKliknutiPripojit(zapasId, steamId);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Chat zápasu: píšou účastníci a admini; ostatní ho ani nevidí (redakce).
+  // Zpráva se nikam nevrací — přijde všem v celém stavu přes SSE.
+  app.post("/api/zapas/:id/zprava", async (request) => {
+    const steamId = await requireUser(request);
+    const zapasId = requireId(request);
+    const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
+    const hrac = await getPlayer(steamId);
+    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.steamId === steamId)) {
+      throw new HttpError(403, "V tomhle zápase nehraješ.");
+    }
+    if (zapas.stav === "zruseny") throw new HttpError(409, "Zrušený zápas nemá chat.");
+    const text = String((request.body as { text?: unknown })?.text ?? "").trim();
+    if (text === "") throw new HttpError(400, "Prázdná zpráva.");
+    if (text.length > MAX_DELKA_ZPRAVY) throw new HttpError(400, `Zpráva má nejvýš ${MAX_DELKA_ZPRAVY} znaků.`);
+    await pridejZpravu(zapasId, steamId, text);
     await broadcastAkce();
     return { ok: true };
   });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
 import { mujUcastnik, popisTymu } from "../zapas.js";
@@ -8,6 +8,8 @@ import { Kopirovatelne } from "./Kopirovatelne.js";
 import { OknoCreateLobby } from "./OknoCreateLobby.js";
 
 interface Props {
+  /** Chat zápasu (Chat.tsx); dodává App, ať karta nezná API. */
+  chat?: ReactNode;
   zapas: ZapasView;
   ja: string;
   /** Očekávané nastavení akce — okno Create Lobby z něj bere pre-lobby volby. */
@@ -23,7 +25,7 @@ interface Props {
  * tak i uprostřed streamu vidí, kde je. Tlačítko do lobby tu není: host ji
  * zakládá, do lobby se odkazem připojují ostatní (KartaHrace).
  */
-export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby }: Props) {
+export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby, chat }: Props) {
   // Po kliknutí na „Spustit hru“ host lobby zakládá právě teď: hledání zrychlí
   // ze 4 s na 2 s, ať hráči dostanou odkaz, sotva lobby vznikne.
   const [hraSpustena, setHraSpustena] = useState(false);
@@ -101,7 +103,8 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           </header>
         </section>
       ) : null}
-    </section>
+    {chat}
+      </section>
   );
 }
 

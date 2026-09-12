@@ -142,6 +142,22 @@ export interface ZapasView {
   /** Dohraný zápas zavřený křížkem: na stránce se neukazuje (v debug módu zašedlý). */
   zavreny?: boolean;
   ucastnici: UcastnikView[];
+  /** Chat zápasu (posledních 100); vidí jen účastníci a admini, ostatním ho redakce vyprázdní. */
+  zpravy?: ZpravaView[];
+}
+
+/** Zpráva v chatu zápasu. Jméno, barva a tým jsou aktuální, ne z doby odeslání. */
+export interface ZpravaView {
+  id: number;
+  steamId: string;
+  jmeno: string;
+  jeAdmin: boolean;
+  /** Barva a tým z účasti v zápase; admin, který v něm nehraje, má null. */
+  barva: Barva | null;
+  tym: Tym | null;
+  text: string;
+  /** ISO čas odeslání. */
+  poslano: string;
 }
 
 export interface AkceStavPayload {
