@@ -1,9 +1,10 @@
-import { Fragment, useEffect, useRef, type ReactNode } from "react";
-import { strany } from "../../../src/shared/strany.js";
-import { BARVA_NAZEV, type HledaniLobbyVysledek, type UcastnikView, type ZapasView } from "../../../src/shared/types.js";
+import { useEffect, useRef, type ReactNode } from "react";
+import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
+import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik, popisTymu, sdiliCivilizaci } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
-import { VyberCivilizace } from "./VyberCivilizace.js";
+import { KontrolaLobby } from "./KontrolaLobby.js";
+import { StranyZapasu } from "./StranyZapasu.js";
 
 interface Props {
   /** Chat zápasu (Chat.tsx); dodává App, ať karta nezná API. */
@@ -12,16 +13,19 @@ interface Props {
   ja: string;
   onPripojit: (zapasId: number) => void;
   onHledatLobby: (zapasId: number) => Promise<HledaniLobbyVysledek>;
+  /** Kontrola lobby jako u hosta; bez ní se sekce nevykreslí (starší volající). */
+  onKontrolaLobby?: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
 }
 
 /**
  * Karta hráče, který se do lobby připojuje (host má ObrazovkaHosta). Stejný
  * rytmus jako u hosta: velký titulek, pruh s barvou a týmem, krok
  * „Připojuješ se!“ — dokud lobby není, čeká se na hosta a web ji hledá sám;
- * jakmile je, je tu tlačítko do hry. Pod tím strany zápasu vedle sebe jako
- * v lobby, s velkým VS mezi nimi.
+ * jakmile je, je tu tlačítko do hry. Pak kontrola lobby jako u hosta (hráč
+ * vidí, co host ještě nemá nastavené — uživatel 13. 9. 2026) a strany zápasu
+ * vedle sebe jako v lobby, s velkým VS mezi nimi.
  */
-export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, chat }: Props) {
+export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, onKontrolaLobby, chat }: Props) {
   const muj = mujUcastnik(zapas, ja);
   if (!muj) return null;
   // Civilizaci sdílí, kdo má stejnou barvu (Coop Kings) — ne kdo je ve stejném týmu.
@@ -99,49 +103,14 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, chat }: Props
         ) : null}
       </section>
 
+      {zapas.lobbyId && onKontrolaLobby ? (
+        <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} />
+      ) : null}
+
       <section className="sekce-krok" data-testid="strany-zapasu">
-        <Strany ucastnici={zapas.ucastnici} ja={ja} />
+        <StranyZapasu ucastnici={zapas.ucastnici} ja={ja} />
       </section>
     <div ref={dole}>{chat}</div>
       </section>
-  );
-}
-
-/**
- * Strany zápasu vedle sebe, každá jako řádky ze skládání (barva, tým, jméno,
- * civilizace), jen ke čtení. Mezi stranami velké VS. Vlastní řádek je
- * zvýrazněný.
- */
-function Strany({ ucastnici, ja }: { ucastnici: UcastnikView[]; ja: string }) {
-  const seznam = strany(ucastnici);
-  return (
-    <div className="vs-rozlozeni">
-      {seznam.map((strana, i) => (
-        <Fragment key={i}>
-          {i > 0 ? (
-            <div className="vs" aria-label="proti">
-              VS
-            </div>
-          ) : null}
-          <div className="skladani jen-ke-cteni">
-            <ul className="sestava">
-              {strana.clenove.map((u) => (
-                <li key={u.steamId} className={u.steamId === ja ? "radek ja" : "radek"} data-testid="radek-strany">
-                  <span className={`volba volba-barva barva-${u.barva}`} aria-label={`Barva ${BARVA_NAZEV[u.barva]}`}>
-                    {u.barva}
-                  </span>
-                  <span className="volba volba-tym" aria-label={popisTymu(u)}>
-                    {u.tym === 0 ? "–" : u.tym}
-                  </span>
-                  <span className="jmeno">{jmenoHrace(u)}</span>
-                  <span className="elo">{u.elo1v1 !== null && u.elo1v1 !== undefined ? <small>({u.elo1v1})</small> : null}</span>
-                  <VyberCivilizace popisek={`Civilizace ${jmenoHrace(u)}`} sada={null} hodnota={u.civ} onZmena={() => {}} vypnuto />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Fragment>
-      ))}
-    </div>
   );
 }

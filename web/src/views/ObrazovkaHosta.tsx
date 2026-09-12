@@ -6,6 +6,7 @@ import { HledaniLobby } from "./HledaniLobby.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 import { Kopirovatelne } from "./Kopirovatelne.js";
 import { OknoCreateLobby } from "./OknoCreateLobby.js";
+import { StranyZapasu } from "./StranyZapasu.js";
 
 interface Props {
   /** Chat zápasu (Chat.tsx); dodává App, ať karta nezná API. */
@@ -23,7 +24,8 @@ interface Props {
  * sebou — „Zakládáš!“ (fajfka, jakmile web lobby najde), „Kontrola lobby“
  * (fajfka, když hlavní sekce prošla) a nakonec „Výborně, můžete hrát!“. Host
  * tak i uprostřed streamu vidí, kde je. Tlačítko do lobby tu není: host ji
- * zakládá, do lobby se odkazem připojují ostatní (KartaHrace).
+ * zakládá, do lobby se odkazem připojují ostatní (KartaHrace). Pod kroky
+ * strany zápasu s VS jako na kartě hráče (uživatel 13. 9. 2026), pak chat.
  */
 export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby, chat }: Props) {
   // Po kliknutí na „Spustit hru“ host lobby zakládá právě teď: hledání zrychlí
@@ -116,6 +118,10 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           </header>
         </section>
       ) : null}
+
+      <section className="sekce-krok" data-testid="strany-zapasu">
+        <StranyZapasu ucastnici={zapas.ucastnici} ja={ja} />
+      </section>
     {chat}
       </section>
   );

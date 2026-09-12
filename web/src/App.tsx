@@ -596,6 +596,7 @@ export function App() {
                     ja={me.steamId}
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
+                    onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                     chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} />}
                   />
                 ),
