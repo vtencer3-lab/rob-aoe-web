@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 12. 9. 2026 večer, dev 0.33.0)
+# Přehled prací a záměrů (stav k 12. 9. 2026 pozdě večer, dev 0.34.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.33.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová místo růžové, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu (§3.34), úprava založeného zápasu (§3.35) |
+| `origin/dev` | 0.34.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, 0.33.0-33.1, přezaloženo z `dev` 12. 9. 2026 večer a nasazeno na <https://jouki.cz/aoe/experimental> — **pokus s praporcem místo barevného pruhu** (§3.33) |
-| Migrace | 001–020, poslední `020_chat.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 291, databázové 160, frontend 251 — všechny zelené (12. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
+| Migrace | 001–021, poslední `021_lhuta_a_svolani.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
+| Testy | backend hermetické 294, databázové 162, frontend 258 — všechny zelené (12. 9. 2026 pozdě večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -1087,6 +1087,49 @@ s **editovatelným jménem lobby** (`onNazev`, uloží se po Enter/odchodu z pol
 a **bez kostky** (heslo je jedno na večer, §3.29). Kolečko je v `Rezie.tsx`
 jen u běžícího zápasu (`obsluha.onUpravit`).
 
+### 3.36 Připomínky z 12. 9. večer (0.33.1–0.34.0)
+
+Šestnáct bodů ze screenshotů, všechny hotové kromě posouzení naživo:
+
+- **Přepínač pozadí** jen v debug módu (uživatel: „má být furt podmíněný
+  debug modem“); nové lvy zůstávají výchozí.
+- **Ikona hry** je 256px ikona z `AoE2DE_s.exe` (icoextract), pozadí pryč
+  přes Scenario (`nastroje/grafika/scenario_bg.py`, klíč v `~/.scenario_api.json`),
+  zmenšená a stlačená TinyPNG (klíč z `settings.json` MMWT u `bin/Debug`,
+  knihovna `tinify`): `web/src/assets/aoe2-ikona.png` (64 px, 2 kB); 256px
+  verze v `_grafika/final/aoe2_ikona_256_nobg.png`. Ikona je uvnitř jména,
+  takže nikdy nespadne na nový řádek. **Debug:** klik na ikonu cykluje
+  má → nelze ověřit → nemá (jen v prohlížeči). **„Nemá hru“:** plus zašedlé,
+  klik otevře `Potvrzeni.tsx` („Hráč nemá hru na svém účtě. Opravdu přidat?“).
+- **Bublina meče** má neaktivitu na druhém řádku (`\n` + `white-space: pre-line`
+  v `.napoveda::after`).
+- **Výběr map:** osm map na řádek (`repeat(8, minmax(0, 1fr))`).
+- **Úprava zápasu:** tlačítko Pre-Lobby je absolutně nad pravým sloupcem
+  v prostoru hlavičky (okno kvůli němu neroste); Reset nastavení pryč
+  (`bezResetu`); **„Uložit sestavu“ pryč** — platná sestava se propíše sama
+  z `odesli` hooku (`zkontrolujSestavu === null`), neplatná zůstane jen
+  v okně (`Skladani` má `bezTlacitka`); menší odsazení, `max-height:
+  calc(100vh - 2rem)`. Modály zamykají scroll stránky (`useZamekScrollu`,
+  `body.bez-scrollu`, počítá vnořená okna).
+- **Chat:** nadpisek „Chat“; dvojitá záře adminů (2 px + 14 px na 45 %);
+  admin maže zprávy (`DELETE /api/zapas/:id/zprava/:zpravaId`); **cenzura**
+  v `src/shared/cenzura.ts` (137 slov + 7 frází ze `%AppData%\StreamerBot\blacklist.json`
+  Robova Streamer.bota, bez diakritiky, hvězdičky stejné délky, na serveru
+  před uložením); značka „Nové zprávy ↓“, když je člověk odrolovaný; debug
+  přepínač autora zprávy (jen zobrazení, `ADMIN_JMENA` v `Chat.tsx`).
+- **Fialová** `--b6: #bd2bbb` (odstín z herní palety).
+- **Zvonek admina** (`🔔` v sloupci „Jsem tu!“ u cizích hráčů):
+  `POST /api/akce/:id/hraci/:steamId/svolat` zapíše `prihlaska.svolan_v`,
+  hráči se změna ve stavu ozve jako `poplach.mp3` (`Play_Townbell_Start`).
+- **Ozubené kolečko** vedle jména v záhlaví → `NastaveniUzivatele.tsx`:
+  hlasitost zvuků 0–100 (výchozí 70, `localStorage` `zvuk.hlasitost`,
+  `prehraj()` ji používá, posun ji hned zkusí zvonem); pro admina **lhůta
+  aktivity** šipkami po minutě, 2–120, `PUT /api/akce/:id/lhuta-aktivity`.
+  Lhůta je od migrace 021 sloupec `akce.lhuta_aktivity_minut`; `signUp`,
+  `obnovAktivitu` i `pulsAktivity` ji berou z akce poddotazem, prohlížeč
+  z `akce.lhutaAktivityMinut` (práh „Jsem tu!“ = lhůta − 1). Přetáčení času
+  v debugu zůstává na výchozích 15 minutách.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1149,9 +1192,8 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
 9. **Zavřený zápas znovu otevřít z UI** — od 0.27.13 to jde jedině přes
    API. Kdyby to někdy chybělo, tlačítko patří jinam než do režie (třeba
    do archivu z bodu 6).
-7. **Lhůty aktivity nastavitelné adminem** (uživatel 8. 9.): dnes je patnáct
-   minut, pět za kliknutí a čtyřminutový odstup pevně v `shared/aktivita.ts`.
-   Práh pro „Jsem tu!“ se z lhůty už počítá, takže se změní jedním číslem.
+7. ~~Lhůty aktivity nastavitelné adminem~~ — plná lhůta hotová v 0.34.0
+   (§3.36); prodloužení za kliknutí (5) a odstup pulsů (4) zůstávají pevné.
 8. **Vlastní rozbalovací seznam místo `<select>`** (uživatel 8. 9.: „prostě
    jsi měl udělat ul li seznamy, které by se chovali identicky, ale to teď
    nedělejme“). Nativní `<select>` neumí obarvit zvýraznění položky a
@@ -1289,6 +1331,8 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.32.0 | 15:20 | Chat zápasu, migrace 020 (§3.34) — build selhal na typech, viz poučení |
 | 0.32.1 | 15:32 | Oprava buildu (karta v režii zná diváka, chat v obsluze nepovinný) |
 | 0.33.0 | 16:05 | Úprava založeného zápasu: nastavení per zápas, jméno lobby, sestava (§3.35) |
+| 0.33.1 | 17:15 | Připomínky: ikona hry inline a odklíčovaná, potvrzení u hráče bez hry, menší okno úpravy, zámek scrollu, dvojitá záře, fialová (§3.36) |
+| 0.34.0 | 17:40 | Moderace chatu (mazání, cenzura, nové zprávy, debug autor), zvonek admina, hlasitost, lhůta aktivity per akce, migrace 021 (§3.36) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
