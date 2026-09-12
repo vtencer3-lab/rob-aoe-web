@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 12. 9. 2026 odpoledne, dev 0.31.0)
+# Přehled prací a záměrů (stav k 12. 9. 2026 večer, dev 0.33.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.31.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová místo růžové, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32) |
-| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, zaostává za `dev` (0.31.0) — před bannery (§3.33) přezaložit |
-| Migrace | 001–019, poslední `019_steam_hra.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 290, databázové 155, frontend 243 — všechny zelené (12. 9. 2026 odpoledne, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
+| `origin/dev` | 0.33.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová místo růžové, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu (§3.34), úprava založeného zápasu (§3.35) |
+| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, zaostává za `dev` (0.33.0) — před bannery (§3.33) přezaložit |
+| Migrace | 001–020, poslední `020_chat.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
+| Testy | backend hermetické 291, databázové 159, frontend 251 — všechny zelené (12. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -1029,6 +1029,53 @@ barev. GPT má propracovanější kresbu i dvouocasého lva; Comfy je plošší 
 lev má jeden ocas. Poznatek pro nasazení: barva se nesmí lít na lem a kopí,
 takže je potřeba maska látky nebo kopí jako zvláštní vrstva.
 
+### 3.34 Chat zápasu (0.32.0–0.32.1, 12. 9. 2026)
+
+**Zadání.** Uživatel: chat mezi hráči a adminem u založené lobby, jméno ze
+Steamu; Rob výrazná fialová, Jouki výrazná oranžová, Tonner cihlová, hráči
+podle týmu (barvy slotu), admini se září; zpráva admina zazvoní ostatním
+(§3.31). Rozhodnuto: **do databáze, per zápas**; vidí ho **účastníci
+a admini**, hráč píše ze své karty, admin z karty v režii.
+
+**Jak to je.** Tabulka `zprava` (migrace 020: zápas, hráč, text ≤ 500,
+čas); `db/chat.ts` (`pridejZpravu`, `listZpravy` — posledních 100 na zápas
+jedním dotazem s `row_number()`), jméno/barva/tým se čtou při sestavení stavu
+z `player`/`ucastnik`, ne z doby odeslání. Zprávy jedou v celém stavu přes SSE
+(`ZapasView.zpravy`), **redakce cizímu divákovi dá prázdný seznam** (heslo
+se v chatu klidně objeví). Route `POST /api/zapas/:id/zprava` (účastník nebo
+admin, ne u zrušeného). Komponenta `Chat.tsx` (drží se u dna, Enter odešle),
+barvy adminů podle Steam ID v `ADMIN_BARVY`, samotné odstíny v `:root`
+(`--chat-*`). Zvon: efekt v `App.tsx` sleduje poslední id zprávy na zápas.
+
+**Poučení z nasazení 0.32.0:** build selhal na typech (testy režie), ale
+commit odešel, protože `npm run build | grep` vrací kód `grep`u — od té doby
+se build kontroluje přes `; echo EXIT=$?`, ne v rouře. 0.32.1 to opravila.
+
+### 3.35 Úprava založeného zápasu (0.33.0, 12. 9. 2026)
+
+**Zadání.** Uživatel: ozubené kolečko u zápasu; upravit „prakticky všechno,
+co je v samotném vytváření lobby“ — kompletní nastavení lobby, Pre-Lobby jako
+vnořený modal. Rozhodnuto: **nastavení lobby je per zápas** (kopie z akce
+při založení, kontrola lobby porovnává proti nastavení zápasu), panel u akce
+zůstává výchozím pro nové zápasy.
+
+**Jak to je.** `zapas.nastaveni` (sloupec z migrace 014) je od teď živé:
+`ZapasRow`/`ZapasView.nastaveni`, kontrola lobby (`kontrolaLobby.ts`) bere
+nastavení zápasu (zápasy z doby před 014 mají `{}` a padají na živé
+nastavení akce), host dostává do okna Create Lobby nastavení svého zápasu.
+Routy pro admina: `PUT /api/zapas/:id/nastaveni`, `/nazev-lobby`
+(1–40 znaků), `/sestava` (jen u běžícího zápasu). `nahradSestavu` v
+`db/matches.ts` sdílí přípravu sedadel s `createZapas` (`pripravSedadla`,
+`vlozSedadla`): **host zůstává, dokud je v nové sestavě, číslo lobby s ním;
+když vypadne, lobby se pustí** jako při přehození hosta; kliknutí na
+Připojit se nepřenášejí. Okno `EditaceZapasu.tsx`: vlevo `Skladani` (nové
+props `popisTlacitka`, `bezVynulovani`; rozpracovaná sestava jde na server
+až tlačítkem „Uložit sestavu“, protože rozpracovaná smí být špatně), vpravo
+`NastaveniLobby` nad zápasem (ukládá se samo), v hlavičce vnořené `PreLobby`
+s **editovatelným jménem lobby** (`onNazev`, uloží se po Enter/odchodu z pole)
+a **bez kostky** (heslo je jedno na večer, §3.29). Kolečko je v `Rezie.tsx`
+jen u běžícího zápasu (`obsluha.onUpravit`).
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1106,18 +1153,12 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
 
 Zadané 12. 9. 2026, rozhodnuté, **ještě nezačaté** (v tomhle pořadí):
 
-11. **Editace založeného zápasu** (ozubené kolečko u zápasu): „prakticky
-    všechno, co je v samotném vytváření lobby“ — modální okno s kompletním
-    nastavením lobby zápasu a Pre-Lobby jako vnořený modal. Otevřené: co
-    přesně je „nastavení zápasu“, když kontrola lobby dnes porovnává proti
-    živému `akce.nastaveni_lobby` a zápas má jen obtisk `zapas.nastaveni`
-    (§3.16) — návrh před psaním kódu.
-12. **Chat v lobby** mezi hráči a adminem, per zápas, **do databáze**
-    (rozhodnuto), rozesílání přes stávající SSE. Jméno ze Steamu; barvy:
-    Rob výrazná fialová, Jouki výrazná oranžová, Tonner cihlová, hráči podle
-    týmu; admini s glow. Zpráva admina zazvoní ostatním zvonem (§3.31).
+11. ~~Editace založeného zápasu~~ — hotovo v 0.33.0 (§3.35).
+12. ~~Chat v lobby~~ — hotovo v 0.32.1 (§3.34).
 13. **Bannery barev** (§3.33) — až jako poslední, ve větvi `experimental`
-    (nejdřív ji přezaložit z `dev`).
+    (nejdřív ji přezaložit z `dev`). Čeká na výběr varianty uživatelem
+    (kandidát: GPT praporec 2 s dodaným kopím) a na rozhodnutí, jestli
+    obarvovat v CSS (maska látky) nebo generovat osm barev nativně.
 
 Uzavřené 12. 9. 2026:
 
@@ -1234,6 +1275,9 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.29.0 | 14:00 | Nové lvy výchozí, přepínač pod Admin/User View; fialová místo růžové; doba neaktivity v bublině meče; heslo večera (§3.29) |
 | 0.30.0 | 14:05 | Ikona vlastnictví hry podle Steamu, migrace 019 (§3.30) |
 | 0.31.0 | 14:35 | Zvon z radnice při založení lobby a při začátku hry (§3.31); výběr mapy z mřížky minimap s hledáním, náhledy donačítané po startu (§3.32) |
+| 0.32.0 | 15:20 | Chat zápasu, migrace 020 (§3.34) — build selhal na typech, viz poučení |
+| 0.32.1 | 15:32 | Oprava buildu (karta v režii zná diváka, chat v obsluze nepovinný) |
+| 0.33.0 | 16:05 | Úprava založeného zápasu: nastavení per zápas, jméno lobby, sestava (§3.35) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
