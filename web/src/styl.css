@@ -85,6 +85,11 @@
 html {
   background: var(--pozadi) url(./assets/ui/pozadi.webp) center top / cover no-repeat fixed;
 }
+/* Zkouška pozadí s překreslenými lvy (dva ocasy, GPT Image přes Codex);
+   třídu přepíná admin v debug módu. Až se rozhodne, jedno z nich zmizí. */
+html.pozadi-nove {
+  background-image: url(./assets/ui/pozadi-nove.webp);
+}
 
 body {
   margin: 0;
