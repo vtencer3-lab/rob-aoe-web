@@ -33,8 +33,6 @@ interface Props {
   onSvolat?: (steamId: string) => void;
   /** Lhůta aktivity večera; z ní se počítá práh pro „Jsem tu!“. */
   lhutaMinut?: number;
-  /** Debug: pravé tlačítko na „Jsem tu!“ předvede svolání, jak ho vidí hráč. */
-  onZkusebniSvolani?: () => void;
   /** Admin vidí odpočet u všech, ať má přehled, kdo za chvíli usne. */
   admin?: boolean;
   /** Kliknutí na „Jsem tu!“ — vrátí hráči plnou lhůtu aktivity. */
@@ -180,7 +178,7 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
 /** Jak dlouho po kliknutí je zvonek zašedlý. */
 const ZVONEK_CHLADNUTI_MS = 5_000;
 
-export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni, onSvolat, lhutaMinut, onZkusebniSvolani }: Props) {
+export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni, onSvolat, lhutaMinut }: Props) {
   // Debug: klik na ikonu hry přepne její stav jen v prohlížeči (má → nelze
   // ověřit → nemá), ať jde všechny tři podoby vidět bez cizího účtu.
   const [prepsaneHry, setPrepsaneHry] = useState<Record<string, SteamVlastnictvi>>({});
@@ -338,17 +336,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   neshodoval. */}
               <td className="jsem-tu-bunka">
                 {ja === hrac.steamId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted, lhutaMinut) ? (
-                  <button
-                    type="button"
-                    className="jsem-tu"
-                    title={ladeni && onZkusebniSvolani ? "Vrátí tě mezi aktivní hráče (pravé tlačítko: předvést svolání)" : "Vrátí tě mezi aktivní hráče"}
-                    onClick={onJsemTu}
-                    onContextMenu={(e) => {
-                      if (!ladeni || !onZkusebniSvolani) return;
-                      e.preventDefault();
-                      onZkusebniSvolani();
-                    }}
-                  >
+                  <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
                     Jsem tu!
                   </button>
                 ) : onSvolat && ja !== hrac.steamId && !jeAi(hrac.steamId) && nabidnoutZvonek(hrac.aktivniDo, ted, lhutaMinut) ? (

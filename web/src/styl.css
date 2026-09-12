@@ -1828,7 +1828,8 @@ body.bez-scrollu { overflow: hidden; }
 .odznak-hry.klikaci { cursor: pointer; }
 .potvrzeni { width: min(28rem, 100%); text-align: center; }
 .potvrzeni .otazka { font-size: 1.1rem; margin: 0.4rem 0 1.2rem; }
-.potvrzeni .ovladani { display: flex; gap: 0.8rem; justify-content: center; }
+.potvrzeni .ovladani { display: flex; gap: 1.4rem; justify-content: center; }
+.potvrzeni .ovladani button { min-width: 6.5rem; }
 
 /* Chat: křížek admina, debug přepínač autora, značka nových zpráv dole. */
 .chat .zpravy li { grid-template-columns: max-content max-content 1fr auto auto; }
@@ -1899,6 +1900,11 @@ body.bez-scrollu { overflow: hidden; }
 /* Oddělovač „nové zprávy“: dvě linky se zlatým nápisem uprostřed; po dorolování k němu zbledne a zmizí. */
 .chat .zpravy li.oddelovac-novych { display: flex; align-items: center; gap: 0.6rem; height: 1.5rem; padding: 0; overflow: hidden; color: var(--zlato); font-family: "Cinzel", Georgia, serif; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; }
 .chat .zpravy li.oddelovac-novych::before, .chat .zpravy li.oddelovac-novych::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--zlato) 30%, var(--zlato) 70%, transparent); opacity: 0.7; }
+.chat .zpravy li.oddelovac-novych { animation: oddelovac-vznik 0.35s ease-out; }
+@keyframes oddelovac-vznik {
+  from { height: 0; opacity: 0; }
+  to { height: 1.5rem; opacity: 1; }
+}
 .chat .zpravy li.oddelovac-novych.bledne { animation: oddelovac-bledne 6s ease-in-out forwards; }
 @keyframes oddelovac-bledne {
   0%, 50% { opacity: 1; height: 1.5rem; }
@@ -1925,11 +1931,12 @@ body.bez-scrollu { overflow: hidden; }
 .chat img.twitch-odznak { width: 18px; height: 18px; vertical-align: -0.2em; margin-right: 0.3rem; border-radius: 3px; }
 
 /* Úprava zápasu: Uložit dole vlevo v rovině posledních zaškrtávátek; chybné řádky červeně. */
-.editace-zapasu .ulozit-radek { margin-top: auto; display: flex; align-items: center; gap: 0.9rem; padding-top: 0.6rem; }
-.editace-zapasu .ulozit-radek .chyba-text { color: var(--cervena-varovani); font-size: 0.85rem; }
+.editace-zapasu .leva { flex-direction: column; }
+.editace-zapasu .ulozit-radek { margin-top: auto; display: flex; align-items: center; padding-top: 0.6rem; }
 .editace-zapasu .radek.chyba > span:first-child, .editace-zapasu .chyba > span:first-child { color: var(--cervena-varovani); }
 .editace-zapasu .radek.chyba > select, .editace-zapasu .radek.chyba > input, .editace-zapasu .radek.chyba > .vyber-mapy-tlacitko { border-color: var(--cervena-varovani); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cervena-varovani) 45%, transparent); }
 .editace-zapasu .souhrn.chyba, .editace-zapasu [data-testid="souhrn-sestavy"].chyba { color: var(--cervena-varovani); }
+.editace-zapasu .skladani .radek.chyba { box-shadow: inset 0 0 0 1px var(--cervena-varovani), 0 0 8px color-mix(in srgb, var(--cervena-varovani) 45%, transparent); border-radius: 3px; }
 .editace-zapasu .prelobby-tlacitko.chyba { border-color: var(--cervena-varovani); box-shadow: 0 0 0 2px color-mix(in srgb, var(--cervena-varovani) 45%, transparent); }
 .prelobby-okno .radek.chyba > span:first-child { color: var(--cervena-varovani); }
 .prelobby-okno .radek.chyba > select { border-color: var(--cervena-varovani); }

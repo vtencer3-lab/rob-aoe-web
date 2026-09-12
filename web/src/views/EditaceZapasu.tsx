@@ -1,6 +1,5 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
-import { jeAi } from "../../../src/shared/aiHraci.js";
 import { doplnNastaveni, type NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
 import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
 import type { PlayerView, SestavaVstup, ZapasView } from "../../../src/shared/types.js";
@@ -30,16 +29,20 @@ interface Navrh {
 }
 
 /**
- * Co v návrhu nesedí: klíče řádků, které se červeně zvýrazní. Sestava
- * (počty, barvy, týmy) se hlídá sdílenou kontrolou; z nastavení to, co
- * s ní souvisí — počet míst v lobby a obtížnost, když v sestavě sedí AI.
+ * Co v návrhu nesedí. Hlídá se jen sestava (sdílená kontrola: počty, barvy,
+ * týmy) — nastavení lobby si Rob nastaví, jak chce (Players v Pre-Lobby je
+ * jen počet otevřených slotů, AI Difficulty není povinná). `hraci` jsou ti,
+ * kdo mají stejnou barvu a jiný tým: ti se v sestavě zvýrazní.
  */
-export function chybyNavrhu(n: Navrh): { klice: string[]; sestava: string | null } {
-  const klice: string[] = [];
+export function chybyNavrhu(n: Navrh): { sestava: string | null; hraci: string[] } {
   const sestava = zkontrolujSestavu(n.sestava);
-  if (n.nastaveni.maxHracu !== null && n.nastaveni.maxHracu < n.sestava.length) klice.push("maxHracu");
-  if (n.sestava.some((s) => jeAi(s.steamId)) && n.nastaveni.aiObtiznost === null) klice.push("aiObtiznost");
-  return { klice, sestava };
+  const podleBarvy = new Map<number, SestavaVstup[]>();
+  for (const s of n.sestava) podleBarvy.set(s.barva, [...(podleBarvy.get(s.barva) ?? []), s]);
+  const hraci: string[] = [];
+  for (const skupina of podleBarvy.values()) {
+    if (new Set(skupina.map((s) => s.tym)).size > 1) hraci.push(...skupina.map((s) => s.steamId));
+  }
+  return { sestava, hraci };
 }
 
 function stejne(a: unknown, b: unknown): boolean {
@@ -57,7 +60,7 @@ function stejne(a: unknown, b: unknown): boolean {
 export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSestava, onZavrit }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   const [ptaSeNaZahozeni, setPtaSeNaZahozeni] = useState(false);
-  const [chyby, setChyby] = useState<{ klice: string[]; sestava: string | null } | null>(null);
+  const [chyby, setChyby] = useState<{ sestava: string | null; hraci: string[] } | null>(null);
   const okno = useRef<HTMLDivElement>(null);
   useZamekScrollu();
 
@@ -84,27 +87,26 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
   // Odklad: platný návrh odejde 1,2 s po poslední změně, dokud je okno otevřené.
   useEffect(() => {
     const ch = chybyNavrhu(navrh);
-    if (ch.sestava !== null || ch.klice.length > 0) return;
+    if (ch.sestava !== null) return;
     const casovac = setTimeout(() => propis(navrh), ODKLAD_PROPISU_MS);
     return () => clearTimeout(casovac);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navrh]);
 
-  // Červené zvýraznění: řádky nastavení podle data-klic, u sestavy souhrn.
+  // Červené zvýraznění: souhrn sestavy (nese větu s důvodem) a hráči v konfliktu.
   useEffect(() => {
     const el = okno.current;
     if (!el) return;
     for (const r of el.querySelectorAll(".chyba")) r.classList.remove("chyba");
-    if (!chyby) return;
-    for (const klic of chyby.klice) el.querySelector(`[data-klic="${klic}"]`)?.classList.add("chyba");
-    if (chyby.klice.includes("maxHracu")) el.querySelector(".prava .prelobby-tlacitko")?.classList.add("chyba");
-    if (chyby.sestava !== null) el.querySelector('[data-testid="souhrn-sestavy"]')?.classList.add("chyba");
-  }, [chyby, preLobbyVidet]);
+    if (!chyby || chyby.sestava === null) return;
+    el.querySelector('[data-testid="souhrn-sestavy"]')?.classList.add("chyba");
+    for (const steamId of chyby.hraci) el.querySelector(`[data-tah-id="${steamId}"]`)?.classList.add("chyba");
+  }, [chyby, navrh]);
 
   /** Uložit / klik vedle: platný návrh hned propsat a zavřít, neplatný zvýraznit a zůstat. */
   const ulozitAZavrit = () => {
     const ch = chybyNavrhu(navrh);
-    if (ch.sestava !== null || ch.klice.length > 0) {
+    if (ch.sestava !== null) {
       setChyby(ch);
       return;
     }
@@ -115,7 +117,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
   /** Křížek: platný návrh = totéž co Uložit; neplatný = dotaz na zahození. */
   const krizek = () => {
     const ch = chybyNavrhu(navrh);
-    if (ch.sestava === null && ch.klice.length === 0) {
+    if (ch.sestava === null) {
       ulozitAZavrit();
       return;
     }
@@ -131,7 +133,6 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
   };
 
   const nastaveni = navrh.nastaveni;
-  const jeChyba = chyby !== null && (chyby.sestava !== null || chyby.klice.length > 0);
 
   return createPortal(
     <div
@@ -164,16 +165,11 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
           <div className="leva">
             <Skladani skladani={skladani} sadaCivilizaci={nastaveni.sadaCivilizaci} bezTlacitka onVytvoritZapas={() => {}} />
             {/* Uložit sedí dole vlevo v rovině posledních zaškrtávátek vpravo,
-                ať okno kvůli němu neroste. Chybová věta vedle něj. */}
+                ať okno kvůli němu neroste. Důvod chyby říká souhrn sestavy nad ním. */}
             <div className="ulozit-radek">
               <button type="button" className="vytvorit" data-testid="ulozit-zapas" onClick={ulozitAZavrit}>
                 Uložit
               </button>
-              {jeChyba ? (
-                <span className="chyba-text" role="alert">
-                  {chyby?.sestava ?? "Nastavení lobby nesedí se sestavou (zvýrazněné řádky)."}
-                </span>
-              ) : null}
             </div>
           </div>
           <div className="prava">

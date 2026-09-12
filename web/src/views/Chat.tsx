@@ -30,8 +30,8 @@ export const UDALOST_SBALIT_CHAT = "aoe:sbalit-chat";
 /** Nejdelší zpráva; totéž hlídá server i databáze. */
 export const MAX_DELKA_ZPRAVY = 500;
 
-/** Jak dlouho po tom, co člověk k oddělovači doroluje, ještě zůstane (3 s drží, 1,5 s bledne). */
-const ODDELOVAC_MS = 4_600;
+/** Jak dlouho po tom, co člověk k oddělovači doroluje, ještě zůstane — musí přesáhnout animaci `oddelovac-bledne` (6 s), jinak řádek zmizí skokem. */
+const ODDELOVAC_MS = 6_200;
 
 /**
  * Admini mají v chatu každý svou barvu (přání uživatele: Rob výrazná fialová,
@@ -115,7 +115,12 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni }: Prop
       el.scrollTop = el.scrollHeight;
       posledniVidene.current = posledniId;
     } else if (zpravy.length > 0 && posledniId > posledniVidene.current) {
+      // Tlačítko a oddělovač vznikají spolu: kdo je odrolovaný, vidí obojí hned.
       setNoveDole(true);
+      if (oddelovacOd === null) {
+        setOddelovacOd(posledniVidene.current);
+        setOddelovacBledne(false);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posledniId]);

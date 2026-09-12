@@ -458,6 +458,20 @@ export function App() {
                     >
                       Odebrat zkušební
                     </button>
+                    {/* Předvedení svolání pro admina: zvuk jednou na plnou nastavenou
+                        hlasitost a totéž okno, co vidí hráč. */}
+                    {me ? (
+                      <button
+                        type="button"
+                        title="Předvede, co uvidí a uslyší hráč, když mu zazvoníš"
+                        onClick={() => {
+                          prehraj(poplachUrl);
+                          setSvolal(jmenoHrace(me));
+                        }}
+                      >
+                        Svolat mě
+                      </button>
+                    ) : null}
                     {/* Popisek je slovy, na tlačítku je jen dvojšipka: „posunout
                         čas“ se řekne rychleji symbolem než větou. */}
                     <button
@@ -490,15 +504,6 @@ export function App() {
             <SeznamPrihlasenych
                 ladeni={admin && ladeni}
               onSvolat={admin ? (steamId) => void hlidej(() => api.svolat(akce.id, steamId)) : undefined}
-              onZkusebniSvolani={
-                admin && ladeni && me
-                  ? () => {
-                      // Předvedení pro admina: zvuk jednou, na plnou nastavenou hlasitost, a totéž okno jako hráči.
-                      prehraj(poplachUrl);
-                      setSvolal(jmenoHrace(me));
-                    }
-                  : undefined
-              }
               lhutaMinut={akce.lhutaAktivityMinut}
               prihlaseni={stav?.prihlaseni ?? []}
               skladani={admin ? skladani : undefined}

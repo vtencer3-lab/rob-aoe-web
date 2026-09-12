@@ -67,7 +67,6 @@ it("neplatnou sestavu okno nepustí: zvýrazní chybu, klik vedle nezavře, kř�
 
     fireEvent.click(screen.getByTestId("editace-stin"));
     expect(p.onZavrit).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByTestId("souhrn-sestavy")).toHaveClass("chyba");
 
     fireEvent.click(screen.getByRole("button", { name: /^zavřít$/i }));
@@ -95,4 +94,20 @@ it("Pre-Lobby je vnořené okno a jméno lobby se uloží po dopsání", () => {
   fireEvent.keyDown(pole, { key: "Enter" });
   expect(p.onNazev).toHaveBeenCalledWith("ROB-finále");
   expect(screen.queryByRole("button", { name: /vygenerovat jiné heslo/i })).not.toBeInTheDocument();
+});
+
+it("hráči se stejnou barvou v různých týmech se zvýrazní, nastavení lobby ne", () => {
+  const konflikt = { ...zapas, ucastnici: [
+    { steamId: "a", alias: "Adam", steamName: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { steamId: "b", alias: "Bára", steamName: null, tym: 2 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 1, kliknulPripojit: null },
+    { steamId: "c", alias: "Cyril", steamName: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: false, poradi: 2, kliknulPripojit: null },
+  ], nastaveni: { maxHracu: 2, aiObtiznost: null } };
+  const p = otevri({ zapas: konflikt });
+  fireEvent.click(screen.getByTestId("ulozit-zapas"));
+  expect(p.onZavrit).not.toHaveBeenCalled();
+  expect(document.querySelector('[data-tah-id="a"]')).toHaveClass("chyba");
+  expect(document.querySelector('[data-tah-id="b"]')).toHaveClass("chyba");
+  expect(document.querySelector('[data-tah-id="c"]')).not.toHaveClass("chyba");
+  expect(document.querySelector('[data-klic="aiObtiznost"]')).not.toHaveClass("chyba");
+  expect(document.querySelector(".prava .prelobby-tlacitko")).not.toHaveClass("chyba");
 });
