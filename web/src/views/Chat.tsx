@@ -165,7 +165,8 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni }: Prop
       const el = seznam.current;
       const cara = oddelovac.current;
       if (!el) return;
-      const cil = cara ? Math.max(0, cara.offsetTop - el.offsetTop - 6) : el.scrollHeight;
+      // Do osmi zpráv se vejde všechno, tak rovnou na dno; jinak k oddělovači.
+      const cil = cara && zpravy.length >= 8 ? Math.max(0, cara.offsetTop - el.offsetTop - 6) : el.scrollHeight;
       el.scrollTo({ top: Math.min(cil, el.scrollHeight), behavior: "smooth" });
     }, 0);
   };

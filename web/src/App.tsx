@@ -505,6 +505,14 @@ export function App() {
                 ladeni={admin && ladeni}
               onSvolat={admin ? (steamId) => void hlidej(() => api.svolat(akce.id, steamId)) : undefined}
               lhutaMinut={akce.lhutaAktivityMinut}
+              onZkusebniSvolani={
+                admin && ladeni && me
+                  ? () => {
+                      prehraj(poplachUrl);
+                      setSvolal(jmenoHrace(me));
+                    }
+                  : undefined
+              }
               prihlaseni={stav?.prihlaseni ?? []}
               skladani={admin ? skladani : undefined}
               vZapase={vZapase}
