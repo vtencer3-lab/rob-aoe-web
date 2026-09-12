@@ -25,20 +25,25 @@ const zapas: ZapasView = {
 };
 const prihlaseni = [hrac("a", "Adam"), hrac("b", "Bára"), hrac("c", "Cyril")];
 
-it("otevře se se sestavou a nastavením zápasu, sestavu uloží tlačítkem", () => {
-  const onSestava = vi.fn();
-  render(<EditaceZapasu zapas={zapas} prihlaseni={prihlaseni} onNastaveni={vi.fn()} onNazev={vi.fn()} onSestava={onSestava} onZavrit={vi.fn()} />);
-  expect(screen.getByRole("dialog", { name: /úprava zápasu #2/i })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /location: arena/i })).toBeInTheDocument();
-  const ulozit = screen.getByRole("button", { name: /uložit sestavu/i });
-  expect(ulozit).toBeEnabled();
-  fireEvent.click(ulozit);
-  expect(onSestava).toHaveBeenCalledWith([
-    { steamId: "a", tym: 1, barva: 1, civ: null },
-    { steamId: "b", tym: 2, barva: 2, civ: null },
-  ]);
-  // Sestava v okně zůstává i po uložení.
-  expect(screen.getByRole("button", { name: /uložit sestavu/i })).toBeInTheDocument();
+it("otevře se se sestavou a nastavením zápasu; platná změna sestavy se propíše sama", async () => {
+  vi.useFakeTimers();
+  try {
+    const onSestava = vi.fn();
+    render(<EditaceZapasu zapas={zapas} prihlaseni={prihlaseni} onNastaveni={vi.fn()} onNazev={vi.fn()} onSestava={onSestava} onZavrit={vi.fn()} />);
+    expect(screen.getByRole("dialog", { name: /úprava zápasu #2/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /location: arena/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /uložit sestavu|vytvořit zápas/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /reset nastavení/i })).not.toBeInTheDocument();
+    expect(document.body).toHaveClass("bez-scrollu");
+
+    // Přidání AI dá 1v1v1 — platná sestava, odejde sama po odkladu.
+    fireEvent.click(screen.getByRole("button", { name: /přidat ai/i }));
+    await vi.advanceTimersByTimeAsync(400);
+    expect(onSestava).toHaveBeenCalledTimes(1);
+    expect(onSestava.mock.calls[0]![0]).toHaveLength(3);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it("Pre-Lobby je vnořené okno a jméno lobby se uloží po dopsání", () => {

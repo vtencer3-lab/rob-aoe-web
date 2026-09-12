@@ -1,3 +1,4 @@
+import { useZamekScrollu } from "../zamekScrollu.js";
 import { useEffect, useRef, useState } from "react";
 import {
   DATA_MODY,
@@ -40,6 +41,7 @@ interface Props {
 const DOBA_ZATRESENI_MS = 600;
 
 export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo, onNazev, onZavrit }: Props) {
+  useZamekScrollu();
   // Jméno lobby se ukládá až po dopsání (Enter nebo odchod z pole), ne po
   // každém písmenu — hostovi by jinak blikalo v okně Create Lobby.
   const [nazevRozepsany, setNazevRozepsany] = useState<string | null>(null);

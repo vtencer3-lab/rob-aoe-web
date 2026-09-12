@@ -37,6 +37,8 @@ interface Props {
   onUlozit: () => void;
   /** Klíč nastavení ke zvýraznění po změně / zpět / znovu. */
   zvyraznit?: { cil: string | null; cas: number } | null;
+  /** Bez tlačítka „Reset nastavení“ (úprava zápasu: reset by přepsal, co host už má ve hře). */
+  bezResetu?: boolean;
 }
 
 /**
@@ -160,7 +162,7 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
  * požadavek na každou číslici) a přes SSE ji uvidí všichni. „Uložit“ dělá
  * snímek, ke kterému se „Načíst uložený preset“ vrátí; „Reset“ nasadí výchozí.
  */
-export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: Props) {
+export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, bezResetu }: Props) {
   const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(zive as Partial<Nastaveni>));
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
   const ceka = useRef(false);
@@ -338,7 +340,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
             Reset nastavení
           </button>
         </div>
-      ) : (
+      ) : bezResetu ? null : (
         <div className="ovladani">
           <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
             Reset nastavení

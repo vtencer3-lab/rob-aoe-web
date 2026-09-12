@@ -1,3 +1,4 @@
+import { useZamekScrollu } from "../zamekScrollu.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MAPY, nazevMapy } from "../../../src/shared/mapy.js";
 import { nahledMapy } from "../mapyNahledy.js";
@@ -29,6 +30,7 @@ function zjednodus(text: string): string {
  * vyhledávání vezme první nalezenou, Escape zavře bez změny.
  */
 export function VyberMapy({ hodnota, onVybrat, onZavrit }: Props) {
+  useZamekScrollu();
   const [hledani, setHledani] = useState("");
   const pole = useRef<HTMLInputElement>(null);
   useEffect(() => {

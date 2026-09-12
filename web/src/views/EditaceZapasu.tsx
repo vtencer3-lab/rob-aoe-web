@@ -1,7 +1,9 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { doplnNastaveni, type NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
+import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
 import type { PlayerView, SestavaVstup, ZapasView } from "../../../src/shared/types.js";
 import { useSkladani } from "../skladani.js";
+import { useZamekScrollu } from "../zamekScrollu.js";
 import { NastaveniLobby } from "./NastaveniLobby.js";
 import { PreLobby } from "./PreLobby.js";
 import { Skladani } from "./Skladani.js";
@@ -18,13 +20,15 @@ interface Props {
 
 /**
  * Ozubené kolečko u zápasu: totéž, co při zakládání — vlevo sestava, vpravo
- * Game Settings, nahoře okno Pre-Lobby — jen nad jedním už založeným zápasem.
- * Nastavení se propisuje samo jako u akce (kontrola lobby ho hned hlídá,
- * hostovi se propíše do okna Create Lobby); sestava se ukládá tlačítkem,
- * protože rozpracovaná sestava smí být chvíli špatně a hotový zápas ne.
+ * Game Settings, vpravo nahoře okno Pre-Lobby — jen nad jedním už založeným
+ * zápasem. Všechno se propisuje samo (uživatel: „nastavení by se mělo
+ * OKAMŽITĚ PROPISOVAT“): nastavení jako u akce, sestava hned, jakmile je
+ * platná — rozpracovaná sestava smí být chvíli špatně, taková zůstane jen
+ * v okně. Reset nastavení tu není: přepsal by, co host už má ve hře.
  */
 export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSestava, onZavrit }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
+  useZamekScrollu();
   // Výchozí sestava ze zápasu; nová identita jen když se zápas na serveru
   // opravdu změní, jinak by hook zahodil rozpracované klikání.
   const klic = zapas.ucastnici.map((u) => `${u.steamId}:${u.tym}:${u.barva}:${u.civ ?? ""}`).join("|");
@@ -33,12 +37,10 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [zapas.id, klic],
   );
-  // Rozpracovaná sestava zůstává v okně, na server jde až tlačítkem.
-  const rozpracovana = useRef<SestavaVstup[]>(vychozi);
   const skladani = useSkladani(prihlaseni, {
     hodnota: vychozi,
     odesli: async (s) => {
-      rozpracovana.current = s;
+      if (zkontrolujSestavu(s) === null) await onSestava(s);
     },
   });
   const nastaveni = doplnNastaveni(zapas.nastaveni as Partial<Nastaveni>);
@@ -56,9 +58,6 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
           <h2>
             Zápas #{zapas.poradi} — {zapas.nazevLobby}
           </h2>
-          <button type="button" className="prelobby-tlacitko" onClick={() => setPreLobbyVidet(true)}>
-            Pre-Lobby Nastavení
-          </button>
           <button type="button" className="zavrit" aria-label="Zavřít" onClick={onZavrit}>
             ✕
           </button>
@@ -75,15 +74,16 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
         ) : null}
         <div className="lobby-rozlozeni">
           <div className="leva">
-            <Skladani
-              skladani={skladani}
-              sadaCivilizaci={nastaveni.sadaCivilizaci}
-              popisTlacitka="Uložit sestavu"
-              bezVynulovani
-              onVytvoritZapas={(sestava) => void onSestava(sestava)}
-            />
+            <Skladani skladani={skladani} sadaCivilizaci={nastaveni.sadaCivilizaci} bezTlacitka onVytvoritZapas={() => {}} />
           </div>
-          <NastaveniLobby zive={zapas.nastaveni} ulozene={null} onZmena={onNastaveni} onUlozit={() => {}} />
+          {/* Tlačítko Pre-Lobby sedí nad pravým sloupcem v prostoru hlavičky,
+              ať okno nenaroste na výšku (přání uživatele). */}
+          <div className="prava">
+            <button type="button" className="prelobby-tlacitko" onClick={() => setPreLobbyVidet(true)}>
+              Pre-Lobby Nastavení
+            </button>
+            <NastaveniLobby zive={zapas.nastaveni} ulozene={null} onZmena={onNastaveni} onUlozit={() => {}} bezResetu />
+          </div>
         </div>
       </div>
     </div>

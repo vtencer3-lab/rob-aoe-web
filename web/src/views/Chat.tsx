@@ -65,6 +65,7 @@ export function Chat({ zapas, ja, onOdeslat }: Props) {
 
   return (
     <section className="chat" aria-label={`Chat zápasu #${zapas.poradi}`} data-testid="chat">
+      <h3 className="chat-nadpis">Chat</h3>
       <ol
         className="zpravy"
         ref={seznam}

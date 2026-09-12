@@ -145,8 +145,9 @@ it("admin vidí panel režie", async () => {
   expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
 });
 
-it("nové pozadí je výchozí a admin ho přepínačem v záhlaví vrátí na původní", async () => {
+it("nové pozadí je výchozí a admin ho v debug módu přepínačem v záhlaví vrátí na původní", async () => {
   vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  localStorage.setItem("rezie.ladeni", "1");
   nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
 
   render(<App />);

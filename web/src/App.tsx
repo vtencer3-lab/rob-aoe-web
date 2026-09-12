@@ -363,8 +363,8 @@ export function App() {
               testId="prepinac-pohledu"
             />
           ) : null}
-          {/* Zkušební pozadí: nové lvy proti původním, dokud se nerozhodne. */}
-          {me?.jeAdmin ? (
+          {/* Zkušební pozadí: nové lvy proti původním, dokud se nerozhodne; jen v debug módu. */}
+          {me?.jeAdmin && ladeni ? (
             <Prepinac popisek="Nové pozadí" vlevo="Původní lvi" vpravo="Nové lvy" zapnuto={novePozadi} onZmena={setNovePozadi} testId="prepinac-pozadi" />
           ) : null}
         </div>
@@ -459,6 +459,7 @@ export function App() {
               </div>
             </header>
             <SeznamPrihlasenych
+                ladeni={admin && ladeni}
               prihlaseni={stav?.prihlaseni ?? []}
               skladani={admin ? skladani : undefined}
               vZapase={vZapase}

@@ -1,5 +1,6 @@
+import { Potvrzeni } from "./Potvrzeni.js";
 import type { SteamVlastnictvi } from "../../../src/shared/types.js";
-import ikonaHryUrl from "../assets/aoe2-ikona.webp";
+import ikonaHryUrl from "../assets/aoe2-ikona.png";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { jeAktivni, nabidnoutJsemTu, zbyvaMs } from "../../../src/shared/aktivita.js";
 import type { PlayerView } from "../../../src/shared/types.js";
@@ -23,6 +24,8 @@ interface Props {
   vZapase?: Map<string, number>;
   /** Steam ID přihlášeného návštěvníka: jen on u sebe vidí „Jsem tu!“. */
   ja?: string | null;
+  /** Debug mód: kliknutí na ikonu hry cykluje její stavy, ať jde vidět všechny. */
+  ladeni?: boolean;
   /** Admin vidí odpočet u všech, ať má přehled, kdo za chvíli usne. */
   admin?: boolean;
   /** Kliknutí na „Jsem tu!“ — vrátí hráči plnou lhůtu aktivity. */
@@ -165,7 +168,18 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
   }, [tabulka, poradi]);
 }
 
-export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu }: Props) {
+export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni }: Props) {
+  // Debug: klik na ikonu hry přepne její stav jen v prohlížeči (má → nelze
+  // ověřit → nemá), ať jde všechny tři podoby vidět bez cizího účtu.
+  const [prepsaneHry, setPrepsaneHry] = useState<Record<string, SteamVlastnictvi>>({});
+  const stavHry = (h: PlayerView): SteamVlastnictvi | null => prepsaneHry[h.steamId] ?? h.steamHra ?? null;
+  const dalsiStavHry = (h: PlayerView) => {
+    const poradi: SteamVlastnictvi[] = ["ma", "soukromy", "nema"];
+    const ted = stavHry(h) ?? "nema";
+    setPrepsaneHry((p) => ({ ...p, [h.steamId]: poradi[(poradi.indexOf(ted) + 1) % poradi.length]! }));
+  };
+  // „Hráč nemá hru“: + zůstává klikací, ale napřed se ptá.
+  const [potvrditVyber, setPotvrditVyber] = useState<PlayerView | null>(null);
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
   const tabulka = useRef<HTMLTableElement>(null);
@@ -206,6 +220,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   }
 
   return (
+    <>
     <table className={skladani ? "seznam seznam-rezie" : "seznam"} ref={tabulka}>
       <thead>
         <tr>
@@ -256,10 +271,10 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                 <td className="vybrat">
                   <button
                     type="button"
-                    className="plus"
+                    className={stavHry(hrac) === "nema" ? "plus bez-hry" : "plus"}
                     aria-label={`Vybrat hráče ${jmeno}`}
-                    title="Vybrat hráče"
-                    onClick={() => skladani.vyber(hrac.steamId)}
+                    title={stavHry(hrac) === "nema" ? "Hráč nemá hru na svém účtě" : "Vybrat hráče"}
+                    onClick={() => (stavHry(hrac) === "nema" ? setPotvrditVyber(hrac) : skladani.vyber(hrac.steamId))}
                   >
                     +
                   </button>
@@ -282,8 +297,8 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                 >
                   {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={28} height={28} /> : null}
                   {jmeno}
+                  <OdznakHry stav={stavHry(hrac)} onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined} />
                 </span>
-                <OdznakHry stav={hrac.steamHra ?? null} />
                 {hrac.statyChyba ? (
                   <span className="varovani" title={hrac.statyChyba}>
                     ⚠
@@ -331,6 +346,19 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
         </tfoot>
       ) : null}
     </table>
+      {potvrditVyber && skladani ? (
+        <Potvrzeni
+          text="Hráč nemá hru na svém účtě. Opravdu přidat?"
+          potvrdit="Přidat"
+          zrusit="Zrušit"
+          onPotvrdit={() => {
+            skladani.vyber(potvrditVyber.steamId);
+            setPotvrditVyber(null);
+          }}
+          onZrusit={() => setPotvrditVyber(null)}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -404,7 +432,7 @@ function ZnackaHrace({
     // kdo v zápase usnul, má tam i jak dlouho. Kdo je v lhůtě, nic navíc.
     const spi = !jeAktivni(hrac.aktivniDo, ted);
     const pryc = spi ? -(zbyvaMs(hrac.aktivniDo, ted) ?? 0) : 0;
-    const popis = spi ? `Právě hraje zápas #${zapas}, neaktivní ${trvani(pryc)}` : `Právě hraje zápas #${zapas}`;
+    const popis = spi ? `Právě hraje zápas #${zapas}\nNeaktivní ${trvani(pryc)}` : `Právě hraje zápas #${zapas}`;
     return (
       <span className="mece napoveda" role="img" aria-label={popis} data-napoveda={popis}>
         ⚔
@@ -431,7 +459,7 @@ function ZnackaHrace({
  * ikonu s vykřičníkem — to je stav, na který má Rob přijít před večerem, ne
  * až v lobby. Dokud Steam nic neřekl (bez klíče, před prvním stažením), nic.
  */
-function OdznakHry({ stav }: { stav: SteamVlastnictvi | null }) {
+function OdznakHry({ stav, onKlik }: { stav: SteamVlastnictvi | null; onKlik?: () => void }) {
   if (stav === null) return null;
   const popis =
     stav === "ma"
@@ -440,7 +468,18 @@ function OdznakHry({ stav }: { stav: SteamVlastnictvi | null }) {
         ? "Soukromý Steam profil, nejde ověřit, že hru má"
         : "Hra na Steam účtu nebyla nalezena";
   return (
-    <span className={`odznak-hry ${stav} napoveda`} role="img" aria-label={popis} data-napoveda={popis} data-testid="odznak-hry">
+    <span
+      className={`odznak-hry ${stav} napoveda${onKlik ? " klikaci" : ""}`}
+      role="img"
+      aria-label={popis}
+      data-napoveda={popis}
+      data-testid="odznak-hry"
+      onClick={(e) => {
+        if (!onKlik) return;
+        e.stopPropagation();
+        onKlik();
+      }}
+    >
       <img src={ikonaHryUrl} alt="" width={18} height={18} />
       {stav === "soukromy" ? <span className="znacka" aria-hidden="true">?</span> : null}
       {stav === "nema" ? <span className="znacka" aria-hidden="true">!</span> : null}

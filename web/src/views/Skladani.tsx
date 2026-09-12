@@ -22,10 +22,8 @@ interface Props {
    * dokud v lobby žádný počítač nesedí, je „–“ v pořádku, s prvním už ne.
    */
   onPrvniAi?: () => void;
-  /** Text hlavního tlačítka; výchozí „Vytvořit zápas (n)“. */
-  popisTlacitka?: string;
-  /** Po potvrzení sestavu nevyprázdnit — při úpravě zápasu zůstává v okně. */
-  bezVynulovani?: boolean;
+  /** Bez tlačítka „Vytvořit zápas“ — při úpravě zápasu se sestava propisuje sama (hook `odesli`). */
+  bezTlacitka?: boolean;
 }
 
 /** Další hodnota v kruhu: levé tlačítko dopředu, pravé zpátky. */
@@ -60,7 +58,7 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
  * tabulce přihlášených nad tím, odkud se berou tlačítkem „+“. Pořadí tady je
  * pořadí slotů v lobby a dá se přetahovat. Formát se odvodí, nevybírá se.
  */
-export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit, onPrvniAi, popisTlacitka, bezVynulovani }: Props) {
+export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit, onPrvniAi, bezTlacitka }: Props) {
   const tahani = useTahani(skladani.presun);
   const seznam = useRef<HTMLUListElement>(null);
   useEffect(() => {
@@ -191,17 +189,19 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
       <p className="zaloha souhrn" data-testid="souhrn-sestavy">
         {vstupy.length === 0 ? "Nikdo není vybraný." : chyba ? `${format || "Sestava"} — ${chyba}` : `Formát: ${format}`}
       </p>
-      <button
-        type="button"
-        className="vytvorit"
-        disabled={chyba !== null}
-        onClick={() => {
-          onVytvoritZapas(vstupy.map((v) => ({ steamId: v.steamId, tym: v.tym, barva: v.barva, civ: v.civ ?? null })));
-          if (!bezVynulovani) skladani.vynuluj();
-        }}
-      >
-        {popisTlacitka ?? `Vytvořit zápas (${vstupy.length})`}
-      </button>
+      {bezTlacitka ? null : (
+        <button
+          type="button"
+          className="vytvorit"
+          disabled={chyba !== null}
+          onClick={() => {
+            onVytvoritZapas(vstupy.map((v) => ({ steamId: v.steamId, tym: v.tym, barva: v.barva, civ: v.civ ?? null })));
+            skladani.vynuluj();
+          }}
+        >
+          Vytvořit zápas ({vstupy.length})
+        </button>
+      )}
     </div>
   );
 }

@@ -334,6 +334,38 @@ it("meč u usnulého hráče říká v bublině, jak dlouho je neaktivní", asyn
   render(
     <SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} vZapase={new Map([["a", 2], ["b", 2]])} />,
   );
-  expect(screen.getByRole("img", { name: /právě hraje zápas #2, neaktivní 9 min/i })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: /právě hraje zápas #2\s+neaktivní 9 min/i })).toBeInTheDocument();
   expect(screen.getByRole("img", { name: /^právě hraje zápas #2$/i })).toBeInTheDocument();
+});
+
+// „Hráč nemá hru“: plus je zašedlé, ale jde na něj kliknout — napřed se
+// zeptá a vybere až po potvrzení.
+it("hráče bez hry vybere až po potvrzení", async () => {
+  const { useSkladani } = await import("../skladani.js");
+  const { renderHook } = await import("@testing-library/react");
+  const hraci = [hrac({ steamId: "a", alias: "Nema", steamHra: "nema" })];
+  const { result } = renderHook(() => useSkladani(hraci));
+  const vyber = vi.spyOn(result.current, "vyber");
+  render(<SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} />);
+  const plus = screen.getByRole("button", { name: /vybrat hráče nema/i });
+  expect(plus).toHaveClass("bez-hry");
+  fireEvent.click(plus);
+  expect(vyber).not.toHaveBeenCalled();
+  expect(screen.getByRole("alertdialog", { name: /nemá hru na svém účtě/i })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /^přidat$/i }));
+  expect(vyber).toHaveBeenCalledWith("a");
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+});
+
+// V debug módu klik na ikonu hry cykluje stavy, ať jdou všechny vidět.
+it("v debug módu klik na ikonu hry přepíná má → nelze ověřit → nemá", () => {
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a", alias: "Ma", steamHra: "ma" })]} ladeni />);
+  const ikona = () => screen.getByTestId("odznak-hry");
+  expect(ikona()).toHaveClass("ma");
+  fireEvent.click(ikona());
+  expect(ikona()).toHaveClass("soukromy");
+  fireEvent.click(ikona());
+  expect(ikona()).toHaveClass("nema");
+  fireEvent.click(ikona());
+  expect(ikona()).toHaveClass("ma");
 });
