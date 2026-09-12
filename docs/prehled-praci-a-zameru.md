@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 dopoledne, dev 0.36.0)
+# Přehled prací a záměrů (stav k 13. 9. 2026 večer, dev 0.36.1)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.36.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 0.36.1, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (0.28.3) navíc: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, 0.33.0-33.1, přezaloženo z `dev` 12. 9. 2026 večer a nasazeno na <https://jouki.cz/aoe/experimental> — **pokus s praporcem místo barevného pruhu** (§3.33) |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 296, databázové 165, frontend 264 — všechny zelené (13. 9. 2026 dopoledne, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
+| Testy | backend hermetické 296, databázové 165, frontend 264 — všechny zelené (13. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -1219,6 +1219,31 @@ odhlašovat nikoho není potřeba.
   rámeček jen při fokusu (klik nebo kolečko, které fokus vynutí); vykřičník
   má navíc tenkou bílou vrstvu záře.
 
+### 3.40 Páté kolo připomínek (0.36.1, 13. 9. 2026)
+
+- **Úprava zápasu jako návrh** (`EditaceZapasu.tsx`): změny nastavení
+  i sestavy žijí v okně jako `navrh`; platný návrh se propíše sám po
+  `ODKLAD_PROPISU_MS` (1,2 s) klidu, zavření okna (tlačítko **Uložit** dole
+  vlevo v rovině posledních zaškrtávátek, nebo klik vedle) ho propíše hned.
+  Neplatný návrh (`chybyNavrhu`: sestava podle `zkontrolujSestavu`, Players
+  < počet hráčů, AI bez obtížnosti) okno nepustí — chybné řádky dostanou
+  třídu `chyba` (červený popisek a rámeček), u sestavy souhrn, vedle Uložit
+  chybová věta. Křížek při neplatném návrhu otevře `Potvrzeni` „Chcete
+  zahodit všechny změny?“ — Ano vrátí serveru stav z otevření okna
+  (`pocatek`), Ne nechá admina opravit. Jméno lobby z Pre-Lobby se ukládá
+  hned jako dřív a do „zahodit“ nespadá.
+- **Chat:** nadpis na střed; Twitch odznaky stažené lokálně
+  (`web/src/assets/twitch-{broadcaster,moderator}.png`, 72 px z Twitch CDN,
+  13. 9. 2026); po kliknutí na „Nové zprávy“ se sjede k oddělovači (ne na
+  dno), oddělovač se vloží i při ručním doscrollování a mizí animací výšky do
+  nuly (6 s, bez skoku).
+- **Debug:** pravé tlačítko na „Jsem tu!“ ve vlastním řádku předvede
+  svolání — zvuk jednou na plnou nastavenou hlasitost a totéž okno, co vidí
+  hráč (`onZkusebniSvolani`).
+- **Okno map** `min(100vh − 4rem, max(47rem, 70vh))`: Full HD jako dřív,
+  1440p a 4K zhruba 70 % výšky. Náhled v nastavení: zvonek menší pod „Jsem
+  tu!“ (bez vodorovného posuvníku). Vykřičník jen s červenou září 1–3 px.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1425,6 +1450,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.34.1 | 18:30 | Druhé kolo: bubliny na řádek, sbalení chatu, okno map pevné a širší, zvonek s načasováním a chladnutím, posuvník, stín pergamenu (§3.37) |
 | 0.35.0 | 13. 9. 09:30 | Třetí kolo: editace zpráv (migrace 022), twitch odznaky, modály v portálu, zvonek i pro spící, lhůta napříč akcemi, auto-scroll (§3.38) |
 | 0.36.0 | 10:45 | Čtvrté kolo: okno „X tě shání!“, cenzura s originálem a zpětně (migrace 023), oficiální odznaky, oddělovač nových zpráv, drobnosti (§3.39) |
+| 0.36.1 | 20:45 | Páté kolo: úprava zápasu jako návrh s Uložit, kontrolou a zahozením; odznaky lokálně; zkušební svolání v debugu; okno map podle výšky (§3.40) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
