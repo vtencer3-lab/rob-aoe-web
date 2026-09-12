@@ -11,6 +11,7 @@ import { useSkladani } from "./skladani.js";
 import { useZmenaVysky } from "./vyska.js";
 import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
 import { Chat } from "./views/Chat.js";
+import { EditaceZapasu } from "./views/EditaceZapasu.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
@@ -64,6 +65,7 @@ export function App() {
   // Zkouška nového pozadí (lvi překreslení podle státního znaku): výchozí je
   // nové, přepínač pod pohledem uživatele ho vrací na původní, ať jde porovnat.
   const [novePozadi, setNovePozadi] = useUlozenyPrepinac("rezie.pozadi-nove", true);
+  const [upravovany, setUpravovany] = useState<number | null>(null);
   useEffect(() => {
     document.documentElement.classList.toggle("pozadi-nove", novePozadi);
   }, [novePozadi]);
@@ -296,7 +298,11 @@ export function App() {
     onHost: (zapasId: number, steamId: string) => void hlidej(() => api.zmenitHosta(zapasId, steamId)),
     onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
     onZprava: (zapasId: number, text: string) => hlidej(() => api.zprava(zapasId, text)),
+    onUpravit: (zapasId: number) => setUpravovany(zapasId),
   };
+  // Ozubené kolečko: který zápas je zrovna otevřený k úpravě. Zápas se bere
+  // živý ze stavu, takže okno ukazuje, co právě platí, a zmizí se zápasem.
+  const zapasKUprave = upravovany === null ? null : (stav?.zapasy.find((z) => z.id === upravovany) ?? null);
 
   return (
     <>
@@ -517,6 +523,16 @@ export function App() {
       {akce ? (
         <>
           {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.steamId} /> : null}
+          {admin && stav && zapasKUprave ? (
+            <EditaceZapasu
+              zapas={zapasKUprave}
+              prihlaseni={stav.prihlaseni}
+              onNastaveni={(n) => hlidej(() => api.nastaveniZapasu(zapasKUprave.id, n))}
+              onNazev={(nazev) => hlidej(() => api.nazevLobbyZapasu(zapasKUprave.id, nazev))}
+              onSestava={(sestava) => hlidej(() => api.sestavaZapasu(zapasKUprave.id, sestava))}
+              onZavrit={() => setUpravovany(null)}
+            />
+          ) : null}
           {me
             ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
                 mujUcastnik(zapas, me.steamId)?.jeHost ? (
@@ -524,7 +540,7 @@ export function App() {
                     key={zapas.id}
                     zapas={zapas}
                     ja={me.steamId}
-                    nastaveniLobby={akce.nastaveniLobby}
+                    nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                     chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} />}

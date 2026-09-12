@@ -23,6 +23,8 @@ export interface Obsluha {
   onZavrit: (zapasId: number) => void;
   /** Zpráva do chatu zápasu; bez ní se chat v kartě nekreslí. */
   onZprava?: (zapasId: number, text: string) => Promise<unknown> | void;
+  /** Ozubené kolečko: otevřít úpravu zápasu (nastavení, jméno lobby, sestava). */
+  onUpravit?: (zapasId: number) => void;
 }
 
 interface Props {
@@ -151,6 +153,12 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
           onClick={() => setSbaleno((b) => !b)}
         >
           {sbaleno ? "▸" : "▾"}
+        </button>
+      ) : null}
+      {/* Ozubené kolečko: úprava běžícího zápasu — totéž okno jako při zakládání. */}
+      {obsluha?.onUpravit && bezi ? (
+        <button type="button" className="upravit-zapas" aria-label={`Upravit zápas #${zapas.poradi}`} title="Upravit nastavení lobby, jméno a sestavu" onClick={() => obsluha.onUpravit!(zapas.id)}>
+          ⚙
         </button>
       ) : null}
       {/* Křížek zavře dohraný zápas: karta zmizí ze stránky všem včetně režie,

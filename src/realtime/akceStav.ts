@@ -44,6 +44,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
     fazeLobby: fazeLobbyPro(zapas.lobbyId),
     vitez: zapas.vitez,
     zavreny: zapas.zavrenyV !== null,
+    nastaveni: zapas.nastaveni,
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,
       alias: u.alias,

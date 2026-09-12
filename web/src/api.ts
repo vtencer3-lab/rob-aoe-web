@@ -93,6 +93,25 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ sestava }),
     }).then((r) => json<{ akce: { id: number } }>(r)),
+  /** Úprava založeného zápasu (ozubené kolečko v režii). */
+  nastaveniZapasu: (zapasId: number, nastaveni: NastaveniLobby) =>
+    fetch(cesta(`/api/zapas/${zapasId}/nastaveni`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(nastaveni),
+    }).then((r) => json<{ ok: true }>(r)),
+  nazevLobbyZapasu: (zapasId: number, nazevLobby: string) =>
+    fetch(cesta(`/api/zapas/${zapasId}/nazev-lobby`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nazevLobby }),
+    }).then((r) => json<{ ok: true }>(r)),
+  sestavaZapasu: (zapasId: number, sestava: SestavaVstup[]) =>
+    fetch(cesta(`/api/zapas/${zapasId}/sestava`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sestava }),
+    }).then((r) => json<{ ok: true }>(r)),
   /** Zpráva do chatu zápasu; odpověď je jen ok, zpráva přijde přes SSE. */
   zprava: (zapasId: number, text: string) =>
     fetch(cesta(`/api/zapas/${zapasId}/zprava`), {

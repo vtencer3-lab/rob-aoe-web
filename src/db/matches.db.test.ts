@@ -323,3 +323,48 @@ it("akce bez hesla ho dostane s prvním zápasem a další zápas ho zdědí", a
   const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
   expect(druhy.heslo).toBe(prvni.heslo);
 });
+
+// Úprava sestavy založeného zápasu (ozubené kolečko): host zůstává, dokud je
+// v sestavě, číslo lobby s ním; když vypadne, lobby se pustí jako při
+// přehození hosta. ELO se otiskne znovu, kliknutí na Připojit se nepřenášejí.
+it("nahradSestavu nechá hosta i lobby, když host zůstal; bez něj lobby pustí", async () => {
+  const { nahradSestavu } = await import("./matches.js");
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  await setLobbyId(zapas.id, "234230181");
+  const host = (await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.steamId;
+  const druhy = HRACI.slice(0, 2).find((s) => s !== host)!;
+
+  // Host zůstává, jen si prohodí tým a barvu s třetím hráčem místo druhého.
+  await nahradSestavu(zapas.id, [
+    { steamId: host, tym: 2, barva: 2, civ: null },
+    { steamId: HRACI[2]!, tym: 1, barva: 1, civ: null },
+  ]);
+  let nacteny = (await getZapas(zapas.id))!;
+  expect(nacteny.zapas.lobbyId).toBe("234230181");
+  expect(nacteny.ucastnici.map((u) => u.steamId).sort()).toEqual([host, HRACI[2]!].sort());
+  expect(nacteny.ucastnici.find((u) => u.jeHost)!.steamId).toBe(host);
+  expect(nacteny.ucastnici.find((u) => u.steamId === host)!.barva).toBe(2);
+  expect(nacteny.ucastnici.some((u) => u.steamId === druhy)).toBe(false);
+
+  // Host vypadl: lobby se pustí a hostem je někdo z nové sestavy.
+  await nahradSestavu(zapas.id, sestavaKazdyProtiKazdemu([HRACI[2]!, HRACI[3]!]));
+  nacteny = (await getZapas(zapas.id))!;
+  expect(nacteny.zapas.lobbyId).toBeNull();
+  expect(nacteny.ucastnici.filter((u) => u.jeHost)).toHaveLength(1);
+  expect(nacteny.ucastnici.map((u) => u.steamId).sort()).toEqual([HRACI[2]!, HRACI[3]!].sort());
+});
+
+it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () => {
+  const { setNastaveniZapasu, setNazevLobby } = await import("./matches.js");
+  await setNastaveniLobby(akceId, { mapaId: 10875 });
+  const prvni = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
+  expect((await getZapas(prvni.id))!.zapas.nastaveni).toEqual({ mapaId: 10875 });
+
+  await setNastaveniZapasu(prvni.id, { mapaId: 10895, populace: 250 });
+  await setNazevLobby(prvni.id, "ROB-finale");
+  expect((await getZapas(prvni.id))!.zapas.nastaveni).toEqual({ mapaId: 10895, populace: 250 });
+  expect((await getZapas(prvni.id))!.zapas.nazevLobby).toBe("ROB-finale");
+  expect((await getZapas(druhy.id))!.zapas.nastaveni).toEqual({ mapaId: 10875 });
+  expect((await getZapas(druhy.id))!.zapas.nazevLobby).toBe("ROB-02");
+});

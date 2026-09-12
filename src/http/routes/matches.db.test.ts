@@ -681,3 +681,37 @@ it("chat: účastník a Rob píšou, cizí hráč nesmí, anonym nic nevidí", a
   expect(ciziCte.json().zapasy[0].zpravy).toEqual([]);
   await app.close();
 });
+
+// Ozubené kolečko v režii: nastavení, jméno lobby i sestava se mění jen
+// adminovi a jen u běžícího zápasu; změna přijde ve stavu všem.
+it("Rob upraví nastavení, jméno lobby i sestavu zápasu; hráč nesmí", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+
+  const nastaveni = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/nastaveni`, cookies: { sid: robSid }, payload: { mapaId: 10895, populace: 250 } });
+  expect(nastaveni.statusCode).toBe(200);
+  const nazev = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/nazev-lobby`, cookies: { sid: robSid }, payload: { nazevLobby: "  ROB-finale " } });
+  expect(nazev.statusCode).toBe(200);
+  const sestava = await app.inject({
+    method: "PUT",
+    url: `/api/zapas/${zapas.id}/sestava`,
+    cookies: { sid: robSid },
+    payload: { sestava: [{ steamId: HRACI[0], tym: 2, barva: 2, civ: null }, { steamId: HRACI[1], tym: 1, barva: 1, civ: null }] },
+  });
+  expect(sestava.statusCode).toBe(200);
+
+  const stav = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: robSid } })).json();
+  expect(stav.zapasy[0].nastaveni).toMatchObject({ mapaId: 10895, populace: 250 });
+  expect(stav.zapasy[0].nazevLobby).toBe("ROB-finale");
+  expect(stav.zapasy[0].ucastnici.find((u: { steamId: string }) => u.steamId === HRACI[0]).barva).toBe(2);
+
+  for (const url of ["nastaveni", "nazev-lobby", "sestava"]) {
+    const hracova = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/${url}`, cookies: { sid: hracSid }, payload: {} });
+    expect(hracova.statusCode).toBe(403);
+  }
+  const prazdne = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/nazev-lobby`, cookies: { sid: robSid }, payload: { nazevLobby: " " } });
+  expect(prazdne.statusCode).toBe(400);
+  const spatna = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/sestava`, cookies: { sid: robSid }, payload: { sestava: [{ steamId: HRACI[0], tym: 1, barva: 1, civ: null }] } });
+  expect(spatna.statusCode).toBe(400);
+  await app.close();
+});

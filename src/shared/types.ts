@@ -144,6 +144,8 @@ export interface ZapasView {
   ucastnici: UcastnikView[];
   /** Chat zápasu (posledních 100); vidí jen účastníci a admini, ostatním ho redakce vyprázdní. */
   zpravy?: ZpravaView[];
+  /** Nastavení lobby tohohle zápasu (obtisk akce při založení, dál vlastní); klíče jako u akce. */
+  nastaveni?: Record<string, unknown>;
 }
 
 /** Zpráva v chatu zápasu. Jméno, barva a tým jsou aktuální, ne z doby odeslání. */

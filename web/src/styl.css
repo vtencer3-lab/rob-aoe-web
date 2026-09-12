@@ -1788,3 +1788,11 @@ a:hover { color: var(--zlato-svetle); }
 .chat li.moje .text { color: var(--zlato-svetle); }
 .chat .psani { display: flex; gap: 0.5rem; }
 .chat .psani input { flex: 1; min-width: 0; }
+
+/* Ozubené kolečko v hlavičce karty v režii a okno úpravy zápasu: stejné
+   rozložení jako panel Nastavení Lobby, jen nad jedním zápasem. */
+.upravit-zapas { margin-left: auto; width: 2.3rem; height: 2.3rem; padding: 0; line-height: 1; font-size: 1.2rem; }
+.upravit-zapas + .sbalit-zapas, .upravit-zapas + .zavrit-zapas { margin-left: 0.3rem; }
+.editace-zapasu { width: min(90rem, 96vw); max-height: 92vh; overflow-y: auto; }
+.editace-zapasu .hlavicka-akce .prelobby-tlacitko { margin-left: 1rem; }
+.editace-zapasu .lobby-rozlozeni { margin-top: 0.8rem; }
