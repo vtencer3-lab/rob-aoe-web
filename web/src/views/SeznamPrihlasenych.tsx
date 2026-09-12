@@ -413,10 +413,10 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   <button
                     type="button"
                     className="jsem-tu"
-                    title={ladeni && onZkusebniSvolani ? "Vrátí tě mezi aktivní hráče (pravé tlačítko: předvést svolání)" : "Vrátí tě mezi aktivní hráče"}
+                    title={onZkusebniSvolani ? "Vrátí tě mezi aktivní hráče (pravé tlačítko: předvést svolání)" : "Vrátí tě mezi aktivní hráče"}
                     onClick={onJsemTu}
                     onContextMenu={(e) => {
-                      if (!ladeni || !onZkusebniSvolani) return;
+                      if (!onZkusebniSvolani) return;
                       e.preventDefault();
                       e.stopPropagation();
                       onZkusebniSvolani();

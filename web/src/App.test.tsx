@@ -665,6 +665,21 @@ it("hráči zazvoní poplach, když ho admin svolá", async () => {
   expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/poplach/);
 });
 
+// Čas svolání z dřívějška nesmí vyskočit s přihlášením: 13. 9. 2026 dostal
+// hráč hned po „Přihlásit se do akce“ okno „tě shání!“, ačkoli nikdo nezvonil.
+it("staré svolání u čerstvé přihlášky okno neotevře", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const ja = { steamId: "b", alias: "Spoluhrac", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null, svolanV: "2026-09-12T15:00:00.000Z", svolalJmeno: "Rob" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [] });
+  const { rerender } = render(<App />);
+  await screen.findByText(/akce 1/i);
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [ja], zapasy: [] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(document.querySelector('tr[data-hrac="b"]')).toBeInTheDocument());
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(prehraj).not.toHaveBeenCalled();
+});
+
 // Zvonek od admina otevře hráči okno „X tě shání!“; zavře ho jen Jsem tu! nebo odhlášení.
 it("po zvonku hráč dostane okno se jménem admina a Jsem tu! ho zavře", async () => {
   vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });

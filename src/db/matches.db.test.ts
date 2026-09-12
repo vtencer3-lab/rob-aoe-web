@@ -371,7 +371,7 @@ it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () =>
 
 // Lhůta aktivity je věcí akce: přihláška i „Jsem tu!“ ji berou z ní.
 it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", async () => {
-  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej } = await import("./events.js");
+  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej, obnovAktivitu, withdraw: odhlas } = await import("./events.js");
   await setLhutaAktivity(akceId, 30);
   await prihlas(akceId, HRACI[0]!);
   // Nové přihlášení posune hráče na konec seznamu (řadí se podle času), tak podle id.
@@ -390,6 +390,13 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   const poMinut = (poSvolani.aktivniDo.getTime() - Date.now()) / 60_000;
   expect(poMinut).toBeGreaterThan(28);
   expect(await svolej(akceId, "76561198000000999", HRACI[1]!)).toBe(false);
+  // „Jsem tu!“ svolání vyřídí; nové přihlášení po odhlášení ho nesmí zdědit.
+  expect(await obnovAktivitu(akceId, HRACI[0]!)).toBe(true);
+  expect((await najdi()).svolanV).toBeNull();
+  expect(await svolej(akceId, HRACI[0]!, HRACI[1]!)).toBe(true);
+  await odhlas(akceId, HRACI[0]!);
+  await prihlas(akceId, HRACI[0]!);
+  expect((await najdi()).svolanV).toBeNull();
   await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
 });
 

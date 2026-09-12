@@ -172,7 +172,8 @@ export async function signUp(akceId: number, steamId: string): Promise<void> {
      ON CONFLICT (akce_id, steam_id) DO UPDATE
           SET stav = 'prihlasen', kdy = now(),
               aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM akce WHERE id = $1) * interval '1 minute',
-              posledni_puls = NULL`,
+              posledni_puls = NULL,
+              svolan_v = NULL, svolal_steam_id = NULL`,
     [akceId, steamId],
   );
 }
@@ -180,11 +181,16 @@ export async function signUp(akceId: number, steamId: string): Promise<void> {
 /**
  * „Jsem tu!“: lhůta se nastaví na plnou, bez ohledu na to, jestli vypršela.
  * Vrací `false`, když se nic nezměnilo — odhlášený hráč, nebo cizí akce.
+ *
+ * Svolání se tím vyřídí (`svolan_v` = NULL): nevyřízené svolání by po
+ * odhlášení a novém přihlášení — které ho maže také — nebo po dalším
+ * načtení stavu vyskočilo znovu, i když admin nezvonil (Trokner, 13. 9. 2026).
  */
 export async function obnovAktivitu(akceId: number, steamId: string): Promise<boolean> {
   const { rowCount } = await getPool().query(
     `UPDATE prihlaska
-        SET aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM akce WHERE id = $1) * interval '1 minute', posledni_puls = now()
+        SET aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM akce WHERE id = $1) * interval '1 minute', posledni_puls = now(),
+            svolan_v = NULL, svolal_steam_id = NULL
       WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'`,
     [akceId, steamId],
   );

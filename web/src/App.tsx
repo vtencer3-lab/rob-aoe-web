@@ -89,17 +89,19 @@ export function App() {
   // Totéž zazvoní každému, komu v chatu zápasu přibyla zpráva od admina
   // (ne vlastní): admin v chatu je pokyn, ne řeč.
   // Zvonek od admina: když se u mé přihlášky změní čas svolání, zazvoní poplach
-  // (Play_Townbell_Start). První snímek po načtení mlčí jako u ostatních zvuků.
+  // (Play_Townbell_Start). První snímek po načtení mlčí jako u ostatních zvuků,
+  // a stejně tak snímek, ve kterém se má přihláška teprve objevila: svolat jde
+  // jen přihlášeného, takže čas svolání u čerstvé přihlášky je vždy starý.
   const predchoziSvolani = useRef<string | null | undefined>(undefined);
   // Okno „X tě shání!“ — zavře ho jen jedno ze dvou tlačítek.
   const [svolal, setSvolal] = useState<string | null>(null);
   useEffect(() => {
     if (!me) return;
     const ja = stav?.prihlaseni.find((h) => h.steamId === me.steamId);
-    const moje = ja?.svolanV ?? null;
+    const moje = ja ? (ja.svolanV ?? null) : undefined;
     const drive = predchoziSvolani.current;
     predchoziSvolani.current = moje;
-    if (drive !== undefined && moje !== null && moje !== drive) {
+    if (drive !== undefined && moje != null && moje !== drive) {
       prehraj(poplachUrl);
       setSvolal(ja?.svolalJmeno ?? "Admin");
     }
@@ -492,7 +494,9 @@ export function App() {
               onSvolat={admin ? (steamId) => void hlidej(() => api.svolat(akce.id, steamId)) : undefined}
               lhutaMinut={akce.lhutaAktivityMinut}
               onZkusebniSvolani={
-                admin && ladeni && me
+                // I v pohledu uživatele: admin si tak zkouší, co hráč uvidí
+                // (Tonner, 13. 9. 2026). Stačí zapnutý debug mód v patičce.
+                me?.jeAdmin && ladeni
                   ? () => {
                       prehraj(poplachUrl);
                       setSvolal(jmenoHrace(me));
