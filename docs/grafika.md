@@ -211,35 +211,40 @@ poskládané ručně a obojí vypadalo špatně: první jako nálepka na desce, 
 jako fušeřina, a navíc si s sebou nesl artefakt z předlohy. Vodoznak je teď
 pryč. Až se k němu vrátíme, musí ho nakreslit nástroj, ne skládání kopií.
 
-### Dvouocasý lev: nedořešeno
+### Dvouocasý lev: opravený přes GPT Image (8. 9. 2026)
 
 Lev na praporcích v pozadí má podle státního znaku **dva ocasy**. Difuzní
-model mu ve scéně spolehlivě kreslí jeden, i když se v promptu dvakrát řekne
-opak, a Qwen-Image-Edit druhý ocas na hotovém obrázku nepřidá taky.
+model mu ve scéně spolehlivě kreslil jeden, i když se v promptu dvakrát řeklo
+opak, a Qwen-Image-Edit druhý ocas na hotovém obrázku nepřidal taky.
 
 Vyzkoušená a **zamítnutá** cesta: vygenerovat scénu s prázdnými praporci
 (`zadani/pozadi3.json`), lva zvlášť (`zadani/lev.json`, tam vychází správně)
 a vsadit ho perspektivní transformací (`vsad_znak.py`). Technicky to fungovalo,
 výsledek byl ale horší než původní vygenerovaná scéna — lvi seděli jinak, měli
 jinou barvu a celé to působilo slepené. Nástroj v repu zůstává, ale
-**nepoužívá se**; pozadí je čistě vygenerované (`namesti2_04`).
+**nepoužívá se**.
 
-Správná cesta je nechat opravu udělat model, který umí cílenou editaci
-obrázku (GPT-Image, Scenario), ne skládat kusy ručně. Do té doby má lev na
-pozadí jeden ocas a je to známý nedodělek.
+**Jak se to vyřešilo.** Uživatel nechal původní render (`namesti2` var. 04,
+bílý lev s jedním ocasem) přepracovat v GPT Image; výsledek je
+`_grafika/final/pozadi_zdroj.png` (1671×941, zlatý dvouocasý lev, jinak stejná
+kompozice) a z něj je `pozadi.webp` v repu od 0.18.x („take the plain
+background“, 8. 9. 2026 večer). Poučení, které od té doby platí obecně:
+**editace hotového obrázku se dělá modelem na cílenou editaci (GPT Image přes
+Codex), ne skládáním kusů ručně**; lokální generování slouží na nové obrázky.
 
 ---
 
 ## 4. Vygenerované assety
 
-Všechno vzniklo lokálně, bez placených služeb. Prompty jsou v
+Až na pozadí (viz „Dvouocasý lev“ v §3) všechno vzniklo lokálně, bez placených
+služeb. Prompty jsou v
 `nastroje/grafika/zadani/*.json`, seedy níž. Modely a jejich zprovoznění:
 `docs/generovani-obrazku.md` v projektu Koshishatsi (tam je i instalace
 ComfyUI a stažení vah).
 
 | Soubor ve `web/src/assets/ui/` | Předloha | Seed | Rozměr generování |
 |---|---|---|---|
-| `pozadi.webp` | `namesti2` var. 04 | 4235347553055014676 | 1536×864 |
+| `pozadi.webp` | `namesti2` var. 04, lev přepracovaný v GPT Image (`final/pozadi_zdroj.png`) | 4235347553055014676 | 1536×864 |
 | `ram.webp` | `ram` var. 02 | 4923907625749824255 | 1024×1024 |
 | `praporec.webp` | `praporec2` var. 04 | 384470600565535280 | 2048×512 |
 | `oddelovac.webp` | `oddelovac` var. 03 | 6271939320368049132 | 1536×384 |

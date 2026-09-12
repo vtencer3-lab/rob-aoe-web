@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 9. 9. 2026, dev 0.28.3)
+# Přehled prací a záměrů (stav k 12. 9. 2026, dev 0.28.3)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -30,13 +30,13 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 ---
 
-## 1. Stav k 9. 9. 2026
+## 1. Stav k 12. 9. 2026
 
 | | |
 |---|---|
 | `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
 | `origin/dev` | 0.28.3, nasazeno na <https://jouki.cz/aoe/dev> — AI v sestavě, mazání zkušebních hráčů, Pre-Lobby nastavení a postavené okno Create Lobby (§3.20–§3.27); po releasu **shodné s `main`** |
-| `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; od té doby prázdné a **zaostalé o celý `dev`** — před dalším pokusem přezaložit (§2.1 nasazení) |
+| `origin/experimental` | 0.28.3-28.3, přezaloženo z `dev` 12. 9. 2026 (`git reset --hard dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental>; zatím bez vlastního pokusu, **shodné s `dev`** |
 | Migrace | 001–018, poslední `018_skryte_civilizace_vypnute.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 286, databázové 154, frontend 233 — všechny zelené (9. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -430,8 +430,12 @@ kolem nadpisu a tabulky přihlášených, aby seděly na jedné desce.
   vinětu (je trénovaná na izolované předměty), bez ní vyšla scéna líp.
 - **Barvy hráčů (`--b1`…`--b8`) zůstaly beze změny** — musí sedět s barvami
   ve hře, jinak hráč nepozná, že je „modrý“.
-- **GPT-Image se nepoužilo** — klíč na stanici není a uživatel potvrdil, že
-  nefunguje. Všechno vzniklo lokálně na RTX 5090.
+- **GPT Image se použilo jen jednou**: uživatel jím 8. 9. večer opravil lva na
+  praporcích v pozadí (dva ocasy), zdroj `_grafika/final/pozadi_zdroj.png`,
+  viz `grafika.md` §3. Všechno ostatní vzniklo lokálně na RTX 5090. Od 12. 9.
+  platí: **editace hotového obrázku přes GPT Image v Codexu** (má nástroj
+  `image_gen`, `codex exec -i obrázek`), nové obrázky lokálně; když není jasné,
+  které z toho, zeptat se.
 - Ze Scenaria uživatel povolil odstranění pozadí, bezešvé textury a upscaling,
   textury si napřed chce ocenit v kreditech. **Zatím se nic z toho nepoužilo**,
   lokální pipeline stačila.
