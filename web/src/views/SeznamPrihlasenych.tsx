@@ -9,7 +9,7 @@ import { hlasitost, prehraj } from "../zvuk.js";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
-import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani } from "../tahani.js";
+import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani, animovanyPosunY } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
 
 interface Props {
@@ -144,9 +144,13 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
   useLayoutEffect(() => {
     const prvek = tabulka.current;
     if (!prvek) return;
-    // Kdo si nepřeje pohyb, dostane přeskládání naráz. Během tažení taky ne:
-    // řádek pod kurzorem má jít za myší, ne si dojíždět po svém.
-    const bezPohybu = (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false) || tahneSe();
+    // Během tažení se sem nesahá vůbec: řádky si posouvá pomocník tažení sám
+    // a polohy naměřené uprostřed tahu by po puštění poslaly řádky jinam.
+    // Uložené polohy zůstanou z doby před tahem, takže po puštění řádky
+    // dojedou z původních míst na nová.
+    if (tahneSe()) return;
+    // Kdo si nepřeje pohyb, dostane přeskládání naráz.
+    const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const ramecek = prvek.getBoundingClientRect();
     const vrchTabulky = ramecek.top;
     const vyskaTabulky = ramecek.height;
@@ -156,9 +160,13 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
     for (const radek of radky) {
       const kdo = radek.dataset["hrac"];
       if (!kdo) continue;
-      const ted = radek.getBoundingClientRect().top - vrchTabulky;
+      // Řádek, který ještě dojíždí z tahu (pomocník mu nechal transform), se
+      // změří bez toho posunu a nechá se dojet po svém.
+      const rozpracovany = radek.style.transform !== "" && radek.style.transition !== "";
+      const ted = radek.getBoundingClientRect().top - vrchTabulky - (rozpracovany ? animovanyPosunY(radek) : 0);
       nynejsi.set(kdo, ted);
       const predtim = drive.current.get(kdo);
+      if (rozpracovany) continue;
       // Nový řádek nemá odkud přijet — objeví se prolnutím (ne při prvním
       // vykreslení tabulky, to by blikal celý seznam). V testovacím DOM jsou
       // všechny souřadnice nulové, takže se přejezd nepustí vůbec.

@@ -51,7 +51,7 @@ interface Tazeny {
  * rozhodovat o prohození se musí podle rozvržení, jinak se při rychlém
  * tahu prohazuje tam a zpět a řádky se „rozletí“.
  */
-function animovanyPosunY(el: HTMLElement): number {
+export function animovanyPosunY(el: HTMLElement): number {
   const t = getComputedStyle(el).transform;
   if (!t || t === "none") return 0;
   const m = /matrix\(([^)]+)\)/.exec(t);
