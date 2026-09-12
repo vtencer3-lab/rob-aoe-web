@@ -345,6 +345,9 @@ button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
 }
 
 .seznam { width: 100%; border-collapse: collapse; }
+/* Během přejezdu šířek sloupců (usePresouvani) se buňky nesmí zalomit —
+   delší jméno by na chvíli zvýšilo řádek a seznam by poskočil. */
+.seznam.sirky-prejizdi > tbody > tr > td { white-space: nowrap; overflow: hidden; }
 /* Přímí potomci schválně: uvnitř tabulky se vykresluje i karta se
    statistikami (ve <tfoot>) a její řádky nemají vypadat jako řádky seznamu.
    Dokud se pravidla psala volně, měla tatáž karta u tabulky jiný vzhled než
