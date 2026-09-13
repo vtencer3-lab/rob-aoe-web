@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+import { useZamekScrollu } from "../zamekScrollu.js";
 import { useEffect, useRef, useState } from "react";
 import {
   DATA_MODY,
@@ -40,6 +42,7 @@ interface Props {
 const DOBA_ZATRESENI_MS = 600;
 
 export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo, onNazev, onZavrit }: Props) {
+  useZamekScrollu();
   // Jméno lobby se ukládá až po dopsání (Enter nebo odchod z pole), ne po
   // každém písmenu — hostovi by jinak blikalo v okně Create Lobby.
   const [nazevRozepsany, setNazevRozepsany] = useState<string | null>(null);
@@ -80,7 +83,7 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
   const cislo = (v: string) => (v === "" ? null : Number(v));
   const zmen = (cast: Partial<Nastaveni>) => onZmena({ ...n, ...cast });
 
-  return (
+  return createPortal(
     <div
       className="prelobby-stin"
       data-testid="prelobby-stin"
@@ -251,7 +254,8 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
           </label>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

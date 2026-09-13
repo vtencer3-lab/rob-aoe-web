@@ -4,6 +4,13 @@ import { expect, it, vi } from "vitest";
 import type { ZapasView } from "../../../src/shared/types.js";
 import { ObrazovkaHosta } from "./ObrazovkaHosta.js";
 
+// Strany zápasu s VS i u hosta (uživatel 13. 9. 2026), pod kroky, před chatem.
+it("ukáže strany zápasu s VS", () => {
+  render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
+  expect(screen.getByTestId("strany-zapasu")).toBeInTheDocument();
+  expect(screen.getByText("VS")).toBeInTheDocument();
+});
+
 /** Automatické hledání volá onHledatLobby hned po vykreslení; mock musí vracet odpověď. */
 const nekontroluj = vi.fn().mockResolvedValue({ nalezeno: false, kontroly: [] });
 const nehledat = vi.fn().mockResolvedValue({ nalezeno: false, lobbyId: null, nazev: null, maHeslo: null, povolujeDivaky: null });

@@ -66,6 +66,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
       tym: z.tym,
       text: z.text,
       poslano: z.poslano.toISOString(),
+      upraveno: z.upravenoV !== null,
     })),
   };
 }
@@ -89,9 +90,15 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       // adminy zaslepuje redakce.
       pristiNazevLobby: lobbyName(zapasy.length + 1),
       pristiHeslo: akce.pristiHeslo ?? "",
+      lhutaAktivityMinut: akce.lhutaAktivityMinut,
     },
     // Lhůta aktivity patří k přihlášce, ne k hráči: mimo akci nemá smysl.
-    prihlaseni: prihlaseni.map((hrac) => ({ ...playerView(hrac), aktivniDo: hrac.aktivniDo.toISOString() })),
+    prihlaseni: prihlaseni.map((hrac) => ({
+      ...playerView(hrac),
+      aktivniDo: hrac.aktivniDo.toISOString(),
+      svolanV: hrac.svolanV?.toISOString() ?? null,
+      svolalJmeno: hrac.svolalJmeno,
+    })),
     zapasy: zapasy.map((z) => zapasView(z, zpravy.get(z.zapas.id) ?? [])),
   };
 }

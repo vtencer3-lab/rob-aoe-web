@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+import { useZamekScrollu } from "../zamekScrollu.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MAPY, nazevMapy } from "../../../src/shared/mapy.js";
 import { nahledMapy } from "../mapyNahledy.js";
@@ -29,6 +31,7 @@ function zjednodus(text: string): string {
  * vyhledávání vezme první nalezenou, Escape zavře bez změny.
  */
 export function VyberMapy({ hodnota, onVybrat, onZavrit }: Props) {
+  useZamekScrollu();
   const [hledani, setHledani] = useState("");
   const pole = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -49,7 +52,7 @@ export function VyberMapy({ hodnota, onVybrat, onZavrit }: Props) {
   );
   const libovolnaSedi = dotaz === "" || zjednodus("libovolná").includes(dotaz);
 
-  return (
+  return createPortal(
     <div
       className="prelobby-stin"
       data-testid="vyber-mapy-stin"
@@ -72,6 +75,11 @@ export function VyberMapy({ hodnota, onVybrat, onZavrit }: Props) {
           aria-label="Hledat mapu"
           value={hledani}
           onChange={(e) => setHledani(e.target.value)}
+          onContextMenu={(e) => {
+            // Pravé tlačítko do pole = smazat text (uživatel), místo nabídky prohlížeče.
+            e.preventDefault();
+            setHledani("");
+          }}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
             e.preventDefault();
@@ -119,6 +127,7 @@ export function VyberMapy({ hodnota, onVybrat, onZavrit }: Props) {
           {!libovolnaSedi && nalezene.length === 0 ? <p className="nic">Žádná mapa neodpovídá.</p> : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

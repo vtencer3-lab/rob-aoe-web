@@ -1,11 +1,15 @@
+import { jeAi } from "../../../src/shared/aiHraci.js";
+import { Potvrzeni } from "./Potvrzeni.js";
 import type { SteamVlastnictvi } from "../../../src/shared/types.js";
-import ikonaHryUrl from "../assets/aoe2-ikona.webp";
+import ikonaHryUrl from "../assets/aoe2-ikona.png";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { jeAktivni, nabidnoutJsemTu, zbyvaMs } from "../../../src/shared/aktivita.js";
+import { jeAktivni, nabidnoutJsemTu, nabidnoutZvonek, zbyvaMs } from "../../../src/shared/aktivita.js";
+import poplachUrl from "../assets/poplach.mp3";
+import { hlasitost, prehraj } from "../zvuk.js";
 import type { PlayerView } from "../../../src/shared/types.js";
 import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
-import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani } from "../tahani.js";
+import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani, animovanyPosunY } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
 
 interface Props {
@@ -23,6 +27,14 @@ interface Props {
   vZapase?: Map<string, number>;
   /** Steam ID přihlášeného návštěvníka: jen on u sebe vidí „Jsem tu!“. */
   ja?: string | null;
+  /** Debug mód: kliknutí na ikonu hry cykluje její stavy, ať jde vidět všechny. */
+  ladeni?: boolean;
+  /** Admin: zvonek u hráče — svolání do radnice (poplach ve hráčově prohlížeči). */
+  onSvolat?: (steamId: string) => void;
+  /** Lhůta aktivity večera; z ní se počítá práh pro „Jsem tu!“. */
+  lhutaMinut?: number;
+  /** Debug: pravé tlačítko na vlastním „Jsem tu!“ předvede svolání. */
+  onZkusebniSvolani?: () => void;
   /** Admin vidí odpočet u všech, ať má přehled, kdo za chvíli usne. */
   admin?: boolean;
   /** Kliknutí na „Jsem tu!“ — vrátí hráči plnou lhůtu aktivity. */
@@ -119,37 +131,69 @@ const PRESUN_MS = 340;
  * nebo objeví (další zápas, panel), protože uložená poloha z minula pak už
  * neplatí. V obou případech řádek odlétal daleko mimo seznam.
  *
- * Přejíždí se jen přeskládání, ne přibytí nebo úbytek hráče. Když někdo do
- * seznamu přijde, posunou se řádky pod ním z docela jiného důvodu než že by
- * si vyměnily místa — a přejezd z toho udělá zmatek, ve kterém celý seznam
- * poskočí a zase se vrátí. V takovém kole se polohy jen zapíšou.
+ * Přejíždí se i přibytí a úbytek hráče (uživatel 13. 9. 2026: „aby se zbytek
+ * listu posunul plynule, a stejně tak při přihlášení“): kdo v seznamu zůstal,
+ * dojede ze staré polohy na novou; kdo přibyl, se objeví prolnutím (třída
+ * `pribyl`); kdo odešel, zmizí hned a řádky pod ním dojedou nahoru. Polohy se
+ * měří vůči tabulce, takže změna její výšky přejezd nerozhodí.
  *
  * `poradi` je otisk pořadí; efekt se pouští jen když se opravdu změnilo.
  */
 function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi: string) {
   const drive = useRef(new Map<string, number>());
+  const driveSirky = useRef<number[]>([]);
+  const animaceSirek = useRef<number | undefined>(undefined);
   useLayoutEffect(() => {
     const prvek = tabulka.current;
     if (!prvek) return;
-    // Kdo si nepřeje pohyb, dostane přeskládání naráz. Během tažení taky ne:
-    // řádek pod kurzorem má jít za myší, ne si dojíždět po svém.
-    const bezPohybu = (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false) || tahneSe();
+    // Sloupce mají šířku podle obsahu; když odejde nejdelší jméno, přeskočí.
+    // Hlavičky se proto změří a šířka se přejede z původní na novou — tabulka
+    // si podle hlavičky srovná i buňky pod ní. Když se pořadí změní uprostřed
+    // rozjetého přejezdu, vyjde se z toho, kde sloupce právě opticky jsou.
+    const hlavicky = [...prvek.querySelectorAll<HTMLTableCellElement>("thead th")];
+    let bylySirky = driveSirky.current;
+    if (animaceSirek.current !== undefined) {
+      window.clearTimeout(animaceSirek.current);
+      animaceSirek.current = undefined;
+      bylySirky = hlavicky.map((th) => th.getBoundingClientRect().width);
+      uklidSirky(prvek, hlavicky);
+    }
+    const sirky = hlavicky.map((th) => th.getBoundingClientRect().width);
+    driveSirky.current = sirky;
+    // Během tažení se sem nesahá vůbec: řádky si posouvá pomocník tažení sám
+    // a polohy naměřené uprostřed tahu by po puštění poslaly řádky jinam.
+    // Uložené polohy zůstanou z doby před tahem, takže po puštění řádky
+    // dojedou z původních míst na nová.
+    if (tahneSe()) return;
+    // Kdo si nepřeje pohyb, dostane přeskládání naráz.
+    const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const ramecek = prvek.getBoundingClientRect();
     const vrchTabulky = ramecek.top;
     const vyskaTabulky = ramecek.height;
     const nynejsi = new Map<string, number>();
     const radky = [...prvek.querySelectorAll<HTMLTableRowElement>("tbody > tr[data-hrac]")];
-    const stejnaSestava =
-      radky.length === drive.current.size && radky.every((r) => drive.current.has(r.dataset["hrac"] ?? ""));
+    const prvniKolo = drive.current.size === 0;
     for (const radek of radky) {
       const kdo = radek.dataset["hrac"];
       if (!kdo) continue;
-      const ted = radek.getBoundingClientRect().top - vrchTabulky;
+      // Řádek, který ještě dojíždí z tahu (pomocník mu nechal transform), se
+      // změří bez toho posunu a nechá se dojet po svém.
+      const rozpracovany = radek.style.transform !== "" && radek.style.transition !== "";
+      const ted = radek.getBoundingClientRect().top - vrchTabulky - (rozpracovany ? animovanyPosunY(radek) : 0);
       nynejsi.set(kdo, ted);
       const predtim = drive.current.get(kdo);
-      // Nový řádek nemá odkud přijet; nulový posun není co animovat. V testovacím
-      // DOM jsou všechny souřadnice nulové, takže se animace nepustí vůbec.
-      if (bezPohybu || !stejnaSestava || predtim === undefined || predtim === ted) continue;
+      if (rozpracovany) continue;
+      // Nový řádek nemá odkud přijet — objeví se prolnutím (ne při prvním
+      // vykreslení tabulky, to by blikal celý seznam). V testovacím DOM jsou
+      // všechny souřadnice nulové, takže se přejezd nepustí vůbec.
+      if (predtim === undefined) {
+        if (!bezPohybu && !prvniKolo) {
+          radek.classList.add("pribyl");
+          radek.addEventListener("animationend", () => radek.classList.remove("pribyl"), { once: true });
+        }
+        continue;
+      }
+      if (bezPohybu || predtim === ted) continue;
       // Zábradlí: dál než přes celou tabulku se řádek posunout nemohl. Když
       // takový posun vyjde, je uložená poloha z jiného rozvržení a přejezd by
       // řádek poslal mimo seznam — v tom případě se prostě přeskládá.
@@ -162,10 +206,72 @@ function usePresouvani(tabulka: React.RefObject<HTMLTableElement | null>, poradi
       });
     }
     drive.current = nynejsi;
+
+    // Přejezd šířek až po změření řádků, ať se měří přirozené rozvržení.
+    //
+    // Po dobu přejezdu má tabulka pevné rozvržení (`table-layout: fixed`)
+    // a všechny hlavičky explicitní šířku: v automatickém rozvržení si
+    // prohlížeč každý snímek rozděloval šířky znovu podle obsahu, sloupec
+    // nemohl pod nejdelší text a přejezd se zadrhával a přeskakoval. Šířky
+    // jsou změřené včetně vnitřního okraje, proto `box-sizing: border-box`.
+    if (bezPohybu || bylySirky.length !== hlavicky.length || !sirky.some((sirka, i) => Math.abs(sirka - bylySirky[i]!) > 0.5)) return;
+    prvek.style.tableLayout = "fixed";
+    prvek.classList.add("sirky-prejizdi");
+    hlavicky.forEach((th, i) => {
+      th.style.boxSizing = "border-box";
+      th.style.transition = "none";
+      th.style.width = `${bylySirky[i]}px`;
+    });
+    void prvek.offsetHeight; // reflow, ať se výchozí šířky opravdu použijí
+    requestAnimationFrame(() => {
+      hlavicky.forEach((th, i) => {
+        th.style.transition = `width ${PRESUN_MS}ms ease`;
+        th.style.width = `${sirky[i]}px`;
+      });
+    });
+    animaceSirek.current = window.setTimeout(() => {
+      animaceSirek.current = undefined;
+      uklidSirky(prvek, hlavicky);
+    }, PRESUN_MS + 60);
   }, [tabulka, poradi]);
 }
 
-export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu }: Props) {
+/** Vrátí tabulce automatické rozvržení a hlavičkám šířku podle obsahu. */
+function uklidSirky(tabulka: HTMLTableElement, hlavicky: HTMLTableCellElement[]) {
+  tabulka.style.tableLayout = "";
+  tabulka.classList.remove("sirky-prejizdi");
+  for (const th of hlavicky) {
+    th.style.transition = "";
+    th.style.width = "";
+    th.style.boxSizing = "";
+  }
+}
+
+/** Jak dlouho po kliknutí je zvonek zašedlý. */
+const ZVONEK_CHLADNUTI_MS = 5_000;
+
+export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni, onSvolat, lhutaMinut, onZkusebniSvolani }: Props) {
+  // Debug: klik na ikonu hry přepne její stav jen v prohlížeči (má → nelze
+  // ověřit → nemá), ať jde všechny tři podoby vidět bez cizího účtu.
+  const [prepsaneHry, setPrepsaneHry] = useState<Record<string, SteamVlastnictvi>>({});
+  const stavHry = (h: PlayerView): SteamVlastnictvi | null => prepsaneHry[h.steamId] ?? h.steamHra ?? null;
+  const dalsiStavHry = (h: PlayerView) => {
+    const poradi: SteamVlastnictvi[] = ["ma", "soukromy", "nema"];
+    const ted = stavHry(h) ?? "nema";
+    setPrepsaneHry((p) => ({ ...p, [h.steamId]: poradi[(poradi.indexOf(ted) + 1) % poradi.length]! }));
+  };
+  // „Hráč nemá hru“: + zůstává klikací, ale napřed se ptá.
+  const [potvrditVyber, setPotvrditVyber] = useState<PlayerView | null>(null);
+  // Zvonek jde použít jednou za pět vteřin (po tu dobu je zašedlý); admin
+  // sám ho slyší jen na desetinu své hlasitosti, ať ví, že odešel.
+  const [zvonekChladne, setZvonekChladne] = useState<Record<string, boolean>>({});
+  const zazvon = (steamId: string) => {
+    if (!onSvolat || zvonekChladne[steamId]) return;
+    onSvolat(steamId);
+    prehraj(poplachUrl, hlasitost() * 0.3);
+    setZvonekChladne((z) => ({ ...z, [steamId]: true }));
+    setTimeout(() => setZvonekChladne((z) => ({ ...z, [steamId]: false })), ZVONEK_CHLADNUTI_MS);
+  };
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
   const tabulka = useRef<HTMLTableElement>(null);
@@ -206,6 +312,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   }
 
   return (
+    <>
     <table className={skladani ? "seznam seznam-rezie" : "seznam"} ref={tabulka}>
       <thead>
         <tr>
@@ -242,7 +349,9 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
           const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
           // Přetahovat jde jen ve vlastním pořadí — v seřazeném seznamu by
           // přesun nebyl vidět.
-          const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId) : {};
+          // Aktivní se řadí jen mezi aktivními, spící mezi spícími — v seznamu
+          // jsou tak stejně oddělení, ať je pořadí v paměti jakékoli.
+          const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId, jeAktivni(hrac.aktivniDo, ted) ? "aktivni" : "spici") : {};
           return (
             <tr
               key={hrac.steamId}
@@ -256,10 +365,10 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                 <td className="vybrat">
                   <button
                     type="button"
-                    className="plus"
+                    className={stavHry(hrac) === "nema" ? "plus bez-hry" : "plus"}
                     aria-label={`Vybrat hráče ${jmeno}`}
-                    title="Vybrat hráče"
-                    onClick={() => skladani.vyber(hrac.steamId)}
+                    title={stavHry(hrac) === "nema" ? "Hráč nemá hru na svém účtě" : "Vybrat hráče"}
+                    onClick={() => (stavHry(hrac) === "nema" ? setPotvrditVyber(hrac) : skladani.vyber(hrac.steamId))}
                   >
                     +
                   </button>
@@ -282,8 +391,8 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                 >
                   {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={28} height={28} /> : null}
                   {jmeno}
+                  <OdznakHry stav={stavHry(hrac)} onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined} />
                 </span>
-                <OdznakHry stav={hrac.steamHra ?? null} />
                 {hrac.statyChyba ? (
                   <span className="varovani" title={hrac.statyChyba}>
                     ⚠
@@ -300,9 +409,31 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   tlačítka odsouvala odpočet a ten by se řádek od řádku
                   neshodoval. */}
               <td className="jsem-tu-bunka">
-                {ja === hrac.steamId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted) ? (
-                  <button type="button" className="jsem-tu" title="Vrátí tě mezi aktivní hráče" onClick={onJsemTu}>
+                {ja === hrac.steamId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted, lhutaMinut) ? (
+                  <button
+                    type="button"
+                    className="jsem-tu"
+                    title={onZkusebniSvolani ? "Vrátí tě mezi aktivní hráče (pravé tlačítko: předvést svolání)" : "Vrátí tě mezi aktivní hráče"}
+                    onClick={onJsemTu}
+                    onContextMenu={(e) => {
+                      if (!onZkusebniSvolani) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onZkusebniSvolani();
+                    }}
+                  >
                     Jsem tu!
+                  </button>
+                ) : onSvolat && ja !== hrac.steamId && !jeAi(hrac.steamId) && nabidnoutZvonek(hrac.aktivniDo, ted, lhutaMinut) ? (
+                  <button
+                    type="button"
+                    className={zvonekChladne[hrac.steamId] ? "zvonek chladne" : "zvonek"}
+                    aria-label={`Svolat hráče ${jmeno}`}
+                    title="Svolat do radnice — hráči zazvoní poplach"
+                    disabled={Boolean(zvonekChladne[hrac.steamId])}
+                    onClick={() => zazvon(hrac.steamId)}
+                  >
+                    🔔
                   </button>
                 ) : null}
               </td>
@@ -331,6 +462,19 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
         </tfoot>
       ) : null}
     </table>
+      {potvrditVyber && skladani ? (
+        <Potvrzeni
+          text="Hráč nemá hru na svém účtě. Opravdu přidat?"
+          potvrdit="Přidat"
+          zrusit="Zrušit"
+          onPotvrdit={() => {
+            skladani.vyber(potvrditVyber.steamId);
+            setPotvrditVyber(null);
+          }}
+          onZrusit={() => setPotvrditVyber(null)}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -404,10 +548,21 @@ function ZnackaHrace({
     // kdo v zápase usnul, má tam i jak dlouho. Kdo je v lhůtě, nic navíc.
     const spi = !jeAktivni(hrac.aktivniDo, ted);
     const pryc = spi ? -(zbyvaMs(hrac.aktivniDo, ted) ?? 0) : 0;
-    const popis = spi ? `Právě hraje zápas #${zapas}, neaktivní ${trvani(pryc)}` : `Právě hraje zápas #${zapas}`;
+    const popis = spi ? `Právě hraje zápas #${zapas}\nNeaktivní ${trvani(pryc)}` : `Právě hraje zápas #${zapas}`;
+    // Vlastní bublina místo `data-napoveda`: dvě informace v jedné bublině
+    // dostanou mezi sebou oddělovač, což atribut neumí.
     return (
-      <span className="mece napoveda" role="img" aria-label={popis} data-napoveda={popis}>
+      <span className="mece napoveda-vlastni" role="img" aria-label={popis}>
         ⚔
+        <span className="bublina" aria-hidden="true">
+          <span>Právě hraje zápas #{zapas}</span>
+          {spi ? (
+            <>
+              <hr />
+              <span>Neaktivní {trvani(pryc)}</span>
+            </>
+          ) : null}
+        </span>
       </span>
     );
   }
@@ -431,7 +586,7 @@ function ZnackaHrace({
  * ikonu s vykřičníkem — to je stav, na který má Rob přijít před večerem, ne
  * až v lobby. Dokud Steam nic neřekl (bez klíče, před prvním stažením), nic.
  */
-function OdznakHry({ stav }: { stav: SteamVlastnictvi | null }) {
+function OdznakHry({ stav, onKlik }: { stav: SteamVlastnictvi | null; onKlik?: () => void }) {
   if (stav === null) return null;
   const popis =
     stav === "ma"
@@ -440,7 +595,18 @@ function OdznakHry({ stav }: { stav: SteamVlastnictvi | null }) {
         ? "Soukromý Steam profil, nejde ověřit, že hru má"
         : "Hra na Steam účtu nebyla nalezena";
   return (
-    <span className={`odznak-hry ${stav} napoveda`} role="img" aria-label={popis} data-napoveda={popis} data-testid="odznak-hry">
+    <span
+      className={`odznak-hry ${stav} napoveda${onKlik ? " klikaci" : ""}`}
+      role="img"
+      aria-label={popis}
+      data-napoveda={popis}
+      data-testid="odznak-hry"
+      onClick={(e) => {
+        if (!onKlik) return;
+        e.stopPropagation();
+        onKlik();
+      }}
+    >
       <img src={ikonaHryUrl} alt="" width={18} height={18} />
       {stav === "soukromy" ? <span className="znacka" aria-hidden="true">?</span> : null}
       {stav === "nema" ? <span className="znacka" aria-hidden="true">!</span> : null}

@@ -715,3 +715,37 @@ it("Rob upraví nastavení, jméno lobby i sestavu zápasu; hráč nesmí", asyn
   expect(spatna.statusCode).toBe(400);
   await app.close();
 });
+
+// Cenzura běží na serveru před uložením; Rob smí zprávu smazat, hráč ne.
+it("chat: zakázané slovo se uloží s hvězdičkami a Rob zprávu smaže", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zprava`, cookies: { sid: hracSid }, payload: { text: "ty Buzerante" } });
+  let zpravy = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } })).json().zapasy[0].zpravy as Array<{ id: number; text: string }>;
+  expect(zpravy[0]!.text).toBe("ty *********");
+
+  const hracova = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}/zprava/${zpravy[0]!.id}`, cookies: { sid: hracSid } });
+  expect(hracova.statusCode).toBe(403);
+  const robova = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}/zprava/${zpravy[0]!.id}`, cookies: { sid: robSid } });
+  expect(robova.statusCode).toBe(200);
+  zpravy = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } })).json().zapasy[0].zpravy;
+  expect(zpravy).toEqual([]);
+  const znovu = await app.inject({ method: "DELETE", url: `/api/zapas/${zapas.id}/zprava/999999`, cookies: { sid: robSid } });
+  expect(znovu.statusCode).toBe(404);
+  await app.close();
+});
+
+// Šipka nahoru: autor přepíše svou zprávu, cizí ne; ve stavu je „upraveno“.
+it("chat: autor upraví svou zprávu, cizí zprávu ne", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/zprava`, cookies: { sid: hracSid }, payload: { text: "puvodni" } });
+  const id = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } })).json().zapasy[0].zpravy[0].id as number;
+  const robova = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/zprava/${id}`, cookies: { sid: robSid }, payload: { text: "cizi" } });
+  expect(robova.statusCode).toBe(404);
+  const vlastni = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/zprava/${id}`, cookies: { sid: hracSid }, payload: { text: " nova verze " } });
+  expect(vlastni.statusCode).toBe(200);
+  const zprava = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } })).json().zapasy[0].zpravy[0];
+  expect(zprava).toMatchObject({ id, text: "nova verze", upraveno: true });
+  await app.close();
+});

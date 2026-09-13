@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Chat } from "./Chat.js";
+import { Chat, UDALOST_SBALIT_CHAT } from "./Chat.js";
 import { jeAi } from "../../../src/shared/aiHraci.js";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
@@ -25,6 +25,12 @@ export interface Obsluha {
   onZprava?: (zapasId: number, text: string) => Promise<unknown> | void;
   /** Ozubené kolečko: otevřít úpravu zápasu (nastavení, jméno lobby, sestava). */
   onUpravit?: (zapasId: number) => void;
+  /** Admin smaže zprávu v chatu. */
+  onSmazatZpravu?: (zapasId: number, zpravaId: number) => Promise<unknown> | void;
+  /** Vlastní zprávu jde přepsat (šipka nahoru). */
+  onUpravitZpravu?: (zapasId: number, zpravaId: number, text: string) => Promise<unknown> | void;
+  /** Debug mód pro chat (přepínání autora). */
+  ladeni?: boolean;
 }
 
 interface Props {
@@ -232,6 +238,9 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
             className="cta spectate"
             aria-disabled={muzeSpectate ? "false" : "true"}
             href={zapas.spectatorUri !== null ? zapas.spectatorUri : undefined}
+            onClick={() => {
+              if (muzeSpectate) window.dispatchEvent(new CustomEvent(UDALOST_SBALIT_CHAT, { detail: zapas.id }));
+            }}
           >
             {muzeSpectate ? (
               <>
@@ -301,7 +310,16 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
         </>
       )}
     {/* Chat zápasu: admin píše odsud, hráči ze své karty. */}
-      {obsluha?.onZprava && ja ? <Chat zapas={zapas} ja={ja} onOdeslat={(text) => obsluha.onZprava!(zapas.id, text)} /> : null}
+      {obsluha?.onZprava && ja ? (
+        <Chat
+          zapas={zapas}
+          ja={ja}
+          onOdeslat={(text) => obsluha.onZprava!(zapas.id, text)}
+          onSmazat={obsluha.onSmazatZpravu ? (zpravaId) => obsluha.onSmazatZpravu!(zapas.id, zpravaId) : undefined}
+          onUpravit={obsluha.onUpravitZpravu ? (zpravaId, text) => obsluha.onUpravitZpravu!(zapas.id, zpravaId, text) : undefined}
+          ladeni={obsluha.ladeni}
+        />
+      ) : null}
     </article>
   );
 }

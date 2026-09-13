@@ -78,6 +78,10 @@ export interface PlayerView {
    * přihlášených; jinde (a ve starších snímcích stavu) chybí.
    */
   aktivniDo?: string | null;
+  /** Kdy admina naposledy svolal zvonkem (ISO); změna = zazvonit. Jen v seznamu přihlášených. */
+  svolanV?: string | null;
+  /** Jméno admina, který zazvonil naposledy (okno „X tě shání!“). */
+  svolalJmeno?: string | null;
 }
 
 export interface AkceView {
@@ -90,6 +94,8 @@ export interface AkceView {
   ulozeneNastaveniLobby?: Record<string, unknown> | null;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
   skladani?: SestavaVstup[];
+  /** Lhůta aktivity v minutách (2–120); chybí ve starších snímcích = 15. */
+  lhutaAktivityMinut?: number;
   /**
    * Jméno, které dostane příští založená lobby (ROB-NN). Odvozené z pořadí,
    * ne tajné — okno Pre-Lobby ho ukazuje, aby ho host opsal do hry.
@@ -160,6 +166,8 @@ export interface ZpravaView {
   text: string;
   /** ISO čas odeslání. */
   poslano: string;
+  /** Autor ji po odeslání přepsal (šipka nahoru); ukazuje se „(editováno)“. */
+  upraveno?: boolean;
 }
 
 export interface AkceStavPayload {

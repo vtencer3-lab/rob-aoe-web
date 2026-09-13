@@ -50,8 +50,13 @@ const vybraniJmena = () =>
   within(screen.getByTestId("vybrani"))
     .getAllByRole("listitem")
     .map((li) => li.querySelector(".jmeno")!.textContent?.replace(/\s*\(.*\)$/, ""));
+// Řádek, který z tabulky právě odchází (animace), se nepočítá.
 const nevybraniJmena = () =>
-  screen.getAllByRole("row").slice(1).map((r) => r.querySelectorAll("td")[1]!.textContent);
+  screen
+    .getAllByRole("row")
+    .slice(1)
+    .filter((r) => !r.classList.contains("odchazi"))
+    .map((r) => r.querySelectorAll("td")[1]!.textContent);
 
 it("tlačítko „+“ přesune hráče z tabulky do sestavy s barvou a týmem", () => {
   render(<Panel />);
@@ -142,7 +147,7 @@ it("přetažení mění pořadí jen uvnitř skupiny", () => {
   expect(vybraniJmena()).toEqual(["Pepa", "TenceR"]);
 
   // Řádky tabulky nevybraných se řadí mezi sebou…
-  const [marek, lukas] = screen.getAllByRole("row").slice(1);
+  const [marek, lukas] = screen.getAllByRole("row").slice(1).filter((r) => !r.classList.contains("odchazi"));
   fireEvent.dragStart(lukas!);
   fireEvent.drop(marek!);
   expect(nevybraniJmena()).toEqual(["Lukas", "Marek"]);

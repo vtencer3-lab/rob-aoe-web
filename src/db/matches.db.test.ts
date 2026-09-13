@@ -368,3 +368,49 @@ it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () =>
   expect((await getZapas(druhy.id))!.zapas.nastaveni).toEqual({ mapaId: 10875 });
   expect((await getZapas(druhy.id))!.zapas.nazevLobby).toBe("ROB-02");
 });
+
+// Lhůta aktivity je věcí akce: přihláška i „Jsem tu!“ ji berou z ní.
+it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", async () => {
+  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej, obnovAktivitu, withdraw: odhlas } = await import("./events.js");
+  await setLhutaAktivity(akceId, 30);
+  await prihlas(akceId, HRACI[0]!);
+  // Nové přihlášení posune hráče na konec seznamu (řadí se podle času), tak podle id.
+  const najdi = async () => (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
+  const radek = await najdi();
+  const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(zaMinut).toBeGreaterThan(28);
+  expect(zaMinut).toBeLessThanOrEqual(30);
+  expect(radek.svolanV).toBeNull();
+
+  expect(await svolej(akceId, HRACI[0]!, HRACI[1]!)).toBe(true);
+  const poSvolani = await najdi();
+  expect(poSvolani.svolanV).toBeInstanceOf(Date);
+  expect(poSvolani.svolalJmeno).toBeTruthy();
+  // Zvonek lhůtu nemění (odečet tří minut uživatel zrušil).
+  const poMinut = (poSvolani.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(poMinut).toBeGreaterThan(28);
+  expect(await svolej(akceId, "76561198000000999", HRACI[1]!)).toBe(false);
+  // „Jsem tu!“ svolání vyřídí; nové přihlášení po odhlášení ho nesmí zdědit.
+  expect(await obnovAktivitu(akceId, HRACI[0]!)).toBe(true);
+  expect((await najdi()).svolanV).toBeNull();
+  expect(await svolej(akceId, HRACI[0]!, HRACI[1]!)).toBe(true);
+  await odhlas(akceId, HRACI[0]!);
+  await prihlas(akceId, HRACI[0]!);
+  expect((await najdi()).svolanV).toBeNull();
+  await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
+});
+
+// Lhůta se dědí do další akce a změna platí hned i běžícím přihláškám.
+it("lhůta se dědí do nové akce a přepočítá běžící přihlášky", async () => {
+  const { setLhutaAktivity, createAkce: novaAkce, listSignups, signUp: prihlas, setAkceStav: nastavStavAkce } = await import("./events.js");
+  await prihlas(akceId, HRACI[0]!);
+  await setLhutaAktivity(akceId, 40);
+  const radek = (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
+  const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(zaMinut).toBeGreaterThan(38);
+  expect(zaMinut).toBeLessThanOrEqual(40);
+  // Otevřená smí být jen jedna akce (jedna_aktivni_akce), tak tuhle napřed ukončit.
+  await nastavStavAkce(akceId, "konec");
+  const dalsi = await novaAkce("zítra");
+  expect(dalsi.lhutaAktivityMinut).toBe(40);
+});
