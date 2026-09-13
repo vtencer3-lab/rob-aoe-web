@@ -374,7 +374,7 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
    `all: unset` platí jen v klidu a hnědá deska se vracela pod kurzorem. */
 button.bez-vzhledu { all: unset; cursor: pointer; }
 
-button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(:where(.bez-vzhledu)),
+button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(:where(.bez-vzhledu)):not(.polozka):not(.odpoved-na),
 a.tlacitko, .cta:not(.spectate) {
   display: inline-flex;
   align-items: center;

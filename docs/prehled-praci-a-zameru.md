@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 14. 9. 2026 dopoledne, main 1.1.4, dev 1.6.1)
+# Přehled prací a záměrů (stav k 14. 9. 2026 dopoledne, main 1.1.4, dev 1.6.2)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,7 +35,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.6.1, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.6.2, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 300, databázové 169, frontend 289 — všechny zelené (14. 9. 2026 dopoledne, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -1583,6 +1583,17 @@ text }`), takže je vidět i u zpráv starších než okno 100 zpráv.
 
 ---
 
+### 3.55 Know-how dokumentace (14. 9. 2026)
+
+Uživatel: „všechny ty funkce podrobně zdokumentuj … aby tento projekt mohl
+být zdrojem referencí a know-how pro další projekty“. Vznikl adresář
+`docs/know-how/` (rozcestník `README.md` + 10 tematických souborů: chat,
+emoty a taunty, zvuky ze hry, push-to-talk, aktivita a svolání, tabulka
+přihlášených, lobby a zápasy, grafika a obrázky, UI vzory, proces
+a nasazení) — psáno pro čtenáře, který projekt nezná, s cestami, funkcemi
+a pastmi. Extrakční skripty pro zvuky ze hry (`pck.py`, `extract_wem.py`)
+a postup jsou nově v repu v `nastroje/zvuky/`, dřív jen ve scratchpadu.
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -1817,6 +1828,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.6.2 | 14. 9. 11:20 | Položky našeptávače opravdu zleva (obecné pravidlo tlačítek je centrovalo — výjimka `:not(.polozka)`); know-how dokumentace `docs/know-how/` + skripty `nastroje/zvuky/` |
 | 1.6.1 | 14. 9. 11:00 | Našeptávač užší (27 rem, vlevo), položky zleva |
 | 1.6.0 | 14. 9. 10:30 | Našeptávání emotů a @jmen (Tab, fulltext), odpovědi na zprávy (migrace 026), zero-width emoty jako vrstvy (§3.52–3.54) |
 | 1.5.1 | 14. 9. 0:55 | Řádek chatu s emotem má výšku emotu (bez záporných okrajů) |
