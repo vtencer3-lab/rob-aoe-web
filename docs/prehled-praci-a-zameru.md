@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 14. 9. 2026 ráno, main 1.1.4, dev 1.5.1)
+# Přehled prací a záměrů (stav k 14. 9. 2026 dopoledne, main 1.1.4, dev 1.6.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.5.1, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.6.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 300, databázové 168, frontend 280 — všechny zelené (14. 9. 2026 ráno, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 300, databázové 169, frontend 289 — všechny zelené (14. 9. 2026 dopoledne, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -1533,6 +1533,52 @@ je oddělovač vidět dole v okně chatu a teprve pak začne mizet.
   hraje se místo cinknutí na hlasitost chatu. Ostatní taunty tam jako
   číslované události nejsou (prohledány event ID všech pěti bank); jejich
   zvuk by chtěl rozbor datového souboru hry — zatím jen text.
+- **Zero-width emoty (1.6.0):** 7TV je značí na položce sady bitem 1
+  (`ActiveEmoteFlag`) nebo na emotu bitem 1 << 8 (`EmoteFlag`); server bere
+  kterýkoli (`nulovaSirka`). V chatu se zero-width emote hned za jiným emotem
+  (i přes mezery) položí na něj jako vrstva (`rozsekejNaEmoty` → `vrstvy`,
+  `.emote-obal` = `inline-grid`, všechny obrázky v `grid-area: 1 / 1`); víc
+  za sebou = víc vrstev; za textem je obyčejný emote. Po vzoru UnityChat.
+
+### 3.53 Našeptávání v chatu (1.6.0, 14. 9. 2026)
+
+Po vzoru UnityChat (uživatel: „koukni do projektu UnityChat a po jeho vzoru
+přidej našeptávání, ovládání tabulátorem, fulltext“). Logika je v
+`web/src/naseptavac.ts` (bez DOM, testy `naseptavac.test.ts`), klávesy a
+panel v `Chat.tsx`:
+
+- **Emoty jen na Tab:** žádný prefix, žádné otevírání při psaní. Tab vezme
+  slovo pod kurzorem (od poslední mezery), otevře seznam a rovnou vloží
+  první položku + mezeru; další Tab cykluje (Shift+Tab zpět), ↑/↓ totéž,
+  → nebo Escape zavře (text zůstane), Enter zprávu odešle. Jiná klávesa
+  seznam zavře. Klik myší na položku ji vloží.
+- **@jméno** (účastníci zápasu a autoři zpráv) se otevírá při psaní od
+  `@` + 1 znak; první Tab jen potvrdí; Enter vloží/zavře a zprávu neodešle.
+- **Fulltext:** zaškrtávátko jako první řádek panelu (jen u emotů): bez něj
+  se hledá začátek jména, s ním kdekoli; přepnutí přefiltruje otevřený
+  seznam proti původnímu prefixu. Na rozdíl od UnityChat se pamatuje
+  (`localStorage` `chat.naseptavac-fulltext`).
+- **Panel** `.naseptavac` nad polem přes celou šířku: obrázek 1x + jméno +
+  zdroj („7TV“ / „hráč“), 4 viditelné položky s posuvným oknem
+  (`oknoOd`), počítadlo „3 / 147“ nad čtyři. Řazení: shoda začátku před
+  shodou uprostřed, přesná velikost písmen před nepřesnou, pak abecedně.
+
+### 3.54 Odpovědi na zprávy (1.6.0, 14. 9. 2026)
+
+Po vzoru UnityChat, ale s vlastní perzistencí: **migrace 026** přidává
+`zprava.odpoved_na` (odkaz na zprávu téhož zápasu, `ON DELETE SET NULL`).
+`POST /api/zapas/:id/zprava` bere `odpovedNa`; cizí nebo neexistující id se
+tiše zahodí. `listZpravy` přibalí náhled původní (`odpovedNa: { id, jmeno,
+text }`), takže je vidět i u zpráv starších než okno 100 zpráv.
+
+- **Spuštění:** ↩ u zprávy (ukáže se po najetí), nad polem pruh „Odpověď pro
+  *jméno*“ se zkráceným textem původní a křížkem; Escape ho zruší
+  (přednost před zrušením úpravy); po odeslání zmizí.
+- **Vykreslení:** nad textem odpovědi řádek `↩ @Jméno úryvek` (jeden řádek,
+  výpustka, tlumený). Klik skočí na původní zprávu (`scrollIntoView`
+  na střed) a ta 2 s blikne (`.blika`, `@keyframes zprava-blik`). Když
+  původní není v seznamu (smazaná → `odpovedNa` null, náhled se nekreslí;
+  starší než okno → klik nic neudělá).
 
 ---
 
@@ -1770,6 +1816,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.6.0 | 14. 9. 10:30 | Našeptávání emotů a @jmen (Tab, fulltext), odpovědi na zprávy (migrace 026), zero-width emoty jako vrstvy (§3.52–3.54) |
 | 1.5.1 | 14. 9. 0:55 | Řádek chatu s emotem má výšku emotu (bez záporných okrajů) |
 | 1.5.0 | 14. 9. 0:40 | 7TV emoty v chatu, „!“ = DinkDonk, taunty ze hry (smích se zvukem); viditelnost chatu sdílená mezi oběma chaty admina, oddělovač nebledne mimo obrazovku (§3.51, §3.52) |
 

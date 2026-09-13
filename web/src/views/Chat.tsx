@@ -1,3 +1,4 @@
+import { aplikuj, oknoOd, otevri, posun, prefiltruj, slovoPodKurzorem, VIDITELNYCH, type Naseptavani } from "../naseptavac.js";
 import { EMOTE_VYKRICNIK, obrazekEmotu, rozsekejNaEmoty, useEmoty, type Emote } from "../emoty.js";
 import { cisloTauntu, TAUNTY } from "../../../src/shared/taunty.js";
 import type { OdesliKousek } from "../hlas.js";
@@ -13,7 +14,8 @@ interface Props {
   zapas: ZapasView;
   /** Kdo se dívá — vlastní zprávy mají zvláštní třídu. */
   ja: string;
-  onOdeslat: (text: string) => Promise<unknown> | void;
+  /** Odeslání; `odpovedNa` je id zprávy, na kterou se odpovídá (null = žádná). */
+  onOdeslat: (text: string, odpovedNa: number | null) => Promise<unknown> | void;
   /** Šipka nahoru v prázdném poli: úprava vlastní poslední zprávy. */
   onUpravit?: (zpravaId: number, text: string) => Promise<unknown> | void;
   /** Admin: křížek u zprávy ji smaže všem. */
@@ -49,6 +51,11 @@ function oznacViditelnost(zapasId: number, klic: symbol, vidim: boolean): void {
 function nekdoNaObrazovce(zapasId: number): boolean {
   return (viditelneChaty.get(zapasId)?.size ?? 0) > 0;
 }
+
+/** Fulltext v našeptávači (localStorage): hledat kdekoli ve jméně emotu. */
+const KLIC_FULLTEXT = "chat.naseptavac-fulltext";
+/** Jak dlouho bliká zpráva, na kterou se skočilo z náhledu odpovědi. */
+const BLIKANI_MS = 2_000;
 
 /** Událost okna, kterou režie sbalí chat zápasu (detail = id zápasu). */
 export const UDALOST_SBALIT_CHAT = "aoe:sbalit-chat";
@@ -112,6 +119,21 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
   const [odesila, setOdesila] = useState(false);
   // Šipka nahoru: upravovaná zpráva (id) — pole nese její text, Escape zruší.
   const [upravovana, setUpravovana] = useState<number | null>(null);
+  // Našeptávání (naseptavac.ts): otevřený seznam, okno čtyř položek, fulltext.
+  const [ac, setAc] = useState<Naseptavani | null>(null);
+  const [oknoAc, setOknoAc] = useState(0);
+  const [fulltext, setFulltext] = useState(() => {
+    try {
+      return localStorage.getItem(KLIC_FULLTEXT) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const vstup = useRef<HTMLInputElement>(null);
+  // Odpověď na zprávu (migrace 026): pruh nad polem s náhledem původní.
+  const [odpovidamNa, setOdpovidamNa] = useState<{ id: number; jmeno: string; text: string } | null>(null);
+  // Zpráva, na kterou se právě skočilo z náhledu odpovědi — 2 s bliká.
+  const [blika, setBlika] = useState<number | null>(null);
   const seznam = useRef<HTMLOListElement>(null);
   const oddelovac = useRef<HTMLLIElement>(null);
   const uDna = useRef(true);
@@ -251,25 +273,114 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
     setOdesila(true);
     try {
       if (upravovana !== null && onUpravit) await onUpravit(upravovana, cisty.slice(0, MAX_DELKA_ZPRAVY));
-      else await onOdeslat(cisty.slice(0, MAX_DELKA_ZPRAVY));
+      else await onOdeslat(cisty.slice(0, MAX_DELKA_ZPRAVY), odpovidamNa?.id ?? null);
       setText("");
       setUpravovana(null);
+      setOdpovidamNa(null);
+      setAc(null);
     } finally {
       setOdesila(false);
     }
   };
 
+  // Vloží položku našeptávače do textu a posune kurzor za ni (+ mezera).
+  const pouzij = (stav: Naseptavani) => {
+    const v = aplikuj(text, stav);
+    setText(v.text);
+    setAc(v.ac);
+    setOknoAc((o) => oknoOd(v.ac.index, v.ac.matches.length, o));
+    requestAnimationFrame(() => vstup.current?.setSelectionRange(v.pos, v.pos));
+  };
+  const jmenaUzivatelu = () => [...new Set([...zapas.ucastnici.map(jmenoHrace), ...zpravy.map((z) => z.jmeno)])];
+  const prepniFulltext = () => {
+    const f = !fulltext;
+    setFulltext(f);
+    try {
+      localStorage.setItem(KLIC_FULLTEXT, f ? "1" : "0");
+    } catch {
+      // Bez úložiště platí jen do obnovení stránky.
+    }
+    if (ac) {
+      setAc(prefiltruj(ac, emoty.keys(), f));
+      setOknoAc(0);
+    }
+    vstup.current?.focus();
+  };
+
   const klavesa = (e: KeyboardEvent<HTMLInputElement>) => {
+    const pos = e.currentTarget.selectionStart ?? text.length;
+    if (e.key === "Tab") {
+      // Tab: otevřít a vložit první; další Taby cyklují (Shift zpátky).
+      // Auto-otevřený seznam (@) první Tab jen potvrdí.
+      e.preventDefault();
+      const smer: 1 | -1 = e.shiftKey ? -1 : 1;
+      if (ac && ac.end === pos) {
+        pouzij(ac.applied ? posun(ac, smer) : ac);
+        return;
+      }
+      const nove = otevri(text, pos, emoty.keys(), jmenaUzivatelu(), fulltext);
+      if (nove) pouzij(nove);
+      else setAc(null);
+      return;
+    }
+    if (ac) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        pouzij(posun(ac, e.key === "ArrowDown" ? 1 : -1));
+        return;
+      }
+      if (e.key === "ArrowRight" || e.key === "Escape") {
+        // Text už je vložený, jen se zavře seznam.
+        if (e.key === "Escape") e.preventDefault();
+        setAc(null);
+        return;
+      }
+      if (e.key === "Enter") {
+        // U jména Enter jen zavře (zprávu neodešle); u emotu propadne k odeslání.
+        if (ac.druh === "uzivatel") {
+          e.preventDefault();
+          if (!ac.applied) pouzij(ac);
+        }
+        setAc(null);
+        return;
+      }
+      if (!["Shift", "Control", "Alt", "Meta"].includes(e.key)) setAc(null);
+    }
     if (e.key === "ArrowUp" && text === "" && upravovana === null && onUpravit) {
       const moje = [...zpravy].reverse().find((z) => z.steamId === ja);
       if (!moje) return;
       e.preventDefault();
       setUpravovana(moje.id);
       setText(moje.text);
+    } else if (e.key === "Escape" && odpovidamNa) {
+      setOdpovidamNa(null);
     } else if (e.key === "Escape" && upravovana !== null) {
       setUpravovana(null);
       setText("");
     }
+  };
+
+  // @jméno se otevírá už při psaní (od „@“ + 1 znak); emoty jen na Tab.
+  const zmenaTextu = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setText(v);
+    const { slovo } = slovoPodKurzorem(v, e.target.selectionStart ?? v.length);
+    if (slovo.startsWith("@") && slovo.length >= 2) {
+      setAc(otevri(v, e.target.selectionStart ?? v.length, [], jmenaUzivatelu(), fulltext));
+      setOknoAc(0);
+    } else if (ac) {
+      setAc(null);
+    }
+  };
+
+  // Náhled odpovědi: skok na původní zprávu a 2 s bliknutí (jako UnityChat).
+  const skocNaZpravu = (id: number) => {
+    const li = seznam.current?.querySelector<HTMLElement>(`li[data-zprava-id="${id}"]`);
+    if (!li) return;
+    li.scrollIntoView({ behavior: "smooth", block: "center" });
+    setBlika(null);
+    requestAnimationFrame(() => setBlika(id));
+    setTimeout(() => setBlika((b) => (b === id ? null : b)), BLIKANI_MS);
   };
 
   const prvniNova = oddelovacOd === null ? null : (zpravy.find((z) => z.id > oddelovacOd)?.id ?? null);
@@ -332,7 +443,7 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
             {zpravy.length === 0 ? <li className="prazdno">Zatím ticho. Napiš první.</li> : null}
             {zpravy.map((z) => {
               const role = z.jeAdmin ? TWITCH_ROLE[z.steamId] : undefined;
-              const tridy = ["zprava", z.steamId === ja ? "moje" : "", upravovana === z.id ? "upravuje-se" : ""].filter(Boolean).join(" ");
+              const tridy = ["zprava", z.steamId === ja ? "moje" : "", upravovana === z.id ? "upravuje-se" : "", blika === z.id ? "blika" : ""].filter(Boolean).join(" ");
               return (
                 <Fragment key={z.id}>
                   {prvniNova === z.id ? (
@@ -340,16 +451,40 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
                       <span>nové zprávy</span>
                     </li>
                   ) : null}
-                  <li className={tridy} data-testid="zprava">
+                  <li className={tridy} data-testid="zprava" data-zprava-id={z.id}>
                     <time dateTime={z.poslano}>{cas(z.poslano)}</time>
                     <span className={tridaAutora(z)}>
                       {role ? <OdznakTwitch role={role} /> : null}
                       {z.jmeno}
                     </span>
                     <span className={jeDulezita(z) ? "text dulezita" : "text"}>
+                      {z.odpovedNa ? (
+                        <button
+                          type="button"
+                          className="odpoved-na"
+                          title="Přejít na původní zprávu"
+                          data-testid="odpoved-na"
+                          onClick={() => skocNaZpravu(z.odpovedNa!.id)}
+                        >
+                          <span aria-hidden="true">↩</span> <b>@{z.odpovedNa.jmeno}</b> <span className="uryvek">{z.odpovedNa.text}</span>
+                        </button>
+                      ) : null}
                       <TextZpravy zprava={z} emoty={emoty} />
                       {z.upraveno ? <small className="editovano">(editováno)</small> : null}
                     </span>
+                    <span className="akce">
+                      <button
+                        type="button"
+                        className="odpovedet"
+                        aria-label={`Odpovědět na zprávu ${z.jmeno}`}
+                        title="Odpovědět"
+                        onClick={() => {
+                          setOdpovidamNa({ id: z.id, jmeno: z.jmeno, text: textZpravy(z) });
+                          vstup.current?.focus();
+                        }}
+                      >
+                        ↩
+                      </button>
                     {ladeni ? (
                       <select
                         className="debug-autor"
@@ -375,6 +510,7 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
                         ×
                       </button>
                     ) : null}
+                    </span>
                   </li>
                 </Fragment>
               );
@@ -387,21 +523,72 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
               </button>
             </div>
           ) : null}
+          <div className="psani-obal">
+          {odpovidamNa ? (
+            <div className="odpoved-lista" data-testid="odpoved-lista">
+              <span className="popisek">
+                Odpověď pro <b>{odpovidamNa.jmeno}</b>
+              </span>
+              <span className="uryvek">{odpovidamNa.text}</span>
+              <button type="button" className="zrusit" aria-label="Zrušit odpověď" title="Zrušit (Escape)" onClick={() => setOdpovidamNa(null)}>
+                ×
+              </button>
+            </div>
+          ) : null}
+          {ac ? (
+            <div className="naseptavac" data-testid="naseptavac" role="listbox" aria-label="Našeptávání">
+              {ac.druh === "emote" ? (
+                <label className="fulltext" onMouseDown={(e) => e.preventDefault()}>
+                  <input type="checkbox" checked={fulltext} onChange={prepniFulltext} /> Fulltext
+                </label>
+              ) : null}
+              {ac.matches.slice(oknoAc, oknoAc + VIDITELNYCH).map((m, i) => {
+                const idx = oknoAc + i;
+                const em = emoty.get(m);
+                return (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={idx === ac.index}
+                    key={m}
+                    className={idx === ac.index ? "polozka vybrana" : "polozka"}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      pouzij({ ...ac, index: idx });
+                      vstup.current?.focus();
+                    }}
+                  >
+                    {em ? <img src={obrazekEmotu(em, 1)} alt="" /> : <span className="tecka" aria-hidden="true" />}
+                    <span className="jmeno">{m}</span>
+                    <span className="zdroj">{em ? "7TV" : "hráč"}</span>
+                  </button>
+                );
+              })}
+              {ac.matches.length > VIDITELNYCH ? (
+                <div className="pocet">
+                  {ac.index + 1} / {ac.matches.length}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <form className={upravovana !== null ? "psani upravuje" : "psani"} onSubmit={(e) => void odesli(e)}>
             <input
+              ref={vstup}
               type="text"
               value={text}
               maxLength={MAX_DELKA_ZPRAVY}
-              placeholder={upravovana !== null ? "Upravit zprávu… (Escape zruší)" : "Napsat do lobby…"}
+              placeholder={upravovana !== null ? "Upravit zprávu… (Escape zruší)" : odpovidamNa ? "Odpověď… (Escape zruší)" : "Napsat do lobby…"}
               aria-label="Zpráva do chatu"
               autoComplete="off"
-              onChange={(e) => setText(e.target.value)}
+              onChange={zmenaTextu}
               onKeyDown={klavesa}
+              onBlur={() => setAc(null)}
             />
             <button type="submit" disabled={odesila || text.trim() === ""}>
               {upravovana !== null ? "Uložit" : "Odeslat"}
             </button>
           </form>
+          </div>
           {jaAdmin && text.startsWith("!") ? (
             <small className="dulezita-poznamka" data-testid="dulezita-poznamka">
               Důležitá zpráva — všem v lobby zazvoní zvon a bude tučně.
@@ -437,13 +624,24 @@ function TextZpravy({ zprava, emoty }: { zprava: { jeAdmin: boolean; text: strin
   return (
     <>
       {rozsekejNaEmoty(text, emoty).map((kus, i) =>
-        kus.typ === "emote" ? <ObrazekEmotu key={i} emote={kus.emote} /> : <Fragment key={i}>{kus.text}</Fragment>,
+        kus.typ === "emote" ? <ObrazekEmotu key={i} emote={kus.emote} vrstvy={kus.vrstvy} /> : <Fragment key={i}>{kus.text}</Fragment>,
       )}
     </>
   );
 }
 
-function ObrazekEmotu({ emote, velky = false }: { emote: Emote; velky?: boolean }) {
+function ObrazekEmotu({ emote, velky = false, vrstvy = [] }: { emote: Emote; velky?: boolean; vrstvy?: Emote[] }) {
   const tridy = ["emote", emote.siroky ? "siroky" : "", velky ? "velky" : ""].filter(Boolean).join(" ");
-  return <img className={tridy} src={obrazekEmotu(emote, velky ? 3 : 2)} alt={emote.jmeno} title={emote.jmeno} loading="lazy" decoding="async" />;
+  const obrazek = <img className={tridy} src={obrazekEmotu(emote, velky ? 3 : 2)} alt={emote.jmeno} title={emote.jmeno} loading="lazy" decoding="async" />;
+  if (vrstvy.length === 0) return obrazek;
+  // Zero-width vrstvy leží přes základní emote; popisek nese všechna jména.
+  const jmena = [emote.jmeno, ...vrstvy.map((v) => v.jmeno)].join(" + ");
+  return (
+    <span className="emote-obal" title={jmena} data-testid="emote-obal">
+      {obrazek}
+      {vrstvy.map((v, i) => (
+        <img key={i} className="emote vrstva" src={obrazekEmotu(v, 2)} alt={v.jmeno} loading="lazy" decoding="async" />
+      ))}
+    </span>
+  );
 }

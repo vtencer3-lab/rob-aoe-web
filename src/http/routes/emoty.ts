@@ -12,10 +12,15 @@ export interface Emote {
   url: string;
   /** Širší než vysoký (WIDE emoty) — chat je nechá roztáhnout. */
   siroky: boolean;
+  /** Zero-width (7TV příznak 1 << 8): kreslí se přes předchozí emote, ne vedle něj. */
+  nulovaSirka: boolean;
 }
 
+/** Příznak 7TV pro zero-width emote. */
+export const PRIZNAK_ZERO_WIDTH = 1 << 8;
+
 interface Sada7tv {
-  emote_set?: { name?: string; emotes?: { name: string; id: string; data?: { host?: { url?: string }; animated?: boolean; flags?: number; width?: number; height?: number } }[] };
+  emote_set?: { name?: string; emotes?: { name: string; id: string; flags?: number; data?: { host?: { url?: string }; animated?: boolean; flags?: number; width?: number; height?: number } }[] };
 }
 
 /**
@@ -53,7 +58,10 @@ export function prevedSadu(data: Sada7tv): Emote[] {
     const url = host.startsWith("//") ? `https:${host}` : host;
     const w = e.data?.width ?? 0;
     const h = e.data?.height ?? 0;
-    emoty.push({ jmeno: e.name, url, siroky: w > 0 && h > 0 && w / h > 1.6 });
+    // Zero-width: na položce sady je to bit 1 (ActiveEmoteFlag), na samotném
+    // emotu bit 1 << 8 (EmoteFlag) — 7TV posílá oboje, stačí kterýkoli.
+    const nulovaSirka = ((e.flags ?? 0) & 1) !== 0 || ((e.data?.flags ?? 0) & PRIZNAK_ZERO_WIDTH) !== 0;
+    emoty.push({ jmeno: e.name, url, siroky: w > 0 && h > 0 && w / h > 1.6, nulovaSirka });
   }
   return emoty;
 }

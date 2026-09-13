@@ -5,6 +5,8 @@ export interface Emote {
   jmeno: string;
   url: string;
   siroky: boolean;
+  /** Zero-width: skládá se přes předchozí emote. */
+  nulovaSirka: boolean;
 }
 
 /** Emote, kterým se ukáže samotný vykřičník od admina (uživatel 13. 9. 2026). */
@@ -57,11 +59,14 @@ export function useEmoty(): Map<string, Emote> {
   return emoty;
 }
 
-export type KusTextu = { typ: "text"; text: string } | { typ: "emote"; emote: Emote };
+export type KusTextu = { typ: "text"; text: string } | { typ: "emote"; emote: Emote; vrstvy: Emote[] };
 
 /**
  * Rozseká text zprávy na slova a emoty: slovo, které je přesně jménem emotu
  * ze sady, se ukáže jako obrázek, zbytek zůstane text. Mezery se zachovají.
+ * Zero-width emote (uživatel 14. 9. 2026) hned za jiným emotem se na něj
+ * položí jako vrstva (víc za sebou = víc vrstev); za textem je to obyčejný
+ * emote, není na co ho položit.
  */
 export function rozsekejNaEmoty(text: string, emoty: Map<string, Emote>): KusTextu[] {
   if (emoty.size === 0) return [{ typ: "text", text }];
@@ -70,9 +75,16 @@ export function rozsekejNaEmoty(text: string, emoty: Map<string, Emote>): KusTex
   for (const cast of text.split(/(\s+)/)) {
     const e = /^\s+$/.test(cast) ? undefined : emoty.get(cast);
     if (e) {
+      const posledni = kusy.at(-1);
+      // Mezi emotem a jeho vrstvou smí být jen mezery (bufr je pak jen bílé).
+      if (e.nulovaSirka && posledni?.typ === "emote" && /^\s*$/.test(bufr)) {
+        bufr = "";
+        posledni.vrstvy.push(e);
+        continue;
+      }
       if (bufr) kusy.push({ typ: "text", text: bufr });
       bufr = "";
-      kusy.push({ typ: "emote", emote: e });
+      kusy.push({ typ: "emote", emote: e, vrstvy: [] });
     } else {
       bufr += cast;
     }

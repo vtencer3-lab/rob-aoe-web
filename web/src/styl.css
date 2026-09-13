@@ -1907,6 +1907,9 @@ body.bez-scrollu { overflow: hidden; }
 /* Bez záporných okrajů: řádek se emotu přizpůsobí, ať se obrázek nepřekrývá se sousedy (uživatel 14. 9. 2026). */
 .chat .emote { height: 1.7em; width: auto; vertical-align: middle; margin: 0 0.1em; }
 .chat .emote.velky { height: 2.6em; }
+/* Zero-width emoty: vrstvy přes základní emote, obal drží jeho rozměr. */
+.chat .emote-obal { display: inline-grid; place-items: center; vertical-align: middle; }
+.chat .emote-obal > .emote { grid-area: 1 / 1; margin: 0; }
 .chat .taunt { font-style: italic; }
 .chat .taunt b { font-style: normal; color: var(--zlato); }
 .chat .dulezita-poznamka { display: block; margin-top: 0.3rem; color: var(--akcent); font-size: 0.8rem; }
@@ -1939,9 +1942,36 @@ body.bez-scrollu { overflow: hidden; }
 .potvrzeni .ovladani button { min-width: 6.5rem; }
 
 /* Chat: křížek admina, debug přepínač autora, značka nových zpráv dole. */
-.chat .zpravy li { grid-template-columns: max-content max-content 1fr auto auto; }
-.chat .smazat-zpravu { padding: 0 0.4rem; line-height: 1; font-size: 0.9rem; opacity: 0.55; }
-.chat .smazat-zpravu:hover { opacity: 1; }
+.chat .zpravy li { grid-template-columns: max-content max-content 1fr auto; }
+/* Akce u zprávy (odpovědět, debug autor, smazat) vpravo; odpovědět se ukáže až po najetí. */
+.chat .zpravy li .akce { display: inline-flex; align-items: center; gap: 0.3rem; }
+.chat .smazat-zpravu, .chat .odpovedet { padding: 0 0.4rem; line-height: 1; font-size: 0.9rem; opacity: 0.55; }
+.chat .smazat-zpravu:hover, .chat .odpovedet:hover { opacity: 1; }
+.chat .odpovedet { opacity: 0; transition: opacity 0.12s; }
+.chat .zpravy li:hover .odpovedet, .chat .odpovedet:focus-visible { opacity: 0.7; }
+/* Náhled původní zprávy nad odpovědí: jeden řádek, tlumený, klik skočí na původní. */
+.chat .odpoved-na { display: block; max-width: 100%; margin: 0 0 0.1rem; padding: 0 0.3rem; background: none; border: 0; border-left: 2px solid rgba(216, 168, 58, 0.45); border-radius: 0; box-shadow: none; text-align: left; font: inherit; font-size: 0.78rem; color: var(--tlumene); opacity: 0.8; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat .odpoved-na:hover { opacity: 1; color: var(--text); }
+.chat .odpoved-na b { color: var(--zlato); font-weight: 700; }
+.chat .zpravy li.blika { animation: zprava-blik 2s ease-out; }
+@keyframes zprava-blik { 0% { background: rgba(216, 168, 58, 0.35); box-shadow: inset 0 0 0 1px rgba(216, 168, 58, 0.5); } 100% { background: transparent; box-shadow: none; } }
+/* Pruh „Odpověď pro …“ nad polem a našeptávač nad ním; obal drží pozici. */
+.chat .psani-obal { position: relative; }
+.chat .odpoved-lista { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; padding: 0.25rem 0.5rem; border: 1px solid rgba(216, 168, 58, 0.3); border-radius: 3px; background: rgba(0, 0, 0, 0.25); font-size: 0.82rem; color: var(--tlumene); }
+.chat .odpoved-lista .popisek { white-space: nowrap; }
+.chat .odpoved-lista b { color: var(--zlato); }
+.chat .odpoved-lista .uryvek { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); opacity: 0.8; }
+.chat .odpoved-lista .zrusit { padding: 0 0.45rem; line-height: 1.2; font-size: 0.9rem; }
+.chat .naseptavac { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 5; margin-bottom: 0.25rem; padding: 0.25rem; border: 1px solid var(--zlato-tmave); border-radius: 4px 4px 0 0; background: linear-gradient(rgba(30, 17, 12, 0.99), rgba(12, 7, 4, 0.99)); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.6); }
+.chat .naseptavac .fulltext { display: flex; align-items: center; gap: 0.35rem; padding: 0.1rem 0.4rem 0.3rem; font-size: 0.78rem; color: var(--tlumene); cursor: pointer; user-select: none; }
+.chat .naseptavac .polozka { display: grid; grid-template-columns: 1.75rem 1fr auto; align-items: center; gap: 0.5rem; width: 100%; padding: 0.2rem 0.5rem; background: none; border: 0; border-radius: 3px; box-shadow: none; text-align: left; font: inherit; font-size: 0.9rem; color: var(--text); cursor: pointer; }
+.chat .naseptavac .polozka img { width: 1.75rem; height: 1.75rem; object-fit: contain; }
+.chat .naseptavac .polozka .tecka { display: inline-block; width: 0.6rem; height: 0.6rem; margin: 0 auto; border-radius: 50%; background: var(--zlato); }
+.chat .naseptavac .polozka .jmeno { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat .naseptavac .polozka .zdroj { font-size: 0.7rem; color: var(--tlumene); }
+.chat .naseptavac .polozka.vybrana { background: rgba(216, 168, 58, 0.18); }
+.chat .naseptavac .polozka.vybrana .jmeno { color: var(--zlato-svetle); font-weight: 700; }
+.chat .naseptavac .pocet { padding: 0.15rem 0.5rem 0; text-align: right; font-size: 0.72rem; color: var(--tlumene); }
 .chat .debug-autor { font-size: 0.75rem; padding: 0 0.2rem; }
 .chat .nove-zpravy-radek { text-align: center; margin: -0.3rem 0 0.5rem; }
 .chat .nove-zpravy { display: inline-block; font-size: 0.8rem; padding: 0.2rem 0.9rem; animation: zare-nove 1.4s ease-in-out infinite; }

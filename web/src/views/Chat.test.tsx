@@ -5,7 +5,7 @@ import { Chat } from "./Chat.js";
 import { zapomenEmoty } from "../emoty.js";
 
 vi.mock("../api.js", () => ({
-  api: { emoty: vi.fn().mockResolvedValue({ emoty: [{ jmeno: "DinkDonk", url: "https://cdn.7tv.app/emote/dink", siroky: false }, { jmeno: "KEKW", url: "https://cdn.7tv.app/emote/kekw", siroky: false }] }) },
+  api: { emoty: vi.fn().mockResolvedValue({ emoty: [{ jmeno: "DinkDonk", url: "https://cdn.7tv.app/emote/dink", siroky: false, nulovaSirka: false }, { jmeno: "KEKW", url: "https://cdn.7tv.app/emote/kekw", siroky: false, nulovaSirka: false }] }) },
 }));
 
 afterEach(() => zapomenEmoty());
@@ -96,7 +96,7 @@ it("Enter odešle oříznutý text a pole vyprázdní", async () => {
   const pole = screen.getByRole("textbox", { name: /zpráva do chatu/i });
   fireEvent.change(pole, { target: { value: "  za chvíli  " } });
   fireEvent.submit(pole.closest("form")!);
-  await vi.waitFor(() => expect(onOdeslat).toHaveBeenCalledWith("za chvíli"));
+  await vi.waitFor(() => expect(onOdeslat).toHaveBeenCalledWith("za chvíli", null));
   await vi.waitFor(() => expect(pole).toHaveValue(""));
 });
 
@@ -140,4 +140,53 @@ it("admini mají twitch odznak: Rob vysílající, Jouki moderátor", () => {
   render(<Chat ja="x" onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
   expect(screen.getByTestId("twitch-broadcaster")).toBeInTheDocument();
   expect(screen.getByTestId("twitch-moderator")).toBeInTheDocument();
+});
+
+
+// Odpověď na zprávu (uživatel 14. 9. 2026): ↩ u zprávy otevře pruh s náhledem,
+// odeslání nese id původní; náhled u odpovědi skočí na původní a ta blikne.
+it("odpověď: pruh nad polem, odeslání s id původní, klik na náhled bliká", async () => {
+  const onOdeslat = vi.fn().mockResolvedValue(undefined);
+  const zpravy: NonNullable<ZapasView["zpravy"]> = [
+    { id: 5, steamId: "b", jmeno: "Pepa", jeAdmin: false, barva: 2, tym: 2, text: "jdeme?", poslano: "2026-09-12T12:00:00.000Z" },
+    { id: 6, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "jo", poslano: "2026-09-12T12:01:00.000Z", odpovedNa: { id: 5, jmeno: "Pepa", text: "jdeme?" } },
+  ];
+  render(<Chat ja="a" onOdeslat={onOdeslat} zapas={zapas(zpravy)} />);
+  fireEvent.click(screen.getByRole("button", { name: /odpovědět na zprávu pepa/i }));
+  expect(screen.getByTestId("odpoved-lista")).toHaveTextContent("Odpověď pro Pepa");
+  const pole = screen.getByRole("textbox", { name: /zpráva do chatu/i });
+  fireEvent.change(pole, { target: { value: "za chvíli" } });
+  fireEvent.submit(pole.closest("form")!);
+  await vi.waitFor(() => expect(onOdeslat).toHaveBeenCalledWith("za chvíli", 5));
+  await vi.waitFor(() => expect(screen.queryByTestId("odpoved-lista")).not.toBeInTheDocument());
+  // Náhled u odpovědi: skok na původní + bliknutí.
+  Element.prototype.scrollIntoView = vi.fn();
+  fireEvent.click(screen.getByTestId("odpoved-na"));
+  await vi.waitFor(() => expect(screen.getAllByTestId("zprava")[0]).toHaveClass("blika"));
+});
+
+// Našeptávání (po vzoru UnityChat): Tab vloží první emote + mezeru, další
+// Tab cykluje, Escape zavře; @ se otevře při psaní a Enter jen zavře.
+it("Tab dokončí emote a cykluje, @ nabídne hráče při psaní", async () => {
+  const onOdeslat = vi.fn().mockResolvedValue(undefined);
+  const sHracem = { ...zapas([]), ucastnici: [{ steamId: "a", alias: "Hráč", steamName: null, tym: 1 as const, barva: 3 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null }] };
+  render(<Chat ja="a" onOdeslat={onOdeslat} zapas={sHracem} />);
+  await screen.findByRole("textbox", { name: /zpráva do chatu/i });
+  const pole = screen.getByRole("textbox", { name: /zpráva do chatu/i }) as HTMLInputElement;
+  // Emoty ze sady (mock api): DinkDonk, KEKW — čekat, až se načtou.
+  fireEvent.change(pole, { target: { value: "hele ke" } });
+  pole.setSelectionRange(7, 7);
+  // Emoty se načítají asynchronně: napřed počkat, až sada dorazí (obrázek v jiné zprávě není, tak přes Tab).
+  await vi.waitFor(() => {
+    fireEvent.keyDown(pole, { key: "Tab" });
+    expect(pole.value).toBe("hele KEKW ");
+  });
+  expect(screen.getByTestId("naseptavac")).toBeInTheDocument();
+  fireEvent.keyDown(pole, { key: "Escape" });
+  expect(screen.queryByTestId("naseptavac")).not.toBeInTheDocument();
+  fireEvent.change(pole, { target: { value: "hele KEKW @h" } });
+  expect(screen.getByTestId("naseptavac")).toHaveTextContent("@Hráč");
+  fireEvent.keyDown(pole, { key: "Enter" });
+  expect(pole.value).toBe("hele KEKW @Hráč ");
+  expect(onOdeslat).not.toHaveBeenCalled();
 });

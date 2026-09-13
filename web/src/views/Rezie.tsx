@@ -22,7 +22,7 @@ export interface Obsluha {
   /** Dohraný zápas zavřít křížkem (true), nebo z debug módu znovu otevřít (false). */
   onZavrit: (zapasId: number) => void;
   /** Zpráva do chatu zápasu; bez ní se chat v kartě nekreslí. */
-  onZprava?: (zapasId: number, text: string) => Promise<unknown> | void;
+  onZprava?: (zapasId: number, text: string, odpovedNa: number | null) => Promise<unknown> | void;
   /** Ozubené kolečko: otevřít úpravu zápasu (nastavení, jméno lobby, sestava). */
   onUpravit?: (zapasId: number) => void;
   /** Admin smaže zprávu v chatu. */
@@ -316,7 +316,7 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
         <Chat
           zapas={zapas}
           ja={ja}
-          onOdeslat={(text) => obsluha.onZprava!(zapas.id, text)}
+          onOdeslat={(text, odpovedNa) => obsluha.onZprava!(zapas.id, text, odpovedNa)}
           onSmazat={obsluha.onSmazatZpravu ? (zpravaId) => obsluha.onSmazatZpravu!(zapas.id, zpravaId) : undefined}
           onUpravit={obsluha.onUpravitZpravu ? (zpravaId, text) => obsluha.onUpravitZpravu!(zapas.id, zpravaId, text) : undefined}
           ladeni={obsluha.ladeni}

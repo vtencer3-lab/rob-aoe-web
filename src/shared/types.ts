@@ -166,6 +166,8 @@ export interface ZpravaView {
   poslano: string;
   /** Autor ji po odeslání přepsal (šipka nahoru); ukazuje se „(editováno)“. */
   upraveno?: boolean;
+  /** Odpověď na jinou zprávu (migrace 026): náhled původní; null = bez odpovědi nebo původní smazaná. */
+  odpovedNa?: { id: number; jmeno: string; text: string } | null;
 }
 
 /**

@@ -20,6 +20,8 @@ export interface ZpravaRow {
   text: string;
   poslano: Date;
   upravenoV: Date | null;
+  /** Odpověď na jinou zprávu téhož zápasu (migrace 026); null = žádná, nebo původní už smazaná. */
+  odpovedNa: { id: number; jmeno: string; text: string } | null;
 }
 
 /** Přepíše vlastní zprávu; vrací false, když zpráva není autorova nebo není v zápase. */
@@ -42,14 +44,15 @@ export async function smazZpravu(zapasId: number, zpravaId: number): Promise<boo
  * Uloží zprávu už cenzurovanou; když cenzura něco změnila, původní znění jde
  * do `text_puvodni` (jen v databázi, do stavu nikdy) — ať se dá dohledat.
  */
-export async function pridejZpravu(zapasId: number, steamId: string, text: string): Promise<void> {
+export async function pridejZpravu(zapasId: number, steamId: string, text: string, odpovedNa: number | null = null): Promise<void> {
   const cisty = cenzuruj(text);
-  await getPool().query("INSERT INTO zprava (zapas_id, steam_id, text, text_puvodni) VALUES ($1, $2, $3, $4)", [
-    zapasId,
-    steamId,
-    cisty,
-    cisty === text ? null : text,
-  ]);
+  // Odpovídat jde jen na zprávu téhož zápasu; cizí nebo neexistující id se
+  // tiše zahodí — zpráva se pošle bez odkazu, ne s chybou.
+  await getPool().query(
+    `INSERT INTO zprava (zapas_id, steam_id, text, text_puvodni, odpoved_na)
+     VALUES ($1, $2, $3, $4, (SELECT id FROM zprava WHERE id = $5 AND zapas_id = $1))`,
+    [zapasId, steamId, cisty, cisty === text ? null : text, odpovedNa],
+  );
 }
 
 /**
@@ -86,15 +89,24 @@ export async function listZpravy(akceId: number, limit = ZPRAV_NA_ZAPAS): Promis
     text: string;
     poslano: Date;
     upraveno_v: Date | null;
+    o_id: number | null;
+    o_text: string | null;
+    o_alias: string | null;
+    o_steam_name: string | null;
+    o_steam_id: string | null;
   }>(
-    `SELECT id, zapas_id, steam_id, alias, steam_name, je_admin, tym, barva, text, poslano, upraveno_v FROM (
+    `SELECT id, zapas_id, steam_id, alias, steam_name, je_admin, tym, barva, text, poslano, upraveno_v,
+            o_id, o_text, o_alias, o_steam_name, o_steam_id FROM (
        SELECT z.id, z.zapas_id, z.steam_id, z.text, z.poslano, z.upraveno_v,
               p.alias, p.steam_name, p.je_admin, u.tym, u.barva,
+              o.id AS o_id, o.text AS o_text, op.alias AS o_alias, op.steam_name AS o_steam_name, o.steam_id AS o_steam_id,
               row_number() OVER (PARTITION BY z.zapas_id ORDER BY z.id DESC) AS n
          FROM zprava z
          JOIN zapas za ON za.id = z.zapas_id
          JOIN player p ON p.steam_id = z.steam_id
          LEFT JOIN ucastnik u ON u.zapas_id = z.zapas_id AND u.steam_id = z.steam_id
+         LEFT JOIN zprava o ON o.id = z.odpoved_na
+         LEFT JOIN player op ON op.steam_id = o.steam_id
         WHERE za.akce_id = $1
      ) t WHERE n <= $2 ORDER BY zapas_id, id`,
     [akceId, limit],
@@ -108,6 +120,7 @@ export async function listZpravy(akceId: number, limit = ZPRAV_NA_ZAPAS): Promis
       steamId: r.steam_id,
       alias: r.alias,
       steamName: r.steam_name,
+      odpovedNa: r.o_id === null || r.o_text === null ? null : { id: r.o_id, jmeno: r.o_alias ?? r.o_steam_name ?? r.o_steam_id ?? "?", text: r.o_text },
       jeAdmin: r.je_admin,
       tym: r.tym as Tym | null,
       barva: r.barva as Barva | null,
