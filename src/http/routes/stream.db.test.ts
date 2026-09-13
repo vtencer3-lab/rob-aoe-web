@@ -48,6 +48,9 @@ async function prvniPayload(stream: NodeJS.ReadableStream): Promise<AkceStavPayl
 
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
+  // Lhůta je globální (migrace 024) a TRUNCATE ji nevrátí — jinak by test
+  // dědil hodnotu z jiného souboru.
+  await getPool().query("UPDATE nastaveni_webu SET lhuta_aktivity_minut = 15");
 });
 
 afterAll(async () => {

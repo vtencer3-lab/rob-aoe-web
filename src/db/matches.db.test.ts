@@ -21,6 +21,9 @@ const HRACI = ["76561198000000050", "76561198000000051", "76561198000000052", "7
 
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
+  // Lhůta je globální (migrace 024) a TRUNCATE ji nevrátí — jinak by test
+  // dědil hodnotu z jiného souboru.
+  await getPool().query("UPDATE nastaveni_webu SET lhuta_aktivity_minut = 15");
   akceId = (await createAkce("večer")).id;
   for (const [i, steamId] of HRACI.entries()) {
     await upsertPlayer(steamId, false);
