@@ -94,6 +94,22 @@ it("červená v dalším nastavení fajfku bere", async () => {
   expect(screen.queryByTestId("fajfka-kontrola")).not.toBeInTheDocument();
 });
 
+// Po zmizení lobby (hra běží) zůstane sbalená sekce s poslední kontrolou
+// (uživatel 13. 9. 2026): s jakým nastavením lobby odešla do hry.
+it("po zmizení lobby ukáže sbalené poslední známé nastavení", async () => {
+  const onKontrola = vi.fn().mockResolvedValue({
+    nalezeno: false,
+    kontroly: [],
+    posledni: { kontroly: [{ klic: "mapa", stav: "ok", text: "Mapa: Arabia", sekce: "hlavni" }], kdy: "2026-09-13T17:09:00.000Z" },
+  });
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
+  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  const sekce = await screen.findByTestId("posledni-nastaveni");
+  expect(sekce).not.toHaveAttribute("open");
+  expect(sekce).toHaveTextContent(/poslední známé nastavení lobby/i);
+  expect(screen.getByTestId("kontroly-posledni")).toHaveTextContent("Mapa: Arabia");
+});
+
 it("lobby mimo seznam a chyba serveru mají vlastní hlášky a verdikt nemají", async () => {
   const onVerdikt = vi.fn();
   const onKontrola = vi.fn().mockResolvedValueOnce({ nalezeno: false, kontroly: [] }).mockRejectedValueOnce(new Error("Seznam lobby se nepodařilo stáhnout."));

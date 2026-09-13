@@ -1,3 +1,4 @@
+import type { Kontrola } from "../shared/lobbyKontrola.js";
 import type { PoolClient } from "pg";
 import { generatePassword, lobbyName, sestavSedadla } from "../matches/composition.js";
 import { jeAi, JMENO_AI } from "../shared/aiHraci.js";
@@ -204,6 +205,24 @@ export async function nahradSestavu(zapasId: number, sestava: SestavaVstup[]): P
 export async function setNastaveniZapasu(zapasId: number, nastaveni: Record<string, unknown>): Promise<void> {
   const { rowCount } = await getPool().query("UPDATE zapas SET nastaveni = $2::jsonb WHERE id = $1", [zapasId, JSON.stringify(nastaveni)]);
   if (!rowCount) throw new Error(`Zápas ${zapasId} neexistuje.`);
+}
+
+/** Poslední úspěšná kontrola lobby (migrace 025) — přepíše se každou další. */
+export async function ulozPosledniKontrolu(zapasId: number, kontroly: Kontrola[]): Promise<void> {
+  await getPool().query("UPDATE zapas SET posledni_kontrola = $2::jsonb, posledni_kontrola_v = now() WHERE id = $1", [
+    zapasId,
+    JSON.stringify(kontroly),
+  ]);
+}
+
+export async function getPosledniKontrola(zapasId: number): Promise<{ kontroly: Kontrola[]; kdy: Date } | null> {
+  const { rows } = await getPool().query<{ posledni_kontrola: unknown; posledni_kontrola_v: Date | null }>(
+    "SELECT posledni_kontrola, posledni_kontrola_v FROM zapas WHERE id = $1",
+    [zapasId],
+  );
+  const r = rows[0];
+  if (!r || !Array.isArray(r.posledni_kontrola) || !r.posledni_kontrola_v) return null;
+  return { kontroly: r.posledni_kontrola as Kontrola[], kdy: r.posledni_kontrola_v };
 }
 
 export async function setNazevLobby(zapasId: number, nazev: string): Promise<void> {

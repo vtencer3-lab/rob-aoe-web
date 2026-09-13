@@ -56,6 +56,18 @@ it("ukončení maže akci bez dohraného zápasu s vítězem, s výsledkem ji ne
   expect((await getPool().query("SELECT 1 FROM akce WHERE id = $1", [druha])).rowCount).toBe(1);
 });
 
+// Poslední úspěšná kontrola zůstává u zápasu (migrace 025), ať jde ukázat i po
+// zmizení lobby ze seznamu hry.
+it("poslední kontrola lobby se u zápasu pamatuje", async () => {
+  const { ulozPosledniKontrolu, getPosledniKontrola } = await import("./matches.js");
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  expect(await getPosledniKontrola(zapas.id)).toBeNull();
+  await ulozPosledniKontrolu(zapas.id, [{ klic: "mapa", stav: "ok", text: "Mapa: Arabia", sekce: "hlavni" }]);
+  const posledni = await getPosledniKontrola(zapas.id);
+  expect(posledni?.kontroly[0]?.text).toBe("Mapa: Arabia");
+  expect(posledni?.kdy).toBeInstanceOf(Date);
+});
+
 it("vytvoří 1v1 s pořadím, názvem lobby a heslem", async () => {
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   expect(zapas.poradi).toBe(1);

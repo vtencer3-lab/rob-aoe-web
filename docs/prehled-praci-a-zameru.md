@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 odpoledne, main 1.1.4, dev 1.2.0)
+# Přehled prací a záměrů (stav k 13. 9. 2026 večer, main 1.1.4, dev 1.3.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,11 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.2.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.3.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 296, databázové 166, frontend 272 — všechny zelené (13. 9. 2026 odpoledne |
-| Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 296, databázové 167, frontend 273 — všechny zelené (13. 9. 2026 večer, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -1379,6 +1378,19 @@ s vítězem zůstává celá.
   jen když má koho svolat; chladne 5 s pod klíčem „*“, admin slyší poplach na
   30 % jako u malého zvonku.
 
+### 3.46 Poslední známé nastavení lobby (1.3.0, 13. 9. 2026)
+
+Uživatel: když lobby ze seznamu hry zmizí („Lobby teď v seznamu ze hry
+není“), má zůstat sbalená sekce s posledním nastavením, které lobby měla.
+**Migrace 025:** `zapas.posledni_kontrola` (JSONB, řádky kontroly) a
+`posledni_kontrola_v`. Route `POST /api/zapas/:id/kontrola-lobby` po každé
+úspěšné kontrole výsledek uloží (`ulozPosledniKontrolu`); když lobby nenajde,
+přibalí `posledni: { kontroly, kdy }` (`getPosledniKontrola`). `KontrolaLobby`
+pak pod hláškou ukáže `<details>` „Poslední známé nastavení lobby — z HH:MM“
+(sbalené, `data-testid="posledni-nastaveni"`) se všemi řádky včetně stavů.
+Přežije obnovení stránky i jiného diváka — je to v databázi, ne ve stavu
+komponenty.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1603,6 +1615,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.1.3 | 15:50 | Třetí zkušební pozadí „Soumrak“, volba ze tří v debug záhlaví (§3.28) |
 | 1.1.4 | 16:05 | Soumrak jako výchozí pozadí; **release PR #17** do `main` (značka `v1.1.2`) |
 | 1.2.0 | 17:00 | Cinkání chatu ze hry i pro admina, Master Volume + Hlasitost chatu (70 × 50 = 35 %), super zvonek v hlavičce tabulky (§3.45) |
+| 1.3.0 | 19:30 | Poslední známé nastavení lobby po jejím zmizení, sbalená sekce; migrace 025 (§3.46) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

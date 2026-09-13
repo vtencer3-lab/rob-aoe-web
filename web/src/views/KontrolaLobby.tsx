@@ -120,6 +120,19 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
           Lobby teď v seznamu ze hry není — buď hra už běží, nebo lobby zmizela.
         </p>
       ) : null}
+      {vysledek && !vysledek.nalezeno && vysledek.posledni && vysledek.posledni.kontroly.length > 0 ? (
+        // Poslední známý stav před zmizením (uživatel 13. 9. 2026), sbalený:
+        // Rob se podívá, s jakým nastavením lobby odešla do hry.
+        <details className="dalsi-nastaveni" data-testid="posledni-nastaveni">
+          <summary>
+            Poslední známé nastavení lobby{" "}
+            <span className="zaloha">
+              — z {new Date(vysledek.posledni.kdy).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </summary>
+          <SeznamKontrol kontroly={vysledek.posledni.kontroly} testId="kontroly-posledni" />
+        </details>
+      ) : null}
       {nalezena ? (
         <>
           {/* Pre-Lobby: co se naklikalo v okně zakládání lobby. Po založení
