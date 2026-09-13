@@ -1,10 +1,3 @@
-import smich1 from "./assets/taunty/smich-1.mp3";
-import smich2 from "./assets/taunty/smich-2.mp3";
-import smich3 from "./assets/taunty/smich-3.mp3";
-import smich4 from "./assets/taunty/smich-4.mp3";
-import smich5 from "./assets/taunty/smich-5.mp3";
-import smich6 from "./assets/taunty/smich-6.mp3";
-import { cisloTauntu } from "../../src/shared/taunty.js";
 import { spustPrehravacHlasu } from "./hlas.js";
 import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -46,10 +39,6 @@ import { prehraj } from "./zvuk.js";
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
-/** Taunt 11 (smích) ze hry — šest náhodných variant jako ve hře. */
-const SMICH = [smich1, smich2, smich3, smich4, smich5, smich6];
-const TAUNT_SMICH = 11;
-
 /** Dvě vnořené šipky (chevrony) pro sbalení a rozbalení lišty. */
 function DvojitaSipka({ smer }: { smer: "nahoru" | "dolu" }) {
   const d = smer === "nahoru" ? "M3 9l5-5 5 5M3 14l5-5 5 5" : "M3 3l5 5 5-5M3 8l5 5 5-5";
@@ -202,10 +191,10 @@ export function App() {
       // uživatel 13. 9. 2026) k tomu všem zazvoní zvonem z radnice.
       const noveVsechny = (z.zpravy ?? []).filter((m) => m.id > p.zprava);
       const nove = noveVsechny.filter((m) => m.steamId !== me.steamId);
-      // Taunt 11 (smích) zní jako ve hře — i autorovi (uživatel 14. 9. 2026)
-      // a místo cinknutí; ostatní taunty zvuk zatím nemají (shared/taunty.ts).
-      if (noveVsechny.some((m) => cisloTauntu(m.text) === TAUNT_SMICH)) prehraj(SMICH[Math.floor(Math.random() * SMICH.length)]!, hlasitostUdalosti(hlasitostChatu));
-      else if (nove.length > 0) prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
+      // Taunty zatím zvuk nemají: nahrávky ze hry se v instalaci nenašly
+      // (uživatel 14. 9. 2026: „to mají být přesně ty ze hry“; smích z Wwise
+      // byl jiný zvuk). Až budou soubory, hrají tady místo cinknutí, i autorovi.
+      if (nove.length > 0) prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
       if (nove.some(jeDulezita)) prehraj(zvonUrl);
       if (noveVsechny.length > 0) continue;
       if (me.jeAdmin) {
