@@ -36,7 +36,7 @@ import { prehraj } from "./zvuk.js";
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
-/** Zkušební pozadí; klíč = přípona třídy `pozadi-<klic>` na `<html>` (původní je bez třídy). */
+/** Zkušební pozadí; klíč = přípona třídy `pozadi-<klic>` na `<html>` (výchozí soumrak je bez třídy). */
 const POZADI = [
   { klic: "puvodni", popisek: "Původní lvi" },
   { klic: "nove", popisek: "Nové lvy" },
@@ -44,13 +44,13 @@ const POZADI = [
 ] as const;
 type Pozadi = (typeof POZADI)[number]["klic"];
 
-/** Starší dvoustavový klíč `rezie.pozadi-nove` („0“ = původní) se převezme, ať volba nezmizí. */
+/**
+ * Výchozí je soumrak (uživatel 13. 9. 2026: „nastav tu poslední verzi jako
+ * default“). Starší dvoustavový klíč `rezie.pozadi-nove` se už nečte — kdo si
+ * něco vybral pod novým klíčem, má to; ostatní dostanou soumrak.
+ */
 function nactiStarouVolbuPozadi(): Pozadi {
-  try {
-    return localStorage.getItem("rezie.pozadi-nove") === "0" ? "puvodni" : "nove";
-  } catch {
-    return "nove";
-  }
+  return "soumrak";
 }
 
 /** Uložená volba z výčtu (localStorage); neznámá nebo chybějící hodnota = výchozí. */
@@ -107,16 +107,17 @@ export function App() {
   // očima hráče; debug mód ukáže tlačítka zkušebních hráčů.
   const [pohledUzivatele, setPohledUzivatele] = useUlozenyPrepinac("rezie.pohled-uzivatele");
   const [ladeni, setLadeni] = useUlozenyPrepinac("rezie.ladeni");
-  // Zkouška pozadí: původní lvi, lvi překreslení podle státního znaku (výchozí)
-  // a od 13. 9. 2026 třetí, soumrak na náměstí (uživatel: „přidej do
-  // přepínače ještě tuto verzi“). Volba pod pohledem uživatele, ať jde porovnat.
+  // Zkouška pozadí: původní lvi, lvi překreslení podle státního znaku a od
+  // 13. 9. 2026 soumrak na náměstí, který je výchozí. Volba pod pohledem
+  // uživatele, ať jde porovnat.
   const [pozadi, setPozadi] = useUlozenaVolba("rezie.pozadi", POZADI, nactiStarouVolbuPozadi);
   const [upravovany, setUpravovany] = useState<number | null>(null);
   // Ozubené kolečko vedle jména: hlasitost (jen tenhle prohlížeč) a pro admina lhůta aktivity.
   const [nastaveniVidet, setNastaveniVidet] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   useEffect(() => {
-    for (const p of POZADI) document.documentElement.classList.toggle(`pozadi-${p.klic}`, p.klic !== "puvodni" && pozadi === p.klic);
+    // Výchozí (soumrak) je v CSS bez třídy; ostatní mají vlastní třídu.
+    for (const p of POZADI) document.documentElement.classList.toggle(`pozadi-${p.klic}`, p.klic !== "soumrak" && pozadi === p.klic);
   }, [pozadi]);
   const { stav, spojeno, obnov, novaVerze } = useAkceStav();
 
