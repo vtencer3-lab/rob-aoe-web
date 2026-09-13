@@ -63,7 +63,9 @@ export function PushToTalk({ onKousek }: Props) {
         }}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <span aria-hidden="true">🎙</span> {mluvi ? "Mluvím…" : "Mluvit"}
+        <span aria-hidden="true">🎙</span>
+        {mluvi ? <span className="nahrava" aria-hidden="true" /> : null}
+        <span className="sr-only">{mluvi ? "Mluvím" : "Mluvit"}</span>
       </button>
       <button
         type="button"

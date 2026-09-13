@@ -29,6 +29,8 @@ export interface Obsluha {
   onSmazatZpravu?: (zapasId: number, zpravaId: number) => Promise<unknown> | void;
   /** Vlastní zprávu jde přepsat (šipka nahoru). */
   onUpravitZpravu?: (zapasId: number, zpravaId: number, text: string) => Promise<unknown> | void;
+  /** Push-to-talk admina: kam odcházejí kousky nahrávky (jen režie). */
+  onHlas?: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string }) => Promise<unknown>;
   /** Debug mód pro chat (přepínání autora). */
   ladeni?: boolean;
 }
@@ -318,6 +320,8 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
           onSmazat={obsluha.onSmazatZpravu ? (zpravaId) => obsluha.onSmazatZpravu!(zapas.id, zpravaId) : undefined}
           onUpravit={obsluha.onUpravitZpravu ? (zpravaId, text) => obsluha.onUpravitZpravu!(zapas.id, zpravaId, text) : undefined}
           ladeni={obsluha.ladeni}
+          jaAdmin
+          onHlas={obsluha.onHlas ? (telo) => obsluha.onHlas!(zapas.id, telo) : undefined}
         />
       ) : null}
     </article>

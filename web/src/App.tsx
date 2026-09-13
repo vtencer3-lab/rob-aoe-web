@@ -396,6 +396,8 @@ export function App() {
     onSmazatZpravu: (zapasId: number, zpravaId: number) => hlidej(() => api.smazatZpravu(zapasId, zpravaId)),
     onUpravitZpravu: (zapasId: number, zpravaId: number, text: string) => hlidej(() => api.upravitZpravu(zapasId, zpravaId, text)),
     onUpravit: (zapasId: number) => setUpravovany(zapasId),
+    // Push-to-talk jen v režii (uživatel 13. 9. 2026), karta hráče ho nemá.
+    onHlas: (zapasId: number, telo: Parameters<typeof api.hlas>[1]) => api.hlas(zapasId, telo),
     ladeni: admin && ladeni,
   };
   // Ozubené kolečko: který zápas je zrovna otevřený k úpravě. Zápas se bere
@@ -677,7 +679,7 @@ export function App() {
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} onHlas={me.jeAdmin ? (telo) => api.hlas(zapas.id, telo) : undefined} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ) : (
                   <KartaHrace
@@ -687,7 +689,7 @@ export function App() {
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} onHlas={me.jeAdmin ? (telo) => api.hlas(zapas.id, telo) : undefined} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ),
               )
