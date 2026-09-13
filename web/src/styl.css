@@ -1902,6 +1902,12 @@ body.bez-scrollu { overflow: hidden; }
 .chat .text { overflow-wrap: anywhere; }
 /* Důležitá zpráva admina (vykřičník na začátku): tučně; poznámka pod polem, když ji admin píše. */
 .chat .text.dulezita { font-weight: 700; }
+/* 7TV emoty v řádku textu; široké (WIDE) se roztáhnou, samotný vykřičník admina
+   je DinkDonk o kus větší. Taunt ze hry: číslo zlatě, text kurzívou. */
+.chat .emote { height: 1.7em; width: auto; vertical-align: middle; margin: -0.35em 0.1em; }
+.chat .emote.velky { height: 2.6em; }
+.chat .taunt { font-style: italic; }
+.chat .taunt b { font-style: normal; color: var(--zlato); }
 .chat .dulezita-poznamka { display: block; margin-top: 0.3rem; color: var(--akcent); font-size: 0.8rem; }
 .chat li.moje .text { color: var(--zlato-svetle); }
 .chat .psani { display: flex; gap: 0.5rem; }

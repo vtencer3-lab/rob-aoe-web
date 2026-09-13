@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, main 1.1.4, dev 1.4.5)
+# Přehled prací a záměrů (stav k 14. 9. 2026 ráno, main 1.1.4, dev 1.5.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.4.5, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.5.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 298, databázové 168, frontend 276 — všechny zelené (13. 9. 2026 v noci, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 300, databázové 168, frontend 280 — všechny zelené (14. 9. 2026 ráno, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -1503,6 +1503,37 @@ nemá se sám posouvat — neaktivní okno nevadí, rozhoduje výřez.
 drží `naObrazovce`; mimo obrazovku se nová zpráva chová jako u odrolovaného
 čtenáře: tlačítko „Nové zprávy“ a oddělovač, žádný skok.
 
+**Dva chaty a oddělovač (1.5.0, uživatel):** admin má týž chat dvakrát
+(režie a karta hráče). Viditelnost se sdílí podle zápasu
+(`viditelneChaty`, `nekdoNaObrazovce`): posouvají se oba, dokud je na
+obrazovce kterýkoli z nich; „Nové zprávy“ přijde až mimo oba. Oddělovač
+dřív mimo obrazovku bledl a mizel dřív, než se k němu člověk vrátil —
+pozorovatel měl kořen v seznamu, ne v okně, takže „viděl“ i odrolovaný
+chat. Blednutí se teď nezačíná, dokud chat není na obrazovce; po návratu
+je oddělovač vidět dole v okně chatu a teprve pak začne mizet.
+
+### 3.52 7TV emoty a taunty ze hry v chatu (1.5.0, 14. 9. 2026)
+
+- **Samotný vykřičník od admina** byl po odebrání značky prázdná zpráva
+  (uživatel: „druhý admin ji nevidí“). Teď je to emote **DinkDonk** o kus
+  větší (`EMOTE_VYKRICNIK`, `.emote.velky`); důležitá zpráva se zvonem
+  zůstává.
+- **7TV emoty Robova kanálu:** server `GET /api/emoty`
+  (`routes/emoty.ts`) stáhne sadu z `7tv.io/v3/users/twitch/160028137`
+  (robdiesalot) a hodinu ji drží; prohlížeč (`emoty.ts`, `useEmoty`) ji
+  načte jednou a slovo, které je přesně jménem emotu (velikost písmen
+  rozhoduje), kreslí jako `<img class="emote">` z `cdn.7tv.app/emote/<id>/2x.webp`
+  (`rozsekejNaEmoty`). Sada měla 13. 9. 2026 529 emotů. Bez 7TV je chat jen
+  bez obrázků.
+- **Taunty ze hry:** zpráva, která je jen číslem 1–105, se ukáže jako
+  taunt „**11** Laugh“ (`shared/taunty.ts`, texty doslova z herního
+  `key-value-strings-utf8.txt`, klíče 11400–11504). Zvuk má zatím jen smích
+  (11): ve Wwise bankách hry je jediná taunt událost `Play_Taunt_11_Random`
+  se šesti náhodnými variantami → `web/src/assets/taunty/smich-1..6.mp3`,
+  hraje se místo cinknutí na hlasitost chatu. Ostatní taunty tam jako
+  číslované události nejsou (prohledány event ID všech pěti bank); jejich
+  zvuk by chtěl rozbor datového souboru hry — zatím jen text.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1739,6 +1770,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.5.0 | 14. 9. 0:40 | 7TV emoty v chatu, „!“ = DinkDonk, taunty ze hry (smích se zvukem); viditelnost chatu sdílená mezi oběma chaty admina, oddělovač nebledne mimo obrazovku (§3.51, §3.52) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

@@ -1,3 +1,10 @@
+import smich1 from "./assets/taunty/smich-1.mp3";
+import smich2 from "./assets/taunty/smich-2.mp3";
+import smich3 from "./assets/taunty/smich-3.mp3";
+import smich4 from "./assets/taunty/smich-4.mp3";
+import smich5 from "./assets/taunty/smich-5.mp3";
+import smich6 from "./assets/taunty/smich-6.mp3";
+import { cisloTauntu } from "../../src/shared/taunty.js";
 import { spustPrehravacHlasu } from "./hlas.js";
 import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -39,6 +46,10 @@ import { prehraj } from "./zvuk.js";
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
+/** Taunt 11 (smích) ze hry — šest náhodných variant jako ve hře. */
+const SMICH = [smich1, smich2, smich3, smich4, smich5, smich6];
+const TAUNT_SMICH = 11;
+
 /** Dvě vnořené šipky (chevrony) pro sbalení a rozbalení lišty. */
 function DvojitaSipka({ smer }: { smer: "nahoru" | "dolu" }) {
   const d = smer === "nahoru" ? "M3 9l5-5 5 5M3 14l5-5 5 5" : "M3 3l5 5 5-5M3 8l5 5 5-5";
@@ -191,7 +202,10 @@ export function App() {
       // uživatel 13. 9. 2026) k tomu všem zazvoní zvonem z radnice.
       const nove = (z.zpravy ?? []).filter((m) => m.id > p.zprava && m.steamId !== me.steamId);
       if (nove.length > 0) {
-        prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
+        // Taunt 11 (smích) zní místo cinknutí — jako ve hře; ostatní taunty
+        // zvuk zatím nemají (viz shared/taunty.ts).
+        if (nove.some((m) => cisloTauntu(m.text) === TAUNT_SMICH)) prehraj(SMICH[Math.floor(Math.random() * SMICH.length)]!, hlasitostUdalosti(hlasitostChatu));
+        else prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
         if (nove.some(jeDulezita)) prehraj(zvonUrl);
         continue;
       }

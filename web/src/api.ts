@@ -92,6 +92,8 @@ export const api = {
   /** Zvonek u hráče: svolání do radnice, hráči zazvoní poplach. */
   svolat: (akceId: number, steamId: string) =>
     fetch(cesta(`/api/akce/${akceId}/hraci/${steamId}/svolat`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
+  /** Sada 7TV emotů Robova kanálu (server ji hodinu drží). */
+  emoty: () => fetch(cesta("/api/emoty")).then((r) => json<{ emoty: { jmeno: string; url: string; siroky: boolean }[] }>(r)),
   /** Push-to-talk admina: jeden kousek nahrávky (nebo značka konce) pro účastníky zápasu. */
   hlas: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string }) =>
     fetch(cesta(`/api/zapas/${zapasId}/hlas`), {

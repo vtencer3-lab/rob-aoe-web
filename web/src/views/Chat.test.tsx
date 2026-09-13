@@ -1,7 +1,30 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import type { ZapasView } from "../../../src/shared/types.js";
 import { Chat } from "./Chat.js";
+import { zapomenEmoty } from "../emoty.js";
+
+vi.mock("../api.js", () => ({
+  api: { emoty: vi.fn().mockResolvedValue({ emoty: [{ jmeno: "DinkDonk", url: "https://cdn.7tv.app/emote/dink", siroky: false }, { jmeno: "KEKW", url: "https://cdn.7tv.app/emote/kekw", siroky: false }] }) },
+}));
+
+afterEach(() => zapomenEmoty());
+
+// 7TV emoty a taunty (uživatel 13. 9. 2026): samotný vykřičník admina je
+// DinkDonk (větší), slovo se jménem emotu je obrázek, číslo tauntu je taunt.
+it("vykřičník admina je DinkDonk, KEKW je obrázek, 11 je taunt Laugh", async () => {
+  const zpravy: NonNullable<ZapasView["zpravy"]> = [
+    { id: 1, steamId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "!", poslano: "2026-09-12T12:01:00.000Z" },
+    { id: 2, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "to je KEKW fakt", poslano: "2026-09-12T12:02:00.000Z" },
+    { id: 3, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "11", poslano: "2026-09-12T12:03:00.000Z" },
+  ];
+  render(<Chat ja="a" onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
+  const dink = await screen.findByAltText("DinkDonk");
+  expect(dink).toHaveClass("velky");
+  expect(dink).toHaveAttribute("src", "https://cdn.7tv.app/emote/dink/3x.webp");
+  expect(screen.getByAltText("KEKW")).toHaveAttribute("src", "https://cdn.7tv.app/emote/kekw/2x.webp");
+  expect(screen.getByTestId("taunt")).toHaveTextContent("11 Laugh");
+});
 
 const zapas = (zpravy: ZapasView["zpravy"]): ZapasView => ({
   id: 7,

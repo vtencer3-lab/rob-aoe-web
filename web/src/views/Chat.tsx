@@ -1,3 +1,5 @@
+import { EMOTE_VYKRICNIK, obrazekEmotu, rozsekejNaEmoty, useEmoty, type Emote } from "../emoty.js";
+import { cisloTauntu, TAUNTY } from "../../../src/shared/taunty.js";
 import type { OdesliKousek } from "../hlas.js";
 import { PushToTalk } from "./PushToTalk.js";
 import { jeDulezita, textZpravy } from "../../../src/shared/cenzura.js";
@@ -30,6 +32,23 @@ const ADMIN_JMENA: Readonly<Record<string, string>> = {
   "76561198014056480": "Jouki",
   "76561198014710095": "Tonner",
 };
+
+/** Které instance chatu (podle zápasu) jsou právě aspoň kouskem na obrazovce. */
+const viditelneChaty = new Map<number, Set<symbol>>();
+
+function oznacViditelnost(zapasId: number, klic: symbol, vidim: boolean): void {
+  let mnozina = viditelneChaty.get(zapasId);
+  if (!mnozina) {
+    mnozina = new Set();
+    viditelneChaty.set(zapasId, mnozina);
+  }
+  if (vidim) mnozina.add(klic);
+  else mnozina.delete(klic);
+}
+
+function nekdoNaObrazovce(zapasId: number): boolean {
+  return (viditelneChaty.get(zapasId)?.size ?? 0) > 0;
+}
 
 /** Událost okna, kterou režie sbalí chat zápasu (detail = id zápasu). */
 export const UDALOST_SBALIT_CHAT = "aoe:sbalit-chat";
@@ -118,22 +137,33 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
   // Chat se sám posouvá jen, když je aspoň kousek na obrazovce (uživatel
   // 13. 9. 2026): kdo ho má odrolovaný pryč (třeba na druhém monitoru pod
   // okrajem), by jinak přišel o místo, kde přestal číst. Neaktivní okno
-  // nevadí — rozhoduje výřez, ne fokus.
-  const naObrazovce = useRef(true);
+  // nevadí — rozhoduje výřez, ne fokus. Admin má týž chat dvakrát (režie
+  // a karta hráče): stačí, když je na obrazovce kterýkoli z nich, pak se
+  // posouvají oba; „Nové zprávy“ dostane až ten, kdo není na žádném.
+  const [naObrazovce, setNaObrazovce] = useState(true);
+  const klicInstance = useRef(Symbol("chat"));
   useEffect(() => {
     const el = seznam.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    const zapasId = zapas.id;
+    const klic = klicInstance.current;
+    oznacViditelnost(zapasId, klic, true);
+    if (!el || typeof IntersectionObserver === "undefined") return () => oznacViditelnost(zapasId, klic, false);
     const pozorovatel = new IntersectionObserver((zaznamy) => {
-      naObrazovce.current = zaznamy.some((z) => z.isIntersecting);
+      const vidim = zaznamy.some((z) => z.isIntersecting);
+      oznacViditelnost(zapasId, klic, vidim);
+      setNaObrazovce(vidim);
     });
     pozorovatel.observe(el);
-    return () => pozorovatel.disconnect();
-  }, []);
+    return () => {
+      pozorovatel.disconnect();
+      oznacViditelnost(zapasId, klic, false);
+    };
+  }, [zapas.id]);
 
   useEffect(() => {
     const el = seznam.current;
     if (!el) return;
-    if (uDna.current && naObrazovce.current) {
+    if (uDna.current && nekdoNaObrazovce(zapas.id)) {
       el.scrollTop = el.scrollHeight;
       posledniVidene.current = posledniId;
     } else if (zpravy.length > 0 && posledniId > posledniVidene.current) {
@@ -156,6 +186,11 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
     const cara = oddelovac.current;
     const el = seznam.current;
     if (oddelovacOd === null || !cara || !el || typeof IntersectionObserver === "undefined") return;
+    // Mimo obrazovku se blednutí nezačíná: kořen pozorovatele je seznam, ne
+    // okno, takže by oddělovač „byl vidět“ i s chatem odrolovaným pryč a
+    // zmizel by dřív, než se k němu člověk vrátí. Až chat přijede na
+    // obrazovku, efekt se spustí znovu a oddělovač je vidět dole v okně.
+    if (!naObrazovce) return;
     let casovac: ReturnType<typeof setTimeout> | undefined;
     const pozorovatel = new IntersectionObserver(
       (zaznamy) => {
@@ -174,7 +209,7 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
       pozorovatel.disconnect();
       clearTimeout(casovac);
     };
-  }, [oddelovacOd]);
+  }, [oddelovacOd, naObrazovce]);
 
   // Po skoku dolů má být oddělovač vidět nahoře ve výřezu, ne pod ním — jinak
   // není vidět, odkud číst. Sjede se tedy k němu, ne na dno; když se pod ním
@@ -238,6 +273,8 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
   };
 
   const prvniNova = oddelovacOd === null ? null : (zpravy.find((z) => z.id > oddelovacOd)?.id ?? null);
+  // 7TV emoty Robova kanálu: slovo, které je jménem emotu, je obrázek.
+  const emoty = useEmoty();
 
   return (
     <section className={sbaleny ? "chat sbaleny" : "chat"} aria-label={`Chat zápasu #${zapas.poradi}`} data-testid="chat">
@@ -310,7 +347,7 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
                       {z.jmeno}
                     </span>
                     <span className={jeDulezita(z) ? "text dulezita" : "text"}>
-                      {textZpravy(z)}
+                      <TextZpravy zprava={z} emoty={emoty} />
                       {z.upraveno ? <small className="editovano">(editováno)</small> : null}
                     </span>
                     {ladeni ? (
@@ -374,4 +411,39 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
       </div>
     </section>
   );
+}
+
+/**
+ * Text zprávy s emoty a taunty (uživatel 13. 9. 2026):
+ * - samotný vykřičník od admina (důležitá zpráva bez textu) = emote DinkDonk,
+ *   o kus větší — jinak by po odebrání vykřičníku nezbylo nic k vidění;
+ * - zpráva, která je jen číslem tauntu ze hry, = „11 Laugh“ jako ve hře;
+ * - jinak slova, která jsou jménem emotu ze sady, jako obrázky z CDN 7TV.
+ */
+function TextZpravy({ zprava, emoty }: { zprava: { jeAdmin: boolean; text: string }; emoty: Map<string, Emote> }) {
+  const text = textZpravy(zprava);
+  if (jeDulezita(zprava) && text === "") {
+    const dink = emoty.get(EMOTE_VYKRICNIK);
+    return dink ? <ObrazekEmotu emote={dink} velky /> : <>!</>;
+  }
+  const taunt = cisloTauntu(zprava.text);
+  if (taunt !== null) {
+    return (
+      <span className="taunt" data-testid="taunt">
+        <b>{taunt}</b> {TAUNTY[taunt]}
+      </span>
+    );
+  }
+  return (
+    <>
+      {rozsekejNaEmoty(text, emoty).map((kus, i) =>
+        kus.typ === "emote" ? <ObrazekEmotu key={i} emote={kus.emote} /> : <Fragment key={i}>{kus.text}</Fragment>,
+      )}
+    </>
+  );
+}
+
+function ObrazekEmotu({ emote, velky = false }: { emote: Emote; velky?: boolean }) {
+  const tridy = ["emote", emote.siroky ? "siroky" : "", velky ? "velky" : ""].filter(Boolean).join(" ");
+  return <img className={tridy} src={obrazekEmotu(emote, velky ? 3 : 2)} alt={emote.jmeno} title={emote.jmeno} loading="lazy" decoding="async" />;
 }

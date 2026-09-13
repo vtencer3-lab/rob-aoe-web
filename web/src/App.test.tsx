@@ -6,6 +6,7 @@ import { api } from "./api.js";
 import { prehraj } from "./zvuk.js";
 import { useAkceStav } from "./useAkceStav.js";
 
+vi.mock("./emoty.js", async (puvodni) => ({ ...(await puvodni<typeof import("./emoty.js")>()), useEmoty: () => new Map() }));
 vi.mock("./zvuk.js", () => ({ prehraj: vi.fn(), naZablokovaniZvuku: () => () => {}, hlasitost: () => 70, nastavHlasitost: vi.fn(), hlasitostChatu: () => 50, nastavHlasitostChatu: vi.fn(), hlasitostUdalosti: (podil: number, master = 70) => (master * podil) / 100, VYCHOZI_HLASITOST: 70, VYCHOZI_HLASITOST_CHATU: 50 }));
 vi.mock("./api.js", () => ({
   api: {
