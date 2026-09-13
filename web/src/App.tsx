@@ -200,15 +200,14 @@ export function App() {
       // Cizí zpráva v chatu cinkne (Play_Chat_Received ze hry) na hlasitost
       // chatu — i adminovi. Důležitá zpráva (admin + vykřičník na začátku,
       // uživatel 13. 9. 2026) k tomu všem zazvoní zvonem z radnice.
-      const nove = (z.zpravy ?? []).filter((m) => m.id > p.zprava && m.steamId !== me.steamId);
-      if (nove.length > 0) {
-        // Taunt 11 (smích) zní místo cinknutí — jako ve hře; ostatní taunty
-        // zvuk zatím nemají (viz shared/taunty.ts).
-        if (nove.some((m) => cisloTauntu(m.text) === TAUNT_SMICH)) prehraj(SMICH[Math.floor(Math.random() * SMICH.length)]!, hlasitostUdalosti(hlasitostChatu));
-        else prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
-        if (nove.some(jeDulezita)) prehraj(zvonUrl);
-        continue;
-      }
+      const noveVsechny = (z.zpravy ?? []).filter((m) => m.id > p.zprava);
+      const nove = noveVsechny.filter((m) => m.steamId !== me.steamId);
+      // Taunt 11 (smích) zní jako ve hře — i autorovi (uživatel 14. 9. 2026)
+      // a místo cinknutí; ostatní taunty zvuk zatím nemají (shared/taunty.ts).
+      if (noveVsechny.some((m) => cisloTauntu(m.text) === TAUNT_SMICH)) prehraj(SMICH[Math.floor(Math.random() * SMICH.length)]!, hlasitostUdalosti(hlasitostChatu));
+      else if (nove.length > 0) prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
+      if (nove.some(jeDulezita)) prehraj(zvonUrl);
+      if (noveVsechny.length > 0) continue;
       if (me.jeAdmin) {
         if (p.faze !== "hraje_se" && z.fazeLobby === "hraje_se") prehraj(zvonUrl);
         continue;
