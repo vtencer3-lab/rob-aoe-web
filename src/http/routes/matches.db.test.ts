@@ -583,7 +583,7 @@ it("kontrola bez lobby v seznamu vrátí nalezeno=false, cizí hráč 403", asyn
   const app = buildServer({ nactiInzeraty: async () => [] });
   const zapas = await vytvorZapas(app);
   const res = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: robSid } });
-  expect(res.json()).toEqual({ nalezeno: false, kontroly: [] });
+  expect(res.json()).toEqual({ nalezeno: false, kontroly: [], posledni: null });
 
   const cizi = "76561198000000099";
   await upsertPlayer(cizi, false);

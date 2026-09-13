@@ -1146,6 +1146,9 @@ button.odebrat:hover { color: var(--chyba); }
 .dalsi-nastaveni summary { cursor: pointer; color: var(--tlumene); }
 .dalsi-nastaveni summary .zaloha { margin: 0; }
 .dalsi-nastaveni .kontroly { font-size: 0.9rem; }
+/* Tělo sbalovací sekce; výšku mu animuje Skladaci (Web Animations). Vnořené
+   sekce v „Nastavení hry“ se odsadí, ať je vidět, co patří pod co. */
+.dalsi-nastaveni .skladaci-telo > .dalsi-nastaveni { margin-left: 1rem; }
 .dalsi-nastaveni .mrizka { margin-top: 0.5rem; }
 
 /* Očekávané nastavení lobby v panelu akce. */

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { lobbyVPoradku, type Kontrola, type KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 
 /** Jak často se kontrola opakuje sama, dokud se v lobby sedí. */
@@ -41,7 +41,14 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
   const [vysledek, setVysledek] = useState<KontrolaLobbyVysledek | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
   const [kontroluji, setKontroluji] = useState(false);
-  const [rozbalene, setRozbalene] = useState(true);
+  // Každá ze tří sekcí si pamatuje, jak si ji kdo sbalil (prohlížeč), i přes
+  // další kontroly a obnovení stránky; totéž platí uvnitř „Nastavení hry“.
+  const [prelobbyOtevrene, setPrelobbyOtevrene] = useUlozenyStav("kontrola.sekce.prelobby", true);
+  const [hlavniOtevrene, setHlavniOtevrene] = useUlozenyStav("kontrola.sekce.hlavni", true);
+  const [dalsiOtevrene, setDalsiOtevrene] = useUlozenyStav("kontrola.sekce.dalsi", true);
+  // „Nastavení hry“ (poslední známý stav po zmizení lobby) je sbalené vždy
+  // napoprvé; nepamatuje se.
+  const [nastaveniHryOtevrene, setNastaveniHryOtevrene] = useState(false);
   const probiha = useRef(false);
   const zivy = useRef(true);
 
@@ -121,42 +128,178 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
         </p>
       ) : null}
       {vysledek && !vysledek.nalezeno && vysledek.posledni && vysledek.posledni.kontroly.length > 0 ? (
-        // Poslední známý stav před zmizením (uživatel 13. 9. 2026), sbalený:
-        // Rob se podívá, s jakým nastavením lobby odešla do hry.
-        <details className="dalsi-nastaveni" data-testid="posledni-nastaveni">
-          <summary>
-            Poslední známé nastavení lobby{" "}
-            <span className="zaloha">
-              — z {new Date(vysledek.posledni.kdy).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-          </summary>
-          <SeznamKontrol kontroly={vysledek.posledni.kontroly} testId="kontroly-posledni" />
-        </details>
+        // „Nastavení hry“ (uživatel 13. 9. 2026): poslední známý stav před
+        // zmizením lobby, sbalený; uvnitř tytéž tři sekce jako u živé
+        // kontroly, rozbalené tak, jak si je kdo nechal.
+        <Skladaci
+          testId="posledni-nastaveni"
+          otevreno={nastaveniHryOtevrene}
+          onPrepnout={setNastaveniHryOtevrene}
+          hlava={
+            <>
+              Nastavení hry{" "}
+              <span className="zaloha">
+                — poslední známé, z {new Date(vysledek.posledni.kdy).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </>
+          }
+        >
+          <Sekce
+            nazev="Pre-Lobby"
+            kontroly={vysledek.posledni.kontroly.filter((k) => k.sekce === "prelobby")}
+            testId="posledni-prelobby"
+            seznamTestId="posledni-kontroly-prelobby"
+            otevreno={prelobbyOtevrene}
+            onPrepnout={setPrelobbyOtevrene}
+          />
+          <Sekce
+            nazev="Nastavení Lobby"
+            kontroly={vysledek.posledni.kontroly.filter((k) => k.sekce === "hlavni")}
+            testId="posledni-hlavni"
+            seznamTestId="posledni-kontroly-hlavni"
+            otevreno={hlavniOtevrene}
+            onPrepnout={setHlavniOtevrene}
+          />
+          <Sekce
+            nazev="Další nastavení"
+            kontroly={vysledek.posledni.kontroly.filter((k) => k.sekce === "dalsi")}
+            testId="posledni-dalsi"
+            seznamTestId="posledni-kontroly-dalsi"
+            otevreno={dalsiOtevrene}
+            onPrepnout={setDalsiOtevrene}
+          />
+        </Skladaci>
       ) : null}
       {nalezena ? (
         <>
           {/* Pre-Lobby: co se naklikalo v okně zakládání lobby. Po založení
               se s tím už nedá hnout, takže sedí zvlášť od herního panelu. */}
-          <Sekce nazev="Pre-Lobby" kontroly={prelobby} testId="prelobby-nastaveni" seznamTestId="kontroly-prelobby" />
-          <Sekce nazev="Nastavení Lobby" kontroly={hlavni} testId="hlavni-nastaveni" seznamTestId="kontroly" />
-          <Sekce
-            nazev="Další nastavení"
-            kontroly={dalsi}
-            testId="dalsi-nastaveni"
-            seznamTestId="kontroly-dalsi"
-            otevreno={rozbalene}
-            onPrepnout={setRozbalene}
-          />
+          <Sekce nazev="Pre-Lobby" kontroly={prelobby} testId="prelobby-nastaveni" seznamTestId="kontroly-prelobby" otevreno={prelobbyOtevrene} onPrepnout={setPrelobbyOtevrene} />
+          <Sekce nazev="Nastavení Lobby" kontroly={hlavni} testId="hlavni-nastaveni" seznamTestId="kontroly" otevreno={hlavniOtevrene} onPrepnout={setHlavniOtevrene} />
+          <Sekce nazev="Další nastavení" kontroly={dalsi} testId="dalsi-nastaveni" seznamTestId="kontroly-dalsi" otevreno={dalsiOtevrene} onPrepnout={setDalsiOtevrene} />
         </>
       ) : null}
     </section>
   );
 }
 
+/** Jak dlouho se sekce rozbaluje a sbaluje. */
+const SKLADANI_MS = 280;
+
+/**
+ * Zapamatovaný stav ano/ne v prohlížeči (localStorage); bez úložiště platí
+ * výchozí jen do obnovení stránky.
+ */
+function useUlozenyStav(klic: string, vychozi: boolean): [boolean, (v: boolean) => void] {
+  const [hodnota, setHodnota] = useState(() => {
+    try {
+      const ulozeno = localStorage.getItem(klic);
+      return ulozeno === null ? vychozi : ulozeno === "1";
+    } catch {
+      return vychozi;
+    }
+  });
+  return [
+    hodnota,
+    (v) => {
+      setHodnota(v);
+      try {
+        localStorage.setItem(klic, v ? "1" : "0");
+      } catch {
+        // Bez úložiště se stav po obnovení stránky vrátí na výchozí.
+      }
+    },
+  ];
+}
+
+/**
+ * Sbalovací blok nad `<details>` s plynulým rozbalením i sbalením (uživatel
+ * 13. 9. 2026). Prohlížeč umí `<details>` jen skokem, tak se kliknutí na
+ * `<summary>` zachytí: při otevření se `open` nastaví hned a tělo dojede
+ * z nuly na svou výšku; při zavření tělo napřed sjede na nulu a `open` se
+ * odebere až potom. Bez Web Animations (testovací DOM) nebo při
+ * `prefers-reduced-motion` se jen přepne.
+ */
+function Skladaci({
+  hlava,
+  testId,
+  otevreno,
+  onPrepnout,
+  children,
+}: {
+  hlava: ReactNode;
+  testId: string;
+  otevreno: boolean;
+  onPrepnout: (otevreno: boolean) => void;
+  children: ReactNode;
+}) {
+  const telo = useRef<HTMLDivElement>(null);
+  const rozjete = useRef<Animation | null>(null);
+  const otevritAnimaci = useRef(false);
+  const umiAnimovat = () =>
+    typeof telo.current?.animate === "function" && !(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+  useLayoutEffect(() => {
+    if (!otevreno || !otevritAnimaci.current) return;
+    otevritAnimaci.current = false;
+    const el = telo.current;
+    if (!el || !umiAnimovat()) return;
+    rozjete.current?.cancel();
+    el.style.overflow = "hidden";
+    rozjete.current = el.animate([{ height: "0px", opacity: 0 }, { height: `${el.scrollHeight}px`, opacity: 1 }], {
+      duration: SKLADANI_MS,
+      easing: "ease",
+    });
+    rozjete.current.onfinish = () => {
+      el.style.overflow = "";
+      rozjete.current = null;
+    };
+  }, [otevreno]);
+  const klik = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (rozjete.current) return;
+    const el = telo.current;
+    if (otevreno) {
+      if (!el || !umiAnimovat()) {
+        onPrepnout(false);
+        return;
+      }
+      el.style.overflow = "hidden";
+      rozjete.current = el.animate([{ height: `${el.scrollHeight}px`, opacity: 1 }, { height: "0px", opacity: 0 }], {
+        duration: SKLADANI_MS,
+        easing: "ease",
+      });
+      rozjete.current.onfinish = () => {
+        el.style.overflow = "";
+        rozjete.current = null;
+        onPrepnout(false);
+      };
+      return;
+    }
+    otevritAnimaci.current = true;
+    onPrepnout(true);
+  };
+  return (
+    <details
+      className="dalsi-nastaveni"
+      data-testid={testId}
+      open={otevreno}
+      onToggle={(e) => {
+        // Přepnutí mimo naše kliknutí (třeba prohlížečem při hledání v textu).
+        if (e.currentTarget.open !== otevreno && !rozjete.current) onPrepnout(e.currentTarget.open);
+      }}
+    >
+      <summary onClick={klik}>{hlava}</summary>
+      <div className="skladaci-telo" ref={telo}>
+        {children}
+      </div>
+    </details>
+  );
+}
+
 /**
  * Jedna sekce kontroly: název, kolik v ní sedí jinak, a seznam řádků. Všechny
- * tři sekce vypadají stejně, takže se kreslí jedním kusem kódu; „Další
- * nastavení“ si navíc pamatuje, jestli je zabalené.
+ * tři sekce vypadají stejně, takže se kreslí jedním kusem kódu; každá si
+ * pamatuje, jestli je zabalená.
  */
 function Sekce({
   nazev,
@@ -170,27 +313,27 @@ function Sekce({
   kontroly: Kontrola[];
   testId: string;
   seznamTestId: string;
-  /** Chybí = sekce je rozbalená a nezapamatovává si nic. */
-  otevreno?: boolean;
-  onPrepnout?: (otevreno: boolean) => void;
+  otevreno: boolean;
+  onPrepnout: (otevreno: boolean) => void;
 }) {
   if (kontroly.length === 0) return null;
   const jinak = kontroly.filter((k) => k.stav === "spatne").length;
   return (
-    <details
-      className="dalsi-nastaveni"
-      data-testid={testId}
-      open={otevreno ?? true}
-      onToggle={onPrepnout === undefined ? undefined : (e) => onPrepnout(e.currentTarget.open)}
+    <Skladaci
+      testId={testId}
+      otevreno={otevreno}
+      onPrepnout={onPrepnout}
+      hlava={
+        <>
+          {nazev}{" "}
+          <span className={jinak === 0 ? "potvrzeno" : "chyba"}>
+            {jinak === 0 ? "— vše podle nastavení akce" : `— ${jinak} jinak než v nastavení akce`}
+          </span>
+        </>
+      }
     >
-      <summary>
-        {nazev}{" "}
-        <span className={jinak === 0 ? "potvrzeno" : "chyba"}>
-          {jinak === 0 ? "— vše podle nastavení akce" : `— ${jinak} jinak než v nastavení akce`}
-        </span>
-      </summary>
       <SeznamKontrol kontroly={kontroly} testId={seznamTestId} />
-    </details>
+    </Skladaci>
   );
 }
 

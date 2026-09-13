@@ -1,6 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+
+// Sekce si pamatují sbalení v localStorage; testy se nesmí ovlivňovat.
+afterEach(() => localStorage.clear());
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 
@@ -106,8 +109,12 @@ it("po zmizení lobby ukáže sbalené poslední známé nastavení", async () =
   await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
   const sekce = await screen.findByTestId("posledni-nastaveni");
   expect(sekce).not.toHaveAttribute("open");
-  expect(sekce).toHaveTextContent(/poslední známé nastavení lobby/i);
-  expect(screen.getByTestId("kontroly-posledni")).toHaveTextContent("Mapa: Arabia");
+  expect(sekce).toHaveTextContent(/nastavení hry/i);
+  // Uvnitř tytéž tři sekce; rozbalené, dokud si je někdo nesbalí.
+  await userEvent.click(sekce.querySelector("summary")!);
+  expect(sekce).toHaveAttribute("open");
+  expect(screen.getByTestId("posledni-hlavni")).toHaveAttribute("open");
+  expect(screen.getByTestId("posledni-kontroly-hlavni")).toHaveTextContent("Mapa: Arabia");
 });
 
 it("lobby mimo seznam a chyba serveru mají vlastní hlášky a verdikt nemají", async () => {
