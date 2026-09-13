@@ -95,6 +95,15 @@ html {
 html.pozadi-nove {
   background-image: url(./assets/ui/pozadi-nove.webp);
 }
+/* Třetí zkouška (13. 9. 2026): soumrak na náměstí, GPT Image od uživatele. */
+html.pozadi-soumrak {
+  background-image: url(./assets/ui/pozadi-soumrak.webp);
+}
+/* Volba pozadí v záhlaví (debug): tři tlačítka, zvolené zlatě. */
+.volba-pozadi { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
+.volba-pozadi > span { color: var(--tlumene); margin-right: 0.2rem; }
+.volba-pozadi > button { padding: 0.15rem 0.6rem; font-size: 0.75rem; }
+.volba-pozadi > button[aria-checked="true"] { border-color: var(--akcent); color: var(--akcent); }
 
 body {
   margin: 0;

@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 ráno, main i dev 1.1.2)
+# Přehled prací a záměrů (stav k 13. 9. 2026 odpoledne, main 1.1.2, dev 1.1.3)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,7 +35,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.2, nasazeno na <https://jouki.cz/aoe> (PR #16, 13. 9. 2026 ráno); stav před ním nese značku `v1.1.1`, starší `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.1.2, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.1.3, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.2) navíc třetí zkušební pozadí „Soumrak“ (§3.28). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 296, databázové 165, frontend 270 — všechny zelené (13. 9. 2026 ráno, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
@@ -930,8 +930,18 @@ Test v `App.test.tsx`.
 export) a všechna čtyři kola ve scratchpadu session (`codex-lev/`), prompty
 `prompt.txt`–`prompt4.txt` tamtéž; relace Codexu v `~/.codex/sessions/2026/09/12/`.
 
-**Co se rozhodne.** Které pozadí zůstane — pak druhý soubor, třída i přepínač
-zmizí (viz §5).
+**Třetí varianta (1.1.3, 13. 9. 2026 odpoledne).** Uživatel dodal obrázek
+z GPT Image (soumrak na náměstí s orlojem, praporce se lvy, ohně) — „přidej do
+přepínače ještě tuto verzi“. Export `nastroje/grafika/export.py -q 82` →
+`web/src/assets/ui/pozadi-soumrak.webp` (96 kB, 1672×941), zdrojový PNG mimo
+repo v `_grafika/final/pozadi_soumrak_gpt.png`. Přepínač Původní/Nové je od
+té doby **volba ze tří** (`POZADI` v `App.tsx`, tlačítka `role="radio"`,
+třídy `pozadi-nove` / `pozadi-soumrak` na `<html>`, klíč `rezie.pozadi`
+s hodnotami `puvodni` / `nove` / `soumrak`; starý klíč `rezie.pozadi-nove`
+= „0“ se převezme jako `puvodni`). Výchozí zůstávají nové lvy.
+
+**Co se rozhodne.** Které pozadí zůstane — pak ostatní soubory, třídy
+i volba zmizí (viz §5).
 
 ---
 
@@ -1566,6 +1576,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.1.0 | 3:00 | Lhůta aktivity jako globální nastavení webu, i mimo akci; migrace 024 (§3.43) |
 | 1.1.1 | 3:15 | DB testy vrací globální lhůtu na 15 před každým testem; **release PR #15** do `main` (značka `v1.0.0`) |
 | 1.1.2 | 3:40 | Ukončená akce bez dohraného zápasu s vítězem se maže i s obsahem (§3.44); **release PR #16** do `main` (značka `v1.1.1`) |
+| 1.1.3 | 15:50 | Třetí zkušební pozadí „Soumrak“, volba ze tří v debug záhlaví (§3.28) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

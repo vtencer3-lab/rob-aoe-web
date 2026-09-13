@@ -145,19 +145,26 @@ it("admin vidí panel režie", async () => {
   expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
 });
 
-it("nové pozadí je výchozí a admin ho v debug módu přepínačem v záhlaví vrátí na původní", async () => {
+it("nové lvy jsou výchozí a admin v debug módu volí ze tří pozadí", async () => {
   vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
   localStorage.setItem("rezie.ladeni", "1");
   nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
 
   render(<App />);
 
-  const prepinac = await screen.findByRole("switch", { name: /nové pozadí/i });
-  expect(document.documentElement.classList.contains("pozadi-nove")).toBe(true);
-  fireEvent.click(prepinac);
-  expect(document.documentElement.classList.contains("pozadi-nove")).toBe(false);
-  fireEvent.click(prepinac);
-  expect(document.documentElement.classList.contains("pozadi-nove")).toBe(true);
+  const puvodni = await screen.findByRole("radio", { name: /původní lvi/i });
+  const html = document.documentElement.classList;
+  expect(html.contains("pozadi-nove")).toBe(true);
+  fireEvent.click(puvodni);
+  expect(html.contains("pozadi-nove")).toBe(false);
+  expect(html.contains("pozadi-soumrak")).toBe(false);
+  fireEvent.click(screen.getByRole("radio", { name: /soumrak/i }));
+  expect(html.contains("pozadi-soumrak")).toBe(true);
+  expect(html.contains("pozadi-nove")).toBe(false);
+  expect(localStorage.getItem("rezie.pozadi")).toBe("soumrak");
+  fireEvent.click(screen.getByRole("radio", { name: /nové lvy/i }));
+  expect(html.contains("pozadi-nove")).toBe(true);
+  expect(html.contains("pozadi-soumrak")).toBe(false);
   localStorage.clear();
 });
 

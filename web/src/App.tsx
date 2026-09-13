@@ -36,6 +36,47 @@ import { prehraj } from "./zvuk.js";
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
+/** Zkušební pozadí; klíč = přípona třídy `pozadi-<klic>` na `<html>` (původní je bez třídy). */
+const POZADI = [
+  { klic: "puvodni", popisek: "Původní lvi" },
+  { klic: "nove", popisek: "Nové lvy" },
+  { klic: "soumrak", popisek: "Soumrak" },
+] as const;
+type Pozadi = (typeof POZADI)[number]["klic"];
+
+/** Starší dvoustavový klíč `rezie.pozadi-nove` („0“ = původní) se převezme, ať volba nezmizí. */
+function nactiStarouVolbuPozadi(): Pozadi {
+  try {
+    return localStorage.getItem("rezie.pozadi-nove") === "0" ? "puvodni" : "nove";
+  } catch {
+    return "nove";
+  }
+}
+
+/** Uložená volba z výčtu (localStorage); neznámá nebo chybějící hodnota = výchozí. */
+function useUlozenaVolba<K extends string>(klic: string, moznosti: readonly { klic: K }[], vychozi: () => K): [K, (v: K) => void] {
+  const [hodnota, setHodnota] = useState<K>(() => {
+    try {
+      const ulozeno = localStorage.getItem(klic);
+      const nalezeno = moznosti.find((m) => m.klic === ulozeno);
+      return nalezeno ? nalezeno.klic : vychozi();
+    } catch {
+      return vychozi();
+    }
+  });
+  return [
+    hodnota,
+    (v) => {
+      setHodnota(v);
+      try {
+        localStorage.setItem(klic, v);
+      } catch {
+        // Bez úložiště se volba po obnovení stránky vrátí na výchozí.
+      }
+    },
+  ];
+}
+
 function useUlozenyPrepinac(klic: string, vychozi = false): [boolean, (v: boolean) => void] {
   const [hodnota, setHodnota] = useState(() => {
     try {
@@ -66,16 +107,17 @@ export function App() {
   // očima hráče; debug mód ukáže tlačítka zkušebních hráčů.
   const [pohledUzivatele, setPohledUzivatele] = useUlozenyPrepinac("rezie.pohled-uzivatele");
   const [ladeni, setLadeni] = useUlozenyPrepinac("rezie.ladeni");
-  // Zkouška nového pozadí (lvi překreslení podle státního znaku): výchozí je
-  // nové, přepínač pod pohledem uživatele ho vrací na původní, ať jde porovnat.
-  const [novePozadi, setNovePozadi] = useUlozenyPrepinac("rezie.pozadi-nove", true);
+  // Zkouška pozadí: původní lvi, lvi překreslení podle státního znaku (výchozí)
+  // a od 13. 9. 2026 třetí, soumrak na náměstí (uživatel: „přidej do
+  // přepínače ještě tuto verzi“). Volba pod pohledem uživatele, ať jde porovnat.
+  const [pozadi, setPozadi] = useUlozenaVolba("rezie.pozadi", POZADI, nactiStarouVolbuPozadi);
   const [upravovany, setUpravovany] = useState<number | null>(null);
   // Ozubené kolečko vedle jména: hlasitost (jen tenhle prohlížeč) a pro admina lhůta aktivity.
   const [nastaveniVidet, setNastaveniVidet] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   useEffect(() => {
-    document.documentElement.classList.toggle("pozadi-nove", novePozadi);
-  }, [novePozadi]);
+    for (const p of POZADI) document.documentElement.classList.toggle(`pozadi-${p.klic}`, p.klic !== "puvodni" && pozadi === p.klic);
+  }, [pozadi]);
   const { stav, spojeno, obnov, novaVerze } = useAkceStav();
 
   const akce = stav?.akce ?? null;
@@ -394,9 +436,16 @@ export function App() {
               testId="prepinac-pohledu"
             />
           ) : null}
-          {/* Zkušební pozadí: nové lvy proti původním, dokud se nerozhodne; jen v debug módu. */}
+          {/* Zkušební pozadí: tři varianty, dokud se nerozhodne; jen v debug módu. */}
           {me?.jeAdmin && ladeni ? (
-            <Prepinac popisek="Nové pozadí" vlevo="Původní lvi" vpravo="Nové lvy" zapnuto={novePozadi} onZmena={setNovePozadi} testId="prepinac-pozadi" />
+            <div className="volba-pozadi" role="radiogroup" aria-label="Pozadí" data-testid="volba-pozadi">
+              <span>Pozadí</span>
+              {POZADI.map((p) => (
+                <button key={p.klic} type="button" role="radio" aria-checked={pozadi === p.klic} onClick={() => setPozadi(p.klic)}>
+                  {p.popisek}
+                </button>
+              ))}
+            </div>
           ) : null}
         </div>
       </header>
