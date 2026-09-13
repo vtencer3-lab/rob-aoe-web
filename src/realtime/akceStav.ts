@@ -1,7 +1,7 @@
 import { listZpravy, type ZpravaRow } from "../db/chat.js";
 import { lobbyName } from "../matches/composition.js";
 import { joinUri, spectatorUri } from "../aoe/lobbyUri.js";
-import { getAktivniAkce, listSignups } from "../db/events.js";
+import { getAktivniAkce, getLhutaAktivity, listSignups } from "../db/events.js";
 import { listZapasy } from "../db/matches.js";
 import type { PlayerRow } from "../db/players.js";
 import type { AkceStavPayload, PlayerView, ZapasView } from "../shared/types.js";
@@ -72,8 +72,11 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
 }
 
 export async function buildAkceStav(): Promise<AkceStavPayload> {
+  // Lhůta je globální (migrace 024) — posílá se i bez akce, okno nastavení
+  // ji ukazuje adminovi pořád.
+  const lhutaAktivityMinut = await getLhutaAktivity();
   const akce = await getAktivniAkce();
-  if (!akce) return { akce: null, prihlaseni: [], zapasy: [] };
+  if (!akce) return { akce: null, prihlaseni: [], zapasy: [], lhutaAktivityMinut };
   const prihlaseni = await listSignups(akce.id);
   const zapasy = await listZapasy(akce.id);
   const zpravy = await listZpravy(akce.id);
@@ -90,8 +93,8 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       // adminy zaslepuje redakce.
       pristiNazevLobby: lobbyName(zapasy.length + 1),
       pristiHeslo: akce.pristiHeslo ?? "",
-      lhutaAktivityMinut: akce.lhutaAktivityMinut,
     },
+    lhutaAktivityMinut,
     // Lhůta aktivity patří k přihlášce, ne k hráči: mimo akci nemá smysl.
     prihlaseni: prihlaseni.map((hrac) => ({
       ...playerView(hrac),

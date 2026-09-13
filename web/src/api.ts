@@ -82,12 +82,13 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(nastaveni),
     }).then((r) => json<{ akce: { id: number } }>(r)),
-  lhutaAktivity: (akceId: number, minut: number) =>
-    fetch(cesta(`/api/akce/${akceId}/lhuta-aktivity`), {
+  /** Lhůta aktivity — globální nastavení webu, platí i mimo akci. */
+  lhutaAktivity: (minut: number) =>
+    fetch(cesta("/api/nastaveni/lhuta-aktivity"), {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ minut }),
-    }).then((r) => json<{ akce: { id: number } }>(r)),
+    }).then((r) => json<{ lhutaAktivityMinut: number }>(r)),
   /** Zvonek u hráče: svolání do radnice, hráči zazvoní poplach. */
   svolat: (akceId: number, steamId: string) =>
     fetch(cesta(`/api/akce/${akceId}/hraci/${steamId}/svolat`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),

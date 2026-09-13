@@ -372,7 +372,7 @@ it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () =>
 // Lhůta aktivity je věcí akce: přihláška i „Jsem tu!“ ji berou z ní.
 it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", async () => {
   const { setLhutaAktivity, signUp: prihlas, listSignups, svolej, obnovAktivitu, withdraw: odhlas } = await import("./events.js");
-  await setLhutaAktivity(akceId, 30);
+  await setLhutaAktivity(30);
   await prihlas(akceId, HRACI[0]!);
   // Nové přihlášení posune hráče na konec seznamu (řadí se podle času), tak podle id.
   const najdi = async () => (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
@@ -397,14 +397,16 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   await odhlas(akceId, HRACI[0]!);
   await prihlas(akceId, HRACI[0]!);
   expect((await najdi()).svolanV).toBeNull();
-  await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
+  await expect(setLhutaAktivity(1)).rejects.toThrow();
 });
 
-// Lhůta se dědí do další akce a změna platí hned i běžícím přihláškám.
-it("lhůta se dědí do nové akce a přepočítá běžící přihlášky", async () => {
-  const { setLhutaAktivity, createAkce: novaAkce, listSignups, signUp: prihlas, setAkceStav: nastavStavAkce } = await import("./events.js");
+// Lhůta je globální (migrace 024): platí i další akci a změna se hned promítne
+// do běžících přihlášek.
+it("lhůta je globální — platí další akci a přepočítá běžící přihlášky", async () => {
+  const { setLhutaAktivity, getLhutaAktivity, createAkce: novaAkce, listSignups, signUp: prihlas, setAkceStav: nastavStavAkce } = await import("./events.js");
   await prihlas(akceId, HRACI[0]!);
-  await setLhutaAktivity(akceId, 40);
+  await setLhutaAktivity(40);
+  expect(await getLhutaAktivity()).toBe(40);
   const radek = (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
   const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
   expect(zaMinut).toBeGreaterThan(38);
@@ -412,5 +414,7 @@ it("lhůta se dědí do nové akce a přepočítá běžící přihlášky", asy
   // Otevřená smí být jen jedna akce (jedna_aktivni_akce), tak tuhle napřed ukončit.
   await nastavStavAkce(akceId, "konec");
   const dalsi = await novaAkce("zítra");
-  expect(dalsi.lhutaAktivityMinut).toBe(40);
+  await prihlas(dalsi.id, HRACI[1]!);
+  const vDalsi = (await listSignups(dalsi.id)).find((r) => r.steamId === HRACI[1])!;
+  expect((vDalsi.aktivniDo.getTime() - Date.now()) / 60_000).toBeGreaterThan(38);
 });

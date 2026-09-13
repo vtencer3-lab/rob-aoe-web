@@ -492,7 +492,7 @@ export function App() {
             <SeznamPrihlasenych
                 ladeni={admin && ladeni}
               onSvolat={admin ? (steamId) => void hlidej(() => api.svolat(akce.id, steamId)) : undefined}
-              lhutaMinut={akce.lhutaAktivityMinut}
+              lhutaMinut={stav?.lhutaAktivityMinut}
               onZkusebniSvolani={
                 // I v pohledu uživatele: admin si tak zkouší, co hráč uvidí
                 // (Tonner, 13. 9. 2026). Stačí zapnutý debug mód v patičce.
@@ -642,8 +642,8 @@ export function App() {
         <NastaveniUzivatele
           hlasitost={hlasitostZvuku}
           onHlasitost={setHlasitostZvuku}
-          lhutaMinut={admin && akce ? (akce.lhutaAktivityMinut ?? 15) : undefined}
-          onLhuta={admin && akce ? (minut) => void hlidej(() => api.lhutaAktivity(akce.id, minut)) : undefined}
+          lhutaMinut={admin ? (stav?.lhutaAktivityMinut ?? 15) : undefined}
+          onLhuta={admin ? (minut) => void hlidej(() => api.lhutaAktivity(minut)) : undefined}
           onZavrit={() => setNastaveniVidet(false)}
         />
       ) : null}
