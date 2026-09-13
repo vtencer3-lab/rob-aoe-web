@@ -98,17 +98,17 @@ export function registerEventRoutes(app: FastifyInstance): void {
     return { akce };
   });
 
-  // Lhůta aktivity večera: admin si ji nastaví v okně nastavení (2–120 min).
-  app.put("/api/akce/:id/lhuta-aktivity", async (request) => {
+  // Lhůta aktivity: globální nastavení webu, admin si ji nastaví v okně
+  // nastavení (2–120 min) — i mimo akci, platí pro všechny další.
+  app.put("/api/nastaveni/lhuta-aktivity", async (request) => {
     await requireAdmin(request);
-    const akceId = requireId(request);
     const minut = Number((request.body as { minut?: unknown })?.minut);
     if (!Number.isInteger(minut) || minut < LHUTA_MIN_MINUT || minut > LHUTA_MAX_MINUT) {
       throw new HttpError(400, `Lhůta je ${LHUTA_MIN_MINUT} až ${LHUTA_MAX_MINUT} minut.`);
     }
-    const akce = await setLhutaAktivity(akceId, minut);
+    await setLhutaAktivity(minut);
     await broadcastAkce();
-    return { akce: { id: akce.id, lhutaAktivityMinut: akce.lhutaAktivityMinut } };
+    return { lhutaAktivityMinut: minut };
   });
 
   // Zvonek u hráče: svolání do radnice — hráči zazvoní poplach ze hry.

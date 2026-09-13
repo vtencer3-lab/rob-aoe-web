@@ -1,4 +1,4 @@
-import { ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT } from "../shared/aktivita.js";
+import { AKTIVITA_MINUT, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT } from "../shared/aktivita.js";
 import type { SestavaVstup } from "../shared/types.js";
 import { generatePassword } from "../matches/composition.js";
 import { getPool, withTransaction } from "./pool.js";
@@ -19,8 +19,6 @@ export interface AkceRow {
   skladani: SestavaVstup[];
   /** Heslo večera — společné všem lobby akce; null jen u akcí z doby, kdy ho neměly. */
   pristiHeslo: string | null;
-  /** Jak dlouho platí přihláška od posledního projevu života (migrace 021, 2–120). */
-  lhutaAktivityMinut: number;
 }
 
 interface AkceDbRow {
@@ -31,10 +29,9 @@ interface AkceDbRow {
   ulozene_nastaveni_lobby: Record<string, unknown> | null;
   skladani: SestavaVstup[] | null;
   pristi_heslo: string | null;
-  lhuta_aktivity_minut: number;
 }
 
-const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani, pristi_heslo, lhuta_aktivity_minut";
+const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani, pristi_heslo";
 
 function mapujAkci(r: AkceDbRow): AkceRow {
   return {
@@ -45,26 +42,29 @@ function mapujAkci(r: AkceDbRow): AkceRow {
     ulozeneNastaveniLobby: r.ulozene_nastaveni_lobby,
     skladani: Array.isArray(r.skladani) ? r.skladani : [],
     pristiHeslo: r.pristi_heslo,
-    lhutaAktivityMinut: r.lhuta_aktivity_minut,
   };
 }
 
-/** Lhůta aktivity akce; rozsah hlídá i databáze (CHECK v migraci 021). */
-export async function setLhutaAktivity(akceId: number, minut: number): Promise<AkceRow> {
-  const { rows } = await getPool().query<AkceDbRow>(
-    `UPDATE akce SET lhuta_aktivity_minut = $2 WHERE id = $1 RETURNING ${SLOUPCE_AKCE}`,
-    [akceId, minut],
-  );
-  if (!rows[0]) throw new Error(`Akce ${akceId} neexistuje.`);
+/**
+ * Lhůta aktivity je globální nastavení webu (migrace 024): jedno číslo pro
+ * všechny akce, rozsah hlídá i databáze (CHECK 2–120).
+ */
+export async function getLhutaAktivity(): Promise<number> {
+  const { rows } = await getPool().query<{ lhuta_aktivity_minut: number }>("SELECT lhuta_aktivity_minut FROM nastaveni_webu");
+  return rows[0]?.lhuta_aktivity_minut ?? AKTIVITA_MINUT;
+}
+
+export async function setLhutaAktivity(minut: number): Promise<number> {
+  await getPool().query("UPDATE nastaveni_webu SET lhuta_aktivity_minut = $1", [minut]);
   // Platí hned: bdícím hráčům se lhůta přepočítá od posledního projevu života,
   // takže kdo mlčí déle než nová lhůta, usne teď, a kdo ne, dostane víc času.
   await getPool().query(
     `UPDATE prihlaska
-        SET aktivni_do = COALESCE(posledni_puls, kdy) + $2 * interval '1 minute'
-      WHERE akce_id = $1 AND stav = 'prihlasen' AND aktivni_do > now()`,
-    [akceId, minut],
+        SET aktivni_do = COALESCE(posledni_puls, kdy) + $1 * interval '1 minute'
+      WHERE stav = 'prihlasen' AND aktivni_do > now()`,
+    [minut],
   );
-  return mapujAkci(rows[0]);
+  return minut;
 }
 
 /**
@@ -101,9 +101,7 @@ export async function createAkce(nazev: string): Promise<AkceRow> {
   // Heslo večera vzniká rovnou s akcí — okno Pre-Lobby ho ukazuje k opsání
   // do hry a nemá čekat, až si o něj někdo řekne.
   const { rows } = await getPool().query<AkceDbRow>(
-    `INSERT INTO akce (nazev, pristi_heslo, lhuta_aktivity_minut)
-     VALUES ($1, $2, COALESCE((SELECT lhuta_aktivity_minut FROM akce ORDER BY id DESC LIMIT 1), 15))
-     RETURNING ${SLOUPCE_AKCE}`,
+    `INSERT INTO akce (nazev, pristi_heslo) VALUES ($1, $2) RETURNING ${SLOUPCE_AKCE}`,
     [nazev, generatePassword()],
   );
   return mapujAkci(rows[0]!);
@@ -168,10 +166,10 @@ export async function prejmenujAkci(akceId: number, nazev: string): Promise<Akce
 export async function signUp(akceId: number, steamId: string): Promise<void> {
   await getPool().query(
     `INSERT INTO prihlaska (akce_id, steam_id, stav, kdy, aktivni_do)
-          VALUES ($1, $2, 'prihlasen', now(), now() + (SELECT lhuta_aktivity_minut FROM akce WHERE id = $1) * interval '1 minute')
+          VALUES ($1, $2, 'prihlasen', now(), now() + (SELECT lhuta_aktivity_minut FROM nastaveni_webu) * interval '1 minute')
      ON CONFLICT (akce_id, steam_id) DO UPDATE
           SET stav = 'prihlasen', kdy = now(),
-              aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM akce WHERE id = $1) * interval '1 minute',
+              aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM nastaveni_webu) * interval '1 minute',
               posledni_puls = NULL,
               svolan_v = NULL, svolal_steam_id = NULL`,
     [akceId, steamId],
@@ -189,7 +187,7 @@ export async function signUp(akceId: number, steamId: string): Promise<void> {
 export async function obnovAktivitu(akceId: number, steamId: string): Promise<boolean> {
   const { rowCount } = await getPool().query(
     `UPDATE prihlaska
-        SET aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM akce WHERE id = $1) * interval '1 minute', posledni_puls = now(),
+        SET aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM nastaveni_webu) * interval '1 minute', posledni_puls = now(),
             svolan_v = NULL, svolal_steam_id = NULL
       WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'`,
     [akceId, steamId],
@@ -209,9 +207,9 @@ export async function obnovAktivitu(akceId: number, steamId: string): Promise<bo
  * a puls tak nestojí nic, i když chodí od každého kliknutí.
  */
 export async function pulsAktivity(akceId: number, steamId: string): Promise<boolean> {
-  // Plná lhůta je z akce (migrace 021); jednou dotazem se přečte do CTE.
+  // Plná lhůta je globální (migrace 024); jednou dotazem se přečte do CTE.
   const { rowCount } = await getPool().query(
-    `WITH lhuta AS (SELECT lhuta_aktivity_minut * interval '1 minute' AS plna FROM akce WHERE id = $1)
+    `WITH lhuta AS (SELECT lhuta_aktivity_minut * interval '1 minute' AS plna FROM nastaveni_webu)
      UPDATE prihlaska
         SET aktivni_do = CASE
               WHEN aktivni_do <= now() THEN now() + (SELECT plna FROM lhuta)

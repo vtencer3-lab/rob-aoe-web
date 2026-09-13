@@ -94,8 +94,6 @@ export interface AkceView {
   ulozeneNastaveniLobby?: Record<string, unknown> | null;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
   skladani?: SestavaVstup[];
-  /** Lhůta aktivity v minutách (2–120); chybí ve starších snímcích = 15. */
-  lhutaAktivityMinut?: number;
   /**
    * Jméno, které dostane příští založená lobby (ROB-NN). Odvozené z pořadí,
    * ne tajné — okno Pre-Lobby ho ukazuje, aby ho host opsal do hry.
@@ -174,6 +172,8 @@ export interface AkceStavPayload {
   akce: AkceView | null;
   prihlaseni: PlayerView[];
   zapasy: ZapasView[];
+  /** Lhůta aktivity v minutách (2–120), globální nastavení webu (migrace 024); chybí ve starších snímcích = 15. */
+  lhutaAktivityMinut?: number;
 }
 
 /**
