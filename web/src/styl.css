@@ -1870,6 +1870,8 @@ a:hover { color: var(--zlato-svetle); }
 /* Červené kolečko „nahrává se“ v rohu tlačítka, pulzuje po dobu držení. */
 .push-to-talk .ptt .nahrava { position: absolute; top: -0.3rem; right: -0.3rem; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #e53935; border: 1px solid #5a0000; box-shadow: 0 0 6px 1px rgba(229, 57, 53, 0.9); animation: ptt-pulz 1s ease-in-out infinite; }
 @keyframes ptt-pulz { 50% { opacity: 0.35; box-shadow: 0 0 2px 0 rgba(229, 57, 53, 0.5); } }
+/* Popisky obou tlačítek jsou vlastní bublina bez prodlevy (ne title), o kus větším písmem (uživatel 13. 9. 2026). */
+.push-to-talk .napoveda::after { font-size: 0.9rem; }
 .push-to-talk .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .push-to-talk .ztlumit { width: 2.1rem; height: 2.1rem; padding: 0; font-size: 0.95rem; line-height: 1; }
 .push-to-talk .ztlumit.zapnuto { border-color: var(--akcent); color: var(--akcent); }

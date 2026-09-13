@@ -38,8 +38,8 @@ export function PushToTalk({ onKousek }: Props) {
     <span className="push-to-talk" data-testid="push-to-talk">
       <button
         type="button"
-        className={mluvi ? "ptt mluvi" : "ptt"}
-        title="Držet a mluvit — účastníci zápasu tě slyší"
+        className={mluvi ? "ptt napoveda mluvi" : "ptt napoveda"}
+        data-napoveda="Držet a mluvit — účastníci zápasu tě slyší"
         aria-pressed={mluvi}
         onPointerDown={(e) => {
           if (e.button !== 0) return;
@@ -69,8 +69,8 @@ export function PushToTalk({ onKousek }: Props) {
       </button>
       <button
         type="button"
-        className={ztlumeno ? "ztlumit zapnuto" : "ztlumit"}
-        title="Mute tlačítko pouze pro ostatní adminy, aby nemuseli poslouchat tvůj otravnej hlas"
+        className={ztlumeno ? "ztlumit napoveda zapnuto" : "ztlumit napoveda"}
+        data-napoveda="Mute tlačítko pouze pro ostatní adminy, aby nemuseli poslouchat tvůj otravnej hlas"
         aria-label={ztlumeno ? "Ostatní admini ztlumeni" : "Ztlumit ostatní adminy"}
         aria-pressed={ztlumeno}
         onClick={() => {
