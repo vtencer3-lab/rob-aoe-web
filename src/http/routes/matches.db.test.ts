@@ -593,6 +593,21 @@ it("kontrola bez lobby v seznamu vrátí nalezeno=false, cizí hráč 403", asyn
   await app.close();
 });
 
+// Push-to-talk: kousek hlasu smí poslat jen admin, tvar se hlídá.
+it("kousek hlasu přijme jen od admina a se sezením a pořadím", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  const ok = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: robSid }, payload: { sezeni: "s1", poradi: 0, data: "AAAA", mime: "audio/webm;codecs=opus" } });
+  expect(ok.statusCode).toBe(200);
+  const konec = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: robSid }, payload: { sezeni: "s1", poradi: 1, konec: true } });
+  expect(konec.statusCode).toBe(200);
+  const spatne = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: robSid }, payload: { poradi: 0, data: "AAAA" } });
+  expect(spatne.statusCode).toBe(400);
+  const hrac = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: hracSid }, payload: { sezeni: "s1", poradi: 0, data: "AAAA" } });
+  expect(hrac.statusCode).toBe(403);
+  await app.close();
+});
+
 // Rozpracovaná sestava žije u akce: co jeden admin naklikal, druhý vidí ve
 // stavu; vytvoření zápasu ji vyprázdní. Jen Rob, jen tvarově platné řádky.
 it("rozpracovaná sestava se ukládá u akce a vytvoření zápasu ji vyprázdní", async () => {

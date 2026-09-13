@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 večer, main 1.1.4, dev 1.3.5)
+# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, main 1.1.4, dev 1.4.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.3.5, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.4.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 296, databázové 167, frontend 276 — všechny zelené (13. 9. 2026 večer, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 298, databázové 168, frontend 276 — všechny zelené (13. 9. 2026 v noci, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -1456,6 +1456,44 @@ admina hráčům zvoní“ tím končí**, zvoní jen důležité. `Chat` dostal
 „Důležitá zpráva — všem v lobby zazvoní zvon a bude tučně.“
 (`.dulezita-poznamka`); důležité zprávy mají třídu `.text.dulezita`.
 
+### 3.50 Push-to-talk admina (1.4.0, 13. 9. 2026)
+
+Uživatel: tlačítko v hlavičce chatu, admin ho drží a účastníci ho slyší;
+vedle „mute“ jen pro ostatní adminy s popiskem „Mute tlačítko pouze pro
+ostatní adminy, aby nemuseli poslouchat tvůj otravnej hlas“.
+
+**Bez WebRTC.** Signaling, STUN a TURN by byly další server a další místo,
+kde to u někoho za NATem nepůjde. Místo toho: admin drží tlačítko →
+`MediaRecorder` (Opus ve WebM, 32 kb/s, kousky po 250 ms) → každý kousek
+jde `POST /api/zapas/:id/hlas` (base64, `sezeni`, `poradi`, na konci
+`konec: true`) → `hlasHub` (`realtime/hlas.ts`) → stejný SSE stream jako
+stav, jen událost `hlas` → posluchač kousky lepí do `MediaSource`
+a hraje skoro živě (zpoždění ~0,5 s). Kde MediaSource s Opusem není
+(Safari), posbírá kousky a přehraje po konci jako vysílačka. Nic se
+neukládá. Zpoždění mezi kousky hlídá pořadí (`poradi`), kousky se posílají
+za sebou (další čeká na předchozí).
+
+**Kdo slyší** (`smiSlyset`): účastníci zápasu (`prijemci` = jejich Steam
+ID, server je přibalí) a všichni admini; anonym, divák mimo zápas a mluvčí
+sám ne. Admin si ostatní adminy ztlumí v prohlížeči (`hlas.ztlumit-adminy`);
+hráčům se nic neztlumí. Hlasitost = Master Volume.
+
+**Prohlížeč:** `hlas.ts` (přehrávač `spustPrehravacHlasu`, nahrávání
+`vytvorNahravani`), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
+puštění kdekoli / ztráta fokusu okna nahrávání zastaví, mikrofon se po
+puštění uvolní, ať v kartě nesvítí), `Chat` prop `onHlas`, `App` přehrávač
+zapíná po přihlášení. `useAkceStav` událost `hlas` jen přeposílá na okno
+(`aoe:hlas`). Testy: `realtime/hlas.test.ts`, route v `matches.db.test.ts`.
+Neověřeno živě se dvěma lidmi — první ostrá zkouška bude na akci.
+
+### 3.51 Chat se posouvá jen na obrazovce (1.4.0, 13. 9. 2026)
+
+Uživatel: když chat není ve výřezu (třeba odrolovaný na druhém monitoru),
+nemá se sám posouvat — neaktivní okno nevadí, rozhoduje výřez.
+`IntersectionObserver` nad seznamem zpráv (kořen = viewport, stačí kousek)
+drží `naObrazovce`; mimo obrazovku se nová zpráva chová jako u odrolovaného
+čtenáře: tlačítko „Nové zprávy“ a oddělovač, žádný skok.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1686,6 +1724,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.3.3 | 20:30 | Lišta „nová verze“ jde sbalit dvojitou šipkou do záložky (§3.47) |
 | 1.3.4 | 21:00 | Prohlížečem zadržený poplach se přehraje po kliknutí a okno svolání to řekne (§3.48); bez výpisu „% z Master Volume“ |
 | 1.3.5 | 21:40 | Důležitá zpráva admina s vykřičníkem (§3.49); „Nastavení hry“ vždy dostupné (§3.46); záložka lišty až k hornímu okraji (§3.47) |
+| 1.4.0 | 22:30 | Push-to-talk admina přes SSE + MediaSource, mute ostatních adminů (§3.50); chat se posouvá jen na obrazovce (§3.51) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

@@ -1860,6 +1860,18 @@ a:hover { color: var(--zlato-svetle); }
 .chat .chat-nadpis:focus-visible { outline: 1px solid var(--zlato-tmave); outline-offset: 2px; }
 .chat .chat-nadpis .sipka { font-size: 0.8rem; width: 0.9rem; }
 .chat .chat-nadpis small { font-family: Georgia, serif; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--tlumene); }
+/* Push-to-talk admina vpravo v hlavičce chatu: hlavička je flex se středem,
+   nástroje se přilepí doprava absolutně, ať nadpis zůstane na středu. */
+.chat .chat-nadpis { position: relative; }
+.chat .chat-nastroje { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-variant: normal; font-family: Georgia, serif; font-weight: 400; letter-spacing: 0; }
+.push-to-talk { display: inline-flex; align-items: center; gap: 0.35rem; }
+.push-to-talk .ptt { padding: 0.25rem 0.7rem; font-size: 0.8rem; user-select: none; -webkit-user-select: none; touch-action: none; }
+.push-to-talk .ptt.mluvi { border-color: #d43b3b; color: #ffd9d9; background: linear-gradient(#7a1c1c, #4a0f0f); box-shadow: 0 0 10px 2px rgba(212, 59, 59, 0.55); animation: ptt-pulz 1s ease-in-out infinite; }
+@keyframes ptt-pulz { 50% { box-shadow: 0 0 16px 4px rgba(212, 59, 59, 0.75); } }
+.push-to-talk .ztlumit { width: 2.1rem; height: 2.1rem; padding: 0; font-size: 0.95rem; line-height: 1; }
+.push-to-talk .ztlumit.zapnuto { border-color: var(--akcent); color: var(--akcent); }
+.push-to-talk .chyba { font-size: 0.75rem; }
+@media (prefers-reduced-motion: reduce) { .push-to-talk .ptt.mluvi { animation: none; } }
 /* Sbalení: mřížka 1fr → 0fr, rychlé a bez poskoku. */
 .chat .chat-telo { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease; opacity: 1; }
 .chat.sbaleny .chat-telo { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }

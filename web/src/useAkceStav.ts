@@ -3,6 +3,7 @@ import type { AkceStavPayload } from "../../src/shared/types.js";
 import { VERZE } from "../../src/shared/verze.js";
 import { api } from "./api.js";
 import { cesta } from "./cesty.js";
+import { UDALOST_HLAS } from "./hlas.js";
 
 /** První pokus o obnovu je skoro okamžitý, další se zdvojnásobují až na strop. */
 export const PRVNI_ODKLAD_MS = 1_000;
@@ -144,6 +145,11 @@ export function useAkceStav(): AkceStavHook {
       aktualni.addEventListener?.("verze", (udalost) => {
         const { verze } = JSON.parse((udalost as MessageEvent<string>).data) as { verze?: string };
         if (typeof verze === "string") setNovaVerze(verze !== VERZE ? verze : null);
+      });
+      // Hlas admina (push-to-talk): kousky nahrávky mimo stav, přehrávač
+      // je poslouchá na okně (hlas.ts). Hook do nich nesahá.
+      aktualni.addEventListener?.("hlas", (udalost) => {
+        window.dispatchEvent(new CustomEvent(UDALOST_HLAS, { detail: JSON.parse((udalost as MessageEvent<string>).data) as unknown }));
       });
       aktualni.onerror = () => {
         setSpojeno(false);

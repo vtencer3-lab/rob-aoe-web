@@ -92,6 +92,13 @@ export const api = {
   /** Zvonek u hráče: svolání do radnice, hráči zazvoní poplach. */
   svolat: (akceId: number, steamId: string) =>
     fetch(cesta(`/api/akce/${akceId}/hraci/${steamId}/svolat`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
+  /** Push-to-talk admina: jeden kousek nahrávky (nebo značka konce) pro účastníky zápasu. */
+  hlas: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string }) =>
+    fetch(cesta(`/api/zapas/${zapasId}/hlas`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(telo),
+    }).then((r) => json<{ ok: true }>(r)),
   /** Super zvonek v hlavičce tabulky: svolá všechny, u kterých je zvonek (lhůta − 5 min). */
   svolatVsechny: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/svolat-vsechny`), { method: "POST" }).then((r) => json<{ pocet: number }>(r)),

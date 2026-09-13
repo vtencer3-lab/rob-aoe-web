@@ -168,6 +168,26 @@ export interface ZpravaView {
   upraveno?: boolean;
 }
 
+/**
+ * Kousek hlasu admina (push-to-talk): jde streamem jako událost `hlas`,
+ * mimo stav. `sezeni` odděluje jednotlivá mluvení, `poradi` drží pořadí
+ * kousků, `konec` uzavírá sezení. `prijemci` = účastníci zápasu (server podle
+ * nich rozhoduje, komu kousek pošle; admini ho dostanou vždy).
+ */
+export interface HlasUdalost {
+  zapasId: number;
+  kdo: string;
+  jmeno: string;
+  sezeni: string;
+  poradi: number;
+  konec: boolean;
+  /** base64 kousku nahrávky; u značky konce prázdné. */
+  data: string;
+  /** MIME nahrávky, třeba `audio/webm;codecs=opus`. */
+  mime?: string;
+  prijemci: string[];
+}
+
 export interface AkceStavPayload {
   akce: AkceView | null;
   prihlaseni: PlayerView[];

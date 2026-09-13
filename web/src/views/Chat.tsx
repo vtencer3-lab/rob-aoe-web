@@ -1,3 +1,5 @@
+import type { OdesliKousek } from "../hlas.js";
+import { PushToTalk } from "./PushToTalk.js";
 import { jeDulezita, textZpravy } from "../../../src/shared/cenzura.js";
 import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { ZapasView, ZpravaView } from "../../../src/shared/types.js";
@@ -18,6 +20,8 @@ interface Props {
   ladeni?: boolean;
   /** Admin: zpráva s vykřičníkem na začátku je důležitá (zvon všem, tučně); u hráče vykřičník nic nedělá. */
   jaAdmin?: boolean;
+  /** Admin: push-to-talk — kam odcházejí kousky nahrávky (App → api.hlas). */
+  onHlas?: OdesliKousek;
 }
 
 /** Jména adminů pro debug přepínač autora (barvy jsou v ADMIN_BARVY). */
@@ -84,7 +88,7 @@ function cas(iso: string): string {
  * a odesílá; seznam se drží u dna, dokud si ho člověk sám neodroluje nahoru.
  * Jméno hráče má barvu jeho slotu, admin svou vlastní a září.
  */
-export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmin = false }: Props) {
+export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmin = false, onHlas }: Props) {
   const [text, setText] = useState("");
   const [odesila, setOdesila] = useState(false);
   // Šipka nahoru: upravovaná zpráva (id) — pole nese její text, Escape zruší.
@@ -111,13 +115,31 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
   const posledniId = zpravy.at(-1)?.id ?? 0;
   const novychPocet = zpravy.filter((z) => z.id > posledniVidene.current).length;
 
+  // Chat se sám posouvá jen, když je aspoň kousek na obrazovce (uživatel
+  // 13. 9. 2026): kdo ho má odrolovaný pryč (třeba na druhém monitoru pod
+  // okrajem), by jinak přišel o místo, kde přestal číst. Neaktivní okno
+  // nevadí — rozhoduje výřez, ne fokus.
+  const naObrazovce = useRef(true);
+  useEffect(() => {
+    const el = seznam.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const pozorovatel = new IntersectionObserver((zaznamy) => {
+      naObrazovce.current = zaznamy.some((z) => z.isIntersecting);
+    });
+    pozorovatel.observe(el);
+    return () => pozorovatel.disconnect();
+  }, []);
+
   useEffect(() => {
     const el = seznam.current;
     if (!el) return;
-    if (uDna.current) {
+    if (uDna.current && naObrazovce.current) {
       el.scrollTop = el.scrollHeight;
       posledniVidene.current = posledniId;
     } else if (zpravy.length > 0 && posledniId > posledniVidene.current) {
+      // Mimo obrazovku se chová jako odrolovaný: až se člověk vrátí, uvidí
+      // „Nové zprávy“ a oddělovač.
+      uDna.current = false;
       // Tlačítko a oddělovač vznikají spolu: kdo je odrolovaný, vidí obojí hned.
       setNoveDole(true);
       if (oddelovacOd === null) {
@@ -239,6 +261,17 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
         </span>
         <span className="chat-titulek">Chat</span>
         {sbaleny && zpravy.length > 0 ? <small>{zpravy.length}</small> : null}
+        {jaAdmin && onHlas ? (
+          // Vpravo v hlavičce, mimo klik na sbalení.
+          <span
+            className="chat-nastroje"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <PushToTalk onKousek={onHlas} />
+          </span>
+        ) : null}
       </div>
       <div className="chat-telo" aria-hidden={sbaleny}>
         <div className="chat-vnitrek">

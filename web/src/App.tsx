@@ -1,3 +1,4 @@
+import { spustPrehravacHlasu } from "./hlas.js";
 import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
@@ -152,6 +153,11 @@ export function App() {
   const predchoziSvolani = useRef<string | null | undefined>(undefined);
   // Okno „X tě shání!“ — zavře ho jen jedno ze dvou tlačítek.
   const [svolal, setSvolal] = useState<string | null>(null);
+  // Hlas admina (push-to-talk): přehrávač poslouchá kousky ze streamu.
+  useEffect(() => {
+    if (!me) return;
+    return spustPrehravacHlasu(me.steamId, me.jeAdmin);
+  }, [me]);
   // Prohlížeč bez gesta zvuk nepustí; okno svolání to řekne a zvuk dojde po kliknutí.
   const [zvukCeka, setZvukCeka] = useState(false);
   useEffect(() => naZablokovaniZvuku(setZvukCeka), []);
@@ -671,7 +677,7 @@ export function App() {
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} onHlas={me.jeAdmin ? (telo) => api.hlas(zapas.id, telo) : undefined} />}
                   />
                 ) : (
                   <KartaHrace
@@ -681,7 +687,7 @@ export function App() {
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} onHlas={me.jeAdmin ? (telo) => api.hlas(zapas.id, telo) : undefined} />}
                   />
                 ),
               )
