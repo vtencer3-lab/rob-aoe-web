@@ -1874,6 +1874,9 @@ a:hover { color: var(--zlato-svetle); }
 .push-to-talk .napoveda::after { font-size: 0.9rem; white-space: normal; width: max-content; max-width: 18rem; text-align: center; }
 .push-to-talk .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .push-to-talk .ztlumit { width: 2.1rem; height: 2.1rem; padding: 0; font-size: 0.95rem; line-height: 1; }
+.push-to-talk .ikona { width: 1.35rem; height: 1.35rem; color: var(--zlato); display: block; margin: auto; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7)); }
+.push-to-talk .ptt, .push-to-talk .ztlumit { display: inline-flex; align-items: center; justify-content: center; }
+.push-to-talk .ptt.mluvi .ikona { color: #ffd9d9; }
 .push-to-talk .ztlumit.zapnuto { border-color: var(--akcent); color: var(--akcent); }
 .push-to-talk .chyba { font-size: 0.75rem; }
 @media (prefers-reduced-motion: reduce) { .push-to-talk .ptt .nahrava { animation: none; } }
