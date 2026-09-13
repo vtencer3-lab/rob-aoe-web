@@ -1962,9 +1962,10 @@ body.bez-scrollu { overflow: hidden; }
 .chat .odpoved-lista b { color: var(--zlato); }
 .chat .odpoved-lista .uryvek { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); opacity: 0.8; }
 .chat .odpoved-lista .zrusit { padding: 0 0.45rem; line-height: 1.2; font-size: 0.9rem; }
-.chat .naseptavac { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 5; margin-bottom: 0.25rem; padding: 0.25rem; border: 1px solid var(--zlato-tmave); border-radius: 4px 4px 0 0; background: linear-gradient(rgba(30, 17, 12, 0.99), rgba(12, 7, 4, 0.99)); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.6); }
+/* Panel jen tak široký, jak je potřeba (uživatel 14. 9. 2026: „může být takto široký, aby nezabíral tolik místa“), text zleva. */
+.chat .naseptavac { position: absolute; left: 0; width: min(100%, 27rem); bottom: 100%; z-index: 5; margin-bottom: 0.25rem; padding: 0.25rem; border: 1px solid var(--zlato-tmave); border-radius: 4px 4px 0 0; background: linear-gradient(rgba(30, 17, 12, 0.99), rgba(12, 7, 4, 0.99)); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.6); }
 .chat .naseptavac .fulltext { display: flex; align-items: center; gap: 0.35rem; padding: 0.1rem 0.4rem 0.3rem; font-size: 0.78rem; color: var(--tlumene); cursor: pointer; user-select: none; }
-.chat .naseptavac .polozka { display: grid; grid-template-columns: 1.75rem 1fr auto; align-items: center; gap: 0.5rem; width: 100%; padding: 0.2rem 0.5rem; background: none; border: 0; border-radius: 3px; box-shadow: none; text-align: left; font: inherit; font-size: 0.9rem; color: var(--text); cursor: pointer; }
+.chat .naseptavac .polozka { display: grid; grid-template-columns: 1.75rem 1fr auto; justify-items: start; justify-content: start; align-items: center; gap: 0.5rem; width: 100%; padding: 0.2rem 0.5rem; background: none; border: 0; border-radius: 3px; box-shadow: none; text-align: left; font: inherit; font-size: 0.9rem; color: var(--text); cursor: pointer; }
 .chat .naseptavac .polozka img { width: 1.75rem; height: 1.75rem; object-fit: contain; }
 .chat .naseptavac .polozka .tecka { display: inline-block; width: 0.6rem; height: 0.6rem; margin: 0 auto; border-radius: 50%; background: var(--zlato); }
 .chat .naseptavac .polozka .jmeno { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
