@@ -107,3 +107,17 @@ Engagement Index).
 - Poplach: změna `svolanV` u vlastní přihlášky (ne v prvním snímku po
   načtení, ne ve snímku, kde se vlastní přihláška teprve objevila).
 - Crashout a další legrácky: `crashout.mp3`, `debil.mp3` (klik na logo).
+
+## Doplněk 14. 9. 2026: taunty ze hry — kde opravdu jsou
+
+Hlasové nahrávky (taunty, hlášky) nejsou v hlavním `wwise/Base.pck` (ten má
+jen SFX), ale **jazykově zvlášť v `wwise/<jazyk>/Base.pck`** — anglicky
+`wwise/en/Base.pck` (3 banky, 160 streamů). Události `Play_Taunt_01` až
+`Play_Taunt_105` (FNV-1 hash) žijí tam. Nejrychlejší cesta k souborům je
+komunitní tabulka StepS (Google Sheets `1bczdFQksnbLnjI5zAkw-mSpb9MnnxxEkHDiz1PftIHw`,
+list „OLD Audio Sources - Speech“: „Taunt NN“ + jazyk → wem ID); většina
+tauntů je vložená v bance (DIDX/DATA), zbytek stream v PCK. Skript
+`nastroje/zvuky/taunty.py` (+ `taunty_en_wem.json`) vytáhne všech 105 do
+`web/src/assets/taunty/taunt-NN.mp3`. Past: `ls | head` usekl podsložku
+`en` a den se hledalo ve špatném balíku; `Play_Taunt_11_Random` v hlavní
+bance NENÍ taunt 11.

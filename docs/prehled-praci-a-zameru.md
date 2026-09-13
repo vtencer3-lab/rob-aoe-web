@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 14. 9. 2026 odpoledne, main 1.1.4, dev 1.6.5)
+# Přehled prací a záměrů (stav k 14. 9. 2026 odpoledne, main 1.1.4, dev 1.7.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,7 +35,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.6.5, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.7.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 300, databázové 169, frontend 289 — všechny zelené (14. 9. 2026 dopoledne, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -1527,18 +1527,17 @@ je oddělovač vidět dole v okně chatu a teprve pak začne mizet.
   bez obrázků.
 - **Taunty ze hry:** zpráva, která je jen číslem 1–105, se ukáže jako
   taunt „**11** Laugh“ (`shared/taunty.ts`, texty doslova z herního
-  `key-value-strings-utf8.txt`, klíče 11400–11504). **Zvuk zatím žádný
-  (1.6.5).** Pokus se smíchem z události `Play_Taunt_11_Random` uživatel
-  odmítl („to mají být přesně ty ze hry“) — byl to jiný zvuk; soubory
-  odstraněny. Hlasové taunty 1–42 se v instalaci nenašly: ve Wwise bankách
-  jsou jen `Play_Taunt_Ally/Enemy/Neutral` a `Play_Flare` (taunty 39–41,
-  46), definice režimu (`modes/Pompeii/Pompeii.json`) čeká složku
-  `resources/<locale>/sound/taunt`, která v instalaci není, a `drs/sounds`
-  (Wwise externals) je prázdná. Prohledáno: všech 5 bank (1622 událostí,
-  17 001 objektů) proti ~2 M kandidátních jmen, struktura událostí (žádný
-  běh 42 jednozvukových), streamy Base.1.pck (jen hudba). Až budou
-  nahrávky (od uživatele nebo z klasické verze hry), hrají v `App.tsx`
-  místo cinknutí, i autorovi. Ostatní taunty tam jako
+  `key-value-strings-utf8.txt`, klíče 11400–11504). **Zvuk všech 105
+  tauntů (1.7.0)** — nahrávky přímo ze hry: hlasy jsou jazykově zvlášť
+  v `AoE2DE/wwise/en/Base.pck` (podsložka `en`, kterou dřívější výpis
+  usekl; hlavní `wwise/Base.pck` má jen SFX, proto se tam taunty nedaly
+  najít — 1.6.5 byl omyl se smíchem z `Play_Taunt_11_Random`). Mapování
+  „Taunt NN → wem“ dala komunitní tabulka StepS (list „OLD Audio Sources -
+  Speech“, jazyk en), extrakce je v `nastroje/zvuky/taunty.py` (+
+  `taunty_en_wem.json`) → `web/src/assets/taunty/taunt-NN.mp3` (2,3 MB,
+  načítají se až při přehrání přes `import.meta.glob`). Prohlížeč taunt
+  hraje místo cinknutí příjemcům i autorovi, na hlasitost chatu; víc tauntů
+  naráz = každý svůj zvuk. Test v `App.test.tsx`. Ostatní taunty tam jako
   číslované události nejsou (prohledány event ID všech pěti bank); jejich
   zvuk by chtěl rozbor datového souboru hry — zatím jen text.
 - **Zero-width emoty (1.6.0):** 7TV je značí na položce sady bitem 1
@@ -1840,6 +1839,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.7.0 | 14. 9. 15:30 | Zvuk všech 105 tauntů přesně ze hry (`wwise/en/Base.pck`), hraje místo cinknutí i autorovi (§3.52) |
 | 1.6.5 | 14. 9. 14:30 | Taunty bez zvuku — smích z Wwise nebyl ten ze hry, nahrávky tauntů v instalaci nejsou (§3.52) |
 | 1.6.4 | 14. 9. 12:10 | Náhled odpovědi nad celou zprávou, skok posouvá jen seznam a jen když je třeba, mezera za jménem, bez pozadí při najetí |
 | 1.6.3 | 14. 9. 11:45 | Smích (taunt 11) hraje i autorovi; test zvuku tauntu |

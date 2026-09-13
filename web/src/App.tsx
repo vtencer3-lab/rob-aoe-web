@@ -1,3 +1,4 @@
+import { cisloTauntu } from "../../src/shared/taunty.js";
 import { spustPrehravacHlasu } from "./hlas.js";
 import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -39,6 +40,18 @@ import { prehraj } from "./zvuk.js";
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
+/**
+ * Taunty ze hry (uživatel 14. 9. 2026: „přesně ty ze hry“): 105 nahrávek
+ * z `wwise/en/Base.pck` (nastroje/zvuky/taunty.py), jako adresy — stáhnou se
+ * až při přehrání. Klíč = číslo tauntu.
+ */
+const TAUNTY_ZVUK: Record<number, string> = Object.fromEntries(
+  Object.entries(import.meta.glob("./assets/taunty/taunt-*.mp3", { eager: true, query: "?url", import: "default" })).map(([cesta, url]) => [
+    Number(/taunt-(\d+)\.mp3$/.exec(cesta)?.[1]),
+    url as string,
+  ]),
+);
+
 /** Dvě vnořené šipky (chevrony) pro sbalení a rozbalení lišty. */
 function DvojitaSipka({ smer }: { smer: "nahoru" | "dolu" }) {
   const d = smer === "nahoru" ? "M3 9l5-5 5 5M3 14l5-5 5 5" : "M3 3l5 5 5-5M3 8l5 5 5-5";
@@ -191,10 +204,11 @@ export function App() {
       // uživatel 13. 9. 2026) k tomu všem zazvoní zvonem z radnice.
       const noveVsechny = (z.zpravy ?? []).filter((m) => m.id > p.zprava);
       const nove = noveVsechny.filter((m) => m.steamId !== me.steamId);
-      // Taunty zatím zvuk nemají: nahrávky ze hry se v instalaci nenašly
-      // (uživatel 14. 9. 2026: „to mají být přesně ty ze hry“; smích z Wwise
-      // byl jiný zvuk). Až budou soubory, hrají tady místo cinknutí, i autorovi.
-      if (nove.length > 0) prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
+      // Taunt ze hry zní jako ve hře — i autorovi — místo cinknutí; jiná cizí
+      // zpráva cinkne. Víc tauntů naráz: každý svůj zvuk.
+      const taunty = noveVsechny.map((m) => cisloTauntu(m.text)).filter((n): n is number => n !== null && n in TAUNTY_ZVUK);
+      for (const n of taunty) prehraj(TAUNTY_ZVUK[n]!, hlasitostUdalosti(hlasitostChatu));
+      if (taunty.length === 0 && nove.length > 0) prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
       if (nove.some(jeDulezita)) prehraj(zvonUrl);
       if (noveVsechny.length > 0) continue;
       if (me.jeAdmin) {

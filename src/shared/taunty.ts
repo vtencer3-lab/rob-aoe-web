@@ -5,10 +5,9 @@
  * `resources/en/strings/key-value/key-value-strings-utf8.txt` (klíče 11400
  * až 11504 = taunty 1 až 105), převzaté doslova.
  *
- * Zvuk má zatím jen smích (11): ve Wwise bankách hry je jediná taunt
- * událost `Play_Taunt_11_Random` (6 náhodných variant); ostatní taunty tam
- * jako číslované události nejsou, jejich zvuk by chtěl rozbor datového
- * souboru hry (viz scratchpad `zvuky-hra/README.txt`).
+ * Zvuky všech 105 tauntů jsou v `web/src/assets/taunty/taunt-NN.mp3`
+ * (z `wwise/en/Base.pck`, viz `nastroje/zvuky/taunty.py`); prohlížeč je hraje
+ * v App.tsx místo cinknutí, i autorovi.
  */
 export const TAUNTY: Readonly<Record<number, string>> = {
   1: "Yes",

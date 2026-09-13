@@ -101,3 +101,12 @@ Play_Taunt_11_Random  1217387751  Event 232745270-12863 -> 6 náhodných variant
   wem 219413181, 304027938, 505627596, 670980093, 693140238, 971682679 -> web/src/assets/taunty/smich-1..6.mp3 (LAME q4)
 Ostatní taunty ve Wwise bankách jako číslované události nejsou (prohledány event ID všech 5 bank
 proti vzorům Play_Taunt_NNN apod.); jejich zvuk by chtěl rozbor datového souboru hry (empires2_x2_p1.dat).
+
+Doplněk 14. 9. 2026 – taunty ze hry (všech 105)
+-----------------------------------------------
+Hlasy jsou jazykově zvlášť: AoE2DE\wwise\en\Base.pck (24 MB; 3 banky, 160 streamů) — podsložka, kterou
+`ls | head` dřív usekl. Události Play_Taunt_01…105 (FNV-1) jsou v těchhle bankách, ne v hlavním Base.pck.
+Mapování „Taunt NN“ -> wem ID pochází z komunitní tabulky StepS (Google Sheets
+1bczdFQksnbLnjI5zAkw-mSpb9MnnxxEkHDiz1PftIHw, list „OLD Audio Sources - Speech“, jazyk en) -> taunty_en_wem.json.
+Extrakce: python taunty.py (pck.py + vgmstream-cli + ffmpeg) -> web/src/assets/taunty/taunt-NN.mp3 (2,3 MB celkem).
+Dřívější „smích“ z Play_Taunt_11_Random (hlavní banka) NENÍ taunt 11 — byl to jiný zvuk, odstraněno.
