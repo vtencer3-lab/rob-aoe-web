@@ -1,4 +1,4 @@
-import { AKTIVITA_MINUT, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT } from "../shared/aktivita.js";
+import { AKTIVITA_MINUT, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT, ZVONEK_PO_MINUTACH } from "../shared/aktivita.js";
 import type { SestavaVstup } from "../shared/types.js";
 import { generatePassword } from "../matches/composition.js";
 import { getPool, withTransaction } from "./pool.js";
@@ -71,6 +71,21 @@ export async function setLhutaAktivity(minut: number): Promise<number> {
  * Svolání do radnice: admin klikne na zvonek u hráče, hráči v prohlížeči
  * zazvoní poplach. Vrací false, když hráč v akci není.
  */
+/**
+ * Super zvonek: svolá naráz všechny, u kterých by admin viděl zvonek — komu
+ * zbývá nejvýš lhůta − ZVONEK_PO_MINUTACH, včetně spících (shared/aktivita
+ * `nabidnoutZvonek`, tady v SQL). Sebe admin nesvolává. Vrací počet.
+ */
+export async function svolejVsechny(akceId: number, kdoSteamId: string): Promise<number> {
+  const { rowCount } = await getPool().query(
+    `UPDATE prihlaska SET svolan_v = now(), svolal_steam_id = $2
+      WHERE akce_id = $1 AND stav = 'prihlasen' AND steam_id <> $2
+        AND aktivni_do <= now() + ((SELECT lhuta_aktivity_minut FROM nastaveni_webu) - $3) * interval '1 minute'`,
+    [akceId, kdoSteamId, ZVONEK_PO_MINUTACH],
+  );
+  return rowCount ?? 0;
+}
+
 export async function svolej(akceId: number, steamId: string, kdoSteamId: string): Promise<boolean> {
   const { rowCount } = await getPool().query(
     "UPDATE prihlaska SET svolan_v = now(), svolal_steam_id = $3 WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'",

@@ -31,6 +31,8 @@ interface Props {
   ladeni?: boolean;
   /** Admin: zvonek u hráče — svolání do radnice (poplach ve hráčově prohlížeči). */
   onSvolat?: (steamId: string) => void;
+  /** Admin: super zvonek v hlavičce — svolá naráz všechny, u kterých je zvonek. */
+  onSvolatVsechny?: () => void;
   /** Lhůta aktivity večera; z ní se počítá práh pro „Jsem tu!“. */
   lhutaMinut?: number;
   /** Debug: pravé tlačítko na vlastním „Jsem tu!“ předvede svolání. */
@@ -250,7 +252,7 @@ function uklidSirky(tabulka: HTMLTableElement, hlavicky: HTMLTableCellElement[])
 /** Jak dlouho po kliknutí je zvonek zašedlý. */
 const ZVONEK_CHLADNUTI_MS = 5_000;
 
-export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni, onSvolat, lhutaMinut, onZkusebniSvolani }: Props) {
+export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni, onSvolat, onSvolatVsechny, lhutaMinut, onZkusebniSvolani }: Props) {
   // Debug: klik na ikonu hry přepne její stav jen v prohlížeči (má → nelze
   // ověřit → nemá), ať jde všechny tři podoby vidět bez cizího účtu.
   const [prepsaneHry, setPrepsaneHry] = useState<Record<string, SteamVlastnictvi>>({});
@@ -271,6 +273,15 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
     prehraj(poplachUrl, hlasitost() * 0.3);
     setZvonekChladne((z) => ({ ...z, [steamId]: true }));
     setTimeout(() => setZvonekChladne((z) => ({ ...z, [steamId]: false })), ZVONEK_CHLADNUTI_MS);
+  };
+  // Super zvonek: totéž pro všechny, u kterých by byl zvonek; chladne pod
+  // klíčem „*“. Ukáže se, jen když má koho svolat.
+  const zazvonVsem = () => {
+    if (!onSvolatVsechny || zvonekChladne["*"]) return;
+    onSvolatVsechny();
+    prehraj(poplachUrl, hlasitost() * 0.3);
+    setZvonekChladne((z) => ({ ...z, "*": true }));
+    setTimeout(() => setZvonekChladne((z) => ({ ...z, "*": false })), ZVONEK_CHLADNUTI_MS);
   };
   const tahani = useTahani(skladani?.presun ?? (() => {}));
   const [razeni, setRazeni] = useState<Razeni | null>(() => (skladani ? nactiRazeni() : null));
@@ -340,7 +351,23 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
               </th>
             );
           })}
-          <th className="jsem-tu-bunka" aria-label="Návrat mezi aktivní" />
+          <th className="jsem-tu-bunka" aria-label="Návrat mezi aktivní">
+            {onSvolatVsechny && prihlaseni.some((h) => h.steamId !== ja && !jeAi(h.steamId) && nabidnoutZvonek(h.aktivniDo, ted, lhutaMinut)) ? (
+              <button
+                type="button"
+                className={zvonekChladne["*"] ? "zvonek super-zvonek chladne" : "zvonek super-zvonek"}
+                aria-label="Svolat všechny"
+                title="Svolat do radnice všechny, u kterých je zvonek"
+                disabled={Boolean(zvonekChladne["*"])}
+                onClick={zazvonVsem}
+              >
+                <span className="dva-zvonky" aria-hidden="true">
+                  <span className="zadni">🔔</span>
+                  <span className="predni">🔔</span>
+                </span>
+              </button>
+            ) : null}
+          </th>
           <th aria-label="Stav hráče" />
         </tr>
       </thead>

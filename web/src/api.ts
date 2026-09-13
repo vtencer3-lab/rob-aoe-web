@@ -92,6 +92,9 @@ export const api = {
   /** Zvonek u hráče: svolání do radnice, hráči zazvoní poplach. */
   svolat: (akceId: number, steamId: string) =>
     fetch(cesta(`/api/akce/${akceId}/hraci/${steamId}/svolat`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
+  /** Super zvonek v hlavičce tabulky: svolá všechny, u kterých je zvonek (lhůta − 5 min). */
+  svolatVsechny: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/svolat-vsechny`), { method: "POST" }).then((r) => json<{ pocet: number }>(r)),
   /** Kostka u hesla v okně Pre-Lobby: nové heslo večera pro lobby, které teprve vzniknou. */
   pristiHeslo: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/pristi-heslo`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),

@@ -8,6 +8,7 @@ import {
   pripravPristiHeslo,
   setLhutaAktivity,
   svolej,
+  svolejVsechny,
   pulsAktivity,
   setAkceStav,
   setNastaveniLobby,
@@ -123,6 +124,15 @@ export function registerEventRoutes(app: FastifyInstance): void {
     if (!(await svolej(akceId, steamId, admin))) throw new HttpError(404, "Hráč v akci není.");
     await broadcastAkce();
     return { ok: true };
+  });
+
+  // Super zvonek v hlavičce tabulky: svolání všech, u kterých je zvonek.
+  app.post("/api/akce/:id/svolat-vsechny", async (request) => {
+    const admin = await requireAdmin(request);
+    const akceId = requireId(request);
+    const pocet = await svolejVsechny(akceId, admin);
+    if (pocet > 0) await broadcastAkce();
+    return { pocet };
   });
 
   // Kostka u hesla v okně Pre-Lobby: nové heslo pro příští lobby. Vrací se

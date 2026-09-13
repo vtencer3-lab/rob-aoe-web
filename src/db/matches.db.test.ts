@@ -394,7 +394,7 @@ it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () =>
 
 // Lhůta aktivity je věcí akce: přihláška i „Jsem tu!“ ji berou z ní.
 it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", async () => {
-  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej, obnovAktivitu, withdraw: odhlas } = await import("./events.js");
+  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej, svolejVsechny, obnovAktivitu, withdraw: odhlas } = await import("./events.js");
   await setLhutaAktivity(30);
   await prihlas(akceId, HRACI[0]!);
   // Nové přihlášení posune hráče na konec seznamu (řadí se podle času), tak podle id.
@@ -413,6 +413,12 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   const poMinut = (poSvolani.aktivniDo.getTime() - Date.now()) / 60_000;
   expect(poMinut).toBeGreaterThan(28);
   expect(await svolej(akceId, "76561198000000999", HRACI[1]!)).toBe(false);
+  // Super zvonek: čerstvě přihlášení mají plnou lhůtu, zvonek by u nich nebyl,
+  // takže se nesvolá nikdo; kdo spí (lhůta pryč), svolá se — admin sám ne.
+  expect(await svolejVsechny(akceId, HRACI[1]!)).toBe(0);
+  await getPool().query("UPDATE prihlaska SET aktivni_do = now() - interval '1 minute' WHERE akce_id = $1 AND steam_id = ANY($2)", [akceId, [HRACI[1], HRACI[2]]]);
+  expect(await svolejVsechny(akceId, HRACI[1]!)).toBe(1);
+  expect((await listSignups(akceId)).find((r) => r.steamId === HRACI[2])!.svolanV).toBeInstanceOf(Date);
   // „Jsem tu!“ svolání vyřídí; nové přihlášení po odhlášení ho nesmí zdědit.
   expect(await obnovAktivitu(akceId, HRACI[0]!)).toBe(true);
   expect((await najdi()).svolanV).toBeNull();

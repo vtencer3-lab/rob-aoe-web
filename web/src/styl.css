@@ -1871,6 +1871,13 @@ body.bez-scrollu { overflow: hidden; }
 .zvonek:not(:disabled):active { animation: zvon-kyv 0.35s ease; }
 .zvonek { transition: transform 0.08s ease, opacity 0.6s ease, filter 0.6s ease; }
 .zvonek.chladne, .zvonek:disabled { opacity: 0.4; filter: grayscale(0.7); cursor: default; transition: transform 0.08s ease, opacity 0s, filter 0s; }
+/* Super zvonek v hlavičce tabulky: dva zvonky, větší vzadu, menší vpředu se
+   stínem (uživatel 13. 9. 2026). Svolá všechny, u kterých je zvonek. */
+.super-zvonek { width: 2.4rem; }
+.super-zvonek .dva-zvonky { position: relative; display: inline-block; width: 1.5rem; height: 1.3rem; }
+.super-zvonek .dva-zvonky > span { position: absolute; line-height: 1; }
+.super-zvonek .dva-zvonky .zadni { left: 0; top: 0; font-size: 1.15rem; }
+.super-zvonek .dva-zvonky .predni { right: 0; bottom: 0; font-size: 0.8rem; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); }
 @keyframes zvon-kyv {
   0% { transform: scale(0.86) rotate(0); }
   35% { transform: scale(0.95) rotate(-14deg); }

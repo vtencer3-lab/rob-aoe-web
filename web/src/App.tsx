@@ -15,7 +15,7 @@ import { EditaceZapasu } from "./views/EditaceZapasu.js";
 import { NastaveniUzivatele } from "./views/NastaveniUzivatele.js";
 import { Svolani } from "./views/Svolani.js";
 import poplachUrl from "./assets/poplach.mp3";
-import { hlasitost as nactiHlasitost } from "./zvuk.js";
+import { hlasitost as nactiHlasitost, hlasitostChatu as nactiHlasitostChatu, hlasitostUdalosti } from "./zvuk.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
@@ -28,6 +28,7 @@ import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
 import crashoutUrl from "./assets/crashout.mp3";
+import chatUrl from "./assets/chat.mp3";
 import zvonUrl from "./assets/zvon.mp3";
 import logoUrl from "./assets/logo.webp";
 import { prehraj } from "./zvuk.js";
@@ -115,6 +116,7 @@ export function App() {
   // Ozubené kolečko vedle jména: hlasitost (jen tenhle prohlížeč) a pro admina lhůta aktivity.
   const [nastaveniVidet, setNastaveniVidet] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
+  const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   useEffect(() => {
     // Výchozí (soumrak) je v CSS bez třídy; ostatní mají vlastní třídu.
     for (const p of POZADI) document.documentElement.classList.toggle(`pozadi-${p.klic}`, p.klic !== "soumrak" && pozadi === p.klic);
@@ -161,9 +163,13 @@ export function App() {
     for (const z of zapasy) {
       const p = drive.get(z.id);
       if (!p) continue;
-      const novaOdAdmina = (z.zpravy ?? []).some((m) => m.id > p.zprava && m.jeAdmin && m.steamId !== me.steamId);
-      if (novaOdAdmina) {
-        prehraj(zvonUrl);
+      // Cizí zpráva v chatu cinkne (Play_Chat_Received ze hry) na hlasitost
+      // chatu — i adminovi (uživatel 13. 9. 2026). Zpráva od admina hráči
+      // zvoní zvonem z radnice jako dřív: admin v chatu je pokyn, ne řeč.
+      const nove = (z.zpravy ?? []).filter((m) => m.id > p.zprava && m.steamId !== me.steamId);
+      if (nove.length > 0) {
+        if (!me.jeAdmin && nove.some((m) => m.jeAdmin)) prehraj(zvonUrl);
+        else prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
         continue;
       }
       if (me.jeAdmin) {
@@ -542,6 +548,7 @@ export function App() {
             <SeznamPrihlasenych
                 ladeni={admin && ladeni}
               onSvolat={admin ? (steamId) => void hlidej(() => api.svolat(akce.id, steamId)) : undefined}
+              onSvolatVsechny={admin ? () => void hlidej(() => api.svolatVsechny(akce.id)) : undefined}
               lhutaMinut={stav?.lhutaAktivityMinut}
               onZkusebniSvolani={
                 // I v pohledu uživatele: admin si tak zkouší, co hráč uvidí
@@ -692,6 +699,8 @@ export function App() {
         <NastaveniUzivatele
           hlasitost={hlasitostZvuku}
           onHlasitost={setHlasitostZvuku}
+          hlasitostChatu={hlasitostChatu}
+          onHlasitostChatu={setHlasitostChatu}
           lhutaMinut={admin ? (stav?.lhutaAktivityMinut ?? 15) : undefined}
           onLhuta={admin ? (minut) => void hlidej(() => api.lhutaAktivity(minut)) : undefined}
           onZavrit={() => setNastaveniVidet(false)}
