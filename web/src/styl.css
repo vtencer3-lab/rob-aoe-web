@@ -1904,7 +1904,8 @@ body.bez-scrollu { overflow: hidden; }
 .chat .text.dulezita { font-weight: 700; }
 /* 7TV emoty v řádku textu; široké (WIDE) se roztáhnou, samotný vykřičník admina
    je DinkDonk o kus větší. Taunt ze hry: číslo zlatě, text kurzívou. */
-.chat .emote { height: 1.7em; width: auto; vertical-align: middle; margin: -0.35em 0.1em; }
+/* Bez záporných okrajů: řádek se emotu přizpůsobí, ať se obrázek nepřekrývá se sousedy (uživatel 14. 9. 2026). */
+.chat .emote { height: 1.7em; width: auto; vertical-align: middle; margin: 0 0.1em; }
 .chat .emote.velky { height: 2.6em; }
 .chat .taunt { font-style: italic; }
 .chat .taunt b { font-style: normal; color: var(--zlato); }
