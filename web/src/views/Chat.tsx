@@ -375,9 +375,15 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
 
   // Náhled odpovědi: skok na původní zprávu a 2 s bliknutí (jako UnityChat).
   const skocNaZpravu = (id: number) => {
-    const li = seznam.current?.querySelector<HTMLElement>(`li[data-zprava-id="${id}"]`);
-    if (!li) return;
-    li.scrollIntoView({ behavior: "smooth", block: "center" });
+    const el = seznam.current;
+    const li = el?.querySelector<HTMLElement>(`li[data-zprava-id="${id}"]`);
+    if (!el || !li) return;
+    // Posouvá se jen seznam zpráv, ne celá stránka (scrollIntoView by hnul
+    // i s ní); když je původní zpráva celá vidět, neposouvá se vůbec.
+    const vrch = li.offsetTop - el.offsetTop;
+    const spodek = vrch + li.offsetHeight;
+    const vidim = vrch >= el.scrollTop && spodek <= el.scrollTop + el.clientHeight;
+    if (!vidim) el.scrollTo({ top: Math.max(0, vrch - (el.clientHeight - li.offsetHeight) / 2), behavior: "smooth" });
     setBlika(null);
     requestAnimationFrame(() => setBlika(id));
     setTimeout(() => setBlika((b) => (b === id ? null : b)), BLIKANI_MS);
@@ -452,23 +458,25 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
                     </li>
                   ) : null}
                   <li className={tridy} data-testid="zprava" data-zprava-id={z.id}>
+                    {z.odpovedNa ? (
+                      // Náhled původní zprávy jako malý řádek nad celou zprávou
+                      // (uživatel 14. 9. 2026), zarovnaný na sloupec jména.
+                      <button
+                        type="button"
+                        className="odpoved-na"
+                        title="Přejít na původní zprávu"
+                        data-testid="odpoved-na"
+                        onClick={() => skocNaZpravu(z.odpovedNa!.id)}
+                      >
+                        <span aria-hidden="true">↩</span> <b>@{z.odpovedNa.jmeno}</b> <span className="uryvek">{z.odpovedNa.text}</span>
+                      </button>
+                    ) : null}
                     <time dateTime={z.poslano}>{cas(z.poslano)}</time>
                     <span className={tridaAutora(z)}>
                       {role ? <OdznakTwitch role={role} /> : null}
                       {z.jmeno}
                     </span>
                     <span className={jeDulezita(z) ? "text dulezita" : "text"}>
-                      {z.odpovedNa ? (
-                        <button
-                          type="button"
-                          className="odpoved-na"
-                          title="Přejít na původní zprávu"
-                          data-testid="odpoved-na"
-                          onClick={() => skocNaZpravu(z.odpovedNa!.id)}
-                        >
-                          <span aria-hidden="true">↩</span> <b>@{z.odpovedNa.jmeno}</b> <span className="uryvek">{z.odpovedNa.text}</span>
-                        </button>
-                      ) : null}
                       <TextZpravy zprava={z} emoty={emoty} />
                       {z.upraveno ? <small className="editovano">(editováno)</small> : null}
                     </span>

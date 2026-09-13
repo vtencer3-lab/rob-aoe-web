@@ -160,7 +160,8 @@ it("odpověď: pruh nad polem, odeslání s id původní, klik na náhled bliká
   await vi.waitFor(() => expect(onOdeslat).toHaveBeenCalledWith("za chvíli", 5));
   await vi.waitFor(() => expect(screen.queryByTestId("odpoved-lista")).not.toBeInTheDocument());
   // Náhled u odpovědi: skok na původní + bliknutí.
-  Element.prototype.scrollIntoView = vi.fn();
+  // Skok posouvá jen seznam (scrollTo), ne stránku.
+  (HTMLElement.prototype as unknown as { scrollTo: unknown }).scrollTo = vi.fn();
   fireEvent.click(screen.getByTestId("odpoved-na"));
   await vi.waitFor(() => expect(screen.getAllByTestId("zprava")[0]).toHaveClass("blika"));
 });
