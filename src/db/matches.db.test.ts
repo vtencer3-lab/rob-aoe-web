@@ -36,6 +36,26 @@ afterAll(async () => {
   await closePool();
 });
 
+// Ukončená akce bez dohraného zápasu s vítězem nemá výpovědní hodnotu a maže
+// se i s rozehranými zápasy (uživatel 13. 9. 2026); s výsledkem zůstává celá.
+it("ukončení maže akci bez dohraného zápasu s vítězem, s výsledkem ji nechá", async () => {
+  const { smazAkciBezVysledku, setAkceStav: nastavStavAkce, createAkce: novaAkce } = await import("./events.js");
+  // Nový zápas je rovnou „bezi“ — rozehraný, bez výsledku.
+  const rozehrany = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  await nastavStavAkce(akceId, "konec");
+  expect(await smazAkciBezVysledku(akceId)).toBe(true);
+  expect((await getPool().query("SELECT 1 FROM zapas WHERE id = $1", [rozehrany.id])).rowCount).toBe(0);
+
+  const druha = (await novaAkce("s výsledkem")).id;
+  for (const steamId of HRACI.slice(0, 2)) await signUp(druha, steamId);
+  const dohrany = await createZapas(druha, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  await setZapasStav(dohrany.id, "dohrano");
+  await setVysledek(dohrany.id, { tym: 2 });
+  await nastavStavAkce(druha, "konec");
+  expect(await smazAkciBezVysledku(druha)).toBe(false);
+  expect((await getPool().query("SELECT 1 FROM akce WHERE id = $1", [druha])).rowCount).toBe(1);
+});
+
 it("vytvoří 1v1 s pořadím, názvem lobby a heslem", async () => {
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   expect(zapas.poradi).toBe(1);

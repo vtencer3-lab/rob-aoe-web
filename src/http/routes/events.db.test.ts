@@ -115,7 +115,11 @@ it("Rob smí akci ukončit", async () => {
   });
 
   expect(stav.json().akce.stav).toBe("konec");
+  // Prázdná akce se ukončením rovnou maže (uživatel 13. 9. 2026).
+  expect(stav.json().smazana).toBe(true);
   expect(await getAktivniAkce()).toBeNull();
+  const { rowCount } = await getPool().query("SELECT 1 FROM akce WHERE id = $1", [akce.id]);
+  expect(rowCount).toBe(0);
   await app.close();
 });
 
