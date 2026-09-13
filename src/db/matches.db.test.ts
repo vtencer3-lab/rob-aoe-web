@@ -40,8 +40,8 @@ afterAll(async () => {
 // se i s rozehranými zápasy (uživatel 13. 9. 2026); s výsledkem zůstává celá.
 it("ukončení maže akci bez dohraného zápasu s vítězem, s výsledkem ji nechá", async () => {
   const { smazAkciBezVysledku, setAkceStav: nastavStavAkce, createAkce: novaAkce } = await import("./events.js");
+  // Nový zápas je rovnou „bezi“ — rozehraný, bez výsledku.
   const rozehrany = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
-  await setZapasStav(rozehrany.id, "bezi");
   await nastavStavAkce(akceId, "konec");
   expect(await smazAkciBezVysledku(akceId)).toBe(true);
   expect((await getPool().query("SELECT 1 FROM zapas WHERE id = $1", [rozehrany.id])).rowCount).toBe(0);
