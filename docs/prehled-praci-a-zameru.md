@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 večer, main 1.1.4, dev 1.3.3)
+# Přehled prací a záměrů (stav k 13. 9. 2026 večer, main 1.1.4, dev 1.3.4)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.3.3, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.3.4, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 296, databázové 167, frontend 273 — všechny zelené (13. 9. 2026 večer, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 296, databázové 167, frontend 275 — všechny zelené (13. 9. 2026 večer, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -1367,7 +1367,8 @@ s vítězem zůstává celá.
 - **Hlasitost:** dosavadní posuvník je **Master Volume** (výchozí 70 %),
   nový **Hlasitost chatu** je podíl z něj (výchozí 50 %, klíč
   `zvuk.hlasitost-chat`): výsledek `hlasitostUdalosti(podil, master)` = 70 × 50
-  → 35 %, pod posuvníkem se ukazuje. Každá další událost se má odvozovat
+  → 35 % (výpis „35 % z Master Volume“ pod posuvníkem uživatel v 1.3.4 zrušil).
+  Každá další událost se má odvozovat
   stejně (`zvuk.ts`). Oba posuvníky jsou jedna komponenta `Posuvnik`
   (kolečko po procentu, zkouška zvukem po puštění: zvon, resp. chat).
 - **Super zvonek** v hlavičce tabulky přihlášených (sloupec „Jsem tu!“):
@@ -1416,6 +1417,19 @@ jen ve stavu `.sbaleno`; kliknutí ji vrátí. Šipky jsou inline SVG
 (`DvojitaSipka` v `App.tsx`). Stav je jen v paměti stránky — po obnovení
 je lišta zase rozbalená, což je v pořádku, obnovení ji stejně zruší.
 Při `prefers-reduced-motion` bez přechodu.
+
+### 3.48 Poplach, který prohlížeč zadržel (1.3.4, 13. 9. 2026)
+
+Hráč po super zvonku dostal okno „tě shání!“, ale poplach se neozval.
+Okno i zvuk spouští týž efekt nad `svolanV`, takže `prehraj()` proběhlo —
+selhalo `audio.play()`: prohlížeč bez gesta uživatele od načtení stránky
+zvuk nepustí (`NotAllowedError`; spící hráč typicky nikam neklikl). Dřív se
+chyba tiše spolkla. Od 1.3.4 `zvuk.ts` zadržený zvuk odloží (`cekajici`)
+a přehraje při prvním `pointerdown`/`keydown`; `naZablokovaniZvuku(cb)`
+hlásí zadržení a uvolnění, `App` to dává oknu `Svolani` (`zvukCeka`), které
+napíše „Prohlížeč poplach bez tvého kliknutí nepustil — ozve se, jakmile
+klikneš.“ Jiné chyby přehrávání se dál jen spolknou. Test `zvuk.test.ts`.
+Ztlumenou kartu nebo vypnutý zvuk v systému to nevyřeší.
 
 ---
 
@@ -1645,6 +1659,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.3.1 | 19:50 | „Nastavení hry“ se třemi pamatovanými podsekcemi a plynulým rozbalením/sbalením (§3.46) |
 | 1.3.2 | 20:10 | Super zvonek na střed sloupce, přední zvonek podle uživatele (§3.45) |
 | 1.3.3 | 20:30 | Lišta „nová verze“ jde sbalit dvojitou šipkou do záložky (§3.47) |
+| 1.3.4 | 21:00 | Prohlížečem zadržený poplach se přehraje po kliknutí a okno svolání to řekne (§3.48); bez výpisu „% z Master Volume“ |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

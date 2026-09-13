@@ -61,5 +61,44 @@ export function prehraj(url: string, procent = hlasitost()): void {
   const audio = new Audio(url);
   audio.volume = Math.min(1, Math.max(0, procent / 100));
   const slib = audio.play() as Promise<void> | undefined;
-  void slib?.catch(() => {});
+  void slib?.catch((chyba: unknown) => {
+    // Prohlížeč bez gesta uživatele zvuk nepustí (NotAllowedError) — třeba
+    // spícímu hráči, který od načtení stránky nikam neklikl (13. 9. 2026:
+    // super zvonek ukázal okno, ale poplach se neozval). Zvuk se odloží
+    // a přehraje při prvním kliknutí nebo klávese; okno „tě shání!“ mezitím
+    // řekne proč.
+    if (!(chyba instanceof Error) || chyba.name !== "NotAllowedError") return;
+    if (cekajici.length === 0) {
+      window.addEventListener("pointerdown", prehrajCekajici);
+      window.addEventListener("keydown", prehrajCekajici);
+    }
+    cekajici.push({ url, procent });
+    oznam(true);
+  });
+}
+
+const cekajici: { url: string; procent: number }[] = [];
+const posluchaci = new Set<(zablokovano: boolean) => void>();
+
+function oznam(zablokovano: boolean): void {
+  for (const cb of posluchaci) cb(zablokovano);
+}
+
+function prehrajCekajici(): void {
+  window.removeEventListener("pointerdown", prehrajCekajici);
+  window.removeEventListener("keydown", prehrajCekajici);
+  for (const { url, procent } of cekajici.splice(0)) {
+    const audio = new Audio(url);
+    audio.volume = Math.min(1, Math.max(0, procent / 100));
+    void (audio.play() as Promise<void> | undefined)?.catch(() => {});
+  }
+  oznam(false);
+}
+
+/** Kdo chce vědět, že prohlížeč zvuk zadržel (a pak zase pustil). Vrací odhlášení. */
+export function naZablokovaniZvuku(cb: (zablokovano: boolean) => void): () => void {
+  posluchaci.add(cb);
+  return () => {
+    posluchaci.delete(cb);
+  };
 }

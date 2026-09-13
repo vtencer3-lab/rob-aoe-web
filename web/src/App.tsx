@@ -15,7 +15,7 @@ import { EditaceZapasu } from "./views/EditaceZapasu.js";
 import { NastaveniUzivatele } from "./views/NastaveniUzivatele.js";
 import { Svolani } from "./views/Svolani.js";
 import poplachUrl from "./assets/poplach.mp3";
-import { hlasitost as nactiHlasitost, hlasitostChatu as nactiHlasitostChatu, hlasitostUdalosti } from "./zvuk.js";
+import { hlasitost as nactiHlasitost, hlasitostChatu as nactiHlasitostChatu, hlasitostUdalosti, naZablokovaniZvuku } from "./zvuk.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
@@ -151,6 +151,9 @@ export function App() {
   const predchoziSvolani = useRef<string | null | undefined>(undefined);
   // Okno „X tě shání!“ — zavře ho jen jedno ze dvou tlačítek.
   const [svolal, setSvolal] = useState<string | null>(null);
+  // Prohlížeč bez gesta zvuk nepustí; okno svolání to řekne a zvuk dojde po kliknutí.
+  const [zvukCeka, setZvukCeka] = useState(false);
+  useEffect(() => naZablokovaniZvuku(setZvukCeka), []);
   useEffect(() => {
     if (!me) return;
     const ja = stav?.prihlaseni.find((h) => h.steamId === me.steamId);
@@ -708,6 +711,7 @@ export function App() {
       {svolal && akce ? (
         <Svolani
           kdo={svolal}
+          zvukCeka={zvukCeka}
           onJsemTu={() => {
             setSvolal(null);
             void hlidej(() => api.jsemTu(akce.id));

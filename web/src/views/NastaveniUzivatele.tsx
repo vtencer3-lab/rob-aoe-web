@@ -71,7 +71,6 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
             onHlasitostChatu(v);
           }}
           onZkouska={() => prehraj(chatUrl, hlasitostUdalosti(chat, master))}
-          poznamka={`${Math.round(hlasitostUdalosti(chat, master))} % z Master Volume`}
         />
         {lhutaMinut !== undefined && onLhuta ? (
           <div className="radek-nastaveni" role="group" aria-label="Lhůta aktivity">
@@ -126,11 +125,9 @@ interface PosuvnikProps {
   onZmena: (procent: number) => void;
   /** Po puštění (myš, klávesa) se zvuk zkusí. */
   onZkouska: () => void;
-  /** Drobný text pod posuvníkem, třeba výsledná hlasitost. */
-  poznamka?: string;
 }
 
-function Posuvnik({ popisek, hodnota, onZmena, onZkouska, poznamka }: PosuvnikProps) {
+function Posuvnik({ popisek, hodnota, onZmena, onZkouska }: PosuvnikProps) {
   return (
     <label className="radek-nastaveni">
       <span>{popisek}</span>
@@ -153,7 +150,6 @@ function Posuvnik({ popisek, hodnota, onZmena, onZkouska, poznamka }: PosuvnikPr
         }}
       />
       <output>{hodnota} %</output>
-      {poznamka ? <small>{poznamka}</small> : null}
     </label>
   );
 }
