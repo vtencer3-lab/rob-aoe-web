@@ -37,6 +37,16 @@ import { prehraj } from "./zvuk.js";
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
+/** Dvě vnořené šipky (chevrony) pro sbalení a rozbalení lišty. */
+function DvojitaSipka({ smer }: { smer: "nahoru" | "dolu" }) {
+  const d = smer === "nahoru" ? "M3 9l5-5 5 5M3 14l5-5 5 5" : "M3 3l5 5 5-5M3 8l5 5 5-5";
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** Zkušební pozadí; klíč = přípona třídy `pozadi-<klic>` na `<html>` (výchozí soumrak je bez třídy). */
 const POZADI = [
   { klic: "puvodni", popisek: "Původní lvi" },
@@ -122,6 +132,7 @@ export function App() {
     for (const p of POZADI) document.documentElement.classList.toggle(`pozadi-${p.klic}`, p.klic !== "soumrak" && pozadi === p.klic);
   }, [pozadi]);
   const { stav, spojeno, obnov, novaVerze } = useAkceStav();
+  const [listaSbalena, setListaSbalena] = useState(false);
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
@@ -385,12 +396,24 @@ export function App() {
     <>
       {/* Nad <main>, ať jde přes celou šířku okna, ne jen obsahu. */}
       {novaVerze ? (
-        <p className="nova-verze" role="status">
-          Web se aktualizoval na verzi {novaVerze}, tahle stránka má {VERZE}.{" "}
-          <button type="button" onClick={() => location.reload()}>
-            Načíst znovu
+        // Lišta jde sbalit dvojitou šipkou vpravo; zůstane jen záložka
+        // s šipkami dolů, která ji zase vytáhne (uživatel 13. 9. 2026).
+        <div className={listaSbalena ? "nova-verze-obal sbaleno" : "nova-verze-obal"} data-testid="nova-verze">
+          <p className="nova-verze" role="status">
+            <span className="text">
+              Web se aktualizoval na verzi {novaVerze}, tahle stránka má {VERZE}.{" "}
+              <button type="button" onClick={() => location.reload()}>
+                Načíst znovu
+              </button>
+            </span>
+            <button type="button" className="sbalit" aria-label="Sbalit lištu" title="Sbalit lištu" onClick={() => setListaSbalena(true)}>
+              <DvojitaSipka smer="nahoru" />
+            </button>
+          </p>
+          <button type="button" className="zalozka" aria-label="Rozbalit lištu" title="Web se aktualizoval — rozbalit" onClick={() => setListaSbalena(false)} tabIndex={listaSbalena ? 0 : -1}>
+            <DvojitaSipka smer="dolu" />
           </button>
-        </p>
+        </div>
       ) : null}
     <main>
       <header>

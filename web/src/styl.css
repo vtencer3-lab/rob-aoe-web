@@ -219,12 +219,61 @@ header h1 {
   text-shadow: 0 2px 4px rgba(40, 6, 6, 0.9), 0 0 20px rgba(0, 0, 0, 0.55);
   filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
 }
-.nova-verze {
+/* Obal lišty drží sticky pozici a umí ji sbalit: výška jede přes grid
+   (1fr → 0fr), lišta uvnitř se zároveň vysune nahoru. Záložka s šipkami dolů
+   visí pod horní hranou, jen když je sbaleno. */
+.nova-verze-obal {
   position: sticky;
   top: 0;
   z-index: 20;
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.35s ease;
+}
+.nova-verze-obal.sbaleno { grid-template-rows: 0fr; }
+.nova-verze-obal > .nova-verze { min-height: 0; overflow: hidden; transition: transform 0.35s ease, opacity 0.35s ease; }
+.nova-verze-obal.sbaleno > .nova-verze { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+.nova-verze-obal .zalozka {
+  position: absolute;
+  top: 100%;
+  right: 1.5rem;
   margin: 0;
-  padding: 0.6rem 1.5rem;
+  padding: 0.15rem 0.8rem 0.25rem;
+  border: 1px solid var(--zlato-stin);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(#e2c47c, #c99a35 55%, #9d7420);
+  color: #23150a;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  line-height: 0;
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  pointer-events: none;
+}
+.nova-verze-obal.sbaleno .zalozka { opacity: 1; transform: none; pointer-events: auto; }
+.nova-verze-obal .zalozka:hover { background: linear-gradient(#ecd28f, #d6a83f 55%, #a97d24); }
+.nova-verze .text { display: inline-flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; justify-content: center; }
+.nova-verze .sbalit {
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  color: #23150a;
+  padding: 0.2rem;
+  line-height: 0;
+  border-radius: 6px;
+}
+.nova-verze .sbalit:hover { background: rgba(35, 21, 10, 0.15); }
+@media (prefers-reduced-motion: reduce) {
+  .nova-verze-obal, .nova-verze-obal > .nova-verze, .nova-verze-obal .zalozka { transition: none; }
+}
+.nova-verze {
+  position: relative;
+  margin: 0;
+  padding: 0.6rem 3.5rem 0.6rem 1.5rem;
   background: linear-gradient(#e2c47c, #c99a35 55%, #9d7420);
   color: #23150a;
   font-family: "Cinzel", Georgia, serif;

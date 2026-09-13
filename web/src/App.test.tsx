@@ -396,6 +396,11 @@ it("při nové verzi serveru nabídne obnovení stránky", async () => {
   render(<App />);
   expect(await screen.findByRole("status")).toHaveTextContent("99.0.0");
   expect(screen.getByRole("button", { name: "Načíst znovu" })).toBeInTheDocument();
+  // Dvojitá šipka lištu sbalí, záložka s šipkami dolů ji vrátí (uživatel 13. 9. 2026).
+  fireEvent.click(screen.getByRole("button", { name: /sbalit lištu/i }));
+  expect(screen.getByTestId("nova-verze")).toHaveClass("sbaleno");
+  fireEvent.click(screen.getByRole("button", { name: /rozbalit lištu/i }));
+  expect(screen.getByTestId("nova-verze")).not.toHaveClass("sbaleno");
 });
 
 // Adminovi visí u každého zápasu plná karta, takže zkrácený veřejný řádek pod
