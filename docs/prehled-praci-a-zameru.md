@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 večer, main 1.1.4, dev 1.3.4)
+# Přehled prací a záměrů (stav k 13. 9. 2026 večer, main 1.1.4, dev 1.3.5)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.3.4, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.3.5, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 296, databázové 167, frontend 275 — všechny zelené (13. 9. 2026 večer, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 296, databázové 167, frontend 276 — všechny zelené (13. 9. 2026 večer, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -1406,6 +1406,13 @@ jsou tedy všechny tři vybalené, pokud si je uživatel nesbalil. Samo
 zachytí, při zavírání se `open` odebere až po dojetí. V testovacím DOM
 a při `prefers-reduced-motion` se jen přepne.
 
+**Vždy dostupné (1.3.5):** „Nastavení hry“ mizelo, jakmile se komponenta
+kontroly znovu připojila (obnovení stránky, přeskládání karet v režii) —
+poslední výsledek žil jen ve stavu komponenty a mimo automatický režim
+(hra běží) se už nic nenačetlo. Kontrola teď proběhne jednou hned po
+připojení i mimo automatický režim, takže se poslední známý stav ze serveru
+načte vždy.
+
 ### 3.47 Sbalitelná lišta „nová verze“ (1.3.3, 13. 9. 2026)
 
 Uživatel: vpravo na liště dvojitá šipka nahoru, která lištu sbalí, zůstane
@@ -1413,7 +1420,10 @@ jen záložka s dvojitou šipkou dolů. Lišta je v obalu `.nova-verze-obal`
 (sticky, `data-testid="nova-verze"`): sbalení jede přes grid
 `1fr → 0fr` a zároveň se lišta vysune (`translateY(-100%)`, 0,35 s),
 záložka `.zalozka` visí pod horní hranou (`top: 100%`, vpravo) a objeví se
-jen ve stavu `.sbaleno`; kliknutí ji vrátí. Šipky jsou inline SVG
+jen ve stavu `.sbaleno`; kliknutí ji vrátí. Od 1.3.5 sbalená lišta stahuje
+i vnitřní okraj a spodní linku (obal měřil ~20 px a záložka visela kus pod
+hranou); tu výšku dostala záložka (`padding-top` 1,35 rem), takže je žlutá až
+po horní okraj stránky (uživatel). Šipky jsou inline SVG
 (`DvojitaSipka` v `App.tsx`). Stav je jen v paměti stránky — po obnovení
 je lišta zase rozbalená, což je v pořádku, obnovení ji stejně zruší.
 Při `prefers-reduced-motion` bez přechodu.
@@ -1430,6 +1440,21 @@ hlásí zadržení a uvolnění, `App` to dává oknu `Svolani` (`zvukCeka`), kt
 napíše „Prohlížeč poplach bez tvého kliknutí nepustil — ozve se, jakmile
 klikneš.“ Jiné chyby přehrávání se dál jen spolknou. Test `zvuk.test.ts`.
 Ztlumenou kartu nebo vypnutý zvuk v systému to nevyřeší.
+
+### 3.49 Důležitá zpráva admina s vykřičníkem (1.3.5, 13. 9. 2026)
+
+Uživatel: zpráva začínající vykřičníkem od admina „odcinkne“ (zvon) spolu
+se zvukem zprávy; u běžného hráče vykřičník nic nedělá; admin při psaní
+vidí poznámku; text je automaticky tučně. Pravidlo je ve sdíleném
+`cenzura.ts`: `jeDulezita(z)` = `jeAdmin && text.startsWith("!")`,
+`textZpravy(z)` vrací text bez úvodního vykřičníku (v databázi zůstává
+s ním — je to značka, přežije úpravu šipkou nahoru). `App` při nové cizí
+zprávě vždy cinkne (`chat.mp3` na hlasitost chatu) a u důležité navíc
+zazvoní `zvon.mp3` — všem včetně adminů. **Dřívější pravidlo „každá zpráva
+admina hráčům zvoní“ tím končí**, zvoní jen důležité. `Chat` dostal prop
+`jaAdmin`; když admin píše text začínající „!“, pod polem se ukáže
+„Důležitá zpráva — všem v lobby zazvoní zvon a bude tučně.“
+(`.dulezita-poznamka`); důležité zprávy mají třídu `.text.dulezita`.
 
 ---
 
@@ -1660,6 +1685,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.3.2 | 20:10 | Super zvonek na střed sloupce, přední zvonek podle uživatele (§3.45) |
 | 1.3.3 | 20:30 | Lišta „nová verze“ jde sbalit dvojitou šipkou do záložky (§3.47) |
 | 1.3.4 | 21:00 | Prohlížečem zadržený poplach se přehraje po kliknutí a okno svolání to řekne (§3.48); bez výpisu „% z Master Volume“ |
+| 1.3.5 | 21:40 | Důležitá zpráva admina s vykřičníkem (§3.49); „Nastavení hry“ vždy dostupné (§3.46); záložka lišty až k hornímu okraji (§3.47) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

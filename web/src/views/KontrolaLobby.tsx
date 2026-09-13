@@ -78,8 +78,12 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
   }, []);
 
   useEffect(() => {
-    if (!automaticky) return;
+    // I mimo automatický režim (hra běží) se jednou zkontroluje: jinak by po
+    // obnovení stránky nebo novém připojení komponenty chybělo „Nastavení
+    // hry“ — poslední známý stav je na serveru, ne ve stavu komponenty
+    // (uživatel 13. 9. 2026: „chci, aby bylo vždy dostupné“).
     void zkontroluj(false);
+    if (!automaticky) return;
     const casovac = setInterval(() => void zkontroluj(false), intervalMs);
     return () => clearInterval(casovac);
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -1,3 +1,4 @@
+import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
@@ -178,12 +179,12 @@ export function App() {
       const p = drive.get(z.id);
       if (!p) continue;
       // Cizí zpráva v chatu cinkne (Play_Chat_Received ze hry) na hlasitost
-      // chatu — i adminovi (uživatel 13. 9. 2026). Zpráva od admina hráči
-      // zvoní zvonem z radnice jako dřív: admin v chatu je pokyn, ne řeč.
+      // chatu — i adminovi. Důležitá zpráva (admin + vykřičník na začátku,
+      // uživatel 13. 9. 2026) k tomu všem zazvoní zvonem z radnice.
       const nove = (z.zpravy ?? []).filter((m) => m.id > p.zprava && m.steamId !== me.steamId);
       if (nove.length > 0) {
-        if (!me.jeAdmin && nove.some((m) => m.jeAdmin)) prehraj(zvonUrl);
-        else prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
+        prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
+        if (nove.some(jeDulezita)) prehraj(zvonUrl);
         continue;
       }
       if (me.jeAdmin) {
@@ -670,7 +671,7 @@ export function App() {
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ) : (
                   <KartaHrace
@@ -680,7 +681,7 @@ export function App() {
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ),
               )

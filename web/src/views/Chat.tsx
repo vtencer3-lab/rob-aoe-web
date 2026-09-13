@@ -1,3 +1,4 @@
+import { jeDulezita, textZpravy } from "../../../src/shared/cenzura.js";
 import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { ZapasView, ZpravaView } from "../../../src/shared/types.js";
 import twitchBroadcasterUrl from "../assets/twitch-broadcaster.png";
@@ -15,6 +16,8 @@ interface Props {
   onSmazat?: (zpravaId: number) => Promise<unknown> | void;
   /** Debug mód: u zprávy jde přepnout autora na jiného admina nebo hráče zápasu — jen v prohlížeči, kvůli barvám. */
   ladeni?: boolean;
+  /** Admin: zpráva s vykřičníkem na začátku je důležitá (zvon všem, tučně); u hráče vykřičník nic nedělá. */
+  jaAdmin?: boolean;
 }
 
 /** Jména adminů pro debug přepínač autora (barvy jsou v ADMIN_BARVY). */
@@ -81,7 +84,7 @@ function cas(iso: string): string {
  * a odesílá; seznam se drží u dna, dokud si ho člověk sám neodroluje nahoru.
  * Jméno hráče má barvu jeho slotu, admin svou vlastní a září.
  */
-export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni }: Props) {
+export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmin = false }: Props) {
   const [text, setText] = useState("");
   const [odesila, setOdesila] = useState(false);
   // Šipka nahoru: upravovaná zpráva (id) — pole nese její text, Escape zruší.
@@ -273,8 +276,8 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni }: Prop
                       {role ? <OdznakTwitch role={role} /> : null}
                       {z.jmeno}
                     </span>
-                    <span className="text">
-                      {z.text}
+                    <span className={jeDulezita(z) ? "text dulezita" : "text"}>
+                      {textZpravy(z)}
                       {z.upraveno ? <small className="editovano">(editováno)</small> : null}
                     </span>
                     {ladeni ? (
@@ -329,6 +332,11 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni }: Prop
               {upravovana !== null ? "Uložit" : "Odeslat"}
             </button>
           </form>
+          {jaAdmin && text.startsWith("!") ? (
+            <small className="dulezita-poznamka" data-testid="dulezita-poznamka">
+              Důležitá zpráva — všem v lobby zazvoní zvon a bude tučně.
+            </small>
+          ) : null}
         </div>
       </div>
     </section>

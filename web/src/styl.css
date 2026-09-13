@@ -231,14 +231,19 @@ header h1 {
   transition: grid-template-rows 0.35s ease;
 }
 .nova-verze-obal.sbaleno { grid-template-rows: 0fr; }
-.nova-verze-obal > .nova-verze { min-height: 0; overflow: hidden; transition: transform 0.35s ease, opacity 0.35s ease; }
-.nova-verze-obal.sbaleno > .nova-verze { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+.nova-verze-obal > .nova-verze { min-height: 0; overflow: hidden; transition: transform 0.35s ease, opacity 0.35s ease, padding 0.35s ease, border-bottom-width 0.35s ease; }
+/* Sbalená lišta nesmí nechat ani vnitřní okraj a linku — jinak obal měří
+   ~20 px a záložka visí kus pod horní hranou (uživatel 13. 9. 2026: „žlutou
+   až po vrchní okraj“). */
+.nova-verze-obal.sbaleno > .nova-verze { transform: translateY(-100%); opacity: 0; pointer-events: none; padding-top: 0; padding-bottom: 0; border-bottom-width: 0; }
 .nova-verze-obal .zalozka {
   position: absolute;
   top: 100%;
   right: 1.5rem;
   margin: 0;
-  padding: 0.15rem 0.8rem 0.25rem;
+  /* Vyšší o to, co dřív zabírala sbalená lišta: sahá až k hornímu okraji
+     (uživatel 13. 9. 2026: „tu výšku přidej tomu žlutému jazyku“). */
+  padding: 1.35rem 0.8rem 0.25rem;
   border: 1px solid var(--zlato-stin);
   border-top: 0;
   border-radius: 0 0 8px 8px;
@@ -1875,6 +1880,9 @@ body.bez-scrollu { overflow: hidden; }
 .chat .autor.barva-1 { color: var(--b1); } .chat .autor.barva-2 { color: var(--b2); } .chat .autor.barva-3 { color: var(--b3); } .chat .autor.barva-4 { color: var(--b4); }
 .chat .autor.barva-5 { color: var(--b5); } .chat .autor.barva-6 { color: var(--b6); } .chat .autor.barva-7 { color: var(--b7); } .chat .autor.barva-8 { color: var(--b8); }
 .chat .text { overflow-wrap: anywhere; }
+/* Důležitá zpráva admina (vykřičník na začátku): tučně; poznámka pod polem, když ji admin píše. */
+.chat .text.dulezita { font-weight: 700; }
+.chat .dulezita-poznamka { display: block; margin-top: 0.3rem; color: var(--akcent); font-size: 0.8rem; }
 .chat li.moje .text { color: var(--zlato-svetle); }
 .chat .psani { display: flex; gap: 0.5rem; }
 .chat .psani input { flex: 1; min-width: 0; }

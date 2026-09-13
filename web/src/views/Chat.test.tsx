@@ -38,6 +38,24 @@ it("kreslí zprávy s barvou slotu, admini svou barvou a září", () => {
   expect(radky[1]).toHaveTextContent("zakládám");
 });
 
+// Důležitá zpráva: admin + vykřičník na začátku → tučně bez vykřičníku;
+// u hráče vykřičník nic nedělá. Admin při psaní vidí poznámku.
+it("admin s vykřičníkem píše důležitou zprávu — tučně, s poznámkou; hráči vykřičník nic nedělá", () => {
+  const zpravy: NonNullable<ZapasView["zpravy"]> = [
+    { id: 1, steamId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "!go", poslano: "2026-09-12T12:01:00.000Z" },
+    { id: 2, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "!ok", poslano: "2026-09-12T12:02:00.000Z" },
+  ];
+  render(<Chat ja="76561198147631465" jaAdmin onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
+  const texty = screen.getAllByTestId("zprava").map((li) => li.querySelector(".text")!);
+  expect(texty[0]).toHaveClass("dulezita");
+  expect(texty[0]).toHaveTextContent(/^go$/);
+  expect(texty[1]).not.toHaveClass("dulezita");
+  expect(texty[1]).toHaveTextContent("!ok");
+  expect(screen.queryByTestId("dulezita-poznamka")).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox", { name: /zpráva do chatu/i }), { target: { value: "!pozor" } });
+  expect(screen.getByTestId("dulezita-poznamka")).toBeInTheDocument();
+});
+
 it("prázdný chat vyzve k první zprávě a prázdnou neodešle", () => {
   const onOdeslat = vi.fn();
   render(<Chat ja="a" onOdeslat={onOdeslat} zapas={zapas([])} />);
