@@ -168,7 +168,9 @@ export function App() {
     const drive = predchoziSvolani.current;
     predchoziSvolani.current = moje;
     if (drive !== undefined && moje != null && moje !== drive) {
-      prehraj(poplachUrl);
+      // Poplach vždy naplno, bez ohledu na Master Volume (uživatel 13. 9. 2026):
+      // svolání má hráče vzbudit, ne ho ztlumit.
+      prehraj(poplachUrl, 100);
       setSvolal(ja?.svolalJmeno ?? "Admin");
     }
   }, [stav, me]);
@@ -590,7 +592,7 @@ export function App() {
                 // (Tonner, 13. 9. 2026). Stačí zapnutý debug mód v patičce.
                 me?.jeAdmin && ladeni
                   ? () => {
-                      prehraj(poplachUrl);
+                      prehraj(poplachUrl, 100);
                       setSvolal(jmenoHrace(me));
                     }
                   : undefined

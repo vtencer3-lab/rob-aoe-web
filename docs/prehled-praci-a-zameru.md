@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, main 1.1.4, dev 1.4.2)
+# Přehled prací a záměrů (stav k 13. 9. 2026 v noci, main 1.1.4, dev 1.4.3)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,7 +35,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.4.2, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.4.3, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 298, databázové 168, frontend 276 — všechny zelené (13. 9. 2026 v noci, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -1368,6 +1368,11 @@ s vítězem zůstává celá.
   nový **Hlasitost chatu** je podíl z něj (výchozí 50 %, klíč
   `zvuk.hlasitost-chat`): výsledek `hlasitostUdalosti(podil, master)` = 70 × 50
   → 35 % (výpis „35 % z Master Volume“ pod posuvníkem uživatel v 1.3.4 zrušil).
+  **Poplach svolání Master Volume neovlivňuje** (1.4.3, uživatel): hráči
+  i zkušební svolání zní vždy na 100 %, aby svolání vzbudilo; u popisku
+  „Master Volume“ je kroužek (i) s bublinou „Neovlivňuje hlasitost svolávání
+  — poplach od admina zazvoní vždy naplno.“ Adminova ozvěna zvonku (30 %)
+  z Master Volume dál vychází.
   Každá další událost se má odvozovat
   stejně (`zvuk.ts`). Oba posuvníky jsou jedna komponenta `Posuvnik`
   (kolečko po procentu, zkouška zvukem po puštění: zvon, resp. chat).
@@ -1731,6 +1736,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.0 | 22:30 | Push-to-talk admina přes SSE + MediaSource, mute ostatních adminů (§3.50); chat se posouvá jen na obrazovce (§3.51) |
 | 1.4.1 | 22:50 | Push-to-talk jen v režii, jen ikona mikrofonu s červeným kolečkem při nahrávání (§3.50) |
 | 1.4.2 | 23:05 | Popisky mikrofonu a ztlumení jako vlastní bublina bez prodlevy, větší písmo (§3.50) |
+| 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

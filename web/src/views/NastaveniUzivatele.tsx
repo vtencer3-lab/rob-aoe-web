@@ -54,6 +54,7 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
             Každý posuvník se po puštění zkusí zvukem, který řídí. */}
         <Posuvnik
           popisek="Master Volume"
+          info="Neovlivňuje hlasitost svolávání — poplach od admina zazvoní vždy naplno."
           hodnota={master}
           onZmena={(v) => {
             setMaster(v);
@@ -125,12 +126,21 @@ interface PosuvnikProps {
   onZmena: (procent: number) => void;
   /** Po puštění (myš, klávesa) se zvuk zkusí. */
   onZkouska: () => void;
+  /** Kroužek (i) za popiskem s bublinou. */
+  info?: string;
 }
 
-function Posuvnik({ popisek, hodnota, onZmena, onZkouska }: PosuvnikProps) {
+function Posuvnik({ popisek, hodnota, onZmena, onZkouska, info }: PosuvnikProps) {
   return (
     <label className="radek-nastaveni">
-      <span>{popisek}</span>
+      <span>
+        {popisek}
+        {info ? (
+          <span className="info napoveda" data-napoveda={info} role="img" aria-label={info} tabIndex={0}>
+            i
+          </span>
+        ) : null}
+      </span>
       <input
         type="range"
         min={0}
