@@ -13,6 +13,7 @@ import {
   setNastaveniLobby,
   setSkladani,
   signUp,
+  smazAkciBezVysledku,
   ulozNastaveniLobby,
   withdraw,
   type AkceStav,
@@ -84,8 +85,11 @@ export function registerEventRoutes(app: FastifyInstance): void {
       throw new HttpError(400, "Neznámý stav akce.");
     }
     const akce = await setAkceStav(akceId, stav as AkceStav);
+    // Ukončená akce bez dohraného zápasu s vítězem nemá co říct — pryč s ní,
+    // včetně přihlášek, zápasů a chatu (db/events.smazAkciBezVysledku).
+    const smazana = stav === "konec" ? await smazAkciBezVysledku(akceId) : false;
     await broadcastAkce();
-    return { akce };
+    return { akce, smazana };
   });
 
   // Očekávané nastavení lobby pro „Zkontrolovat lobby“. Mění se živě: každé

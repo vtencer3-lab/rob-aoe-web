@@ -123,6 +123,23 @@ export async function setAkceStav(akceId: number, stav: AkceStav): Promise<AkceR
   return mapujAkci(rows[0]);
 }
 
+/**
+ * Akce bez výpovědní hodnoty se při ukončení maže (uživatel 13. 9. 2026):
+ * prázdná, jen se zrušenými zápasy, nebo i s rozehranými — „on je stejně
+ * neukončuje, to dělám já“. Zůstává jen akce, která má aspoň jeden dohraný
+ * zápas s vítězem. Přihlášky, zápasy, účastníci, chat i události jdou
+ * s ní (ON DELETE CASCADE). Vrací true, když se smazala.
+ */
+export async function smazAkciBezVysledku(akceId: number): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    `DELETE FROM akce
+      WHERE id = $1
+        AND NOT EXISTS (SELECT 1 FROM zapas WHERE akce_id = $1 AND stav = 'dohrano' AND vitez IS NOT NULL)`,
+    [akceId],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
 export async function setNastaveniLobby(
   akceId: number,
   nastaveni: Record<string, unknown>,

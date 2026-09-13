@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 ráno, main i dev 1.1.1)
+# Přehled prací a záměrů (stav k 13. 9. 2026 ráno, main 1.1.1, dev 1.1.2)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,7 +35,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.1.1, nasazeno na <https://jouki.cz/aoe> (PR #15, 13. 9. 2026 ráno); stav před ním nese značku `v1.0.0`, před 1.0.0 `v0.28.3` |
-| `origin/dev` | 1.1.1, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.1.2, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.1) navíc mazání akcí bez výsledku (§3.44). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 296, databázové 165, frontend 270 — všechny zelené (13. 9. 2026 ráno, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
@@ -1332,6 +1332,19 @@ z předchozí a okno nastavení ji ukazovalo jen s běžící akcí.
   `TRUNCATE player, akce` ji už nesmaže, takže hodnota z jednoho souboru
   padala do dalšího.
 
+### 3.44 Ukončená akce bez výsledku se maže (1.1.2, 13. 9. 2026)
+
+Uživatel: akce, „co nemají v sobě žádný zápas s vítězem“ — prázdné, jen se
+zrušenými zápasy, a na výslovné přání i s rozehranými („on je stejně
+neukončuje, to dělám já“) — nemají výpovědní hodnotu a při ukončení se mají
+z databáze smazat. `POST /api/akce/:id/stav` s `konec` proto po změně stavu
+zavolá `smazAkciBezVysledku` (`db/events.ts`): `DELETE FROM akce`, když
+neexistuje zápas ve stavu `dohrano` s vyplněným `vitez`. Přihlášky, zápasy,
+účastníci, chat i události jdou s ní (`ON DELETE CASCADE` od migrace 001).
+Odpověď nese `smazana: true/false`; prohlížeč nic nemění, stav přijde přes
+SSE jako „žádná akce“. Nevratné — akce s aspoň jedním dohraným zápasem
+s vítězem zůstává celá.
+
 ---
 
 ## 4. Externí API — co je ověřené a co ne
@@ -1552,6 +1565,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | **1.0.0** | 2:30 | **Release PR #14** do `main` (značka `v0.28.3` na stavu před ním); `experimental` přezaloženo na 1.0.0-0.0 s praporcem |
 | 1.1.0 | 3:00 | Lhůta aktivity jako globální nastavení webu, i mimo akci; migrace 024 (§3.43) |
 | 1.1.1 | 3:15 | DB testy vrací globální lhůtu na 15 před každým testem; **release PR #15** do `main` (značka `v1.0.0`) |
+| 1.1.2 | 3:40 | Ukončená akce bez dohraného zápasu s vítězem se maže i s obsahem (§3.44) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).
