@@ -1,3 +1,4 @@
+import { listZpravy, type ZpravaRow } from "../db/chat.js";
 import { lobbyName } from "../matches/composition.js";
 import { joinUri, spectatorUri } from "../aoe/lobbyUri.js";
 import { getAktivniAkce, listSignups } from "../db/events.js";
@@ -18,6 +19,7 @@ export function playerView(hrac: PlayerRow): PlayerView {
     eloNejvyssi: hrac.eloNejvyssi,
     odehranoHer: hrac.odehranoHer,
     steamHodiny: hrac.steamHodiny,
+    steamHra: hrac.steamHra,
     posledniZapas: hrac.posledniZapas?.toISOString() ?? null,
     statyStazenyV: hrac.statyStazenyV?.toISOString() ?? null,
     statyChyba: hrac.statyChyba,
@@ -27,7 +29,7 @@ export function playerView(hrac: PlayerRow): PlayerView {
 
 export { joinUri, spectatorUri };
 
-function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): ZapasView {
+function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zpravy: ZpravaRow[]): ZapasView {
   const { zapas, ucastnici } = zaznam;
   return {
     id: zapas.id,
@@ -42,6 +44,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
     fazeLobby: fazeLobbyPro(zapas.lobbyId),
     vitez: zapas.vitez,
     zavreny: zapas.zavrenyV !== null,
+    nastaveni: zapas.nastaveni,
     ucastnici: ucastnici.map((u) => ({
       steamId: u.steamId,
       alias: u.alias,
@@ -54,6 +57,17 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number]): Zapa
       poradi: u.poradi,
       kliknulPripojit: u.kliknulPripojit?.toISOString() ?? null,
     })),
+    zpravy: zpravy.map((z) => ({
+      id: z.id,
+      steamId: z.steamId,
+      jmeno: z.alias ?? z.steamName ?? z.steamId,
+      jeAdmin: z.jeAdmin,
+      barva: z.barva,
+      tym: z.tym,
+      text: z.text,
+      poslano: z.poslano.toISOString(),
+      upraveno: z.upravenoV !== null,
+    })),
   };
 }
 
@@ -62,6 +76,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   if (!akce) return { akce: null, prihlaseni: [], zapasy: [] };
   const prihlaseni = await listSignups(akce.id);
   const zapasy = await listZapasy(akce.id);
+  const zpravy = await listZpravy(akce.id);
   return {
     akce: {
       id: akce.id,
@@ -75,10 +90,16 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       // adminy zaslepuje redakce.
       pristiNazevLobby: lobbyName(zapasy.length + 1),
       pristiHeslo: akce.pristiHeslo ?? "",
+      lhutaAktivityMinut: akce.lhutaAktivityMinut,
     },
     // Lhůta aktivity patří k přihlášce, ne k hráči: mimo akci nemá smysl.
-    prihlaseni: prihlaseni.map((hrac) => ({ ...playerView(hrac), aktivniDo: hrac.aktivniDo.toISOString() })),
-    zapasy: zapasy.map(zapasView),
+    prihlaseni: prihlaseni.map((hrac) => ({
+      ...playerView(hrac),
+      aktivniDo: hrac.aktivniDo.toISOString(),
+      svolanV: hrac.svolanV?.toISOString() ?? null,
+      svolalJmeno: hrac.svolalJmeno,
+    })),
+    zapasy: zapasy.map((z) => zapasView(z, zpravy.get(z.zapas.id) ?? [])),
   };
 }
 

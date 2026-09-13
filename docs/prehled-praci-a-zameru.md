@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 9. 9. 2026, dev 0.28.3)
+# Přehled prací a záměrů (stav k 13. 9. 2026 ráno, main i dev 1.0.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -30,15 +30,15 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 ---
 
-## 1. Stav k 9. 9. 2026
+## 1. Stav k 12. 9. 2026
 
 | | |
 |---|---|
-| `origin/main` | 0.28.3, nasazeno na <https://jouki.cz/aoe> (PR #13, 9. 9. 2026 večer); stav před ním nese značku `v0.24.37` |
-| `origin/dev` | 0.28.3, nasazeno na <https://jouki.cz/aoe/dev> — AI v sestavě, mazání zkušebních hráčů, Pre-Lobby nastavení a postavené okno Create Lobby (§3.20–§3.27); po releasu **shodné s `main`** |
-| `origin/experimental` | 0.18.0-18.0, přezaloženo z `dev` 8. 9. 2026 po sloučení kabátku; od té doby prázdné a **zaostalé o celý `dev`** — před dalším pokusem přezaložit (§2.1 nasazení) |
-| Migrace | 001–018, poslední `018_skryte_civilizace_vypnute.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 286, databázové 154, frontend 233 — všechny zelené (9. 9. 2026 večer, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
+| `origin/main` | 1.0.0, nasazeno na <https://jouki.cz/aoe> (PR #14, 13. 9. 2026 ráno); stav před ním nese značku `v0.28.3` |
+| `origin/dev` | 1.0.0, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
+| Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
+| Testy | backend hermetické 296, databázové 165, frontend 270 — všechny zelené (13. 9. 2026 v noci, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
 | Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -46,7 +46,8 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
 PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
-kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) a PR #13 (0.28.3) 9. 9.
+kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) a PR #13 (0.28.3) 9. 9.;
+PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele).
 Před releasem se na dosavadní `main` věší značka
 `vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
 [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
@@ -430,8 +431,12 @@ kolem nadpisu a tabulky přihlášených, aby seděly na jedné desce.
   vinětu (je trénovaná na izolované předměty), bez ní vyšla scéna líp.
 - **Barvy hráčů (`--b1`…`--b8`) zůstaly beze změny** — musí sedět s barvami
   ve hře, jinak hráč nepozná, že je „modrý“.
-- **GPT-Image se nepoužilo** — klíč na stanici není a uživatel potvrdil, že
-  nefunguje. Všechno vzniklo lokálně na RTX 5090.
+- **GPT Image se použilo jen jednou**: uživatel jím 8. 9. večer opravil lva na
+  praporcích v pozadí (dva ocasy), zdroj `_grafika/final/namesti_2560.png`,
+  viz `grafika.md` §3. Všechno ostatní vzniklo lokálně na RTX 5090. Od 12. 9.
+  platí: **editace hotového obrázku přes GPT Image v Codexu** (má nástroj
+  `image_gen`, `codex exec -i obrázek`), nové obrázky lokálně; když není jasné,
+  které z toho, zeptat se.
 - Ze Scenaria uživatel povolil odstranění pozadí, bezešvé textury a upscaling,
   textury si napřed chce ocenit v kreditech. **Zatím se nic z toho nepoužilo**,
   lokální pipeline stačila.
@@ -904,6 +909,410 @@ to plnohodnotní hráči a jejich zápasy mají zůstat.
 
 ---
 
+### 3.28 Zkušební pozadí s dvouocasými lvy (0.28.4, 12. 9. 2026)
+
+**Odkud.** Zkouška napojení na Codex (GPT Image) — postup a poučení v
+`grafika.md` §3 „Dvouocasý lev“ a v paměti. Lvi na praporcích jsou překreslení
+podle státního znaku (anatomie, dva ocasy, všichni natočení do náměstí) a pak
+o krok zhrubnutí, aby vypadali jako stará výšivka. Čtyři kola: erbovní
+(příliš čistý), zkroucený ocas (dlouhý prompt s „intertwine“), čistý se
+správným ocasem, a nakonec zhrubnutý — ten je v repu.
+
+**Co je v kódu.** `web/src/assets/ui/pozadi-nove.webp` (99 kB, 1672×941)
+vedle původního `pozadi.webp`; třída `pozadi-nove` na `<html>` přepne
+`background-image` (`styl.css`). Od 0.29.0 jsou **nové lvy výchozí** a admin
+má v záhlaví pod Admin/User View přepínač „Původní lvi / Nové lvy“ (uživatel:
+„prozatím zkusíme nastavit ty nové lvy jako default“); volba je v
+`localStorage` (`rezie.pozadi-nove`), bez uložené hodnoty platí výchozí.
+Test v `App.test.tsx`.
+
+**Zdroje mimo repo.** `_grafika/final/pozadi_lvi_codex_v4.png` (vstup pro
+export) a všechna čtyři kola ve scratchpadu session (`codex-lev/`), prompty
+`prompt.txt`–`prompt4.txt` tamtéž; relace Codexu v `~/.codex/sessions/2026/09/12/`.
+
+**Co se rozhodne.** Které pozadí zůstane — pak druhý soubor, třída i přepínač
+zmizí (viz §5).
+
+---
+
+### 3.29 Heslo večera místo hesla na zápas (0.29.0, 12. 9. 2026)
+
+**Zadání.** Uživatel: „heslo bude per akce, ne per zápas … všechny lobby
+budou mít ten den stejné heslo“. Rob ho do hry opisuje při každém zakládání
+a hráči si ho pamatují z prvního zápasu; točení hesla po každém zápase jen
+nutilo lidi ptát se znovu.
+
+**Jak to je.** Sloupec `akce.pristi_heslo` (název zůstal) nese heslo večera:
+vzniká s akcí (migrace 017 ho doplnila starým), `createZapas` si ho **kopíruje
+a nepřepisuje** (`COALESCE`, akce bez hesla ho dostane s prvním zápasem).
+Kostka v Pre-Lobby ho přegeneruje jen pro lobby, které teprve vzniknou;
+založený zápas si drží své (`zapas.heslo` je obtisk), protože už je opsané
+ve hře. Testy v `matches.db.test.ts` (tři případy).
+
+### 3.30 Ikona hry vedle jména podle Steamu (0.30.0, 12. 9. 2026)
+
+**Zadání.** Uživatel: zkontrolovat, že přihlášený hráč hru má, a ukázat ikonu
+hry vedle jména; u soukromého profilu siluetu s jemným otazníkem a bublinou,
+u veřejného profilu bez hry výrazný vykřičník.
+
+**Jak to je.** Tatáž odpověď `GetOwnedGames`, ze které jdou hodiny, říká
+i vlastnictví — jen tvarem: skrytá knihovna vrací `response: {}` bez
+`game_count`, veřejná má `game_count` vždy, i nulový (`parseSteamHra` ve
+`steam.ts`). Dep `nactiHodiny` se přejmenoval na `nactiHru` a vrací obojí;
+`player.steam_hra` (migrace 019, `ma`/`nema`/`soukromy`) se ukládá při každém
+stažení statistik, takže **stávající hráči ikonu dostanou až po dalším
+přihlášení**. Ikona je Steam ikona aplikace 813780 (`aoe2-ikona.webp`, 32 px),
+komponenta `OdznakHry` v `SeznamPrihlasenych.tsx`, styly `.odznak-hry`.
+
+**DLC v bublině (3.1 ze zadání) nejde:** `GetOwnedGames` DLC nevrací a
+ověření vlastnictví DLC má jen vydavatelské API. Uzavřeno.
+
+### 3.31 Zvon z radnice (0.31.0, 12. 9. 2026)
+
+**Zadání.** Uživatel chtěl zvuk, „který hra používá když hráč odklikne
+poplach z TC (uvolnění, zpět do práce)“: pro zprávy admina v chatu (až bude),
+pro potvrzení založení lobby hráčům a pro admina, když se Spectate přepne na
+„Hraje se“.
+
+**Odkud.** Ve hře jsou dvě Wwise události, `Play_Townbell_Start` (poplach)
+a `Play_Townbell_Stop` (odvolání) — názvy v `resources/_common/dat/sounds.json`,
+zvuk v bance `232745270.bnk` uvnitř `wwise/Base.pck`, každá má jedinou
+variantu. Vytaženo vlastním parserem PCK + `wwiser` + `vgmstream-cli`
+(nainstalovaný přes scoop); postup a mapování ID jsou v `README.txt` vedle
+souborů ve scratchpadu session (`zvuky-hra/`). Uživatel potvrdil `Stop`.
+V repu je jako `web/src/assets/zvon.mp3` (41 kB, 1,1 s).
+
+**Kdy zvoní** (`App.tsx`, efekt nad `stav`): hráči-účastníkovi, když jeho
+zápas dostane `lobbyId` (host potvrdil) — **hostovi ne**, je to jeho vlastní
+potvrzení; adminovi, když `fazeLobby` některého zápasu přejde na `hraje_se`.
+První snímek stavu po načtení stránky mlčí. Rozhodnutí „jen účastníkům, ne
+všem přihlášeným“ je moje, uživatel ho výslovně neřekl.
+
+### 3.32 Výběr mapy z mřížky minimap s hledáním (0.31.0, 12. 9. 2026)
+
+**Zadání.** Uživatel: pole vypadá jako dropdown, po kliknutí modální okno
+s náhledy minimap ze hry (modální okno už je z Pre-Lobby), do map přidat
+vyhledávání; náhledy 192 px, a „aby se ty obrázky donačetly po tom, co se
+načte hlavní stránka … lazyloadem dostahovat dodatečné assety“.
+
+**Jak to je.** `nastroje/grafika/mapy_nahledy.py` spáruje názvy z
+`src/shared/mapy.ts` s ikonami hry (`mapicons/{rm_,rwm_,sm_,br_}*.png`,
+normalizace + ruční slovník `RUCNE` pro překlepy jako `rwm_phillipines`) a
+uloží `web/src/assets/mapy/<id>.webp` (192 px, q82): **195 ze 198 map, 1,6 MB**;
+bez ikony jsou King of the Hill, Great Wall a Network Test (zástupný obdélník).
+`web/src/mapyNahledy.ts` je přečte `import.meta.glob` (jen adresy) a
+`donactiDoplnkoveObrazky()` z `main.tsx` po události `load` a
+v `requestIdleCallback` přidá `<link rel="prefetch">` pro každý — hlavní
+stránka na ně nečeká, okno se pak otevře s hotovými obrázky. Tam patří i
+případné další doplňkové obrázky. Okno `VyberMapy.tsx` (třídy z Pre-Lobby +
+`.vyber-mapy`): vyhledávání s fokusem, filtr bez ohledu na diakritiku, Enter
+bere první nález, Escape/klik do stínu zavře; „libovolná“ jde první. Pole
+Location v `NastaveniLobby.tsx` je tlačítko převlečené za select
+(`.vyber-mapy-tlacitko`, s miniaturou vybrané mapy).
+
+### 3.33 Bannery barev pro obrazovku hráče — jen návrhy (12. 9. 2026)
+
+**Zadání.** Nahradit plochý barevný obdélník („ČERVENÁ / tým 2“) na
+obrazovce hráče praporcem; uživateli se z GPT ukázek líbila „Vlajka
+s větrem“ (látka vlající z kopí). Ideál: barevně neutrální praporec obarvený
+v CSS. Rozhodnuto: **generovat obojí a porovnat**, nasazení až jako poslední
+a **ve větvi `experimental`**, protože se to možná zahodí.
+
+**Stav (12. 9. večer):** v `experimental` 0.33.0-33.1 je nasazená varianta
+GPT praporec 2 s dodaným kopím, obarvená v CSS: `web/src/assets/ui/praporec-tym.webp`
+(RGBA, 1200×425, 69 kB) a `praporec-tym-maska.webp` (maska látky, 6 kB); `.hero`
+karty hráče i hosta má praporec jako pozadí a `::before` s `background:
+var(--barva-hero)`, `mix-blend-mode: multiply` a `mask-mode: luminance`
+přes masku, takže lem, kopí i lev zůstanou zlaté a látka bere `--bN`.
+Text sedí na látce vpravo od lva (`padding: 0 8% 0 30%`). Assety vznikly
+skriptem ve scratchpadu (klíčování černé podle jasu, maska = neutrální
+pixely napravo od kopí); postup je i v commitu 329853a. Uživatel posoudí
+naživo; když projde, merge do `dev` přes `npm run verze -- z-experimentu`.
+
+**Co existuje** (nic dalšího v repu, vše ve scratchpadu session `bannery/`):
+GPT Image přes Codex — `gpt_neutralni_1.png` (s kopím), `gpt_neutralni_2.png`
+(bez kopí, kroužky na lemu) a na přání uživatele `gpt_neutralni_2_kopi.png`
+(totéž s dodaným kopím), `gpt_neutralni_pruhledna.png` (RGBA, alfa látky
+241–254), `gpt_modra.png`, `gpt_cervena.png`; látka měřena jako neutrální
+(chroma 1–6). Lokální ComfyUI (Flux.2-dev, `davka.py`) — `comfy_neutralni_1/2`,
+`comfy_modra`, `comfy_cervena`, `_nobg` verze (rembg + BiRefNet) a
+`comfy_neutralni_*_css_zkouska.png` se simulací obarvení `multiply` do čtyř
+barev. GPT má propracovanější kresbu i dvouocasého lva; Comfy je plošší a
+lev má jeden ocas. Poznatek pro nasazení: barva se nesmí lít na lem a kopí,
+takže je potřeba maska látky nebo kopí jako zvláštní vrstva.
+
+### 3.34 Chat zápasu (0.32.0–0.32.1, 12. 9. 2026)
+
+**Zadání.** Uživatel: chat mezi hráči a adminem u založené lobby, jméno ze
+Steamu; Rob výrazná fialová, Jouki výrazná oranžová, Tonner cihlová, hráči
+podle týmu (barvy slotu), admini se září; zpráva admina zazvoní ostatním
+(§3.31). Rozhodnuto: **do databáze, per zápas**; vidí ho **účastníci
+a admini**, hráč píše ze své karty, admin z karty v režii.
+
+**Jak to je.** Tabulka `zprava` (migrace 020: zápas, hráč, text ≤ 500,
+čas); `db/chat.ts` (`pridejZpravu`, `listZpravy` — posledních 100 na zápas
+jedním dotazem s `row_number()`), jméno/barva/tým se čtou při sestavení stavu
+z `player`/`ucastnik`, ne z doby odeslání. Zprávy jedou v celém stavu přes SSE
+(`ZapasView.zpravy`), **redakce cizímu divákovi dá prázdný seznam** (heslo
+se v chatu klidně objeví). Route `POST /api/zapas/:id/zprava` (účastník nebo
+admin, ne u zrušeného). Komponenta `Chat.tsx` (drží se u dna, Enter odešle),
+barvy adminů podle Steam ID v `ADMIN_BARVY`, samotné odstíny v `:root`
+(`--chat-*`). Zvon: efekt v `App.tsx` sleduje poslední id zprávy na zápas.
+
+**Poučení z nasazení 0.32.0:** build selhal na typech (testy režie), ale
+commit odešel, protože `npm run build | grep` vrací kód `grep`u — od té doby
+se build kontroluje přes `; echo EXIT=$?`, ne v rouře. 0.32.1 to opravila.
+
+### 3.35 Úprava založeného zápasu (0.33.0, 12. 9. 2026)
+
+**Zadání.** Uživatel: ozubené kolečko u zápasu; upravit „prakticky všechno,
+co je v samotném vytváření lobby“ — kompletní nastavení lobby, Pre-Lobby jako
+vnořený modal. Rozhodnuto: **nastavení lobby je per zápas** (kopie z akce
+při založení, kontrola lobby porovnává proti nastavení zápasu), panel u akce
+zůstává výchozím pro nové zápasy.
+
+**Jak to je.** `zapas.nastaveni` (sloupec z migrace 014) je od teď živé:
+`ZapasRow`/`ZapasView.nastaveni`, kontrola lobby (`kontrolaLobby.ts`) bere
+nastavení zápasu (zápasy z doby před 014 mají `{}` a padají na živé
+nastavení akce), host dostává do okna Create Lobby nastavení svého zápasu.
+Routy pro admina: `PUT /api/zapas/:id/nastaveni`, `/nazev-lobby`
+(1–40 znaků), `/sestava` (jen u běžícího zápasu). `nahradSestavu` v
+`db/matches.ts` sdílí přípravu sedadel s `createZapas` (`pripravSedadla`,
+`vlozSedadla`): **host zůstává, dokud je v nové sestavě, číslo lobby s ním;
+když vypadne, lobby se pustí** jako při přehození hosta; kliknutí na
+Připojit se nepřenášejí. Okno `EditaceZapasu.tsx`: vlevo `Skladani` (nové
+props `popisTlacitka`, `bezVynulovani`; rozpracovaná sestava jde na server
+až tlačítkem „Uložit sestavu“, protože rozpracovaná smí být špatně), vpravo
+`NastaveniLobby` nad zápasem (ukládá se samo), v hlavičce vnořené `PreLobby`
+s **editovatelným jménem lobby** (`onNazev`, uloží se po Enter/odchodu z pole)
+a **bez kostky** (heslo je jedno na večer, §3.29). Kolečko je v `Rezie.tsx`
+jen u běžícího zápasu (`obsluha.onUpravit`).
+
+### 3.36 Připomínky z 12. 9. večer (0.33.1–0.34.0)
+
+Šestnáct bodů ze screenshotů, všechny hotové kromě posouzení naživo:
+
+- **Přepínač pozadí** jen v debug módu (uživatel: „má být furt podmíněný
+  debug modem“); nové lvy zůstávají výchozí.
+- **Ikona hry** je 256px ikona z `AoE2DE_s.exe` (icoextract), pozadí pryč
+  přes Scenario (`nastroje/grafika/scenario_bg.py`, klíč v `~/.scenario_api.json`),
+  zmenšená a stlačená TinyPNG (klíč z `settings.json` MMWT u `bin/Debug`,
+  knihovna `tinify`): `web/src/assets/aoe2-ikona.png` (64 px, 2 kB); 256px
+  verze v `_grafika/final/aoe2_ikona_256_nobg.png`. Ikona je uvnitř jména,
+  takže nikdy nespadne na nový řádek. **Debug:** klik na ikonu cykluje
+  má → nelze ověřit → nemá (jen v prohlížeči). **„Nemá hru“:** plus zašedlé,
+  klik otevře `Potvrzeni.tsx` („Hráč nemá hru na svém účtě. Opravdu přidat?“).
+- **Bublina meče** má neaktivitu na druhém řádku (`\n` + `white-space: pre-line`
+  v `.napoveda::after`).
+- **Výběr map:** osm map na řádek (`repeat(8, minmax(0, 1fr))`).
+- **Úprava zápasu:** tlačítko Pre-Lobby je absolutně nad pravým sloupcem
+  v prostoru hlavičky (okno kvůli němu neroste); Reset nastavení pryč
+  (`bezResetu`); **„Uložit sestavu“ pryč** — platná sestava se propíše sama
+  z `odesli` hooku (`zkontrolujSestavu === null`), neplatná zůstane jen
+  v okně (`Skladani` má `bezTlacitka`); menší odsazení, `max-height:
+  calc(100vh - 2rem)`. Modály zamykají scroll stránky (`useZamekScrollu`,
+  `body.bez-scrollu`, počítá vnořená okna).
+- **Chat:** nadpisek „Chat“; dvojitá záře adminů (2 px + 14 px na 45 %);
+  admin maže zprávy (`DELETE /api/zapas/:id/zprava/:zpravaId`); **cenzura**
+  v `src/shared/cenzura.ts` (137 slov + 7 frází ze `%AppData%\StreamerBot\blacklist.json`
+  Robova Streamer.bota, bez diakritiky, hvězdičky stejné délky, na serveru
+  před uložením); značka „Nové zprávy ↓“, když je člověk odrolovaný; debug
+  přepínač autora zprávy (jen zobrazení, `ADMIN_JMENA` v `Chat.tsx`).
+- **Fialová** `--b6: #bd2bbb` (odstín z herní palety).
+- **Zvonek admina** (`🔔` v sloupci „Jsem tu!“ u cizích hráčů):
+  `POST /api/akce/:id/hraci/:steamId/svolat` zapíše `prihlaska.svolan_v`,
+  hráči se změna ve stavu ozve jako `poplach.mp3` (`Play_Townbell_Start`).
+- **Ozubené kolečko** vedle jména v záhlaví → `NastaveniUzivatele.tsx`:
+  hlasitost zvuků 0–100 (výchozí 70, `localStorage` `zvuk.hlasitost`,
+  `prehraj()` ji používá, posun ji hned zkusí zvonem); pro admina **lhůta
+  aktivity** šipkami po minutě, 2–120, `PUT /api/akce/:id/lhuta-aktivity`.
+  Lhůta je od migrace 021 sloupec `akce.lhuta_aktivity_minut`; `signUp`,
+  `obnovAktivitu` i `pulsAktivity` ji berou z akce poddotazem, prohlížeč
+  z `akce.lhutaAktivityMinut` (práh „Jsem tu!“ = lhůta − 1). Přetáčení času
+  v debugu zůstává na výchozích 15 minutách.
+
+### 3.37 Druhé kolo připomínek (0.34.1, 12. 9. 2026 v noci)
+
+- **Bublina** (`.napoveda::after`) má `white-space: pre` + `width: max-content`
+  (max 24 rem): zalomí jen tam, kde je `\n`, jinak jeden řádek. Ikona hry
+  bez rámečku (pravidlo pro avatar v `.jmeno-hrace img` ji chytalo),
+  vykřičník `--cervena-varovani` se září.
+- **Chat:** nadpis je zlaté tlačítko, které chat **sbalí** (mřížka
+  `1fr → 0fr`, 180 ms); klik na Spectate v režii ho sbalí přes událost okna
+  `aoe:sbalit-chat` (detail = id zápasu); „Nové zprávy ↓“ na střed se září
+  a plynulým scrollem; `--chat-rob` sytější (#b34dff).
+- **Cenzura** doplněna o „negroid“ ve všech pádech (ručně v `cenzura.ts`).
+- **Okno map:** pevná výška (`min(100vh − 2rem, 60rem)`), šířka
+  `min(96vw, max(70vw, 84rem))`, náhledy `minmax(9.5rem, 1fr)` = aspoň osm
+  vedle sebe, pravé tlačítko do hledání ho smaže.
+- **Úprava zápasu:** tlačítko Pre-Lobby o 0,75 rem níž, menší svislé
+  odsazení (`padding 0.4rem/0.5rem`, stín `0.5rem`, `max-height: 100vh − 1rem`).
+- **Nastavení:** lhůta reaguje na kolečko myši (±1 min), posuvník má
+  vlastní stopu vyplněnou po palec (`--podil`), takže 100 % je opravdu plné.
+- **Zvonek:** ukáže se, až hráči uběhne 5 minut odpočtu
+  (`nabidnoutZvonek`: zbývá ≤ lhůta − 5 a hráč nespí); po „Jsem tu!“ zmizí;
+  klik ubere 3 minuty (jen aktivním, SQL v `svolej`), admin ho slyší na 10 %
+  své hlasitosti, 5 s chladne (zašedlý, `disabled`), animace stisku;
+  vycentrovaný ve sloupci.
+- **Pergamen Create Lobby** má `drop-shadow` jako okluzi na dřevě.
+
+Odpovědi z toho kola: „neplatná sestava zůstane jen v okně“ = při úpravě
+zápasu se na server posílá jen sestava, kterou `zkontrolujSestavu` pustí
+(počty, barvy, týmy); mezistav při přeskládání (třeba tři hráči v jednom
+týmu) se drží jen v okně, dokud ho admin nedoklikne. Kontrola vlastnictví
+hry se obnovuje s `obnovStaty` — při přihlášení Steamem **i při každém
+načtení stránky** (`/api/me`), pokud jsou statistiky starší než 15 minut;
+odhlašovat nikoho není potřeba.
+
+### 3.38 Třetí kolo připomínek (0.35.0, 13. 9. 2026)
+
+- **Chat:** šipka nahoru v prázdném poli načte poslední vlastní zprávu,
+  Uložit ji pošle na `PUT /api/zapas/:id/zprava/:zpravaId` (jen autor,
+  cenzura platí), migrace 022 `zprava.upraveno_v` → `ZpravaView.upraveno`
+  a nenápadné „(editováno)“. Twitch odznaky u adminů kreslené inline SVG
+  (Rob vysílající, Jouki a Tonner moderátoři; `TWITCH_ROLE` v `Chat.tsx`).
+  „Nové zprávy (n) ↓“ na středu s počtem od poslední viděné; po skoku dolů
+  se nové zprávy zvýrazní (3 s + 1,5 s bledne, animace `nova-zprava`).
+  Nadpis „Chat“ je kapitálkový řádek na celou šířku ve stylu ostatních
+  nadpisů, klikací.
+- **Modály přes `createPortal` do `document.body`** (VyberMapy, PreLobby,
+  Potvrzeni, NastaveniUzivatele, EditaceZapasu) — dřív se okno map otevřené
+  z úpravy zápasu vnořilo do jejího okna.
+- **Zvonek** se ukazuje i u spících hráčů (to je jeho hlavní smysl; podmínka
+  je jen „uběhlo ≥ 5 minut odpočtu“), admin ho slyší na 20 %, je vycentrovaný.
+- **Lhůta aktivity** se dědí do nové akce (`createAkce` bere poslední) a
+  změna platí hned: bdícím se `aktivni_do` přepočítá od posledního pulsu.
+  V nastavení místo věty o rozsahu náhled „Jsem tu! od 14 min / 🔔 od 10 min“
+  (nekliknutelné), posuvník hlasitosti reaguje na kolečko po procentu.
+- **Ikona hry** 28 px jako avatar, vykřičník pulzuje (`zare-vykricnik`);
+  bublina meče je vlastní element (`.napoveda-vlastni .bublina`) se slabým
+  `<hr>` mezi dvěma informacemi.
+- **Okno map** 47 rem na výšku (tři řádky na Full HD); **úprava zápasu**
+  `zoom: 0.95` do výšky 1100 px, tlačítko Pre-Lobby o 8 px níž.
+- **Host** má pod „Spustit hru“ drobné „(Lobby zakládáš ručně)“; po nalezení
+  lobby stránka sjede ke kontrole a chatu, hráči na „Připojit se do hry“ a po
+  kliknutí k chatu (jen při změně, ne při načtení; admin jen jako účastník,
+  protože karty se kreslí jen účastníkům).
+- Cenzura: prefix `negroid*`; stín pergamenu slabší.
+
+### 3.39 Čtvrté kolo připomínek (0.36.0, 13. 9. 2026)
+
+- **Svolání:** hráči po zvonku vyskočí `Svolani.tsx` „{admin} tě shání!“
+  se dvěma tlačítky — „Jsem tu!“ (`api.jsemTu`) a „Odhlásit se z akce“
+  (`api.odhlasit`); klik vedle ani Escape nezavírá. Kdo zazvonil, nese
+  `prihlaska.svolal_steam_id` (migrace 023) → `PlayerView.svolalJmeno`.
+  Odečet tří minut zrušen (uživatel si to rozmyslel). Admin slyší zvonek na
+  30 %; zvonek se z chladnutí vrací s přechodem 0,6 s.
+- **Cenzura** přesunutá do `db/chat.ts` (`pridejZpravu`, `upravZpravu`):
+  původní znění jde do `zprava.text_puvodni` (jen v databázi, do stavu
+  nikdy); `cenzurujZpetne()` běží při startu serveru (`main.ts`) a dožene
+  staré zprávy, když se seznam rozšíří. **Dohledání originálu:** `SELECT
+  text, text_puvodni FROM zprava WHERE …` v databázi.
+- **Chat:** hlavička je `div role="button"` (obecný vzhled tlačítek ji už
+  nebarví), oficiální Twitch odznaky z `static-cdn.jtvnw.net` (globální
+  broadcaster/moderator, verze 1) s kresleným náhradníkem při chybě načtení;
+  oddělovač „nové zprávy“ (dvě linky s nápisem) místo podbarvení — zůstane,
+  dokud k němu člověk nedoroluje (`IntersectionObserver`), pak 3 s + 1,5 s
+  zmizí; debug přepínač autora nabízí i hráče zápasu.
+- **Okno map** `calc(100vh − 6rem)`, jen do výšky 1100 px platí 47 rem;
+  úprava zápasu `zoom: 0.99`; náhled „Jsem tu!/zvonek“ vedle stepperu
+  (`grid-column: 3`) a tlačítko ve velikosti z tabulky; posuvník bez rámečku,
+  rámeček jen při fokusu (klik nebo kolečko, které fokus vynutí); vykřičník
+  má navíc tenkou bílou vrstvu záře.
+
+### 3.40 Páté kolo připomínek (0.36.1, 13. 9. 2026)
+
+- **Úprava zápasu jako návrh** (`EditaceZapasu.tsx`): změny nastavení
+  i sestavy žijí v okně jako `navrh`; platný návrh se propíše sám po
+  `ODKLAD_PROPISU_MS` (1,2 s) klidu, zavření okna (tlačítko **Uložit** dole
+  vlevo v rovině posledních zaškrtávátek, nebo klik vedle) ho propíše hned.
+  Neplatný návrh (`chybyNavrhu`: sestava podle `zkontrolujSestavu`, Players
+  < počet hráčů, AI bez obtížnosti) okno nepustí — chybné řádky dostanou
+  třídu `chyba` (červený popisek a rámeček), u sestavy souhrn, vedle Uložit
+  chybová věta. Křížek při neplatném návrhu otevře `Potvrzeni` „Chcete
+  zahodit všechny změny?“ — Ano vrátí serveru stav z otevření okna
+  (`pocatek`), Ne nechá admina opravit. Jméno lobby z Pre-Lobby se ukládá
+  hned jako dřív a do „zahodit“ nespadá.
+- **Chat:** nadpis na střed; Twitch odznaky stažené lokálně
+  (`web/src/assets/twitch-{broadcaster,moderator}.png`, 72 px z Twitch CDN,
+  13. 9. 2026); po kliknutí na „Nové zprávy“ se sjede k oddělovači (ne na
+  dno), oddělovač se vloží i při ručním doscrollování a mizí animací výšky do
+  nuly (6 s, bez skoku).
+- **Debug:** pravé tlačítko na „Jsem tu!“ ve vlastním řádku předvede
+  svolání — zvuk jednou na plnou nastavenou hlasitost a totéž okno, co vidí
+  hráč (`onZkusebniSvolani`).
+- **Okno map** `min(100vh − 4rem, max(47rem, 70vh))`: Full HD jako dřív,
+  1440p a 4K zhruba 70 % výšky. Náhled v nastavení: zvonek menší pod „Jsem
+  tu!“ (bez vodorovného posuvníku). Vykřičník jen s červenou září 1–3 px.
+
+### 3.41 Šesté kolo připomínek (0.36.2, 13. 9. 2026)
+
+- **Oddělovač „nové zprávy“** vzniká ve stejnou chvíli jako tlačítko (kdo je
+  odrolovaný, vidí obojí), roste animací `oddelovac-vznik`; `ODDELOVAC_MS`
+  je 6,2 s, tedy víc než animace zmizení (6 s), aby řádek nezmizel skokem.
+- **Debug svolání:** tlačítko „Svolat mě“ mezi debug tlačítky u tabulky
+  (pravý klik na „Jsem tu!“ nešel použít — tlačítko po kliknutí zmizí).
+- **Úprava zápasu:** levý sloupec je sloupec (`flex-direction: column`),
+  Uložit úplně vlevo pod sestavou; **kontroluje se jen sestava**
+  (`chybyNavrhu` → `zkontrolujSestavu`; Players v Pre-Lobby je jen počet
+  otevřených slotů a AI Difficulty není povinná — obojí zrušeno); důvod je
+  jen jednou, v souhrnu sestavy nad tlačítkem; hráči se stejnou barvou
+  v různých týmech dostanou třídu `chyba` (`[data-tah-id]`), červený rámeček.
+  Dotaz na zahození má větší mezeru a tlačítka min. 6,5 rem.
+
+### 3.42 Sedmé kolo: animace tabulky přihlášených (0.36.3–0.36.7, 13. 9. 2026)
+
+- **Chat:** při méně než 8 zprávách skáče „Nové zprávy“ na dno, ne
+  k oddělovači (0.36.3).
+- **Debug svolání** znovu pravým tlačítkem na „Jsem tu!“ (kontextová
+  nabídka se potlačí `onContextMenu` + `preventDefault`); tlačítko „Svolat
+  mě“ zůstává (0.36.3).
+- **Odchod a příchod řádku** (`usePresouvani` v `SeznamPrihlasenych.tsx`):
+  hook FLIP, který dosud přesouval jen přeřazené řádky, si pamatuje pozice
+  všech řádků; když někdo odejde, řádky pod ním sjedou nahoru plynule, nový
+  řádek dostane třídu `pribyl` (0.36.4–0.36.5). Během tažení se hook vůbec
+  nespouští (`tahneSe()`) a řádky s rozpracovaným transformem přeskakuje —
+  jinak blikaly řádky nad taženým (0.36.6).
+- **Šířky sloupců:** tabulka má automatické šířky, po odchodu nejdelšího
+  jména sloupce přeskočily. Hook teď měří `thead th` před a po změně; kde se
+  šířka liší, nastaví starou hodnotu a přejede na novou přechodem `width`
+  za `PRESUN_MS`, po skončení inline styly smaže. Buňky pod hlavičkou jdou
+  s ní (0.36.7). Při `prefers-reduced-motion` žádný přejezd. Přejezd byl
+  zprvu trhaný: v automatickém rozvržení si prohlížeč každý snímek rozděloval
+  šířky znovu podle obsahu, sloupec nemohl pod nejdelší text a šířka
+  z `getBoundingClientRect` (s okrajem) se do `width` buňky (bez okraje)
+  nevešla. Od 0.36.9 má tabulka po dobu přejezdu `table-layout: fixed`,
+  všechny hlavičky explicitní šířku s `box-sizing: border-box` a buňky
+  třídou `sirky-prejizdi` zákaz zalomení; změna pořadí uprostřed přejezdu
+  vychází z toho, kde sloupce právě opticky jsou (`uklidSirky`).
+- **Tažení jen uvnitř zóny** (0.36.8): pořadí nevybraných v paměti prohlížeče
+  je promíchané (spící hráč může být uprostřed), zatímco tabulka spící řadí
+  na konec. Tažení aktivního přes spícího proto přeskládalo aktivní jinak, než
+  bylo vidět, a s dalším pohybem zase zpět — řádky „šílely“. `useTahani`
+  dostal třetí parametr `zona` (`data-tah-zona`, v tabulce „aktivni“ /
+  „spici“) a prohazuje jen sousedy se stejnou zónou; přetažený řádek nad
+  cizí zónou jen visí a po puštění se vrátí. Tlačítko „Svolat mě“ odebráno,
+  zůstává pravý klik na „Jsem tu!“.
+- **Zděděné svolání** (0.36.10): `svolan_v` se nikdy nemazalo, takže kdo byl
+  jednou svolán, dostal okno „tě shání!“ při každém dalším přihlášení do akce
+  (Trokner). Teď ho maže nové přihlášení (`signUp`) i „Jsem tu!“
+  (`obnovAktivitu`); prohlížeč navíc mlčí ve snímku, ve kterém se vlastní
+  přihláška teprve objevila. Pravý klik na „Jsem tu!“ (zkušební svolání)
+  stačí zapnutý debug mód v patičce, funguje i v pohledu uživatele.
+- **Strany zápasu vedle sebe** (0.36.11): na obrazovce hráče měly obě strany
+  pevné sloupce (civilizace 17 rem) a při delších jménech druhý tým spadl pod
+  „VS“. `.vs-rozlozeni` už nezalamuje, každá strana má `flex: 1 1 0` a sloupce
+  jména i civilizace se zmenšují (`minmax(0, 1fr)`, `minmax(9rem, 17rem)`)
+  s výpustkou. Pod 40 rem šířky (telefon) se strany skládají pod sebe.
+- **Kontrola lobby i hráči, strany i hostovi** (0.36.12): karta
+  připojujícího se hráče kontrolu lobby nikdy neměla (viděl ji jen admin
+  v režii a divák), uživatel ji tam chtěl. `KartaHrace` dostala
+  `onKontrolaLobby` a po nalezení lobby vykreslí `KontrolaLobby` jako host.
+  Strany zápasu s VS jsou vytažené do `StranyZapasu.tsx` a obrazovka hosta je
+  má pod kroky, před chatem.
+
+---
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -941,11 +1350,7 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
 1. **Civilizace hráče z lobby na kartě hráče.** Sloty v seznamu lobby
    obsahují zvolenou civilizaci; šlo by ji ukazovat vedle předepsané. Kód
    parsování slotů existuje (`worldsEdgeLobby.ts`), UI ne.
-2. **Náhledy map vedle „Location“ v kontrole lobby.** Ikony map jsou ve hře
-   v `resources/_common/wpfg/resources/mapicons/{rm_,rwm_,sm_,br_}*.png`;
-   při zkoušce se spárovalo 194 z 198 map (chybí King of the Hill, BR Fall
-   of Rome, Great Wall, Network Test). **Do repa se nic nepřidalo**
-   (`web/src/assets/mapy` neexistuje) — postup by byl stejný jako u erbů.
+2. ~~Náhledy map~~ — hotovo v 0.31.0 (§3.32).
 3. **Indikátor „heslo funguje“.** Správnost hesla z API nejde přečíst;
    navrženo hlásit „heslo funguje“, jakmile do lobby vstoupí druhý hráč.
    Neimplementováno.
@@ -968,13 +1373,36 @@ Uživatel se ptal nebo dostal nabídku, ale **nerozhodl**:
 9. **Zavřený zápas znovu otevřít z UI** — od 0.27.13 to jde jedině přes
    API. Kdyby to někdy chybělo, tlačítko patří jinam než do režie (třeba
    do archivu z bodu 6).
-7. **Lhůty aktivity nastavitelné adminem** (uživatel 8. 9.): dnes je patnáct
-   minut, pět za kliknutí a čtyřminutový odstup pevně v `shared/aktivita.ts`.
-   Práh pro „Jsem tu!“ se z lhůty už počítá, takže se změní jedním číslem.
+7. ~~Lhůty aktivity nastavitelné adminem~~ — plná lhůta hotová v 0.34.0
+   (§3.36); prodloužení za kliknutí (5) a odstup pulsů (4) zůstávají pevné.
 8. **Vlastní rozbalovací seznam místo `<select>`** (uživatel 8. 9.: „prostě
    jsi měl udělat ul li seznamy, které by se chovali identicky, ale to teď
    nedělejme“). Nativní `<select>` neumí obarvit zvýraznění položky a
    `appearance: base-select` se neosvědčilo (viz komentář v `styl.css`).
+
+10. **Které pozadí zůstane** (od 0.28.4, §3.28): původní lvi z GPT Image
+    z 8. 9., nebo překreslení podle státního znaku z 12. 9.? Od 0.29.0 jsou
+    nové výchozí, přepínač je v záhlaví. Po rozhodnutí smazat druhý webp,
+    třídu `pozadi-nove` a přepínač.
+
+Zadané 12. 9. 2026, rozhodnuté, **ještě nezačaté** (v tomhle pořadí):
+
+11. ~~Editace založeného zápasu~~ — hotovo v 0.33.0 (§3.35).
+12. ~~Chat v lobby~~ — hotovo v 0.32.1 (§3.34).
+13. **Bannery barev** (§3.33) — nasazeno v `experimental` 0.33.0-33.1
+    (GPT praporec 2 s kopím, obarvení v CSS přes masku). Čeká na posouzení
+    uživatelem naživo: nechat, doladit (výška pruhu, poloha textu, sytost
+    barev přes multiply), nebo zahodit `git reset --hard dev`.
+
+Uzavřené 12. 9. 2026:
+
+- **DLC v bublině ikony hry nejde** (§3.30).
+- **Skript (.bat) místo companion appky na založení lobby nejde.** AOE URL
+  Helper (`HKCR\aoe2de\shell\open\command`) dělá jen
+  `steam.exe -applaunch 813780 aoe2de://…`; hra z argumentu umí připojit
+  (`0/`) nebo sledovat (`1/`) lobby podle ID, žádný příkaz na založení nebo
+  nastavení lobby zvenčí nepřijímá. Zbývá jen automatizace herního UI, a ta
+  je křehká.
 
 Drobné známé nedodělky:
 
@@ -988,7 +1416,7 @@ Drobné známé nedodělky:
 
 ---
 
-## 6. Historie verzí (7.–9. 9. 2026)
+## 6. Historie verzí (7.–12. 9. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 
@@ -1077,6 +1505,30 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.28.1 | 22:35 | Barvy v kontrole ve čtvrtém pádě; barva 6 je růžová i odstínem |
 | 0.28.2 | 22:47 | Hlavní sekce kontroly má vlastní sbalitelné záhlaví; všechny tři sekce kreslí jedna komponenta |
 | **0.28.3** | 22:52 | Players vysvětlí, že rozdíl jsou prázdné otevřené sloty; **release PR #13** |
+| 0.28.4 | 12. 9. 13:02 | Zkušební pozadí s dvouocasými lvy, přepínač v debug módu (§3.28) |
+| 0.29.0 | 14:00 | Nové lvy výchozí, přepínač pod Admin/User View; fialová místo růžové; doba neaktivity v bublině meče; heslo večera (§3.29) |
+| 0.30.0 | 14:05 | Ikona vlastnictví hry podle Steamu, migrace 019 (§3.30) |
+| 0.31.0 | 14:35 | Zvon z radnice při založení lobby a při začátku hry (§3.31); výběr mapy z mřížky minimap s hledáním, náhledy donačítané po startu (§3.32) |
+| 0.32.0 | 15:20 | Chat zápasu, migrace 020 (§3.34) — build selhal na typech, viz poučení |
+| 0.32.1 | 15:32 | Oprava buildu (karta v režii zná diváka, chat v obsluze nepovinný) |
+| 0.33.0 | 16:05 | Úprava založeného zápasu: nastavení per zápas, jméno lobby, sestava (§3.35) |
+| 0.33.1 | 17:15 | Připomínky: ikona hry inline a odklíčovaná, potvrzení u hráče bez hry, menší okno úpravy, zámek scrollu, dvojitá záře, fialová (§3.36) |
+| 0.34.0 | 17:40 | Moderace chatu (mazání, cenzura, nové zprávy, debug autor), zvonek admina, hlasitost, lhůta aktivity per akce, migrace 021 (§3.36) |
+| 0.34.1 | 18:30 | Druhé kolo: bubliny na řádek, sbalení chatu, okno map pevné a širší, zvonek s načasováním a chladnutím, posuvník, stín pergamenu (§3.37) |
+| 0.35.0 | 13. 9. 09:30 | Třetí kolo: editace zpráv (migrace 022), twitch odznaky, modály v portálu, zvonek i pro spící, lhůta napříč akcemi, auto-scroll (§3.38) |
+| 0.36.0 | 10:45 | Čtvrté kolo: okno „X tě shání!“, cenzura s originálem a zpětně (migrace 023), oficiální odznaky, oddělovač nových zpráv, drobnosti (§3.39) |
+| 0.36.1 | 20:45 | Páté kolo: úprava zápasu jako návrh s Uložit, kontrolou a zahozením; odznaky lokálně; zkušební svolání v debugu; okno map podle výšky (§3.40) |
+| 0.36.2 | 21:40 | Šesté kolo: oddělovač s tlačítkem a bez skoku, „Svolat mě“, Uložit vlevo, kontrola jen sestavy se zvýrazněním hráčů (§3.41) |
+| 0.36.3 | 22:40 | Krátký chat skáče na dno; pravý klik na „Jsem tu!“ v debugu = zkušební svolání (§3.42) |
+| 0.36.4–0.36.5 | 23:10 | Řádek tabulky při odchodu/příchodu: zbytek seznamu se plynule posune (§3.42) |
+| 0.36.6 | 23:25 | Přesouvací animace se během tažení nespouští — bez blikání řádků (§3.42) |
+| 0.36.7 | 23:30 | Sloupce tabulky přejíždějí na novou šířku plynule (§3.42) |
+| 0.36.8 | 23:50 | Tažení prohazuje jen řádky stejné zóny (aktivní/spící) — konec skákání; bez tlačítka „Svolat mě“ (§3.42) |
+| 0.36.9 | 0:15 | Přejezd šířek sloupců bez trhání: pevné rozvržení tabulky po dobu přejezdu (§3.42) |
+| 0.36.10 | 1:30 | Svolání se maže přihlášením a „Jsem tu!“ — okno „tě shání!“ už nevyskakuje z dřívějška; zkušební svolání i v pohledu uživatele (§3.42) |
+| 0.36.11 | 1:45 | Strany zápasu na obrazovce hráče vždy vedle sebe (§3.42) |
+| 0.36.12 | 2:05 | Kontrola lobby i na kartě hráče; strany zápasu s VS i u hosta (§3.42) |
+| **1.0.0** | 2:30 | **Release PR #14** do `main` (značka `v0.28.3` na stavu před ním); `experimental` přezaloženo na 1.0.0-0.0 s praporcem |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

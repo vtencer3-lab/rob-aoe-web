@@ -10,7 +10,7 @@ export const BARVA_NAZEV: Record<Barva, string> = {
   3: "zelená",
   4: "žlutá",
   5: "tyrkysová",
-  6: "růžová",
+  6: "fialová",
   7: "šedá",
   8: "oranžová",
 };
@@ -25,7 +25,7 @@ export const BARVA_KOHO_CO: Record<Barva, string> = {
   3: "zelenou",
   4: "žlutou",
   5: "tyrkysovou",
-  6: "růžovou",
+  6: "fialovou",
   7: "šedou",
   8: "oranžovou",
 };
@@ -49,6 +49,12 @@ export interface Seat extends SestavaVstup {
   poradi: number;
 }
 
+/**
+ * Co Steam řekl o vlastnictví hry: `ma` (je v knihovně), `nema` (veřejný
+ * profil, hra v knihovně chybí), `soukromy` (knihovna je skrytá, nejde ověřit).
+ */
+export type SteamVlastnictvi = "ma" | "nema" | "soukromy";
+
 export interface PlayerView {
   steamId: string;
   alias: string | null;
@@ -59,6 +65,8 @@ export interface PlayerView {
   eloNejvyssi: number | null;
   odehranoHer: number | null;
   steamHodiny: number | null;
+  /** Vlastnictví hry podle Steamu; null = ještě nezjištěno (nebo bez klíče). */
+  steamHra?: SteamVlastnictvi | null;
   posledniZapas: string | null;
   statyStazenyV: string | null;
   statyChyba: string | null;
@@ -70,6 +78,10 @@ export interface PlayerView {
    * přihlášených; jinde (a ve starších snímcích stavu) chybí.
    */
   aktivniDo?: string | null;
+  /** Kdy admina naposledy svolal zvonkem (ISO); změna = zazvonit. Jen v seznamu přihlášených. */
+  svolanV?: string | null;
+  /** Jméno admina, který zazvonil naposledy (okno „X tě shání!“). */
+  svolalJmeno?: string | null;
 }
 
 export interface AkceView {
@@ -82,6 +94,8 @@ export interface AkceView {
   ulozeneNastaveniLobby?: Record<string, unknown> | null;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
   skladani?: SestavaVstup[];
+  /** Lhůta aktivity v minutách (2–120); chybí ve starších snímcích = 15. */
+  lhutaAktivityMinut?: number;
   /**
    * Jméno, které dostane příští založená lobby (ROB-NN). Odvozené z pořadí,
    * ne tajné — okno Pre-Lobby ho ukazuje, aby ho host opsal do hry.
@@ -134,6 +148,26 @@ export interface ZapasView {
   /** Dohraný zápas zavřený křížkem: na stránce se neukazuje (v debug módu zašedlý). */
   zavreny?: boolean;
   ucastnici: UcastnikView[];
+  /** Chat zápasu (posledních 100); vidí jen účastníci a admini, ostatním ho redakce vyprázdní. */
+  zpravy?: ZpravaView[];
+  /** Nastavení lobby tohohle zápasu (obtisk akce při založení, dál vlastní); klíče jako u akce. */
+  nastaveni?: Record<string, unknown>;
+}
+
+/** Zpráva v chatu zápasu. Jméno, barva a tým jsou aktuální, ne z doby odeslání. */
+export interface ZpravaView {
+  id: number;
+  steamId: string;
+  jmeno: string;
+  jeAdmin: boolean;
+  /** Barva a tým z účasti v zápase; admin, který v něm nehraje, má null. */
+  barva: Barva | null;
+  tym: Tym | null;
+  text: string;
+  /** ISO čas odeslání. */
+  poslano: string;
+  /** Autor ji po odeslání přepsal (šipka nahoru); ukazuje se „(editováno)“. */
+  upraveno?: boolean;
 }
 
 export interface AkceStavPayload {

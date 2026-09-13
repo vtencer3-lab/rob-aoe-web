@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
 import { mujUcastnik, popisTymu } from "../zapas.js";
@@ -6,8 +6,11 @@ import { HledaniLobby } from "./HledaniLobby.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 import { Kopirovatelne } from "./Kopirovatelne.js";
 import { OknoCreateLobby } from "./OknoCreateLobby.js";
+import { StranyZapasu } from "./StranyZapasu.js";
 
 interface Props {
+  /** Chat zápasu (Chat.tsx); dodává App, ať karta nezná API. */
+  chat?: ReactNode;
   zapas: ZapasView;
   ja: string;
   /** Očekávané nastavení akce — okno Create Lobby z něj bere pre-lobby volby. */
@@ -21,12 +24,23 @@ interface Props {
  * sebou — „Zakládáš!“ (fajfka, jakmile web lobby najde), „Kontrola lobby“
  * (fajfka, když hlavní sekce prošla) a nakonec „Výborně, můžete hrát!“. Host
  * tak i uprostřed streamu vidí, kde je. Tlačítko do lobby tu není: host ji
- * zakládá, do lobby se odkazem připojují ostatní (KartaHrace).
+ * zakládá, do lobby se odkazem připojují ostatní (KartaHrace). Pod kroky
+ * strany zápasu s VS jako na kartě hráče (uživatel 13. 9. 2026), pak chat.
  */
-export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby }: Props) {
+export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby, chat }: Props) {
   // Po kliknutí na „Spustit hru“ host lobby zakládá právě teď: hledání zrychlí
   // ze 4 s na 2 s, ať hráči dostanou odkaz, sotva lobby vznikne.
   const [hraSpustena, setHraSpustena] = useState(false);
+  // Jakmile se lobby najde, sjet ke kontrole a chatu (uživatel) — jen při
+  // změně, ne při načtení stránky s už nalezenou lobby.
+  const kontrola = useRef<HTMLDivElement>(null);
+  const drivLobby = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const driv = drivLobby.current;
+    drivLobby.current = zapas.lobbyId;
+    if (driv === undefined || driv !== null || zapas.lobbyId === null) return;
+    setTimeout(() => kontrola.current?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 50);
+  }, [zapas.lobbyId]);
   // Verdikt kontroly drží sekce kontroly; sem ho jen hlásí.
   const [vPoradku, setVPoradku] = useState<boolean | null>(null);
 
@@ -67,6 +81,7 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           <a className="cta" href="steam://run/813780" data-testid="spustit-hru" onClick={() => setHraSpustena(true)}>
             Spustit hru
           </a>
+          <small className="rucne">(Lobby zakládáš ručně)</small>
         </div>
         <OknoCreateLobby
           nazevLobby={zapas.nazevLobby}
@@ -88,7 +103,9 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
       </section>
 
       {zapas.lobbyId ? (
-        <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} onVerdikt={setVPoradku} />
+        <div ref={kontrola}>
+          <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} onVerdikt={setVPoradku} />
+        </div>
       ) : null}
 
       {zapas.lobbyId && vPoradku ? (
@@ -101,7 +118,12 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           </header>
         </section>
       ) : null}
-    </section>
+
+      <section className="sekce-krok" data-testid="strany-zapasu">
+        <StranyZapasu ucastnici={zapas.ucastnici} ja={ja} />
+      </section>
+    {chat}
+      </section>
   );
 }
 

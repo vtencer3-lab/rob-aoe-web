@@ -327,3 +327,15 @@ it("dokud se nic nedohrálo, historie se nevykreslí vůbec", () => {
   expect(container).toBeEmptyDOMElement();
   expect(screen.queryByRole("heading", { name: /historie zápasů/i })).not.toBeInTheDocument();
 });
+
+// Ozubené kolečko u běžícího zápasu otevře úpravu; u dohraného není.
+it("ozubené kolečko otevře úpravu jen u běžícího zápasu", () => {
+  const onUpravit = vi.fn();
+  const obsluha = { onStav: vi.fn(), onSmazat: vi.fn(), onVysledek: vi.fn(), onHost: vi.fn(), onKontrolaLobby: vi.fn(), onZavrit: vi.fn(), onUpravit };
+  const bezi = { ...zapas, id: 1, poradi: 1, stav: "bezi", vitez: null };
+  const dohrany = { ...zapas, id: 2, poradi: 2, stav: "dohrano", vitez: { tym: 1 as const } };
+  render(<Rezie stav={{ akce: { id: 1, nazev: "Akce", stav: "bezi" }, prihlaseni: [], zapasy: [bezi, dohrany] }} obsluha={obsluha} />);
+  fireEvent.click(screen.getByRole("button", { name: /upravit zápas #1/i }));
+  expect(onUpravit).toHaveBeenCalledWith(1);
+  expect(screen.queryByRole("button", { name: /upravit zápas #2/i })).not.toBeInTheDocument();
+});

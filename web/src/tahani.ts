@@ -37,6 +37,8 @@ export function tahneSe(): boolean {
 interface Tazeny {
   steamId: string;
   skupina: Skupina;
+  /** Zóna v seznamu (aktivní / spící); prohazuje se jen uvnitř ní. */
+  zona: string | undefined;
   el: HTMLElement;
   pointerId: number;
   posledniX: number;
@@ -51,7 +53,7 @@ interface Tazeny {
  * rozhodovat o prohození se musí podle rozvržení, jinak se při rychlém
  * tahu prohazuje tam a zpět a řádky se „rozletí“.
  */
-function animovanyPosunY(el: HTMLElement): number {
+export function animovanyPosunY(el: HTMLElement): number {
   const t = getComputedStyle(el).transform;
   if (!t || t === "none") return 0;
   const m = /matrix\(([^)]+)\)/.exec(t);
@@ -80,7 +82,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
   // Posluchače na window žijí přes překreslení; volají vždy aktuální presun.
   const presunRef = useRef(presun);
   presunRef.current = presun;
-  const tazenyHtml5 = useRef<{ steamId: string; skupina: Skupina } | null>(null);
+  const tazenyHtml5 = useRef<{ steamId: string; skupina: Skupina; zona: string | undefined } | null>(null);
   const tazeny = useRef<Tazeny | null>(null);
   const prvky = useRef(new Map<string, HTMLElement>());
   const predchoziTop = useRef(new Map<string, number>());
@@ -135,7 +137,12 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     // Přejel kurzor střed souseda? Pak si s ním prohodit místo.
     const rodic = t.el.parentElement;
     if (!rodic) return;
-    const sourozenci = Array.from(rodic.children).filter((c): c is HTMLElement => c instanceof HTMLElement && c !== t.el && c.hasAttribute("data-tah-id"));
+    // Jen řádky ze stejné zóny: tabulka přihlášených řadí spící na konec bez
+    // ohledu na uložené pořadí, takže prohození aktivního se spícím by
+    // přeskládalo aktivní jinak, než je vidět — a s dalším pohybem zase zpět.
+    const sourozenci = Array.from(rodic.children).filter(
+      (c): c is HTMLElement => c instanceof HTMLElement && c !== t.el && c.hasAttribute("data-tah-id") && c.dataset["tahZona"] === t.zona,
+    );
     for (const s of sourozenci) {
       const r = s.getBoundingClientRect();
       if (r.height === 0) continue;
@@ -171,18 +178,19 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
   // Odpojení komponenty uprostřed tažení nesmí nechat posluchače na window.
   useEffect(() => poloz, []);
 
-  return (skupina: Skupina, steamId: string) => ({
+  return (skupina: Skupina, steamId: string, zona?: string) => ({
     ref: (el: HTMLElement | null) => {
       if (el) prvky.current.set(steamId, el);
       else prvky.current.delete(steamId);
     },
     "data-tah-id": steamId,
+    "data-tah-zona": zona,
     onPointerDown: (e: PointerEvent<HTMLElement>) => {
       // jsdom pointer událostem tlačítko nedává — chybějící bereme jako levé.
       if ((e.button ?? 0) !== 0 || (e.target as HTMLElement).closest(NETAHAT)) return;
       const el = e.currentTarget;
       if (tazeny.current) poloz();
-      tazeny.current = { steamId, skupina, el, pointerId: e.pointerId, posledniX: e.clientX, vychoziY: e.clientY, posledniY: e.clientY };
+      tazeny.current = { steamId, skupina, zona, el, pointerId: e.pointerId, posledniX: e.clientX, vychoziY: e.clientY, posledniY: e.clientY };
       el.classList.add("v-ruce");
       el.style.transition = "none";
       document.body.classList.add("tahne-se");
@@ -194,15 +202,15 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
 
     // Záloha: HTML5 drag & drop (testy, prohlížeče bez pointer událostí).
     onDragStart: () => {
-      tazenyHtml5.current = { steamId, skupina };
+      tazenyHtml5.current = { steamId, skupina, zona };
     },
     onDragOver: (e: DragEvent) => {
-      // Přetahovat jde jen v rámci skupiny; cizí tažení se nepřijme.
-      if (tazenyHtml5.current?.skupina === skupina) e.preventDefault();
+      // Přetahovat jde jen v rámci skupiny a zóny; cizí tažení se nepřijme.
+      if (tazenyHtml5.current?.skupina === skupina && tazenyHtml5.current.zona === zona) e.preventDefault();
     },
     onDrop: (e: DragEvent) => {
       e.preventDefault();
-      if (tazenyHtml5.current?.skupina === skupina) presun(skupina, tazenyHtml5.current.steamId, steamId);
+      if (tazenyHtml5.current?.skupina === skupina && tazenyHtml5.current.zona === zona) presun(skupina, tazenyHtml5.current.steamId, steamId);
       tazenyHtml5.current = null;
     },
     onDragEnd: () => {

@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+import { useZamekScrollu } from "../zamekScrollu.js";
 import { useEffect, useRef, useState } from "react";
 import {
   DATA_MODY,
@@ -17,11 +19,13 @@ interface Props {
   nastaveni: Nastaveni;
   /** Jméno, které dostane příští lobby — opisuje se do hry. */
   nazevLobby: string;
-  /** Heslo připravené pro příští lobby; prázdné, dokud ho server nepošle. */
+  /** Heslo večera, společné všem lobby akce; prázdné, dokud ho server nepošle. */
   heslo: string;
   onZmena: (nastaveni: Nastaveni) => void;
-  /** Kostka u hesla: server vygeneruje nové. */
-  onNoveHeslo: () => void;
+  /** Kostka u hesla: server vygeneruje nové pro lobby, které teprve vzniknou. Bez ní kostka není. */
+  onNoveHeslo?: () => void;
+  /** Při úpravě založeného zápasu jde jméno lobby přepsat; bez toho je jen ke čtení. */
+  onNazev?: (nazevLobby: string) => void;
   onZavrit: () => void;
 }
 
@@ -37,7 +41,17 @@ interface Props {
 /** Jak dlouho se třese řádek, na kterém někdo zkusil nemožné. */
 const DOBA_ZATRESENI_MS = 600;
 
-export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo, onZavrit }: Props) {
+export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo, onNazev, onZavrit }: Props) {
+  useZamekScrollu();
+  // Jméno lobby se ukládá až po dopsání (Enter nebo odchod z pole), ne po
+  // každém písmenu — hostovi by jinak blikalo v okně Create Lobby.
+  const [nazevRozepsany, setNazevRozepsany] = useState<string | null>(null);
+  const ulozNazev = () => {
+    if (!onNazev || nazevRozepsany === null) return;
+    const cisty = nazevRozepsany.trim();
+    if (cisty !== "" && cisty !== nazevLobby) onNazev(cisty);
+    setNazevRozepsany(null);
+  };
   const okno = useRef<HTMLDivElement>(null);
   const [dotceny, setDotceny] = useState<string | null>(null);
   const [vynadano, setVynadano] = useState(false);
@@ -69,7 +83,7 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
   const cislo = (v: string) => (v === "" ? null : Number(v));
   const zmen = (cast: Partial<Nastaveni>) => onZmena({ ...n, ...cast });
 
-  return (
+  return createPortal(
     <div
       className="prelobby-stin"
       data-testid="prelobby-stin"
@@ -91,11 +105,28 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
         ) : null}
 
         <div className="radky">
-          {/* Jméno lobby ani heslo nejsou předvolba — jsou to hodnoty příští
-              lobby, které Rob opíše do hry. Reset nastavení se jich netýká. */}
+          {/* Jméno lobby ani heslo nejsou předvolba — jméno patří příští lobby,
+              heslo celému večeru; obojí Rob opíše do hry. Reset se jich netýká. */}
           <label className="radek" data-klic="nazevLobby">
             <span>Lobby Name:</span>
-            <input type="text" value={nazevLobby} readOnly data-testid="prelobby-nazev" />
+            {onNazev ? (
+              <input
+                type="text"
+                value={nazevRozepsany ?? nazevLobby}
+                maxLength={40}
+                data-testid="prelobby-nazev"
+                onChange={(e) => setNazevRozepsany(e.target.value)}
+                onBlur={ulozNazev}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    ulozNazev();
+                  }
+                }}
+              />
+            ) : (
+              <input type="text" value={nazevLobby} readOnly data-testid="prelobby-nazev" />
+            )}
           </label>
           <label className="radek" data-klic="lobbyTyp">
             <span>Lobby Type:</span>
@@ -162,9 +193,11 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
               {/* Dokud server heslo nepřipravil, hvězdičky — ať je vidět, že
                   tam něco bude, a ne prázdné pole. */}
               <input type="text" value={heslo === "" ? "****" : heslo} readOnly data-testid="prelobby-heslo" />
-              <button type="button" className="kostka" title="Vygenerovat jiné heslo" aria-label="Vygenerovat jiné heslo" onClick={onNoveHeslo}>
-                <Kostka />
-              </button>
+              {onNoveHeslo ? (
+                <button type="button" className="kostka" title="Vygenerovat jiné heslo pro další lobby (založené si nechají své)" aria-label="Vygenerovat jiné heslo" onClick={onNoveHeslo}>
+                  <Kostka />
+                </button>
+              ) : null}
             </span>
           </label>
           <div className={dotceny === "povolitDivaky" ? "radek prelobby-dvojice zatrest" : "radek prelobby-dvojice"}>
@@ -221,7 +254,8 @@ export function PreLobby({ nastaveni: n, nazevLobby, heslo, onZmena, onNoveHeslo
           </label>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

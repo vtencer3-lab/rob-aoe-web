@@ -23,6 +23,21 @@ const zapas: ZapasView = {
   ],
 };
 
+// Kontrola lobby i pro připojujícího se hráče (uživatel 13. 9. 2026): vidí,
+// co host ještě nemá nastavené. Bez lobby se nekontroluje.
+it("po nalezení lobby ukáže kontrolu lobby jako u hosta", async () => {
+  const kontrola = vi.fn().mockResolvedValue({ nalezeno: true, kontroly: [{ klic: "mapa", text: "Mapa: Arabia", stav: "ok", sekce: "hlavni" }] });
+  render(<KartaHrace zapas={{ ...zapas, fazeLobby: "lobby" }} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} onKontrolaLobby={kontrola} />);
+  expect(await screen.findByText(/mapa: arabia/i)).toBeInTheDocument();
+  expect(kontrola).toHaveBeenCalledWith(1);
+});
+
+it("bez lobby se kontrola nevolá", () => {
+  const kontrola = vi.fn();
+  render(<KartaHrace zapas={{ ...zapas, lobbyId: null, joinUri: null }} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} onKontrolaLobby={kontrola} />);
+  expect(kontrola).not.toHaveBeenCalled();
+});
+
 it("ukáže barvu a tým velkým písmem", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
   expect(screen.getByTestId("moje-barva")).toHaveTextContent("modrá");

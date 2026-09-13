@@ -284,24 +284,133 @@ it("opakované AI v dalším zápase projde", async () => {
   expect(druhy.poradi).toBe(2);
 });
 
-// Heslo si Rob opisuje do hry ještě před založením zápasu (okno Pre-Lobby),
-// takže zápas musí dostat přesně to připravené — jinak by hráči dostali jiné
-// heslo, než jaké host do lobby naklikal.
-it("zápas si vezme heslo připravené pro příští lobby a hned chystá další", async () => {
+// Heslo je jedno na celý večer: Rob ho opisuje do hry při každém zakládání
+// a hráči si ho pamatují z prvního zápasu. Každý zápas proto dostane heslo
+// akce, a to zůstává i po založení.
+it("všechny zápasy večera sdílejí heslo akce", async () => {
   const { pripravPristiHeslo, getAktivniAkce } = await import("./events.js");
-  const pripravene = (await pripravPristiHeslo(akceId))!.pristiHeslo;
-  expect(pripravene).toMatch(/^[0-9]{4}$/);
+  const heslo = (await pripravPristiHeslo(akceId))!.pristiHeslo;
+  expect(heslo).toMatch(/^[0-9]{4}$/);
 
-  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
-  expect(zapas.heslo).toBe(pripravene);
-
-  // Pro další lobby už zase čeká heslo, a jiné.
-  const dalsi = (await getAktivniAkce())!.pristiHeslo;
-  expect(dalsi).toMatch(/^[0-9]{4}$/);
-  expect(dalsi).not.toBe(pripravene);
+  const prvni = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
+  expect(prvni.heslo).toBe(heslo);
+  expect(druhy.heslo).toBe(heslo);
+  expect((await getAktivniAkce())!.pristiHeslo).toBe(heslo);
 });
 
-it("bez připraveného hesla si zápas vygeneruje vlastní", async () => {
+// Kostka mění heslo jen pro lobby, které teprve vzniknou — už založený zápas
+// má svoje opsané ve hře a nesmí se mu pod rukama změnit.
+it("nové heslo z kostky dostanou až další zápasy, založené si drží své", async () => {
+  const { pripravPristiHeslo } = await import("./events.js");
+  const stare = (await pripravPristiHeslo(akceId))!.pristiHeslo;
+  const prvni = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+
+  const nove = (await pripravPristiHeslo(akceId, true))!.pristiHeslo;
+  expect(nove).not.toBe(stare);
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
+  expect(druhy.heslo).toBe(nove);
+  expect((await getZapas(prvni.id))!.zapas.heslo).toBe(stare);
+});
+
+it("akce bez hesla ho dostane s prvním zápasem a další zápas ho zdědí", async () => {
+  const { getAktivniAkce } = await import("./events.js");
+  // Akce z doby před migrací 017 heslo neměly.
+  await getPool().query("UPDATE akce SET pristi_heslo = NULL WHERE id = $1", [akceId]);
+  const prvni = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  expect(prvni.heslo).toMatch(/^[0-9]{4}$/);
+  expect((await getAktivniAkce())!.pristiHeslo).toBe(prvni.heslo);
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
+  expect(druhy.heslo).toBe(prvni.heslo);
+});
+
+// Úprava sestavy založeného zápasu (ozubené kolečko): host zůstává, dokud je
+// v sestavě, číslo lobby s ním; když vypadne, lobby se pustí jako při
+// přehození hosta. ELO se otiskne znovu, kliknutí na Připojit se nepřenášejí.
+it("nahradSestavu nechá hosta i lobby, když host zůstal; bez něj lobby pustí", async () => {
+  const { nahradSestavu } = await import("./matches.js");
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
-  expect(zapas.heslo).toMatch(/^[0-9]{4}$/);
+  await setLobbyId(zapas.id, "234230181");
+  const host = (await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.steamId;
+  const druhy = HRACI.slice(0, 2).find((s) => s !== host)!;
+
+  // Host zůstává, jen si prohodí tým a barvu s třetím hráčem místo druhého.
+  await nahradSestavu(zapas.id, [
+    { steamId: host, tym: 2, barva: 2, civ: null },
+    { steamId: HRACI[2]!, tym: 1, barva: 1, civ: null },
+  ]);
+  let nacteny = (await getZapas(zapas.id))!;
+  expect(nacteny.zapas.lobbyId).toBe("234230181");
+  expect(nacteny.ucastnici.map((u) => u.steamId).sort()).toEqual([host, HRACI[2]!].sort());
+  expect(nacteny.ucastnici.find((u) => u.jeHost)!.steamId).toBe(host);
+  expect(nacteny.ucastnici.find((u) => u.steamId === host)!.barva).toBe(2);
+  expect(nacteny.ucastnici.some((u) => u.steamId === druhy)).toBe(false);
+
+  // Host vypadl: lobby se pustí a hostem je někdo z nové sestavy.
+  await nahradSestavu(zapas.id, sestavaKazdyProtiKazdemu([HRACI[2]!, HRACI[3]!]));
+  nacteny = (await getZapas(zapas.id))!;
+  expect(nacteny.zapas.lobbyId).toBeNull();
+  expect(nacteny.ucastnici.filter((u) => u.jeHost)).toHaveLength(1);
+  expect(nacteny.ucastnici.map((u) => u.steamId).sort()).toEqual([HRACI[2]!, HRACI[3]!].sort());
+});
+
+it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () => {
+  const { setNastaveniZapasu, setNazevLobby } = await import("./matches.js");
+  await setNastaveniLobby(akceId, { mapaId: 10875 });
+  const prvni = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  const druhy = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(2, 4)));
+  expect((await getZapas(prvni.id))!.zapas.nastaveni).toEqual({ mapaId: 10875 });
+
+  await setNastaveniZapasu(prvni.id, { mapaId: 10895, populace: 250 });
+  await setNazevLobby(prvni.id, "ROB-finale");
+  expect((await getZapas(prvni.id))!.zapas.nastaveni).toEqual({ mapaId: 10895, populace: 250 });
+  expect((await getZapas(prvni.id))!.zapas.nazevLobby).toBe("ROB-finale");
+  expect((await getZapas(druhy.id))!.zapas.nastaveni).toEqual({ mapaId: 10875 });
+  expect((await getZapas(druhy.id))!.zapas.nazevLobby).toBe("ROB-02");
+});
+
+// Lhůta aktivity je věcí akce: přihláška i „Jsem tu!“ ji berou z ní.
+it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", async () => {
+  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej, obnovAktivitu, withdraw: odhlas } = await import("./events.js");
+  await setLhutaAktivity(akceId, 30);
+  await prihlas(akceId, HRACI[0]!);
+  // Nové přihlášení posune hráče na konec seznamu (řadí se podle času), tak podle id.
+  const najdi = async () => (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
+  const radek = await najdi();
+  const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(zaMinut).toBeGreaterThan(28);
+  expect(zaMinut).toBeLessThanOrEqual(30);
+  expect(radek.svolanV).toBeNull();
+
+  expect(await svolej(akceId, HRACI[0]!, HRACI[1]!)).toBe(true);
+  const poSvolani = await najdi();
+  expect(poSvolani.svolanV).toBeInstanceOf(Date);
+  expect(poSvolani.svolalJmeno).toBeTruthy();
+  // Zvonek lhůtu nemění (odečet tří minut uživatel zrušil).
+  const poMinut = (poSvolani.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(poMinut).toBeGreaterThan(28);
+  expect(await svolej(akceId, "76561198000000999", HRACI[1]!)).toBe(false);
+  // „Jsem tu!“ svolání vyřídí; nové přihlášení po odhlášení ho nesmí zdědit.
+  expect(await obnovAktivitu(akceId, HRACI[0]!)).toBe(true);
+  expect((await najdi()).svolanV).toBeNull();
+  expect(await svolej(akceId, HRACI[0]!, HRACI[1]!)).toBe(true);
+  await odhlas(akceId, HRACI[0]!);
+  await prihlas(akceId, HRACI[0]!);
+  expect((await najdi()).svolanV).toBeNull();
+  await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
+});
+
+// Lhůta se dědí do další akce a změna platí hned i běžícím přihláškám.
+it("lhůta se dědí do nové akce a přepočítá běžící přihlášky", async () => {
+  const { setLhutaAktivity, createAkce: novaAkce, listSignups, signUp: prihlas, setAkceStav: nastavStavAkce } = await import("./events.js");
+  await prihlas(akceId, HRACI[0]!);
+  await setLhutaAktivity(akceId, 40);
+  const radek = (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
+  const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
+  expect(zaMinut).toBeGreaterThan(38);
+  expect(zaMinut).toBeLessThanOrEqual(40);
+  // Otevřená smí být jen jedna akce (jedna_aktivni_akce), tak tuhle napřed ukončit.
+  await nastavStavAkce(akceId, "konec");
+  const dalsi = await novaAkce("zítra");
+  expect(dalsi.lhutaAktivityMinut).toBe(40);
 });

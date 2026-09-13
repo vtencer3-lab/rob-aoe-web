@@ -17,7 +17,7 @@ function depsSe(prepis: Partial<RefreshDeps> = {}) {
   const deps: RefreshDeps = {
     nactiZebricek: vi.fn(async () => ZEBRICEK),
     nactiProfil: vi.fn(async () => ({ personaName: "Vlasta", avatarUrl: "https://a/b.jpg" })),
-    nactiHodiny: vi.fn(async () => 1230),
+    nactiHru: vi.fn(async () => ({ hodiny: 1230, vlastnictvi: "ma" as const })),
     uloz: vi.fn(async (_id: string, staty: PlayerStatsUpdate) => {
       ulozeno.push(staty);
     }),
@@ -67,14 +67,16 @@ describe("refreshPlayerStats", () => {
       odehranoHer: 512,
       steamName: "Vlasta",
       steamHodiny: 1230,
+      steamHra: "ma",
       chyba: null,
     });
   });
 
-  it("skryté hodiny uloží jako null, ne jako chybu", async () => {
-    const { deps, ulozeno } = depsSe({ nactiHodiny: vi.fn(async () => null) });
+  it("skrytou knihovnu uloží jako null hodin a `soukromy`, ne jako chybu", async () => {
+    const { deps, ulozeno } = depsSe({ nactiHru: vi.fn(async () => ({ hodiny: null, vlastnictvi: "soukromy" as const })) });
     await refreshPlayerStats("76561198000000001", deps);
     expect(ulozeno[0]!.steamHodiny).toBeNull();
+    expect(ulozeno[0]!.steamHra).toBe("soukromy");
     expect(ulozeno[0]!.chyba).toBeNull();
   });
 
@@ -106,7 +108,7 @@ describe("refreshPlayerStats", () => {
     const { deps, ulozeno } = depsSe({
       nactiZebricek: selze,
       nactiProfil: selze,
-      nactiHodiny: selze,
+      nactiHru: selze,
     });
     await expect(refreshPlayerStats("76561198000000001", deps)).resolves.toBeUndefined();
     expect(ulozeno[0]!.chyba).toBeTruthy();

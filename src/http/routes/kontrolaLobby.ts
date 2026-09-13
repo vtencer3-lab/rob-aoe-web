@@ -137,8 +137,11 @@ export function registerKontrolaLobbyRoutes(app: FastifyInstance, deps: MatchDep
     const odpoved: KontrolaLobbyVysledek = { nalezeno: lobby !== undefined, kontroly: [] };
     if (!lobby) return odpoved;
 
-    const akce = await getAktivniAkce();
-    const ocekavane = doplnNastaveni((akce?.nastaveniLobby ?? {}) as Partial<NastaveniLobby>);
+    // Očekávané nastavení je zápasu vlastní (obtisk akce při založení, od
+    // 0.33.0 upravitelné zvlášť). Zápasy z doby před migrací 014 obtisk nemají
+    // a berou živé nastavení akce jako dřív.
+    const akce = Object.keys(zapas.nastaveni).length === 0 ? await getAktivniAkce() : null;
+    const ocekavane = doplnNastaveni((akce ? akce.nastaveniLobby : zapas.nastaveni) as Partial<NastaveniLobby>);
     odpoved.kontroly = zkontrolujLobby(ucastnici, ocekavane, lobby);
     return odpoved;
   });

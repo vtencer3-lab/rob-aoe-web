@@ -82,7 +82,16 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(nastaveni),
     }).then((r) => json<{ akce: { id: number } }>(r)),
-  /** Kostka u hesla v okně Pre-Lobby: nové heslo pro příští lobby. */
+  lhutaAktivity: (akceId: number, minut: number) =>
+    fetch(cesta(`/api/akce/${akceId}/lhuta-aktivity`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ minut }),
+    }).then((r) => json<{ akce: { id: number } }>(r)),
+  /** Zvonek u hráče: svolání do radnice, hráči zazvoní poplach. */
+  svolat: (akceId: number, steamId: string) =>
+    fetch(cesta(`/api/akce/${akceId}/hraci/${steamId}/svolat`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
+  /** Kostka u hesla v okně Pre-Lobby: nové heslo večera pro lobby, které teprve vzniknou. */
   pristiHeslo: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/pristi-heslo`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   ulozitNastaveniLobby: (akceId: number) =>
@@ -93,6 +102,40 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ sestava }),
     }).then((r) => json<{ akce: { id: number } }>(r)),
+  /** Úprava založeného zápasu (ozubené kolečko v režii). */
+  nastaveniZapasu: (zapasId: number, nastaveni: NastaveniLobby) =>
+    fetch(cesta(`/api/zapas/${zapasId}/nastaveni`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(nastaveni),
+    }).then((r) => json<{ ok: true }>(r)),
+  nazevLobbyZapasu: (zapasId: number, nazevLobby: string) =>
+    fetch(cesta(`/api/zapas/${zapasId}/nazev-lobby`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nazevLobby }),
+    }).then((r) => json<{ ok: true }>(r)),
+  sestavaZapasu: (zapasId: number, sestava: SestavaVstup[]) =>
+    fetch(cesta(`/api/zapas/${zapasId}/sestava`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sestava }),
+    }).then((r) => json<{ ok: true }>(r)),
+  upravitZpravu: (zapasId: number, zpravaId: number, text: string) =>
+    fetch(cesta(`/api/zapas/${zapasId}/zprava/${zpravaId}`), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }).then((r) => json<{ ok: true }>(r)),
+  smazatZpravu: (zapasId: number, zpravaId: number) =>
+    fetch(cesta(`/api/zapas/${zapasId}/zprava/${zpravaId}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+  /** Zpráva do chatu zápasu; odpověď je jen ok, zpráva přijde přes SSE. */
+  zprava: (zapasId: number, text: string) =>
+    fetch(cesta(`/api/zapas/${zapasId}/zprava`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }).then((r) => json<{ ok: true }>(r)),
   hledatLobby: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>
       json<HledaniLobbyVysledek>(r),

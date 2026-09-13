@@ -20,7 +20,9 @@ import {
   VYCHOZI_NASTAVENI,
   type NastaveniLobby as Nastaveni,
 } from "../../../src/shared/lobbyKontrola.js";
-import { MAPY } from "../../../src/shared/mapy.js";
+import { nazevMapy } from "../../../src/shared/mapy.js";
+import { nahledMapy } from "../mapyNahledy.js";
+import { VyberMapy } from "./VyberMapy.js";
 import { MAX_HRACU, MIN_HRACU } from "../../../src/shared/sestava.js";
 import { blikni } from "../historie.js";
 
@@ -35,6 +37,8 @@ interface Props {
   onUlozit: () => void;
   /** Klíč nastavení ke zvýraznění po změně / zpět / znovu. */
   zvyraznit?: { cil: string | null; cas: number } | null;
+  /** Bez tlačítka „Reset nastavení“ (úprava zápasu: reset by přepsal, co host už má ve hře). */
+  bezResetu?: boolean;
 }
 
 /**
@@ -45,10 +49,6 @@ const PRESETY_VIDET = false;
 
 /** Jak dlouho se čeká na další klik, než se změna pošle na server. */
 export const ODKLAD_ZMENY_MS = 300;
-
-const MAPY_PODLE_JMENA = Object.entries(MAPY)
-  .map(([id, nazev]) => ({ id: Number(id), nazev }))
-  .sort((a, b) => a.nazev.localeCompare(b.nazev, "cs"));
 
 type KlicTrojstavu = "lockTeams" | "teamTogether" | "teamPositions" | "sharedExploration" | "lockSpeed" | "turbo" | "fullTechTree" | "empireWars" | "suddenDeath" | "regicide" | "antiquity" | "recordGame";
 
@@ -162,11 +162,13 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
  * požadavek na každou číslici) a přes SSE ji uvidí všichni. „Uložit“ dělá
  * snímek, ke kterému se „Načíst uložený preset“ vrátí; „Reset“ nasadí výchozí.
  */
-export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: Props) {
+export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, bezResetu }: Props) {
   const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(zive as Partial<Nastaveni>));
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
   const ceka = useRef(false);
   const formular = useRef<HTMLFormElement>(null);
+  // Okno s minimapami místo seznamu jmen (VyberMapy).
+  const [vyberMap, setVyberMap] = useState(false);
   useEffect(() => {
     if (zvyraznit?.cil) blikni(formular.current?.querySelector(`[data-klic="${zvyraznit.cil}"]`));
   }, [zvyraznit]);
@@ -231,17 +233,34 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
           jedno
           onZmena={(v) => zmen({ ...n, ...(v === null ? {} : (NASTAVENI_REZIMU[v] ?? {})), rezim: v })}
         />
-        <label className="radek" data-klic="mapaId">
+        {/* Vypadá jako rozbalovací seznam, ale otevírá okno s minimapami —
+            u dvou set map řekne obrázek víc než jméno. */}
+        <div className="radek" data-klic="mapaId">
           <span>Location:</span>
-          <select value={n.mapaId ?? ""} onChange={(e) => zmen({ ...n, mapaId: cislo(e.target.value) })}>
-            <option value="">libovolná</option>
-            {MAPY_PODLE_JMENA.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nazev}
-              </option>
-            ))}
-          </select>
-        </label>
+          <button
+            type="button"
+            className="vyber-mapy-tlacitko"
+            aria-haspopup="dialog"
+            aria-expanded={vyberMap}
+            aria-label={`Location: ${nazevMapy(n.mapaId)}`}
+            data-testid="vyber-mapy-tlacitko"
+            onClick={() => setVyberMap(true)}
+          >
+            {nahledMapy(n.mapaId) ? <img src={nahledMapy(n.mapaId)!} alt="" width={22} height={22} /> : null}
+            <span className="jmeno">{nazevMapy(n.mapaId)}</span>
+            <span className="sipka" aria-hidden="true" />
+          </button>
+        </div>
+        {vyberMap ? (
+          <VyberMapy
+            hodnota={n.mapaId}
+            onVybrat={(id) => {
+              zmen({ ...n, mapaId: id });
+              setVyberMap(false);
+            }}
+            onZavrit={() => setVyberMap(false)}
+          />
+        ) : null}
         <label className="radek" data-klic="velikost">
           <span>Map Size:</span>
           <select value={n.velikost ?? ""} onChange={(e) => zmen({ ...n, velikost: cislo(e.target.value) })}>
@@ -321,7 +340,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit }: 
             Reset nastavení
           </button>
         </div>
-      ) : (
+      ) : bezResetu ? null : (
         <div className="ovladani">
           <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
             Reset nastavení

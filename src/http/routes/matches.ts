@@ -1,11 +1,15 @@
 import type { FastifyInstance } from "fastify";
 import { parseJoinUri, type LobbyUriError } from "../../aoe/lobbyUri.js";
+import { MAX_DELKA_ZPRAVY, pridejZpravu, smazZpravu, upravZpravu } from "../../db/chat.js";
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { setSkladani } from "../../db/events.js";
 import {
   createZapas,
   getZapas,
+  nahradSestavu,
   oznacKliknutiPripojit,
+  setNastaveniZapasu,
+  setNazevLobby,
   setHost,
   setLobbyId,
   setVysledek,
@@ -25,6 +29,10 @@ import { zkontrolujSestavu } from "../../shared/sestava.js";
 import { stejnyVitez, strany } from "../../shared/strany.js";
 import { BARVY, TYMY, type Barva, type HledaniLobbyVysledek, type SestavaVstup, type Tym, type Vitez } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
+import { prectiNastaveniLobby } from "./kontrolaLobby.js";
+
+/** Nejdelší jméno lobby, které hra vezme. */
+const MAX_DELKA_NAZVU_LOBBY = 40;
 
 /**
  * Tělo požadavku na zápas: pole řádků {steamId, tym, barva} v pořadí slotů.
@@ -255,6 +263,94 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
       throw new HttpError(403, "V tomhle zápase nehraješ.");
     }
     await oznacKliknutiPripojit(zapasId, steamId);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Úprava založeného zápasu (ozubené kolečko v režii): nastavení lobby jen
+  // tohohle zápasu, jeho jméno a jeho sestava. Změny přijdou všem přes SSE;
+  // hostovi se propíšou do okna Create Lobby, kontrola lobby je hlídá.
+  app.put("/api/zapas/:id/nastaveni", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const { zapas } = await nactiNeboSelzi(zapasId);
+    if (zapas.stav === "zruseny") throw new HttpError(409, "Zrušený zápas se neupravuje.");
+    await setNastaveniZapasu(zapasId, prectiNastaveniLobby(request.body));
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  app.put("/api/zapas/:id/nazev-lobby", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const { zapas } = await nactiNeboSelzi(zapasId);
+    if (zapas.stav === "zruseny") throw new HttpError(409, "Zrušený zápas se neupravuje.");
+    const nazev = String((request.body as { nazevLobby?: unknown })?.nazevLobby ?? "").trim();
+    if (nazev === "") throw new HttpError(400, "Jméno lobby nesmí být prázdné.");
+    if (nazev.length > MAX_DELKA_NAZVU_LOBBY) throw new HttpError(400, `Jméno lobby má nejvýš ${MAX_DELKA_NAZVU_LOBBY} znaků.`);
+    await setNazevLobby(zapasId, nazev);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  app.put("/api/zapas/:id/sestava", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const { zapas } = await nactiNeboSelzi(zapasId);
+    if (zapas.stav !== "bezi") throw new HttpError(409, `Zápas je ve stavu „${zapas.stav}“, sestava se už nemění.`);
+    const sestava = prectiSestavu(request.body);
+    try {
+      await nahradSestavu(zapasId, sestava);
+    } catch (err) {
+      if (err instanceof UcastnikOdhlasenChyba) throw new HttpError(409, err.message);
+      if (err instanceof SestavaChyba) throw new HttpError(400, err.message);
+      throw err;
+    }
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Chat zápasu: píšou účastníci a admini; ostatní ho ani nevidí (redakce).
+  // Zpráva se nikam nevrací — přijde všem v celém stavu přes SSE.
+  app.post("/api/zapas/:id/zprava", async (request) => {
+    const steamId = await requireUser(request);
+    const zapasId = requireId(request);
+    const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
+    const hrac = await getPlayer(steamId);
+    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.steamId === steamId)) {
+      throw new HttpError(403, "V tomhle zápase nehraješ.");
+    }
+    if (zapas.stav === "zruseny") throw new HttpError(409, "Zrušený zápas nemá chat.");
+    const text = String((request.body as { text?: unknown })?.text ?? "").trim();
+    if (text === "") throw new HttpError(400, "Prázdná zpráva.");
+    if (text.length > MAX_DELKA_ZPRAVY) throw new HttpError(400, `Zpráva má nejvýš ${MAX_DELKA_ZPRAVY} znaků.`);
+    // Cenzura ještě před uložením: hvězdičky vidí každý včetně autora.
+    await pridejZpravu(zapasId, steamId, text);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Autor přepíše svou zprávu (šipka nahoru v chatu); cenzura platí i tady.
+  app.put("/api/zapas/:id/zprava/:zpravaId", async (request) => {
+    const steamId = await requireUser(request);
+    const zapasId = requireId(request);
+    const zpravaId = Number((request.params as { zpravaId?: string }).zpravaId);
+    if (!Number.isInteger(zpravaId) || zpravaId <= 0) throw new HttpError(400, "Špatné id zprávy.");
+    const text = String((request.body as { text?: unknown })?.text ?? "").trim();
+    if (text === "") throw new HttpError(400, "Prázdná zpráva.");
+    if (text.length > MAX_DELKA_ZPRAVY) throw new HttpError(400, `Zpráva má nejvýš ${MAX_DELKA_ZPRAVY} znaků.`);
+    if (!(await upravZpravu(zapasId, zpravaId, steamId, text))) throw new HttpError(404, "Tohle není tvoje zpráva.");
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Admin smí zprávu smazat — zmizí všem s dalším stavem.
+  app.delete("/api/zapas/:id/zprava/:zpravaId", async (request) => {
+    await requireAdmin(request);
+    const zapasId = requireId(request);
+    const zpravaId = Number((request.params as { zpravaId?: string }).zpravaId);
+    if (!Number.isInteger(zpravaId) || zpravaId <= 0) throw new HttpError(400, "Špatné id zprávy.");
+    if (!(await smazZpravu(zapasId, zpravaId))) throw new HttpError(404, "Taková zpráva tu není.");
     await broadcastAkce();
     return { ok: true };
   });

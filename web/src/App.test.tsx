@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { AkceStavPayload, UcastnikView, ZapasView } from "../../src/shared/types.js";
 import { App } from "./App.js";
 import { api } from "./api.js";
+import { prehraj } from "./zvuk.js";
 import { useAkceStav } from "./useAkceStav.js";
 
+vi.mock("./zvuk.js", () => ({ prehraj: vi.fn(), hlasitost: () => 70, nastavHlasitost: vi.fn(), VYCHOZI_HLASITOST: 70 }));
 vi.mock("./api.js", () => ({
   api: {
     me: vi.fn(),
@@ -141,6 +143,22 @@ it("admin vidí panel režie", async () => {
   render(<App />);
 
   expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
+});
+
+it("nové pozadí je výchozí a admin ho v debug módu přepínačem v záhlaví vrátí na původní", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  localStorage.setItem("rezie.ladeni", "1");
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  const prepinac = await screen.findByRole("switch", { name: /nové pozadí/i });
+  expect(document.documentElement.classList.contains("pozadi-nove")).toBe(true);
+  fireEvent.click(prepinac);
+  expect(document.documentElement.classList.contains("pozadi-nove")).toBe(false);
+  fireEvent.click(prepinac);
+  expect(document.documentElement.classList.contains("pozadi-nove")).toBe(true);
+  localStorage.clear();
 });
 
 it("neadmin panel režie nevidí", async () => {
@@ -569,4 +587,114 @@ it("s nastavenou obtížností AI Difficulty nebliká", async () => {
 
   fireEvent.click(await screen.findByRole("button", { name: "Přidat AI do sestavy" }));
   expect(document.querySelector('[data-klic="aiObtiznost"].zmena')).toBeNull();
+});
+
+// Zvon z radnice: hráči slyší, že host založil jejich lobby; admin, že se
+// v lobby začalo hrát. Host sám ani první načtení stránky nezvoní.
+it("hráči zazvoní založení jeho lobby, hostovi ne", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const bez = zapas([u("a", 1, 1, true), u("b", 2, 2)]);
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [bez] });
+  const { rerender } = render(<App />);
+  await screen.findByText(/spoluhrac/i);
+  expect(prehraj).not.toHaveBeenCalled();
+
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, lobbyId: "123", joinUri: "aoe2de://0/123" }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/zvon/);
+
+  // Host to samé nedostane — potvrzení je jeho vlastní.
+  vi.mocked(prehraj).mockClear();
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "a", alias: "Host", steamName: null, jeAdmin: false } });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [bez] });
+  const druhy = render(<App />);
+  await druhy.findByText(/^zakládáš!$/i);
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, lobbyId: "123", joinUri: "aoe2de://0/123" }] });
+  druhy.rerender(<App />);
+  await new Promise((r) => setTimeout(r, 20));
+  expect(prehraj).not.toHaveBeenCalled();
+});
+
+it("adminovi zazvoní, když se v lobby začne hrát", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "rob", alias: "Rob", steamName: null, jeAdmin: true } });
+  const lobby = { ...zapas([u("a", 1, 1, true), u("b", 2, 2)]), lobbyId: "123", fazeLobby: "lobby" as const };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [lobby] });
+  const { rerender } = render(<App />);
+  await screen.findByRole("button", { name: /vytvořit zápas/i });
+  expect(prehraj).not.toHaveBeenCalled();
+
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...lobby, fazeLobby: "hraje_se" as const }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/zvon/);
+});
+
+// Zpráva admina v chatu zazvoní ostatním (je to pokyn, ne řeč); vlastní ne.
+it("hráči zazvoní nová zpráva od admina, jeho vlastní ne", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const bez = { ...zapas([u("a", 1, 1, true), u("b", 2, 2)]), zpravy: [] };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [bez] });
+  const { rerender } = render(<App />);
+  await screen.findByTestId("chat");
+
+  const moje = { id: 1, steamId: "b", jmeno: "Spoluhrac", jeAdmin: false, barva: 2 as const, tym: 2 as const, text: "jdu", poslano: "2026-09-12T12:00:00.000Z" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, zpravy: [moje] }] });
+  rerender(<App />);
+  await new Promise((r) => setTimeout(r, 20));
+  expect(prehraj).not.toHaveBeenCalled();
+
+  const robova = { id: 2, steamId: "rob", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "zakládám", poslano: "2026-09-12T12:01:00.000Z" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, zpravy: [moje, robova] }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(screen.getByText("zakládám")).toBeInTheDocument();
+});
+
+// Zvonek od admina: změna času svolání u mé přihlášky zazvoní poplach; první snímek ne.
+it("hráči zazvoní poplach, když ho admin svolá", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const ja = { steamId: "b", alias: "Spoluhrac", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null, svolanV: null };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [ja], zapasy: [] });
+  const { rerender } = render(<App />);
+  await screen.findByText(/spoluhrac/i);
+  expect(prehraj).not.toHaveBeenCalled();
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [{ ...ja, svolanV: "2026-09-12T15:00:00.000Z" }], zapasy: [] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/poplach/);
+});
+
+// Čas svolání z dřívějška nesmí vyskočit s přihlášením: 13. 9. 2026 dostal
+// hráč hned po „Přihlásit se do akce“ okno „tě shání!“, ačkoli nikdo nezvonil.
+it("staré svolání u čerstvé přihlášky okno neotevře", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const ja = { steamId: "b", alias: "Spoluhrac", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null, svolanV: "2026-09-12T15:00:00.000Z", svolalJmeno: "Rob" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [] });
+  const { rerender } = render(<App />);
+  await screen.findByText(/akce 1/i);
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [ja], zapasy: [] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(document.querySelector('tr[data-hrac="b"]')).toBeInTheDocument());
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(prehraj).not.toHaveBeenCalled();
+});
+
+// Zvonek od admina otevře hráči okno „X tě shání!“; zavře ho jen Jsem tu! nebo odhlášení.
+it("po zvonku hráč dostane okno se jménem admina a Jsem tu! ho zavře", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  vi.mocked(api.jsemTu).mockResolvedValue({ ok: true } as never);
+  const ja = { steamId: "b", alias: "Spoluhrac", steamName: null, avatarUrl: null, country: null, elo1v1: null, eloNejvyssi: null, odehranoHer: null, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null, svolanV: null, svolalJmeno: null };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [ja], zapasy: [] });
+  const { rerender } = render(<App />);
+  await screen.findByText(/spoluhrac/i);
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [{ ...ja, svolanV: "2026-09-13T10:00:00.000Z", svolalJmeno: "Rob" }], zapasy: [] });
+  rerender(<App />);
+  const okno = await screen.findByRole("alertdialog", { name: /rob tě shání/i });
+  expect(okno).toBeInTheDocument();
+  fireEvent.click(screen.getByTestId("svolani-stin"));
+  expect(screen.getByRole("alertdialog", { name: /rob tě shání/i })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /^jsem tu!$/i }));
+  await vi.waitFor(() => expect(api.jsemTu).toHaveBeenCalledWith(1));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
 });

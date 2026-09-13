@@ -7,7 +7,7 @@ const nic = () => {};
 
 it("bez uloženého nastavení nabídne výchozí: Arabia, Normal, 200, Conquest, bez cheatů", () => {
   render(<NastaveniLobby zive={undefined} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
-  expect(screen.getByLabelText(/location/i)).toHaveValue("10875");
+  expect(screen.getByRole("button", { name: /location: arabia/i })).toBeInTheDocument();
   expect(screen.getByLabelText(/map size/i)).toHaveValue("");
   expect(screen.getByLabelText(/game speed/i)).toHaveValue("2");
   expect(screen.getByLabelText(/population/i)).toHaveValue("200");
@@ -19,9 +19,12 @@ it("bez uloženého nastavení nabídne výchozí: Arabia, Normal, 200, Conquest
 it("živé hodnoty převezme a každou změnu pošle sama", async () => {
   const onZmena = vi.fn();
   render(<NastaveniLobby zive={{ mapaId: 10878, populace: 150 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
-  expect(screen.getByLabelText(/location/i)).toHaveValue("10878");
+  expect(screen.getByRole("button", { name: /location: black forest/i })).toBeInTheDocument();
 
-  fireEvent.change(screen.getByLabelText(/location/i), { target: { value: "" } });
+  // Location otevře okno s minimapami; „libovolná“ vrátí null.
+  fireEvent.click(screen.getByRole("button", { name: /location/i }));
+  fireEvent.click(screen.getByRole("option", { name: /libovolná/i }));
+  expect(screen.queryByTestId("vyber-mapy")).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText(/map size/i), { target: { value: "168" } });
   fireEvent.change(screen.getByLabelText(/game speed/i), { target: { value: "3" } });
   fireEvent.click(screen.getByLabelText(/allow cheats/i));

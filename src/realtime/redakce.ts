@@ -45,5 +45,6 @@ function redigujZapas(zapas: ZapasView, divak: Divak): ZapasView {
   if (divak.jeAdmin) return { ...zapas };
   if (jeUcastnik) return { ...zapas, spectatorUri: null };
 
-  return { ...zapas, heslo: "", lobbyId: null, joinUri: null, spectatorUri: null };
+  // Chat je jen pro lidi v zápase a adminy; cizí divák dostane prázdný seznam.
+  return { ...zapas, heslo: "", lobbyId: null, joinUri: null, spectatorUri: null, zpravy: [] };
 }
