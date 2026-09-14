@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 14. 9. 2026 odpoledne, main i dev 1.7.0)
+# Přehled prací a záměrů (stav k 15. 9. 2026, main 1.7.0, dev 1.7.1)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,7 +35,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.7.0, nasazeno na <https://jouki.cz/aoe> (PR #18, 14. 9. 2026 odpoledne); stav před ním nese značku `v1.1.4`, starší `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.7.0, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.7.1, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.7.0) navíc náhledy map 420 px a erby 104 px v plné velikosti (§3.56). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS) |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 300, databázové 169, frontend 289 — všechny zelené (14. 9. 2026 dopoledne, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -1605,6 +1605,20 @@ a nasazení) — psáno pro čtenáře, který projekt nezná, s cestami, funkce
 a pastmi. Extrakční skripty pro zvuky ze hry (`pck.py`, `extract_wem.py`)
 a postup jsou nově v repu v `nastroje/zvuky/`, dřív jen ve scratchpadu.
 
+### 3.56 Náhledy map a erby v plné velikosti (1.7.1, 15. 9. 2026)
+
+Uživatel: „všechny obrázky map vyexportuj v maximální velikosti, minimálně
+420×420“ a „i erby v maximální velikosti, kterou hra má“.
+- **Mapy:** ikony ve hře (`wpfg/resources/mapicons`) mají většinou 420×420,
+  pár 490×478 a 315×315; `nastroje/grafika/mapy_nahledy.py` už nezmenšuje
+  na 192, nechává nativní rozměr a menší než 420 zvětší (`VELIKOST_MIN`).
+  Výsledek 195 × 420×420, 5,5 MB (dřív 2,1 MB); mřížka je dál 192 px, obrázky
+  se donačítají po startu jako dřív. Spouštět s `PYTHONUTF8=1` (výpis má „→“).
+- **Erby:** kulaté ikony `civ_techtree/menu_techtree_<slug>.png` má hra jen
+  ve 104×104 (web měl 96); nový `nastroje/grafika/erby.py` je exportuje
+  1:1 (60 erbů, bez custom/disabled/fullrandom/mirror), webp q90. Velké
+  štítové `civ_emblems/*.png` (450×280) jsou jiná grafika, web ji nepoužívá.
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -1839,6 +1853,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.7.1 | 15. 9. | Náhledy map 420 px (nativní) a erby 104 px, exportní skript erbů (§3.56) |
 | 1.7.0 | 14. 9. 15:30 | Zvuk všech 105 tauntů přesně ze hry (`wwise/en/Base.pck`), hraje místo cinknutí i autorovi (§3.52); **release PR #18** do `main` (značka `v1.1.4`) |
 | 1.6.5 | 14. 9. 14:30 | Taunty bez zvuku — smích z Wwise nebyl ten ze hry, nahrávky tauntů v instalaci nejsou (§3.52) |
 | 1.6.4 | 14. 9. 12:10 | Náhled odpovědi nad celou zprávou, skok posouvá jen seznam a jen když je třeba, mezera za jménem, bez pozadí při najetí |
