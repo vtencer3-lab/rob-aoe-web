@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { getAktivniAkce } from "../../db/events.js";
 import { getPlayer } from "../../db/players.js";
-import { getZapas, setLobbyId } from "../../db/matches.js";
+import { getPosledniKontrola, getZapas, setLobbyId, ulozPosledniKontrolu } from "../../db/matches.js";
 import type { LobbyInzerat } from "../../external/worldsEdgeLobby.js";
 import { najdiLobby } from "../../matches/hledaniLobby.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
@@ -135,7 +135,13 @@ export function registerKontrolaLobbyRoutes(app: FastifyInstance, deps: MatchDep
       }
     }
     const odpoved: KontrolaLobbyVysledek = { nalezeno: lobby !== undefined, kontroly: [] };
-    if (!lobby) return odpoved;
+    if (!lobby) {
+      // Lobby zmizela (hra běží): přibalit poslední úspěšnou kontrolu, ať je
+      // vidět, s čím odešla do hry (migrace 025).
+      const posledni = await getPosledniKontrola(zapasId);
+      odpoved.posledni = posledni ? { kontroly: posledni.kontroly, kdy: posledni.kdy.toISOString() } : null;
+      return odpoved;
+    }
 
     // Očekávané nastavení je zápasu vlastní (obtisk akce při založení, od
     // 0.33.0 upravitelné zvlášť). Zápasy z doby před migrací 014 obtisk nemají
@@ -143,6 +149,7 @@ export function registerKontrolaLobbyRoutes(app: FastifyInstance, deps: MatchDep
     const akce = Object.keys(zapas.nastaveni).length === 0 ? await getAktivniAkce() : null;
     const ocekavane = doplnNastaveni((akce ? akce.nastaveniLobby : zapas.nastaveni) as Partial<NastaveniLobby>);
     odpoved.kontroly = zkontrolujLobby(ucastnici, ocekavane, lobby);
+    await ulozPosledniKontrolu(zapasId, odpoved.kontroly);
     return odpoved;
   });
 }

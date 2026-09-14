@@ -324,8 +324,10 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     const text = String((request.body as { text?: unknown })?.text ?? "").trim();
     if (text === "") throw new HttpError(400, "Prázdná zpráva.");
     if (text.length > MAX_DELKA_ZPRAVY) throw new HttpError(400, `Zpráva má nejvýš ${MAX_DELKA_ZPRAVY} znaků.`);
+    const odpovedNaRaw = (request.body as { odpovedNa?: unknown })?.odpovedNa;
+    const odpovedNa = typeof odpovedNaRaw === "number" && Number.isInteger(odpovedNaRaw) && odpovedNaRaw > 0 ? odpovedNaRaw : null;
     // Cenzura ještě před uložením: hvězdičky vidí každý včetně autora.
-    await pridejZpravu(zapasId, steamId, text);
+    await pridejZpravu(zapasId, steamId, text, odpovedNa);
     await broadcastAkce();
     return { ok: true };
   });

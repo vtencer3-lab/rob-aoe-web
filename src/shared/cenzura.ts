@@ -34,6 +34,20 @@ export function zjednodus(text: string): string {
 }
 
 /** Kmeny, u kterých je zakázané každé slovo, co jimi začíná (uživatel 12. 9.: „negroidovy“ prošlo). */
+/**
+ * Důležitá zpráva (uživatel 13. 9. 2026): admin ji začne vykřičníkem. Všem
+ * ostatním v lobby k cinknutí navíc zazvoní zvon z radnice a text je tučně
+ * bez vykřičníku. U běžného hráče vykřičník nic nedělá.
+ */
+export function jeDulezita(zprava: { jeAdmin: boolean; text: string }): boolean {
+  return zprava.jeAdmin && zprava.text.startsWith("!");
+}
+
+/** Text důležité zprávy bez úvodního vykřičníku; ostatní beze změny. */
+export function textZpravy(zprava: { jeAdmin: boolean; text: string }): string {
+  return jeDulezita(zprava) ? zprava.text.slice(1).trimStart() : zprava.text;
+}
+
 const PREDPONY: readonly string[] = ["negroid"];
 
 function zakazanyKmen(prosty: string): boolean {

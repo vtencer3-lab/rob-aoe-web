@@ -1,13 +1,18 @@
 import { createPortal } from "react-dom";
 import { useState, type CSSProperties } from "react";
 import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT, ZVONEK_PO_MINUTACH } from "../../../src/shared/aktivita.js";
+import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
 import { useZamekScrollu } from "../zamekScrollu.js";
-import { nastavHlasitost, prehraj } from "../zvuk.js";
+import { hlasitostUdalosti, nastavHlasitost, nastavHlasitostChatu, prehraj } from "../zvuk.js";
 
 interface Props {
+  /** Master Volume, 0–100. */
   hlasitost: number;
   onHlasitost: (procent: number) => void;
+  /** Podíl chatu z Master Volume, 0–100 (výchozí 50). */
+  hlasitostChatu: number;
+  onHlasitostChatu: (procent: number) => void;
   /** Jen admin: lhůta aktivity večera v minutách. */
   lhutaMinut?: number;
   onLhuta?: (minut: number) => void;
@@ -20,9 +25,10 @@ interface Props {
  * se ukládá při každém posunu a hned se zkouší zvonem; lhůta jde po minutě
  * šipkami, meze hlídá i server.
  */
-export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta, onZavrit }: Props) {
+export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onHlasitostChatu, lhutaMinut, onLhuta, onZavrit }: Props) {
   useZamekScrollu();
-  const [posun, setPosun] = useState(hlasitost);
+  const [master, setMaster] = useState(hlasitost);
+  const [chat, setChat] = useState(hlasitostChatu);
   const zmenLhutu = (o: number) => {
     if (lhutaMinut === undefined || !onLhuta) return;
     const nova = Math.min(LHUTA_MAX_MINUT, Math.max(LHUTA_MIN_MINUT, lhutaMinut + o));
@@ -44,36 +50,29 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta
             ✕
           </button>
         </header>
-        <label className="radek-nastaveni">
-          <span>Hlasitost zvuků</span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={posun}
-            style={{ "--podil": `${posun}%` } as CSSProperties}
-            aria-label="Hlasitost zvuků"
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              setPosun(v);
-              nastavHlasitost(v);
-              onHlasitost(v);
-            }}
-            onMouseUp={() => prehraj(zvonUrl, posun)}
-            onKeyUp={() => prehraj(zvonUrl, posun)}
-            onWheel={(e) => {
-              // Kolečko po procentu (uživatel); hodnota se uloží jako při tažení.
-              // Fokus, ať se ukáže rámeček jako při kliknutí.
-              e.currentTarget.focus();
-              e.preventDefault();
-              const v = Math.min(100, Math.max(0, posun + (e.deltaY < 0 ? 1 : -1)));
-              setPosun(v);
-              nastavHlasitost(v);
-              onHlasitost(v);
-            }}
-          />
-          <output>{posun} %</output>
-        </label>
+        {/* Master Volume je strop, chat z něj bere svůj podíl: 70 % × 50 % = 35 %.
+            Každý posuvník se po puštění zkusí zvukem, který řídí. */}
+        <Posuvnik
+          popisek="Master Volume"
+          info="Neovlivňuje hlasitost svolávání — poplach od admina zazvoní vždy naplno."
+          hodnota={master}
+          onZmena={(v) => {
+            setMaster(v);
+            nastavHlasitost(v);
+            onHlasitost(v);
+          }}
+          onZkouska={() => prehraj(zvonUrl, master)}
+        />
+        <Posuvnik
+          popisek="Hlasitost chatu"
+          hodnota={chat}
+          onZmena={(v) => {
+            setChat(v);
+            nastavHlasitostChatu(v);
+            onHlasitostChatu(v);
+          }}
+          onZkouska={() => prehraj(chatUrl, hlasitostUdalosti(chat, master))}
+        />
         {lhutaMinut !== undefined && onLhuta ? (
           <div className="radek-nastaveni" role="group" aria-label="Lhůta aktivity">
             <span>Lhůta aktivity</span>
@@ -118,5 +117,49 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, lhutaMinut, onLhuta
       </div>
     </div>,
     document.body,
+  );
+}
+
+interface PosuvnikProps {
+  popisek: string;
+  hodnota: number;
+  onZmena: (procent: number) => void;
+  /** Po puštění (myš, klávesa) se zvuk zkusí. */
+  onZkouska: () => void;
+  /** Kroužek (i) za popiskem s bublinou. */
+  info?: string;
+}
+
+function Posuvnik({ popisek, hodnota, onZmena, onZkouska, info }: PosuvnikProps) {
+  return (
+    <label className="radek-nastaveni">
+      <span>
+        {popisek}
+        {info ? (
+          <span className="info napoveda" data-napoveda={info} role="img" aria-label={info} tabIndex={0}>
+            i
+          </span>
+        ) : null}
+      </span>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={hodnota}
+        style={{ "--podil": `${hodnota}%` } as CSSProperties}
+        aria-label={popisek}
+        onChange={(e) => onZmena(Number(e.target.value))}
+        onMouseUp={onZkouska}
+        onKeyUp={onZkouska}
+        onWheel={(e) => {
+          // Kolečko po procentu (uživatel); hodnota se uloží jako při tažení.
+          // Fokus, ať se ukáže rámeček jako při kliknutí.
+          e.currentTarget.focus();
+          e.preventDefault();
+          onZmena(Math.min(100, Math.max(0, hodnota + (e.deltaY < 0 ? 1 : -1))));
+        }}
+      />
+      <output>{hodnota} %</output>
+    </label>
   );
 }

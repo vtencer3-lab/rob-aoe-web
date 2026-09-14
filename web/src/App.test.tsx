@@ -6,7 +6,8 @@ import { api } from "./api.js";
 import { prehraj } from "./zvuk.js";
 import { useAkceStav } from "./useAkceStav.js";
 
-vi.mock("./zvuk.js", () => ({ prehraj: vi.fn(), hlasitost: () => 70, nastavHlasitost: vi.fn(), VYCHOZI_HLASITOST: 70 }));
+vi.mock("./emoty.js", async (puvodni) => ({ ...(await puvodni<typeof import("./emoty.js")>()), useEmoty: () => new Map() }));
+vi.mock("./zvuk.js", () => ({ prehraj: vi.fn(), naZablokovaniZvuku: () => () => {}, hlasitost: () => 70, nastavHlasitost: vi.fn(), hlasitostChatu: () => 50, nastavHlasitostChatu: vi.fn(), hlasitostUdalosti: (podil: number, master = 70) => (master * podil) / 100, VYCHOZI_HLASITOST: 70, VYCHOZI_HLASITOST_CHATU: 50 }));
 vi.mock("./api.js", () => ({
   api: {
     me: vi.fn(),
@@ -396,6 +397,11 @@ it("při nové verzi serveru nabídne obnovení stránky", async () => {
   render(<App />);
   expect(await screen.findByRole("status")).toHaveTextContent("99.0.0");
   expect(screen.getByRole("button", { name: "Načíst znovu" })).toBeInTheDocument();
+  // Dvojitá šipka lištu sbalí, záložka s šipkami dolů ji vrátí (uživatel 13. 9. 2026).
+  fireEvent.click(screen.getByRole("button", { name: /sbalit lištu/i }));
+  expect(screen.getByTestId("nova-verze")).toHaveClass("sbaleno");
+  fireEvent.click(screen.getByRole("button", { name: /rozbalit lištu/i }));
+  expect(screen.getByTestId("nova-verze")).not.toHaveClass("sbaleno");
 });
 
 // Adminovi visí u každého zápasu plná karta, takže zkrácený veřejný řádek pod
@@ -657,6 +663,30 @@ it("hráči zazvoní nová zpráva od admina, jeho vlastní ne", async () => {
   rerender(<App />);
   await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
   expect(screen.getByText("zakládám")).toBeInTheDocument();
+});
+
+// Taunt ze hry zní příjemci i autorovi místo cinknutí; obyčejná zpráva cinkne.
+it("taunt zahraje nahrávku ze hry příjemci i autorovi, obyčejná zpráva cinkne", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { steamId: "b", alias: "Spoluhrac", steamName: null, jeAdmin: false } });
+  const bez = { ...zapas([u("a", 1, 1, true), u("b", 2, 2)]), zpravy: [] };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [bez] });
+  const { rerender } = render(<App />);
+  await screen.findByTestId("chat");
+  const cizi = { id: 1, steamId: "a", jmeno: "Host", jeAdmin: false, barva: 1 as const, tym: 1 as const, text: "30", poslano: "2026-09-12T12:00:00.000Z" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, zpravy: [cizi] }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(1));
+  expect(String(vi.mocked(prehraj).mock.calls[0]![0])).toMatch(/taunt-30/);
+  const moje = { id: 2, steamId: "b", jmeno: "Spoluhrac", jeAdmin: false, barva: 2 as const, tym: 2 as const, text: "11", poslano: "2026-09-12T12:01:00.000Z" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, zpravy: [cizi, moje] }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(2));
+  expect(String(vi.mocked(prehraj).mock.calls[1]![0])).toMatch(/taunt-11/);
+  const bezna = { id: 3, steamId: "a", jmeno: "Host", jeAdmin: false, barva: 1 as const, tym: 1 as const, text: "gg", poslano: "2026-09-12T12:02:00.000Z" };
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [{ ...bez, zpravy: [cizi, moje, bezna] }] });
+  rerender(<App />);
+  await vi.waitFor(() => expect(prehraj).toHaveBeenCalledTimes(3));
+  expect(String(vi.mocked(prehraj).mock.calls[2]![0])).toMatch(/chat/);
 });
 
 // Zvonek od admina: změna času svolání u mé přihlášky zazvoní poplach; první snímek ne.

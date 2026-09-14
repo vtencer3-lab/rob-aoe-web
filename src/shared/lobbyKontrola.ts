@@ -436,6 +436,11 @@ export interface Kontrola {
 export interface KontrolaLobbyVysledek {
   nalezeno: boolean;
   kontroly: Kontrola[];
+  /**
+   * Když lobby v seznamu není: poslední úspěšná kontrola (migrace 025), ať
+   * je vidět, s jakým nastavením lobby odešla do hry. `kdy` je ISO čas.
+   */
+  posledni?: { kontroly: Kontrola[]; kdy: string } | null;
 }
 
 /** „Lobby v pořádku“ = nikde nic červeného. Upozornění a „je to jedno“ fajfku neberou. */

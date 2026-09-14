@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { buildAkceStav } from "../../realtime/akceStav.js";
+import { hlasHub, smiSlyset } from "../../realtime/hlas.js";
 import { hub, KANAL_AKCE } from "../../realtime/hub.js";
 import { sledujPritomnost } from "../../realtime/pritomnost.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
@@ -16,6 +17,7 @@ export function registerStreamRoutes(app: FastifyInstance): void {
     // klient se může odpojit dřív, než bychom na 'close' měli vůbec co
     // navěsit — a bez posluchače tady by odběratel i puls unikaly navždy.
     let odhlas: (() => void) | undefined;
+    let odhlasHlas: (() => void) | undefined;
     let puls: NodeJS.Timeout | undefined;
     // Zavření poslední karty znamená odchod z akce (pritomnost.ts).
     let odesel: (() => void) | undefined;
@@ -28,6 +30,9 @@ export function registerStreamRoutes(app: FastifyInstance): void {
       const fn = odhlas;
       odhlas = undefined;
       fn?.();
+      const fnHlas = odhlasHlas;
+      odhlasHlas = undefined;
+      fnHlas?.();
       odesel?.();
     };
     request.raw.on("close", uklid);
@@ -83,6 +88,13 @@ export function registerStreamRoutes(app: FastifyInstance): void {
           return;
         }
         posli(payload);
+      });
+
+      // Hlas admina (push-to-talk) jde stejným spojením jako událost `hlas`,
+      // jen tomu, kdo ho smí slyšet (realtime/hlas.ts). Není to stav — nic
+      // se nedrží pro pozdní příchozí.
+      odhlasHlas = hlasHub.subscribe(KANAL_AKCE, (udalost) => {
+        if (smiSlyset(divak, udalost)) reply.raw.write(`event: hlas\ndata: ${JSON.stringify(udalost)}\n\n`);
       });
 
       const stav = await buildAkceStav();

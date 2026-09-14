@@ -92,6 +92,18 @@ export const api = {
   /** Zvonek u hráče: svolání do radnice, hráči zazvoní poplach. */
   svolat: (akceId: number, steamId: string) =>
     fetch(cesta(`/api/akce/${akceId}/hraci/${steamId}/svolat`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
+  /** Sada 7TV emotů Robova kanálu (server ji hodinu drží). */
+  emoty: () => fetch(cesta("/api/emoty")).then((r) => json<{ emoty: { jmeno: string; url: string; siroky: boolean; nulovaSirka: boolean }[] }>(r)),
+  /** Push-to-talk admina: jeden kousek nahrávky (nebo značka konce) pro účastníky zápasu. */
+  hlas: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string }) =>
+    fetch(cesta(`/api/zapas/${zapasId}/hlas`), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(telo),
+    }).then((r) => json<{ ok: true }>(r)),
+  /** Super zvonek v hlavičce tabulky: svolá všechny, u kterých je zvonek (lhůta − 5 min). */
+  svolatVsechny: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/svolat-vsechny`), { method: "POST" }).then((r) => json<{ pocet: number }>(r)),
   /** Kostka u hesla v okně Pre-Lobby: nové heslo večera pro lobby, které teprve vzniknou. */
   pristiHeslo: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/pristi-heslo`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
@@ -131,11 +143,11 @@ export const api = {
   smazatZpravu: (zapasId: number, zpravaId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/zprava/${zpravaId}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   /** Zpráva do chatu zápasu; odpověď je jen ok, zpráva přijde přes SSE. */
-  zprava: (zapasId: number, text: string) =>
+  zprava: (zapasId: number, text: string, odpovedNa: number | null = null) =>
     fetch(cesta(`/api/zapas/${zapasId}/zprava`), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(odpovedNa === null ? { text } : { text, odpovedNa }),
     }).then((r) => json<{ ok: true }>(r)),
   hledatLobby: (zapasId: number) =>
     fetch(cesta(`/api/zapas/${zapasId}/hledat-lobby`), { method: "POST" }).then((r) =>

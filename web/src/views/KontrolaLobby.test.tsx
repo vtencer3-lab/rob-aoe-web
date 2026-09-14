@@ -1,6 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+
+// Sekce si pamatují sbalení v localStorage; testy se nesmí ovlivňovat.
+afterEach(() => localStorage.clear());
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 
@@ -50,7 +53,7 @@ it("klik zkontroluje a vypíše čtyři stavy; souhrn počítá červené z obou
 it("sbalené další nastavení zůstane sbalené i po další kontrole", async () => {
   const onKontrola = vi.fn().mockResolvedValue(vysledek);
   render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
-  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  // Jedna kontrola proběhne hned po připojení (1.3.5), pak ruční.
   const dalsi = await screen.findByTestId("dalsi-nastaveni");
   await userEvent.click(dalsi.querySelector("summary")!);
   expect(dalsi).not.toHaveAttribute("open");
@@ -94,11 +97,31 @@ it("červená v dalším nastavení fajfku bere", async () => {
   expect(screen.queryByTestId("fajfka-kontrola")).not.toBeInTheDocument();
 });
 
+// Po zmizení lobby (hra běží) zůstane sbalená sekce s poslední kontrolou
+// (uživatel 13. 9. 2026): s jakým nastavením lobby odešla do hry.
+it("po zmizení lobby ukáže sbalené poslední známé nastavení", async () => {
+  const onKontrola = vi.fn().mockResolvedValue({
+    nalezeno: false,
+    kontroly: [],
+    posledni: { kontroly: [{ klic: "mapa", stav: "ok", text: "Mapa: Arabia", sekce: "hlavni" }], kdy: "2026-09-13T17:09:00.000Z" },
+  });
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
+  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  const sekce = await screen.findByTestId("posledni-nastaveni");
+  expect(sekce).not.toHaveAttribute("open");
+  expect(sekce).toHaveTextContent(/nastavení hry/i);
+  // Uvnitř tytéž tři sekce; rozbalené, dokud si je někdo nesbalí.
+  await userEvent.click(sekce.querySelector("summary")!);
+  expect(sekce).toHaveAttribute("open");
+  expect(screen.getByTestId("posledni-hlavni")).toHaveAttribute("open");
+  expect(screen.getByTestId("posledni-kontroly-hlavni")).toHaveTextContent("Mapa: Arabia");
+});
+
 it("lobby mimo seznam a chyba serveru mají vlastní hlášky a verdikt nemají", async () => {
   const onVerdikt = vi.fn();
   const onKontrola = vi.fn().mockResolvedValueOnce({ nalezeno: false, kontroly: [] }).mockRejectedValueOnce(new Error("Seznam lobby se nepodařilo stáhnout."));
   render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} onVerdikt={onVerdikt} />);
-  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  // První kontrola běží sama po připojení (1.3.5).
   expect(await screen.findByRole("status")).toHaveTextContent(/není/i);
   await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
   expect(await screen.findByRole("alert")).toHaveTextContent(/nepodařilo/i);

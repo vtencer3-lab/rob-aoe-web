@@ -6,6 +6,8 @@ interface Props {
   kdo: string;
   onJsemTu: () => void;
   onOdhlasit: () => void;
+  /** Prohlížeč poplach zadržel (bez kliknutí zvuk nepustí) — říct to. */
+  zvukCeka?: boolean;
 }
 
 /**
@@ -14,7 +16,7 @@ interface Props {
  * z akce“ hráče odhlásí. Kliknutí vedle ani Escape okno nezavřou (uživatel:
  * hráč má odpovědět, ne to odklepnout).
  */
-export function Svolani({ kdo, onJsemTu, onOdhlasit }: Props) {
+export function Svolani({ kdo, onJsemTu, onOdhlasit, zvukCeka = false }: Props) {
   useZamekScrollu();
   return createPortal(
     <div className="prelobby-stin" data-testid="svolani-stin">
@@ -22,6 +24,11 @@ export function Svolani({ kdo, onJsemTu, onOdhlasit }: Props) {
         <p className="otazka">
           <strong>{kdo}</strong> tě shání!
         </p>
+        {zvukCeka ? (
+          <p className="zaloha stred" data-testid="zvuk-ceka">
+            Prohlížeč poplach bez tvého kliknutí nepustil — ozve se, jakmile klikneš.
+          </p>
+        ) : null}
         <div className="ovladani">
           <button type="button" className="vytvorit" onClick={onJsemTu} autoFocus>
             Jsem tu!
