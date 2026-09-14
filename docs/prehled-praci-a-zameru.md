@@ -36,7 +36,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | 1.7.0, nasazeno na <https://jouki.cz/aoe> (PR #18, 14. 9. 2026 odpoledne); stav před ním nese značku `v1.1.4`, starší `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.7.0, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
-| `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
+| `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS) |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 300, databázové 169, frontend 289 — všechny zelené (14. 9. 2026 dopoledne, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
