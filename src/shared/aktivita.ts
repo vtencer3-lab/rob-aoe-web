@@ -7,11 +7,12 @@
  * u sebe tlačítko „Jsem tu!“.
  *
  * Lhůty jsou tady, ne v SQL a v komponentě zvlášť, aby server i prohlížeč
- * počítaly s týmiž čísly. Plnou lhůtu si od migrace 021 nastavuje admin u akce
- * (`akce.lhuta_aktivity_minut`); tady zůstává výchozí hodnota a meze.
+ * počítaly s týmiž čísly. Plnou lhůtu si nastavuje admin globálně pro celý web
+ * (`nastaveni_webu.lhuta_aktivity_minut`, migrace 024); tady zůstává výchozí
+ * hodnota a meze.
  */
 
-/** Výchozí lhůta přihlášky od posledního projevu života; skutečnou nese akce. */
+/** Výchozí lhůta přihlášky od posledního projevu života; skutečnou nese nastavení webu. */
 export const AKTIVITA_MINUT = 15;
 export const LHUTA_MIN_MINUT = 2;
 export const LHUTA_MAX_MINUT = 120;

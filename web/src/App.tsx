@@ -1,3 +1,6 @@
+import { cisloTauntu } from "../../src/shared/taunty.js";
+import { spustPrehravacHlasu } from "./hlas.js";
+import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
@@ -15,7 +18,7 @@ import { EditaceZapasu } from "./views/EditaceZapasu.js";
 import { NastaveniUzivatele } from "./views/NastaveniUzivatele.js";
 import { Svolani } from "./views/Svolani.js";
 import poplachUrl from "./assets/poplach.mp3";
-import { hlasitost as nactiHlasitost } from "./zvuk.js";
+import { hlasitost as nactiHlasitost, hlasitostChatu as nactiHlasitostChatu, hlasitostUdalosti, naZablokovaniZvuku } from "./zvuk.js";
 import { KartaHrace } from "./views/KartaHrace.js";
 import { ObrazovkaHosta } from "./views/ObrazovkaHosta.js";
 import { Prepinac } from "./views/Prepinac.js";
@@ -28,6 +31,7 @@ import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
 import crashoutUrl from "./assets/crashout.mp3";
+import chatUrl from "./assets/chat.mp3";
 import zvonUrl from "./assets/zvon.mp3";
 import logoUrl from "./assets/logo.webp";
 import { prehraj } from "./zvuk.js";
@@ -36,6 +40,69 @@ import { prehraj } from "./zvuk.js";
 const KANAL_BROHEMIANS = "https://www.youtube.com/@BrohemiansAoE";
 
 /** Přepínač, který si prohlížeč pamatuje (debug mód, pohled uživatele). */
+/**
+ * Taunty ze hry (uživatel 14. 9. 2026: „přesně ty ze hry“): 105 nahrávek
+ * z `wwise/en/Base.pck` (nastroje/zvuky/taunty.py), jako adresy — stáhnou se
+ * až při přehrání. Klíč = číslo tauntu.
+ */
+const TAUNTY_ZVUK: Record<number, string> = Object.fromEntries(
+  Object.entries(import.meta.glob("./assets/taunty/taunt-*.mp3", { eager: true, query: "?url", import: "default" })).map(([cesta, url]) => [
+    Number(/taunt-(\d+)\.mp3$/.exec(cesta)?.[1]),
+    url as string,
+  ]),
+);
+
+/** Dvě vnořené šipky (chevrony) pro sbalení a rozbalení lišty. */
+function DvojitaSipka({ smer }: { smer: "nahoru" | "dolu" }) {
+  const d = smer === "nahoru" ? "M3 9l5-5 5 5M3 14l5-5 5 5" : "M3 3l5 5 5-5M3 8l5 5 5-5";
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Zkušební pozadí; klíč = přípona třídy `pozadi-<klic>` na `<html>` (výchozí soumrak je bez třídy). */
+const POZADI = [
+  { klic: "puvodni", popisek: "Původní lvi" },
+  { klic: "nove", popisek: "Nové lvy" },
+  { klic: "soumrak", popisek: "Soumrak" },
+] as const;
+type Pozadi = (typeof POZADI)[number]["klic"];
+
+/**
+ * Výchozí je soumrak (uživatel 13. 9. 2026: „nastav tu poslední verzi jako
+ * default“). Starší dvoustavový klíč `rezie.pozadi-nove` se už nečte — kdo si
+ * něco vybral pod novým klíčem, má to; ostatní dostanou soumrak.
+ */
+function nactiStarouVolbuPozadi(): Pozadi {
+  return "soumrak";
+}
+
+/** Uložená volba z výčtu (localStorage); neznámá nebo chybějící hodnota = výchozí. */
+function useUlozenaVolba<K extends string>(klic: string, moznosti: readonly { klic: K }[], vychozi: () => K): [K, (v: K) => void] {
+  const [hodnota, setHodnota] = useState<K>(() => {
+    try {
+      const ulozeno = localStorage.getItem(klic);
+      const nalezeno = moznosti.find((m) => m.klic === ulozeno);
+      return nalezeno ? nalezeno.klic : vychozi();
+    } catch {
+      return vychozi();
+    }
+  });
+  return [
+    hodnota,
+    (v) => {
+      setHodnota(v);
+      try {
+        localStorage.setItem(klic, v);
+      } catch {
+        // Bez úložiště se volba po obnovení stránky vrátí na výchozí.
+      }
+    },
+  ];
+}
+
 function useUlozenyPrepinac(klic: string, vychozi = false): [boolean, (v: boolean) => void] {
   const [hodnota, setHodnota] = useState(() => {
     try {
@@ -66,17 +133,21 @@ export function App() {
   // očima hráče; debug mód ukáže tlačítka zkušebních hráčů.
   const [pohledUzivatele, setPohledUzivatele] = useUlozenyPrepinac("rezie.pohled-uzivatele");
   const [ladeni, setLadeni] = useUlozenyPrepinac("rezie.ladeni");
-  // Zkouška nového pozadí (lvi překreslení podle státního znaku): výchozí je
-  // nové, přepínač pod pohledem uživatele ho vrací na původní, ať jde porovnat.
-  const [novePozadi, setNovePozadi] = useUlozenyPrepinac("rezie.pozadi-nove", true);
+  // Zkouška pozadí: původní lvi, lvi překreslení podle státního znaku a od
+  // 13. 9. 2026 soumrak na náměstí, který je výchozí. Volba pod pohledem
+  // uživatele, ať jde porovnat.
+  const [pozadi, setPozadi] = useUlozenaVolba("rezie.pozadi", POZADI, nactiStarouVolbuPozadi);
   const [upravovany, setUpravovany] = useState<number | null>(null);
   // Ozubené kolečko vedle jména: hlasitost (jen tenhle prohlížeč) a pro admina lhůta aktivity.
   const [nastaveniVidet, setNastaveniVidet] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
+  const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   useEffect(() => {
-    document.documentElement.classList.toggle("pozadi-nove", novePozadi);
-  }, [novePozadi]);
+    // Výchozí (soumrak) je v CSS bez třídy; ostatní mají vlastní třídu.
+    for (const p of POZADI) document.documentElement.classList.toggle(`pozadi-${p.klic}`, p.klic !== "soumrak" && pozadi === p.klic);
+  }, [pozadi]);
   const { stav, spojeno, obnov, novaVerze } = useAkceStav();
+  const [listaSbalena, setListaSbalena] = useState(false);
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
@@ -95,6 +166,14 @@ export function App() {
   const predchoziSvolani = useRef<string | null | undefined>(undefined);
   // Okno „X tě shání!“ — zavře ho jen jedno ze dvou tlačítek.
   const [svolal, setSvolal] = useState<string | null>(null);
+  // Hlas admina (push-to-talk): přehrávač poslouchá kousky ze streamu.
+  useEffect(() => {
+    if (!me) return;
+    return spustPrehravacHlasu(me.steamId, me.jeAdmin);
+  }, [me]);
+  // Prohlížeč bez gesta zvuk nepustí; okno svolání to řekne a zvuk dojde po kliknutí.
+  const [zvukCeka, setZvukCeka] = useState(false);
+  useEffect(() => naZablokovaniZvuku(setZvukCeka), []);
   useEffect(() => {
     if (!me) return;
     const ja = stav?.prihlaseni.find((h) => h.steamId === me.steamId);
@@ -102,7 +181,9 @@ export function App() {
     const drive = predchoziSvolani.current;
     predchoziSvolani.current = moje;
     if (drive !== undefined && moje != null && moje !== drive) {
-      prehraj(poplachUrl);
+      // Poplach vždy naplno, bez ohledu na Master Volume (uživatel 13. 9. 2026):
+      // svolání má hráče vzbudit, ne ho ztlumit.
+      prehraj(poplachUrl, 100);
       setSvolal(ja?.svolalJmeno ?? "Admin");
     }
   }, [stav, me]);
@@ -118,11 +199,18 @@ export function App() {
     for (const z of zapasy) {
       const p = drive.get(z.id);
       if (!p) continue;
-      const novaOdAdmina = (z.zpravy ?? []).some((m) => m.id > p.zprava && m.jeAdmin && m.steamId !== me.steamId);
-      if (novaOdAdmina) {
-        prehraj(zvonUrl);
-        continue;
-      }
+      // Cizí zpráva v chatu cinkne (Play_Chat_Received ze hry) na hlasitost
+      // chatu — i adminovi. Důležitá zpráva (admin + vykřičník na začátku,
+      // uživatel 13. 9. 2026) k tomu všem zazvoní zvonem z radnice.
+      const noveVsechny = (z.zpravy ?? []).filter((m) => m.id > p.zprava);
+      const nove = noveVsechny.filter((m) => m.steamId !== me.steamId);
+      // Taunt ze hry zní jako ve hře — i autorovi — místo cinknutí; jiná cizí
+      // zpráva cinkne. Víc tauntů naráz: každý svůj zvuk.
+      const taunty = noveVsechny.map((m) => cisloTauntu(m.text)).filter((n): n is number => n !== null && n in TAUNTY_ZVUK);
+      for (const n of taunty) prehraj(TAUNTY_ZVUK[n]!, hlasitostUdalosti(hlasitostChatu));
+      if (taunty.length === 0 && nove.length > 0) prehraj(chatUrl, hlasitostUdalosti(hlasitostChatu));
+      if (nove.some(jeDulezita)) prehraj(zvonUrl);
+      if (noveVsechny.length > 0) continue;
       if (me.jeAdmin) {
         if (p.faze !== "hraje_se" && z.fazeLobby === "hraje_se") prehraj(zvonUrl);
         continue;
@@ -322,10 +410,12 @@ export function App() {
     onVysledek: (zapasId: number, vitez: Vitez) => void hlidej(() => api.vysledek(zapasId, vitez)),
     onHost: (zapasId: number, steamId: string) => void hlidej(() => api.zmenitHosta(zapasId, steamId)),
     onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
-    onZprava: (zapasId: number, text: string) => hlidej(() => api.zprava(zapasId, text)),
+    onZprava: (zapasId: number, text: string, odpovedNa: number | null) => hlidej(() => api.zprava(zapasId, text, odpovedNa)),
     onSmazatZpravu: (zapasId: number, zpravaId: number) => hlidej(() => api.smazatZpravu(zapasId, zpravaId)),
     onUpravitZpravu: (zapasId: number, zpravaId: number, text: string) => hlidej(() => api.upravitZpravu(zapasId, zpravaId, text)),
     onUpravit: (zapasId: number) => setUpravovany(zapasId),
+    // Push-to-talk jen v režii (uživatel 13. 9. 2026), karta hráče ho nemá.
+    onHlas: (zapasId: number, telo: Parameters<typeof api.hlas>[1]) => api.hlas(zapasId, telo),
     ladeni: admin && ladeni,
   };
   // Ozubené kolečko: který zápas je zrovna otevřený k úpravě. Zápas se bere
@@ -336,12 +426,24 @@ export function App() {
     <>
       {/* Nad <main>, ať jde přes celou šířku okna, ne jen obsahu. */}
       {novaVerze ? (
-        <p className="nova-verze" role="status">
-          Web se aktualizoval na verzi {novaVerze}, tahle stránka má {VERZE}.{" "}
-          <button type="button" onClick={() => location.reload()}>
-            Načíst znovu
+        // Lišta jde sbalit dvojitou šipkou vpravo; zůstane jen záložka
+        // s šipkami dolů, která ji zase vytáhne (uživatel 13. 9. 2026).
+        <div className={listaSbalena ? "nova-verze-obal sbaleno" : "nova-verze-obal"} data-testid="nova-verze">
+          <p className="nova-verze" role="status">
+            <span className="text">
+              Web se aktualizoval na verzi {novaVerze}, tahle stránka má {VERZE}.{" "}
+              <button type="button" onClick={() => location.reload()}>
+                Načíst znovu
+              </button>
+            </span>
+            <button type="button" className="sbalit" aria-label="Sbalit lištu" title="Sbalit lištu" onClick={() => setListaSbalena(true)}>
+              <DvojitaSipka smer="nahoru" />
+            </button>
+          </p>
+          <button type="button" className="zalozka" aria-label="Rozbalit lištu" title="Web se aktualizoval — rozbalit" onClick={() => setListaSbalena(false)} tabIndex={listaSbalena ? 0 : -1}>
+            <DvojitaSipka smer="dolu" />
           </button>
-        </p>
+        </div>
       ) : null}
     <main>
       <header>
@@ -394,9 +496,16 @@ export function App() {
               testId="prepinac-pohledu"
             />
           ) : null}
-          {/* Zkušební pozadí: nové lvy proti původním, dokud se nerozhodne; jen v debug módu. */}
+          {/* Zkušební pozadí: tři varianty, dokud se nerozhodne; jen v debug módu. */}
           {me?.jeAdmin && ladeni ? (
-            <Prepinac popisek="Nové pozadí" vlevo="Původní lvi" vpravo="Nové lvy" zapnuto={novePozadi} onZmena={setNovePozadi} testId="prepinac-pozadi" />
+            <div className="volba-pozadi" role="radiogroup" aria-label="Pozadí" data-testid="volba-pozadi">
+              <span>Pozadí</span>
+              {POZADI.map((p) => (
+                <button key={p.klic} type="button" role="radio" aria-checked={pozadi === p.klic} onClick={() => setPozadi(p.klic)}>
+                  {p.popisek}
+                </button>
+              ))}
+            </div>
           ) : null}
         </div>
       </header>
@@ -492,13 +601,14 @@ export function App() {
             <SeznamPrihlasenych
                 ladeni={admin && ladeni}
               onSvolat={admin ? (steamId) => void hlidej(() => api.svolat(akce.id, steamId)) : undefined}
-              lhutaMinut={akce.lhutaAktivityMinut}
+              onSvolatVsechny={admin ? () => void hlidej(() => api.svolatVsechny(akce.id)) : undefined}
+              lhutaMinut={stav?.lhutaAktivityMinut}
               onZkusebniSvolani={
                 // I v pohledu uživatele: admin si tak zkouší, co hráč uvidí
                 // (Tonner, 13. 9. 2026). Stačí zapnutý debug mód v patičce.
                 me?.jeAdmin && ladeni
                   ? () => {
-                      prehraj(poplachUrl);
+                      prehraj(poplachUrl, 100);
                       setSvolal(jmenoHrace(me));
                     }
                   : undefined
@@ -587,7 +697,7 @@ export function App() {
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ) : (
                   <KartaHrace
@@ -597,7 +707,7 @@ export function App() {
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text) => hlidej(() => api.zprava(zapas.id, text))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} />}
+                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ),
               )
@@ -628,6 +738,7 @@ export function App() {
       {svolal && akce ? (
         <Svolani
           kdo={svolal}
+          zvukCeka={zvukCeka}
           onJsemTu={() => {
             setSvolal(null);
             void hlidej(() => api.jsemTu(akce.id));
@@ -642,8 +753,10 @@ export function App() {
         <NastaveniUzivatele
           hlasitost={hlasitostZvuku}
           onHlasitost={setHlasitostZvuku}
-          lhutaMinut={admin && akce ? (akce.lhutaAktivityMinut ?? 15) : undefined}
-          onLhuta={admin && akce ? (minut) => void hlidej(() => api.lhutaAktivity(akce.id, minut)) : undefined}
+          hlasitostChatu={hlasitostChatu}
+          onHlasitostChatu={setHlasitostChatu}
+          lhutaMinut={admin ? (stav?.lhutaAktivityMinut ?? 15) : undefined}
+          onLhuta={admin ? (minut) => void hlidej(() => api.lhutaAktivity(minut)) : undefined}
           onZavrit={() => setNastaveniVidet(false)}
         />
       ) : null}

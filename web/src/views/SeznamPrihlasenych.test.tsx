@@ -370,6 +370,22 @@ it("v debug módu klik na ikonu hry přepíná má → nelze ověřit → nemá"
   expect(ikona()).toHaveClass("ma");
 });
 
+// Super zvonek v hlavičce: jen když má koho svolat; po kliknutí chladne jako ten malý.
+it("super zvonek v hlavičce svolá všechny a ukáže se jen s někým ke svolání", () => {
+  zmrazCas();
+  const onSvolatVsechny = vi.fn();
+  const svezi = [hrac({ steamId: "rob", alias: "Rob", aktivniDo: za(14) }), hrac({ steamId: "b", alias: "Bedřich", aktivniDo: za(14) })];
+  const { rerender } = render(<SeznamPrihlasenych prihlaseni={svezi} ja="rob" admin onSvolat={vi.fn()} onSvolatVsechny={onSvolatVsechny} lhutaMinut={15} />);
+  expect(screen.queryByRole("button", { name: /svolat všechny/i })).not.toBeInTheDocument();
+  rerender(<SeznamPrihlasenych prihlaseni={[...svezi, hrac({ steamId: "c", alias: "Cyril", aktivniDo: za(-1) })]} ja="rob" admin onSvolat={vi.fn()} onSvolatVsechny={onSvolatVsechny} lhutaMinut={15} />);
+  const zvonek = screen.getByRole("button", { name: /svolat všechny/i });
+  fireEvent.click(zvonek);
+  expect(onSvolatVsechny).toHaveBeenCalledTimes(1);
+  expect(zvonek).toBeDisabled();
+  fireEvent.click(zvonek);
+  expect(onSvolatVsechny).toHaveBeenCalledTimes(1);
+});
+
 // Admin má u cizích hráčů zvonek (svolání do radnice), u sebe ne.
 it("admin má zvonek u hráče po pěti minutách odpočtu i u spícího, a po kliknutí zvonek na chvíli zešedne", () => {
   zmrazCas();

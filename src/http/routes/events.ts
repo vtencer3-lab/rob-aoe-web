@@ -8,11 +8,13 @@ import {
   pripravPristiHeslo,
   setLhutaAktivity,
   svolej,
+  svolejVsechny,
   pulsAktivity,
   setAkceStav,
   setNastaveniLobby,
   setSkladani,
   signUp,
+  smazAkciBezVysledku,
   ulozNastaveniLobby,
   withdraw,
   type AkceStav,
@@ -84,8 +86,11 @@ export function registerEventRoutes(app: FastifyInstance): void {
       throw new HttpError(400, "Neznámý stav akce.");
     }
     const akce = await setAkceStav(akceId, stav as AkceStav);
+    // Ukončená akce bez dohraného zápasu s vítězem nemá co říct — pryč s ní,
+    // včetně přihlášek, zápasů a chatu (db/events.smazAkciBezVysledku).
+    const smazana = stav === "konec" ? await smazAkciBezVysledku(akceId) : false;
     await broadcastAkce();
-    return { akce };
+    return { akce, smazana };
   });
 
   // Očekávané nastavení lobby pro „Zkontrolovat lobby“. Mění se živě: každé
@@ -98,17 +103,17 @@ export function registerEventRoutes(app: FastifyInstance): void {
     return { akce };
   });
 
-  // Lhůta aktivity večera: admin si ji nastaví v okně nastavení (2–120 min).
-  app.put("/api/akce/:id/lhuta-aktivity", async (request) => {
+  // Lhůta aktivity: globální nastavení webu, admin si ji nastaví v okně
+  // nastavení (2–120 min) — i mimo akci, platí pro všechny další.
+  app.put("/api/nastaveni/lhuta-aktivity", async (request) => {
     await requireAdmin(request);
-    const akceId = requireId(request);
     const minut = Number((request.body as { minut?: unknown })?.minut);
     if (!Number.isInteger(minut) || minut < LHUTA_MIN_MINUT || minut > LHUTA_MAX_MINUT) {
       throw new HttpError(400, `Lhůta je ${LHUTA_MIN_MINUT} až ${LHUTA_MAX_MINUT} minut.`);
     }
-    const akce = await setLhutaAktivity(akceId, minut);
+    await setLhutaAktivity(minut);
     await broadcastAkce();
-    return { akce: { id: akce.id, lhutaAktivityMinut: akce.lhutaAktivityMinut } };
+    return { lhutaAktivityMinut: minut };
   });
 
   // Zvonek u hráče: svolání do radnice — hráči zazvoní poplach ze hry.
@@ -119,6 +124,15 @@ export function registerEventRoutes(app: FastifyInstance): void {
     if (!(await svolej(akceId, steamId, admin))) throw new HttpError(404, "Hráč v akci není.");
     await broadcastAkce();
     return { ok: true };
+  });
+
+  // Super zvonek v hlavičce tabulky: svolání všech, u kterých je zvonek.
+  app.post("/api/akce/:id/svolat-vsechny", async (request) => {
+    const admin = await requireAdmin(request);
+    const akceId = requireId(request);
+    const pocet = await svolejVsechny(akceId, admin);
+    if (pocet > 0) await broadcastAkce();
+    return { pocet };
   });
 
   // Kostka u hesla v okně Pre-Lobby: nové heslo pro příští lobby. Vrací se

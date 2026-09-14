@@ -11,6 +11,9 @@ let akceId: number;
 
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
+  // Lhůta je globální (migrace 024) a TRUNCATE ji nevrátí — jinak by test
+  // dědil hodnotu z jiného souboru.
+  await getPool().query("UPDATE nastaveni_webu SET lhuta_aktivity_minut = 15");
   akceId = (await createAkce("večer")).id;
   for (const s of HRACI) {
     await upsertPlayer(s, false);
@@ -38,6 +41,24 @@ it("vrátí posledních N zpráv každého zápasu, od nejstarší", async () =>
 
 // Cenzura běží v db vrstvě a pamatuje si originál; zpětná cenzura dožene
 // zprávy uložené před rozšířením seznamu.
+// Odpověď na zprávu (migrace 026): nese náhled původní; po smazání původní
+// zůstane bez náhledu; odkaz mimo zápas se zahodí.
+it("odpověď nese původní zprávu a přežije její smazání bez náhledu", async () => {
+  const { smazZpravu } = await import("./chat.js");
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI));
+  await pridejZpravu(zapas.id, HRACI[0]!, "jdeme?");
+  const puvodni = (await listZpravy(akceId)).get(zapas.id)![0]!;
+  await pridejZpravu(zapas.id, HRACI[1]!, "jo", puvodni.id);
+  await pridejZpravu(zapas.id, HRACI[1]!, "mimo", 999_999);
+  let zpravy = (await listZpravy(akceId)).get(zapas.id)!;
+  expect(zpravy[1]!.odpovedNa).toEqual({ id: puvodni.id, jmeno: expect.any(String), text: "jdeme?" });
+  expect(zpravy[2]!.odpovedNa).toBeNull();
+  await smazZpravu(zapas.id, puvodni.id);
+  zpravy = (await listZpravy(akceId)).get(zapas.id)!;
+  expect(zpravy[0]!.text).toBe("jo");
+  expect(zpravy[0]!.odpovedNa).toBeNull();
+});
+
 it("schová zakázané slovo, originál nechá v text_puvodni a zpětně docenzuruje", async () => {
   const { cenzurujZpetne } = await import("./chat.js");
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI));

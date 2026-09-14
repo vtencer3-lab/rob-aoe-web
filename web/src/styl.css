@@ -85,16 +85,26 @@
 }
 
 /* Malované pozadí je připnuté k oknu (fixed), takže při rolování stojí a
-   panely po něm jedou jako po jevišti. Obrázek vznikl lokálním Fluxem,
-   prompt a seed jsou v `nastroje/grafika/zadani/pozadi.json` a v manifestu. */
+   panely po něm jedou jako po jevišti. Výchozí je od 1.1.4 soumrak na náměstí
+   (GPT Image od uživatele, 13. 9. 2026); původní z Fluxu (prompt a seed
+   v `nastroje/grafika/zadani/pozadi.json`) a nové lvy zůstávají jako volba. */
 html {
-  background: var(--pozadi) url(./assets/ui/pozadi.webp) center top / cover no-repeat fixed;
+  background: var(--pozadi) url(./assets/ui/pozadi-soumrak.webp) center top / cover no-repeat fixed;
+}
+/* Původní lvi z Fluxu; od 1.1.4 jen jako volba v debug záhlaví. */
+html.pozadi-puvodni {
+  background-image: url(./assets/ui/pozadi.webp);
 }
 /* Zkouška pozadí s překreslenými lvy (dva ocasy, GPT Image přes Codex);
    třídu přepíná admin v debug módu. Až se rozhodne, jedno z nich zmizí. */
 html.pozadi-nove {
   background-image: url(./assets/ui/pozadi-nove.webp);
 }
+/* Volba pozadí v záhlaví (debug): tři tlačítka, zvolené zlatě. */
+.volba-pozadi { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
+.volba-pozadi > span { color: var(--tlumene); margin-right: 0.2rem; }
+.volba-pozadi > button { padding: 0.15rem 0.6rem; font-size: 0.75rem; }
+.volba-pozadi > button[aria-checked="true"] { border-color: var(--akcent); color: var(--akcent); }
 
 body {
   margin: 0;
@@ -209,12 +219,66 @@ header h1 {
   text-shadow: 0 2px 4px rgba(40, 6, 6, 0.9), 0 0 20px rgba(0, 0, 0, 0.55);
   filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
 }
-.nova-verze {
+/* Obal lišty drží sticky pozici a umí ji sbalit: výška jede přes grid
+   (1fr → 0fr), lišta uvnitř se zároveň vysune nahoru. Záložka s šipkami dolů
+   visí pod horní hranou, jen když je sbaleno. */
+.nova-verze-obal {
   position: sticky;
   top: 0;
   z-index: 20;
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.35s ease;
+}
+.nova-verze-obal.sbaleno { grid-template-rows: 0fr; }
+.nova-verze-obal > .nova-verze { min-height: 0; overflow: hidden; transition: transform 0.35s ease, opacity 0.35s ease, padding 0.35s ease, border-bottom-width 0.35s ease; }
+/* Sbalená lišta nesmí nechat ani vnitřní okraj a linku — jinak obal měří
+   ~20 px a záložka visí kus pod horní hranou (uživatel 13. 9. 2026: „žlutou
+   až po vrchní okraj“). */
+.nova-verze-obal.sbaleno > .nova-verze { transform: translateY(-100%); opacity: 0; pointer-events: none; padding-top: 0; padding-bottom: 0; border-bottom-width: 0; }
+.nova-verze-obal .zalozka {
+  position: absolute;
+  top: 100%;
+  right: 1.5rem;
   margin: 0;
-  padding: 0.6rem 1.5rem;
+  /* Vyšší o to, co dřív zabírala sbalená lišta: sahá až k hornímu okraji
+     (uživatel 13. 9. 2026: „tu výšku přidej tomu žlutému jazyku“). */
+  padding: 1.35rem 0.8rem 0.25rem;
+  border: 1px solid var(--zlato-stin);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(#e2c47c, #c99a35 55%, #9d7420);
+  color: #23150a;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  line-height: 0;
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  pointer-events: none;
+}
+.nova-verze-obal.sbaleno .zalozka { opacity: 1; transform: none; pointer-events: auto; }
+.nova-verze-obal .zalozka:hover { background: linear-gradient(#ecd28f, #d6a83f 55%, #a97d24); }
+.nova-verze .text { display: inline-flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; justify-content: center; }
+.nova-verze .sbalit {
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  color: #23150a;
+  padding: 0.2rem;
+  line-height: 0;
+  border-radius: 6px;
+}
+.nova-verze .sbalit:hover { background: rgba(35, 21, 10, 0.15); }
+@media (prefers-reduced-motion: reduce) {
+  .nova-verze-obal, .nova-verze-obal > .nova-verze, .nova-verze-obal .zalozka { transition: none; }
+}
+.nova-verze {
+  position: relative;
+  margin: 0;
+  padding: 0.6rem 3.5rem 0.6rem 1.5rem;
   background: linear-gradient(#e2c47c, #c99a35 55%, #9d7420);
   color: #23150a;
   font-family: "Cinzel", Georgia, serif;
@@ -310,7 +374,7 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
    `all: unset` platí jen v klidu a hnědá deska se vracela pod kurzorem. */
 button.bez-vzhledu { all: unset; cursor: pointer; }
 
-button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(:where(.bez-vzhledu)),
+button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(:where(.bez-vzhledu)):not(.polozka):not(.odpoved-na),
 a.tlacitko, .cta:not(.spectate) {
   display: inline-flex;
   align-items: center;
@@ -1157,6 +1221,9 @@ button.odebrat:hover { color: var(--chyba); }
 .dalsi-nastaveni summary { cursor: pointer; color: var(--tlumene); }
 .dalsi-nastaveni summary .zaloha { margin: 0; }
 .dalsi-nastaveni .kontroly { font-size: 0.9rem; }
+/* Tělo sbalovací sekce; výšku mu animuje Skladaci (Web Animations). Vnořené
+   sekce v „Nastavení hry“ se odsadí, ať je vidět, co patří pod co. */
+.dalsi-nastaveni .skladaci-telo > .dalsi-nastaveni { margin-left: 1rem; }
 .dalsi-nastaveni .mrizka { margin-top: 0.5rem; }
 
 /* Očekávané nastavení lobby v panelu akce. */
@@ -1814,6 +1881,26 @@ a:hover { color: var(--zlato-svetle); }
 .chat .chat-nadpis:focus-visible { outline: 1px solid var(--zlato-tmave); outline-offset: 2px; }
 .chat .chat-nadpis .sipka { font-size: 0.8rem; width: 0.9rem; }
 .chat .chat-nadpis small { font-family: Georgia, serif; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--tlumene); }
+/* Push-to-talk admina vpravo v hlavičce chatu: hlavička je flex se středem,
+   nástroje se přilepí doprava absolutně, ať nadpis zůstane na středu. */
+.chat .chat-nadpis { position: relative; }
+.chat .chat-nastroje { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-variant: normal; font-family: Georgia, serif; font-weight: 400; letter-spacing: 0; }
+.push-to-talk { display: inline-flex; align-items: center; gap: 0.35rem; }
+.push-to-talk .ptt { position: relative; width: 2.1rem; height: 2.1rem; padding: 0; font-size: 0.95rem; line-height: 1; user-select: none; -webkit-user-select: none; touch-action: none; }
+.push-to-talk .ptt.mluvi { border-color: #d43b3b; box-shadow: 0 0 10px 2px rgba(212, 59, 59, 0.55); }
+/* Červené kolečko „nahrává se“ v rohu tlačítka, pulzuje po dobu držení. */
+.push-to-talk .ptt .nahrava { position: absolute; top: -0.3rem; right: -0.3rem; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #e53935; border: 1px solid #5a0000; box-shadow: 0 0 6px 1px rgba(229, 57, 53, 0.9); animation: ptt-pulz 1s ease-in-out infinite; }
+@keyframes ptt-pulz { 50% { opacity: 0.35; box-shadow: 0 0 2px 0 rgba(229, 57, 53, 0.5); } }
+/* Popisky obou tlačítek jsou vlastní bublina bez prodlevy (ne title), o kus větším písmem (uživatel 13. 9. 2026). */
+.push-to-talk .napoveda::after { font-size: 0.9rem; white-space: normal; width: max-content; max-width: 18rem; text-align: center; }
+.push-to-talk .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.push-to-talk .ztlumit { width: 2.1rem; height: 2.1rem; padding: 0; font-size: 0.95rem; line-height: 1; }
+.push-to-talk .ikona { width: 1.35rem; height: 1.35rem; color: var(--zlato); display: block; margin: auto; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7)); }
+.push-to-talk .ptt, .push-to-talk .ztlumit { display: inline-flex; align-items: center; justify-content: center; }
+.push-to-talk .ptt.mluvi .ikona { color: #ffd9d9; }
+.push-to-talk .ztlumit.zapnuto { border-color: var(--akcent); color: var(--akcent); }
+.push-to-talk .chyba { font-size: 0.75rem; }
+@media (prefers-reduced-motion: reduce) { .push-to-talk .ptt .nahrava { animation: none; } }
 /* Sbalení: mřížka 1fr → 0fr, rychlé a bez poskoku. */
 .chat .chat-telo { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease; opacity: 1; }
 .chat.sbaleny .chat-telo { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
@@ -1834,6 +1921,19 @@ body.bez-scrollu { overflow: hidden; }
 .chat .autor.barva-1 { color: var(--b1); } .chat .autor.barva-2 { color: var(--b2); } .chat .autor.barva-3 { color: var(--b3); } .chat .autor.barva-4 { color: var(--b4); }
 .chat .autor.barva-5 { color: var(--b5); } .chat .autor.barva-6 { color: var(--b6); } .chat .autor.barva-7 { color: var(--b7); } .chat .autor.barva-8 { color: var(--b8); }
 .chat .text { overflow-wrap: anywhere; }
+/* Důležitá zpráva admina (vykřičník na začátku): tučně; poznámka pod polem, když ji admin píše. */
+.chat .text.dulezita { font-weight: 700; }
+/* 7TV emoty v řádku textu; široké (WIDE) se roztáhnou, samotný vykřičník admina
+   je DinkDonk o kus větší. Taunt ze hry: číslo zlatě, text kurzívou. */
+/* Bez záporných okrajů: řádek se emotu přizpůsobí, ať se obrázek nepřekrývá se sousedy (uživatel 14. 9. 2026). */
+.chat .emote { height: 1.7em; width: auto; vertical-align: middle; margin: 0 0.1em; }
+.chat .emote.velky { height: 2.6em; }
+/* Zero-width emoty: vrstvy přes základní emote, obal drží jeho rozměr. */
+.chat .emote-obal { display: inline-grid; place-items: center; vertical-align: middle; }
+.chat .emote-obal > .emote { grid-area: 1 / 1; margin: 0; }
+.chat .taunt { font-style: italic; }
+.chat .taunt b { font-style: normal; color: var(--zlato); }
+.chat .dulezita-poznamka { display: block; margin-top: 0.3rem; color: var(--akcent); font-size: 0.8rem; }
 .chat li.moje .text { color: var(--zlato-svetle); }
 .chat .psani { display: flex; gap: 0.5rem; }
 .chat .psani input { flex: 1; min-width: 0; }
@@ -1863,9 +1963,38 @@ body.bez-scrollu { overflow: hidden; }
 .potvrzeni .ovladani button { min-width: 6.5rem; }
 
 /* Chat: křížek admina, debug přepínač autora, značka nových zpráv dole. */
-.chat .zpravy li { grid-template-columns: max-content max-content 1fr auto auto; }
-.chat .smazat-zpravu { padding: 0 0.4rem; line-height: 1; font-size: 0.9rem; opacity: 0.55; }
-.chat .smazat-zpravu:hover { opacity: 1; }
+.chat .zpravy li { grid-template-columns: max-content max-content 1fr auto; }
+/* Akce u zprávy (odpovědět, debug autor, smazat) vpravo; odpovědět se ukáže až po najetí. */
+.chat .zpravy li .akce { display: inline-flex; align-items: center; gap: 0.3rem; }
+.chat .smazat-zpravu, .chat .odpovedet { padding: 0 0.4rem; line-height: 1; font-size: 0.9rem; opacity: 0.55; }
+.chat .smazat-zpravu:hover, .chat .odpovedet:hover { opacity: 1; }
+.chat .odpovedet { opacity: 0; transition: opacity 0.12s; }
+.chat .zpravy li:hover .odpovedet, .chat .odpovedet:focus-visible { opacity: 0.7; }
+/* Náhled původní zprávy nad odpovědí: jeden řádek, tlumený, klik skočí na původní. */
+.chat .odpoved-na { grid-column: 2 / -1; justify-self: start; display: block; max-width: 100%; margin: 0 0 0.05rem; padding: 0 0.3rem; background: none; border: 0; border-left: 2px solid rgba(216, 168, 58, 0.45); border-radius: 0; box-shadow: none; text-align: left; font: inherit; font-size: 0.78rem; color: var(--tlumene); opacity: 0.8; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat .odpoved-na:hover { opacity: 1; color: var(--text); }
+.chat .odpoved-na b { color: var(--zlato); font-weight: 700; margin-right: 0.3rem; }
+.chat .odpoved-na:hover { background: none; box-shadow: none; }
+.chat .zpravy li.blika { animation: zprava-blik 2s ease-out; }
+@keyframes zprava-blik { 0% { background: rgba(216, 168, 58, 0.35); box-shadow: inset 0 0 0 1px rgba(216, 168, 58, 0.5); } 100% { background: transparent; box-shadow: none; } }
+/* Pruh „Odpověď pro …“ nad polem a našeptávač nad ním; obal drží pozici. */
+.chat .psani-obal { position: relative; }
+.chat .odpoved-lista { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; padding: 0.25rem 0.5rem; border: 1px solid rgba(216, 168, 58, 0.3); border-radius: 3px; background: rgba(0, 0, 0, 0.25); font-size: 0.82rem; color: var(--tlumene); }
+.chat .odpoved-lista .popisek { white-space: nowrap; }
+.chat .odpoved-lista b { color: var(--zlato); }
+.chat .odpoved-lista .uryvek { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); opacity: 0.8; }
+.chat .odpoved-lista .zrusit { padding: 0 0.45rem; line-height: 1.2; font-size: 0.9rem; }
+/* Panel jen tak široký, jak je potřeba (uživatel 14. 9. 2026: „může být takto široký, aby nezabíral tolik místa“), text zleva. */
+.chat .naseptavac { position: absolute; left: 0; width: min(100%, 27rem); bottom: 100%; z-index: 5; margin-bottom: 0.25rem; padding: 0.25rem; border: 1px solid var(--zlato-tmave); border-radius: 4px 4px 0 0; background: linear-gradient(rgba(30, 17, 12, 0.99), rgba(12, 7, 4, 0.99)); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.6); }
+.chat .naseptavac .fulltext { display: flex; align-items: center; gap: 0.35rem; padding: 0.1rem 0.4rem 0.3rem; font-size: 0.78rem; color: var(--tlumene); cursor: pointer; user-select: none; }
+.chat .naseptavac .polozka { display: grid; grid-template-columns: 1.75rem 1fr auto; justify-items: start; justify-content: start; align-items: center; gap: 0.5rem; width: 100%; padding: 0.2rem 0.5rem; background: none; border: 0; border-radius: 3px; box-shadow: none; text-align: left; font: inherit; font-size: 0.9rem; color: var(--text); cursor: pointer; }
+.chat .naseptavac .polozka img { width: 1.75rem; height: 1.75rem; object-fit: contain; }
+.chat .naseptavac .polozka .tecka { display: inline-block; width: 0.6rem; height: 0.6rem; margin: 0 auto; border-radius: 50%; background: var(--zlato); }
+.chat .naseptavac .polozka .jmeno { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat .naseptavac .polozka .zdroj { font-size: 0.7rem; color: var(--tlumene); }
+.chat .naseptavac .polozka.vybrana { background: rgba(216, 168, 58, 0.18); }
+.chat .naseptavac .polozka.vybrana .jmeno { color: var(--zlato-svetle); font-weight: 700; }
+.chat .naseptavac .pocet { padding: 0.15rem 0.5rem 0; text-align: right; font-size: 0.72rem; color: var(--tlumene); }
 .chat .debug-autor { font-size: 0.75rem; padding: 0 0.2rem; }
 .chat .nove-zpravy-radek { text-align: center; margin: -0.3rem 0 0.5rem; }
 .chat .nove-zpravy { display: inline-block; font-size: 0.8rem; padding: 0.2rem 0.9rem; animation: zare-nove 1.4s ease-in-out infinite; }
@@ -1877,11 +2006,22 @@ body.bez-scrollu { overflow: hidden; }
 /* Zvonek admina v tabulce (čtvercové tlačítko jako plus) a kolečko nastavení v záhlaví. */
 .jsem-tu-bunka { text-align: center; }
 .seznam > tbody > tr > td.jsem-tu-bunka { text-align: center; }
+/* Hlavička téhož sloupce stejně na střed, ať super zvonek sedí přesně nad
+   zvonky v řádcích (uživatel 13. 9. 2026: „vycentruj“); obecné pravidlo pro
+   th výš ji zarovnávalo doprava. */
+.seznam th.jsem-tu-bunka { text-align: center; }
+.super-zvonek { width: 2.1rem; }
 .zvonek { display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; padding: 0; margin: 0; line-height: 1; font-size: 1rem; vertical-align: middle; transition: transform 0.08s ease; }
 .zvonek:active { transform: scale(0.86); }
 .zvonek:not(:disabled):active { animation: zvon-kyv 0.35s ease; }
 .zvonek { transition: transform 0.08s ease, opacity 0.6s ease, filter 0.6s ease; }
 .zvonek.chladne, .zvonek:disabled { opacity: 0.4; filter: grayscale(0.7); cursor: default; transition: transform 0.08s ease, opacity 0s, filter 0s; }
+/* Super zvonek v hlavičce tabulky: dva zvonky, větší vzadu, menší vpředu se
+   stínem (uživatel 13. 9. 2026). Svolá všechny, u kterých je zvonek. */
+.super-zvonek .dva-zvonky { position: relative; display: inline-block; width: 1.5rem; height: 1.3rem; }
+.super-zvonek .dva-zvonky > span { position: absolute; line-height: 1; }
+.super-zvonek .dva-zvonky .zadni { left: 0; top: 0; font-size: 1.15rem; }
+.super-zvonek .dva-zvonky .predni { right: 6px; bottom: 0; font-size: 0.9rem; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); }
 @keyframes zvon-kyv {
   0% { transform: scale(0.86) rotate(0); }
   35% { transform: scale(0.95) rotate(-14deg); }
@@ -1892,6 +2032,9 @@ body.bez-scrollu { overflow: hidden; }
 .nastaveni-uzivatele { width: min(30rem, 100%); }
 .nastaveni-uzivatele .radek-nastaveni { display: grid; grid-template-columns: max-content 1fr max-content; gap: 0.4rem 0.9rem; align-items: center; margin: 0.8rem 0; }
 .nastaveni-uzivatele .radek-nastaveni > span:first-child { color: var(--tlumene); }
+/* Kroužek (i) za popiskem: bublina .napoveda bez prodlevy. */
+.nastaveni-uzivatele .info { display: inline-flex; align-items: center; justify-content: center; width: 1.05rem; height: 1.05rem; margin-left: 0.4rem; border: 1px solid var(--zlato-tmave); border-radius: 50%; font-family: Georgia, serif; font-size: 0.7rem; font-style: italic; color: var(--zlato); cursor: help; vertical-align: 0.1rem; }
+.nastaveni-uzivatele .info::after { right: auto; left: 50%; transform: translateX(-50%); white-space: normal; width: 16rem; font-size: 0.85rem; text-align: center; }
 .nastaveni-uzivatele .radek-nastaveni small { grid-column: 2 / -1; color: var(--tlumene); }
 .nastaveni-uzivatele input[type="range"] { --podil: 70%; width: 100%; height: 1.4rem; margin: 0; padding: 0; border: 0; border-radius: 0.5rem; box-shadow: none; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }
 .nastaveni-uzivatele input[type="range"]:focus { outline: 1px solid var(--zlato); outline-offset: 3px; box-shadow: none; border: 0; }

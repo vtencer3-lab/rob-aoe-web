@@ -21,6 +21,9 @@ const HRACI = ["76561198000000050", "76561198000000051", "76561198000000052", "7
 
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
+  // Lhůta je globální (migrace 024) a TRUNCATE ji nevrátí — jinak by test
+  // dědil hodnotu z jiného souboru.
+  await getPool().query("UPDATE nastaveni_webu SET lhuta_aktivity_minut = 15");
   akceId = (await createAkce("večer")).id;
   for (const [i, steamId] of HRACI.entries()) {
     await upsertPlayer(steamId, false);
@@ -31,6 +34,38 @@ beforeEach(async () => {
 
 afterAll(async () => {
   await closePool();
+});
+
+// Ukončená akce bez dohraného zápasu s vítězem nemá výpovědní hodnotu a maže
+// se i s rozehranými zápasy (uživatel 13. 9. 2026); s výsledkem zůstává celá.
+it("ukončení maže akci bez dohraného zápasu s vítězem, s výsledkem ji nechá", async () => {
+  const { smazAkciBezVysledku, setAkceStav: nastavStavAkce, createAkce: novaAkce } = await import("./events.js");
+  // Nový zápas je rovnou „bezi“ — rozehraný, bez výsledku.
+  const rozehrany = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  await nastavStavAkce(akceId, "konec");
+  expect(await smazAkciBezVysledku(akceId)).toBe(true);
+  expect((await getPool().query("SELECT 1 FROM zapas WHERE id = $1", [rozehrany.id])).rowCount).toBe(0);
+
+  const druha = (await novaAkce("s výsledkem")).id;
+  for (const steamId of HRACI.slice(0, 2)) await signUp(druha, steamId);
+  const dohrany = await createZapas(druha, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  await setZapasStav(dohrany.id, "dohrano");
+  await setVysledek(dohrany.id, { tym: 2 });
+  await nastavStavAkce(druha, "konec");
+  expect(await smazAkciBezVysledku(druha)).toBe(false);
+  expect((await getPool().query("SELECT 1 FROM akce WHERE id = $1", [druha])).rowCount).toBe(1);
+});
+
+// Poslední úspěšná kontrola zůstává u zápasu (migrace 025), ať jde ukázat i po
+// zmizení lobby ze seznamu hry.
+it("poslední kontrola lobby se u zápasu pamatuje", async () => {
+  const { ulozPosledniKontrolu, getPosledniKontrola } = await import("./matches.js");
+  const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
+  expect(await getPosledniKontrola(zapas.id)).toBeNull();
+  await ulozPosledniKontrolu(zapas.id, [{ klic: "mapa", stav: "ok", text: "Mapa: Arabia", sekce: "hlavni" }]);
+  const posledni = await getPosledniKontrola(zapas.id);
+  expect(posledni?.kontroly[0]?.text).toBe("Mapa: Arabia");
+  expect(posledni?.kdy).toBeInstanceOf(Date);
 });
 
 it("vytvoří 1v1 s pořadím, názvem lobby a heslem", async () => {
@@ -371,8 +406,8 @@ it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () =>
 
 // Lhůta aktivity je věcí akce: přihláška i „Jsem tu!“ ji berou z ní.
 it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", async () => {
-  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej, obnovAktivitu, withdraw: odhlas } = await import("./events.js");
-  await setLhutaAktivity(akceId, 30);
+  const { setLhutaAktivity, signUp: prihlas, listSignups, svolej, svolejVsechny, obnovAktivitu, withdraw: odhlas } = await import("./events.js");
+  await setLhutaAktivity(30);
   await prihlas(akceId, HRACI[0]!);
   // Nové přihlášení posune hráče na konec seznamu (řadí se podle času), tak podle id.
   const najdi = async () => (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
@@ -390,6 +425,12 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   const poMinut = (poSvolani.aktivniDo.getTime() - Date.now()) / 60_000;
   expect(poMinut).toBeGreaterThan(28);
   expect(await svolej(akceId, "76561198000000999", HRACI[1]!)).toBe(false);
+  // Super zvonek: čerstvě přihlášení mají plnou lhůtu, zvonek by u nich nebyl,
+  // takže se nesvolá nikdo; kdo spí (lhůta pryč), svolá se — admin sám ne.
+  expect(await svolejVsechny(akceId, HRACI[1]!)).toBe(0);
+  await getPool().query("UPDATE prihlaska SET aktivni_do = now() - interval '1 minute' WHERE akce_id = $1 AND steam_id = ANY($2)", [akceId, [HRACI[1], HRACI[2]]]);
+  expect(await svolejVsechny(akceId, HRACI[1]!)).toBe(1);
+  expect((await listSignups(akceId)).find((r) => r.steamId === HRACI[2])!.svolanV).toBeInstanceOf(Date);
   // „Jsem tu!“ svolání vyřídí; nové přihlášení po odhlášení ho nesmí zdědit.
   expect(await obnovAktivitu(akceId, HRACI[0]!)).toBe(true);
   expect((await najdi()).svolanV).toBeNull();
@@ -397,14 +438,16 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   await odhlas(akceId, HRACI[0]!);
   await prihlas(akceId, HRACI[0]!);
   expect((await najdi()).svolanV).toBeNull();
-  await expect(setLhutaAktivity(akceId, 1)).rejects.toThrow();
+  await expect(setLhutaAktivity(1)).rejects.toThrow();
 });
 
-// Lhůta se dědí do další akce a změna platí hned i běžícím přihláškám.
-it("lhůta se dědí do nové akce a přepočítá běžící přihlášky", async () => {
-  const { setLhutaAktivity, createAkce: novaAkce, listSignups, signUp: prihlas, setAkceStav: nastavStavAkce } = await import("./events.js");
+// Lhůta je globální (migrace 024): platí i další akci a změna se hned promítne
+// do běžících přihlášek.
+it("lhůta je globální — platí další akci a přepočítá běžící přihlášky", async () => {
+  const { setLhutaAktivity, getLhutaAktivity, createAkce: novaAkce, listSignups, signUp: prihlas, setAkceStav: nastavStavAkce } = await import("./events.js");
   await prihlas(akceId, HRACI[0]!);
-  await setLhutaAktivity(akceId, 40);
+  await setLhutaAktivity(40);
+  expect(await getLhutaAktivity()).toBe(40);
   const radek = (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
   const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
   expect(zaMinut).toBeGreaterThan(38);
@@ -412,5 +455,7 @@ it("lhůta se dědí do nové akce a přepočítá běžící přihlášky", asy
   // Otevřená smí být jen jedna akce (jedna_aktivni_akce), tak tuhle napřed ukončit.
   await nastavStavAkce(akceId, "konec");
   const dalsi = await novaAkce("zítra");
-  expect(dalsi.lhutaAktivityMinut).toBe(40);
+  await prihlas(dalsi.id, HRACI[1]!);
+  const vDalsi = (await listSignups(dalsi.id)).find((r) => r.steamId === HRACI[1])!;
+  expect((vDalsi.aktivniDo.getTime() - Date.now()) / 60_000).toBeGreaterThan(38);
 });

@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 13. 9. 2026 ráno, main i dev 1.0.0)
+# Přehled prací a záměrů (stav k 14. 9. 2026 odpoledne, main i dev 1.7.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -34,12 +34,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 1.0.0, nasazeno na <https://jouki.cz/aoe> (PR #14, 13. 9. 2026 ráno); stav před ním nese značku `v0.28.3` |
-| `origin/dev` | 1.0.0, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/main` | 1.7.0, nasazeno na <https://jouki.cz/aoe> (PR #18, 14. 9. 2026 odpoledne); stav před ním nese značku `v1.1.4`, starší `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
+| `origin/dev` | 1.7.0, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 296, databázové 165, frontend 270 — všechny zelené (13. 9. 2026 v noci, databázové přes `/root/aoe-deploy/test-db.sh dev`) |
-| Admini (`ADMIN_STEAM_ID` v Coolify) | 76561198014056480 (Jouki), 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 300, databázové 169, frontend 289 — všechny zelené (14. 9. 2026 dopoledne, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -47,7 +46,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
 PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
 kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) a PR #13 (0.28.3) 9. 9.;
-PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele).
+PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele); PR #15 (1.1.1, globální lhůta); PR #16 (1.1.2, mazání akcí bez výsledku); PR #17 (1.1.4, soumrak jako výchozí pozadí); PR #18 (1.7.0, chat: našeptávání, odpovědi, 7TV emoty, taunty; push-to-talk; globální lhůta; poslední nastavení lobby).
 Před releasem se na dosavadní `main` věší značka
 `vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
 [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
@@ -930,8 +929,20 @@ Test v `App.test.tsx`.
 export) a všechna čtyři kola ve scratchpadu session (`codex-lev/`), prompty
 `prompt.txt`–`prompt4.txt` tamtéž; relace Codexu v `~/.codex/sessions/2026/09/12/`.
 
-**Co se rozhodne.** Které pozadí zůstane — pak druhý soubor, třída i přepínač
-zmizí (viz §5).
+**Třetí varianta (1.1.3, 13. 9. 2026 odpoledne).** Uživatel dodal obrázek
+z GPT Image (soumrak na náměstí s orlojem, praporce se lvy, ohně) — „přidej do
+přepínače ještě tuto verzi“. Export `nastroje/grafika/export.py -q 82` →
+`web/src/assets/ui/pozadi-soumrak.webp` (96 kB, 1672×941), zdrojový PNG mimo
+repo v `_grafika/final/pozadi_soumrak_gpt.png`. Přepínač Původní/Nové je od
+té doby **volba ze tří** (`POZADI` v `App.tsx`, tlačítka `role="radio"`,
+třídy `pozadi-nove` / `pozadi-soumrak` na `<html>`, klíč `rezie.pozadi`
+s hodnotami `puvodni` / `nove` / `soumrak`). Od **1.1.4 je soumrak výchozí**
+(uživatel: „nastav tu poslední verzi jako default“): v CSS je bez třídy,
+původní lvi mají `pozadi-puvodni`, nové lvy `pozadi-nove`; starý klíč
+`rezie.pozadi-nove` se už nečte.
+
+**Co se rozhodne.** Jestli zbylé dvě varianty zůstanou jako volba v debugu,
+nebo se soubory, třídy i volba zruší (viz §5).
 
 ---
 
@@ -1311,7 +1322,288 @@ odhlašovat nikoho není potřeba.
   Strany zápasu s VS jsou vytažené do `StranyZapasu.tsx` a obrazovka hosta je
   má pod kroky, před chatem.
 
+### 3.43 Lhůta aktivity jako globální nastavení (1.1.0, 13. 9. 2026)
+
+Uživatel: nastavení lhůty „by se mělo ukazovat i mimo akci a být
+persistentní přes akce — dá se říct, že je to globální nastavení“. Do té
+doby byla lhůta sloupcem akce (migrace 021), nová akce ji dědila
+z předchozí a okno nastavení ji ukazovalo jen s běžící akcí.
+
+- **Migrace 024:** tabulka `nastaveni_webu` s jediným řádkem
+  (`id = 1`, `lhuta_aktivity_minut` s CHECK 2–120); hodnota se převezme
+  z poslední akce, sloupec `akce.lhuta_aktivity_minut` se ruší.
+- **Server:** `getLhutaAktivity()` / `setLhutaAktivity(minut)` v `db/events.ts`
+  (změna přepočítá běžící přihlášky všech akcí); přihlášení, „Jsem tu!“ i puls
+  čtou lhůtu z `nastaveni_webu`. Route `PUT /api/nastaveni/lhuta-aktivity`
+  (admin) místo `/api/akce/:id/lhuta-aktivity`. Stav (`AkceStavPayload`) nese
+  `lhutaAktivityMinut` na nejvyšší úrovni, i když akce neběží.
+- **Prohlížeč:** okno nastavení ukazuje lhůtu adminovi vždy (ozubené kolečko
+  je v hlavičce nezávisle na akci); tabulka bere lhůtu ze stavu.
+- **Databázové testy** si lhůtu vrací na 15 v každém `beforeEach` (1.1.1):
+  `TRUNCATE player, akce` ji už nesmaže, takže hodnota z jednoho souboru
+  padala do dalšího.
+
+### 3.44 Ukončená akce bez výsledku se maže (1.1.2, 13. 9. 2026)
+
+Uživatel: akce, „co nemají v sobě žádný zápas s vítězem“ — prázdné, jen se
+zrušenými zápasy, a na výslovné přání i s rozehranými („on je stejně
+neukončuje, to dělám já“) — nemají výpovědní hodnotu a při ukončení se mají
+z databáze smazat. `POST /api/akce/:id/stav` s `konec` proto po změně stavu
+zavolá `smazAkciBezVysledku` (`db/events.ts`): `DELETE FROM akce`, když
+neexistuje zápas ve stavu `dohrano` s vyplněným `vitez`. Přihlášky, zápasy,
+účastníci, chat i události jdou s ní (`ON DELETE CASCADE` od migrace 001).
+Odpověď nese `smazana: true/false`; prohlížeč nic nemění, stav přijde přes
+SSE jako „žádná akce“. Nevratné — akce s aspoň jedním dohraným zápasem
+s vítězem zůstává celá.
+
+### 3.45 Cinkání chatu, Master Volume a super zvonek (1.2.0, 13. 9. 2026)
+
+- **Zvuk chatu ze hry:** Wwise událost `Play_Chat_Received` (id 2568766646,
+  banka 232745270, wem 468419989) vytažená stejným postupem jako zvon
+  (scratchpad `zvuky-hra/README.txt`, doplněk 13. 9.) → `web/src/assets/chat.mp3`
+  (26 kB, 2 s, slyšitelné 1,3 s). Cinkne každému, komu v chatu zápasu přibyla
+  cizí zpráva — **i adminovi** (uživatel). Zpráva od admina hráči dál zvoní
+  zvonem z radnice (pokyn, ne řeč); admin slyší od jiného admina cinknutí.
+- **Hlasitost:** dosavadní posuvník je **Master Volume** (výchozí 70 %),
+  nový **Hlasitost chatu** je podíl z něj (výchozí 50 %, klíč
+  `zvuk.hlasitost-chat`): výsledek `hlasitostUdalosti(podil, master)` = 70 × 50
+  → 35 % (výpis „35 % z Master Volume“ pod posuvníkem uživatel v 1.3.4 zrušil).
+  **Poplach svolání Master Volume neovlivňuje** (1.4.3, uživatel): hráči
+  i zkušební svolání zní vždy na 100 %, aby svolání vzbudilo; u popisku
+  „Master Volume“ je kroužek (i) s bublinou „Neovlivňuje hlasitost svolávání
+  — poplach od admina zazvoní vždy naplno.“ Adminova ozvěna zvonku (30 %)
+  z Master Volume dál vychází.
+  Každá další událost se má odvozovat
+  stejně (`zvuk.ts`). Oba posuvníky jsou jedna komponenta `Posuvnik`
+  (kolečko po procentu, zkouška zvukem po puštění: zvon, resp. chat).
+- **Super zvonek** v hlavičce tabulky přihlášených (sloupec „Jsem tu!“):
+  dva zvonky, větší vzadu a menší vpředu se stínem (`.super-zvonek
+  .dva-zvonky`). Svolá naráz všechny, u kterých by admin viděl zvonek
+  (lhůta − 5 min včetně spících, sebe ne) — `POST /api/akce/:id/svolat-vsechny`
+  → `svolejVsechny` (týž práh v SQL z `nastaveni_webu`), vrací počet. Ukáže se,
+  jen když má koho svolat; chladne 5 s pod klíčem „*“, admin slyší poplach na
+  30 % jako u malého zvonku. Od 1.3.2 je hlavička sloupce zarovnaná na střed
+  jako buňky pod ní (obecné `th` pravidlo ji dávalo doprava, zvonek byl
+  o 40 px vedle) a tlačítko má 2,1 rem jako malé zvonky; přední zvonek
+  0,9 rem, 6 px od pravého okraje, dvojitý stín (CSS od uživatele).
+
+### 3.46 Poslední známé nastavení lobby (1.3.0, 13. 9. 2026)
+
+Uživatel: když lobby ze seznamu hry zmizí („Lobby teď v seznamu ze hry
+není“), má zůstat sbalená sekce s posledním nastavením, které lobby měla.
+**Migrace 025:** `zapas.posledni_kontrola` (JSONB, řádky kontroly) a
+`posledni_kontrola_v`. Route `POST /api/zapas/:id/kontrola-lobby` po každé
+úspěšné kontrole výsledek uloží (`ulozPosledniKontrolu`); když lobby nenajde,
+přibalí `posledni: { kontroly, kdy }` (`getPosledniKontrola`). `KontrolaLobby`
+pak pod hláškou ukáže sbalenou sekci **„Nastavení hry — poslední známé,
+z HH:MM“** (`data-testid="posledni-nastaveni"`, 1.3.1 podle upřesnění
+uživatele) a v ní tytéž tři podsekce jako u živé kontroly (Pre-Lobby,
+Nastavení Lobby, Další nastavení) se všemi řádky včetně stavů. Přežije
+obnovení stránky i jiného diváka — je to v databázi, ne ve stavu komponenty.
+
+**Sbalování (1.3.1):** všechny tři podsekce si pamatují rozbalení
+v `localStorage` (`kontrola.sekce.prelobby|hlavni|dalsi`, výchozí rozbalené)
+a stav sdílí živá kontrola i „Nastavení hry“ — po rozbalení „Nastavení hry“
+jsou tedy všechny tři vybalené, pokud si je uživatel nesbalil. Samo
+„Nastavení hry“ je napoprvé vždy sbalené. Komponenta `Skladaci` nad
+`<details>` dělá plynulé rozbalení i sbalení (Web Animations, výška 0 ↔
+`scrollHeight` + opacity, `SKLADANI_MS` = 280): klik na `<summary>` se
+zachytí, při zavírání se `open` odebere až po dojetí. V testovacím DOM
+a při `prefers-reduced-motion` se jen přepne.
+
+**Vždy dostupné (1.3.5):** „Nastavení hry“ mizelo, jakmile se komponenta
+kontroly znovu připojila (obnovení stránky, přeskládání karet v režii) —
+poslední výsledek žil jen ve stavu komponenty a mimo automatický režim
+(hra běží) se už nic nenačetlo. Kontrola teď proběhne jednou hned po
+připojení i mimo automatický režim, takže se poslední známý stav ze serveru
+načte vždy.
+
+### 3.47 Sbalitelná lišta „nová verze“ (1.3.3, 13. 9. 2026)
+
+Uživatel: vpravo na liště dvojitá šipka nahoru, která lištu sbalí, zůstane
+jen záložka s dvojitou šipkou dolů. Lišta je v obalu `.nova-verze-obal`
+(sticky, `data-testid="nova-verze"`): sbalení jede přes grid
+`1fr → 0fr` a zároveň se lišta vysune (`translateY(-100%)`, 0,35 s),
+záložka `.zalozka` visí pod horní hranou (`top: 100%`, vpravo) a objeví se
+jen ve stavu `.sbaleno`; kliknutí ji vrátí. Od 1.3.5 sbalená lišta stahuje
+i vnitřní okraj a spodní linku (obal měřil ~20 px a záložka visela kus pod
+hranou); tu výšku dostala záložka (`padding-top` 1,35 rem), takže je žlutá až
+po horní okraj stránky (uživatel). Šipky jsou inline SVG
+(`DvojitaSipka` v `App.tsx`). Stav je jen v paměti stránky — po obnovení
+je lišta zase rozbalená, což je v pořádku, obnovení ji stejně zruší.
+Při `prefers-reduced-motion` bez přechodu.
+
+### 3.48 Poplach, který prohlížeč zadržel (1.3.4, 13. 9. 2026)
+
+Hráč po super zvonku dostal okno „tě shání!“, ale poplach se neozval.
+Okno i zvuk spouští týž efekt nad `svolanV`, takže `prehraj()` proběhlo —
+selhalo `audio.play()`: prohlížeč bez gesta uživatele od načtení stránky
+zvuk nepustí (`NotAllowedError`; spící hráč typicky nikam neklikl). Dřív se
+chyba tiše spolkla. Od 1.3.4 `zvuk.ts` zadržený zvuk odloží (`cekajici`)
+a přehraje při prvním `pointerdown`/`keydown`; `naZablokovaniZvuku(cb)`
+hlásí zadržení a uvolnění, `App` to dává oknu `Svolani` (`zvukCeka`), které
+napíše „Prohlížeč poplach bez tvého kliknutí nepustil — ozve se, jakmile
+klikneš.“ Jiné chyby přehrávání se dál jen spolknou. Test `zvuk.test.ts`.
+Ztlumenou kartu nebo vypnutý zvuk v systému to nevyřeší.
+
+### 3.49 Důležitá zpráva admina s vykřičníkem (1.3.5, 13. 9. 2026)
+
+Uživatel: zpráva začínající vykřičníkem od admina „odcinkne“ (zvon) spolu
+se zvukem zprávy; u běžného hráče vykřičník nic nedělá; admin při psaní
+vidí poznámku; text je automaticky tučně. Pravidlo je ve sdíleném
+`cenzura.ts`: `jeDulezita(z)` = `jeAdmin && text.startsWith("!")`,
+`textZpravy(z)` vrací text bez úvodního vykřičníku (v databázi zůstává
+s ním — je to značka, přežije úpravu šipkou nahoru). `App` při nové cizí
+zprávě vždy cinkne (`chat.mp3` na hlasitost chatu) a u důležité navíc
+zazvoní `zvon.mp3` — všem včetně adminů. **Dřívější pravidlo „každá zpráva
+admina hráčům zvoní“ tím končí**, zvoní jen důležité. `Chat` dostal prop
+`jaAdmin`; když admin píše text začínající „!“, pod polem se ukáže
+„Důležitá zpráva — všem v lobby zazvoní zvon a bude tučně.“
+(`.dulezita-poznamka`); důležité zprávy mají třídu `.text.dulezita`.
+
+### 3.50 Push-to-talk admina (1.4.0, 13. 9. 2026)
+
+Uživatel: tlačítko v hlavičce chatu, admin ho drží a účastníci ho slyší;
+vedle „mute“ jen pro ostatní adminy s popiskem „Mute tlačítko pouze pro
+ostatní adminy, aby nemuseli poslouchat tvůj otravnej hlas“.
+
+**Bez WebRTC.** Signaling, STUN a TURN by byly další server a další místo,
+kde to u někoho za NATem nepůjde. Místo toho: admin drží tlačítko →
+`MediaRecorder` (Opus ve WebM, 32 kb/s, kousky po 250 ms) → každý kousek
+jde `POST /api/zapas/:id/hlas` (base64, `sezeni`, `poradi`, na konci
+`konec: true`) → `hlasHub` (`realtime/hlas.ts`) → stejný SSE stream jako
+stav, jen událost `hlas` → posluchač kousky lepí do `MediaSource`
+a hraje skoro živě (zpoždění ~0,5 s). Kde MediaSource s Opusem není
+(Safari), posbírá kousky a přehraje po konci jako vysílačka. Nic se
+neukládá. Zpoždění mezi kousky hlídá pořadí (`poradi`), kousky se posílají
+za sebou (další čeká na předchozí).
+
+**Kdo slyší** (`smiSlyset`): účastníci zápasu (`prijemci` = jejich Steam
+ID, server je přibalí) a všichni admini; anonym, divák mimo zápas a mluvčí
+sám ne. Admin si ostatní adminy ztlumí v prohlížeči (`hlas.ztlumit-adminy`);
+hráčům se nic neztlumí. Hlasitost = Master Volume.
+
+**Prohlížeč:** `hlas.ts` (přehrávač `spustPrehravacHlasu`, nahrávání
+`vytvorNahravani`), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
+puštění kdekoli / ztráta fokusu okna nahrávání zastaví, mikrofon se po
+puštění uvolní, ať v kartě nesvítí), `Chat` prop `onHlas`, `App` přehrávač
+zapíná po přihlášení. Od 1.4.1 je tlačítko **jen v režii** (`Obsluha.onHlas`,
+karta hráče ani hosta ho nemá) a je to jen ikona mikrofonu 2,1 rem; po dobu
+držení má v rohu pulzující červené kolečko „nahrává se“ (uživatel). Popisky
+obou tlačítek jsou od 1.4.2 vlastní bublina `.napoveda` bez prodlevy
+(0,9 rem), ne `title`. `useAkceStav` událost `hlas` jen přeposílá na okno
+(`aoe:hlas`). Testy: `realtime/hlas.test.ts`, route v `matches.db.test.ts`.
+Neověřeno živě se dvěma lidmi — první ostrá zkouška bude na akci.
+
+### 3.51 Chat se posouvá jen na obrazovce (1.4.0, 13. 9. 2026)
+
+Uživatel: když chat není ve výřezu (třeba odrolovaný na druhém monitoru),
+nemá se sám posouvat — neaktivní okno nevadí, rozhoduje výřez.
+`IntersectionObserver` nad seznamem zpráv (kořen = viewport, stačí kousek)
+drží `naObrazovce`; mimo obrazovku se nová zpráva chová jako u odrolovaného
+čtenáře: tlačítko „Nové zprávy“ a oddělovač, žádný skok.
+
+**Dva chaty a oddělovač (1.5.0, uživatel):** admin má týž chat dvakrát
+(režie a karta hráče). Viditelnost se sdílí podle zápasu
+(`viditelneChaty`, `nekdoNaObrazovce`): posouvají se oba, dokud je na
+obrazovce kterýkoli z nich; „Nové zprávy“ přijde až mimo oba. Oddělovač
+dřív mimo obrazovku bledl a mizel dřív, než se k němu člověk vrátil —
+pozorovatel měl kořen v seznamu, ne v okně, takže „viděl“ i odrolovaný
+chat. Blednutí se teď nezačíná, dokud chat není na obrazovce; po návratu
+je oddělovač vidět dole v okně chatu a teprve pak začne mizet.
+
+### 3.52 7TV emoty a taunty ze hry v chatu (1.5.0, 14. 9. 2026)
+
+- **Samotný vykřičník od admina** byl po odebrání značky prázdná zpráva
+  (uživatel: „druhý admin ji nevidí“). Teď je to emote **DinkDonk** o kus
+  větší (`EMOTE_VYKRICNIK`, `.emote.velky`); důležitá zpráva se zvonem
+  zůstává.
+- **7TV emoty Robova kanálu:** server `GET /api/emoty`
+  (`routes/emoty.ts`) stáhne sadu z `7tv.io/v3/users/twitch/160028137`
+  (robdiesalot) a hodinu ji drží; prohlížeč (`emoty.ts`, `useEmoty`) ji
+  načte jednou a slovo, které je přesně jménem emotu (velikost písmen
+  rozhoduje), kreslí jako `<img class="emote">` z `cdn.7tv.app/emote/<id>/2x.webp`
+  (`rozsekejNaEmoty`). Sada měla 13. 9. 2026 529 emotů. Bez 7TV je chat jen
+  bez obrázků.
+- **Taunty ze hry:** zpráva, která je jen číslem 1–105, se ukáže jako
+  taunt „**11** Laugh“ (`shared/taunty.ts`, texty doslova z herního
+  `key-value-strings-utf8.txt`, klíče 11400–11504). **Zvuk všech 105
+  tauntů (1.7.0)** — nahrávky přímo ze hry: hlasy jsou jazykově zvlášť
+  v `AoE2DE/wwise/en/Base.pck` (podsložka `en`, kterou dřívější výpis
+  usekl; hlavní `wwise/Base.pck` má jen SFX, proto se tam taunty nedaly
+  najít — 1.6.5 byl omyl se smíchem z `Play_Taunt_11_Random`). Mapování
+  „Taunt NN → wem“ dala komunitní tabulka StepS (list „OLD Audio Sources -
+  Speech“, jazyk en), extrakce je v `nastroje/zvuky/taunty.py` (+
+  `taunty_en_wem.json`) → `web/src/assets/taunty/taunt-NN.mp3` (2,3 MB,
+  načítají se až při přehrání přes `import.meta.glob`). Prohlížeč taunt
+  hraje místo cinknutí příjemcům i autorovi, na hlasitost chatu; víc tauntů
+  naráz = každý svůj zvuk. Test v `App.test.tsx`. Ostatní taunty tam jako
+  číslované události nejsou (prohledány event ID všech pěti bank); jejich
+  zvuk by chtěl rozbor datového souboru hry — zatím jen text.
+- **Zero-width emoty (1.6.0):** 7TV je značí na položce sady bitem 1
+  (`ActiveEmoteFlag`) nebo na emotu bitem 1 << 8 (`EmoteFlag`); server bere
+  kterýkoli (`nulovaSirka`). V chatu se zero-width emote hned za jiným emotem
+  (i přes mezery) položí na něj jako vrstva (`rozsekejNaEmoty` → `vrstvy`,
+  `.emote-obal` = `inline-grid`, všechny obrázky v `grid-area: 1 / 1`); víc
+  za sebou = víc vrstev; za textem je obyčejný emote. Po vzoru UnityChat.
+
+### 3.53 Našeptávání v chatu (1.6.0, 14. 9. 2026)
+
+Po vzoru UnityChat (uživatel: „koukni do projektu UnityChat a po jeho vzoru
+přidej našeptávání, ovládání tabulátorem, fulltext“). Logika je v
+`web/src/naseptavac.ts` (bez DOM, testy `naseptavac.test.ts`), klávesy a
+panel v `Chat.tsx`:
+
+- **Emoty jen na Tab:** žádný prefix, žádné otevírání při psaní. Tab vezme
+  slovo pod kurzorem (od poslední mezery), otevře seznam a rovnou vloží
+  první položku + mezeru; další Tab cykluje (Shift+Tab zpět), ↑/↓ totéž,
+  → nebo Escape zavře (text zůstane), Enter zprávu odešle. Jiná klávesa
+  seznam zavře. Klik myší na položku ji vloží.
+- **@jméno** (účastníci zápasu a autoři zpráv) se otevírá při psaní od
+  `@` + 1 znak; první Tab jen potvrdí; Enter vloží/zavře a zprávu neodešle.
+- **Fulltext:** zaškrtávátko jako první řádek panelu (jen u emotů): bez něj
+  se hledá začátek jména, s ním kdekoli; přepnutí přefiltruje otevřený
+  seznam proti původnímu prefixu. Na rozdíl od UnityChat se pamatuje
+  (`localStorage` `chat.naseptavac-fulltext`).
+- **Panel** `.naseptavac` nad polem, vlevo, nejvýš 27 rem široký (1.6.1,
+  uživatel: ať nezabírá tolik místa), text zleva: obrázek 1x + jméno +
+  zdroj („7TV“ / „hráč“), 4 viditelné položky s posuvným oknem
+  (`oknoOd`), počítadlo „3 / 147“ nad čtyři. Řazení: shoda začátku před
+  shodou uprostřed, přesná velikost písmen před nepřesnou, pak abecedně.
+
+### 3.54 Odpovědi na zprávy (1.6.0, 14. 9. 2026)
+
+Po vzoru UnityChat, ale s vlastní perzistencí: **migrace 026** přidává
+`zprava.odpoved_na` (odkaz na zprávu téhož zápasu, `ON DELETE SET NULL`).
+`POST /api/zapas/:id/zprava` bere `odpovedNa`; cizí nebo neexistující id se
+tiše zahodí. `listZpravy` přibalí náhled původní (`odpovedNa: { id, jmeno,
+text }`), takže je vidět i u zpráv starších než okno 100 zpráv.
+
+- **Spuštění:** ↩ u zprávy (ukáže se po najetí), nad polem pruh „Odpověď pro
+  *jméno*“ se zkráceným textem původní a křížkem; Escape ho zruší
+  (přednost před zrušením úpravy); po odeslání zmizí.
+- **Vykreslení (1.6.4):** malý řádek `↩ @Jméno úryvek` nad **celou**
+  zprávou (první dítě `li`, `grid-column: 2 / -1`, tedy od sloupce jména),
+  jeden řádek s výpustkou, tlumený, bez vzhledu tlačítka (výjimka
+  z obecného pravidla `button:not(...)`, jinak inline, bez mezery a s
+  pozadím při najetí). Klik posune **jen seznam zpráv** (`el.scrollTo`,
+  ne `scrollIntoView`, který hýbal celou stránkou), a jen když původní
+  není celá vidět; ta pak 2 s blikne (`.blika`, `@keyframes zprava-blik`). Když
+  původní není v seznamu (smazaná → `odpovedNa` null, náhled se nekreslí;
+  starší než okno → klik nic neudělá).
+
 ---
+
+### 3.55 Know-how dokumentace (14. 9. 2026)
+
+Uživatel: „všechny ty funkce podrobně zdokumentuj … aby tento projekt mohl
+být zdrojem referencí a know-how pro další projekty“. Vznikl adresář
+`docs/know-how/` (rozcestník `README.md` + 10 tematických souborů: chat,
+emoty a taunty, zvuky ze hry, push-to-talk, aktivita a svolání, tabulka
+přihlášených, lobby a zápasy, grafika a obrázky, UI vzory, proces
+a nasazení) — psáno pro čtenáře, který projekt nezná, s cestami, funkcemi
+a pastmi. Extrakční skripty pro zvuky ze hry (`pck.py`, `extract_wem.py`)
+a postup jsou nově v repu v `nastroje/zvuky/`, dřív jen ve scratchpadu.
 
 ## 4. Externí API — co je ověřené a co ne
 
@@ -1529,6 +1821,33 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 0.36.11 | 1:45 | Strany zápasu na obrazovce hráče vždy vedle sebe (§3.42) |
 | 0.36.12 | 2:05 | Kontrola lobby i na kartě hráče; strany zápasu s VS i u hosta (§3.42) |
 | **1.0.0** | 2:30 | **Release PR #14** do `main` (značka `v0.28.3` na stavu před ním); `experimental` přezaloženo na 1.0.0-0.0 s praporcem |
+| 1.1.0 | 3:00 | Lhůta aktivity jako globální nastavení webu, i mimo akci; migrace 024 (§3.43) |
+| 1.1.1 | 3:15 | DB testy vrací globální lhůtu na 15 před každým testem; **release PR #15** do `main` (značka `v1.0.0`) |
+| 1.1.2 | 3:40 | Ukončená akce bez dohraného zápasu s vítězem se maže i s obsahem (§3.44); **release PR #16** do `main` (značka `v1.1.1`) |
+| 1.1.3 | 15:50 | Třetí zkušební pozadí „Soumrak“, volba ze tří v debug záhlaví (§3.28) |
+| 1.1.4 | 16:05 | Soumrak jako výchozí pozadí; **release PR #17** do `main` (značka `v1.1.2`) |
+| 1.2.0 | 17:00 | Cinkání chatu ze hry i pro admina, Master Volume + Hlasitost chatu (70 × 50 = 35 %), super zvonek v hlavičce tabulky (§3.45) |
+| 1.3.0 | 19:30 | Poslední známé nastavení lobby po jejím zmizení, sbalená sekce; migrace 025 (§3.46) |
+| 1.3.1 | 19:50 | „Nastavení hry“ se třemi pamatovanými podsekcemi a plynulým rozbalením/sbalením (§3.46) |
+| 1.3.2 | 20:10 | Super zvonek na střed sloupce, přední zvonek podle uživatele (§3.45) |
+| 1.3.3 | 20:30 | Lišta „nová verze“ jde sbalit dvojitou šipkou do záložky (§3.47) |
+| 1.3.4 | 21:00 | Prohlížečem zadržený poplach se přehraje po kliknutí a okno svolání to řekne (§3.48); bez výpisu „% z Master Volume“ |
+| 1.3.5 | 21:40 | Důležitá zpráva admina s vykřičníkem (§3.49); „Nastavení hry“ vždy dostupné (§3.46); záložka lišty až k hornímu okraji (§3.47) |
+| 1.4.0 | 22:30 | Push-to-talk admina přes SSE + MediaSource, mute ostatních adminů (§3.50); chat se posouvá jen na obrazovce (§3.51) |
+| 1.4.1 | 22:50 | Push-to-talk jen v režii, jen ikona mikrofonu s červeným kolečkem při nahrávání (§3.50) |
+| 1.4.2 | 23:05 | Popisky mikrofonu a ztlumení jako vlastní bublina bez prodlevy, větší písmo (§3.50) |
+| 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
+| 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
+| 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.7.0 | 14. 9. 15:30 | Zvuk všech 105 tauntů přesně ze hry (`wwise/en/Base.pck`), hraje místo cinknutí i autorovi (§3.52); **release PR #18** do `main` (značka `v1.1.4`) |
+| 1.6.5 | 14. 9. 14:30 | Taunty bez zvuku — smích z Wwise nebyl ten ze hry, nahrávky tauntů v instalaci nejsou (§3.52) |
+| 1.6.4 | 14. 9. 12:10 | Náhled odpovědi nad celou zprávou, skok posouvá jen seznam a jen když je třeba, mezera za jménem, bez pozadí při najetí |
+| 1.6.3 | 14. 9. 11:45 | Smích (taunt 11) hraje i autorovi; test zvuku tauntu |
+| 1.6.2 | 14. 9. 11:20 | Položky našeptávače opravdu zleva (obecné pravidlo tlačítek je centrovalo — výjimka `:not(.polozka)`); know-how dokumentace `docs/know-how/` + skripty `nastroje/zvuky/` |
+| 1.6.1 | 14. 9. 11:00 | Našeptávač užší (27 rem, vlevo), položky zleva |
+| 1.6.0 | 14. 9. 10:30 | Našeptávání emotů a @jmen (Tab, fulltext), odpovědi na zprávy (migrace 026), zero-width emoty jako vrstvy (§3.52–3.54) |
+| 1.5.1 | 14. 9. 0:55 | Řádek chatu s emotem má výšku emotu (bez záporných okrajů) |
+| 1.5.0 | 14. 9. 0:40 | 7TV emoty v chatu, „!“ = DinkDonk, taunty ze hry (smích se zvukem); viditelnost chatu sdílená mezi oběma chaty admina, oddělovač nebledne mimo obrazovku (§3.51, §3.52) |
 
 Před tím (3.–6. 9.): návrh a plán, zjednodušení stavů akce (spec 5. 9.),
 zrcadlo dialogu Create Lobby, onboarding pro přispěvatele (0.1.0).

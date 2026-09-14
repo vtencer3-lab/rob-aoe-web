@@ -16,6 +16,9 @@ let hracSid: string;
 
 beforeEach(async () => {
   await getPool().query("TRUNCATE player, akce CASCADE");
+  // Lhůta je globální (migrace 024) a TRUNCATE ji nevrátí — jinak by test
+  // dědil hodnotu z jiného souboru.
+  await getPool().query("UPDATE nastaveni_webu SET lhuta_aktivity_minut = 15");
   akceId = (await createAkce("večer")).id;
 
   await upsertPlayer(ROB, true);
@@ -580,13 +583,28 @@ it("kontrola bez lobby v seznamu vrátí nalezeno=false, cizí hráč 403", asyn
   const app = buildServer({ nactiInzeraty: async () => [] });
   const zapas = await vytvorZapas(app);
   const res = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: robSid } });
-  expect(res.json()).toEqual({ nalezeno: false, kontroly: [] });
+  expect(res.json()).toEqual({ nalezeno: false, kontroly: [], posledni: null });
 
   const cizi = "76561198000000099";
   await upsertPlayer(cizi, false);
   const ciziSid = await createSession(cizi);
   const zakazano = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/kontrola-lobby`, cookies: { sid: ciziSid } });
   expect(zakazano.statusCode).toBe(403);
+  await app.close();
+});
+
+// Push-to-talk: kousek hlasu smí poslat jen admin, tvar se hlídá.
+it("kousek hlasu přijme jen od admina a se sezením a pořadím", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  const ok = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: robSid }, payload: { sezeni: "s1", poradi: 0, data: "AAAA", mime: "audio/webm;codecs=opus" } });
+  expect(ok.statusCode).toBe(200);
+  const konec = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: robSid }, payload: { sezeni: "s1", poradi: 1, konec: true } });
+  expect(konec.statusCode).toBe(200);
+  const spatne = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: robSid }, payload: { poradi: 0, data: "AAAA" } });
+  expect(spatne.statusCode).toBe(400);
+  const hrac = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: hracSid }, payload: { sezeni: "s1", poradi: 0, data: "AAAA" } });
+  expect(hrac.statusCode).toBe(403);
   await app.close();
 });
 

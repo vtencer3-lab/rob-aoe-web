@@ -94,8 +94,6 @@ export interface AkceView {
   ulozeneNastaveniLobby?: Record<string, unknown> | null;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
   skladani?: SestavaVstup[];
-  /** Lhůta aktivity v minutách (2–120); chybí ve starších snímcích = 15. */
-  lhutaAktivityMinut?: number;
   /**
    * Jméno, které dostane příští založená lobby (ROB-NN). Odvozené z pořadí,
    * ne tajné — okno Pre-Lobby ho ukazuje, aby ho host opsal do hry.
@@ -168,12 +166,36 @@ export interface ZpravaView {
   poslano: string;
   /** Autor ji po odeslání přepsal (šipka nahoru); ukazuje se „(editováno)“. */
   upraveno?: boolean;
+  /** Odpověď na jinou zprávu (migrace 026): náhled původní; null = bez odpovědi nebo původní smazaná. */
+  odpovedNa?: { id: number; jmeno: string; text: string } | null;
+}
+
+/**
+ * Kousek hlasu admina (push-to-talk): jde streamem jako událost `hlas`,
+ * mimo stav. `sezeni` odděluje jednotlivá mluvení, `poradi` drží pořadí
+ * kousků, `konec` uzavírá sezení. `prijemci` = účastníci zápasu (server podle
+ * nich rozhoduje, komu kousek pošle; admini ho dostanou vždy).
+ */
+export interface HlasUdalost {
+  zapasId: number;
+  kdo: string;
+  jmeno: string;
+  sezeni: string;
+  poradi: number;
+  konec: boolean;
+  /** base64 kousku nahrávky; u značky konce prázdné. */
+  data: string;
+  /** MIME nahrávky, třeba `audio/webm;codecs=opus`. */
+  mime?: string;
+  prijemci: string[];
 }
 
 export interface AkceStavPayload {
   akce: AkceView | null;
   prihlaseni: PlayerView[];
   zapasy: ZapasView[];
+  /** Lhůta aktivity v minutách (2–120), globální nastavení webu (migrace 024); chybí ve starších snímcích = 15. */
+  lhutaAktivityMinut?: number;
 }
 
 /**
