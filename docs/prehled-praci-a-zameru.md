@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 14. 9. 2026 odpoledne, main 1.1.4, dev 1.7.0)
+# Přehled prací a záměrů (stav k 14. 9. 2026 odpoledne, main i dev 1.7.0)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -34,8 +34,8 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.7.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/main` | 1.7.0, nasazeno na <https://jouki.cz/aoe> (PR #18, 14. 9. 2026 odpoledne); stav před ním nese značku `v1.1.4`, starší `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
+| `origin/dev` | 1.7.0, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
 | Testy | backend hermetické 300, databázové 169, frontend 289 — všechny zelené (14. 9. 2026 dopoledne, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
@@ -46,7 +46,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
 PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
 kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) a PR #13 (0.28.3) 9. 9.;
-PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele); PR #15 (1.1.1, globální lhůta); PR #16 (1.1.2, mazání akcí bez výsledku); PR #17 (1.1.4, soumrak jako výchozí pozadí).
+PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele); PR #15 (1.1.1, globální lhůta); PR #16 (1.1.2, mazání akcí bez výsledku); PR #17 (1.1.4, soumrak jako výchozí pozadí); PR #18 (1.7.0, chat: našeptávání, odpovědi, 7TV emoty, taunty; push-to-talk; globální lhůta; poslední nastavení lobby).
 Před releasem se na dosavadní `main` věší značka
 `vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
 [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
@@ -1839,7 +1839,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
-| 1.7.0 | 14. 9. 15:30 | Zvuk všech 105 tauntů přesně ze hry (`wwise/en/Base.pck`), hraje místo cinknutí i autorovi (§3.52) |
+| 1.7.0 | 14. 9. 15:30 | Zvuk všech 105 tauntů přesně ze hry (`wwise/en/Base.pck`), hraje místo cinknutí i autorovi (§3.52); **release PR #18** do `main` (značka `v1.1.4`) |
 | 1.6.5 | 14. 9. 14:30 | Taunty bez zvuku — smích z Wwise nebyl ten ze hry, nahrávky tauntů v instalaci nejsou (§3.52) |
 | 1.6.4 | 14. 9. 12:10 | Náhled odpovědi nad celou zprávou, skok posouvá jen seznam a jen když je třeba, mezera za jménem, bez pozadí při najetí |
 | 1.6.3 | 14. 9. 11:45 | Smích (taunt 11) hraje i autorovi; test zvuku tauntu |
