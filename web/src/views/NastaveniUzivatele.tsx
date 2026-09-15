@@ -49,7 +49,8 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
       const adresa = await nahrajZkousku(mikrofon);
       setZkouska("prehravam");
       const audio = new Audio(adresa);
-      audio.volume = Math.min(1, Math.max(0, master / 100));
+      // Naplno jako u ostatních — takhle to uslyší i oni.
+      audio.volume = 1;
       audio.onended = () => {
         URL.revokeObjectURL(adresa);
         setZkouska("klid");
@@ -107,7 +108,7 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
         {hlasitostAdmina !== undefined && onHlasitostAdmina ? (
           <Posuvnik
             popisek="Hlasitost administrátora"
-            info="Jak nahlas slyšíš hlas ostatních adminů (push-to-talk); podíl z Master Volume. Reproduktor u mikrofonu je umlčí úplně."
+            info="Jak nahlas slyšíš hlas ostatních adminů (push-to-talk). Hraje naplno, nezávisle na Master Volume — proto se nemusí zesilovat mikrofon. Reproduktor u mikrofonu je umlčí úplně."
             hodnota={admin}
             onZmena={(v) => {
               setAdmin(v);
@@ -119,7 +120,7 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
         {zesileniMikrofonu !== undefined && onZesileniMikrofonu ? (
           <Posuvnik
             popisek="Zesílení mikrofonu"
-            info="Jen pro tvůj push-to-talk: 100 % je mikrofon tak, jak ho slyší systém. Vyšší hodnota zesílí tichý mikrofon; přebuzení hlídá limiter."
+            info="Jen pro tvůj push-to-talk: 100 % je mikrofon tak, jak ho slyší systém. Zesiluj, až když jsi i na plný výstup moc tichý — zesílení vstupu ubírá z kvality, i když přebuzení hlídá měkké omezení."
             hodnota={mikrofon}
             min={ZESILENI_MIN}
             max={ZESILENI_MAX}

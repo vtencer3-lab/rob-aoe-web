@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 16. 9. 2026, main 1.7.2, dev 1.7.4)
+# Přehled prací a záměrů (stav k 16. 9. 2026, main 1.7.2, dev 1.7.5)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -35,10 +35,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | | |
 |---|---|
 | `origin/main` | 1.7.2, nasazeno na <https://jouki.cz/aoe> (PR #19, 15. 9. 2026); stav před ním nese značku `v1.7.0`, starší `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.7.4, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.7.2) navíc hlasitost administrátora a oprava lupání při zesílení (§3.50). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/dev` | 1.7.5, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.7.2) navíc hlasitost administrátora a oprava lupání při zesílení (§3.50). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS) |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 300, databázové 169, frontend 297 — všechny zelené (16. 9. 2026, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 300, databázové 169, frontend 298 — všechny zelené (16. 9. 2026, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -1484,11 +1484,14 @@ sám ne. Admin si ostatní adminy ztlumí v prohlížeči (`hlas.ztlumit-adminy`
 hráčům se nic neztlumí. Hlasitost = Master Volume.
 
 **Hlasitost administrátora (1.7.3, uživatel):** posuvník v nastavení jen
-pro adminy — podíl hlasu adminů (push-to-talk) z Master Volume, výchozí
-100 %, klíč `hlas.hlasitost-admina`. Přehrávač (`Prehravani`) z něj počítá
-hlasitost přes `hlasitostUdalosti`, takže jde ztišit kolegu bez ztlumení
-zbytku webu; reproduktor u mikrofonu ho umlčí úplně jako dřív. Hráči
-slyší hlas na plný Master Volume a posuvník nevidí.
+pro adminy — hlasitost hlasu adminů (push-to-talk), výchozí 100 %, klíč
+`hlas.hlasitost-admina`; reproduktor u mikrofonu je umlčí úplně jako dřív.
+Od **1.7.5 je mimo Master Volume** (uživatel: „v prvé řadě ať je output
+stopy na maximum“): `Prehravani` nastaví `audio.volume` přímo z posuvníku,
+takže při výchozích 100 % jde hlas ven naplno a **nemusí se zesilovat
+vstup** — zesílení mikrofonu ubírá z kvality, i s měkkým omezením. Hráči
+slyší hlas taky naplno a posuvník nevidí. Zkouška mikrofonu přehrává
+také naplno, ať odpovídá tomu, co uslyší ostatní.
 
 **Zesílení mikrofonu (1.7.2, uživatel):** v nastavení posuvník „Zesílení
 mikrofonu“ 100–400 % po pěti (jen admin, klíč `hlas.zesileni-mikrofonu`).
@@ -1881,6 +1884,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.7.5 | 16. 9. | Hlas admina hraje naplno mimo Master Volume, ať se nemusí zesilovat vstup (§3.50) |
 | 1.7.4 | 16. 9. | Konec lupání po zesílení (měkké omezení místo kompresoru, frekvence mikrofonu, bez AGC, 64 kb/s) + zkouška mikrofonu (§3.50) |
 | 1.7.3 | 15. 9. | Hlasitost administrátora: podíl hlasu adminů z Master Volume, jen pro adminy (§3.50) |
 | 1.7.2 | 15. 9. | Zesílení mikrofonu pro push-to-talk 100–400 % s limiterem (§3.50); **release PR #19** do `main` (značka `v1.7.0`) |

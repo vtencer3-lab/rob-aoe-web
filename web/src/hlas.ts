@@ -1,5 +1,5 @@
 import type { HlasUdalost } from "../../src/shared/types.js";
-import { hlasitost, hlasitostUdalosti } from "./zvuk.js";
+import { hlasitost } from "./zvuk.js";
 
 /** Událost okna, kterou stream předává kousky hlasu (detail = HlasUdalost). */
 export const UDALOST_HLAS = "aoe:hlas";
@@ -10,7 +10,14 @@ export const MIME_HLASU = "audio/webm;codecs=opus";
 const KLIC_ZTLUMIT_ADMINY = "hlas.ztlumit-adminy";
 const KLIC_HLASITOST_ADMINA = "hlas.hlasitost-admina";
 const KLIC_ZESILENI = "hlas.zesileni-mikrofonu";
-/** Podíl hlasu administrátorů z Master Volume, 0–100; výchozí 100 (nic neubírá). */
+/**
+ * Hlasitost hlasu administrátorů, 0–100; výchozí 100 = naplno.
+ *
+ * Schválně **mimo Master Volume** (uživatel 16. 9. 2026): výstup má jít na
+ * maximum, ať se nemusí zesilovat vstup z mikrofonu — zesílení na vstupu
+ * ukrajuje z kvality, i s měkkým omezením. Master Volume tedy hlas neztlumí;
+ * kdo chce kolegu ztišit, ubere tímhle posuvníkem, nebo ho umlčí úplně.
+ */
 export const VYCHOZI_HLASITOST_ADMINA = 100;
 
 export function hlasitostAdmina(): number {
@@ -173,9 +180,8 @@ class Prehravani {
 
   constructor(mime: string) {
     this.#mime = mime;
-    // Hlas admina má vlastní podíl z Master Volume (uživatel 15. 9. 2026:
-    // „hlasitost administrátora“), ať jde ztišit bez ztlumení všeho ostatního.
-    this.#audio.volume = Math.min(1, Math.max(0, hlasitostUdalosti(hlasitostAdmina()) / 100));
+    // Naplno, nezávisle na Master Volume — viz hlasitostAdmina().
+    this.#audio.volume = Math.min(1, Math.max(0, hlasitostAdmina() / 100));
     this.#zive = typeof MediaSource !== "undefined" && typeof MediaSource.isTypeSupported === "function" && MediaSource.isTypeSupported(mime);
     if (this.#zive) {
       this.#zdroj = new MediaSource();

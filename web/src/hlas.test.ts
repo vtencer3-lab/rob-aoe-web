@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { hlasitostAdmina, nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, zesileniMikrofonu, zesilProud, ZESILENI_MAX, ZESILENI_MIN } from "./hlas.js";
+import { spustPrehravacHlasu, UDALOST_HLAS, hlasitostAdmina, nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, zesileniMikrofonu, zesilProud, ZESILENI_MAX, ZESILENI_MIN } from "./hlas.js";
 
 afterEach(() => {
   localStorage.clear();
@@ -26,6 +26,30 @@ it("hlasitost administrátora se ukládá a ořezává na 0–100", () => {
   expect(hlasitostAdmina()).toBe(40);
   nastavHlasitostAdmina(-5);
   expect(hlasitostAdmina()).toBe(0);
+});
+
+// Hlas jde ven naplno bez ohledu na Master Volume (uživatel 16. 9. 2026):
+// ať se nemusí zesilovat vstup a ubírat z kvality.
+it("hlas admina hraje na svou hlasitost, ne na podíl z Master Volume", () => {
+  localStorage.setItem("zvuk.hlasitost", "30");
+  const hlasitosti: number[] = [];
+  vi.stubGlobal(
+    "Audio",
+    vi.fn(function () {
+      return {
+        set volume(v: number) {
+          hlasitosti.push(v);
+        },
+        play: () => Promise.resolve(),
+        addEventListener: () => {},
+      };
+    }),
+  );
+  const odhlasit = spustPrehravacHlasu("ja", true);
+  const kousek = { zapasId: 1, kdo: "rob", jmeno: "Rob", sezeni: "s1", poradi: 0, konec: true, data: "AAAA", prijemci: ["ja"] };
+  window.dispatchEvent(new CustomEvent(UDALOST_HLAS, { detail: kousek }));
+  expect(hlasitosti).toEqual([1]);
+  odhlasit();
 });
 
 // Při 100 % se proud nechává být; nad 100 % jde přes zisk a limiter.

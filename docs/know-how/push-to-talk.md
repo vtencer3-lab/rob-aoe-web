@@ -119,6 +119,7 @@ Kontext se zavírá se zastavením nahrávání; při 100 % se nic nevytváří.
 ## Hlasitost hlasu adminů (1.7.3)
 
 Vedle úplného ztlumení (`hlas.ztlumit-adminy`) má admin i plynulý posuvník
-„Hlasitost administrátora“ — podíl z Master Volume (`hlas.hlasitost-admina`,
-výchozí 100). `Prehravani` nastaví `audio.volume` z `hlasitostUdalosti(podíl)`;
-u hráče se posuvník nenabízí a platí plný Master Volume.
+„Hlasitost administrátora“ (`hlas.hlasitost-admina`, výchozí 100).
+`Prehravani` z něj nastaví `audio.volume` **přímo, mimo Master Volume**:
+výstup má jít naplno, aby se nemusel zesilovat vstup z mikrofonu (zesílení
+na vstupu ubírá z kvality). U hráče se posuvník nenabízí a hlas hraje naplno.
