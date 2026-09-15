@@ -105,3 +105,10 @@ knee 0, poměr 20:1, attack 3 ms, release 100 ms) → `createMediaStreamDestinat
 a nahrává se z jeho `stream`. Limiter je tam proto, že samotný zisk nad 1 by
 hlasitější slabiky ořezal natvrdo. Kontext se zavírá se zastavením nahrávání.
 Při 100 % se nic nevytváří — vrací se původní proud.
+
+## Hlasitost hlasu adminů (1.7.3)
+
+Vedle úplného ztlumení (`hlas.ztlumit-adminy`) má admin i plynulý posuvník
+„Hlasitost administrátora“ — podíl z Master Volume (`hlas.hlasitost-admina`,
+výchozí 100). `Prehravani` nastaví `audio.volume` z `hlasitostUdalosti(podíl)`;
+u hráče se posuvník nenabízí a platí plný Master Volume.
