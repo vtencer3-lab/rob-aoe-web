@@ -35,23 +35,35 @@ it("zesilProud vrací původní proud při 100 % a zesílený nad ním", () => {
 
   const zavreno = vi.fn().mockResolvedValue(undefined);
   const gain = { gain: { value: 1 }, connect: vi.fn((cil: unknown) => cil) };
-  const limiter = { threshold: { value: 0 }, knee: { value: 0 }, ratio: { value: 0 }, attack: { value: 0 }, release: { value: 0 }, connect: vi.fn((cil: unknown) => cil) };
+  const tvar = { curve: null as Float32Array | null, oversample: "none", connect: vi.fn((cil: unknown) => cil) };
   const cil = { stream: { id: "zesileny" } };
   const zdroj = { connect: vi.fn((c: unknown) => c) };
+  const probuzeno = vi.fn().mockResolvedValue(undefined);
+  const nastaveni: unknown[] = [];
   vi.stubGlobal(
     "AudioContext",
-    vi.fn(() => ({
-      createGain: () => gain,
-      createDynamicsCompressor: () => limiter,
-      createMediaStreamDestination: () => cil,
-      createMediaStreamSource: () => zdroj,
-      close: zavreno,
-    })),
+    vi.fn((o: unknown) => {
+      nastaveni.push(o);
+      return {
+        createGain: () => gain,
+        createWaveShaper: () => tvar,
+        createMediaStreamDestination: () => cil,
+        createMediaStreamSource: () => zdroj,
+        resume: probuzeno,
+        close: zavreno,
+      };
+    }),
   );
-  const v = zesilProud(proud, 300);
+  const sProudem = { getAudioTracks: () => [{ getSettings: () => ({ sampleRate: 48_000 }) }] } as unknown as MediaStream;
+  const v = zesilProud(sProudem, 300);
   expect(v.proud).toBe(cil.stream);
   expect(gain.gain.value).toBe(3);
-  expect(limiter.ratio.value).toBe(20);
+  // Kontext má frekvenci mikrofonu a probudí se; omezení je měkká křivka.
+  expect(nastaveni[0]).toMatchObject({ sampleRate: 48_000 });
+  expect(probuzeno).toHaveBeenCalled();
+  expect(tvar.curve).toBeInstanceOf(Float32Array);
+  expect(tvar.curve!.at(-1)).toBeCloseTo(1, 5);
+  expect(Math.max(...Array.from(tvar.curve!).map(Math.abs))).toBeLessThanOrEqual(1);
   v.zavri();
   expect(zavreno).toHaveBeenCalled();
 });

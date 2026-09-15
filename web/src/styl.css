@@ -2013,6 +2013,9 @@ body.bez-scrollu { overflow: hidden; }
 .nastaveni-uzivatele .radek-nastaveni > span:first-child { color: var(--tlumene); }
 /* Kroužek (i) za popiskem: bublina .napoveda bez prodlevy. */
 .nastaveni-uzivatele .info { display: inline-flex; align-items: center; justify-content: center; width: 1.05rem; height: 1.05rem; margin-left: 0.4rem; border: 1px solid var(--zlato-tmave); border-radius: 50%; font-family: Georgia, serif; font-size: 0.7rem; font-style: italic; color: var(--zlato); cursor: help; vertical-align: 0.1rem; }
+.nastaveni-uzivatele .zkouska-mikrofonu { display: flex; align-items: center; gap: 0.7rem; margin: -0.3rem 0 0.8rem; }
+.nastaveni-uzivatele .zkouska-mikrofonu button { padding: 0.2rem 0.7rem; font-size: 0.8rem; }
+.nastaveni-uzivatele .zkouska-mikrofonu small { color: var(--tlumene); font-size: 0.78rem; }
 .nastaveni-uzivatele .info::after { right: auto; left: 50%; transform: translateX(-50%); white-space: normal; width: 16rem; font-size: 0.85rem; text-align: center; }
 .nastaveni-uzivatele .radek-nastaveni small { grid-column: 2 / -1; color: var(--tlumene); }
 .nastaveni-uzivatele input[type="range"] { --podil: 70%; width: 100%; height: 1.4rem; margin: 0; padding: 0; border: 0; border-radius: 0.5rem; box-shadow: none; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }

@@ -3,7 +3,7 @@ import { useState, type CSSProperties } from "react";
 import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT, ZVONEK_PO_MINUTACH } from "../../../src/shared/aktivita.js";
 import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
-import { nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, ZESILENI_MAX, ZESILENI_MIN } from "../hlas.js";
+import { nahrajZkousku, nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, ZESILENI_MAX, ZESILENI_MIN } from "../hlas.js";
 import { useZamekScrollu } from "../zamekScrollu.js";
 import { hlasitostUdalosti, nastavHlasitost, nastavHlasitostChatu, prehraj } from "../zvuk.js";
 
@@ -38,6 +38,28 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
   const [chat, setChat] = useState(hlasitostChatu);
   const [mikrofon, setMikrofon] = useState(zesileniMikrofonu ?? VYCHOZI_ZESILENI);
   const [admin, setAdmin] = useState(hlasitostAdmina ?? VYCHOZI_HLASITOST_ADMINA);
+  // Zkouška mikrofonu: 3 s nahrávky týmž řetězcem jako push-to-talk a přehrát.
+  const [zkouska, setZkouska] = useState<"klid" | "nahravam" | "prehravam">("klid");
+  const [zkouskaChyba, setZkouskaChyba] = useState<string | null>(null);
+  const zkusMikrofon = async () => {
+    if (zkouska !== "klid") return;
+    setZkouskaChyba(null);
+    setZkouska("nahravam");
+    try {
+      const adresa = await nahrajZkousku(mikrofon);
+      setZkouska("prehravam");
+      const audio = new Audio(adresa);
+      audio.volume = Math.min(1, Math.max(0, master / 100));
+      audio.onended = () => {
+        URL.revokeObjectURL(adresa);
+        setZkouska("klid");
+      };
+      await audio.play();
+    } catch (e) {
+      setZkouskaChyba(e instanceof Error && e.message.includes("prohlížeč") ? e.message : "Mikrofon se nepodařilo otevřít — povol ho stránce v prohlížeči.");
+      setZkouska("klid");
+    }
+  };
   const zmenLhutu = (o: number) => {
     if (lhutaMinut === undefined || !onLhuta) return;
     const nova = Math.min(LHUTA_MAX_MINUT, Math.max(LHUTA_MIN_MINUT, lhutaMinut + o));
@@ -108,6 +130,14 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
               onZesileniMikrofonu(v);
             }}
           />
+        ) : null}
+        {zesileniMikrofonu !== undefined && onZesileniMikrofonu ? (
+          <div className="zkouska-mikrofonu" data-testid="zkouska-mikrofonu">
+            <button type="button" onClick={() => void zkusMikrofon()} disabled={zkouska !== "klid"}>
+              {zkouska === "nahravam" ? "Mluv… (3 s)" : zkouska === "prehravam" ? "Přehrávám…" : "Zkusit mikrofon"}
+            </button>
+            <small>{zkouskaChyba ?? "Nahraje tři vteřiny a hned je přehraje — tak uslyšíš, co uslyší ostatní."}</small>
+          </div>
         ) : null}
         {lhutaMinut !== undefined && onLhuta ? (
           <div className="radek-nastaveni" role="group" aria-label="Lhůta aktivity">

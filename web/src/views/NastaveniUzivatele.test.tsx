@@ -32,6 +32,13 @@ it("posuvník zesílení mikrofonu ukládá procenta a hlásí je", () => {
   expect(localStorage.getItem("hlas.zesileni-mikrofonu")).toBe("250");
 });
 
+// Zkouška mikrofonu: v testovacím prohlížeči není MediaRecorder, tak hláška.
+it("zkouška mikrofonu řekne, když ji prohlížeč neumí", async () => {
+  render(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} hlasitostChatu={50} onHlasitostChatu={vi.fn()} zesileniMikrofonu={150} onZesileniMikrofonu={vi.fn()} onZavrit={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: /zkusit mikrofon/i }));
+  expect(await screen.findByText(/nahrávání z mikrofonu neumí/i)).toBeInTheDocument();
+});
+
 it("hráč adminská nastavení zvuku nevidí", () => {
   render(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} hlasitostChatu={50} onHlasitostChatu={vi.fn()} onZavrit={vi.fn()} />);
   expect(screen.queryByRole("slider", { name: /zesílení mikrofonu/i })).not.toBeInTheDocument();
