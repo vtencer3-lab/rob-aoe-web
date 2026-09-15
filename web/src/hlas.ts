@@ -8,6 +8,57 @@ export const KOUSEK_MS = 250;
 /** Preferovaný formát nahrávky; co prohlížeč neumí, nahradí výchozím. */
 export const MIME_HLASU = "audio/webm;codecs=opus";
 const KLIC_ZTLUMIT_ADMINY = "hlas.ztlumit-adminy";
+const KLIC_ZESILENI = "hlas.zesileni-mikrofonu";
+/** Zesílení mikrofonu v procentech: 100 = bez zásahu, 400 = čtyřnásobek. */
+export const ZESILENI_MIN = 100;
+export const ZESILENI_MAX = 400;
+export const VYCHOZI_ZESILENI = 100;
+
+export function zesileniMikrofonu(): number {
+  try {
+    const ulozeno = localStorage.getItem(KLIC_ZESILENI);
+    const cislo = ulozeno === null ? NaN : Number(ulozeno);
+    return Number.isFinite(cislo) ? Math.min(ZESILENI_MAX, Math.max(ZESILENI_MIN, cislo)) : VYCHOZI_ZESILENI;
+  } catch {
+    return VYCHOZI_ZESILENI;
+  }
+}
+
+export function nastavZesileniMikrofonu(procent: number): void {
+  try {
+    localStorage.setItem(KLIC_ZESILENI, String(Math.min(ZESILENI_MAX, Math.max(ZESILENI_MIN, Math.round(procent)))));
+  } catch {
+    // Bez úložiště platí do obnovení stránky jen výchozí.
+  }
+}
+
+/**
+ * Proud z mikrofonu zesílený podle nastavení (uživatel 15. 9. 2026: „možnost
+ * boostnout svůj mikrofon“). Web Audio: zdroj → zisk → měkký limiter →
+ * výstupní proud, ať zesílení nepřebudí a nekřupe. Vrací i zavření kontextu;
+ * při 100 % nebo bez Web Audia se vrací původní proud a zavírat není co.
+ */
+export function zesilProud(proud: MediaStream, procent: number): { proud: MediaStream; zavri: () => void } {
+  const Kontext = typeof window === "undefined" ? undefined : (window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+  if (procent <= 100 || !Kontext) return { proud, zavri: () => {} };
+  const kontext = new Kontext();
+  const zisk = kontext.createGain();
+  zisk.gain.value = procent / 100;
+  const limiter = kontext.createDynamicsCompressor();
+  limiter.threshold.value = -3;
+  limiter.knee.value = 0;
+  limiter.ratio.value = 20;
+  limiter.attack.value = 0.003;
+  limiter.release.value = 0.1;
+  const cil = kontext.createMediaStreamDestination();
+  kontext.createMediaStreamSource(proud).connect(zisk).connect(limiter).connect(cil);
+  return {
+    proud: cil.stream,
+    zavri: () => {
+      void kontext.close().catch(() => {});
+    },
+  };
+}
 
 export function ztlumitAdminy(): boolean {
   try {
@@ -158,6 +209,7 @@ async function doB64(blob: Blob): Promise<string> {
 export function vytvorNahravani(odesli: OdesliKousek, onChyba?: (zprava: string) => void) {
   let rekorder: MediaRecorder | null = null;
   let proud: MediaStream | null = null;
+  let zavriZesileni: (() => void) | null = null;
   let fronta: Promise<unknown> = Promise.resolve();
   let sezeni = "";
   let poradi = 0;
@@ -179,8 +231,12 @@ export function vytvorNahravani(odesli: OdesliKousek, onChyba?: (zprava: string)
         onChyba?.("Mikrofon se nepodařilo otevřít — povol ho stránce v prohlížeči.");
         return;
       }
+      // Zesílení se čte až tady, ať změna v nastavení platí od dalšího stisku.
+      const zesileni = zesilProud(proud, zesileniMikrofonu());
+      zavriZesileni = zesileni.zavri;
+      const nahravany = zesileni.proud;
       const mime = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(MIME_HLASU) ? MIME_HLASU : undefined;
-      rekorder = mime ? new MediaRecorder(proud, { mimeType: mime, audioBitsPerSecond: 32_000 }) : new MediaRecorder(proud);
+      rekorder = mime ? new MediaRecorder(nahravany, { mimeType: mime, audioBitsPerSecond: 32_000 }) : new MediaRecorder(nahravany);
       sezeni = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
       poradi = 0;
       const skutecnyMime = rekorder.mimeType || mime || MIME_HLASU;
@@ -201,6 +257,8 @@ export function vytvorNahravani(odesli: OdesliKousek, onChyba?: (zprava: string)
       const r = rekorder;
       rekorder = null;
       if (r && r.state !== "inactive") r.stop();
+      zavriZesileni?.();
+      zavriZesileni = null;
       proud?.getTracks().forEach((t) => t.stop());
       proud = null;
     },

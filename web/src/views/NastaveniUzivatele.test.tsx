@@ -11,6 +11,23 @@ it("posuvník chatu ukládá podíl z Master Volume", () => {
   expect(localStorage.getItem("zvuk.hlasitost-chat")).toBe("20");
 });
 
+// Zesílení mikrofonu (jen admin s push-to-talk): 100–400 %, ukládá se.
+it("posuvník zesílení mikrofonu ukládá procenta a hlásí je", () => {
+  const onZesileni = vi.fn();
+  render(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} hlasitostChatu={50} onHlasitostChatu={vi.fn()} zesileniMikrofonu={100} onZesileniMikrofonu={onZesileni} onZavrit={vi.fn()} />);
+  const posuvnik = screen.getByRole("slider", { name: /zesílení mikrofonu/i });
+  expect(posuvnik).toHaveAttribute("min", "100");
+  expect(posuvnik).toHaveAttribute("max", "400");
+  fireEvent.change(posuvnik, { target: { value: "250" } });
+  expect(onZesileni).toHaveBeenCalledWith(250);
+  expect(localStorage.getItem("hlas.zesileni-mikrofonu")).toBe("250");
+});
+
+it("bez push-to-talk se zesílení mikrofonu nenabízí", () => {
+  render(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} hlasitostChatu={50} onHlasitostChatu={vi.fn()} onZavrit={vi.fn()} />);
+  expect(screen.queryByRole("slider", { name: /zesílení mikrofonu/i })).not.toBeInTheDocument();
+});
+
 it("posuvník hlasitosti ukládá do prohlížeče a hlásí hodnotu", () => {
   const onHlasitost = vi.fn();
   render(<NastaveniUzivatele hlasitost={70} onHlasitost={onHlasitost} hlasitostChatu={50} onHlasitostChatu={vi.fn()} onZavrit={vi.fn()} />);
