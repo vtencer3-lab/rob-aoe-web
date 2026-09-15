@@ -95,3 +95,13 @@ poslouchá tam a drží `Map<kdo/sezeni, Prehravani>`:
   zkouška proběhla až na akci.
 - Testy: `src/realtime/hlas.test.ts` (`smiSlyset`), route v
   `src/http/routes/matches.db.test.ts` (403 pro hráče, 400 bez sezení).
+
+## Zesílení mikrofonu (1.7.2)
+
+Tichý mikrofon jde v nastavení zesílit na 100–400 % (`hlas.zesileni-mikrofonu`
+v localStorage). `zesilProud(proud, procenta)` postaví řetěz Web Audia
+`createMediaStreamSource` → `GainNode` → `DynamicsCompressor` (práh −3 dB,
+knee 0, poměr 20:1, attack 3 ms, release 100 ms) → `createMediaStreamDestination`
+a nahrává se z jeho `stream`. Limiter je tam proto, že samotný zisk nad 1 by
+hlasitější slabiky ořezal natvrdo. Kontext se zavírá se zastavením nahrávání.
+Při 100 % se nic nevytváří — vrací se původní proud.
