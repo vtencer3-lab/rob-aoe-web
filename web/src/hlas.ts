@@ -1,5 +1,5 @@
 import type { HlasUdalost } from "../../src/shared/types.js";
-import { hlasitost } from "./zvuk.js";
+import { hlasitost, hlasitostUdalosti } from "./zvuk.js";
 
 /** Událost okna, kterou stream předává kousky hlasu (detail = HlasUdalost). */
 export const UDALOST_HLAS = "aoe:hlas";
@@ -8,7 +8,28 @@ export const KOUSEK_MS = 250;
 /** Preferovaný formát nahrávky; co prohlížeč neumí, nahradí výchozím. */
 export const MIME_HLASU = "audio/webm;codecs=opus";
 const KLIC_ZTLUMIT_ADMINY = "hlas.ztlumit-adminy";
+const KLIC_HLASITOST_ADMINA = "hlas.hlasitost-admina";
 const KLIC_ZESILENI = "hlas.zesileni-mikrofonu";
+/** Podíl hlasu administrátorů z Master Volume, 0–100; výchozí 100 (nic neubírá). */
+export const VYCHOZI_HLASITOST_ADMINA = 100;
+
+export function hlasitostAdmina(): number {
+  try {
+    const ulozeno = localStorage.getItem(KLIC_HLASITOST_ADMINA);
+    const cislo = ulozeno === null ? NaN : Number(ulozeno);
+    return Number.isFinite(cislo) ? Math.min(100, Math.max(0, cislo)) : VYCHOZI_HLASITOST_ADMINA;
+  } catch {
+    return VYCHOZI_HLASITOST_ADMINA;
+  }
+}
+
+export function nastavHlasitostAdmina(procent: number): void {
+  try {
+    localStorage.setItem(KLIC_HLASITOST_ADMINA, String(Math.min(100, Math.max(0, Math.round(procent)))));
+  } catch {
+    // Bez úložiště platí do obnovení stránky jen výchozí.
+  }
+}
 /** Zesílení mikrofonu v procentech: 100 = bez zásahu, 400 = čtyřnásobek. */
 export const ZESILENI_MIN = 100;
 export const ZESILENI_MAX = 400;
@@ -101,7 +122,9 @@ class Prehravani {
 
   constructor(mime: string) {
     this.#mime = mime;
-    this.#audio.volume = Math.min(1, Math.max(0, hlasitost() / 100));
+    // Hlas admina má vlastní podíl z Master Volume (uživatel 15. 9. 2026:
+    // „hlasitost administrátora“), ať jde ztišit bez ztlumení všeho ostatního.
+    this.#audio.volume = Math.min(1, Math.max(0, hlasitostUdalosti(hlasitostAdmina()) / 100));
     this.#zive = typeof MediaSource !== "undefined" && typeof MediaSource.isTypeSupported === "function" && MediaSource.isTypeSupported(mime);
     if (this.#zive) {
       this.#zdroj = new MediaSource();

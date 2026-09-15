@@ -1,5 +1,5 @@
 import { cisloTauntu } from "../../src/shared/taunty.js";
-import { spustPrehravacHlasu, zesileniMikrofonu as nactiZesileniMikrofonu } from "./hlas.js";
+import { hlasitostAdmina as nactiHlasitostAdmina, spustPrehravacHlasu, zesileniMikrofonu as nactiZesileniMikrofonu } from "./hlas.js";
 import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
@@ -143,6 +143,7 @@ export function App() {
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
+  const [hlasAdmina, setHlasAdmina] = useState(nactiHlasitostAdmina);
   useEffect(() => {
     // Výchozí (soumrak) je v CSS bez třídy; ostatní mají vlastní třídu.
     for (const p of POZADI) document.documentElement.classList.toggle(`pozadi-${p.klic}`, p.klic !== "soumrak" && pozadi === p.klic);
@@ -756,6 +757,8 @@ export function App() {
           onHlasitost={setHlasitostZvuku}
           hlasitostChatu={hlasitostChatu}
           onHlasitostChatu={setHlasitostChatu}
+          hlasitostAdmina={me?.jeAdmin ? hlasAdmina : undefined}
+          onHlasitostAdmina={me?.jeAdmin ? setHlasAdmina : undefined}
           zesileniMikrofonu={me?.jeAdmin ? zesileniMik : undefined}
           onZesileniMikrofonu={me?.jeAdmin ? setZesileniMik : undefined}
           lhutaMinut={admin ? (stav?.lhutaAktivityMinut ?? 15) : undefined}

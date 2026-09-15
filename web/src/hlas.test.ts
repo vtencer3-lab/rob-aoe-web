@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { nastavZesileniMikrofonu, VYCHOZI_ZESILENI, zesileniMikrofonu, zesilProud, ZESILENI_MAX, ZESILENI_MIN } from "./hlas.js";
+import { hlasitostAdmina, nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, zesileniMikrofonu, zesilProud, ZESILENI_MAX, ZESILENI_MIN } from "./hlas.js";
 
 afterEach(() => {
   localStorage.clear();
@@ -16,6 +16,16 @@ it("zesílení mikrofonu se ukládá a ořezává na povolený rozsah", () => {
   expect(zesileniMikrofonu()).toBe(ZESILENI_MAX);
   nastavZesileniMikrofonu(0);
   expect(zesileniMikrofonu()).toBe(ZESILENI_MIN);
+});
+
+// Hlasitost hlasu adminů je vlastní podíl, taky jen v prohlížeči.
+it("hlasitost administrátora se ukládá a ořezává na 0–100", () => {
+  expect(hlasitostAdmina()).toBe(VYCHOZI_HLASITOST_ADMINA);
+  nastavHlasitostAdmina(40);
+  expect(localStorage.getItem("hlas.hlasitost-admina")).toBe("40");
+  expect(hlasitostAdmina()).toBe(40);
+  nastavHlasitostAdmina(-5);
+  expect(hlasitostAdmina()).toBe(0);
 });
 
 // Při 100 % se proud nechává být; nad 100 % jde přes zisk a limiter.

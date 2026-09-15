@@ -3,7 +3,7 @@ import { useState, type CSSProperties } from "react";
 import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT, ZVONEK_PO_MINUTACH } from "../../../src/shared/aktivita.js";
 import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
-import { nastavZesileniMikrofonu, VYCHOZI_ZESILENI, ZESILENI_MAX, ZESILENI_MIN } from "../hlas.js";
+import { nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, ZESILENI_MAX, ZESILENI_MIN } from "../hlas.js";
 import { useZamekScrollu } from "../zamekScrollu.js";
 import { hlasitostUdalosti, nastavHlasitost, nastavHlasitostChatu, prehraj } from "../zvuk.js";
 
@@ -14,6 +14,9 @@ interface Props {
   /** Podíl chatu z Master Volume, 0–100 (výchozí 50). */
   hlasitostChatu: number;
   onHlasitostChatu: (procent: number) => void;
+  /** Jen admin: podíl hlasu administrátorů (push-to-talk) z Master Volume, 0–100. */
+  hlasitostAdmina?: number;
+  onHlasitostAdmina?: (procent: number) => void;
   /** Jen admin (push-to-talk): zesílení mikrofonu v procentech, 100–400. */
   zesileniMikrofonu?: number;
   onZesileniMikrofonu?: (procent: number) => void;
@@ -29,11 +32,12 @@ interface Props {
  * se ukládá při každém posunu a hned se zkouší zvonem; lhůta jde po minutě
  * šipkami, meze hlídá i server.
  */
-export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onHlasitostChatu, zesileniMikrofonu, onZesileniMikrofonu, lhutaMinut, onLhuta, onZavrit }: Props) {
+export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onHlasitostChatu, hlasitostAdmina, onHlasitostAdmina, zesileniMikrofonu, onZesileniMikrofonu, lhutaMinut, onLhuta, onZavrit }: Props) {
   useZamekScrollu();
   const [master, setMaster] = useState(hlasitost);
   const [chat, setChat] = useState(hlasitostChatu);
   const [mikrofon, setMikrofon] = useState(zesileniMikrofonu ?? VYCHOZI_ZESILENI);
+  const [admin, setAdmin] = useState(hlasitostAdmina ?? VYCHOZI_HLASITOST_ADMINA);
   const zmenLhutu = (o: number) => {
     if (lhutaMinut === undefined || !onLhuta) return;
     const nova = Math.min(LHUTA_MAX_MINUT, Math.max(LHUTA_MIN_MINUT, lhutaMinut + o));
@@ -78,6 +82,18 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
           }}
           onZkouska={() => prehraj(chatUrl, hlasitostUdalosti(chat, master))}
         />
+        {hlasitostAdmina !== undefined && onHlasitostAdmina ? (
+          <Posuvnik
+            popisek="Hlasitost administrátora"
+            info="Jak nahlas slyšíš hlas ostatních adminů (push-to-talk); podíl z Master Volume. Reproduktor u mikrofonu je umlčí úplně."
+            hodnota={admin}
+            onZmena={(v) => {
+              setAdmin(v);
+              nastavHlasitostAdmina(v);
+              onHlasitostAdmina(v);
+            }}
+          />
+        ) : null}
         {zesileniMikrofonu !== undefined && onZesileniMikrofonu ? (
           <Posuvnik
             popisek="Zesílení mikrofonu"
