@@ -3,6 +3,7 @@ import { useState, type CSSProperties } from "react";
 import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT, ZVONEK_PO_MINUTACH } from "../../../src/shared/aktivita.js";
 import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
+import { nastavZesileniMikrofonu, VYCHOZI_ZESILENI, ZESILENI_MAX, ZESILENI_MIN } from "../hlas.js";
 import { useZamekScrollu } from "../zamekScrollu.js";
 import { hlasitostUdalosti, nastavHlasitost, nastavHlasitostChatu, prehraj } from "../zvuk.js";
 
@@ -13,6 +14,9 @@ interface Props {
   /** Podíl chatu z Master Volume, 0–100 (výchozí 50). */
   hlasitostChatu: number;
   onHlasitostChatu: (procent: number) => void;
+  /** Jen admin (push-to-talk): zesílení mikrofonu v procentech, 100–400. */
+  zesileniMikrofonu?: number;
+  onZesileniMikrofonu?: (procent: number) => void;
   /** Jen admin: lhůta aktivity večera v minutách. */
   lhutaMinut?: number;
   onLhuta?: (minut: number) => void;
@@ -25,10 +29,11 @@ interface Props {
  * se ukládá při každém posunu a hned se zkouší zvonem; lhůta jde po minutě
  * šipkami, meze hlídá i server.
  */
-export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onHlasitostChatu, lhutaMinut, onLhuta, onZavrit }: Props) {
+export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onHlasitostChatu, zesileniMikrofonu, onZesileniMikrofonu, lhutaMinut, onLhuta, onZavrit }: Props) {
   useZamekScrollu();
   const [master, setMaster] = useState(hlasitost);
   const [chat, setChat] = useState(hlasitostChatu);
+  const [mikrofon, setMikrofon] = useState(zesileniMikrofonu ?? VYCHOZI_ZESILENI);
   const zmenLhutu = (o: number) => {
     if (lhutaMinut === undefined || !onLhuta) return;
     const nova = Math.min(LHUTA_MAX_MINUT, Math.max(LHUTA_MIN_MINUT, lhutaMinut + o));
@@ -73,6 +78,21 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
           }}
           onZkouska={() => prehraj(chatUrl, hlasitostUdalosti(chat, master))}
         />
+        {zesileniMikrofonu !== undefined && onZesileniMikrofonu ? (
+          <Posuvnik
+            popisek="Zesílení mikrofonu"
+            info="Jen pro tvůj push-to-talk: 100 % je mikrofon tak, jak ho slyší systém. Vyšší hodnota zesílí tichý mikrofon; přebuzení hlídá limiter."
+            hodnota={mikrofon}
+            min={ZESILENI_MIN}
+            max={ZESILENI_MAX}
+            krok={5}
+            onZmena={(v) => {
+              setMikrofon(v);
+              nastavZesileniMikrofonu(v);
+              onZesileniMikrofonu(v);
+            }}
+          />
+        ) : null}
         {lhutaMinut !== undefined && onLhuta ? (
           <div className="radek-nastaveni" role="group" aria-label="Lhůta aktivity">
             <span>Lhůta aktivity</span>
@@ -124,13 +144,18 @@ interface PosuvnikProps {
   popisek: string;
   hodnota: number;
   onZmena: (procent: number) => void;
-  /** Po puštění (myš, klávesa) se zvuk zkusí. */
-  onZkouska: () => void;
+  /** Po puštění (myš, klávesa) se zvuk zkusí; bez toho se jen posouvá. */
+  onZkouska?: () => void;
   /** Kroužek (i) za popiskem s bublinou. */
   info?: string;
+  /** Rozsah a krok; výchozí 0–100 po jednom procentu. */
+  min?: number;
+  max?: number;
+  krok?: number;
 }
 
-function Posuvnik({ popisek, hodnota, onZmena, onZkouska, info }: PosuvnikProps) {
+function Posuvnik({ popisek, hodnota, onZmena, onZkouska, info, min = 0, max = 100, krok = 1 }: PosuvnikProps) {
+  const podil = ((hodnota - min) / (max - min)) * 100;
   return (
     <label className="radek-nastaveni">
       <span>
@@ -143,20 +168,21 @@ function Posuvnik({ popisek, hodnota, onZmena, onZkouska, info }: PosuvnikProps)
       </span>
       <input
         type="range"
-        min={0}
-        max={100}
+        min={min}
+        max={max}
+        step={krok}
         value={hodnota}
-        style={{ "--podil": `${hodnota}%` } as CSSProperties}
+        style={{ "--podil": `${podil}%` } as CSSProperties}
         aria-label={popisek}
         onChange={(e) => onZmena(Number(e.target.value))}
         onMouseUp={onZkouska}
         onKeyUp={onZkouska}
         onWheel={(e) => {
-          // Kolečko po procentu (uživatel); hodnota se uloží jako při tažení.
+          // Kolečko po kroku (uživatel); hodnota se uloží jako při tažení.
           // Fokus, ať se ukáže rámeček jako při kliknutí.
           e.currentTarget.focus();
           e.preventDefault();
-          onZmena(Math.min(100, Math.max(0, hodnota + (e.deltaY < 0 ? 1 : -1))));
+          onZmena(Math.min(max, Math.max(min, hodnota + (e.deltaY < 0 ? krok : -krok))));
         }}
       />
       <output>{hodnota} %</output>

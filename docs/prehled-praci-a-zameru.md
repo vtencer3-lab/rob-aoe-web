@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 14. 9. 2026 odpoledne, main 1.1.4, dev 1.7.0)
+# Přehled prací a záměrů (stav k 15. 9. 2026, main i dev 1.7.2)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -34,11 +34,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 | | |
 |---|---|
-| `origin/main` | 1.1.4, nasazeno na <https://jouki.cz/aoe> (PR #17, 13. 9. 2026 odpoledne); stav před ním nese značku `v1.1.2`, starší `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.7.0, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.1.4) navíc cinkání chatu s vlastní hlasitostí a super zvonek (§3.45), poslední známé nastavení lobby (§3.46, migrace 025). Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
-| `origin/experimental` | 1.0.0-0.0, `dev` 1.0.0 do něj mergnutý 13. 9. 2026 ráno (`git merge dev` + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — nese jen **pokus s praporcem místo barevného pruhu** (§3.33), čeká na verdikt |
+| `origin/main` | 1.7.2, nasazeno na <https://jouki.cz/aoe> (PR #19, 15. 9. 2026); stav před ním nese značku `v1.7.0`, starší `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
+| `origin/dev` | 1.7.2, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS) |
 | Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 300, databázové 169, frontend 289 — všechny zelené (14. 9. 2026 dopoledne, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 300, databázové 169, frontend 294 — všechny zelené (15. 9. 2026, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
@@ -46,7 +46,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
 PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
 kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) a PR #13 (0.28.3) 9. 9.;
-PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele); PR #15 (1.1.1, globální lhůta); PR #16 (1.1.2, mazání akcí bez výsledku); PR #17 (1.1.4, soumrak jako výchozí pozadí).
+PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele); PR #15 (1.1.1, globální lhůta); PR #16 (1.1.2, mazání akcí bez výsledku); PR #17 (1.1.4, soumrak jako výchozí pozadí); PR #18 (1.7.0, chat: našeptávání, odpovědi, 7TV emoty, taunty; push-to-talk; globální lhůta; poslední nastavení lobby).
 Před releasem se na dosavadní `main` věší značka
 `vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
 [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
@@ -1483,8 +1483,15 @@ ID, server je přibalí) a všichni admini; anonym, divák mimo zápas a mluvč�
 sám ne. Admin si ostatní adminy ztlumí v prohlížeči (`hlas.ztlumit-adminy`);
 hráčům se nic neztlumí. Hlasitost = Master Volume.
 
+**Zesílení mikrofonu (1.7.2, uživatel):** v nastavení posuvník „Zesílení
+mikrofonu“ 100–400 % po pěti (jen admin, klíč `hlas.zesileni-mikrofonu`).
+Nahrávka jde přes Web Audio: zdroj → `GainNode` (procenta/100) → měkký
+limiter (`DynamicsCompressor`, práh −3 dB, poměr 20:1) → výstupní proud,
+ať zesílení nekřupe. Při 100 % nebo bez Web Audia se proud nechává být.
+Hodnota se čte při každém stisku tlačítka, takže změna platí hned.
+
 **Prohlížeč:** `hlas.ts` (přehrávač `spustPrehravacHlasu`, nahrávání
-`vytvorNahravani`), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
+`vytvorNahravani`, zesílení `zesilProud`), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
 puštění kdekoli / ztráta fokusu okna nahrávání zastaví, mikrofon se po
 puštění uvolní, ať v kartě nesvítí), `Chat` prop `onHlas`, `App` přehrávač
 zapíná po přihlášení. Od 1.4.1 je tlačítko **jen v režii** (`Obsluha.onHlas`,
@@ -1604,6 +1611,20 @@ přihlášených, lobby a zápasy, grafika a obrázky, UI vzory, proces
 a nasazení) — psáno pro čtenáře, který projekt nezná, s cestami, funkcemi
 a pastmi. Extrakční skripty pro zvuky ze hry (`pck.py`, `extract_wem.py`)
 a postup jsou nově v repu v `nastroje/zvuky/`, dřív jen ve scratchpadu.
+
+### 3.56 Náhledy map a erby v plné velikosti (1.7.1, 15. 9. 2026)
+
+Uživatel: „všechny obrázky map vyexportuj v maximální velikosti, minimálně
+420×420“ a „i erby v maximální velikosti, kterou hra má“.
+- **Mapy:** ikony ve hře (`wpfg/resources/mapicons`) mají většinou 420×420,
+  pár 490×478 a 315×315; `nastroje/grafika/mapy_nahledy.py` už nezmenšuje
+  na 192, nechává nativní rozměr a menší než 420 zvětší (`VELIKOST_MIN`).
+  Výsledek 195 × 420×420, 5,5 MB (dřív 2,1 MB); mřížka je dál 192 px, obrázky
+  se donačítají po startu jako dřív. Spouštět s `PYTHONUTF8=1` (výpis má „→“).
+- **Erby:** kulaté ikony `civ_techtree/menu_techtree_<slug>.png` má hra jen
+  ve 104×104 (web měl 96); nový `nastroje/grafika/erby.py` je exportuje
+  1:1 (60 erbů, bez custom/disabled/fullrandom/mirror), webp q90. Velké
+  štítové `civ_emblems/*.png` (450×280) jsou jiná grafika, web ji nepoužívá.
 
 ## 4. Externí API — co je ověřené a co ne
 
@@ -1839,7 +1860,9 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
-| 1.7.0 | 14. 9. 15:30 | Zvuk všech 105 tauntů přesně ze hry (`wwise/en/Base.pck`), hraje místo cinknutí i autorovi (§3.52) |
+| 1.7.2 | 15. 9. | Zesílení mikrofonu pro push-to-talk 100–400 % s limiterem (§3.50); **release PR #19** do `main` (značka `v1.7.0`) |
+| 1.7.1 | 15. 9. | Náhledy map 420 px (nativní) a erby 104 px, exportní skript erbů (§3.56) |
+| 1.7.0 | 14. 9. 15:30 | Zvuk všech 105 tauntů přesně ze hry (`wwise/en/Base.pck`), hraje místo cinknutí i autorovi (§3.52); **release PR #18** do `main` (značka `v1.1.4`) |
 | 1.6.5 | 14. 9. 14:30 | Taunty bez zvuku — smích z Wwise nebyl ten ze hry, nahrávky tauntů v instalaci nejsou (§3.52) |
 | 1.6.4 | 14. 9. 12:10 | Náhled odpovědi nad celou zprávou, skok posouvá jen seznam a jen když je třeba, mezera za jménem, bez pozadí při najetí |
 | 1.6.3 | 14. 9. 11:45 | Smích (taunt 11) hraje i autorovi; test zvuku tauntu |

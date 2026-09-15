@@ -24,7 +24,10 @@ HRA = Path(r"C:/Program Files (x86)/Steam/steamapps/common/AoE2DE/resources/_com
 REPO = Path(__file__).resolve().parents[2]
 MAPY_TS = REPO / "src/shared/mapy.ts"
 VYSTUP = REPO / "web/src/assets/mapy"
-VELIKOST = 192
+# Plná velikost (uživatel 15. 9. 2026: „v maximální velikosti, minimálně
+# 420×420“): ikony ve hře mají většinou 420×420, pár 490×478 a pár 315×315 —
+# nic se nezmenšuje, menší než minimum se zvětší.
+VELIKOST_MIN = 420
 
 # Názvy, které se na soubor nedají převést pravidlem (překlepy ve hře apod.).
 RUCNE = {
@@ -96,7 +99,9 @@ def main() -> None:
     celkem = 0
     for id_, soubor in nalezeno.items():
         im = Image.open(soubor).convert("RGBA")
-        im.thumbnail((VELIKOST, VELIKOST), Image.LANCZOS)
+        if min(im.size) < VELIKOST_MIN:
+            k = VELIKOST_MIN / min(im.size)
+            im = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS)
         cil = VYSTUP / f"{id_}.webp"
         im.save(cil, "WEBP", quality=82, method=6)
         celkem += cil.stat().st_size
