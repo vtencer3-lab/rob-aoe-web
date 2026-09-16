@@ -65,7 +65,9 @@ export function vychoziPoPrihlaseni(
       zebricky: zebricek.status === "fulfilled" ? (zebricek.value?.zebricky ?? null) : null,
       weProfil: zebricek.status === "fulfilled" ? (zebricek.value?.profil ?? null) : null,
       weProfilId: zebricek.status === "fulfilled" ? (zebricek.value?.profilId ?? null) : null,
-      avatarUrl: pic.status === "fulfilled" ? pic.value : null,
+      // MUTACE PRO DŮKAZ (úkol 9, recenze): avatarUrl se nezapisuje nikdy, i
+      // když gamerpic uspěje. Dočasné, vrátí se dalším commitem.
+      avatarUrl: null,
       chyba: chyby.length > 0 ? chyby.join("; ") : null,
     };
     // undefined = nepovedlo se zjistit; hodnotu v databázi nesaháme.
