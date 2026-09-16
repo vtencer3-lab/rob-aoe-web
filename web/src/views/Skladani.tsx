@@ -46,7 +46,7 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
     vysledek.push({
       tym,
       soucet: lide.reduce((s, v) => s + (v.hrac.elo1v1 ?? 0), 0),
-      bezEla: lide.filter((v) => v.hrac.elo1v1 === null).map((v) => v.hrac.alias ?? v.hrac.steamName ?? v.hrac.hracId),
+      bezEla: lide.filter((v) => v.hrac.elo1v1 === null).map((v) => v.hrac.alias ?? v.hrac.platformaJmeno ?? v.hrac.hracId),
     });
   }
   return vysledek;
@@ -103,7 +103,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
 
       <ul className="sestava" data-testid="vybrani" ref={seznam}>
         {skladani.vybrani.map(({ vstup: v, hrac }) => {
-          const jmeno = hrac.alias ?? hrac.steamName ?? hrac.hracId;
+          const jmeno = hrac.alias ?? hrac.platformaJmeno ?? hrac.hracId;
           return (
             <li key={v.hracId} className={`radek vybrany barva-${v.barva}`} {...tahani("vybrani", v.hracId)}>
               <span className="uchyt" aria-hidden="true">

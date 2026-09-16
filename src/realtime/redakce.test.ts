@@ -16,8 +16,8 @@ const zapas: ZapasView = {
   spectatorUri: "aoe2de://1/234230181",
   vitez: null,
   ucastnici: [
-    { hracId: HRAC, alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { hracId: "x", alias: "Pepa", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: HRAC, alias: "TenceR", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { hracId: "x", alias: "Pepa", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
@@ -114,8 +114,8 @@ describe("redigujProDivaka", () => {
       joinUri: "aoe2de://0/999999999",
       spectatorUri: "aoe2de://1/999999999",
       ucastnici: [
-        { hracId: CIZI, alias: "Jiny", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-        { hracId: "y", alias: "Franta", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+        { hracId: CIZI, alias: "Jiny", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+        { hracId: "y", alias: "Franta", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
       ],
     };
     const dvaZapasy: AkceStavPayload = { ...stav, zapasy: [zapas, druhyZapas] };

@@ -8,7 +8,7 @@ export interface ClenStrany {
   barva: Barva;
   poradi: number;
   alias?: string | null;
-  steamName?: string | null;
+  platformaJmeno?: string | null;
 }
 
 /**
@@ -23,7 +23,7 @@ export interface Strana {
 }
 
 export function jmenoClena(c: ClenStrany): string {
-  return c.alias ?? c.steamName ?? c.hracId;
+  return c.alias ?? c.platformaJmeno ?? c.hracId;
 }
 
 /** Týmy vzestupně podle čísla, pak sólo hráči v pořadí slotů. */

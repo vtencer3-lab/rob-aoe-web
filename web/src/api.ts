@@ -3,7 +3,7 @@ import type { AkceStavPayload, HledaniLobbyVysledek, SestavaVstup, Vitez } from 
 import { cesta } from "./cesty.js";
 
 export interface Me {
-  hrac: { hracId: string; alias: string | null; steamName: string | null; jeAdmin: boolean } | null;
+  hrac: { hracId: string; alias: string | null; platformaJmeno: string | null; jeAdmin: boolean } | null;
 }
 
 async function json<T>(res: Response): Promise<T> {

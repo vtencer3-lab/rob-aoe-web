@@ -133,7 +133,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     // nenačte znovu. Proto se u nepojmenovaného hráče na obnovu chvíli počká —
     // ale jen chvíli, ať přihlášení nedrží pohledem do nefunkčního Steamu.
     const cerstvy = await getPlayer(hracId);
-    if (cerstvy && !cerstvy.alias && !cerstvy.steamName) {
+    if (cerstvy && !cerstvy.alias && !cerstvy.platformaJmeno) {
       await Promise.race([
         deps.obnovStaty(hracId).catch(() => {}),
         new Promise((hotovo) => setTimeout(hotovo, CEKANI_NA_JMENO_MS)),

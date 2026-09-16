@@ -1,6 +1,6 @@
 import { jeAi } from "../../../src/shared/aiHraci.js";
 import { Potvrzeni } from "./Potvrzeni.js";
-import type { SteamVlastnictvi } from "../../../src/shared/types.js";
+import type { Vlastnictvi } from "../../../src/shared/types.js";
 import ikonaHryUrl from "../assets/aoe2-ikona.png";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { jeAktivni, nabidnoutJsemTu, nabidnoutZvonek, zbyvaMs } from "../../../src/shared/aktivita.js";
@@ -255,10 +255,10 @@ const ZVONEK_CHLADNUTI_MS = 5_000;
 export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni, onSvolat, onSvolatVsechny, lhutaMinut, onZkusebniSvolani }: Props) {
   // Debug: klik na ikonu hry přepne její stav jen v prohlížeči (má → nelze
   // ověřit → nemá), ať jde všechny tři podoby vidět bez cizího účtu.
-  const [prepsaneHry, setPrepsaneHry] = useState<Record<string, SteamVlastnictvi>>({});
-  const stavHry = (h: PlayerView): SteamVlastnictvi | null => prepsaneHry[h.hracId] ?? h.steamHra ?? null;
+  const [prepsaneHry, setPrepsaneHry] = useState<Record<string, Vlastnictvi>>({});
+  const stavHry = (h: PlayerView): Vlastnictvi | null => prepsaneHry[h.hracId] ?? h.hraVlastnictvi ?? null;
   const dalsiStavHry = (h: PlayerView) => {
-    const poradi: SteamVlastnictvi[] = ["ma", "soukromy", "nema"];
+    const poradi: Vlastnictvi[] = ["ma", "soukromy", "nema"];
     const ted = stavHry(h) ?? "nema";
     setPrepsaneHry((p) => ({ ...p, [h.hracId]: poradi[(poradi.indexOf(ted) + 1) % poradi.length]! }));
   };
@@ -373,7 +373,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
       </thead>
       <tbody>
         {radky.map((hrac) => {
-          const jmeno = hrac.alias ?? hrac.steamName ?? hrac.hracId;
+          const jmeno = hrac.alias ?? hrac.platformaJmeno ?? hrac.hracId;
           // Přetahovat jde jen ve vlastním pořadí — v seřazeném seznamu by
           // přesun nebyl vidět.
           // Aktivní se řadí jen mezi aktivními, spící mezi spícími — v seznamu
@@ -613,7 +613,7 @@ function ZnackaHrace({
  * ikonu s vykřičníkem — to je stav, na který má Rob přijít před večerem, ne
  * až v lobby. Dokud Steam nic neřekl (bez klíče, před prvním stažením), nic.
  */
-function OdznakHry({ stav, onKlik }: { stav: SteamVlastnictvi | null; onKlik?: () => void }) {
+function OdznakHry({ stav, onKlik }: { stav: Vlastnictvi | null; onKlik?: () => void }) {
   if (stav === null) return null;
   const popis =
     stav === "ma"

@@ -79,7 +79,7 @@ export function registerDevRoutes(app: FastifyInstance): void {
       const vzor = ZKUSEBNI.find((z) => z.jmeno.toLowerCase() === jmeno.toLowerCase());
       await savePlayerStats(hracId, {
         alias: jmeno,
-        steamName: jmeno,
+        platformaJmeno: jmeno,
         elo1v1: vzor?.elo ?? 1000,
         odehranoHer: vzor?.her ?? 0,
         chyba: null,
@@ -128,7 +128,7 @@ export function registerDevRoutes(app: FastifyInstance): void {
       await upsertPlayer(hracId, null);
       await savePlayerStats(hracId, {
         alias: jmeno,
-        steamName: jmeno,
+        platformaJmeno: jmeno,
         elo1v1: elo,
         eloNejvyssi: elo + 60,
         odehranoHer: her,

@@ -100,7 +100,7 @@ it("/api/me vrátí null bez cookie a hráče s cookie", async () => {
 // na obnovu chvíli počká.
 it("/api/me počká při prvním přihlášení na jméno hráče", async () => {
   const obnovStaty = vi.fn(async (hracId: string) => {
-    await savePlayerStats(hracId, { alias: "Jouki in Rage", steamName: "Jouki in Rage", chyba: null });
+    await savePlayerStats(hracId, { alias: "Jouki in Rage", platformaJmeno: "Jouki in Rage", chyba: null });
   });
   const app = buildServer({ overSteam: async () => true, obnovStaty });
 

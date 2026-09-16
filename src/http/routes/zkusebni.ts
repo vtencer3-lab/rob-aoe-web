@@ -51,7 +51,7 @@ export function registerZkusebniRoutes(app: FastifyInstance): void {
     await upsertPlayer(hracId, null);
     await savePlayerStats(hracId, {
       alias: dalsi.jmeno,
-      steamName: dalsi.jmeno,
+      platformaJmeno: dalsi.jmeno,
       elo1v1: dalsi.elo,
       eloNejvyssi: dalsi.elo + 60,
       odehranoHer: dalsi.her,

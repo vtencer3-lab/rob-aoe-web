@@ -67,7 +67,7 @@ export async function refreshPlayerStats(hracId: string, deps: RefreshDeps): Pro
       odehranoHer: zebricek?.odehranoHer ?? null,
       posledniZapas: zebricek?.posledniZapas ?? null,
       zebricky: zebricek?.zebricky ?? null,
-      steamName: profil?.personaName ?? null,
+      platformaJmeno: profil?.personaName ?? null,
       avatarUrl: profil?.avatarUrl ?? null,
       chyba: chyby.length > 0 ? chyby.join("; ") : null,
     };
@@ -77,7 +77,7 @@ export async function refreshPlayerStats(hracId: string, deps: RefreshDeps): Pro
     // vlastnictví `soukromy`, které vedle ikony hry dostane otazník.
     if (hra !== undefined) {
       staty.steamHodiny = hra.hodiny;
-      staty.steamHra = hra.vlastnictvi;
+      staty.hraVlastnictvi = hra.vlastnictvi;
     }
 
     await deps.uloz(hracId, staty);

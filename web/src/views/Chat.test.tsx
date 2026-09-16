@@ -170,7 +170,7 @@ it("odpověď: pruh nad polem, odeslání s id původní, klik na náhled bliká
 // Tab cykluje, Escape zavře; @ se otevře při psaní a Enter jen zavře.
 it("Tab dokončí emote a cykluje, @ nabídne hráče při psaní", async () => {
   const onOdeslat = vi.fn().mockResolvedValue(undefined);
-  const sHracem = { ...zapas([]), ucastnici: [{ hracId: "a", alias: "Hráč", steamName: null, tym: 1 as const, barva: 3 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null }] };
+  const sHracem = { ...zapas([]), ucastnici: [{ hracId: "a", alias: "Hráč", platformaJmeno: null, tym: 1 as const, barva: 3 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null }] };
   render(<Chat ja="a" onOdeslat={onOdeslat} zapas={sHracem} />);
   await screen.findByRole("textbox", { name: /zpráva do chatu/i });
   const pole = screen.getByRole("textbox", { name: /zpráva do chatu/i }) as HTMLInputElement;

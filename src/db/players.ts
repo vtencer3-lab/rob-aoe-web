@@ -1,4 +1,4 @@
-import type { SteamVlastnictvi } from "../shared/types.js";
+import type { Vlastnictvi } from "../shared/types.js";
 import type { ZebricekRadek } from "../shared/zebricky.js";
 import { getPool } from "./pool.js";
 
@@ -16,7 +16,7 @@ export interface PlayerRow {
   /** Číselný profil ve Worlds Edge; na něm stojí rozpoznání v lobby. */
   weProfilId: number | null;
   alias: string | null;
-  steamName: string | null;
+  platformaJmeno: string | null;
   avatarUrl: string | null;
   country: string | null;
   elo1v1: number | null;
@@ -24,8 +24,8 @@ export interface PlayerRow {
   odehranoHer: number | null;
   posledniZapas: Date | null;
   steamHodiny: number | null;
-  /** Vlastnictví hry podle Steamu; null = ještě nezjištěno. */
-  steamHra: SteamVlastnictvi | null;
+  /** Vlastnictví hry; null = ještě nezjištěno. */
+  hraVlastnictvi: Vlastnictvi | null;
   statyStazenyV: Date | null;
   statyChyba: string | null;
   /** Všechny žebříčky (karta se statistikami); null = ještě nestaženo. */
@@ -35,7 +35,7 @@ export interface PlayerRow {
 
 export interface PlayerStatsUpdate {
   alias?: string | null;
-  steamName?: string | null;
+  platformaJmeno?: string | null;
   avatarUrl?: string | null;
   country?: string | null;
   elo1v1?: number | null;
@@ -43,7 +43,7 @@ export interface PlayerStatsUpdate {
   odehranoHer?: number | null;
   posledniZapas?: Date | null;
   steamHodiny?: number | null;
-  steamHra?: SteamVlastnictvi | null;
+  hraVlastnictvi?: Vlastnictvi | null;
   zebricky?: ZebricekRadek[] | null;
   chyba: string | null;
 }
@@ -60,7 +60,7 @@ export const PLAYER_SLOUPEC_NAZVY = [
   "we_profil",
   "we_profil_id",
   "alias",
-  "steam_name",
+  "platforma_jmeno",
   "avatar_url",
   "country",
   "elo_1v1",
@@ -68,7 +68,7 @@ export const PLAYER_SLOUPEC_NAZVY = [
   "odehrano_her",
   "posledni_zapas",
   "steam_hodiny",
-  "steam_hra",
+  "hra_vlastnictvi",
   "staty_stazeny_v",
   "staty_chyba",
   "zebricky",
@@ -86,7 +86,7 @@ export interface DbRow {
   we_profil: string | null;
   we_profil_id: number | null;
   alias: string | null;
-  steam_name: string | null;
+  platforma_jmeno: string | null;
   avatar_url: string | null;
   country: string | null;
   elo_1v1: number | null;
@@ -94,7 +94,7 @@ export interface DbRow {
   odehrano_her: number | null;
   posledni_zapas: Date | null;
   steam_hodiny: number | null;
-  steam_hra: SteamVlastnictvi | null;
+  hra_vlastnictvi: Vlastnictvi | null;
   staty_stazeny_v: Date | null;
   staty_chyba: string | null;
   zebricky: ZebricekRadek[] | null;
@@ -111,7 +111,7 @@ export function mapuj(row: DbRow): PlayerRow {
     weProfil: row.we_profil,
     weProfilId: row.we_profil_id,
     alias: row.alias,
-    steamName: row.steam_name,
+    platformaJmeno: row.platforma_jmeno,
     avatarUrl: row.avatar_url,
     country: row.country,
     elo1v1: row.elo_1v1,
@@ -119,7 +119,7 @@ export function mapuj(row: DbRow): PlayerRow {
     odehranoHer: row.odehrano_her,
     posledniZapas: row.posledni_zapas,
     steamHodiny: row.steam_hodiny,
-    steamHra: row.steam_hra,
+    hraVlastnictvi: row.hra_vlastnictvi,
     statyStazenyV: row.staty_stazeny_v,
     statyChyba: row.staty_chyba,
     zebricky: Array.isArray(row.zebricky) ? row.zebricky : null,
@@ -161,7 +161,7 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
   await getPool().query(
     `UPDATE player SET
        alias           = COALESCE($2, alias),
-       steam_name      = COALESCE($3, steam_name),
+       platforma_jmeno = COALESCE($3, platforma_jmeno),
        avatar_url      = COALESCE($4, avatar_url),
        country         = COALESCE($5, country),
        elo_1v1         = COALESCE($6, elo_1v1),
@@ -169,7 +169,7 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
        odehrano_her    = COALESCE($8, odehrano_her),
        posledni_zapas  = COALESCE($9, posledni_zapas),
        steam_hodiny    = CASE WHEN $10::boolean THEN $11::integer ELSE steam_hodiny END,
-       steam_hra       = CASE WHEN $14::boolean THEN $15::text ELSE steam_hra END,
+       hra_vlastnictvi = CASE WHEN $14::boolean THEN $15::text ELSE hra_vlastnictvi END,
        staty_stazeny_v = now(),
        staty_chyba     = $12,
        zebricky        = COALESCE($13::jsonb, zebricky)
@@ -177,7 +177,7 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
     [
       hracId,
       staty.alias ?? null,
-      staty.steamName ?? null,
+      staty.platformaJmeno ?? null,
       staty.avatarUrl ?? null,
       staty.country ?? null,
       staty.elo1v1 ?? null,
@@ -188,8 +188,8 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
       staty.steamHodiny ?? null,
       staty.chyba,
       staty.zebricky ? JSON.stringify(staty.zebricky) : null,
-      "steamHra" in staty,
-      staty.steamHra ?? null,
+      "hraVlastnictvi" in staty,
+      staty.hraVlastnictvi ?? null,
     ],
   );
 }

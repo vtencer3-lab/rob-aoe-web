@@ -1,4 +1,4 @@
-import type { SteamVlastnictvi } from "../shared/types.js";
+import type { Vlastnictvi } from "../shared/types.js";
 
 export interface SteamProfile {
   personaName: string;
@@ -8,7 +8,7 @@ export interface SteamProfile {
 /** Jedna odpověď GetOwnedGames říká obojí: kolik hodin a jestli hru vůbec má. */
 export interface SteamHra {
   hodiny: number | null;
-  vlastnictvi: SteamVlastnictvi;
+  vlastnictvi: Vlastnictvi;
 }
 
 const AOE2_APPID = 813780;

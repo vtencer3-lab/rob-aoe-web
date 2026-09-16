@@ -50,7 +50,7 @@ it("uloží statistiky včetně času stažení", async () => {
     eloNejvyssi: 1901,
     odehranoHer: 512,
     steamHodiny: 1230,
-    steamHra: "ma",
+    hraVlastnictvi: "ma",
     chyba: null,
   });
 
@@ -58,7 +58,7 @@ it("uloží statistiky včetně času stažení", async () => {
   expect(hrac?.alias).toBe("TenceR");
   expect(hrac?.elo1v1).toBe(1847);
   expect(hrac?.steamHodiny).toBe(1230);
-  expect(hrac?.steamHra).toBe("ma");
+  expect(hrac?.hraVlastnictvi).toBe("ma");
   expect(hrac?.statyStazenyV).toBeInstanceOf(Date);
   expect(hrac?.statyChyba).toBeNull();
 });

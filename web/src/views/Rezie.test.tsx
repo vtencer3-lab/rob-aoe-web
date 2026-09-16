@@ -15,10 +15,10 @@ const zapas: ZapasView = {
   spectatorUri: "aoe2de://1/234230181",
   vitez: null,
   ucastnici: [
-    { hracId: "a", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: "2026-09-03T12:00:00.000Z" },
-    { hracId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: "2026-09-03T12:01:00.000Z" },
-    { hracId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { hracId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "a", alias: "TenceR", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: "2026-09-03T12:00:00.000Z" },
+    { hracId: "b", alias: "Pepa_CZ", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: "2026-09-03T12:01:00.000Z" },
+    { hracId: "c", alias: "Marek", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "d", alias: "Lukas", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 

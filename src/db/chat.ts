@@ -12,7 +12,7 @@ export interface ZpravaRow {
   zapasId: number;
   hracId: string;
   alias: string | null;
-  steamName: string | null;
+  platformaJmeno: string | null;
   jeAdmin: boolean;
   /** Tým a barva z účasti v zápase; admin, který v něm nehraje, je nemá. */
   tym: Tym | null;
@@ -82,7 +82,7 @@ export async function listZpravy(akceId: number, limit = ZPRAV_NA_ZAPAS): Promis
     zapas_id: number;
     hrac_id: string;
     alias: string | null;
-    steam_name: string | null;
+    platforma_jmeno: string | null;
     je_admin: boolean;
     tym: number | null;
     barva: number | null;
@@ -92,14 +92,14 @@ export async function listZpravy(akceId: number, limit = ZPRAV_NA_ZAPAS): Promis
     o_id: number | null;
     o_text: string | null;
     o_alias: string | null;
-    o_steam_name: string | null;
+    o_platforma_jmeno: string | null;
     o_hrac_id: string | null;
   }>(
-    `SELECT id, zapas_id, hrac_id, alias, steam_name, je_admin, tym, barva, text, poslano, upraveno_v,
-            o_id, o_text, o_alias, o_steam_name, o_hrac_id FROM (
+    `SELECT id, zapas_id, hrac_id, alias, platforma_jmeno, je_admin, tym, barva, text, poslano, upraveno_v,
+            o_id, o_text, o_alias, o_platforma_jmeno, o_hrac_id FROM (
        SELECT z.id, z.zapas_id, z.hrac_id, z.text, z.poslano, z.upraveno_v,
-              p.alias, p.steam_name, p.je_admin, u.tym, u.barva,
-              o.id AS o_id, o.text AS o_text, op.alias AS o_alias, op.steam_name AS o_steam_name, o.hrac_id AS o_hrac_id,
+              p.alias, p.platforma_jmeno, p.je_admin, u.tym, u.barva,
+              o.id AS o_id, o.text AS o_text, op.alias AS o_alias, op.platforma_jmeno AS o_platforma_jmeno, o.hrac_id AS o_hrac_id,
               row_number() OVER (PARTITION BY z.zapas_id ORDER BY z.id DESC) AS n
          FROM zprava z
          JOIN zapas za ON za.id = z.zapas_id
@@ -119,8 +119,8 @@ export async function listZpravy(akceId: number, limit = ZPRAV_NA_ZAPAS): Promis
       zapasId: r.zapas_id,
       hracId: r.hrac_id,
       alias: r.alias,
-      steamName: r.steam_name,
-      odpovedNa: r.o_id === null || r.o_text === null ? null : { id: r.o_id, jmeno: r.o_alias ?? r.o_steam_name ?? r.o_hrac_id ?? "?", text: r.o_text },
+      platformaJmeno: r.platforma_jmeno,
+      odpovedNa: r.o_id === null || r.o_text === null ? null : { id: r.o_id, jmeno: r.o_alias ?? r.o_platforma_jmeno ?? r.o_hrac_id ?? "?", text: r.o_text },
       jeAdmin: r.je_admin,
       tym: r.tym as Tym | null,
       barva: r.barva as Barva | null,

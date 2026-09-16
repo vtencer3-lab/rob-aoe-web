@@ -5,7 +5,7 @@ import { jmenoHrace, mojeZapasy, mujUcastnik, souperi, spoluhraci, verejneZapasy
 const u = (hracId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikView => ({
   hracId,
   alias: hracId.toUpperCase(),
-  steamName: null,
+  platformaJmeno: null,
   tym,
   barva,
   civ: null,
@@ -67,10 +67,10 @@ describe("mojeZapasy", () => {
 });
 
 describe("jmenoHrace", () => {
-  const kdo = (alias: string | null, steamName: string | null): UcastnikView => ({
+  const kdo = (alias: string | null, platformaJmeno: string | null): UcastnikView => ({
     hracId: "76561199091641101",
     alias,
-    steamName,
+    platformaJmeno,
     tym: 1,
     barva: 1,
     civ: null,
@@ -108,7 +108,7 @@ describe("verejneZapasy", () => {
     ucastnici: hracIds.map((hracId, i) => ({
       hracId,
       alias: hracId,
-      steamName: null,
+      platformaJmeno: null,
       tym: (i % 2 === 0 ? 1 : 2) as 1 | 2,
       barva: (i % 2 === 0 ? 1 : 2) as 1 | 2,
       civ: null,

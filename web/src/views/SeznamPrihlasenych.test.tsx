@@ -7,7 +7,7 @@ import { formatOdpoctu, podleAktivity, SeznamPrihlasenych } from "./SeznamPrihla
 const hrac = (prepis: Partial<PlayerView> = {}): PlayerView => ({
   hracId: "76561198000000001",
   alias: "TenceR",
-  steamName: "Vlasta",
+  platformaJmeno: "Vlasta",
   avatarUrl: null,
   country: "cz",
   elo1v1: 1847,
@@ -93,9 +93,9 @@ it("ukazuje vlastnictví hry ze Steamu vedle jména", () => {
   render(
     <SeznamPrihlasenych
       prihlaseni={[
-        hrac({ hracId: "a", alias: "Ma", steamHra: "ma" }),
-        hrac({ hracId: "b", alias: "Tajny", steamHra: "soukromy" }),
-        hrac({ hracId: "c", alias: "Nema", steamHra: "nema" }),
+        hrac({ hracId: "a", alias: "Ma", hraVlastnictvi: "ma" }),
+        hrac({ hracId: "b", alias: "Tajny", hraVlastnictvi: "soukromy" }),
+        hrac({ hracId: "c", alias: "Nema", hraVlastnictvi: "nema" }),
         hrac({ hracId: "d", alias: "Nevime" }),
       ]}
     />,
@@ -343,7 +343,7 @@ it("meč u usnulého hráče říká v bublině, jak dlouho je neaktivní", asyn
 it("hráče bez hry vybere až po potvrzení", async () => {
   const { useSkladani } = await import("../skladani.js");
   const { renderHook } = await import("@testing-library/react");
-  const hraci = [hrac({ hracId: "a", alias: "Nema", steamHra: "nema" })];
+  const hraci = [hrac({ hracId: "a", alias: "Nema", hraVlastnictvi: "nema" })];
   const { result } = renderHook(() => useSkladani(hraci));
   const vyber = vi.spyOn(result.current, "vyber");
   render(<SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} />);
@@ -359,7 +359,7 @@ it("hráče bez hry vybere až po potvrzení", async () => {
 
 // V debug módu klik na ikonu hry cykluje stavy, ať jdou všechny vidět.
 it("v debug módu klik na ikonu hry přepíná má → nelze ověřit → nemá", () => {
-  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "a", alias: "Ma", steamHra: "ma" })]} ladeni />);
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "a", alias: "Ma", hraVlastnictvi: "ma" })]} ladeni />);
   const ikona = () => screen.getByTestId("odznak-hry");
   expect(ikona()).toHaveClass("ma");
   fireEvent.click(ikona());

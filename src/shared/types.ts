@@ -50,23 +50,24 @@ export interface Seat extends SestavaVstup {
 }
 
 /**
- * Co Steam řekl o vlastnictví hry: `ma` (je v knihovně), `nema` (veřejný
- * profil, hra v knihovně chybí), `soukromy` (knihovna je skrytá, nejde ověřit).
+ * Jestli hráč hru na svém účtu má: `ma`, `nema` (účet je vidět, hra tam není),
+ * `soukromy` (knihovna na Steamu nebo herní historie na Xboxu je skrytá,
+ * takže to ověřit nejde).
  */
-export type SteamVlastnictvi = "ma" | "nema" | "soukromy";
+export type Vlastnictvi = "ma" | "nema" | "soukromy";
 
 export interface PlayerView {
   hracId: string;
   alias: string | null;
-  steamName: string | null;
+  platformaJmeno: string | null;
   avatarUrl: string | null;
   country: string | null;
   elo1v1: number | null;
   eloNejvyssi: number | null;
   odehranoHer: number | null;
   steamHodiny: number | null;
-  /** Vlastnictví hry podle Steamu; null = ještě nezjištěno (nebo bez klíče). */
-  steamHra?: SteamVlastnictvi | null;
+  /** Vlastnictví hry; null = ještě nezjištěno (nebo bez klíče k dané platformě). */
+  hraVlastnictvi?: Vlastnictvi | null;
   posledniZapas: string | null;
   statyStazenyV: string | null;
   statyChyba: string | null;
@@ -109,7 +110,7 @@ export interface AkceView {
 export interface UcastnikView {
   hracId: string;
   alias: string | null;
-  steamName: string | null;
+  platformaJmeno: string | null;
   tym: Tym;
   barva: Barva;
   /** Předepsaná civilizace (herní id), null = libovolná. */

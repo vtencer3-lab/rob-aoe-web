@@ -347,7 +347,7 @@ function TlacitkoViteze({
   onVysledek: (zapasId: number, vitez: Vitez) => void;
 }) {
   const barva = strana.clenove[0]?.barva ?? 1;
-  const hraci = strana.clenove.length > 1 ? strana.clenove.map((c) => jmenoHrace({ hracId: c.hracId, alias: c.alias ?? null, steamName: c.steamName ?? null })) : [];
+  const hraci = strana.clenove.length > 1 ? strana.clenove.map((c) => jmenoHrace({ hracId: c.hracId, alias: c.alias ?? null, platformaJmeno: c.platformaJmeno ?? null })) : [];
   return (
     <button className={`vysledek barva-${barva}`} onClick={() => onVysledek(zapas.id, strana.vitez)}>
       <span>{titulekViteze(strana)}</span>

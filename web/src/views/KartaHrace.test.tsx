@@ -16,10 +16,10 @@ const zapas: ZapasView = {
   spectatorUri: null,
   vitez: null,
   ucastnici: [
-    { hracId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { hracId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { hracId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, elo1v1: 1136, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { hracId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "ja", alias: "TenceR", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "b", alias: "Pepa_CZ", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { hracId: "c", alias: "Marek", platformaJmeno: null, tym: 2, barva: 2, civ: null, elo1v1: 1136, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "d", alias: "Lukas", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
@@ -113,16 +113,16 @@ it("kliknutí na připojení se ohlásí serveru", async () => {
   expect(onPripojit).toHaveBeenCalledWith(1);
 });
 
-// Druhý Steam účet bez hodnocené hry alias nemá. Bez fallbacku na steamName
+// Druhý Steam účet bez hodnocené hry alias nemá. Bez fallbacku na platformaJmeno
 // stojí v „Proti vám“ syrové 64bitové číslo.
 it("spoluhráče i soupeře bez aliasu pojmenuje jménem ze Steamu", () => {
   const bezAliasu: ZapasView = {
     ...zapas,
     ucastnici: [
-      { hracId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
-      { hracId: "76561199091641101", alias: null, steamName: "TibbarZmr", tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { hracId: "c", alias: null, steamName: "Marecek", tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
-      { hracId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { hracId: "ja", alias: "TenceR", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { hracId: "76561199091641101", alias: null, platformaJmeno: "TibbarZmr", tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { hracId: "c", alias: null, platformaJmeno: "Marecek", tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { hracId: "d", alias: "Lukas", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
   render(<KartaHrace zapas={bezAliasu} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);

@@ -22,7 +22,11 @@ import type { Barva, Tym } from "../shared/types.js";
  */
 export interface LobbyInzerat extends PoznatekLobby {
   nazev: string;
-  /** Steam ID všech, kdo v lobby sedí (včetně hosta). Totéž co sloty, jen jména. */
+  /**
+   * ID všech, kdo v lobby sedí (včetně hosta) — zatím jen steam_id, protože
+   * `avatars` endpointu nese jen jména s prefixem `/steam/`. Totéž co sloty,
+   * jen jména.
+   */
   clenoveHraci: string[];
 }
 

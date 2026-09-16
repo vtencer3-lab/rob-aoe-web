@@ -6,7 +6,7 @@ import { useSkladani } from "./skladani.js";
 const hrac = (hracId: string): PlayerView => ({
   hracId,
   alias: hracId.toUpperCase(),
-  steamName: null,
+  platformaJmeno: null,
   avatarUrl: null,
   country: null,
   elo1v1: null,

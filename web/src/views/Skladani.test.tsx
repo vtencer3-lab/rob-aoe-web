@@ -9,7 +9,7 @@ function hrac(hracId: string, alias: string, elo: number | null = null): PlayerV
   return {
     hracId,
     alias,
-    steamName: null,
+    platformaJmeno: null,
     avatarUrl: null,
     country: null,
     elo1v1: elo,

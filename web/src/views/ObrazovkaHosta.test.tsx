@@ -26,10 +26,10 @@ const zaklad: ZapasView = {
   spectatorUri: null,
   vitez: null,
   ucastnici: [
-    { hracId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { hracId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { hracId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { hracId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "ja", alias: "TenceR", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { hracId: "b", alias: "Pepa_CZ", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "c", alias: "Marek", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "d", alias: "Lukas", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
@@ -57,8 +57,8 @@ it("pruh nese barvu toho, kdo se dívá", () => {
   const cerveny = {
     ...zaklad,
     ucastnici: [
-      { hracId: "ja", alias: "TenceR", steamName: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { hracId: "b", alias: "Pepa_CZ", steamName: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { hracId: "ja", alias: "TenceR", platformaJmeno: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { hracId: "b", alias: "Pepa_CZ", platformaJmeno: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
   render(<ObrazovkaHosta zapas={cerveny} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);

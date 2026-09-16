@@ -33,7 +33,7 @@ export function registerHlasRoutes(app: FastifyInstance): void {
     const udalost: HlasUdalost = {
       zapasId,
       kdo,
-      jmeno: mluvci?.alias ?? mluvci?.steamName ?? "Admin",
+      jmeno: mluvci?.alias ?? mluvci?.platformaJmeno ?? "Admin",
       sezeni,
       poradi,
       konec,

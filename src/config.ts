@@ -58,9 +58,9 @@ export const config = {
   // Obojí se čte při každém přístupu, ne jednou při načtení modulu: startovní
   // kontrola i přihlašovací routa se tím dají otestovat podstrčeným prostředím.
   /**
-   * Steam ID účtů s režií, čárkou oddělený seznam (`id1,id2`). Dva admini
-   * jsou normální stav: Rob a ten, kdo mu web spravuje. Prázdný seznam =
-   * proměnná chybí.
+   * ID účtů s režií (hracId, dnes vždy Steam ID), čárkou oddělený seznam
+   * (`id1,id2`). Dva admini jsou normální stav: Rob a ten, kdo mu web
+   * spravuje. Prázdný seznam = proměnná chybí.
    */
   get adminHracIds(): string[] {
     return (process.env["ADMIN_STEAM_ID"] ?? "")

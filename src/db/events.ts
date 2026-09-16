@@ -332,7 +332,7 @@ export async function listSignups(akceId: number): Promise<PrihlasenyRow[]> {
   const sloupce = PLAYER_SLOUPEC_NAZVY.map((sloupec) => `p.${sloupec}`).join(", ");
   const { rows } = await getPool().query<DbRow & { aktivni_do: Date; svolan_v: Date | null; svolal_jmeno: string | null }>(
     `SELECT ${sloupce}, pr.aktivni_do, pr.svolan_v,
-            COALESCE(a.alias, a.steam_name, a.hrac_id) AS svolal_jmeno
+            COALESCE(a.alias, a.platforma_jmeno, a.hrac_id) AS svolal_jmeno
        FROM prihlaska pr
        JOIN player p ON p.hrac_id = pr.hrac_id
        LEFT JOIN player a ON a.hrac_id = pr.svolal_hrac_id

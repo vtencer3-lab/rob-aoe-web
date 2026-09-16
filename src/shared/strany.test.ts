@@ -13,7 +13,7 @@ import {
 import type { Barva, Tym } from "./types.js";
 
 function c(hracId: string, tym: Tym, barva: Barva, poradi: number, alias: string | null = null): ClenStrany {
-  return { hracId, tym, barva, poradi, alias: alias ?? hracId.toUpperCase(), steamName: null };
+  return { hracId, tym, barva, poradi, alias: alias ?? hracId.toUpperCase(), platformaJmeno: null };
 }
 
 describe("strany", () => {

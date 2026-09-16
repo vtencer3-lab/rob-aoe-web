@@ -455,11 +455,11 @@ interface UcastnikProKontrolu {
   /** Předepsaná civilizace; null nebo chybí = libovolná, nekontroluje se. */
   civ?: number | null;
   alias?: string | null;
-  steamName?: string | null;
+  platformaJmeno?: string | null;
 }
 
 function jmeno(u: UcastnikProKontrolu): string {
-  return u.alias ?? u.steamName ?? u.hracId;
+  return u.alias ?? u.platformaJmeno ?? u.hracId;
 }
 
 function popisTymu(t: Tym | "?" | null): string {

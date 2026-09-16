@@ -5,11 +5,11 @@ export { sdiliCivilizaci, popisFormatu, strany, titulekViteze, vitezVeVete } fro
 /**
  * Jméno, které se hráči ukáže. Alias je herní přezdívka ze žebříčku Worlds
  * Edge, jenže ten ho vydá jen účtu s hodnocenou hrou — nováček a druhý účet
- * ho nemají. Bez druhého kroku by v sestavě zápasu svítilo syrové 64bitové
- * Steam ID, přestože soupiska hned vedle jméno zná ze Steamu.
+ * ho nemají. Bez druhého kroku by v sestavě zápasu svítilo syrové ID účtu
+ * (Steam ID nebo Xbox XUID), přestože soupiska hned vedle jméno z platformy zná.
  */
-export function jmenoHrace(u: Pick<UcastnikView, "hracId" | "alias" | "steamName">): string {
-  return u.alias ?? u.steamName ?? u.hracId;
+export function jmenoHrace(u: Pick<UcastnikView, "hracId" | "alias" | "platformaJmeno">): string {
+  return u.alias ?? u.platformaJmeno ?? u.hracId;
 }
 
 export function mujUcastnik(zapas: ZapasView, hracId: string): UcastnikView | null {

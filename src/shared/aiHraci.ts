@@ -36,7 +36,7 @@ export function jeAi(hracId: string): boolean {
 export const AI_HRACI: readonly PlayerView[] = Array.from({ length: POCET_AI }, (_, i) => ({
   hracId: aiId(i + 1),
   alias: JMENO_AI,
-  steamName: JMENO_AI,
+  platformaJmeno: JMENO_AI,
   avatarUrl: null,
   country: null,
   elo1v1: null,

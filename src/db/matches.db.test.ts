@@ -225,11 +225,11 @@ it("neznámý zápas vrátí null", async () => {
 
 // Účet bez jediné hodnocené hry nemá ve Worlds Edge alias, takže by v sestavě
 // zápasu zbylo syrové 64bitové Steam ID — soupiska přitom vedle ukazuje jméno
-// ze Steamu. Sestava proto musí steamName nést taky.
-it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříčku", async () => {
+// ze Steamu. Sestava proto musí platformaJmeno nést taky.
+it("účastník nese platformaJmeno, aby se dal pojmenovat i bez aliasu ze žebříčku", async () => {
   const bezAliasu = "76561199091641101";
   await upsertPlayer(bezAliasu, false);
-  await savePlayerStats(bezAliasu, { alias: null, steamName: "TibbarZmr", chyba: null });
+  await savePlayerStats(bezAliasu, { alias: null, platformaJmeno: "TibbarZmr", chyba: null });
   await signUp(akceId, bezAliasu);
 
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[0]!, bezAliasu]));
@@ -237,7 +237,7 @@ it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříč
   const host = zaznam!.ucastnici.find((u) => u.hracId === bezAliasu)!;
 
   expect(host.alias).toBeNull();
-  expect(host.steamName).toBe("TibbarZmr");
+  expect(host.platformaJmeno).toBe("TibbarZmr");
   expect(zapas.poradi).toBe(1);
 });
 
@@ -247,7 +247,7 @@ it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříč
 // čísla a nešlo by zjistit, na jaké mapě se hrál.
 
 it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
-  await savePlayerStats(HRACI[0]!, { alias: "A", steamName: "A", elo1v1: 1234, eloNejvyssi: 1300, odehranoHer: 10, chyba: null });
+  await savePlayerStats(HRACI[0]!, { alias: "A", platformaJmeno: "A", elo1v1: 1234, eloNejvyssi: 1300, odehranoHer: 10, chyba: null });
   await setNastaveniLobby(akceId, { location: "Arabia", population: 200 });
 
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));

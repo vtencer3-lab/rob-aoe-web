@@ -35,7 +35,7 @@ export class UcastnikOdhlasenChyba extends Error {}
 export interface UcastnikRow {
   hracId: string;
   alias: string | null;
-  steamName: string | null;
+  platformaJmeno: string | null;
   tym: Tym;
   barva: Barva;
   civ: number | null;
@@ -112,7 +112,7 @@ async function pripravSedadla(client: PoolClient, akceId: number, sestava: Sesta
     // AI existovalo v celém repu jen jednou (shared/aiHraci.ts).
     if (jeAi(hracId)) {
       await client.query(
-        `INSERT INTO player (hrac_id, alias, steam_name) VALUES ($1, $2, $2)
+        `INSERT INTO player (hrac_id, alias, platforma_jmeno) VALUES ($1, $2, $2)
            ON CONFLICT (hrac_id) DO NOTHING`,
         [hracId, JMENO_AI],
       );
@@ -232,7 +232,7 @@ export async function setNazevLobby(zapasId: number, nazev: string): Promise<voi
 
 async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
   const { rows } = await getPool().query(
-    `SELECT u.hrac_id, p.alias, p.steam_name, p.elo_1v1, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
+    `SELECT u.hrac_id, p.alias, p.platforma_jmeno, p.elo_1v1, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
        FROM ucastnik u JOIN player p ON p.hrac_id = u.hrac_id
       WHERE u.zapas_id = $1
       ORDER BY u.poradi, u.hrac_id`,
@@ -243,7 +243,7 @@ async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
     return {
       hracId: row["hrac_id"] as string,
       alias: row["alias"] as string | null,
-      steamName: row["steam_name"] as string | null,
+      platformaJmeno: row["platforma_jmeno"] as string | null,
       tym: row["tym"] as Tym,
       barva: row["barva"] as Barva,
       civ: (row["civ"] as number | null) ?? null,
