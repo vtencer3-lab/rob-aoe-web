@@ -2,6 +2,12 @@
 
 *Stav k 7. 9. 2026. Zdroje jsou uvedené na konci; co je ověřené naživo, je tak označené.*
 
+> **Aktualizace 16. 9. 2026:** rozpoznání hráčů v lobby dnes běží přes
+> `profile_id` / `player.we_profil_id`, ne přes Steam ID — viz
+> `docs/prehled-praci-a-zameru.md` §3.57. Zbytek dokumentu popisuje stav
+> a implementaci k 7.–9. 9. 2026, kdy web uměl jen Steam přihlášení; klíče
+> nastavení lobby v §6 tím nejsou dotčené a platí dál.
+
 ## Odpověď zkrátka
 
 **Ano, jde to.** Oficiální backend hry (Worlds Edge, stejný, ze kterého web už
@@ -146,8 +152,12 @@ hráče ne.
   Steam ID hosta, název je jen kontrola.
 - **Host založil lobby dřív, než Rob složil zápas.** Nevadí, seznam ji
   obsahuje, dokud je otevřená. První cyklus po složení ji najde.
-- **Verze z Microsoft Store.** Steam ID by v `avatars` bylo `/xboxlive/…`;
-  hráč bez Steamu se ale na web ani nepřihlásí, takže totéž omezení jako dnes.
+- **Verze z Microsoft Store.** V `avatars` je Xbox profil `/xboxlive/<hash>`,
+  ne `/steam/<steamId64>` — v době tohohle dokumentu (7. 9. 2026) se hráč bez
+  Steamu na web ani nepřihlásil, takže to nevadilo. Od 16. 9. 2026 web umí
+  i přihlášení Microsoft účtem a rozpoznání v seznamu lobby přešlo z tohohle
+  Steam ID na `profile_id` (viz `docs/prehled-praci-a-zameru.md` §3.57) —
+  `/xboxlive/…` hráče už rozpozná stejně jako `/steam/…`.
 
 ## 5. Co se tím získá navíc
 

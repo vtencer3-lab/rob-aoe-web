@@ -297,8 +297,9 @@ Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 | `BASE_PATH` (build) | `/aoe/` | `/aoe/dev/` | `/aoe/experimental/` |
 | `HOST` | `0.0.0.0` | `0.0.0.0` | `0.0.0.0` |
 | `PORT` | `3000` | `3000` | `3000` |
-| `ADMIN_STEAM_ID` | seznam Steam ID s režií oddělený čárkou (Rob + správce) | totéž | totéž |
+| `ADMIN_STEAM_ID` | seznam `hrac_id` s režií oddělený čárkou (Rob + správce); bere Steam ID i `xbox:<xuid>`, jméno proměnné zůstalo kvůli nasazení (viz `docs/prehled-praci-a-zameru.md` §3.57) | totéž | totéž |
 | `STEAM_API_KEY` | volitelné | volitelné | volitelné |
+| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | **nenastaveno** — přihlášení Microsoft účtem tu zatím vypnuté | registrace z entra.microsoft.com — jediná aplikace, která je má | **nenastaveno** |
 | `LOG_LEVEL` | `info` | `info` | `info` |
 | `DEV_PRISTUP` | nenastavovat | nenastavovat | nenastavovat |
 | `ZKUSEBNI_HRACI` | nenastavovat | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` |
