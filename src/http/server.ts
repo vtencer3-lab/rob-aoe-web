@@ -95,6 +95,8 @@ export function buildServer(castDeps: Partial<ServerDeps> = {}): FastifyInstance
   // opravdu ten build, který měl.
   app.get("/api/health", async () => ({ ok: true, verze: VERZE }));
   registerAuthRoutes(app, deps);
+  // Bez registrace v Entra by routy jen vracely chyby; ať radši nejsou.
+  if (config.maMicrosoft) registerMicrosoftRoutes(app, deps);
   registerEventRoutes(app);
   registerMatchRoutes(app, deps);
   registerStreamRoutes(app);
