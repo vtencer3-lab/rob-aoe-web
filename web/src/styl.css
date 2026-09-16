@@ -693,7 +693,23 @@ h2.nadpis-akce::after {
 .prelobby-dvojice { display: flex; gap: 1.4rem; }
 .prelobby-okno label.zaskrtavaci { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
 /* Okno volby platformy: dvě cesty vedle sebe, na úzké obrazovce pod sebe. */
+/* Přihlašovací okno je proti ostatním modálům širší: nese dva erby vedle sebe,
+   ne formulář. Šířku přebíjí jen ono — `.prelobby-okno` sdílí sedm dalších oken. */
+.prihlaseni-okno { width: min(54rem, 100%); }
+.prihlaseni-okno h1 { margin: 0; text-align: center; font-size: 1.9rem; }
+/* Táž ozdoba, jakou má prázdný stav pod nadpisem; okno tím patří ke zbytku webu. */
+.prihlaseni-okno h1::after {
+  content: "";
+  display: block;
+  width: 21rem;
+  max-width: 100%;
+  height: 1.37rem;
+  margin: 0.9rem auto 0;
+  background: url(./assets/ui/oddelovac.webp) center / 100% 100% no-repeat;
+}
+
 .prihlaseni-volby {
+  margin: 50px;
   display: flex;
   /* Vedle sebe, nikdy pod sebou: štít se radši zmenší, než aby se dvojice
      rozpadla na sloupec. Proto `nowrap` a smrštitelný základ níž.
@@ -701,12 +717,13 @@ h2.nadpis-akce::after {
      obrazovku, ne modál, takže na širokém displeji nafoukla štíty přes jeho
      šířku a zalomila je. */
   flex-wrap: nowrap;
-  gap: 8%;
+  gap: clamp(1.5rem, 6vw, 12rem);
   justify-content: center;
   align-items: center;
 }
 .prihlaseni-volby a {
   display: flex;
+  position: relative;
   /* Základ 256 px, ale smrštitelný: na úzkém okně se štít zmenší místo zalomení. */
   flex: 0 1 256px;
   min-width: 0;
@@ -728,6 +745,32 @@ h2.nadpis-akce::after {
 }
 .prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
   transform: scale(1.06);
+}
+
+/* Reflektor. Jakmile se vybírá, zbytek couvne do stínu a vybraný erb zůstane
+   nasvícený — čte se to jako světlo namířené na jednu volbu. Skutečný kruh
+   ztmavení se středem přesně na erbu by potřeboval měřit jeho polohu
+   v JavaScriptu; tohle dělá totéž bez měření a nerozbije se při změně okna. */
+.prihlaseni-volby:hover a, .prihlaseni-volby:focus-within a {
+  filter: brightness(0.38) saturate(0.55);
+}
+.prihlaseni-volby a::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(216, 168, 58, 0.3), transparent 68%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  /* Záře nesmí brát kliknutí ani hover, jinak by si erb bral pozornost sám. */
+  pointer-events: none;
+}
+/* Až za tlumením: stejná váha, takže o vybraném erbu rozhoduje pořadí. */
+.prihlaseni-volby a:hover, .prihlaseni-volby a:focus-visible {
+  filter: none;
+}
+.prihlaseni-volby a:hover::before, .prihlaseni-volby a:focus-visible::before {
+  opacity: 1;
 }
 .skladani .sestava {
   list-style: none;

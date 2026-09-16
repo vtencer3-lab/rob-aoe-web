@@ -27,11 +27,11 @@ export function PrihlaseniOkno({ onZavrit }: { onZavrit: () => void }) {
         if (e.target === e.currentTarget) onZavrit();
       }}
     >
-      {/* Třída `prihlaseni-okno` odsud zmizela: po dvou úpravách vzhledu na ni
-          nezbylo jediné pravidlo a nic ji nehledalo. Okno stojí na
-          `.prelobby-okno`, rozložení erbů řeší `.prihlaseni-volby`. */}
-      <div className="prelobby-okno" role="dialog" aria-modal="true" aria-label="Přihlášení">
-        <h2>Přihlášení</h2>
+      {/* Vlastní třída je zpátky: okno je proti ostatním modálům širší, protože
+          nese dva erby vedle sebe místo formuláře, a tu šířku nesmí zdědit
+          sedm dalších oken, která na `.prelobby-okno` stojí taky. */}
+      <div className="prelobby-okno prihlaseni-okno" role="dialog" aria-modal="true" aria-label="Přihlášení">
+        <h1>Přihlášení</h1>
         {/*
           Bez popisků pod štíty: znaky obou platforem jsou známé dost na to, aby
           se poznaly bez nápovědy, a text pod nimi z nich dělal formulář místo
