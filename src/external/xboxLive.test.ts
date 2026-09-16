@@ -1,10 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
+  nactiGamerpic,
+  nactiVlastnictvi,
   parseGamerpic,
   parseHerniHistorii,
   parseXstsChybu,
   parseXstsIdentitu,
+  ziskejXboxIdentitu,
 } from "./xboxLive.js";
+import type { XboxIdentita } from "./xboxLive.js";
+
+/** Odpověď fetch, jak ji potřebuje `postJson`/`fetchImpl` — jen `ok`, `status` a `json()`. */
+function odpoved(status: number, telo: unknown): Response {
+  return { ok: status >= 200 && status < 300, status, json: async () => telo } as unknown as Response;
+}
 
 describe("parseXstsIdentitu", () => {
   it("vytáhne XUID, gamertag a uhs", () => {
@@ -85,5 +94,141 @@ describe("parseHerniHistorii", () => {
     // Xbox na skrytou historii odpoví bez pole titles. Kdyby se to sloučilo
     // s „nema“, ukázal by web vykřičník člověku, který hru má.
     expect(parseHerniHistorii({})).toBe("soukromy");
+  });
+});
+
+describe("ziskejXboxIdentitu", () => {
+  it("posílá RpsTicket s prefixem d= a správné RelyingParty u obou kroků", async () => {
+    const volani: Array<{ url: string; telo: Record<string, unknown> }> = [];
+    const fetchImpl = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const telo = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      volani.push({ url: String(url), telo });
+      if (String(url).includes("user.auth.xboxlive.com")) {
+        return odpoved(200, { Token: "xbl-token", DisplayClaims: { xui: [{ uhs: "docasny-uhs" }] } });
+      }
+      return odpoved(200, {
+        Token: "xsts-token",
+        DisplayClaims: { xui: [{ uhs: "spravny-uhs", xid: "2533274952064423", gtg: "Jouki3645" }] },
+      });
+    });
+
+    await ziskejXboxIdentitu("puvodni-access-token", fetchImpl as unknown as typeof fetch);
+
+    expect(volani).toHaveLength(2);
+    const xbl = volani[0]!.telo as { Properties: { RpsTicket: string }; RelyingParty: string };
+    expect(xbl.Properties.RpsTicket).toBe("d=puvodni-access-token");
+    expect(xbl.RelyingParty).toBe("http://auth.xboxlive.com");
+    const xsts = volani[1]!.telo as { RelyingParty: string };
+    expect(xsts.RelyingParty).toBe("http://xboxlive.com");
+  });
+
+  it("identitu čte z odpovědi XSTS, ne XBL", async () => {
+    // XBL ve skutečnosti vrací v xui[0] jen uhs (ověřeno sondou 16. 9. 2026), ale
+    // fixtura tu úmyslně podstrčí i gtg/xid se ŠPATNÝMI hodnotami, aby test
+    // chytil i budoucí záměnu kroků, ne jen dnešní tvar odpovědi.
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes("user.auth.xboxlive.com")) {
+        return odpoved(200, {
+          Token: "xbl-token",
+          DisplayClaims: { xui: [{ uhs: "spatny-uhs", xid: "999", gtg: "SPATNY_GAMERTAG" }] },
+        });
+      }
+      return odpoved(200, {
+        Token: "xsts-token",
+        DisplayClaims: { xui: [{ uhs: "spravny-uhs", xid: "2533274952064423", gtg: "Jouki3645" }] },
+      });
+    });
+
+    const identita = await ziskejXboxIdentitu("access-token", fetchImpl as unknown as typeof fetch);
+
+    expect(identita).toEqual({
+      uhs: "spravny-uhs",
+      xuid: "2533274952064423",
+      gamertag: "Jouki3645",
+      token: "xsts-token",
+    });
+  });
+
+  it("XSTS chyba 2148916233 vyhodí českou hlášku bez tokenu a uhs", async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      if (String(url).includes("user.auth.xboxlive.com")) {
+        return odpoved(200, { Token: "xbl-token-tajny", DisplayClaims: { xui: [{ uhs: "uhs-tajny" }] } });
+      }
+      return odpoved(401, { XErr: 2148916233 });
+    });
+
+    let chyba: Error | null = null;
+    try {
+      await ziskejXboxIdentitu("access-token-tajny", fetchImpl as unknown as typeof fetch);
+    } catch (e) {
+      chyba = e as Error;
+    }
+
+    expect(chyba).not.toBeNull();
+    expect(chyba?.message).toContain("nemá Xbox profil");
+    expect(chyba?.message).not.toContain("access-token-tajny");
+    expect(chyba?.message).not.toContain("xbl-token-tajny");
+    expect(chyba?.message).not.toContain("uhs-tajny");
+  });
+});
+
+describe("nactiGamerpic", () => {
+  const id: XboxIdentita = {
+    xuid: "2533274952064423",
+    gamertag: "Jouki3645",
+    uhs: "uhs-hodnota",
+    token: "xsts-token-hodnota",
+  };
+
+  it("posílá hlavičku Authorization ve tvaru XBL3.0 x=<uhs>;<token> a vrátí adresu obrázku", async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const hlavicky = init?.headers as Record<string, string>;
+      expect(hlavicky["Authorization"]).toBe("XBL3.0 x=uhs-hodnota;xsts-token-hodnota");
+      return odpoved(200, {
+        profileUsers: [
+          {
+            settings: [
+              {
+                id: "GameDisplayPicRaw",
+                value: "https://images-eds-ssl.xboxlive.com/image?url=x&format=png",
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    await expect(nactiGamerpic(id, fetchImpl as unknown as typeof fetch)).resolves.toBe(
+      "https://images-eds-ssl.xboxlive.com/image?url=x&format=png",
+    );
+  });
+});
+
+describe("nactiVlastnictvi", () => {
+  const id: XboxIdentita = {
+    xuid: "2533274952064423",
+    gamertag: "Jouki3645",
+    uhs: "uhs-hodnota",
+    token: "xsts-token-hodnota",
+  };
+
+  it("HTTP 403 znamená skryté soukromí", async () => {
+    const fetchImpl = vi.fn(async () => odpoved(403, {}));
+    await expect(nactiVlastnictvi(id, fetchImpl as unknown as typeof fetch)).resolves.toBe("soukromy");
+  });
+
+  it("jiná chyba HTTP je undefined, ne soukromy — nepovedlo se zeptat, DB se nesahá", async () => {
+    const fetchImpl = vi.fn(async () => odpoved(500, {}));
+    await expect(nactiVlastnictvi(id, fetchImpl as unknown as typeof fetch)).resolves.toBeUndefined();
+  });
+
+  it("posílá hlavičku Authorization ve tvaru XBL3.0 x=<uhs>;<token>", async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const hlavicky = init?.headers as Record<string, string>;
+      expect(hlavicky["Authorization"]).toBe("XBL3.0 x=uhs-hodnota;xsts-token-hodnota");
+      return odpoved(200, { titles: [] });
+    });
+
+    await expect(nactiVlastnictvi(id, fetchImpl as unknown as typeof fetch)).resolves.toBe("nema");
   });
 });
