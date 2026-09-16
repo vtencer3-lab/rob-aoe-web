@@ -49,15 +49,46 @@ země) na všechny tři tvary dotazu:
 Dotaz podle aliasu je ta spojka, která celý návrh drží: z herního jména
 dostaneme kanonický profil.
 
-### 2.3 Co ověřené není
+### 2.3 Živá sonda přihlášení (16. 9. 2026)
+
+Registrace v Microsoft Entra (`Personal Microsoft accounts only`) + jedno
+skutečné přihlášení autora. **Celý řetěz prošel.**
+
+| co | výsledek |
+|---|---|
+| `XboxLive.signin` naší registraci | **povolen** — souhlasná obrazovka oprávnění nabídla a token se vrátil se `scope=XboxLive.signin` |
+| XBL `user/authenticate` s `RpsTicket: d=…` | HTTP 200, vrátil user token |
+| XSTS pro `http://xboxlive.com` | HTTP 200, `DisplayClaims.xui[0]` obsahuje **`gtg`** (gamertag), **`xid`** (XUID), `uhs`, `agg`, `usr`, `utr`, `prv`, `ugc` |
+| gamerpic přes `profile.xboxlive.com` | HTTP 200, `GameDisplayPicRaw` vrátil adresu na `images-eds-ssl.xboxlive.com` |
+| `titlehub` herní historie | HTTP 200, 127 titulů |
+| **AoE2 DE v historii** | `titleId` **`2064168993`**, `name` `Age of Empires II: Definitive Edition`, `titleHistory.lastTimePlayed` vyplněné |
+| Worlds Edge podle gamertagu | HTTP 200, našel profil `/xboxlive/<40 hex>` s `alias` **shodným s gamertagem** |
+
+**Klíčové potvrzení:** `alias` Xbox profilu ve hře **je** gamertag. Na tom
+stojí celá sekce 5.1 a byl to největší nepodložený předpoklad návrhu.
+
+#### Dvě věci, které sonda ukázala navíc
+
+**`titlehub` vidí i hru hranou přes Steam.** Autor hraje ze Steamu, a přesto
+má AoE2 DE v historii Xboxu — hra se totiž k Xbox Live přihlašuje bez ohledu
+na to, odkud je nainstalovaná. Ikona vlastnictví (sekce 6.2) tedy znamená
+„tenhle Microsoft účet tu hru hrál", což je přesně to, co má znamenat, a
+u hráče z Game Passu to platí stejně.
+
+**Jeden člověk může mít dva herní profily.** Steamový a xboxový vedle sebe,
+každý s vlastním ELO a vlastní historií. Autorův `/xboxlive/` profil má
+`xp: 1`, `level: 1` — vznikl jen tím, že se hra k Xbox Live přihlásila, a
+je prakticky prázdný. **Důsledek pro návrh:** kdo má hru na Steamu a přihlásí
+se Microsoftem, dostane svůj prázdný profil místo skutečného. Řeší to text
+u tlačítka (sekce 8) a sekce 9 níž.
+
+### 2.4 Co ověřené pořád není
 
 | co | jak se to ověří |
 |---|---|
-| Projde `XboxLive.signin` scope naší registraci? | milník 1 (sekce 12) |
-| Sedí gamertag s aliasem ve hře? | tester, sekce 14 |
-| Vrací XSTS pro `http://xboxlive.com` claim `gtg`? | milník 1 |
 | Funguje `aoe2de://` na verzi z Microsoft Store? | tester, příloha B |
-| Titulek AoE2 DE v `titlehub` a chování při skrytém soukromí | milník 1 |
+| Chování `titlehub` při skrytém soukromí herní historie | tester (na minutu si přepne nastavení soukromí) |
+| Sedí gamertag s aliasem i u hráče, který hru **má** z Game Passu? | tester — u účtu s prázdným profilem to sedělo, u skutečného hráče to chce potvrdit |
 
 ## 3. Identita a datový model
 
@@ -241,8 +272,13 @@ Význam ikony se tím u obou platforem posouvá na „tuhle hru na tomhle účtu
 hrál“, což je to nejpřesnější, co web může tvrdit. Bublina u ikony to řekne
 i slovy.
 
-Titul se hledá podle jména obsahujícího `Age of Empires II`; konkrétní
-`titleId` se dopíše do kódu, jakmile ho milník 1 uvidí v odpovědi.
+Titul se hledá podle `titleId` **`2064168993`** (naměřeno sondou 16. 9. 2026).
+Jméno `Age of Empires II: Definitive Edition` slouží jen jako záloha, kdyby
+Microsoft id někdy změnil — `titleId` je stabilnější než lokalizovatelný název.
+
+**Pozor na Return of Rome a Age of Empires Online.** Sonda našla v historii
+i `1297289123` (AoE Online), takže hledání podle jména obsahujícího „Age of
+Empires" by sedlo na špatnou hru. Porovnávat se musí přesné `titleId`.
 
 ### 6.3 Co Microsoft hráči chybí
 
@@ -286,6 +322,8 @@ Přejmenování v typech: `LobbyInzerat.clenoveSteamIds` → `clenoveHraci`,
 | gamerpic nedostupný | Výchozí erb. |
 | `titlehub` nedostupný | Ikona hry se neukáže, jako když chybí Steam klíč. |
 | Worlds Edge nedostupné | Stejné chování jako dnes u Steam hráčů. |
+
+| Steam hráč se přihlásí Microsoftem | Dostane svůj **prázdný** `/xboxlive/` profil místo skutečného (sonda 16. 9., §2.3). Karta hráče proto u profilu bez odehrané hry řekne, že vypadá prázdně, a nabídne přihlášení Steamem. |
 
 Dva Microsoft účty se stejným gamertagem nastat nemohou — gamertag je
 u Microsoftu unikátní.
