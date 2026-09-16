@@ -664,7 +664,7 @@ h2.nadpis-akce::after {
    běžné nastavování, tak stojí v modálním okně — okolí ztmavne a kliknutí
    vedle (nebo Escape) ho zavře. */
 .hlavicka-akce .prelobby-tlacitko { margin-left: auto; }
-.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); }
+.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); transition: background 280ms ease; }
 .prelobby-okno {
   width: min(34rem, 100%);
   max-height: calc(100vh - 4rem);
@@ -727,7 +727,9 @@ h2.nadpis-akce::after {
 }
 
 .prihlaseni-volby {
-  margin: 50px;
+  /* Odsazení ustupuje na nízkém okně: při pevných 50 px přeroste obsah
+     maximální výšku desky a naskočí posuvník. */
+  margin: clamp(1rem, 4vh, 50px) clamp(1rem, 4vw, 50px);
   display: flex;
   /* Vedle sebe, nikdy pod sebou: štít se radši zmenší, než aby se dvojice
      rozpadla na sloupec. Proto `nowrap` a smrštitelný základ níž.
@@ -742,8 +744,10 @@ h2.nadpis-akce::after {
 .prihlaseni-volby a {
   display: flex;
   position: relative;
-  /* Základ 256 px, ale smrštitelný: na úzkém okně se štít zmenší místo zalomení. */
-  flex: 0 1 256px;
+  /* Základ 256 px, ale smrštitelný: na úzkém okně se štít zmenší místo zalomení.
+     Strop podle výšky okna je tu proto, že štít je čtverec — bez něj by na
+     nízké obrazovce přerostl desku na výšku a přinesl posuvník. */
+  flex: 0 1 min(256px, 34vh);
   min-width: 0;
   /* Odkaz s obrázkem si nesmí vzít reliéf ražené destičky (grafika.md §7). */
   background: none;
@@ -810,7 +814,7 @@ h2.nadpis-akce::after {
 }
 /* Až za tlumením: stejná váha, takže o vybraném erbu rozhoduje pořadí. */
 .prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
-  filter: brightness(1.06);
+  filter: brightness(1.15);
 }
 .prihlaseni-volby a:hover::before, .prihlaseni-volby a:focus-visible::before {
   opacity: 1;
@@ -831,6 +835,13 @@ h2.nadpis-akce::after {
 .prihlaseni-okno:has(.prihlaseni-volby a:hover),
 .prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) {
   box-shadow: inset 0 0 12rem 2rem rgba(0, 0, 0, 0.55);
+}
+/* Setmít se musí celá obrazovka, ne jen deska: reflektor nad osvětlenou
+   scénou není reflektor. Zatmívací vrstva pod oknem je na to jediné místo,
+   které sahá až k okrajům. */
+.prelobby-stin:has(.prihlaseni-volby a:hover),
+.prelobby-stin:has(.prihlaseni-volby a:focus-visible) {
+  background: rgba(2, 1, 0, 0.96);
 }
 .skladani .sestava {
   list-style: none;
