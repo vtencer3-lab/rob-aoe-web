@@ -2493,23 +2493,36 @@ git push origin dev
 
 ---
 
-## Úkol 11: Rozhraní — tlačítko a platforma
+## Úkol 11: Rozhraní — okno volby platformy
+
+Zadání uživatele z 16. 9. 2026: v záhlaví má být jediné **„Přihlásit se“**,
+které otevře modální okno se dvěma ikonami **96×96 px** — Steam a Xbox.
+Původní návrh dvou textových tlačítek vedle sebe padá.
 
 **Soubory:**
+- Vytvořit: `web/src/views/PrihlaseniOkno.tsx`, `web/src/views/PrihlaseniOkno.test.tsx`
+- Vytvořit: `web/src/assets/ui/prihlaseni-steam.webp`, `web/src/assets/ui/prihlaseni-xbox.webp` (dodá uživatel, viz níž)
 - Upravit: `web/src/App.tsx`, `web/src/views/KartaHrace.tsx`, `web/src/styl.css`
 - Test: `web/src/App.test.tsx`
 
 **Rozhraní:**
-- Konzumuje: `/api/auth/microsoft` (úkol 7), `PlayerView.platforma` (úkol 2)
+- Konzumuje: `/api/auth/steam` a `/api/auth/microsoft` (úkol 7), `PlayerView.platforma` (úkol 2)
 - Produkuje: nic pro další úkoly
 
-- [ ] **Krok 1: Padající test**
+- [ ] **Krok 1: Padající testy**
 
 ```tsx
 // web/src/App.test.tsx
-it("nepřihlášenému nabídne obě cesty", async () => {
+it("nepřihlášenému nabídne jediné tlačítko, ne dvě cesty", async () => {
   render(<App />);
-  expect(await screen.findByRole("link", { name: /Steam/ })).toHaveAttribute(
+  expect(await screen.findByRole("button", { name: "Přihlásit se" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Steam/ })).not.toBeInTheDocument();
+});
+
+it("tlačítko otevře okno s oběma platformami", async () => {
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Přihlásit se" }));
+  expect(screen.getByRole("link", { name: /Steam/ })).toHaveAttribute(
     "href",
     expect.stringContaining("/api/auth/steam"),
   );
@@ -2520,47 +2533,147 @@ it("nepřihlášenému nabídne obě cesty", async () => {
 });
 ```
 
-- [ ] **Krok 2: Spustit, ať padne**
+```tsx
+// web/src/views/PrihlaseniOkno.test.tsx
+it("Escape okno zavře", async () => {
+  const zavrit = vi.fn();
+  render(<PrihlaseniOkno onZavrit={zavrit} />);
+  await userEvent.keyboard("{Escape}");
+  expect(zavrit).toHaveBeenCalled();
+});
+
+it("obě volby jsou odkazy, ne tlačítka — přihlášení je odchod ze stránky", () => {
+  render(<PrihlaseniOkno onZavrit={() => {}} />);
+  expect(screen.getAllByRole("link")).toHaveLength(2);
+});
+
+it("ikony mají textovou alternativu, aby šlo okno ovládat i bez obrázků", () => {
+  render(<PrihlaseniOkno onZavrit={() => {}} />);
+  expect(screen.getByAltText(/Steam/)).toBeInTheDocument();
+  expect(screen.getByAltText(/Xbox|Microsoft/)).toBeInTheDocument();
+});
+```
+
+- [ ] **Krok 2: Spustit, ať padnou**
 
 ```bash
-npm --prefix web test -- --run App
+npm --prefix web test -- --run App PrihlaseniOkno
 ```
 
-Očekávaný výsledek: FAIL, odkaz s „Microsoft“ neexistuje.
+Očekávaný výsledek: FAIL — `PrihlaseniOkno` neexistuje a v záhlaví je pořád
+odkaz „Přihlásit se přes Steam“.
 
-- [ ] **Krok 3: Implementace**
+- [ ] **Krok 3: Okno**
 
-V `web/src/App.tsx` nahradit samostatné tlačítko dvojicí:
+Nevymýšlej modál od nuly. `web/src/views/Potvrzeni.tsx` už drží vzor, který
+zbytek webu používá: `createPortal`, `useZamekScrollu()`, Escape na klávesnici.
+Drž se ho.
 
 ```tsx
-            <span className="prihlaseni">
-              <a className="tlacitko" href={cesta("/api/auth/steam")}>
-                Přihlásit se přes Steam
-              </a>
-              <a className="tlacitko" href={cesta("/api/auth/microsoft")}>
-                Přihlásit se přes Microsoft
-              </a>
-              <small>Microsoft účet je pro hru z Microsoft Store nebo Game Passu.</small>
-            </span>
+// web/src/views/PrihlaseniOkno.tsx
+import { createPortal } from "react-dom";
+import { useEffect } from "react";
+import { useZamekScrollu } from "../zamekScrollu.js";
+import { cesta } from "../cesty.js";
+import steamIkona from "../assets/ui/prihlaseni-steam.webp";
+import xboxIkona from "../assets/ui/prihlaseni-xbox.webp";
+
+/**
+ * Volba platformy při přihlášení. Dvě cesty se do záhlaví nevešly a vedle sebe
+ * působily jako dvě různé akce — jsou to dvě cesty k téže. Odkazy, ne tlačítka:
+ * obojí odsud vede pryč ze stránky.
+ */
+export function PrihlaseniOkno({ onZavrit }: { onZavrit: () => void }) {
+  useZamekScrollu();
+  useEffect(() => {
+    const klavesa = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onZavrit();
+    };
+    window.addEventListener("keydown", klavesa);
+    return () => window.removeEventListener("keydown", klavesa);
+  }, [onZavrit]);
+
+  return createPortal(
+    <div className="zaclona" onClick={onZavrit}>
+      <div className="deska prihlaseni-okno" onClick={(e) => e.stopPropagation()}>
+        <h2>Přihlášení</h2>
+        <div className="prihlaseni-volby">
+          <a href={cesta("/api/auth/steam")}>
+            <img src={steamIkona} alt="Přihlásit se přes Steam" width={96} height={96} />
+            <span>Steam</span>
+          </a>
+          <a href={cesta("/api/auth/microsoft")}>
+            <img src={xboxIkona} alt="Přihlásit se přes Microsoft" width={96} height={96} />
+            <span>Microsoft</span>
+          </a>
+        </div>
+        <p className="napoveda">
+          Microsoft účet je pro hru z Microsoft Store nebo Game Passu.
+        </p>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 ```
 
-Styl do `web/src/styl.css`, barvy **jen z `:root`**, nikdy napevno:
+Třídu `zaclona` a `deska` nevymýšlej znovu — zkontroluj, jak se jmenují
+v `Potvrzeni.tsx`, a použij tytéž.
+
+- [ ] **Krok 4: Záhlaví**
+
+V `web/src/App.tsx` nahradit dosavadní odkaz:
+
+```tsx
+            <button className="tlacitko" onClick={() => setPrihlaseniVidet(true)}>
+              Přihlásit se
+            </button>
+```
+
+a okno vykreslit vedle ostatních modálů, když je `prihlaseniVidet`.
+
+- [ ] **Krok 5: Styl**
+
+Do `web/src/styl.css`. **Barvy jen z `:root`**, nikdy napevno (pravidlo ze
+sekce 7 `docs/grafika.md`).
 
 ```css
-/* Dvě přihlašovací cesty vedle sebe; na úzké obrazovce pod sebe. */
-.prihlaseni {
+/* Dvě cesty vedle sebe; na úzké obrazovce pod sebe. */
+.prihlaseni-volby {
   display: flex;
+  gap: 1.5rem;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
 }
-.prihlaseni small {
-  flex-basis: 100%;
-  color: var(--barva-text-tlumeny);
+.prihlaseni-volby a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  /* Odkaz s obrázkem si nesmí vzít reliéf ražené destičky (grafika.md §7). */
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--zlato-svetle);
+}
+.prihlaseni-volby img {
+  transition: transform 120ms ease;
+}
+.prihlaseni-volby a:hover img {
+  transform: scale(1.06);
+}
+.prihlaseni-okno .napoveda {
+  text-align: center;
+  color: var(--text-tlumeny);
 }
 ```
 
-Na kartě hráče platforma u jména (`web/src/views/KartaHrace.tsx`):
+Jestli `--text-tlumeny` v paletě není, vzít nejbližší existující — novou
+proměnnou kvůli jedné větě nezavádět.
+
+- [ ] **Krok 6: Platforma na kartě hráče**
+
+`web/src/views/KartaHrace.tsx`:
 
 ```tsx
         {hrac.platforma === "xbox" ? (
@@ -2570,7 +2683,7 @@ Na kartě hráče platforma u jména (`web/src/views/KartaHrace.tsx`):
         ) : null}
 ```
 
-- [ ] **Krok 4: Testy zeleně, build, verze, commit**
+- [ ] **Krok 7: Testy zeleně, build, verze, commit**
 
 ```bash
 npm --prefix web test -- --run
@@ -2578,22 +2691,28 @@ npm --prefix web exec tsc -- -b --force
 npm run build; echo "EXIT=$?"
 npm run verze
 git add -A
-git commit -F - <<'EOF'
-Offer signing in with a Microsoft account
+git commit -F - <<'KONEC'
+Ask which platform to sign in with, in a window
 
-Two buttons side by side, with one line saying who the second one is for.
-The player card names the platform, because it explains why someone has no
-hours next to their name.
+Two buttons side by side read as two different actions; they are two ways to
+the same one. One button in the header opens a window with the two crests,
+and the line underneath says who the second one is for.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
-EOF
+KONEC
 git push origin dev
 ```
 
-- [ ] **Krok 5: Vizuální kontrola uživatelem**
+- [ ] **Krok 8: Vizuální kontrola uživatelem**
 
 Zelené testy nejsou důkaz, že UI funguje. Požádat uživatele, ať se podívá na
-<https://jouki.cz/aoe/dev> — obě tlačítka vedle sebe, čitelná i na mobilu.
+<https://jouki.cz/aoe/dev>: okno se otevře, obě ikony sedí do zbytku stránky,
+na mobilu se nic nerozsype.
+
+**Ikony dodá uživatel** jako `web/src/assets/ui/prihlaseni-steam.webp` a
+`prihlaseni-xbox.webp`, 96×96, průhledné pozadí. Když ještě nejsou, úkol se
+udělá s dočasným textem místo obrázku a ikony se doplní samostatným commitem —
+čekání na grafiku nesmí blokovat kód.
 
 ---
 
