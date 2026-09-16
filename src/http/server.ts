@@ -5,11 +5,11 @@ import { join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 import { registerDevRoutes } from "../auth/devRoutes.js";
 import { registerMicrosoftRoutes, type MicrosoftDeps } from "../auth/microsoftRoutes.js";
-import { buildTokenBody, TOKEN_URL } from "../auth/microsoftOAuth.js";
 import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
 import { getPlayer, savePlayerStats, type PlayerStatsUpdate } from "../db/players.js";
+import { vymenKodZaToken } from "../external/microsoftToken.js";
 import { nactiGamerpic, nactiVlastnictvi, ziskejXboxIdentitu, type XboxIdentita } from "../external/xboxLive.js";
 import { fetchPersonalStatPodleAliasu, type LeaderboardStats } from "../external/worldsEdge.js";
 import { seznamLobby } from "../matches/seznamLobby.js";
@@ -96,29 +96,14 @@ function vychoziDeps(): ServerDeps {
       // právě mají otevřenou — jinak by čekali na jiný broadcast.
       await broadcastAkce();
     },
-    vymenKod: async (kod, verifier) => {
-      const res = await fetch(TOKEN_URL, {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: buildTokenBody(
-          config.baseUrl,
-          config.msClientId,
-          config.msClientSecret,
-          kod,
-          verifier,
-        ).toString(),
-        signal: AbortSignal.timeout(10_000),
-      });
-      const json: unknown = await res.json().catch(() => null);
-      const token =
-        typeof json === "object" && json !== null
-          ? (json as Record<string, unknown>)["access_token"]
-          : null;
-      if (!res.ok || typeof token !== "string") {
-        throw new Error("Microsoft nevydal přihlašovací token.");
-      }
-      return token;
-    },
+    vymenKod: (kod, verifier) =>
+      vymenKodZaToken({
+        baseUrl: config.baseUrl,
+        clientId: config.msClientId,
+        clientSecret: config.msClientSecret,
+        kod,
+        verifier,
+      }),
     ziskejIdentitu: (accessToken) => ziskejXboxIdentitu(accessToken),
     poPrihlaseni: vychoziPoPrihlaseni({
       gamerpic: (identita) => nactiGamerpic(identita),
