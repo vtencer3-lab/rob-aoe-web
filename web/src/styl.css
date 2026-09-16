@@ -723,7 +723,7 @@ h2.nadpis-akce::after {
 .prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
   transform: scale(1.06);
 }
-.prihlaseni-okno .napoveda {
+.prihlaseni-okno .prihlaseni-napoveda {
   text-align: center;
   color: var(--tlumene);
 }

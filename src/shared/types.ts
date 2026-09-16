@@ -107,6 +107,12 @@ export interface AkceView {
   pristiHeslo?: string;
 }
 
+/**
+ * Redakce podle diváka (`redigujProDivaka`) je vedená na úrovni zápasu
+ * (`heslo`, `lobbyId`, `joinUri`, `spectatorUri`, `zpravy`), ne jednotlivých
+ * účastníků — pole tady dole vidí úplně každý divák. Kdo sem přidá něco
+ * citlivého, musí napřed rozšířit `redigujProDivaka` v `realtime/redakce.ts`.
+ */
 export interface UcastnikView {
   hracId: string;
   alias: string | null;

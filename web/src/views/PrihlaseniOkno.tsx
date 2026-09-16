@@ -39,7 +39,7 @@ export function PrihlaseniOkno({ onZavrit }: { onZavrit: () => void }) {
             <span>Microsoft</span>
           </a>
         </div>
-        <p className="napoveda">Microsoft účet je pro hru z Microsoft Store nebo Game Passu.</p>
+        <p className="prihlaseni-napoveda">Microsoft účet je pro hru z Microsoft Store nebo Game Passu.</p>
       </div>
     </div>,
     document.body,
