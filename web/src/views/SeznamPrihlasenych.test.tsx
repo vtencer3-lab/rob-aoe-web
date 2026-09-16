@@ -432,3 +432,18 @@ it("admin má zvonek u hráče po pěti minutách odpočtu i u spícího, a po k
   fireEvent.click(zvonek);
   expect(onSvolat).toHaveBeenCalledTimes(1);
 });
+
+it("u hráče ukáže znak platformy, ze které se hlásí", () => {
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "xbox:1", platforma: "xbox" })]} />);
+  expect(screen.getByTestId("znak-platformy")).toHaveAttribute("alt", "Microsoft");
+});
+
+it("Steam hráč dostane steamový znak", () => {
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ platforma: "steam" })]} />);
+  expect(screen.getByTestId("znak-platformy")).toHaveAttribute("alt", "Steam");
+});
+
+it("starší snímek bez platformy neukáže žádný znak — hádat je horší než mlčet", () => {
+  render(<SeznamPrihlasenych prihlaseni={[hrac()]} />);
+  expect(screen.queryByTestId("znak-platformy")).not.toBeInTheDocument();
+});

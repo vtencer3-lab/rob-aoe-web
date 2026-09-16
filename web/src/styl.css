@@ -1742,6 +1742,10 @@ h2 input.nazev-akce-pole {
 .seznam > tbody > tr > td { vertical-align: middle; }
 .seznam > tbody > tr > td .jmeno-hrace { cursor: help; display: flex; align-items: center; gap: 0.5rem; }
 .seznam > tbody > tr > td .jmeno-hrace img { width: 28px; height: 28px; border-radius: 2px; flex: none; border: 1px solid var(--zlato-tmave); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+/* Znak platformy není portrét: menší, bez rámečku a bez zaoblení, aby vedle
+   avatara nevypadal jako druhá tvář. Soubor je 96 px kvůli systémovému
+   zvětšení, na obrazovce jich je osmnáct. */
+.seznam > tbody > tr > td .jmeno-hrace img.znak-platformy { width: 18px; height: 18px; border: none; border-radius: 0; box-shadow: none; opacity: 0.92; }
 
 /* Tažený řádek „v ruce“: jede s kurzorem, nad ostatními, se stínem. Ostatní
    řádky se na nové místo posouvají animací (tahani.ts, FLIP). */

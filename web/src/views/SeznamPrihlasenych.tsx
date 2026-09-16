@@ -11,6 +11,8 @@ import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
 import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani, animovanyPosunY } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
+import steamZnak from "../assets/ui/platforma-steam.webp";
+import xboxZnak from "../assets/ui/platforma-xbox.webp";
 
 interface Props {
   prihlaseni: PlayerView[];
@@ -417,6 +419,20 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   tabIndex={0}
                 >
                   {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={28} height={28} /> : null}
+                  {/* Odkud se ten člověk hlásí. Starší snímky stavu pole
+                      `platforma` nenesou — pak se neukazuje nic, protože
+                      hádat je horší než mlčet. */}
+                  {hrac.platforma ? (
+                    <img
+                      className="znak-platformy"
+                      src={hrac.platforma === "xbox" ? xboxZnak : steamZnak}
+                      alt={hrac.platforma === "xbox" ? "Microsoft" : "Steam"}
+                      title={hrac.platforma === "xbox" ? "Přihlášen Microsoft účtem" : "Přihlášen přes Steam"}
+                      width={96}
+                      height={96}
+                      data-testid="znak-platformy"
+                    />
+                  ) : null}
                   {jmeno}
                   <OdznakHry stav={stavHry(hrac)} platforma={hrac.platforma} onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined} />
                 </span>
