@@ -9,6 +9,7 @@ import {
 } from "../matches/stateMachine.js";
 import type { Barva, Seat, SestavaVstup, Tym, Vitez } from "../shared/types.js";
 import { getPool, withTransaction } from "./pool.js";
+import type { Platforma } from "./players.js";
 
 export interface ZapasRow {
   id: number;
@@ -36,6 +37,8 @@ export interface UcastnikRow {
   hracId: string;
   alias: string | null;
   platformaJmeno: string | null;
+  /** Platforma přihlášení — karta hráče podle ní ukazuje značku Microsoft. */
+  platforma: Platforma;
   tym: Tym;
   barva: Barva;
   civ: number | null;
@@ -232,7 +235,7 @@ export async function setNazevLobby(zapasId: number, nazev: string): Promise<voi
 
 async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
   const { rows } = await getPool().query(
-    `SELECT u.hrac_id, p.alias, p.platforma_jmeno, p.elo_1v1, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
+    `SELECT u.hrac_id, p.alias, p.platforma_jmeno, p.platforma, p.elo_1v1, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
        FROM ucastnik u JOIN player p ON p.hrac_id = u.hrac_id
       WHERE u.zapas_id = $1
       ORDER BY u.poradi, u.hrac_id`,
@@ -244,6 +247,7 @@ async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
       hracId: row["hrac_id"] as string,
       alias: row["alias"] as string | null,
       platformaJmeno: row["platforma_jmeno"] as string | null,
+      platforma: row["platforma"] as Platforma,
       tym: row["tym"] as Tym,
       barva: row["barva"] as Barva,
       civ: (row["civ"] as number | null) ?? null,

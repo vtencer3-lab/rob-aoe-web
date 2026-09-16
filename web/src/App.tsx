@@ -3,7 +3,6 @@ import { hlasitostAdmina as nactiHlasitostAdmina, spustPrehravacHlasu, zesileniM
 import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
-import { cesta } from "./cesty.js";
 import { doplnNastaveni, type NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import { VERZE } from "../../src/shared/verze.js";
 import type { Vitez, ZapasView } from "../../src/shared/types.js";
@@ -16,6 +15,7 @@ import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./z
 import { Chat } from "./views/Chat.js";
 import { EditaceZapasu } from "./views/EditaceZapasu.js";
 import { NastaveniUzivatele } from "./views/NastaveniUzivatele.js";
+import { PrihlaseniOkno } from "./views/PrihlaseniOkno.js";
 import { Svolani } from "./views/Svolani.js";
 import poplachUrl from "./assets/poplach.mp3";
 import { hlasitost as nactiHlasitost, hlasitostChatu as nactiHlasitostChatu, hlasitostUdalosti, naZablokovaniZvuku } from "./zvuk.js";
@@ -140,6 +140,8 @@ export function App() {
   const [upravovany, setUpravovany] = useState<number | null>(null);
   // Ozubené kolečko vedle jména: hlasitost (jen tenhle prohlížeč) a pro admina lhůta aktivity.
   const [nastaveniVidet, setNastaveniVidet] = useState(false);
+  // Okno volby platformy (Steam/Microsoft) místo dvou odkazů vedle sebe v záhlaví.
+  const [prihlaseniVidet, setPrihlaseniVidet] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
@@ -483,9 +485,9 @@ export function App() {
               <button onClick={() => void api.odhlasitSe().then(() => setMe(null))}>Odhlásit</button>
             </span>
           ) : (
-            <a className="tlacitko" href={cesta("/api/auth/steam")}>
-              Přihlásit se přes Steam
-            </a>
+            <button type="button" className="tlacitko" onClick={() => setPrihlaseniVidet(true)}>
+              Přihlásit se
+            </button>
           )}
           {/* Přepínač pohledu pod řádkem se jménem, jen pro adminy. */}
           {me?.jeAdmin ? (
@@ -766,6 +768,7 @@ export function App() {
           onZavrit={() => setNastaveniVidet(false)}
         />
       ) : null}
+      {prihlaseniVidet ? <PrihlaseniOkno onZavrit={() => setPrihlaseniVidet(false)} /> : null}
       <ZkusebniLista jaHracId={me?.hracId ?? null} />
       {admin ? <Toasty toasty={toasty} onZavrit={zavriToast} /> : null}
       {/* Verze v patičce: po nasazení se jedním pohledem pozná, jestli

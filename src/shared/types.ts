@@ -117,6 +117,8 @@ export interface UcastnikView {
   civ: number | null;
   /** 1v1 ELO ze žebříčku; chybí ve starších snímcích a testech. */
   elo1v1?: number | null;
+  /** Platforma přihlášení; chybí ve starších snímcích a testech (výchozí = Steam). */
+  platforma?: "steam" | "xbox";
   jeHost: boolean;
   /** Slot v lobby, od nuly; v tomhle pořadí Rob hráče naklikal. */
   poradi: number;

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { AkceStavPayload, UcastnikView, ZapasView } from "../../src/shared/types.js";
 import { App } from "./App.js";
@@ -211,6 +212,29 @@ it("běžný hráč bez akce formulář na založení nevidí", async () => {
 // (redigujZapas). Frontend ho ale zahazoval dvěma filtry naráz — anonyma
 // vyhodilo `me ?` a neúčastníka `mojeZapasy()` — takže zápas neviděl nikdo
 // kromě hráčů a admina. Nahlášené třikrát.
+// Dvě cesty vedle sebe v záhlaví (Steam, Microsoft) vypadaly jako dvě různé
+// akce. Jedno tlačítko otevře okno, kde jsou obě.
+it("nepřihlášenému nabídne jediné tlačítko, ne dvě cesty", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: "Přihlásit se" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Steam/ })).not.toBeInTheDocument();
+});
+
+it("tlačítko otevře okno s oběma platformami", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  await userEvent.click(await screen.findByRole("button", { name: "Přihlásit se" }));
+  expect(screen.getByRole("link", { name: /Steam/ })).toHaveAttribute("href", expect.stringContaining("/api/auth/steam"));
+  expect(screen.getByRole("link", { name: /Microsoft/ })).toHaveAttribute("href", expect.stringContaining("/api/auth/microsoft"));
+});
+
 it("anonym vidí, kdo proti komu hraje", async () => {
   vi.mocked(api.me).mockResolvedValue({ hrac: null });
   nastavStav({

@@ -54,6 +54,11 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, onKontrolaLob
         <span>
           <span data-testid="muj-tym">{popisTymu(muj)}</span>
         </span>
+        {muj.platforma === "xbox" ? (
+          <span className="platforma" title="Hra z Microsoft Store nebo Game Passu">
+            Microsoft
+          </span>
+        ) : null}
       </div>
       {parta.length > 0 ? (
         <p className="stred">

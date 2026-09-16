@@ -534,6 +534,8 @@ main > .prazdno::after {
 }
 .karta .hero strong, .host .hero strong { font-family: "Cinzel", Georgia, serif; }
 .karta .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
+/* Drobný popisek platformy vedle barvy a týmu; barvu nese samo pozadí heroa. */
+.karta .hero .platforma { display: block; margin-top: 0.3rem; font-size: 0.75rem; opacity: 0.85; }
 .karta.barva-1 .hero, .host.barva-1 .hero { background: var(--b1); }
 .karta.barva-2 .hero, .host.barva-2 .hero { background: var(--b2); }
 .karta.barva-3 .hero, .host.barva-3 .hero { background: var(--b3); }
@@ -690,6 +692,41 @@ h2.nadpis-akce::after {
 .prelobby-okno input[readonly] { color: var(--akcent); font-weight: 700; }
 .prelobby-dvojice { display: flex; gap: 1.4rem; }
 .prelobby-okno label.zaskrtavaci { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+/* Okno volby platformy: dvě cesty vedle sebe, na úzké obrazovce pod sebe. */
+.prihlaseni-volby {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.prihlaseni-volby a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  /* Odkaz s obrázkem si nesmí vzít reliéf ražené destičky (grafika.md §7). */
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--zlato-svetle);
+}
+.prihlaseni-volby img {
+  /* Soubor je 512 px, na obrazovce nejvýš 256. Obrázek vykreslený přesně
+     v cílové velikosti se při systémovém zvětšení (150 % ve Windows) nebo na
+     displeji s vysokou hustotou roztáhne a rozmaže — proto se posílá
+     dvojnásobek a zmenšuje se až tady. Clamp dole drží dvojici vedle sebe
+     i na úzkém mobilu. */
+  width: clamp(112px, 26vw, 256px);
+  height: auto;
+  transition: transform 120ms ease;
+}
+.prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
+  transform: scale(1.06);
+}
+.prihlaseni-okno .napoveda {
+  text-align: center;
+  color: var(--tlumene);
+}
 .skladani .sestava {
   list-style: none;
   padding: 0;

@@ -44,6 +44,20 @@ it("ukáže barvu a tým velkým písmem", () => {
   expect(screen.getByTestId("muj-tym")).toHaveTextContent("tým 1");
 });
 
+it("hráč z Microsoft Store nebo Game Passu má na kartě značku Microsoft", () => {
+  const xbox: ZapasView = {
+    ...zapas,
+    ucastnici: [{ ...zapas.ucastnici[0]!, platforma: "xbox" }, ...zapas.ucastnici.slice(1)],
+  };
+  render(<KartaHrace zapas={xbox} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
+  expect(screen.getByText("Microsoft")).toBeInTheDocument();
+});
+
+it("steam hráč žádnou značku platformy nemá", () => {
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
+  expect(screen.queryByText("Microsoft")).not.toBeInTheDocument();
+});
+
 it("řekne, s kým se sdílí civilizace", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
   expect(screen.getByText(/sdílíš/)).toHaveTextContent("Pepa_CZ");

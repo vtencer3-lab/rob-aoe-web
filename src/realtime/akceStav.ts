@@ -49,6 +49,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
       hracId: u.hracId,
       alias: u.alias,
       platformaJmeno: u.platformaJmeno,
+      platforma: u.platforma,
       tym: u.tym,
       barva: u.barva,
       civ: u.civ,
