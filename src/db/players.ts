@@ -138,7 +138,7 @@ export async function upsertPlayer(hracId: string, jeAdmin: boolean | null): Pro
     // Zkušební hráč (`test:pepa`) projde toutéž cestou, ale Steam ID nedostane:
     // atrapa pro večer nasucho žádný účet nemá a unikátní hodnotu by jen zabrala.
     `INSERT INTO player (hrac_id, platforma, steam_id, je_admin)
-     VALUES ($1, 'steam', CASE WHEN $1 ~ '^\d{17}$' THEN $1 END,
+     VALUES ($1, 'steam', CASE WHEN $1 ~ '^\\d{17}$' THEN $1 END,
              COALESCE($2::boolean, false))
      ON CONFLICT (hrac_id) DO UPDATE SET
        steam_id = COALESCE(EXCLUDED.steam_id, player.steam_id),
