@@ -232,3 +232,33 @@ it("selhání kteréhokoliv doplňku nechá hráče přihlášeného", async () 
   });
   await app.close();
 });
+
+it("hráč, kterému se herní profil nenajde, zůstane plnohodnotný, jen bez ELO", async () => {
+  // Worlds Edge tu neselhal (nevyhodil), jen nikoho pod tímhle gamertagem
+  // nenašel — běžný stav u každého, kdo se přihlásí dřív, než vůbec spustí
+  // hru. To není chyba, takže se nesmí objevit ve `staty_chyba`.
+  zapniMicrosoft();
+  const app = buildServer({
+    vymenKod: async () => "ms-token",
+    ziskejIdentitu: async () => IDENTITA,
+    poPrihlaseni: vychoziPoPrihlaseni({
+      gamerpic: async () => "https://images-eds.xboxlive.com/x",
+      vlastnictvi: async () => "ma" as const,
+      zebricek: async () => null,
+    }),
+  });
+  const res = await prihlas(app);
+  expect(res.statusCode).toBe(302);
+  // hraVlastnictvi nezávisí na žebříčku, takže jde použít jako nezávislý
+  // signál, že poPrihlaseni doběhlo (avatarUrl by fungoval taky, ale tenhle
+  // se neváže na tu část odpovědi, kterou test primárně zkoumá).
+  await vi.waitFor(async () => {
+    expect((await getPlayer("xbox:2535412345678901"))?.hraVlastnictvi).toBe("ma");
+  });
+  expect(await getPlayer("xbox:2535412345678901")).toMatchObject({
+    platformaJmeno: "Jouki in Rage",
+    elo1v1: null,
+    statyChyba: null,
+  });
+  await app.close();
+});
