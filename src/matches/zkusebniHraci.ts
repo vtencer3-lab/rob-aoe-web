@@ -17,9 +17,10 @@ export const ZKUSEBNI_HRACI = [
 ] as const;
 
 /**
- * Steam ID zkušebního hráče. Prefix „test:“ je schválně něco, co skutečné
- * 64bitové Steam ID nikdy mít nebude — zkušební účet se tak nemůže srazit
- * s opravdovým člověkem ani omylem, a v databázi je na první pohled poznat.
+ * Klíč zkušebního hráče. Prefix „test:“ je schválně něco, co skutečný klíč
+ * nikdy mít nebude — ani 64bitové Steam ID, ani `xbox:<xuid>` — takže se
+ * zkušební účet nemůže srazit s opravdovým člověkem ani omylem a v databázi
+ * je na první pohled poznat.
  */
 export function zkusebniId(jmeno: string): string {
   return `test:${jmeno.trim().toLowerCase()}`;

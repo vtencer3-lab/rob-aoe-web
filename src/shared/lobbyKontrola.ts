@@ -489,7 +489,8 @@ export function zkontrolujLobby(
   const zapasu = new Set(ucastnici.map((u) => u.hracId));
 
 
-  // Lidi porovnává Steam ID, AI barva: počítač žádné id nemá, takže se dvě
+  // Lidi porovnává klíč hráče (`hracId` — Steam ID i `xbox:<xuid>`), AI barva:
+  // počítač žádné id nemá, takže se dvě
   // AI od sebe v datech nepoznají. Napřed se spárují ty, které barvu mají
   // podle sestavy, zbylé se doplní v pořadí — aby se u nich dala vypsat
   // aspoň hláška „má náhodnou barvu, má mít žlutá“ jako u člověka.

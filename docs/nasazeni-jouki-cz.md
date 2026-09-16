@@ -317,13 +317,26 @@ Před každým releasem do `main` se na dosavadní stav `main` pověsí značka
 **Nejdřív zjisti, jestli mezi verzemi přibyla migrace:**
 
 ```bash
-git diff --name-only vX.Y.Z..main -- migrations/
+git diff --name-only vX.Y.Z..main -- database/
 ```
+
+Migrace jsou v `database/`; složka `migrations/` v repu nikdy nebyla, takže
+příkaz s ní vypsal prázdno pokaždé — i když migrace přibyly.
 
 Když je výpis prázdný, je návrat čistě otázka kódu a nic se neztratí. Když
 prázdný není, databáze už je napřed a **samotné vrácení kódu nestačí** —
 migrace se nevrací samy a stará verze nemusí novou strukturu unést. To je
 případ na rozmyšlenou, ne na rychlý příkaz.
+
+> **Migrace 027 a 028 zpátky nejdou.** Runner ve `scripts/migrate.ts` zná jen
+> dopředný směr a žádná migrace zpětnou variantu nemá. Migrace 027 přejmenovala
+> `player.steam_id` na `hrac_id` (a totéž v pěti dalších tabulkách), migrace 028
+> `steam_name` na `platforma_jmeno` a `steam_hra` na `hra_vlastnictvi`. Verze
+> 1.7.5 a starší po nich **nenaběhnou** — čtou sloupce, které už neexistují.
+> `git revert` tedy u téhle dvojice nestačí: buď se dopíše a pustí zpětná
+> migrace, nebo se obnoví záloha ostré databáze `rob_aoe` (§3.5), nebo se místo
+> návratu opraví to, co je rozbité, a vydá se další verze. Vybrat se to musí **dřív**, než se
+> revert pushne — jinak ostrá verze spadne na startu.
 
 **Vrácení, které nechává historii být** (doporučené, `main` jde dál dopředu):
 

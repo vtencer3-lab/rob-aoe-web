@@ -76,9 +76,12 @@ v localStorage `rezie.razeni`. Hráči řazení nevidí (vidí pořadí přihlá
 Tažení jde jen ve vlastním pořadí — v seřazeném by přesun nebyl vidět.
 Spící jdou na konec vždy.
 
-## Ikona vlastnictví hry ze Steamu (migrace 019)
+## Ikona vlastnictví hry (migrace 019, přejmenovaná migrací 028)
 
-`player.steam_hra IN ('ma', 'nema', 'soukromy')`. Steam Web API
+`player.hra_vlastnictvi IN ('ma', 'nema', 'soukromy')` (do migrace 028 se
+sloupec jmenoval `steam_hra`). U Steam hráče ho plní Steam Web API, u
+Microsoft hráče herní historie Xboxu — význam je pro obě platformy „tuhle hru
+na tomhle účtu hrál“. Steam Web API
 `GetOwnedGames` říká obojí jednou odpovědí: hodiny (`playtime_forever` u
 appid 813780) i vlastnictví — **tvarem odpovědi**:
 

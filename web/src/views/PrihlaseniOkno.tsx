@@ -27,7 +27,10 @@ export function PrihlaseniOkno({ onZavrit }: { onZavrit: () => void }) {
         if (e.target === e.currentTarget) onZavrit();
       }}
     >
-      <div className="prelobby-okno prihlaseni-okno" role="dialog" aria-modal="true" aria-label="Přihlášení">
+      {/* Třída `prihlaseni-okno` odsud zmizela: po dvou úpravách vzhledu na ni
+          nezbylo jediné pravidlo a nic ji nehledalo. Okno stojí na
+          `.prelobby-okno`, rozložení erbů řeší `.prihlaseni-volby`. */}
+      <div className="prelobby-okno" role="dialog" aria-modal="true" aria-label="Přihlášení">
         <h2>Přihlášení</h2>
         {/*
           Bez popisků pod štíty: znaky obou platforem jsou známé dost na to, aby
