@@ -4,11 +4,14 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 import { registerDevRoutes } from "../auth/devRoutes.js";
+import { registerMicrosoftRoutes, type MicrosoftDeps } from "../auth/microsoftRoutes.js";
+import { buildTokenBody, TOKEN_URL } from "../auth/microsoftOAuth.js";
 import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
 import { getPlayer, savePlayerStats } from "../db/players.js";
 import { steamZdroje } from "../external/steam.js";
+import { ziskejXboxIdentitu } from "../external/xboxLive.js";
 import { fetchPersonalStat } from "../external/worldsEdge.js";
 import { seznamLobby } from "../matches/seznamLobby.js";
 import { maCerstveStaty, refreshPlayerStats } from "../players/refresh.js";
@@ -23,7 +26,7 @@ import { registerHlasRoutes } from "./routes/hlas.js";
 import { registerEmotyRoutes } from "./routes/emoty.js";
 import { VERZE } from "../shared/verze.js";
 
-export type ServerDeps = AuthDeps & MatchDeps;
+export type ServerDeps = AuthDeps & MatchDeps & MicrosoftDeps;
 
 function vychoziDeps(): ServerDeps {
   return {
@@ -43,6 +46,31 @@ function vychoziDeps(): ServerDeps {
       // právě mají otevřenou — jinak by čekali na jiný broadcast.
       await broadcastAkce();
     },
+    vymenKod: async (kod, verifier) => {
+      const res = await fetch(TOKEN_URL, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: buildTokenBody(
+          config.baseUrl,
+          config.msClientId,
+          config.msClientSecret,
+          kod,
+          verifier,
+        ).toString(),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const json: unknown = await res.json().catch(() => null);
+      const token =
+        typeof json === "object" && json !== null
+          ? (json as Record<string, unknown>)["access_token"]
+          : null;
+      if (!res.ok || typeof token !== "string") {
+        throw new Error("Microsoft nevydal přihlašovací token.");
+      }
+      return token;
+    },
+    ziskejIdentitu: (accessToken) => ziskejXboxIdentitu(accessToken),
+    poPrihlaseni: async () => {}, // naplní úkoly 8 a 9
   };
 }
 

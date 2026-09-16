@@ -153,6 +153,38 @@ export async function upsertPlayer(hracId: string, jeAdmin: boolean | null): Pro
   return mapuj(rows[0]!);
 }
 
+/**
+ * Klíč je `xbox:<xuid>`, protože XUID je to jediné, co máme jistě hned při
+ * přihlášení — gamertag si hráč může změnit. Prefix drží klíče obou platforem
+ * rozlišitelné na první pohled, stejně jako `test:` u zkušebních hráčů.
+ */
+export function xboxHracId(xuid: string): string {
+  return `xbox:${xuid}`;
+}
+
+/**
+ * Gamertag jde schválně i do platforma_jmeno: hráč má mít jméno hned po
+ * přihlášení, ne až ho doplní obnova žebříčku (ta běží mimo přihlašovací
+ * cestu, stejně jako u Steamu).
+ */
+export async function upsertHracXbox(
+  xuid: string,
+  gamertag: string,
+  jeAdmin: boolean | null,
+): Promise<PlayerRow> {
+  const { rows } = await getPool().query<DbRow>(
+    `INSERT INTO player (hrac_id, platforma, xbox_xuid, xbox_gamertag, platforma_jmeno, je_admin)
+     VALUES ($1, 'xbox', $2, $3, $3, COALESCE($4::boolean, false))
+     ON CONFLICT (hrac_id) DO UPDATE SET
+       xbox_gamertag   = EXCLUDED.xbox_gamertag,
+       platforma_jmeno = EXCLUDED.platforma_jmeno,
+       je_admin        = COALESCE($4::boolean, player.je_admin)
+     RETURNING ${SLOUPCE}`,
+    [xboxHracId(xuid), xuid, gamertag, jeAdmin],
+  );
+  return mapuj(rows[0]!);
+}
+
 /** Podklad pro nouzový režim: povýšit prvního přihlášeného smíme jen dokud admin neexistuje. */
 export async function existujeAdmin(): Promise<boolean> {
   const { rows } = await getPool().query<{ existuje: boolean }>(
