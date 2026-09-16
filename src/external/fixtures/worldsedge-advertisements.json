@@ -52,7 +52,7 @@
       "description": "xbox host",
       "passwordprotected": 0,
       "isobservable": 0,
-      "matchmembers": []
+      "matchmembers": [{ "match_id": 504951802, "profile_id": 303, "teamid": -1 }]
     },
     { "id": null, "description": "bez id" },
     "nesmysl"

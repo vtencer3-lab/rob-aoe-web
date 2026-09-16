@@ -1,12 +1,16 @@
 import { inflateSync } from "node:zlib";
-import type { AiSlot, PoznatekLobby, SlotLobby } from "../shared/lobbyKontrola.js";
+import type { AiSlot, NastaveniZeHry, PoznatekLobby, PreLobbyZeHry, SlotLobby } from "../shared/lobbyKontrola.js";
 import type { Barva, Tym } from "../shared/types.js";
 
 /**
  * Seznam otevřených lobby ze stejného backendu, ze kterého web bere žebříček.
  * Nezdokumentovaný, bez přihlášení, vrací veřejné lobby před startem hry.
  * Ověřeno 7. 9. 2026: `id` inzerátu je přesně číslo z odkazu
- * `aoe2de://0/<id>`, host i členové jsou v `avatars` pod `/steam/<hracId>`.
+ * `aoe2de://0/<id>`. Host, členové i obsazené sloty nesou `profile_id` —
+ * totéž číslo, které web ukládá do `player.we_profil_id` u Steam i
+ * Microsoft hráčů (úkoly 2, 4 a 8). Tenhle modul je hermetický (na databázi
+ * nesahá), takže vrací jen čísla profilů; na `hracId` webu je překládá až
+ * `src/matches/seznamLobby.ts`, jediné místo, které databázi má.
  *
  * Endpoint vrací nejvýš 100 lobby na stránku (nejnovější první) a starší
  * odsouvá na `start=100`, `start=200`, … Filtrovat neumí (parametry
@@ -23,15 +27,39 @@ import type { Barva, Tym } from "../shared/types.js";
 export interface LobbyInzerat extends PoznatekLobby {
   nazev: string;
   /**
-   * ID všech, kdo v lobby sedí (včetně hosta) — zatím jen steam_id, protože
-   * `avatars` endpointu nese jen jména s prefixem `/steam/`. Totéž co sloty,
-   * jen jména.
+   * ID všech, kdo v lobby sedí (včetně hosta) — hráči webu, na které se
+   * podařilo přeložit číslo profilu (`prelozHrace`). Funguje stejně pro
+   * Steam i Microsoft, protože obě platformy mají profil v `player.we_profil_id`.
    */
   clenoveHraci: string[];
 }
 
+/** Slot, jak vyjde z parseru: hráč je zatím jen číslo profilu. */
+export interface SlotSProfilem extends Omit<SlotLobby, "hracId"> {
+  profilId: number;
+}
+
+/**
+ * Inzerát, jak vyjde z parseru. Hráči jsou čísla profilů, protože parser je
+ * hermetický a na databázi sahat nesmí. Každý záznam v `matches` nese
+ * `profile_id` bez ohledu na platformu — a totéž číslo drží web ve
+ * `player.we_profil_id`, takže jedna cesta stačí na Steam i Xbox.
+ */
+export interface InzeratSProfily {
+  lobbyId: string;
+  hostProfilId: number | null;
+  nazev: string;
+  maHeslo: boolean;
+  povolujeDivaky: boolean;
+  clenoveProfily: number[];
+  slotyProfily: SlotSProfilem[];
+  aiSloty: AiSlot[];
+  pocetSlotu: number | null;
+  preLobby: PreLobbyZeHry;
+  nastaveni: NastaveniZeHry | null;
+}
+
 const ZAKLAD = "https://aoe-api.worldsedgelink.com/community/advertisement";
-const STEAM_PREFIX = "/steam/";
 const STRANKA = 100;
 
 function jeObjekt(hodnota: unknown): hodnota is Record<string, unknown> {
@@ -44,22 +72,6 @@ function cisloJakoText(hodnota: unknown): string | null {
   }
   if (typeof hodnota === "string" && /^\d+$/.test(hodnota)) return hodnota;
   return null;
-}
-
-/** Z pole `avatars` postaví mapu profile_id → Steam ID (jen účty ze Steamu). */
-function mapaHracu(avatars: unknown): Map<number, string> {
-  const mapa = new Map<number, string>();
-  if (!Array.isArray(avatars)) return mapa;
-  for (const a of avatars) {
-    if (!jeObjekt(a)) continue;
-    const id = a["profile_id"];
-    const name = a["name"];
-    if (typeof id !== "number" || typeof name !== "string") continue;
-    if (!name.startsWith(STEAM_PREFIX)) continue;
-    const hracId = name.slice(STEAM_PREFIX.length);
-    if (/^\d{17}$/.test(hracId)) mapa.set(id, hracId);
-  }
-  return mapa;
 }
 
 /** Bajt s počtem, pak řetězce s délkou uint32 LE před sebou. */
@@ -201,8 +213,7 @@ const STAV_ZAVRENY = 1;
  */
 export function parseSloty(
   zabalene: unknown,
-  steam: Map<number, string>,
-): { lide: SlotLobby[]; ai: AiSlot[]; pocetSlotu: number | null } {
+): { lide: SlotSProfilem[]; ai: AiSlot[]; pocetSlotu: number | null } {
   const prazdne = { lide: [], ai: [], pocetSlotu: null };
   const text = rozbal(zabalene);
   if (text === null) return prazdne;
@@ -220,16 +231,18 @@ export function parseSloty(
     return prazdne;
   }
   if (!Array.isArray(pole)) return prazdne;
-  const lide: SlotLobby[] = [];
+  const lide: SlotSProfilem[] = [];
   const ai: AiSlot[] = [];
   let pocetSlotu = 0;
   for (const s of pole) {
     if (!jeObjekt(s)) continue;
     if (s["status"] !== STAV_ZAVRENY) pocetSlotu++;
     const pid = s["profileInfo.id"];
-    const hracId = typeof pid === "number" ? steam.get(pid) : undefined;
-    if (hracId) {
-      lide.push({ hracId, ...slotZMetadat(s) });
+    // Prázdný slot i AI mají id −1. Dosud je odfiltrovalo to, že takové
+    // číslo nebylo v mapě Steam ID; bez mapy to musí udělat tahle podmínka,
+    // jinak by se z počítačového protivníka stal „hráč“.
+    if (typeof pid === "number" && pid > 0) {
+      lide.push({ profilId: pid, ...slotZMetadat(s) });
       continue;
     }
     if (s["status"] === STAV_AI) ai.push(slotZMetadat(s));
@@ -237,43 +250,47 @@ export function parseSloty(
   return { lide, ai, pocetSlotu };
 }
 
-export function parseAdvertisements(json: unknown): LobbyInzerat[] {
+export function parseAdvertisements(json: unknown): InzeratSProfily[] {
   if (!jeObjekt(json)) return [];
   const matches = json["matches"];
   if (!Array.isArray(matches)) return [];
-  const steam = mapaHracu(json["avatars"]);
 
-  const vysledek: LobbyInzerat[] = [];
+  const vysledek: InzeratSProfily[] = [];
   for (const m of matches) {
     if (!jeObjekt(m)) continue;
     const lobbyId = cisloJakoText(m["id"]);
     if (!lobbyId) continue;
     const host = m["host_profile_id"];
-    const clenove: string[] = [];
+    const clenove: number[] = [];
     const members = m["matchmembers"];
     if (Array.isArray(members)) {
       for (const c of members) {
         if (!jeObjekt(c)) continue;
         const pid = c["profile_id"];
-        const sid = typeof pid === "number" ? steam.get(pid) : undefined;
-        if (sid) clenove.push(sid);
+        if (typeof pid === "number" && pid > 0) clenove.push(pid);
       }
     }
+    // Jedno rozbalení slotinfo na inzerát: dosud se parseSloty volalo dvakrát
+    // na tentýž zip, jednou kvůli slotům a podruhé kvůli maxHracu. Při až
+    // tisícovce lobby na dotaz je to zbytečná práce navíc.
+    const { lide, ai, pocetSlotu } = parseSloty(m["slotinfo"]);
     const options = parseOptions(m["options"]);
     vysledek.push({
       lobbyId,
-      hostHracId: typeof host === "number" ? (steam.get(host) ?? null) : null,
+      hostProfilId: typeof host === "number" && host > 0 ? host : null,
       nazev: typeof m["description"] === "string" ? m["description"] : "",
       maHeslo: m["passwordprotected"] === 1 || m["passwordprotected"] === true,
       povolujeDivaky: m["isobservable"] === 1 || m["isobservable"] === true,
-      clenoveHraci: clenove,
-      ...(({ lide, ai, pocetSlotu }) => ({ sloty: lide, aiSloty: ai, pocetSlotu }))(parseSloty(m["slotinfo"], steam)),
+      clenoveProfily: clenove,
+      slotyProfily: lide,
+      aiSloty: ai,
+      pocetSlotu,
       preLobby: {
         lobbyTyp: typeof m["matchtype_id"] === "number" ? m["matchtype_id"] : null,
         viditelnost: typeof m["visible"] === "number" ? m["visible"] : null,
         // Ne maxplayers: to je vždycky 8, tedy kolik hráčů hra unese. Kolik
         // slotů lobby doopravdy má, se pozná až podle nezavřených slotů.
-        maxHracu: parseSloty(m["slotinfo"], steam).pocetSlotu,
+        maxHracu: pocetSlotu,
         zpozdeniDivakuSekund: typeof m["observerdelay"] === "number" ? m["observerdelay"] : null,
         server: typeof m["relayserver_region"] === "string" ? m["relayserver_region"] : null,
       },
@@ -283,11 +300,52 @@ export function parseAdvertisements(json: unknown): LobbyInzerat[] {
   return vysledek;
 }
 
+/** Všechna čísla profilů, na která se pak databáze zeptá jedním dotazem. */
+export function profilyVInzeratech(inzeraty: InzeratSProfily[]): number[] {
+  const vsechny = new Set<number>();
+  for (const i of inzeraty) {
+    if (i.hostProfilId !== null) vsechny.add(i.hostProfilId);
+    for (const p of i.clenoveProfily) vsechny.add(p);
+    for (const s of i.slotyProfily) vsechny.add(s.profilId);
+  }
+  return [...vsechny];
+}
+
+/**
+ * Z čísel profilů udělá hráče webu. Kdo na webu není, vypadne — nerozpoznaný
+ * hráč je správná odpověď, vymyšlené id by bylo horší než žádné.
+ */
+export function prelozHrace(
+  inzeraty: InzeratSProfily[],
+  mapa: Map<number, string>,
+): LobbyInzerat[] {
+  return inzeraty.map((i) => ({
+    lobbyId: i.lobbyId,
+    hostHracId: i.hostProfilId !== null ? (mapa.get(i.hostProfilId) ?? null) : null,
+    nazev: i.nazev,
+    maHeslo: i.maHeslo,
+    povolujeDivaky: i.povolujeDivaky,
+    clenoveHraci: i.clenoveProfily.flatMap((p) => {
+      const hracId = mapa.get(p);
+      return hracId ? [hracId] : [];
+    }),
+    sloty: i.slotyProfily.flatMap((s) => {
+      const hracId = mapa.get(s.profilId);
+      return hracId
+        ? [{ hracId, barva: s.barva, tym: s.tym, civ: s.civ, pripraven: s.pripraven }]
+        : [];
+    }),
+    aiSloty: i.aiSloty,
+    preLobby: i.preLobby,
+    nastaveni: i.nastaveni,
+  }));
+}
+
 /** Stáhne všechny stránky (po 100) a slije je do jednoho seznamu. */
 export async function fetchAdvertisements(
   fetchImpl: typeof fetch = fetch,
-): Promise<LobbyInzerat[]> {
-  const vsechny: LobbyInzerat[] = [];
+): Promise<InzeratSProfily[]> {
+  const vsechny: InzeratSProfily[] = [];
   for (let start = 0; start < 1000; start += STRANKA) {
     const res = await fetchImpl(`${ZAKLAD}/findAdvertisements?title=age2&start=${start}`, {
       signal: AbortSignal.timeout(10_000),

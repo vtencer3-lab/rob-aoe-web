@@ -4,7 +4,9 @@ import {
   existujeAdmin,
   getPlayer,
   getPlayers,
+  hraciPodleProfilu,
   savePlayerStats,
+  upsertHracXbox,
   upsertPlayer,
 } from "./players.js";
 
@@ -115,6 +117,22 @@ it("načte víc hráčů najednou", async () => {
   await upsertPlayer("76561198000000007", false);
   const hraci = await getPlayers(["76561198000000006", "76561198000000007", "neznamy"]);
   expect(hraci.map((h) => h.hracId).sort()).toEqual(["76561198000000006", "76561198000000007"]);
+});
+
+it("přeloží profily z lobby na hráče webu jedním dotazem", async () => {
+  await upsertPlayer("76561198000000011", false);
+  await savePlayerStats("76561198000000011", { weProfilId: 111111, chyba: null });
+  await upsertHracXbox("2535412345678901", "Konzolista", false);
+  await savePlayerStats("xbox:2535412345678901", { weProfilId: 222222, chyba: null });
+
+  const mapa = await hraciPodleProfilu([111111, 222222, 999999]);
+  expect(mapa.get(111111)).toBe("76561198000000011");
+  expect(mapa.get(222222)).toBe("xbox:2535412345678901");
+  expect(mapa.has(999999)).toBe(false);
+});
+
+it("prázdný seznam profilů se do databáze vůbec nezeptá", async () => {
+  expect(await hraciPodleProfilu([])).toEqual(new Map());
 });
 
 it("upsertPlayer s null práva admina nemění", async () => {

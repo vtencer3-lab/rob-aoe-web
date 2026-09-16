@@ -250,3 +250,17 @@ export async function getPlayers(hracIds: string[]): Promise<PlayerRow[]> {
   );
   return rows.map(mapuj);
 }
+
+/**
+ * Profil z lobby na hráče webu; jeden dotaz na celý seznam, ne dotaz na
+ * lobby — s tisícovkou otevřených lobby v jedné odpovědi by se to jinak
+ * neúnosně prodloužilo.
+ */
+export async function hraciPodleProfilu(profily: number[]): Promise<Map<number, string>> {
+  if (profily.length === 0) return new Map();
+  const { rows } = await getPool().query<{ we_profil_id: number; hrac_id: string }>(
+    `SELECT we_profil_id, hrac_id FROM player WHERE we_profil_id = ANY($1::integer[])`,
+    [profily],
+  );
+  return new Map(rows.map((r) => [r.we_profil_id, r.hrac_id]));
+}
