@@ -695,14 +695,21 @@ h2.nadpis-akce::after {
 /* Okno volby platformy: dvě cesty vedle sebe, na úzké obrazovce pod sebe. */
 .prihlaseni-volby {
   display: flex;
-  /* Štíty stojí vedle sebe jako dvě samostatné volby, ne jako dvojice tlačítek:
-     mezera roste s oknem, aby si na širokém displeji nelezly na rám. */
-  gap: clamp(1.5rem, 6vw, 5rem);
+  /* Vedle sebe, nikdy pod sebou: štít se radši zmenší, než aby se dvojice
+     rozpadla na sloupec. Proto `nowrap` a smrštitelný základ níž.
+     Mezera i šířka jsou v procentech tohohle okna, ne ve `vw` — `vw` měří
+     obrazovku, ne modál, takže na širokém displeji nafoukla štíty přes jeho
+     šířku a zalomila je. */
+  flex-wrap: nowrap;
+  gap: 8%;
   justify-content: center;
-  flex-wrap: wrap;
+  align-items: center;
 }
 .prihlaseni-volby a {
   display: flex;
+  /* Základ 256 px, ale smrštitelný: na úzkém okně se štít zmenší místo zalomení. */
+  flex: 0 1 256px;
+  min-width: 0;
   /* Odkaz s obrázkem si nesmí vzít reliéf ražené destičky (grafika.md §7). */
   background: none;
   border: none;
@@ -715,7 +722,7 @@ h2.nadpis-akce::after {
      displeji s vysokou hustotou roztáhne a rozmaže — proto se posílá
      dvojnásobek a zmenšuje se až tady. Clamp dole drží dvojici vedle sebe
      i na úzkém mobilu. */
-  width: clamp(112px, 26vw, 256px);
+  width: 100%;
   height: auto;
   transition: transform 120ms ease;
 }
