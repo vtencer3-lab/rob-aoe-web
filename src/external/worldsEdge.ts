@@ -9,6 +9,10 @@ export interface LeaderboardStats {
   posledniZapas: Date | null;
   /** Všechny žebříčky hráče (pro kartu se statistikami); prázdné = nikde nehrál. */
   zebricky: ZebricekRadek[];
+  /** Kanonické jméno profilu, `/steam/…` nebo `/xboxlive/…`. */
+  profil: string | null;
+  /** Číslo profilu; používá ho obnova statistik i rozpoznání v lobby. */
+  profilId: number | null;
 }
 
 /** SOLO_RM_RANKED — 1v1 Random Map. Ostatní žebříčky se ignorují. */
@@ -16,11 +20,13 @@ const ZEBRICEK_1V1 = 3;
 
 const ZAKLAD = "https://aoe-api.worldsedgelink.com/community/leaderboard";
 
+/** Rozšířit o dvě pole, která se dosud nečetla. */
 interface Member {
   name?: unknown;
   alias?: unknown;
   personal_statgroup_id?: unknown;
   country?: unknown;
+  profile_id?: unknown;
 }
 
 function cisloNeboNull(hodnota: unknown): number | null {
@@ -32,18 +38,25 @@ function jeObjekt(hodnota: unknown): hodnota is Record<string, unknown> {
   return typeof hodnota === "object" && hodnota !== null;
 }
 
-export function parsePersonalStat(json: unknown, hracId: string): LeaderboardStats | null {
+/**
+ * Najde člena podle vlastní podmínky; zbytek zpracování je pro obě platformy
+ * stejný. Dosud bylo hledání podle `/steam/<id>` zadrátované uvnitř, takže
+ * Xbox větev by se od Steam větve mohla nepozorovaně rozejít.
+ */
+function statyZOdpovedi(
+  json: unknown,
+  vyhovuje: (member: Record<string, unknown>) => boolean,
+): LeaderboardStats | null {
   if (!jeObjekt(json)) return null;
   const data = json as { statGroups?: unknown; leaderboardStats?: unknown };
   if (!Array.isArray(data.statGroups)) return null;
 
-  const hledane = `/steam/${hracId}`;
   let member: Member | undefined;
   for (const skupina of data.statGroups) {
     if (!jeObjekt(skupina)) continue;
     const members = skupina.members;
     if (!Array.isArray(members)) continue;
-    const nalezeny = members.find((m) => jeObjekt(m) && m.name === hledane) as Member | undefined;
+    const nalezeny = members.find((m) => jeObjekt(m) && vyhovuje(m)) as Member | undefined;
     if (nalezeny) {
       member = nalezeny;
       break;
@@ -85,7 +98,39 @@ export function parsePersonalStat(json: unknown, hracId: string): LeaderboardSta
     odehranoHer: wins !== null && losses !== null ? wins + losses : null,
     posledniZapas: lastMatch !== null ? new Date(lastMatch * 1000) : null,
     zebricky,
+    profil: typeof member.name === "string" ? member.name : null,
+    profilId: cisloNeboNull(member.profile_id),
   };
+}
+
+export function parsePersonalStat(json: unknown, hracId: string): LeaderboardStats | null {
+  return statyZOdpovedi(json, (m) => m["name"] === `/steam/${hracId}`);
+}
+
+/**
+ * Dohledání podle herního jména. `vyzadovanyPrefix` je pojistka: žebříček je
+ * pro Steam i Xbox společný, takže bez něj by Microsoft hráč dostal
+ * statistiky cizího Steam hráče, který má shodou okolností stejný alias.
+ */
+export function parsePersonalStatPodleAliasu(
+  json: unknown,
+  alias: string,
+  vyzadovanyPrefix = "/xboxlive/",
+): LeaderboardStats | null {
+  return statyZOdpovedi(
+    json,
+    (m) =>
+      m["alias"] === alias &&
+      typeof m["name"] === "string" &&
+      m["name"].startsWith(vyzadovanyPrefix),
+  );
+}
+
+export function parsePersonalStatPodleProfilu(
+  json: unknown,
+  profilId: number,
+): LeaderboardStats | null {
+  return statyZOdpovedi(json, (m) => m["profile_id"] === profilId);
 }
 
 export async function fetchPersonalStat(
@@ -97,4 +142,34 @@ export async function fetchPersonalStat(
   const res = await fetchImpl(url, { signal: AbortSignal.timeout(10_000) });
   if (!res.ok) throw new Error(`Worlds Edge odpovědělo ${res.status}`);
   return parsePersonalStat(await res.json(), hracId);
+}
+
+/**
+ * První dohledání Microsoft hráče: přihlášení zná jen gamertag (alias),
+ * profil se stálým číslem se dozvíme až z týhle odpovědi.
+ */
+export async function fetchPersonalStatPodleAliasu(
+  alias: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<LeaderboardStats | null> {
+  const aliasy = encodeURIComponent(JSON.stringify([alias]));
+  const url = `${ZAKLAD}/getPersonalStat?title=age2&aliases=${aliasy}`;
+  const res = await fetchImpl(url, { signal: AbortSignal.timeout(10_000) });
+  if (!res.ok) throw new Error(`Worlds Edge odpovědělo ${res.status}`);
+  return parsePersonalStatPodleAliasu(await res.json(), alias);
+}
+
+/**
+ * Každá další obnova Microsoft hráče: podle profil_id, protože alias
+ * (gamertag) si jde ve hře kdykoliv změnit.
+ */
+export async function fetchPersonalStatPodleProfilu(
+  profilId: number,
+  fetchImpl: typeof fetch = fetch,
+): Promise<LeaderboardStats | null> {
+  const profily = encodeURIComponent(JSON.stringify([profilId]));
+  const url = `${ZAKLAD}/getPersonalStat?title=age2&profile_ids=${profily}`;
+  const res = await fetchImpl(url, { signal: AbortSignal.timeout(10_000) });
+  if (!res.ok) throw new Error(`Worlds Edge odpovědělo ${res.status}`);
+  return parsePersonalStatPodleProfilu(await res.json(), profilId);
 }

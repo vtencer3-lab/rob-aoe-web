@@ -45,6 +45,10 @@ export interface PlayerStatsUpdate {
   steamHodiny?: number | null;
   hraVlastnictvi?: Vlastnictvi | null;
   zebricky?: ZebricekRadek[] | null;
+  /** Kanonické jméno profilu ve Worlds Edge, `/steam/…` nebo `/xboxlive/…`. */
+  weProfil?: string | null;
+  /** Číselný profil; u Microsoft hráčů z něj jde další obnova, u Steam hráčů se plní zdarma ze stejné odpovědi. */
+  weProfilId?: number | null;
   chyba: string | null;
 }
 
@@ -172,7 +176,9 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
        hra_vlastnictvi = CASE WHEN $14::boolean THEN $15::text ELSE hra_vlastnictvi END,
        staty_stazeny_v = now(),
        staty_chyba     = $12,
-       zebricky        = COALESCE($13::jsonb, zebricky)
+       zebricky        = COALESCE($13::jsonb, zebricky),
+       we_profil       = COALESCE($16, we_profil),
+       we_profil_id    = COALESCE($17::integer, we_profil_id)
      WHERE hrac_id = $1`,
     [
       hracId,
@@ -190,6 +196,8 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
       staty.zebricky ? JSON.stringify(staty.zebricky) : null,
       "hraVlastnictvi" in staty,
       staty.hraVlastnictvi ?? null,
+      staty.weProfil ?? null,
+      staty.weProfilId ?? null,
     ],
   );
 }

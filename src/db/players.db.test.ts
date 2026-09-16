@@ -63,6 +63,20 @@ it("uloží statistiky včetně času stažení", async () => {
   expect(hrac?.statyChyba).toBeNull();
 });
 
+it("uloží we_profil a we_profil_id, i pro Steam hráče", async () => {
+  await upsertPlayer("76561198000000010", false);
+  await savePlayerStats("76561198000000010", {
+    alias: "TenceR",
+    weProfil: "/steam/76561198000000010",
+    weProfilId: 654321,
+    chyba: null,
+  });
+
+  const hrac = await getPlayer("76561198000000010");
+  expect(hrac?.weProfil).toBe("/steam/76561198000000010");
+  expect(hrac?.weProfilId).toBe(654321);
+});
+
 it("zapíše chybu, ale nepřepíše dřívější hodnoty", async () => {
   await upsertPlayer("76561198000000004", false);
   await savePlayerStats("76561198000000004", {

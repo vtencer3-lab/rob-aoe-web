@@ -10,6 +10,8 @@ const ZEBRICEK = {
   odehranoHer: 512,
   zebricky: [],
   posledniZapas: new Date("2026-08-30T10:00:00Z"),
+  profil: "/steam/76561198000000001",
+  profilId: 123456,
 };
 
 function depsSe(prepis: Partial<RefreshDeps> = {}) {

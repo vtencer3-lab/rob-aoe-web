@@ -1,6 +1,42 @@
 import { describe, expect, it } from "vitest";
 import fixture from "./fixtures/worldsedge-personalstat.json" with { type: "json" };
-import { parsePersonalStat } from "./worldsEdge.js";
+import {
+  parsePersonalStat,
+  parsePersonalStatPodleAliasu,
+  fetchPersonalStatPodleAliasu,
+  fetchPersonalStatPodleProfilu,
+} from "./worldsEdge.js";
+
+// Zkrácená živá odpověď ze sondy 16. 9. 2026 (Xbox hráč).
+const XBOX_ODPOVED = {
+  result: { code: 0, message: "SUCCESS" },
+  statGroups: [
+    {
+      id: 4972952,
+      members: [
+        {
+          profile_id: 6458213,
+          name: "/xboxlive/D3B6B94FC53483297CEEA5A85933D3129D8A5B36",
+          alias: "MING4888",
+          personal_statgroup_id: 4972952,
+          country: "tw",
+        },
+      ],
+    },
+  ],
+  leaderboardStats: [
+    {
+      statgroup_id: 4972952,
+      leaderboard_id: 3,
+      wins: 43,
+      losses: 44,
+      rating: 1067,
+      highestrating: 1082,
+      lastmatchdate: 1736577544,
+      rank: -1,
+    },
+  ],
+};
 
 describe("parsePersonalStat", () => {
   it("vytáhne jméno ve hře a 1v1 ELO", () => {
@@ -79,5 +115,57 @@ describe("parsePersonalStat", () => {
     );
     expect(staty).not.toBeNull();
     expect(staty!.elo1v1).toBeNull();
+  });
+
+  it("u Steam hráče vyplní profil i profilId", () => {
+    const staty = parsePersonalStat(fixture, "76561198000635167");
+    expect(staty?.profil).toMatch(/^\/steam\//);
+    expect(typeof staty?.profilId).toBe("number");
+  });
+});
+
+describe("parsePersonalStatPodleAliasu", () => {
+  it("dohledá Xbox hráče podle aliasu a vrátí jeho profil", () => {
+    const staty = parsePersonalStatPodleAliasu(XBOX_ODPOVED, "MING4888");
+    expect(staty).toMatchObject({
+      alias: "MING4888",
+      elo1v1: 1067,
+      country: "tw",
+      profil: "/xboxlive/D3B6B94FC53483297CEEA5A85933D3129D8A5B36",
+      profilId: 6458213,
+    });
+  });
+
+  it("odmítne Steam profil, i když se alias shoduje", () => {
+    const steamOdpoved = structuredClone(XBOX_ODPOVED);
+    steamOdpoved.statGroups[0]!.members[0]!.name = "/steam/76561198014056480";
+    // Žebříček je pro obě platformy společný: bez téhle kontroly by Microsoft
+    // hráč dostal statistiky cizího Steam hráče se stejnou přezdívkou.
+    expect(parsePersonalStatPodleAliasu(steamOdpoved, "MING4888", "/xboxlive/")).toBeNull();
+  });
+
+  it("dotaz podle aliasu posílá parametr aliases", async () => {
+    let volanaUrl = "";
+    const falesnyFetch = (async (url: string) => {
+      volanaUrl = url;
+      return { ok: true, json: async () => XBOX_ODPOVED } as unknown as Response;
+    }) as unknown as typeof fetch;
+
+    await fetchPersonalStatPodleAliasu("MING4888", falesnyFetch);
+    expect(volanaUrl).toContain("aliases=");
+    expect(decodeURIComponent(volanaUrl)).toContain('["MING4888"]');
+  });
+});
+
+describe("parsePersonalStatPodleProfilu", () => {
+  it("dotaz podle profilu posílá parametr profile_ids", async () => {
+    let volanaUrl = "";
+    const falesnyFetch = (async (url: string) => {
+      volanaUrl = url;
+      return { ok: true, json: async () => XBOX_ODPOVED } as unknown as Response;
+    }) as unknown as typeof fetch;
+
+    await fetchPersonalStatPodleProfilu(6458213, falesnyFetch);
+    expect(decodeURIComponent(volanaUrl)).toContain("profile_ids=[6458213]");
   });
 });

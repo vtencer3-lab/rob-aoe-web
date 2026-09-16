@@ -67,6 +67,8 @@ export async function refreshPlayerStats(hracId: string, deps: RefreshDeps): Pro
       odehranoHer: zebricek?.odehranoHer ?? null,
       posledniZapas: zebricek?.posledniZapas ?? null,
       zebricky: zebricek?.zebricky ?? null,
+      weProfil: zebricek?.profil ?? null,
+      weProfilId: zebricek?.profilId ?? null,
       platformaJmeno: profil?.personaName ?? null,
       avatarUrl: profil?.avatarUrl ?? null,
       chyba: chyby.length > 0 ? chyby.join("; ") : null,
