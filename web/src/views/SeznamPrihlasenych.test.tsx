@@ -100,10 +100,39 @@ it("ukazuje vlastnictví hry ze Steamu vedle jména", () => {
       ]}
     />,
   );
-  expect(screen.getByRole("img", { name: /hru má na steamu/i })).toHaveClass("ma");
-  expect(screen.getByRole("img", { name: /soukromý steam profil/i })).toHaveClass("soukromy");
-  expect(screen.getByRole("img", { name: /nebyla nalezena/i })).toHaveClass("nema");
+  expect(screen.getByRole("img", { name: /^Hru má v knihovně na Steamu$/i })).toHaveClass("ma");
+  expect(screen.getByRole("img", { name: /knihovna na Steamu je skrytá/i })).toHaveClass("soukromy");
+  expect(screen.getByRole("img", { name: /^V knihovně na Steamu tahle hra není$/i })).toHaveClass("nema");
   expect(screen.getAllByTestId("odznak-hry")).toHaveLength(3);
+});
+
+// Sloupec i typ se přejmenovaly a zdroj pro Xbox přibyl, ale text zůstal
+// steamový — Microsoft hráči tvrdil nepravdu. Steamu se ptáme na knihovnu,
+// Microsoftu na herní historii; společné je „hru na tomhle účtu hrál“.
+it("u Microsoft hráče mluví bublina o Microsoft účtu, ne o Steamu", () => {
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[
+        hrac({ hracId: "a", alias: "Ma", platforma: "xbox", hraVlastnictvi: "ma" }),
+        hrac({ hracId: "b", alias: "Tajny", platforma: "xbox", hraVlastnictvi: "soukromy" }),
+        hrac({ hracId: "c", alias: "Nema", platforma: "xbox", hraVlastnictvi: "nema" }),
+      ]}
+    />,
+  );
+  for (const odznak of screen.getAllByTestId("odznak-hry")) {
+    expect(odznak.getAttribute("aria-label")).not.toMatch(/steam/i);
+    expect(odznak.getAttribute("aria-label")).toMatch(/Microsoft/);
+  }
+  expect(screen.getByRole("img", { name: /hru na tomhle Microsoft účtu hrál/i })).toHaveClass("ma");
+  expect(screen.getByRole("img", { name: /herní historie.*skrytá/i })).toHaveClass("soukromy");
+  expect(screen.getByRole("img", { name: /herní historii.*hra není/i })).toHaveClass("nema");
+});
+
+// Chybějící platforma (starší snímek stavu, AI hráči) se čte jako Steam —
+// tak to na webu bylo roky a Steam hráčů je drtivá většina.
+it("bez uvedené platformy mluví bublina jako dřív, o Steamu", () => {
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "a", alias: "Ma", hraVlastnictvi: "ma" })]} />);
+  expect(screen.getByTestId("odznak-hry").getAttribute("aria-label")).toMatch(/Steamu/);
 });
 
 // Kdo právě hraje běžící zápas, má v režii zkřížené meče — ať Rob neskládá

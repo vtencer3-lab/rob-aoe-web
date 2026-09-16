@@ -66,6 +66,12 @@ export interface PlayerView {
   eloNejvyssi: number | null;
   odehranoHer: number | null;
   steamHodiny: number | null;
+  /**
+   * Platforma přihlášení; chybí ve starších snímcích a u zástupných hráčů
+   * (výchozí = Steam). Tabulka podle ní říká, co vlastně ikona hry ověřila:
+   * u Steamu knihovnu, u Microsoftu herní historii.
+   */
+  platforma?: "steam" | "xbox";
   /** Vlastnictví hry; null = ještě nezjištěno (nebo bez klíče k dané platformě). */
   hraVlastnictvi?: Vlastnictvi | null;
   posledniZapas: string | null;

@@ -25,7 +25,7 @@ interface Props {
    * nesestavuje další zápas z lidí, kteří jsou zrovna ve hře.
    */
   vZapase?: Map<string, number>;
-  /** Steam ID přihlášeného návštěvníka: jen on u sebe vidí „Jsem tu!“. */
+  /** Klíč přihlášeného návštěvníka (`hracId`): jen on u sebe vidí „Jsem tu!“. */
   ja?: string | null;
   /** Debug mód: kliknutí na ikonu hry cykluje její stavy, ať jde vidět všechny. */
   ladeni?: boolean;
@@ -418,7 +418,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                 >
                   {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={28} height={28} /> : null}
                   {jmeno}
-                  <OdznakHry stav={stavHry(hrac)} onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined} />
+                  <OdznakHry stav={stavHry(hrac)} platforma={hrac.platforma} onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined} />
                 </span>
                 {hrac.statyChyba ? (
                   <span className="varovani" title={hrac.statyChyba}>
@@ -429,8 +429,10 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
               <td>{formatElo(hrac.elo1v1)}</td>
               <td>{formatElo(hrac.eloNejvyssi)}</td>
               <td>{formatOdehrano(hrac.odehranoHer)}</td>
-              {/* Bez avataru se Steamu nikdo neptal (chybí klíč, nebo dotaz
-                  selhal) — pak NULL neznamená skrytý profil, ale „nevíme“. */}
+              {/* Bez avataru se platformy nikdo nezeptal (chybí Steam klíč,
+                  nebo dotaz selhal) — pak NULL neznamená skrytý profil, ale
+                  „nevíme“. Microsoft hodiny nezveřejňuje vůbec, tam je pomlčka
+                  správná odpověď i s avatarem. */}
               <td>{hrac.steamHodiny !== null || hrac.avatarUrl ? formatHodiny(hrac.steamHodiny) : "—"}</td>
               {/* Tlačítko a značka mají vlastní sloupce. V jednom by šířka
                   tlačítka odsouvala odpočet a ten by se řádek od řádku
@@ -608,19 +610,44 @@ function ZnackaHrace({
 }
 
 /**
- * Ikona hry vedle jména: potvrzení ze Steamu, že hráč AoE2 má. Skrytá knihovna
- * dostane siluetu s tichým otazníkem (ověřit nejde), veřejná knihovna bez hry
- * ikonu s vykřičníkem — to je stav, na který má Rob přijít před večerem, ne
- * až v lobby. Dokud Steam nic neřekl (bez klíče, před prvním stažením), nic.
+ * Co která platforma o hře doopravdy říká. Ptáme se jinde a hráči se to má
+ * říct tak, jak to je: u Steamu rozhoduje knihovna účtu, u Microsoftu herní
+ * historie Xbox profilu (vlastnictví se u něj zjistit nedá, viz návrh §6.1).
+ * Společné oběma je „tuhle hru na tomhle účtu hrál“ — a přesně tohle ikona
+ * znamená.
  */
-function OdznakHry({ stav, onKlik }: { stav: Vlastnictvi | null; onKlik?: () => void }) {
+const POPIS_HRY: Record<"steam" | "xbox", Record<Vlastnictvi, string>> = {
+  steam: {
+    ma: "Hru má v knihovně na Steamu",
+    soukromy: "Knihovna na Steamu je skrytá, ověřit hru nejde",
+    nema: "V knihovně na Steamu tahle hra není",
+  },
+  xbox: {
+    ma: "Hru na tomhle Microsoft účtu hrál",
+    soukromy: "Herní historie na Microsoft účtu je skrytá, ověřit hru nejde",
+    nema: "V herní historii Microsoft účtu tahle hra není",
+  },
+};
+
+/**
+ * Ikona hry vedle jména: potvrzení, že hráč AoE2 na svém účtu má (Steam) nebo
+ * hrál (Microsoft). Skryté soukromí dostane siluetu s tichým otazníkem
+ * (ověřit nejde), účet bez hry ikonu s vykřičníkem — to je stav, na který má
+ * Rob přijít před večerem, ne až v lobby. Dokud platforma nic neřekla (bez
+ * Steam klíče, před prvním stažením), nic.
+ */
+function OdznakHry({
+  stav,
+  platforma,
+  onKlik,
+}: {
+  stav: Vlastnictvi | null;
+  /** Chybí u starších snímků a zástupných hráčů; Steam je ta cesta, co tu byla vždycky. */
+  platforma?: "steam" | "xbox";
+  onKlik?: () => void;
+}) {
   if (stav === null) return null;
-  const popis =
-    stav === "ma"
-      ? "Hru má na Steamu"
-      : stav === "soukromy"
-        ? "Soukromý Steam profil, nejde ověřit, že hru má"
-        : "Hra na Steam účtu nebyla nalezena";
+  const popis = POPIS_HRY[platforma === "xbox" ? "xbox" : "steam"][stav];
   return (
     <span
       className={`odznak-hry ${stav} napoveda${onKlik ? " klikaci" : ""}`}

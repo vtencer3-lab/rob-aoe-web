@@ -19,6 +19,10 @@ export function playerView(hrac: PlayerRow): PlayerView {
     eloNejvyssi: hrac.eloNejvyssi,
     odehranoHer: hrac.odehranoHer,
     steamHodiny: hrac.steamHodiny,
+    // Bez platformy se text u ikony hry nedá rozvětvit a Microsoft hráči by
+    // bublina dál tvrdila, co řekl Steam. `UcastnikView` ji nese od úkolu 11,
+    // tohle je totéž pro tabulku přihlášených.
+    platforma: hrac.platforma,
     hraVlastnictvi: hrac.hraVlastnictvi,
     posledniZapas: hrac.posledniZapas?.toISOString() ?? null,
     statyStazenyV: hrac.statyStazenyV?.toISOString() ?? null,
