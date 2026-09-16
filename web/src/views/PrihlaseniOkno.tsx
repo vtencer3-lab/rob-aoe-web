@@ -29,17 +29,20 @@ export function PrihlaseniOkno({ onZavrit }: { onZavrit: () => void }) {
     >
       <div className="prelobby-okno prihlaseni-okno" role="dialog" aria-modal="true" aria-label="Přihlášení">
         <h2>Přihlášení</h2>
+        {/*
+          Bez popisků pod štíty: znaky obou platforem jsou známé dost na to, aby
+          se poznaly bez nápovědy, a text pod nimi z nich dělal formulář místo
+          volby erbu. Jméno platformy nese `alt` obrázku, takže odkaz zůstává
+          pojmenovaný pro čtečku i pro případ, že se obrázek nenačte.
+        */}
         <div className="prihlaseni-volby">
           <a href={cesta("/api/auth/steam")}>
             <img src={steamIkona} alt="Přihlásit se přes Steam" width={512} height={512} />
-            <span>Steam</span>
           </a>
           <a href={cesta("/api/auth/microsoft")}>
             <img src={xboxIkona} alt="Přihlásit se přes Microsoft" width={512} height={512} />
-            <span>Microsoft</span>
           </a>
         </div>
-        <p className="prihlaseni-napoveda">Microsoft účet je pro hru z Microsoft Store nebo Game Passu.</p>
       </div>
     </div>,
     document.body,

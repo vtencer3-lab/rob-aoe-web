@@ -695,15 +695,14 @@ h2.nadpis-akce::after {
 /* Okno volby platformy: dvě cesty vedle sebe, na úzké obrazovce pod sebe. */
 .prihlaseni-volby {
   display: flex;
-  gap: 1.5rem;
+  /* Štíty stojí vedle sebe jako dvě samostatné volby, ne jako dvojice tlačítek:
+     mezera roste s oknem, aby si na širokém displeji nelezly na rám. */
+  gap: clamp(1.5rem, 6vw, 5rem);
   justify-content: center;
   flex-wrap: wrap;
 }
 .prihlaseni-volby a {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
   /* Odkaz s obrázkem si nesmí vzít reliéf ražené destičky (grafika.md §7). */
   background: none;
   border: none;
@@ -722,10 +721,6 @@ h2.nadpis-akce::after {
 }
 .prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
   transform: scale(1.06);
-}
-.prihlaseni-okno .prihlaseni-napoveda {
-  text-align: center;
-  color: var(--tlumene);
 }
 .skladani .sestava {
   list-style: none;
