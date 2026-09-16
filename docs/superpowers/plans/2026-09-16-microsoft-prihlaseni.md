@@ -1289,13 +1289,23 @@ describe("parseGamerpic", () => {
 
 describe("parseHerniHistorii", () => {
   it("hra v historii znamená, že ji hráč má", () => {
-    expect(parseHerniHistorii({ titles: [{ name: "Age of Empires II: Definitive Edition" }] })).toBe(
-      "ma",
-    );
+    expect(
+      parseHerniHistorii({
+        titles: [{ titleId: "2064168993", name: "Age of Empires II: Definitive Edition" }],
+      }),
+    ).toBe("ma");
   });
 
   it("historie bez té hry znamená, že ji nemá", () => {
-    expect(parseHerniHistorii({ titles: [{ name: "Forza Horizon 5" }] })).toBe("nema");
+    expect(parseHerniHistorii({ titles: [{ titleId: "1", name: "Forza Horizon 5" }] })).toBe("nema");
+  });
+
+  it("jiná hra ze série se za ni nevydává", () => {
+    // Sonda 16. 9. 2026 našla v téže historii i Age of Empires Online.
+    // Porovnávání podle jména by na ni sedlo.
+    expect(
+      parseHerniHistorii({ titles: [{ titleId: "1297289123", name: "Age of Empires Online" }] }),
+    ).toBe("nema");
   });
 
   it("skryté soukromí není totéž co chybějící hra", () => {
@@ -1325,8 +1335,12 @@ const XSTS = "https://xsts.auth.xboxlive.com/xsts/authorize";
 const PROFIL = "https://profile.xboxlive.com";
 const TITULY = "https://titlehub.xboxlive.com";
 
-/** Jméno hry v herní historii. Konkrétní titleId doplnit podle sondy (úkol 1). */
-const AOE2_JMENO = /Age of Empires II/i;
+/**
+ * AoE2 DE v herní historii. Naměřeno sondou 16. 9. 2026. Porovnává se id,
+ * ne jméno: v téže historii sedí i Age of Empires Online (1297289123), takže
+ * hledání podle „Age of Empires“ by sedlo na špatnou hru.
+ */
+const AOE2_TITLE_ID = "2064168993";
 
 export interface XboxIdentita {
   xuid: string;
@@ -1388,7 +1402,7 @@ export function parseHerniHistorii(json: unknown): Vlastnictvi {
   if (!jeObjekt(json)) return "soukromy";
   const titles = json["titles"];
   if (!Array.isArray(titles)) return "soukromy";
-  const ma = titles.some((t) => jeObjekt(t) && typeof t["name"] === "string" && AOE2_JMENO.test(t["name"]));
+  const ma = titles.some((t) => jeObjekt(t) && String(t["titleId"]) === AOE2_TITLE_ID);
   return ma ? "ma" : "nema";
 }
 
