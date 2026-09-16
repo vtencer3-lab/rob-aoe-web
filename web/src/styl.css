@@ -345,6 +345,7 @@ a.tlacitko, button.tlacitko, .cta, button.vytvorit, button.plus {
 /* Specifičtější než `button:hover:enabled` níž — jinak by zlaté tlačítko při
    najetí zhnědlo do barvy běžných tlačítek. */
 a.tlacitko:hover, .cta:hover,
+button.tlacitko:hover:enabled,
 button.vytvorit:hover:enabled, button.plus:hover:enabled {
   /* Barva textu musí být řečená i tady: obecné pravidlo pro odkazy pod
      kurzorem je zesvětluje, a zlaté tlačítko je odkaz — nápis pak zbělal. */
@@ -466,6 +467,12 @@ main > .prazdno::after {
 .odznak-hry { position: relative; display: inline-block; margin-left: 0.35rem; vertical-align: middle; line-height: 0; cursor: help; }
 .odznak-hry img, .seznam > tbody > tr > td .jmeno-hrace .odznak-hry img { width: 28px; height: 28px; border: none; box-shadow: none; border-radius: 0; display: block; }
 .odznak-hry.soukromy img { filter: grayscale(1) brightness(0.45); opacity: 0.55; }
+/* Microsoft hráč, který hru hrál, ale ne v posledních dvou týdnech (Game Pass
+   mezitím mohl vypršet — přesně tenhle případ web dřív tvrdil špatně).
+   Vlastní odstín schválně, ne `soukromy`: sdílet vzhled by spletlo „nevíme“
+   (skryté soukromí) s „víme, ale je to staré“ — dvě různé věci. Sépiový tón
+   místo čistě šedé připomíná zašlou fotografii, ne otazník. */
+.odznak-hry.davno img { filter: grayscale(0.7) sepia(0.45) brightness(0.55); opacity: 0.6; }
 .odznak-hry .znacka {
   position: absolute; right: -0.35rem; bottom: -0.3rem;
   font-size: 0.8rem; line-height: 1; font-weight: 700;
