@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import {
   config,
+  varovaniMicrosoft,
   varovaniSteamKlic,
   nazevCookie,
   varovaniDevPristup,
@@ -164,4 +165,11 @@ it("ADMIN_STEAM_ID může být seznam oddělený čárkou", () => {
 it("bez STEAM_API_KEY varuje, s klíčem mlčí", () => {
   nastav({ STEAM_API_KEY: undefined });
   expect(varovaniSteamKlic()).toMatch(/STEAM_API_KEY/);
+});
+
+it("varuje, když Microsoft registrace chybí, a mlčí, když je", () => {
+  nastav({ MS_CLIENT_ID: undefined, MS_CLIENT_SECRET: undefined });
+  expect(varovaniMicrosoft()).toContain("MS_CLIENT_ID");
+  nastav({ MS_CLIENT_ID: "a", MS_CLIENT_SECRET: "b" });
+  expect(varovaniMicrosoft()).toBeNull();
 });

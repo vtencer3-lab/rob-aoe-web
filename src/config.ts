@@ -55,6 +55,19 @@ export const config = {
   },
   port: Number(process.env["PORT"] ?? 3000),
   steamApiKey: process.env["STEAM_API_KEY"] ?? "",
+  // Gettery, ne pole: config.test.ts přepíná MS_CLIENT_ID/MS_CLIENT_SECRET
+  // přes vi.stubEnv v běhu, hodnota nastavená jednou při načtení modulu by to
+  // nezachytila.
+  get msClientId(): string {
+    return process.env["MS_CLIENT_ID"] ?? "";
+  },
+  get msClientSecret(): string {
+    return process.env["MS_CLIENT_SECRET"] ?? "";
+  },
+  /** Bez obou hodnot se Microsoft routy vůbec neregistrují a tlačítko se neukáže. */
+  get maMicrosoft(): boolean {
+    return this.msClientId !== "" && this.msClientSecret !== "";
+  },
   // Obojí se čte při každém přístupu, ne jednou při načtení modulu: startovní
   // kontrola i přihlašovací routa se tím dají otestovat podstrčeným prostředím.
   /**
@@ -160,4 +173,17 @@ export { povinne };
 export function varovaniSteamKlic(): string | null {
   if (config.steamApiKey !== "") return null;
   return "STEAM_API_KEY chybí: avatary, jména ze Steamu ani odehrané hodiny se nestahují. Klíč je zdarma na https://steamcommunity.com/dev/apikey.";
+}
+
+/**
+ * Chybějící registrace se navenek projeví jen tím, že tlačítko není vidět —
+ * a to vypadá stejně jako záměr. Řádek při startu je jediné místo, kde se to
+ * dá poznat.
+ */
+export function varovaniMicrosoft(): string | null {
+  if (config.maMicrosoft) return null;
+  return (
+    "MS_CLIENT_ID nebo MS_CLIENT_SECRET chybí: přihlášení Microsoft účtem je " +
+    "vypnuté a tlačítko se neukáže. Registrace se zakládá na entra.microsoft.com."
+  );
 }
