@@ -2599,11 +2599,11 @@ export function PrihlaseniOkno({ onZavrit }: { onZavrit: () => void }) {
         <h2>Přihlášení</h2>
         <div className="prihlaseni-volby">
           <a href={cesta("/api/auth/steam")}>
-            <img src={steamIkona} alt="Přihlásit se přes Steam" width={96} height={96} />
+            <img src={steamIkona} alt="Přihlásit se přes Steam" width={512} height={512} />
             <span>Steam</span>
           </a>
           <a href={cesta("/api/auth/microsoft")}>
-            <img src={xboxIkona} alt="Přihlásit se přes Microsoft" width={96} height={96} />
+            <img src={xboxIkona} alt="Přihlásit se přes Microsoft" width={512} height={512} />
             <span>Microsoft</span>
           </a>
         </div>
@@ -2657,6 +2657,13 @@ sekce 7 `docs/grafika.md`).
   color: var(--zlato-svetle);
 }
 .prihlaseni-volby img {
+  /* Soubor je 512 px, na obrazovce nejvýš 256. Obrázek vykreslený přesně
+     v cílové velikosti se při systémovém zvětšení (150 % ve Windows) nebo na
+     displeji s vysokou hustotou roztáhne a rozmaže — proto se posílá
+     dvojnásobek a zmenšuje se až tady. Dole clamp drží dvojici vedle sebe
+     i na úzkém mobilu. */
+  width: clamp(112px, 26vw, 256px);
+  height: auto;
   transition: transform 120ms ease;
 }
 .prihlaseni-volby a:hover img {
@@ -2709,10 +2716,14 @@ Zelené testy nejsou důkaz, že UI funguje. Požádat uživatele, ať se podív
 <https://jouki.cz/aoe/dev>: okno se otevře, obě ikony sedí do zbytku stránky,
 na mobilu se nic nerozsype.
 
-**Ikony dodá uživatel** jako `web/src/assets/ui/prihlaseni-steam.webp` a
-`prihlaseni-xbox.webp`, 96×96, průhledné pozadí. Když ještě nejsou, úkol se
-udělá s dočasným textem místo obrázku a ikony se doplní samostatným commitem —
-čekání na grafiku nesmí blokovat kód.
+**Ikony už v repu jsou** (`web/src/assets/ui/prihlaseni-steam.webp` a
+`prihlaseni-xbox.webp`, 512×512, průhledné pozadí). Vznikly z podkladů
+uživatele; odklíčovaný černý lem se spočítal pryč odpremultiplikováním
+(naměřeno −38 → +2, viz `docs/grafika.md` §4.1). Zdrojová data zůstala
+v `_grafika/prihlaseni/`.
+
+**Nestahují se při načtení stránky**, protože modál se vykresluje až po
+kliknutí — proto u nich nevadí, že dohromady váží přes sto kilobajtů.
 
 ---
 
