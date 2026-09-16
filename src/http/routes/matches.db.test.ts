@@ -24,10 +24,10 @@ beforeEach(async () => {
   await upsertPlayer(ROB, true);
   robSid = await createSession(ROB);
 
-  for (const [i, steamId] of HRACI.entries()) {
-    await upsertPlayer(steamId, false);
-    await savePlayerStats(steamId, { alias: `Hrac${i}`, odehranoHer: i * 10, chyba: null });
-    await signUp(akceId, steamId);
+  for (const [i, hracId] of HRACI.entries()) {
+    await upsertPlayer(hracId, false);
+    await savePlayerStats(hracId, { alias: `Hrac${i}`, odehranoHer: i * 10, chyba: null });
+    await signUp(akceId, hracId);
   }
   hracSid = await createSession(HRACI[0]!);
 });
@@ -81,16 +81,16 @@ it("běžný hráč nesmí měnit stav zápasu", async () => {
 it("běžný hráč nesmí přehodit hosta zápasu", async () => {
   const app = buildServer();
   const zapas = await vytvorZapas(app);
-  const puvodniHost = (await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.steamId;
+  const puvodniHost = (await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.hracId;
 
   const res = await app.inject({
     method: "POST",
     url: `/api/zapas/${zapas.id}/host`,
     cookies: { sid: hracSid },
-    payload: { steamId: HRACI[0] },
+    payload: { hracId: HRACI[0] },
   });
   expect(res.statusCode).toBe(403);
-  expect((await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.steamId).toBe(puvodniHost);
+  expect((await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.hracId).toBe(puvodniHost);
   await app.close();
 });
 
@@ -379,12 +379,12 @@ it("změna hosta zahodí odkaz", async () => {
     method: "POST",
     url: `/api/zapas/${zapas.id}/host`,
     cookies: { sid: robSid },
-    payload: { steamId: HRACI[0] },
+    payload: { hracId: HRACI[0] },
   });
 
   const nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBeNull();
-  expect(nacteny.ucastnici.find((u) => u.jeHost)!.steamId).toBe(HRACI[0]);
+  expect(nacteny.ucastnici.find((u) => u.jeHost)!.hracId).toBe(HRACI[0]);
   await app.close();
 });
 
@@ -397,7 +397,7 @@ it("účastník si označí kliknutí na připojení", async () => {
     cookies: { sid: hracSid },
   });
   const { ucastnici } = (await getZapas(zapas.id))!;
-  expect(ucastnici.find((u) => u.steamId === HRACI[0])!.kliknulPripojit).toBeInstanceOf(Date);
+  expect(ucastnici.find((u) => u.hracId === HRACI[0])!.kliknulPripojit).toBeInstanceOf(Date);
   await app.close();
 });
 
@@ -477,15 +477,15 @@ it("cizí divák nevidí v GET /api/akce heslo", async () => {
 
 // „Vyhledat hru“: seznam lobby ze hry se podstrkuje, hledá se podle Steam ID
 // hosta zápasu. Host zápasu je ten s víc odehranými hrami, tedy HRACI[1].
-function inzerat(lobbyId: string, hostSteamId: string) {
+function inzerat(lobbyId: string, hostHracId: string) {
   return {
     lobbyId,
-    hostSteamId,
+    hostHracId,
     nazev: "cokoliv",
     maHeslo: true,
     povolujeDivaky: true,
-    clenoveSteamIds: [hostSteamId],
-    sloty: [{ steamId: hostSteamId, barva: 1 as const, tym: 1 as const, civ: null, pripraven: true }],
+    clenoveHraci: [hostHracId],
+    sloty: [{ hracId: hostHracId, barva: 1 as const, tym: 1 as const, civ: null, pripraven: true }],
     nastaveni: { mapaId: 10875, velikost: 120, rychlost: 2 as const, populace: 200, vitezstvi: 1 as const, cheaty: false },
   };
 }
@@ -559,7 +559,7 @@ it("kontrola lobby vrátí fajfky a křížky a nové číslo lobby si uloží",
     nactiInzeraty: async () => [
       {
         ...inzerat("504987862", HRACI[1]!),
-        sloty: [{ steamId: HRACI[1]!, barva: 2, tym: 2, civ: null, pripraven: true }],
+        sloty: [{ hracId: HRACI[1]!, barva: 2, tym: 2, civ: null, pripraven: true }],
         nastaveni: { mapaId: 10878, velikost: 120, rychlost: 2, populace: 200, vitezstvi: 1, cheaty: false },
       },
     ],
@@ -612,11 +612,11 @@ it("kousek hlasu přijme jen od admina a se sezením a pořadím", async () => {
 // stavu; vytvoření zápasu ji vyprázdní. Jen Rob, jen tvarově platné řádky.
 it("rozpracovaná sestava se ukládá u akce a vytvoření zápasu ji vyprázdní", async () => {
   const app = buildServer();
-  const sestava = [{ steamId: HRACI[0], tym: 1, barva: 1, civ: 18 }, { steamId: HRACI[1], tym: 2, barva: 2, civ: null }];
+  const sestava = [{ hracId: HRACI[0], tym: 1, barva: 1, civ: 18 }, { hracId: HRACI[1], tym: 2, barva: 2, civ: null }];
 
   const zakazano = await app.inject({ method: "PUT", url: `/api/akce/${akceId}/skladani`, cookies: { sid: hracSid }, payload: { sestava } });
   expect(zakazano.statusCode).toBe(403);
-  const spatne = await app.inject({ method: "PUT", url: `/api/akce/${akceId}/skladani`, cookies: { sid: robSid }, payload: { sestava: [{ steamId: "x", tym: 9, barva: 1 }] } });
+  const spatne = await app.inject({ method: "PUT", url: `/api/akce/${akceId}/skladani`, cookies: { sid: robSid }, payload: { sestava: [{ hracId: "x", tym: 9, barva: 1 }] } });
   expect(spatne.statusCode).toBe(400);
 
   const res = await app.inject({ method: "PUT", url: `/api/akce/${akceId}/skladani`, cookies: { sid: robSid }, payload: { sestava } });
@@ -690,8 +690,8 @@ it("chat: účastník a Rob píšou, cizí hráč nesmí, anonym nic nevidí", a
   const ucastnik = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: hracSid } });
   const zpravy = ucastnik.json().zapasy[0].zpravy as Array<Record<string, unknown>>;
   expect(zpravy.map((z) => z["text"])).toEqual(["jdu tam", "za minutu zakládám"]);
-  expect(zpravy[0]).toMatchObject({ steamId: HRACI[0], jeAdmin: false, barva: 1, tym: 1 });
-  expect(zpravy[1]).toMatchObject({ steamId: ROB, jeAdmin: true, barva: null, tym: null });
+  expect(zpravy[0]).toMatchObject({ hracId: HRACI[0], jeAdmin: false, barva: 1, tym: 1 });
+  expect(zpravy[1]).toMatchObject({ hracId: ROB, jeAdmin: true, barva: null, tym: null });
 
   const anonym = await app.inject({ method: "GET", url: "/api/akce" });
   expect(anonym.json().zapasy[0].zpravy).toEqual([]);
@@ -714,14 +714,14 @@ it("Rob upraví nastavení, jméno lobby i sestavu zápasu; hráč nesmí", asyn
     method: "PUT",
     url: `/api/zapas/${zapas.id}/sestava`,
     cookies: { sid: robSid },
-    payload: { sestava: [{ steamId: HRACI[0], tym: 2, barva: 2, civ: null }, { steamId: HRACI[1], tym: 1, barva: 1, civ: null }] },
+    payload: { sestava: [{ hracId: HRACI[0], tym: 2, barva: 2, civ: null }, { hracId: HRACI[1], tym: 1, barva: 1, civ: null }] },
   });
   expect(sestava.statusCode).toBe(200);
 
   const stav = (await app.inject({ method: "GET", url: "/api/akce", cookies: { sid: robSid } })).json();
   expect(stav.zapasy[0].nastaveni).toMatchObject({ mapaId: 10895, populace: 250 });
   expect(stav.zapasy[0].nazevLobby).toBe("ROB-finale");
-  expect(stav.zapasy[0].ucastnici.find((u: { steamId: string }) => u.steamId === HRACI[0]).barva).toBe(2);
+  expect(stav.zapasy[0].ucastnici.find((u: { hracId: string }) => u.hracId === HRACI[0]).barva).toBe(2);
 
   for (const url of ["nastaveni", "nazev-lobby", "sestava"]) {
     const hracova = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/${url}`, cookies: { sid: hracSid }, payload: {} });
@@ -729,7 +729,7 @@ it("Rob upraví nastavení, jméno lobby i sestavu zápasu; hráč nesmí", asyn
   }
   const prazdne = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/nazev-lobby`, cookies: { sid: robSid }, payload: { nazevLobby: " " } });
   expect(prazdne.statusCode).toBe(400);
-  const spatna = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/sestava`, cookies: { sid: robSid }, payload: { sestava: [{ steamId: HRACI[0], tym: 1, barva: 1, civ: null }] } });
+  const spatna = await app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/sestava`, cookies: { sid: robSid }, payload: { sestava: [{ hracId: HRACI[0], tym: 1, barva: 1, civ: null }] } });
   expect(spatna.statusCode).toBe(400);
   await app.close();
 });

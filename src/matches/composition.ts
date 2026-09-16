@@ -24,16 +24,16 @@ export function sestavSedadla(
   const chyba = zkontrolujSestavu(sestava);
   if (chyba) throw new SestavaChyba(chyba);
 
-  const lide = sestava.map((s, i) => i).filter((i) => !jeAi(sestava[i]!.steamId));
+  const lide = sestava.map((s, i) => i).filter((i) => !jeAi(sestava[i]!.hracId));
   let hostIndex = lide[0] ?? 0;
   for (const i of lide) {
-    const her = odehranoHer.get(sestava[i]!.steamId) ?? 0;
-    const nejvic = odehranoHer.get(sestava[hostIndex]!.steamId) ?? 0;
+    const her = odehranoHer.get(sestava[i]!.hracId) ?? 0;
+    const nejvic = odehranoHer.get(sestava[hostIndex]!.hracId) ?? 0;
     if (her > nejvic) hostIndex = i;
   }
 
   return sestava.map((s, poradi) => ({
-    steamId: s.steamId,
+    hracId: s.hracId,
     tym: s.tym,
     barva: s.barva,
     civ: s.civ ?? null,

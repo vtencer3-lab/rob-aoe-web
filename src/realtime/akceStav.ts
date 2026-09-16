@@ -10,7 +10,7 @@ import { hub, KANAL_AKCE } from "./hub.js";
 
 export function playerView(hrac: PlayerRow): PlayerView {
   return {
-    steamId: hrac.steamId,
+    hracId: hrac.hracId,
     alias: hrac.alias,
     steamName: hrac.steamName,
     avatarUrl: hrac.avatarUrl,
@@ -46,7 +46,7 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
     zavreny: zapas.zavrenyV !== null,
     nastaveni: zapas.nastaveni,
     ucastnici: ucastnici.map((u) => ({
-      steamId: u.steamId,
+      hracId: u.hracId,
       alias: u.alias,
       steamName: u.steamName,
       tym: u.tym,
@@ -59,8 +59,8 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
     })),
     zpravy: zpravy.map((z) => ({
       id: z.id,
-      steamId: z.steamId,
-      jmeno: z.alias ?? z.steamName ?? z.steamId,
+      hracId: z.hracId,
+      jmeno: z.alias ?? z.steamName ?? z.hracId,
       jeAdmin: z.jeAdmin,
       barva: z.barva,
       tym: z.tym,

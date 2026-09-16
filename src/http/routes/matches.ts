@@ -35,7 +35,7 @@ import { prectiNastaveniLobby } from "./kontrolaLobby.js";
 const MAX_DELKA_NAZVU_LOBBY = 40;
 
 /**
- * Tělo požadavku na zápas: pole řádků {steamId, tym, barva} v pořadí slotů.
+ * Tělo požadavku na zápas: pole řádků {hracId, tym, barva} v pořadí slotů.
  * Tvar se kontroluje tady, pravidla sestavy (počty, barvy, týmy) ve sdílené
  * zkontrolujSestavu, kterou používá i režie.
  */
@@ -45,26 +45,26 @@ function prectiSestavu(telo: unknown): SestavaVstup[] {
   const vysledek: SestavaVstup[] = [];
   for (const radek of sestava) {
     if (typeof radek !== "object" || radek === null) throw new HttpError(400, "Řádek sestavy není objekt.");
-    const { steamId, tym, barva, civ } = radek as { steamId?: unknown; tym?: unknown; barva?: unknown; civ?: unknown };
-    if (typeof steamId !== "string" || steamId === "") throw new HttpError(400, "Řádek sestavy nemá hráče.");
+    const { hracId, tym, barva, civ } = radek as { hracId?: unknown; tym?: unknown; barva?: unknown; civ?: unknown };
+    if (typeof hracId !== "string" || hracId === "") throw new HttpError(400, "Řádek sestavy nemá hráče.");
     if (typeof tym !== "number" || !TYMY.includes(tym as Tym)) throw new HttpError(400, "Tým musí být – nebo 1 až 4.");
     if (typeof barva !== "number" || !BARVY.includes(barva as Barva)) throw new HttpError(400, "Barva musí být 1 až 8.");
     if (civ !== undefined && civ !== null && typeof civ !== "number") throw new HttpError(400, "Civilizace musí být číslo, nebo prázdná.");
-    vysledek.push({ steamId, tym: tym as Tym, barva: barva as Barva, civ: typeof civ === "number" ? civ : null });
+    vysledek.push({ hracId, tym: tym as Tym, barva: barva as Barva, civ: typeof civ === "number" ? civ : null });
   }
   const chyba = zkontrolujSestavu(vysledek);
   if (chyba) throw new HttpError(400, chyba);
   return vysledek;
 }
 
-/** Vítěz z těla: {tym: 1..4} nebo {steamId}. Musí odpovídat některé straně zápasu. */
+/** Vítěz z těla: {tym: 1..4} nebo {hracId}. Musí odpovídat některé straně zápasu. */
 function prectiViteze(telo: unknown, ucastnici: Parameters<typeof strany>[0]): Vitez {
   const vitez = (telo as { vitez?: unknown }).vitez;
   let kandidat: Vitez | null = null;
   if (typeof vitez === "object" && vitez !== null) {
-    const v = vitez as { tym?: unknown; steamId?: unknown };
+    const v = vitez as { tym?: unknown; hracId?: unknown };
     if (typeof v.tym === "number" && TYMY.includes(v.tym as Tym) && v.tym !== 0) kandidat = { tym: v.tym as Tym };
-    else if (typeof v.steamId === "string" && v.steamId !== "") kandidat = { steamId: v.steamId };
+    else if (typeof v.hracId === "string" && v.hracId !== "") kandidat = { hracId: v.hracId };
   }
   if (!kandidat) throw new HttpError(400, "Vítěz je tým (1 až 4), nebo hráč bez týmu.");
   if (!strany(ucastnici).some((s) => stejnyVitez(s.vitez, kandidat))) {
@@ -102,13 +102,13 @@ async function nactiNeboSelzi(zapasId: number) {
 
 /** Vrátí roli přihlášeného vůči zápasu, nebo vyhodí 403. */
 async function roleVZapase(request: Parameters<typeof requireUser>[0], zapasId: number) {
-  const steamId = await requireUser(request);
+  const hracId = await requireUser(request);
   const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
-  const hrac = await getPlayer(steamId);
-  if (hrac?.jeAdmin) return { steamId, zapas, ucastnici, actor: "admin" as const };
-  const ucastnik = ucastnici.find((u) => u.steamId === steamId);
+  const hrac = await getPlayer(hracId);
+  if (hrac?.jeAdmin) return { hracId, zapas, ucastnici, actor: "admin" as const };
+  const ucastnik = ucastnici.find((u) => u.hracId === hracId);
   if (!ucastnik?.jeHost) throw new HttpError(403, "Tohle smí jen host zápasu nebo Rob.");
-  return { steamId, zapas, ucastnici, actor: "host" as const };
+  return { hracId, zapas, ucastnici, actor: "host" as const };
 }
 
 export interface MatchDeps {
@@ -204,11 +204,11 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   // Smí kliknout kdokoliv ze zápasu i Rob — čekající hráč tím nic nezkazí,
   // uloží se totéž číslo, které by našel host.
   app.post("/api/zapas/:id/hledat-lobby", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const zapasId = requireId(request);
     const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
-    const hrac = await getPlayer(steamId);
-    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.steamId === steamId)) {
+    const hrac = await getPlayer(hracId);
+    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.hracId === hracId)) {
       throw new HttpError(403, "V tomhle zápase nehraješ.");
     }
     if (zapas.stav === "dohrano" || zapas.stav === "zruseny") {
@@ -244,25 +244,25 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   app.post("/api/zapas/:id/host", async (request) => {
     await requireAdmin(request);
     const zapasId = requireId(request);
-    const { steamId } = request.body as { steamId?: unknown };
-    if (typeof steamId !== "string") throw new HttpError(400, "Chybí hráč, který má hostovat.");
+    const { hracId } = request.body as { hracId?: unknown };
+    if (typeof hracId !== "string") throw new HttpError(400, "Chybí hráč, který má hostovat.");
     const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
-    if (!ucastnici.some((u) => u.steamId === steamId)) {
+    if (!ucastnici.some((u) => u.hracId === hracId)) {
       throw new HttpError(400, "Hostovat může jen někdo z účastníků zápasu.");
     }
-    await setHost(zapasId, steamId);
+    await setHost(zapasId, hracId);
     await broadcastAkce();
     return { ok: true };
   });
 
   app.post("/api/zapas/:id/pripojeni", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const zapasId = requireId(request);
     const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
-    if (!ucastnici.some((u) => u.steamId === steamId)) {
+    if (!ucastnici.some((u) => u.hracId === hracId)) {
       throw new HttpError(403, "V tomhle zápase nehraješ.");
     }
-    await oznacKliknutiPripojit(zapasId, steamId);
+    await oznacKliknutiPripojit(zapasId, hracId);
     await broadcastAkce();
     return { ok: true };
   });
@@ -313,11 +313,11 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   // Chat zápasu: píšou účastníci a admini; ostatní ho ani nevidí (redakce).
   // Zpráva se nikam nevrací — přijde všem v celém stavu přes SSE.
   app.post("/api/zapas/:id/zprava", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const zapasId = requireId(request);
     const { zapas, ucastnici } = await nactiNeboSelzi(zapasId);
-    const hrac = await getPlayer(steamId);
-    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.steamId === steamId)) {
+    const hrac = await getPlayer(hracId);
+    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.hracId === hracId)) {
       throw new HttpError(403, "V tomhle zápase nehraješ.");
     }
     if (zapas.stav === "zruseny") throw new HttpError(409, "Zrušený zápas nemá chat.");
@@ -327,21 +327,21 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     const odpovedNaRaw = (request.body as { odpovedNa?: unknown })?.odpovedNa;
     const odpovedNa = typeof odpovedNaRaw === "number" && Number.isInteger(odpovedNaRaw) && odpovedNaRaw > 0 ? odpovedNaRaw : null;
     // Cenzura ještě před uložením: hvězdičky vidí každý včetně autora.
-    await pridejZpravu(zapasId, steamId, text, odpovedNa);
+    await pridejZpravu(zapasId, hracId, text, odpovedNa);
     await broadcastAkce();
     return { ok: true };
   });
 
   // Autor přepíše svou zprávu (šipka nahoru v chatu); cenzura platí i tady.
   app.put("/api/zapas/:id/zprava/:zpravaId", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const zapasId = requireId(request);
     const zpravaId = Number((request.params as { zpravaId?: string }).zpravaId);
     if (!Number.isInteger(zpravaId) || zpravaId <= 0) throw new HttpError(400, "Špatné id zprávy.");
     const text = String((request.body as { text?: unknown })?.text ?? "").trim();
     if (text === "") throw new HttpError(400, "Prázdná zpráva.");
     if (text.length > MAX_DELKA_ZPRAVY) throw new HttpError(400, `Zpráva má nejvýš ${MAX_DELKA_ZPRAVY} znaků.`);
-    if (!(await upravZpravu(zapasId, zpravaId, steamId, text))) throw new HttpError(404, "Tohle není tvoje zpráva.");
+    if (!(await upravZpravu(zapasId, zpravaId, hracId, text))) throw new HttpError(404, "Tohle není tvoje zpráva.");
     await broadcastAkce();
     return { ok: true };
   });

@@ -5,7 +5,7 @@ import { AKTIVITA_MINUT } from "../../../src/shared/aktivita.js";
 import { formatOdpoctu, podleAktivity, SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
 
 const hrac = (prepis: Partial<PlayerView> = {}): PlayerView => ({
-  steamId: "76561198000000001",
+  hracId: "76561198000000001",
   alias: "TenceR",
   steamName: "Vlasta",
   avatarUrl: null,
@@ -59,9 +59,9 @@ it("v režii řadí kliknutím na sloupec dokola a hráče bez hodnoty dává na
   const { renderHook } = await import("@testing-library/react");
   localStorage.clear();
   const hraci = [
-    hrac({ steamId: "a", alias: "Bez", elo1v1: null }),
-    hrac({ steamId: "b", alias: "Nizke", elo1v1: 900 }),
-    hrac({ steamId: "c", alias: "Vysoke", elo1v1: 1500 }),
+    hrac({ hracId: "a", alias: "Bez", elo1v1: null }),
+    hrac({ hracId: "b", alias: "Nizke", elo1v1: 900 }),
+    hrac({ hracId: "c", alias: "Vysoke", elo1v1: 1500 }),
   ];
   const { result } = renderHook(() => useSkladani(hraci));
   const jmena = () => screen.getAllByRole("row").slice(1).map((r) => r.querySelectorAll("td")[1]!.textContent);
@@ -93,10 +93,10 @@ it("ukazuje vlastnictví hry ze Steamu vedle jména", () => {
   render(
     <SeznamPrihlasenych
       prihlaseni={[
-        hrac({ steamId: "a", alias: "Ma", steamHra: "ma" }),
-        hrac({ steamId: "b", alias: "Tajny", steamHra: "soukromy" }),
-        hrac({ steamId: "c", alias: "Nema", steamHra: "nema" }),
-        hrac({ steamId: "d", alias: "Nevime" }),
+        hrac({ hracId: "a", alias: "Ma", steamHra: "ma" }),
+        hrac({ hracId: "b", alias: "Tajny", steamHra: "soukromy" }),
+        hrac({ hracId: "c", alias: "Nema", steamHra: "nema" }),
+        hrac({ hracId: "d", alias: "Nevime" }),
       ]}
     />,
   );
@@ -111,7 +111,7 @@ it("ukazuje vlastnictví hry ze Steamu vedle jména", () => {
 it("v režii označí mečem hráče, kteří právě hrají", async () => {
   const { useSkladani } = await import("../skladani.js");
   const { renderHook } = await import("@testing-library/react");
-  const hraci = [hrac({ steamId: "a", alias: "Hraje" }), hrac({ steamId: "b", alias: "Volny" })];
+  const hraci = [hrac({ hracId: "a", alias: "Hraje" }), hrac({ hracId: "b", alias: "Volny" })];
   const { result } = renderHook(() => useSkladani(hraci));
   render(<SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} vZapase={new Map([["a", 3]])} />);
   expect(screen.getByRole("img", { name: /právě hraje zápas #3/i })).toBeInTheDocument();
@@ -158,15 +158,15 @@ function zmrazCas() {
 }
 
 it("spáči padají na konec, mezi sebou si pořadí drží", () => {
-  const a = hrac({ steamId: "a", aktivniDo: za(-1) });
-  const b = hrac({ steamId: "b", aktivniDo: za(5) });
-  const c = hrac({ steamId: "c", aktivniDo: za(-9) });
-  const d = hrac({ steamId: "d", aktivniDo: za(1) });
-  expect(podleAktivity([a, b, c, d], TED).map((h) => h.steamId)).toEqual(["b", "d", "a", "c"]);
+  const a = hrac({ hracId: "a", aktivniDo: za(-1) });
+  const b = hrac({ hracId: "b", aktivniDo: za(5) });
+  const c = hrac({ hracId: "c", aktivniDo: za(-9) });
+  const d = hrac({ hracId: "d", aktivniDo: za(1) });
+  expect(podleAktivity([a, b, c, d], TED).map((h) => h.hracId)).toEqual(["b", "d", "a", "c"]);
 });
 
 it("když nikdo nespí, pořadí zůstává beze změny", () => {
-  const hraci = [hrac({ steamId: "a", aktivniDo: za(3) }), hrac({ steamId: "b" })];
+  const hraci = [hrac({ hracId: "a", aktivniDo: za(3) }), hrac({ hracId: "b" })];
   expect(podleAktivity(hraci, TED)).toBe(hraci);
 });
 
@@ -189,7 +189,7 @@ it("u vlastního spícího řádku je tlačítko Jsem tu!, u cizího ne", () => 
   const onJsemTu = vi.fn();
   render(
     <SeznamPrihlasenych
-      prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(-1) }), hrac({ steamId: "cizi", alias: "Cizí", aktivniDo: za(-1) })]}
+      prihlaseni={[hrac({ hracId: "ja", alias: "Já", aktivniDo: za(-1) }), hrac({ hracId: "cizi", alias: "Cizí", aktivniDo: za(-1) })]}
       ja="ja"
       onJsemTu={onJsemTu}
     />,
@@ -207,7 +207,7 @@ it("u vlastního spícího řádku je tlačítko Jsem tu!, u cizího ne", () => 
 // Čerstvě obnovená lhůta tlačítko nenabízí: není co resetovat.
 it("s plnou lhůtou se tlačítko nenabízí, jen odpočet", () => {
   zmrazCas();
-  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", aktivniDo: za(AKTIVITA_MINUT) })]} ja="ja" onJsemTu={vi.fn()} />);
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "ja", aktivniDo: za(AKTIVITA_MINUT) })]} ja="ja" onJsemTu={vi.fn()} />);
   expect(screen.queryByRole("button", { name: /jsem tu/i })).not.toBeInTheDocument();
   expect(screen.getByText("15:00")).toBeInTheDocument();
 });
@@ -216,7 +216,7 @@ it("s plnou lhůtou se tlačítko nenabízí, jen odpočet", () => {
 // na reset dřív, než ho seznam odsune dolů.
 it("po minutě se tlačítko nabídne, i když hráč ještě neusnul", () => {
   zmrazCas();
-  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", aktivniDo: za(AKTIVITA_MINUT - 1.5) })]} ja="ja" onJsemTu={vi.fn()} />);
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "ja", aktivniDo: za(AKTIVITA_MINUT - 1.5) })]} ja="ja" onJsemTu={vi.fn()} />);
   expect(screen.getByRole("button", { name: /jsem tu/i })).toBeInTheDocument();
 });
 
@@ -225,7 +225,7 @@ it("odpočet vidí hráč jen u sebe", () => {
   zmrazCas();
   render(
     <SeznamPrihlasenych
-      prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(5) }), hrac({ steamId: "cizi", alias: "Cizí", aktivniDo: za(5) })]}
+      prihlaseni={[hrac({ hracId: "ja", alias: "Já", aktivniDo: za(5) }), hrac({ hracId: "cizi", alias: "Cizí", aktivniDo: za(5) })]}
       ja="ja"
     />,
   );
@@ -239,7 +239,7 @@ it("vlastní řádek je označený, aktivní i usnulý", () => {
   zmrazCas();
   const { rerender } = render(
     <SeznamPrihlasenych
-      prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(5) }), hrac({ steamId: "cizi", alias: "Cizí", aktivniDo: za(5) })]}
+      prihlaseni={[hrac({ hracId: "ja", alias: "Já", aktivniDo: za(5) }), hrac({ hracId: "cizi", alias: "Cizí", aktivniDo: za(5) })]}
       ja="ja"
     />,
   );
@@ -247,7 +247,7 @@ it("vlastní řádek je označený, aktivní i usnulý", () => {
   expect(screen.getByText("Cizí").closest("tr")).not.toHaveClass("muj-radek");
 
   rerender(
-    <SeznamPrihlasenych prihlaseni={[hrac({ steamId: "ja", alias: "Já", aktivniDo: za(-1) })]} ja="ja" />,
+    <SeznamPrihlasenych prihlaseni={[hrac({ hracId: "ja", alias: "Já", aktivniDo: za(-1) })]} ja="ja" />,
   );
   const radek = screen.getByText("Já").closest("tr");
   expect(radek).toHaveClass("muj-radek");
@@ -257,7 +257,7 @@ it("vlastní řádek je označený, aktivní i usnulý", () => {
 // Nepřihlášený návštěvník žádný vlastní řádek nemá.
 it("bez přihlášení není označený nikdo", () => {
   zmrazCas();
-  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a" })]} ja={null} />);
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "a" })]} ja={null} />);
   expect(screen.getByText("TenceR").closest("tr")).not.toHaveClass("muj-radek");
 });
 
@@ -265,7 +265,7 @@ it("bez přihlášení není označený nikdo", () => {
 // měřit a přeskládání by zase skákalo.
 it("řádky nesou značku, podle které je animace najde", () => {
   zmrazCas();
-  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a" }), hrac({ steamId: "b" })]} />);
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "a" }), hrac({ hracId: "b" })]} />);
   const znacky = document.querySelectorAll("tbody > tr[data-hrac]");
   expect([...znacky].map((r) => r.getAttribute("data-hrac"))).toEqual(["a", "b"]);
 });
@@ -274,7 +274,7 @@ it("řádky nesou značku, podle které je animace najde", () => {
 // zkušební hráče nevyjímaje. Hráč vidí jen ten svůj.
 it("adminovi běží odpočet u všech řádků", () => {
   zmrazCas();
-  const hraci = [hrac({ steamId: "a", alias: "A", aktivniDo: za(5) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(9) })];
+  const hraci = [hrac({ hracId: "a", alias: "A", aktivniDo: za(5) }), hrac({ hracId: "b", alias: "B", aktivniDo: za(9) })];
   const { rerender } = render(<SeznamPrihlasenych prihlaseni={hraci} ja="a" admin />);
   expect(screen.getByText("05:00")).toBeInTheDocument();
   expect(screen.getByText("09:00")).toBeInTheDocument();
@@ -290,7 +290,7 @@ it("čas i Zzz stojí ve stejné značce", () => {
   zmrazCas();
   render(
     <SeznamPrihlasenych
-      prihlaseni={[hrac({ steamId: "a", alias: "A", aktivniDo: za(5) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(-1) })]}
+      prihlaseni={[hrac({ hracId: "a", alias: "A", aktivniDo: za(5) }), hrac({ hracId: "b", alias: "B", aktivniDo: za(-1) })]}
       ja="a"
       admin
     />,
@@ -314,7 +314,7 @@ it("u spáče je v bublině doba nepřítomnosti", () => {
   zmrazCas();
   render(
     <SeznamPrihlasenych
-      prihlaseni={[hrac({ steamId: "a", alias: "A", aktivniDo: za(-7) }), hrac({ steamId: "b", alias: "B", aktivniDo: za(-95) })]}
+      prihlaseni={[hrac({ hracId: "a", alias: "A", aktivniDo: za(-7) }), hrac({ hracId: "b", alias: "B", aktivniDo: za(-95) })]}
     />,
   );
   const znacky = screen.getAllByText("Zzz");
@@ -329,7 +329,7 @@ it("meč u usnulého hráče říká v bublině, jak dlouho je neaktivní", asyn
   zmrazCas();
   const { useSkladani } = await import("../skladani.js");
   const { renderHook } = await import("@testing-library/react");
-  const hraci = [hrac({ steamId: "a", alias: "Spi", aktivniDo: za(-9) }), hrac({ steamId: "b", alias: "Bdi", aktivniDo: za(5) })];
+  const hraci = [hrac({ hracId: "a", alias: "Spi", aktivniDo: za(-9) }), hrac({ hracId: "b", alias: "Bdi", aktivniDo: za(5) })];
   const { result } = renderHook(() => useSkladani(hraci));
   render(
     <SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} vZapase={new Map([["a", 2], ["b", 2]])} />,
@@ -343,7 +343,7 @@ it("meč u usnulého hráče říká v bublině, jak dlouho je neaktivní", asyn
 it("hráče bez hry vybere až po potvrzení", async () => {
   const { useSkladani } = await import("../skladani.js");
   const { renderHook } = await import("@testing-library/react");
-  const hraci = [hrac({ steamId: "a", alias: "Nema", steamHra: "nema" })];
+  const hraci = [hrac({ hracId: "a", alias: "Nema", steamHra: "nema" })];
   const { result } = renderHook(() => useSkladani(hraci));
   const vyber = vi.spyOn(result.current, "vyber");
   render(<SeznamPrihlasenych prihlaseni={hraci} skladani={result.current} />);
@@ -359,7 +359,7 @@ it("hráče bez hry vybere až po potvrzení", async () => {
 
 // V debug módu klik na ikonu hry cykluje stavy, ať jdou všechny vidět.
 it("v debug módu klik na ikonu hry přepíná má → nelze ověřit → nemá", () => {
-  render(<SeznamPrihlasenych prihlaseni={[hrac({ steamId: "a", alias: "Ma", steamHra: "ma" })]} ladeni />);
+  render(<SeznamPrihlasenych prihlaseni={[hrac({ hracId: "a", alias: "Ma", steamHra: "ma" })]} ladeni />);
   const ikona = () => screen.getByTestId("odznak-hry");
   expect(ikona()).toHaveClass("ma");
   fireEvent.click(ikona());
@@ -374,10 +374,10 @@ it("v debug módu klik na ikonu hry přepíná má → nelze ověřit → nemá"
 it("super zvonek v hlavičce svolá všechny a ukáže se jen s někým ke svolání", () => {
   zmrazCas();
   const onSvolatVsechny = vi.fn();
-  const svezi = [hrac({ steamId: "rob", alias: "Rob", aktivniDo: za(14) }), hrac({ steamId: "b", alias: "Bedřich", aktivniDo: za(14) })];
+  const svezi = [hrac({ hracId: "rob", alias: "Rob", aktivniDo: za(14) }), hrac({ hracId: "b", alias: "Bedřich", aktivniDo: za(14) })];
   const { rerender } = render(<SeznamPrihlasenych prihlaseni={svezi} ja="rob" admin onSvolat={vi.fn()} onSvolatVsechny={onSvolatVsechny} lhutaMinut={15} />);
   expect(screen.queryByRole("button", { name: /svolat všechny/i })).not.toBeInTheDocument();
-  rerender(<SeznamPrihlasenych prihlaseni={[...svezi, hrac({ steamId: "c", alias: "Cyril", aktivniDo: za(-1) })]} ja="rob" admin onSvolat={vi.fn()} onSvolatVsechny={onSvolatVsechny} lhutaMinut={15} />);
+  rerender(<SeznamPrihlasenych prihlaseni={[...svezi, hrac({ hracId: "c", alias: "Cyril", aktivniDo: za(-1) })]} ja="rob" admin onSvolat={vi.fn()} onSvolatVsechny={onSvolatVsechny} lhutaMinut={15} />);
   const zvonek = screen.getByRole("button", { name: /svolat všechny/i });
   fireEvent.click(zvonek);
   expect(onSvolatVsechny).toHaveBeenCalledTimes(1);
@@ -390,7 +390,7 @@ it("super zvonek v hlavičce svolá všechny a ukáže se jen s někým ke svol�
 it("admin má zvonek u hráče po pěti minutách odpočtu i u spícího, a po kliknutí zvonek na chvíli zešedne", () => {
   zmrazCas();
   const onSvolat = vi.fn();
-  const hraci = [hrac({ steamId: "rob", alias: "Rob", aktivniDo: za(8) }), hrac({ steamId: "a", alias: "Adam", aktivniDo: za(8) }), hrac({ steamId: "b", alias: "Bedřich", aktivniDo: za(14) }), hrac({ steamId: "c", alias: "Cyril", aktivniDo: za(-1) })];
+  const hraci = [hrac({ hracId: "rob", alias: "Rob", aktivniDo: za(8) }), hrac({ hracId: "a", alias: "Adam", aktivniDo: za(8) }), hrac({ hracId: "b", alias: "Bedřich", aktivniDo: za(14) }), hrac({ hracId: "c", alias: "Cyril", aktivniDo: za(-1) })];
   render(<SeznamPrihlasenych prihlaseni={hraci} ja="rob" admin onSvolat={onSvolat} lhutaMinut={15} />);
   expect(screen.queryByRole("button", { name: /svolat hráče rob/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /svolat hráče bedřich/i })).not.toBeInTheDocument();

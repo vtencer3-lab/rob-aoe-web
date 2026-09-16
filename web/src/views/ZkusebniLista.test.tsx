@@ -8,8 +8,8 @@ afterEach(() => {
 
 const INFO = {
   hraci: ["Pepa", "Jana"],
-  reziser: { jmeno: "Rezie", steamId: "test:rezie" },
-  skutecni: [{ steamId: "76561198000000001", alias: "Trokner" }],
+  reziser: { jmeno: "Rezie", hracId: "test:rezie" },
+  skutecni: [{ hracId: "76561198000000001", alias: "Trokner" }],
   admin: "76561198000000001",
 };
 
@@ -25,13 +25,13 @@ function odpovez(ok: boolean, telo: unknown = {}): void {
 // že tudy vede cesta dovnitř.
 it("bez otevřených dveří nevykreslí vůbec nic", async () => {
   odpovez(false);
-  const { container } = render(<ZkusebniLista jaSteamId={null} />);
+  const { container } = render(<ZkusebniLista jaHracId={null} />);
   await waitFor(() => expect(container).toBeEmptyDOMElement());
 });
 
 it("nabídne přihlášení za každého zkušebního hráče i za režiséra", async () => {
   odpovez(true, INFO);
-  render(<ZkusebniLista jaSteamId={null} />);
+  render(<ZkusebniLista jaHracId={null} />);
 
   expect(await screen.findByRole("link", { name: "Jsem Pepa" })).toHaveAttribute(
     "href",
@@ -48,13 +48,13 @@ it("nabídne přihlášení za každého zkušebního hráče i za režiséra", 
 // Steam na localhostu zpátky nepomůže.
 it("nabídne cestu zpět na skutečný účet, ale ne když už na něm jsem", async () => {
   odpovez(true, INFO);
-  const { rerender } = render(<ZkusebniLista jaSteamId="test:pepa" />);
+  const { rerender } = render(<ZkusebniLista jaHracId="test:pepa" />);
   expect(await screen.findByRole("link", { name: "Jsem Trokner" })).toHaveAttribute(
     "href",
-    "/api/dev/login?steamId=76561198000000001",
+    "/api/dev/login?hracId=76561198000000001",
   );
 
-  rerender(<ZkusebniLista jaSteamId="76561198000000001" />);
+  rerender(<ZkusebniLista jaHracId="76561198000000001" />);
   await waitFor(() =>
     expect(screen.queryByRole("link", { name: "Jsem Trokner" })).not.toBeInTheDocument(),
   );
@@ -64,12 +64,12 @@ it("nabídne cestu zpět na skutečný účet, ale ne když už na něm jsem", a
 // vyzkoušet pohled obyčejného hráče — panel režie svítí pořád.
 it("ukáže, kdo drží režii, a nabídne její přenos oběma směry", async () => {
   odpovez(true, INFO);
-  render(<ZkusebniLista jaSteamId="76561198000000001" />);
+  render(<ZkusebniLista jaHracId="76561198000000001" />);
 
   expect(await screen.findByText(/Režii má: Trokner/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /Režii dej účtu Rezie/ })).toHaveAttribute(
     "href",
-    "/api/dev/rezie?steamId=test%3Arezie",
+    "/api/dev/rezie?hracId=test%3Arezie",
   );
   expect(screen.getByRole("link", { name: /Režii dej tomuhle účtu/ })).toHaveAttribute(
     "href",
@@ -79,7 +79,7 @@ it("ukáže, kdo drží režii, a nabídne její přenos oběma směry", async (
 
 it("bez admina si nikoho nevymýšlí", async () => {
   odpovez(true, { ...INFO, admin: null });
-  render(<ZkusebniLista jaSteamId={null} />);
+  render(<ZkusebniLista jaHracId={null} />);
   expect(await screen.findByText(/Režii má: nikdo/)).toBeInTheDocument();
 });
 
@@ -90,6 +90,6 @@ it("rozbité dveře stránku neshodí", async () => {
       throw new Error("síť spadla");
     }),
   );
-  const { container } = render(<ZkusebniLista jaSteamId={null} />);
+  const { container } = render(<ZkusebniLista jaHracId={null} />);
   await waitFor(() => expect(container).toBeEmptyDOMElement());
 });

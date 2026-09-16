@@ -8,13 +8,13 @@ const udalost: HlasUdalost = { zapasId: 1, kdo: "admin", jmeno: "Rob", sezeni: "
 // zápas a mluvčí sám ne.
 describe("smiSlyset", () => {
   it("účastník ano, cizí hráč a anonym ne", () => {
-    expect(smiSlyset({ steamId: "a", jeAdmin: false }, udalost)).toBe(true);
-    expect(smiSlyset({ steamId: "x", jeAdmin: false }, udalost)).toBe(false);
-    expect(smiSlyset({ steamId: null, jeAdmin: false }, udalost)).toBe(false);
+    expect(smiSlyset({ hracId: "a", jeAdmin: false }, udalost)).toBe(true);
+    expect(smiSlyset({ hracId: "x", jeAdmin: false }, udalost)).toBe(false);
+    expect(smiSlyset({ hracId: null, jeAdmin: false }, udalost)).toBe(false);
   });
 
   it("jiný admin ano, mluvčí sám ne", () => {
-    expect(smiSlyset({ steamId: "jiny-admin", jeAdmin: true }, udalost)).toBe(true);
-    expect(smiSlyset({ steamId: "admin", jeAdmin: true }, udalost)).toBe(false);
+    expect(smiSlyset({ hracId: "jiny-admin", jeAdmin: true }, udalost)).toBe(true);
+    expect(smiSlyset({ hracId: "admin", jeAdmin: true }, udalost)).toBe(false);
   });
 });

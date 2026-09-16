@@ -32,12 +32,12 @@ function jeObjekt(hodnota: unknown): hodnota is Record<string, unknown> {
   return typeof hodnota === "object" && hodnota !== null;
 }
 
-export function parsePersonalStat(json: unknown, steamId: string): LeaderboardStats | null {
+export function parsePersonalStat(json: unknown, hracId: string): LeaderboardStats | null {
   if (!jeObjekt(json)) return null;
   const data = json as { statGroups?: unknown; leaderboardStats?: unknown };
   if (!Array.isArray(data.statGroups)) return null;
 
-  const hledane = `/steam/${steamId}`;
+  const hledane = `/steam/${hracId}`;
   let member: Member | undefined;
   for (const skupina of data.statGroups) {
     if (!jeObjekt(skupina)) continue;
@@ -89,12 +89,12 @@ export function parsePersonalStat(json: unknown, steamId: string): LeaderboardSt
 }
 
 export async function fetchPersonalStat(
-  steamId: string,
+  hracId: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<LeaderboardStats | null> {
-  const profily = encodeURIComponent(JSON.stringify([`/steam/${steamId}`]));
+  const profily = encodeURIComponent(JSON.stringify([`/steam/${hracId}`]));
   const url = `${ZAKLAD}/getPersonalStat?title=age2&profile_names=${profily}`;
   const res = await fetchImpl(url, { signal: AbortSignal.timeout(10_000) });
   if (!res.ok) throw new Error(`Worlds Edge odpovědělo ${res.status}`);
-  return parsePersonalStat(await res.json(), steamId);
+  return parsePersonalStat(await res.json(), hracId);
 }

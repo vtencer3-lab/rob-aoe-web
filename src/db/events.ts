@@ -76,20 +76,20 @@ export async function setLhutaAktivity(minut: number): Promise<number> {
  * zbývá nejvýš lhůta − ZVONEK_PO_MINUTACH, včetně spících (shared/aktivita
  * `nabidnoutZvonek`, tady v SQL). Sebe admin nesvolává. Vrací počet.
  */
-export async function svolejVsechny(akceId: number, kdoSteamId: string): Promise<number> {
+export async function svolejVsechny(akceId: number, kdoHracId: string): Promise<number> {
   const { rowCount } = await getPool().query(
-    `UPDATE prihlaska SET svolan_v = now(), svolal_steam_id = $2
-      WHERE akce_id = $1 AND stav = 'prihlasen' AND steam_id <> $2
+    `UPDATE prihlaska SET svolan_v = now(), svolal_hrac_id = $2
+      WHERE akce_id = $1 AND stav = 'prihlasen' AND hrac_id <> $2
         AND aktivni_do <= now() + ((SELECT lhuta_aktivity_minut FROM nastaveni_webu) - $3) * interval '1 minute'`,
-    [akceId, kdoSteamId, ZVONEK_PO_MINUTACH],
+    [akceId, kdoHracId, ZVONEK_PO_MINUTACH],
   );
   return rowCount ?? 0;
 }
 
-export async function svolej(akceId: number, steamId: string, kdoSteamId: string): Promise<boolean> {
+export async function svolej(akceId: number, hracId: string, kdoHracId: string): Promise<boolean> {
   const { rowCount } = await getPool().query(
-    "UPDATE prihlaska SET svolan_v = now(), svolal_steam_id = $3 WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'",
-    [akceId, steamId, kdoSteamId],
+    "UPDATE prihlaska SET svolan_v = now(), svolal_hrac_id = $3 WHERE akce_id = $1 AND hrac_id = $2 AND stav = 'prihlasen'",
+    [akceId, hracId, kdoHracId],
   );
   return (rowCount ?? 0) > 0;
 }
@@ -195,16 +195,16 @@ export async function prejmenujAkci(akceId: number, nazev: string): Promise<Akce
   return rows[0] ? mapujAkci(rows[0]) : null;
 }
 
-export async function signUp(akceId: number, steamId: string): Promise<void> {
+export async function signUp(akceId: number, hracId: string): Promise<void> {
   await getPool().query(
-    `INSERT INTO prihlaska (akce_id, steam_id, stav, kdy, aktivni_do)
+    `INSERT INTO prihlaska (akce_id, hrac_id, stav, kdy, aktivni_do)
           VALUES ($1, $2, 'prihlasen', now(), now() + (SELECT lhuta_aktivity_minut FROM nastaveni_webu) * interval '1 minute')
-     ON CONFLICT (akce_id, steam_id) DO UPDATE
+     ON CONFLICT (akce_id, hrac_id) DO UPDATE
           SET stav = 'prihlasen', kdy = now(),
               aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM nastaveni_webu) * interval '1 minute',
               posledni_puls = NULL,
-              svolan_v = NULL, svolal_steam_id = NULL`,
-    [akceId, steamId],
+              svolan_v = NULL, svolal_hrac_id = NULL`,
+    [akceId, hracId],
   );
 }
 
@@ -216,13 +216,13 @@ export async function signUp(akceId: number, steamId: string): Promise<void> {
  * odhlášení a novém přihlášení — které ho maže také — nebo po dalším
  * načtení stavu vyskočilo znovu, i když admin nezvonil (Trokner, 13. 9. 2026).
  */
-export async function obnovAktivitu(akceId: number, steamId: string): Promise<boolean> {
+export async function obnovAktivitu(akceId: number, hracId: string): Promise<boolean> {
   const { rowCount } = await getPool().query(
     `UPDATE prihlaska
         SET aktivni_do = now() + (SELECT lhuta_aktivity_minut FROM nastaveni_webu) * interval '1 minute', posledni_puls = now(),
-            svolan_v = NULL, svolal_steam_id = NULL
-      WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'`,
-    [akceId, steamId],
+            svolan_v = NULL, svolal_hrac_id = NULL
+      WHERE akce_id = $1 AND hrac_id = $2 AND stav = 'prihlasen'`,
+    [akceId, hracId],
   );
   return (rowCount ?? 0) > 0;
 }
@@ -238,7 +238,7 @@ export async function obnovAktivitu(akceId: number, steamId: string): Promise<bo
  * Vrací `false`, když se nic nezměnilo. Volající pak nemusí rozesílat stav,
  * a puls tak nestojí nic, i když chodí od každého kliknutí.
  */
-export async function pulsAktivity(akceId: number, steamId: string): Promise<boolean> {
+export async function pulsAktivity(akceId: number, hracId: string): Promise<boolean> {
   // Plná lhůta je globální (migrace 024); jednou dotazem se přečte do CTE.
   const { rowCount } = await getPool().query(
     `WITH lhuta AS (SELECT lhuta_aktivity_minut * interval '1 minute' AS plna FROM nastaveni_webu)
@@ -248,7 +248,7 @@ export async function pulsAktivity(akceId: number, steamId: string): Promise<boo
               ELSE LEAST(aktivni_do + $3 * interval '1 minute', now() + (SELECT plna FROM lhuta))
             END,
             posledni_puls = now()
-      WHERE akce_id = $1 AND steam_id = $2 AND stav = 'prihlasen'
+      WHERE akce_id = $1 AND hrac_id = $2 AND stav = 'prihlasen'
         AND (
           aktivni_do <= now()
           OR posledni_puls IS NULL
@@ -257,15 +257,15 @@ export async function pulsAktivity(akceId: number, steamId: string): Promise<boo
         -- Prodloužení, které by nic nepřidalo (lhůta už je na stropu), se
         -- zahodí tady: jinak by každé kliknutí rozesílalo stav nazdařbůh.
         AND (aktivni_do <= now() OR aktivni_do < now() + (SELECT plna FROM lhuta))`,
-    [akceId, steamId, PRODLOUZENI_MINUT, ODSTUP_PULSU_MINUT],
+    [akceId, hracId, PRODLOUZENI_MINUT, ODSTUP_PULSU_MINUT],
   );
   return (rowCount ?? 0) > 0;
 }
 
-export async function withdraw(akceId: number, steamId: string): Promise<void> {
+export async function withdraw(akceId: number, hracId: string): Promise<void> {
   await getPool().query(
-    "UPDATE prihlaska SET stav = 'odhlasen' WHERE akce_id = $1 AND steam_id = $2",
-    [akceId, steamId],
+    "UPDATE prihlaska SET stav = 'odhlasen' WHERE akce_id = $1 AND hrac_id = $2",
+    [akceId, hracId],
   );
 }
 
@@ -280,7 +280,7 @@ export async function withdraw(akceId: number, steamId: string): Promise<void> {
  * stejně není doklad o ničem, a nechat ho v historii by znamenalo věčný
  * zmatek. Zápasů, kde žádný zkušební nebyl, se úklid nedotkne.
  *
- * Pořadí kroků je dané cizími klíči: `ucastnik.steam_id` ani `udalost.kdo`
+ * Pořadí kroků je dané cizími klíči: `ucastnik.hrac_id` ani `udalost.kdo`
  * nemají ON DELETE, takže dokud existují, `DELETE FROM player` neprojde.
  * Účastníky smaže kaskáda po zápase, události se mažou zvlášť; přihlášky
  * a sezení padnou kaskádou s hráčem. Všechno v jedné transakci, ať po
@@ -292,16 +292,16 @@ export async function withdraw(akceId: number, steamId: string): Promise<void> {
 export async function smazZkusebniHrace(akceId: number): Promise<number> {
   return withTransaction(async (client) => {
     const { rows } = await client.query<{ pocet: string }>(
-      "SELECT count(*) AS pocet FROM prihlaska WHERE akce_id = $1 AND stav = 'prihlasen' AND steam_id LIKE 'test:%'",
+      "SELECT count(*) AS pocet FROM prihlaska WHERE akce_id = $1 AND stav = 'prihlasen' AND hrac_id LIKE 'test:%'",
       [akceId],
     );
     const prihlasenych = Number(rows[0]?.pocet ?? 0);
 
     await client.query(
-      "DELETE FROM zapas WHERE id IN (SELECT zapas_id FROM ucastnik WHERE steam_id LIKE 'test:%')",
+      "DELETE FROM zapas WHERE id IN (SELECT zapas_id FROM ucastnik WHERE hrac_id LIKE 'test:%')",
     );
     await client.query("DELETE FROM udalost WHERE kdo LIKE 'test:%'");
-    await client.query("DELETE FROM player WHERE steam_id LIKE 'test:%'");
+    await client.query("DELETE FROM player WHERE hrac_id LIKE 'test:%'");
     return prihlasenych;
   });
 }
@@ -332,10 +332,10 @@ export async function listSignups(akceId: number): Promise<PrihlasenyRow[]> {
   const sloupce = PLAYER_SLOUPEC_NAZVY.map((sloupec) => `p.${sloupec}`).join(", ");
   const { rows } = await getPool().query<DbRow & { aktivni_do: Date; svolan_v: Date | null; svolal_jmeno: string | null }>(
     `SELECT ${sloupce}, pr.aktivni_do, pr.svolan_v,
-            COALESCE(a.alias, a.steam_name, a.steam_id) AS svolal_jmeno
+            COALESCE(a.alias, a.steam_name, a.hrac_id) AS svolal_jmeno
        FROM prihlaska pr
-       JOIN player p ON p.steam_id = pr.steam_id
-       LEFT JOIN player a ON a.steam_id = pr.svolal_steam_id
+       JOIN player p ON p.hrac_id = pr.hrac_id
+       LEFT JOIN player a ON a.hrac_id = pr.svolal_hrac_id
       WHERE pr.akce_id = $1 AND pr.stav = 'prihlasen'
       ORDER BY pr.kdy ASC`,
     [akceId],

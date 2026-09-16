@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { Barva, SestavaVstup, Tym } from "../shared/types.js";
 import { generatePassword, lobbyName, sestavSedadla } from "./composition.js";
 
-const h = (steamId: string, tym: Tym, barva: Barva): SestavaVstup => ({ steamId, tym, barva });
+const h = (hracId: string, tym: Tym, barva: Barva): SestavaVstup => ({ hracId, tym, barva });
 const her = (zaznamy: Record<string, number | null>) => new Map(Object.entries(zaznamy));
 
 describe("sestavSedadla", () => {
   it("zachová pořadí, tým i barvu a očísluje sloty od nuly", () => {
     const seats = sestavSedadla([h("A", 1, 1), h("B", 1, 1), h("C", 2, 2), h("D", 2, 3)], her({}));
-    expect(seats.map((s) => [s.steamId, s.tym, s.barva, s.poradi])).toEqual([
+    expect(seats.map((s) => [s.hracId, s.tym, s.barva, s.poradi])).toEqual([
       ["A", 1, 1, 0],
       ["B", 1, 1, 1],
       ["C", 2, 2, 2],
@@ -18,12 +18,12 @@ describe("sestavSedadla", () => {
 
   it("hostem je hráč s nejvíc odehranými hrami", () => {
     const seats = sestavSedadla([h("A", 1, 1), h("B", 1, 3), h("C", 2, 2), h("D", 2, 4)], her({ A: 10, B: 900, C: 30, D: 40 }));
-    expect(seats.filter((s) => s.jeHost).map((s) => s.steamId)).toEqual(["B"]);
+    expect(seats.filter((s) => s.jeHost).map((s) => s.hracId)).toEqual(["B"]);
   });
 
   it("při shodě vybere dřívější slot, neznámý počet her je nula", () => {
-    expect(sestavSedadla([h("A", 1, 1), h("B", 2, 2)], her({ A: 5, B: 5 })).find((s) => s.jeHost)!.steamId).toBe("A");
-    expect(sestavSedadla([h("A", 1, 1), h("B", 2, 2)], her({ A: null, B: 1 })).find((s) => s.jeHost)!.steamId).toBe("B");
+    expect(sestavSedadla([h("A", 1, 1), h("B", 2, 2)], her({ A: 5, B: 5 })).find((s) => s.jeHost)!.hracId).toBe("A");
+    expect(sestavSedadla([h("A", 1, 1), h("B", 2, 2)], her({ A: null, B: 1 })).find((s) => s.jeHost)!.hracId).toBe("B");
   });
 
   it("host je vždy právě jeden", () => {
@@ -35,12 +35,12 @@ describe("sestavSedadla", () => {
   // kdyby AI měla v tabulce víc odehraných her (nemá, ale mapa ji unese).
   it("hostem nikdy není AI", () => {
     const seats = sestavSedadla([h("ai:1", 1, 1), h("A", 2, 2)], her({ "ai:1": 9000, A: 1 }));
-    expect(seats.filter((s) => s.jeHost).map((s) => s.steamId)).toEqual(["A"]);
+    expect(seats.filter((s) => s.jeHost).map((s) => s.hracId)).toEqual(["A"]);
   });
 
   it("při samých AI vedle jednoho člověka je host ten člověk", () => {
     const seats = sestavSedadla([h("ai:1", 1, 1), h("ai:2", 1, 2), h("A", 2, 3)], her({}));
-    expect(seats.filter((s) => s.jeHost).map((s) => s.steamId)).toEqual(["A"]);
+    expect(seats.filter((s) => s.jeHost).map((s) => s.hracId)).toEqual(["A"]);
   });
 
   it("neplatnou sestavu odmítne českou větou", () => {

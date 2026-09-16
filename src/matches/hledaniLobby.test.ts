@@ -8,11 +8,11 @@ const CIZI = "76561198000000009";
 
 function lobby(cast: Partial<LobbyInzerat> & { lobbyId: string }): LobbyInzerat {
   return {
-    hostSteamId: null,
+    hostHracId: null,
     nazev: "",
     maHeslo: false,
     povolujeDivaky: false,
-    clenoveSteamIds: [],
+    clenoveHraci: [],
     sloty: [],
     nastaveni: null,
     ...cast,
@@ -20,15 +20,15 @@ function lobby(cast: Partial<LobbyInzerat> & { lobbyId: string }): LobbyInzerat 
 }
 
 const ucastnici = [
-  { steamId: HOST, jeHost: true },
-  { steamId: HRAC, jeHost: false },
+  { hracId: HOST, jeHost: true },
+  { hracId: HRAC, jeHost: false },
 ];
 
 describe("najdiLobby", () => {
   it("nejdřív bere lobby, kterou host zápasu hostuje", () => {
     const seznam = [
-      lobby({ lobbyId: "1", hostSteamId: CIZI, clenoveSteamIds: [CIZI, HOST] }),
-      lobby({ lobbyId: "2", hostSteamId: HOST, clenoveSteamIds: [HOST] }),
+      lobby({ lobbyId: "1", hostHracId: CIZI, clenoveHraci: [CIZI, HOST] }),
+      lobby({ lobbyId: "2", hostHracId: HOST, clenoveHraci: [HOST] }),
     ];
     expect(najdiLobby(ucastnici, seznam)).toMatchObject({
       lobby: { lobbyId: "2" },
@@ -37,14 +37,14 @@ describe("najdiLobby", () => {
   });
 
   it("když host jen sedí v cizí lobby, vezme ji s odpovídajícím důvodem", () => {
-    const seznam = [lobby({ lobbyId: "1", hostSteamId: CIZI, clenoveSteamIds: [CIZI, HOST] })];
+    const seznam = [lobby({ lobbyId: "1", hostHracId: CIZI, clenoveHraci: [CIZI, HOST] })];
     expect(najdiLobby(ucastnici, seznam)?.duvod).toBe("host_sedi");
   });
 
   it("jiný účastník, který hostuje, má přednost před účastníkem, který jen sedí", () => {
     const seznam = [
-      lobby({ lobbyId: "1", hostSteamId: CIZI, clenoveSteamIds: [CIZI, HRAC] }),
-      lobby({ lobbyId: "2", hostSteamId: HRAC, clenoveSteamIds: [HRAC] }),
+      lobby({ lobbyId: "1", hostHracId: CIZI, clenoveHraci: [CIZI, HRAC] }),
+      lobby({ lobbyId: "2", hostHracId: HRAC, clenoveHraci: [HRAC] }),
     ];
     expect(najdiLobby(ucastnici, seznam)).toMatchObject({
       lobby: { lobbyId: "2" },
@@ -53,18 +53,18 @@ describe("najdiLobby", () => {
   });
 
   it("účastník sedící v cizí lobby je poslední záchrana", () => {
-    const seznam = [lobby({ lobbyId: "1", hostSteamId: CIZI, clenoveSteamIds: [CIZI, HRAC] })];
+    const seznam = [lobby({ lobbyId: "1", hostHracId: CIZI, clenoveHraci: [CIZI, HRAC] })];
     expect(najdiLobby(ucastnici, seznam)?.duvod).toBe("ucastnik_sedi");
   });
 
   it("název lobby nerozhoduje — cizí lobby s naším názvem se nebere", () => {
-    const seznam = [lobby({ lobbyId: "1", hostSteamId: CIZI, nazev: "ROB-01", clenoveSteamIds: [CIZI] })];
+    const seznam = [lobby({ lobbyId: "1", hostHracId: CIZI, nazev: "ROB-01", clenoveHraci: [CIZI] })];
     expect(najdiLobby(ucastnici, seznam)).toBeNull();
   });
 
   it("bez hosta v zápase hledá jen podle účastníků", () => {
-    const seznam = [lobby({ lobbyId: "1", hostSteamId: HRAC })];
-    expect(najdiLobby([{ steamId: HRAC, jeHost: false }], seznam)?.duvod).toBe("ucastnik_hostuje");
+    const seznam = [lobby({ lobbyId: "1", hostHracId: HRAC })];
+    expect(najdiLobby([{ hracId: HRAC, jeHost: false }], seznam)?.duvod).toBe("ucastnik_hostuje");
   });
 });
 

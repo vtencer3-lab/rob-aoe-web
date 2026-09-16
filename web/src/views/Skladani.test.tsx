@@ -5,9 +5,9 @@ import { useSkladani } from "../skladani.js";
 import { SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
 import { Skladani } from "./Skladani.js";
 
-function hrac(steamId: string, alias: string, elo: number | null = null): PlayerView {
+function hrac(hracId: string, alias: string, elo: number | null = null): PlayerView {
   return {
-    steamId,
+    hracId,
     alias,
     steamName: null,
     avatarUrl: null,
@@ -108,8 +108,8 @@ it("vytvoří zápas se sestavou v pořadí slotů a hlásí formát", () => {
 
   fireEvent.click(screen.getByRole("button", { name: /vytvořit zápas \(2\)/i }));
   expect(onVytvoritZapas).toHaveBeenCalledWith([
-    { steamId: "a", tym: 1, barva: 1, civ: null },
-    { steamId: "b", tym: 2, barva: 2, civ: null },
+    { hracId: "a", tym: 1, barva: 1, civ: null },
+    { hracId: "b", tym: 2, barva: 2, civ: null },
   ]);
   expect(nevybraniJmena()).toHaveLength(4);
 });

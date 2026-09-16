@@ -18,7 +18,7 @@ afterAll(async () => {
 
 it("založí hráče a podruhé ho jen vrátí", async () => {
   const prvni = await upsertPlayer("76561198000000001", false);
-  expect(prvni.steamId).toBe("76561198000000001");
+  expect(prvni.hracId).toBe("76561198000000001");
   expect(prvni.alias).toBeNull();
 
   await upsertPlayer("76561198000000001", false);
@@ -29,6 +29,17 @@ it("založí hráče a podruhé ho jen vrátí", async () => {
 it("nastaví příznak admina", async () => {
   const hrac = await upsertPlayer("76561198000000002", true);
   expect(hrac.jeAdmin).toBe(true);
+});
+
+it("zkušební hráč projde bez Steam ID", async () => {
+  const hrac = await upsertPlayer("test:pepa", null);
+  expect(hrac.steamId).toBeNull();
+  expect(hrac.platforma).toBe("steam");
+});
+
+it("Steam hráč dostane steam_id shodné s klíčem", async () => {
+  const hrac = await upsertPlayer("76561198014056480", null);
+  expect(hrac.steamId).toBe("76561198014056480");
 });
 
 it("uloží statistiky včetně času stažení", async () => {
@@ -89,7 +100,7 @@ it("načte víc hráčů najednou", async () => {
   await upsertPlayer("76561198000000006", false);
   await upsertPlayer("76561198000000007", false);
   const hraci = await getPlayers(["76561198000000006", "76561198000000007", "neznamy"]);
-  expect(hraci.map((h) => h.steamId).sort()).toEqual(["76561198000000006", "76561198000000007"]);
+  expect(hraci.map((h) => h.hracId).sort()).toEqual(["76561198000000006", "76561198000000007"]);
 });
 
 it("upsertPlayer s null práva admina nemění", async () => {

@@ -38,7 +38,7 @@ export function registerHlasRoutes(app: FastifyInstance): void {
       poradi,
       konec,
       data,
-      prijemci: nacteny.ucastnici.map((u) => u.steamId),
+      prijemci: nacteny.ucastnici.map((u) => u.hracId),
       ...(mime ? { mime } : {}),
     };
     hlasHub.publish(KANAL_AKCE, udalost);

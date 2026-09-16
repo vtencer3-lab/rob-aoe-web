@@ -171,14 +171,14 @@ export function App() {
   // Hlas admina (push-to-talk): přehrávač poslouchá kousky ze streamu.
   useEffect(() => {
     if (!me) return;
-    return spustPrehravacHlasu(me.steamId, me.jeAdmin);
+    return spustPrehravacHlasu(me.hracId, me.jeAdmin);
   }, [me]);
   // Prohlížeč bez gesta zvuk nepustí; okno svolání to řekne a zvuk dojde po kliknutí.
   const [zvukCeka, setZvukCeka] = useState(false);
   useEffect(() => naZablokovaniZvuku(setZvukCeka), []);
   useEffect(() => {
     if (!me) return;
-    const ja = stav?.prihlaseni.find((h) => h.steamId === me.steamId);
+    const ja = stav?.prihlaseni.find((h) => h.hracId === me.hracId);
     const moje = ja ? (ja.svolanV ?? null) : undefined;
     const drive = predchoziSvolani.current;
     predchoziSvolani.current = moje;
@@ -205,7 +205,7 @@ export function App() {
       // chatu — i adminovi. Důležitá zpráva (admin + vykřičník na začátku,
       // uživatel 13. 9. 2026) k tomu všem zazvoní zvonem z radnice.
       const noveVsechny = (z.zpravy ?? []).filter((m) => m.id > p.zprava);
-      const nove = noveVsechny.filter((m) => m.steamId !== me.steamId);
+      const nove = noveVsechny.filter((m) => m.hracId !== me.hracId);
       // Taunt ze hry zní jako ve hře — i autorovi — místo cinknutí; jiná cizí
       // zpráva cinkne. Víc tauntů naráz: každý svůj zvuk.
       const taunty = noveVsechny.map((m) => cisloTauntu(m.text)).filter((n): n is number => n !== null && n in TAUNTY_ZVUK);
@@ -217,7 +217,7 @@ export function App() {
         if (p.faze !== "hraje_se" && z.fazeLobby === "hraje_se") prehraj(zvonUrl);
         continue;
       }
-      const ja = mujUcastnik(z, me.steamId);
+      const ja = mujUcastnik(z, me.hracId);
       if (p.lobbyId === null && z.lobbyId !== null && ja && !ja.jeHost) prehraj(zvonUrl);
     }
   }, [stav, me]);
@@ -238,7 +238,7 @@ export function App() {
   // Kdo je v běžícím zápase — v tabulce přihlášených dostane zkřížené meče.
   const vZapase = new Map<string, number>();
   for (const z of stav?.zapasy ?? []) {
-    if (z.stav === "bezi") for (const u of z.ucastnici) vZapase.set(u.steamId, z.poradi);
+    if (z.stav === "bezi") for (const u of z.ucastnici) vZapase.set(u.hracId, z.poradi);
   }
 
   // Rozpracovaná sestava žije u akce na serveru a přes SSE ji vidí všichni
@@ -257,7 +257,7 @@ export function App() {
       : undefined,
   );
   // useSkladani se volá dřív, než jsou definované pomocné funkce níž — refy to překlenou.
-  const jmenoPodleIdRef = useRef<(steamId: string) => string>((id) => id);
+  const jmenoPodleIdRef = useRef<(hracId: string) => string>((id) => id);
   const zaznamenejRef = useRef<(z: Zaznam) => void>(() => {});
 
   useEffect(() => {
@@ -268,10 +268,10 @@ export function App() {
       .catch(() => {});
   }, []);
 
-  const jsemPrihlaseny = Boolean(me && stav?.prihlaseni.some((h) => h.steamId === me.steamId));
-  const jmenoPodleId = (steamId: string) => {
-    const h = stav?.prihlaseni.find((x) => x.steamId === steamId);
-    return h ? jmenoHrace(h) : steamId;
+  const jsemPrihlaseny = Boolean(me && stav?.prihlaseni.some((h) => h.hracId === me.hracId));
+  const jmenoPodleId = (hracId: string) => {
+    const h = stav?.prihlaseni.find((x) => x.hracId === hracId);
+    return h ? jmenoHrace(h) : hracId;
   };
 
   /** Nasadí stav z kroku (před = zpět, po = znovu) a ohlásí to. */
@@ -282,9 +282,9 @@ export function App() {
       // Krok je platný jen pro hráče, kteří jsou pořád přihlášení; ostatní se
       // vynechají a toast to řekne, místo aby se někdo vrátil natvrdo.
       const cilovy = smer === "zpet" ? z.pred : z.po;
-      const prihlaseniIds = new Set((stav?.prihlaseni ?? []).map((h) => h.steamId));
-      const chybejici = cilovy.filter((v) => !prihlaseniIds.has(v.steamId)).map((v) => jmenoPodleId(v.steamId));
-      skladani.nastavCelou(cilovy.filter((v) => prihlaseniIds.has(v.steamId)));
+      const prihlaseniIds = new Set((stav?.prihlaseni ?? []).map((h) => h.hracId));
+      const chybejici = cilovy.filter((v) => !prihlaseniIds.has(v.hracId)).map((v) => jmenoPodleId(v.hracId));
+      skladani.nastavCelou(cilovy.filter((v) => prihlaseniIds.has(v.hracId)));
       zvyrazni(z.druh, z.cil);
       pridejToast(chybejici.length > 0 ? `${predpona}: ${z.text} — ${chybejici.join(", ")} už není přihlášený, vynechán` : `${predpona}: ${z.text}`);
       return;
@@ -410,7 +410,7 @@ export function App() {
     onSmazat: (zapasId: number) => void hlidej(() => api.smazatZapas(zapasId)),
     onZavrit: (zapasId: number) => void hlidej(() => api.zavritZapas(zapasId)),
     onVysledek: (zapasId: number, vitez: Vitez) => void hlidej(() => api.vysledek(zapasId, vitez)),
-    onHost: (zapasId: number, steamId: string) => void hlidej(() => api.zmenitHosta(zapasId, steamId)),
+    onHost: (zapasId: number, hracId: string) => void hlidej(() => api.zmenitHosta(zapasId, hracId)),
     onKontrolaLobby: (id: number) => api.kontrolaLobby(id),
     onZprava: (zapasId: number, text: string, odpovedNa: number | null) => hlidej(() => api.zprava(zapasId, text, odpovedNa)),
     onSmazatZpravu: (zapasId: number, zpravaId: number) => hlidej(() => api.smazatZpravu(zapasId, zpravaId)),
@@ -602,7 +602,7 @@ export function App() {
             </header>
             <SeznamPrihlasenych
                 ladeni={admin && ladeni}
-              onSvolat={admin ? (steamId) => void hlidej(() => api.svolat(akce.id, steamId)) : undefined}
+              onSvolat={admin ? (hracId) => void hlidej(() => api.svolat(akce.id, hracId)) : undefined}
               onSvolatVsechny={admin ? () => void hlidej(() => api.svolatVsechny(akce.id)) : undefined}
               lhutaMinut={stav?.lhutaAktivityMinut}
               onZkusebniSvolani={
@@ -618,7 +618,7 @@ export function App() {
               prihlaseni={stav?.prihlaseni ?? []}
               skladani={admin ? skladani : undefined}
               vZapase={vZapase}
-              ja={me?.steamId ?? null}
+              ja={me?.hracId ?? null}
               admin={admin}
               onJsemTu={() => void hlidej(() => api.jsemTu(akce.id))}
             />
@@ -678,7 +678,7 @@ export function App() {
 
       {akce ? (
         <>
-          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.steamId} /> : null}
+          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.hracId} /> : null}
           {admin && stav && zapasKUprave ? (
             <EditaceZapasu
               zapas={zapasKUprave}
@@ -690,26 +690,26 @@ export function App() {
             />
           ) : null}
           {me
-            ? mojeZapasy(stav?.zapasy ?? [], me.steamId).map((zapas) =>
-                mujUcastnik(zapas, me.steamId)?.jeHost ? (
+            ? mojeZapasy(stav?.zapasy ?? [], me.hracId).map((zapas) =>
+                mujUcastnik(zapas, me.hracId)?.jeHost ? (
                   <ObrazovkaHosta
                     key={zapas.id}
                     zapas={zapas}
-                    ja={me.steamId}
+                    ja={me.hracId}
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
+                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ) : (
                   <KartaHrace
                     key={zapas.id}
                     zapas={zapas}
-                    ja={me.steamId}
+                    ja={me.hracId}
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.steamId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
+                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ),
               )
@@ -725,9 +725,9 @@ export function App() {
               v režii. */}
           {admin
             ? null
-            : verejneZapasy(stav?.zapasy ?? [], me?.steamId ?? null)
+            : verejneZapasy(stav?.zapasy ?? [], me?.hracId ?? null)
                 .filter(jeVeHre)
-                .map((zapas) => <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.steamId ?? null} />)}
+                .map((zapas) => <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.hracId ?? null} />)}
           {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
               má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
               karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}
@@ -766,7 +766,7 @@ export function App() {
           onZavrit={() => setNastaveniVidet(false)}
         />
       ) : null}
-      <ZkusebniLista jaSteamId={me?.steamId ?? null} />
+      <ZkusebniLista jaHracId={me?.hracId ?? null} />
       {admin ? <Toasty toasty={toasty} onZavrit={zavriToast} /> : null}
       {/* Verze v patičce: po nasazení se jedním pohledem pozná, jestli
           prohlížeč drží nový build, nebo starý z mezipaměti. Vedle ní má

@@ -19,10 +19,10 @@ function jeObjekt(hodnota: unknown): hodnota is Record<string, unknown> {
   return typeof hodnota === "object" && hodnota !== null;
 }
 
-export function parsePlayerSummaries(json: unknown, steamId: string): SteamProfile | null {
+export function parsePlayerSummaries(json: unknown, hracId: string): SteamProfile | null {
   const hraci = (json as { response?: { players?: unknown } })?.response?.players;
   if (!Array.isArray(hraci)) return null;
-  const hrac = hraci.find((h) => jeObjekt(h) && h["steamid"] === steamId) as
+  const hrac = hraci.find((h) => jeObjekt(h) && h["steamid"] === hracId) as
     | Record<string, unknown>
     | undefined;
   if (!hrac) return null;
@@ -73,8 +73,8 @@ export function steamZdroje(
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): {
-  nactiProfil: (steamId: string) => Promise<SteamProfile | null>;
-  nactiHru: (steamId: string) => Promise<SteamHra | undefined>;
+  nactiProfil: (hracId: string) => Promise<SteamProfile | null>;
+  nactiHru: (hracId: string) => Promise<SteamHra | undefined>;
 } {
   if (apiKey === "") {
     return {
@@ -83,29 +83,29 @@ export function steamZdroje(
     };
   }
   return {
-    nactiProfil: (steamId) => fetchSteamProfile(steamId, apiKey, fetchImpl),
-    nactiHru: (steamId) => fetchSteamHra(steamId, apiKey, fetchImpl),
+    nactiProfil: (hracId) => fetchSteamProfile(hracId, apiKey, fetchImpl),
+    nactiHru: (hracId) => fetchSteamHra(hracId, apiKey, fetchImpl),
   };
 }
 
 export async function fetchSteamProfile(
-  steamId: string,
+  hracId: string,
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SteamProfile | null> {
-  const url = `${ZAKLAD}/ISteamUser/GetPlayerSummaries/v2/?key=${apiKey}&steamids=${steamId}`;
+  const url = `${ZAKLAD}/ISteamUser/GetPlayerSummaries/v2/?key=${apiKey}&steamids=${hracId}`;
   const res = await fetchImpl(url, { signal: AbortSignal.timeout(10_000) });
   if (!res.ok) throw new Error(`Steam odpovědělo ${res.status}`);
-  return parsePlayerSummaries(await res.json(), steamId);
+  return parsePlayerSummaries(await res.json(), hracId);
 }
 
 export async function fetchSteamHra(
-  steamId: string,
+  hracId: string,
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SteamHra> {
   const url =
-    `${ZAKLAD}/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${steamId}` +
+    `${ZAKLAD}/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${hracId}` +
     `&appids_filter[0]=${AOE2_APPID}`;
   const res = await fetchImpl(url, { signal: AbortSignal.timeout(10_000) });
   if (!res.ok) throw new Error(`Steam odpovědělo ${res.status}`);

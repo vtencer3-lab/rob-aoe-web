@@ -338,7 +338,7 @@ export function doplnNastaveni(cast: Partial<NastaveniLobby> | null | undefined)
 
 /** Jeden hráč tak, jak sedí v lobby: barva a tým podle metadat slotu. */
 export interface SlotLobby {
-  steamId: string;
+  hracId: string;
   /** null = random (ve hře výchozí). */
   barva: Barva | null;
   /** 0 = „–“, 1 až 4 tým, "?" = náhodný, null = nečitelné. */
@@ -352,7 +352,7 @@ export interface SlotLobby {
  * Počítačový protivník v lobby. Hra u AI slotů žádné id neposílá, takže se
  * mezi sebou nedají rozlišit — pozná se jen barva, tým a civilizace.
  */
-export type AiSlot = Omit<SlotLobby, "steamId">;
+export type AiSlot = Omit<SlotLobby, "hracId">;
 
 /**
  * Nastavení z okna zakládání lobby („pre-lobby“). Hra ho neposílá v
@@ -407,7 +407,7 @@ export interface NastaveniZeHry {
 /** Co ze seznamu lobby ve hře opravdu čteme. */
 export interface PoznatekLobby {
   lobbyId: string;
-  hostSteamId: string | null;
+  hostHracId: string | null;
   maHeslo: boolean;
   povolujeDivaky: boolean;
   sloty: SlotLobby[];
@@ -449,7 +449,7 @@ export function lobbyVPoradku(kontroly: Kontrola[]): boolean {
 }
 
 interface UcastnikProKontrolu {
-  steamId: string;
+  hracId: string;
   tym: Tym;
   barva: Barva;
   /** Předepsaná civilizace; null nebo chybí = libovolná, nekontroluje se. */
@@ -459,7 +459,7 @@ interface UcastnikProKontrolu {
 }
 
 function jmeno(u: UcastnikProKontrolu): string {
-  return u.alias ?? u.steamName ?? u.steamId;
+  return u.alias ?? u.steamName ?? u.hracId;
 }
 
 function popisTymu(t: Tym | "?" | null): string {
@@ -485,30 +485,30 @@ export function zkontrolujLobby(
   const hlavni = (klic: string, ok: boolean, text: string, varovani = false): void => {
     k.push({ klic, stav: ok ? "ok" : varovani ? "varovani" : "spatne", text, sekce: "hlavni" });
   };
-  const vLobby = new Map(lobby.sloty.map((s) => [s.steamId, s]));
-  const zapasu = new Set(ucastnici.map((u) => u.steamId));
+  const vLobby = new Map(lobby.sloty.map((s) => [s.hracId, s]));
+  const zapasu = new Set(ucastnici.map((u) => u.hracId));
 
 
   // Lidi porovnává Steam ID, AI barva: počítač žádné id nemá, takže se dvě
   // AI od sebe v datech nepoznají. Napřed se spárují ty, které barvu mají
   // podle sestavy, zbylé se doplní v pořadí — aby se u nich dala vypsat
   // aspoň hláška „má náhodnou barvu, má mít žlutá“ jako u člověka.
-  const lide = ucastnici.filter((u) => !jeAi(u.steamId));
-  const aiVSestave = ucastnici.filter((u) => jeAi(u.steamId));
+  const lide = ucastnici.filter((u) => !jeAi(u.hracId));
+  const aiVSestave = ucastnici.filter((u) => jeAi(u.hracId));
   const aiVLobby = lobby.aiSloty ?? [];
   const parAi = new Map<string, AiSlot>();
   const volneAi = [...aiVLobby];
   for (const u of aiVSestave) {
     const i = volneAi.findIndex((s) => s.barva === u.barva);
-    if (i !== -1) parAi.set(u.steamId, volneAi.splice(i, 1)[0]!);
+    if (i !== -1) parAi.set(u.hracId, volneAi.splice(i, 1)[0]!);
   }
   for (const u of aiVSestave) {
-    if (!parAi.has(u.steamId) && volneAi.length > 0) parAi.set(u.steamId, volneAi.shift()!);
+    if (!parAi.has(u.hracId) && volneAi.length > 0) parAi.set(u.hracId, volneAi.shift()!);
   }
 
-  const chybi = lide.filter((u) => !vLobby.has(u.steamId));
+  const chybi = lide.filter((u) => !vLobby.has(u.hracId));
   const chybiAi = aiVSestave.length - parAi.size;
-  const navic = lobby.sloty.filter((s) => !zapasu.has(s.steamId));
+  const navic = lobby.sloty.filter((s) => !zapasu.has(s.hracId));
   const navicAi = volneAi.length;
   const vsePasuje = chybi.length === 0 && navic.length === 0 && chybiAi === 0 && navicAi === 0;
   const kolikAi = aiVSestave.length > 0 ? ` (${aiVSestave.length} AI)` : "";
@@ -537,11 +537,11 @@ export function zkontrolujLobby(
   const cisloTymu = (t: SlotLobby["tym"]) => (typeof t === "number" && t >= 1 ? t : null);
 
   for (const u of ucastnici) {
-    const s = jeAi(u.steamId) ? parAi.get(u.steamId) : vLobby.get(u.steamId);
+    const s = jeAi(u.hracId) ? parAi.get(u.hracId) : vLobby.get(u.hracId);
     if (!s) continue;
     const barvaOk = s.barva === u.barva;
     hlavni(
-      `barva:${u.steamId}`,
+      `barva:${u.hracId}`,
       barvaOk,
       barvaOk
         ? `${jmeno(u)}: ${BARVA_NAZEV[u.barva]}`
@@ -554,7 +554,7 @@ export function zkontrolujLobby(
     if (u.civ !== undefined && u.civ !== null) {
       const civOk = s.civ === u.civ;
       hlavni(
-        `civ:${u.steamId}`,
+        `civ:${u.hracId}`,
         civOk,
         civOk
           ? `${jmeno(u)}: ${nazevCivilizace(u.civ)}`
@@ -562,25 +562,25 @@ export function zkontrolujLobby(
       );
     }
 
-    const vLobbySlot = (steamId: string) => (jeAi(steamId) ? parAi.get(steamId) : vLobby.get(steamId));
-    const ostatni = ucastnici.filter((x) => x.steamId !== u.steamId && vLobbySlot(x.steamId) !== undefined);
+    const vLobbySlot = (hracId: string) => (jeAi(hracId) ? parAi.get(hracId) : vLobby.get(hracId));
+    const ostatni = ucastnici.filter((x) => x.hracId !== u.hracId && vLobbySlot(x.hracId) !== undefined);
     if (!tymova) {
-      const stejny = ostatni.find((x) => cisloTymu(vLobbySlot(x.steamId)!.tym) !== null && vLobbySlot(x.steamId)!.tym === s.tym);
+      const stejny = ostatni.find((x) => cisloTymu(vLobbySlot(x.hracId)!.tym) !== null && vLobbySlot(x.hracId)!.tym === s.tym);
       hlavni(
-        `tym:${u.steamId}`,
+        `tym:${u.hracId}`,
         !stejny,
         stejny ? `${jmeno(u)} a ${jmeno(stejny)} mají oba tým ${cisloTymu(s.tym)} — soupeři musí mít jiný` : `${jmeno(u)}: ${popisTymu(s.tym)}`,
       );
     } else {
       const moje = cisloTymu(s.tym);
       const spoluhrac = ostatni.find((x) => x.tym === u.tym);
-      const souperStejny = ostatni.find((x) => x.tym !== u.tym && moje !== null && cisloTymu(vLobbySlot(x.steamId)!.tym) === moje);
-      const spoluhracJiny = ostatni.find((x) => x.tym === u.tym && cisloTymu(vLobbySlot(x.steamId)!.tym) !== moje);
+      const souperStejny = ostatni.find((x) => x.tym !== u.tym && moje !== null && cisloTymu(vLobbySlot(x.hracId)!.tym) === moje);
+      const spoluhracJiny = ostatni.find((x) => x.tym === u.tym && cisloTymu(vLobbySlot(x.hracId)!.tym) !== moje);
       let text: string | null = null;
       if (moje === null) text = `${jmeno(u)} má ${popisTymu(s.tym)}, v týmové hře musí mít číslo týmu${spoluhrac ? ` (stejné jako ${jmeno(spoluhrac)})` : ""}`;
-      else if (spoluhracJiny) text = `${jmeno(u)} má tým ${moje}, ${jmeno(spoluhracJiny)} ze stejného týmu má ${popisTymu(vLobbySlot(spoluhracJiny.steamId)!.tym)}`;
+      else if (spoluhracJiny) text = `${jmeno(u)} má tým ${moje}, ${jmeno(spoluhracJiny)} ze stejného týmu má ${popisTymu(vLobbySlot(spoluhracJiny.hracId)!.tym)}`;
       else if (souperStejny) text = `${jmeno(u)} a soupeř ${jmeno(souperStejny)} mají oba tým ${moje}`;
-      hlavni(`tym:${u.steamId}`, text === null, text ?? `${jmeno(u)}: tým ${moje}`);
+      hlavni(`tym:${u.hracId}`, text === null, text ?? `${jmeno(u)}: tým ${moje}`);
     }
   }
 

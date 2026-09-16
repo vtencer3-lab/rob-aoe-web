@@ -105,13 +105,13 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
  */
 export function registerKontrolaLobbyRoutes(app: FastifyInstance, deps: MatchDeps): void {
   app.post("/api/zapas/:id/kontrola-lobby", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const zapasId = requireId(request);
     const nacteny = await getZapas(zapasId);
     if (!nacteny) throw new HttpError(404, "Takový zápas neexistuje.");
     const { zapas, ucastnici } = nacteny;
-    const hrac = await getPlayer(steamId);
-    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.steamId === steamId)) {
+    const hrac = await getPlayer(hracId);
+    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.hracId === hracId)) {
       throw new HttpError(403, "V tomhle zápase nehraješ.");
     }
     if (zapas.stav !== "bezi") throw new HttpError(409, `Zápas je ve stavu „${zapas.stav}“.`);

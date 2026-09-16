@@ -29,12 +29,12 @@ function vychoziDeps(): ServerDeps {
   return {
     nactiInzeraty: () => seznamLobby.aktualni(),
     overSteam: (params) => verifyWithSteam(params),
-    obnovStaty: async (steamId) => {
+    obnovStaty: async (hracId) => {
       // Worlds Edge je nezdokumentovaný endpoint bez známých limitů, takže se
       // stahuje nejvýš jednou za patnáct minut na hráče.
-      const hrac = await getPlayer(steamId);
+      const hrac = await getPlayer(hracId);
       if (maCerstveStaty(hrac)) return;
-      await refreshPlayerStats(steamId, {
+      await refreshPlayerStats(hracId, {
         nactiZebricek: (id) => fetchPersonalStat(id),
         ...steamZdroje(config.steamApiKey),
         uloz: savePlayerStats,

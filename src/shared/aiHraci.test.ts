@@ -8,7 +8,7 @@ describe("aiHraci", () => {
   });
 
   it("každé AI má vlastní id, ale všechna se jmenují stejně", () => {
-    expect(new Set(AI_HRACI.map((a) => a.steamId)).size).toBe(POCET_AI);
+    expect(new Set(AI_HRACI.map((a) => a.hracId)).size).toBe(POCET_AI);
     expect(AI_HRACI.every((a) => a.alias === JMENO_AI)).toBe(true);
   });
 

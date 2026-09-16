@@ -3,8 +3,8 @@ import { expect, it } from "vitest";
 import type { UcastnikView, ZapasView } from "../../../src/shared/types.js";
 import { VerejnyZapas } from "./VerejnyZapas.js";
 
-const u = (steamId: string, alias: string | null, tym: 1 | 2, steamName: string | null = null): UcastnikView => ({
-  steamId,
+const u = (hracId: string, alias: string | null, tym: 1 | 2, steamName: string | null = null): UcastnikView => ({
+  hracId,
   alias,
   steamName,
   tym,

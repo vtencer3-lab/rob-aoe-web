@@ -9,11 +9,11 @@ describe("parseAdvertisements", () => {
     const [prvni] = parseAdvertisements(inzeraty);
     expect(prvni).toMatchObject({
       lobbyId: "504953429",
-      hostSteamId: "76561198014056480",
+      hostHracId: "76561198014056480",
       nazev: "Jouki in Rage's Game",
       maHeslo: false,
       povolujeDivaky: true,
-      clenoveSteamIds: ["76561198014056480"],
+      clenoveHraci: ["76561198014056480"],
     });
   });
 
@@ -21,16 +21,16 @@ describe("parseAdvertisements", () => {
     const rob03 = parseAdvertisements(inzeraty).find((l) => l.nazev === "ROB-03");
     expect(rob03).toMatchObject({
       lobbyId: "504951828",
-      hostSteamId: "76561198000000072",
+      hostHracId: "76561198000000072",
       maHeslo: true,
       povolujeDivaky: false,
-      clenoveSteamIds: ["76561198000000072", "76561198000000073"],
+      clenoveHraci: ["76561198000000072", "76561198000000073"],
     });
   });
 
   it("host mimo Steam (Xbox) dostane null, id jako text projde", () => {
     const xbox = parseAdvertisements(inzeraty).find((l) => l.nazev === "xbox host");
-    expect(xbox).toMatchObject({ lobbyId: "504951802", hostSteamId: null, clenoveSteamIds: [] });
+    expect(xbox).toMatchObject({ lobbyId: "504951802", hostHracId: null, clenoveHraci: [] });
   });
 
   it("inzerát bez id a nesmysly vynechá, celkem zbydou tři", () => {
@@ -59,8 +59,8 @@ describe("parseAdvertisements — sloty a nastavení", () => {
 
   it("rozbalí sloty: barvu z ScenarioPlayerIndex, tým z Team", () => {
     expect(lobby!.sloty).toEqual([
-      { steamId: "76561198014710095", barva: 1, tym: 1, civ: null, pripraven: true },
-      { steamId: "76561198014056480", barva: 2, tym: 0, civ: null, pripraven: true },
+      { hracId: "76561198014710095", barva: 1, tym: 1, civ: null, pripraven: true },
+      { hracId: "76561198014056480", barva: 2, tym: 0, civ: null, pripraven: true },
     ]);
   });
 
@@ -95,7 +95,7 @@ describe("parseAdvertisements — sloty a nastavení", () => {
       antiquity: false,
       recordGame: true,
     });
-    expect(lobby!).toMatchObject({ lobbyId: "504987862", maHeslo: false, povolujeDivaky: true, hostSteamId: "76561198014710095" });
+    expect(lobby!).toMatchObject({ lobbyId: "504987862", maHeslo: false, povolujeDivaky: true, hostHracId: "76561198014710095" });
   });
 });
 
@@ -148,7 +148,7 @@ describe("parseSloty s AI", () => {
     const steam = new Map([[15260548, "76561198014056480"]]);
     const { lide, ai } = parseSloty(zabalSloty(SLOTY_S_AI), steam);
 
-    expect(lide.map((s) => s.steamId)).toEqual(["76561198014056480"]);
+    expect(lide.map((s) => s.hracId)).toEqual(["76561198014056480"]);
     expect(ai).toHaveLength(2);
   });
 

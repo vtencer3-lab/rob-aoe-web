@@ -26,17 +26,17 @@ export const ODCHOD_MS = 90_000;
 const otevrene = new Map<string, number>();
 const odklady = new Map<string, NodeJS.Timeout>();
 
-function zrusOdklad(steamId: string): void {
-  const odklad = odklady.get(steamId);
+function zrusOdklad(hracId: string): void {
+  const odklad = odklady.get(hracId);
   if (odklad === undefined) return;
   clearTimeout(odklad);
-  odklady.delete(steamId);
+  odklady.delete(hracId);
 }
 
 /** Otevřela se další karta. Vrací funkci, která ohlásí její zavření. */
-export function sledujPritomnost(steamId: string): () => void {
-  otevrene.set(steamId, (otevrene.get(steamId) ?? 0) + 1);
-  zrusOdklad(steamId);
+export function sledujPritomnost(hracId: string): () => void {
+  otevrene.set(hracId, (otevrene.get(hracId) ?? 0) + 1);
+  zrusOdklad(hracId);
 
   let ohlaseno = false;
   return () => {
@@ -44,30 +44,30 @@ export function sledujPritomnost(steamId: string): () => void {
     if (ohlaseno) return;
     ohlaseno = true;
 
-    const zbyva = (otevrene.get(steamId) ?? 1) - 1;
+    const zbyva = (otevrene.get(hracId) ?? 1) - 1;
     if (zbyva > 0) {
-      otevrene.set(steamId, zbyva);
+      otevrene.set(hracId, zbyva);
       return;
     }
-    otevrene.delete(steamId);
+    otevrene.delete(hracId);
 
     const odklad = setTimeout(() => {
-      odklady.delete(steamId);
-      void odhlasZAkce(steamId);
+      odklady.delete(hracId);
+      void odhlasZAkce(hracId);
     }, ODCHOD_MS);
     // Ať odklad nedrží proces naživu při vypínání.
     odklad.unref?.();
-    odklady.set(steamId, odklad);
+    odklady.set(hracId, odklad);
   };
 }
 
-async function odhlasZAkce(steamId: string): Promise<void> {
+async function odhlasZAkce(hracId: string): Promise<void> {
   try {
     // Akce se rozhoduje až tady: mezi zavřením karty a vypršením odkladu mohl
     // večer skončit a jiný začít.
     const akce = await getAktivniAkce();
     if (!akce) return;
-    await withdraw(akce.id, steamId);
+    await withdraw(akce.id, hracId);
     await broadcastAkce();
   } catch {
     // Odhlášení je úklid, ne úkol uživatele. Když se nepovede, hráč zůstane
@@ -77,6 +77,6 @@ async function odhlasZAkce(steamId: string): Promise<void> {
 
 /** Jen pro testy: zapomene, co si drží v paměti. */
 export function zapomenPritomnost(): void {
-  for (const steamId of odklady.keys()) zrusOdklad(steamId);
+  for (const hracId of odklady.keys()) zrusOdklad(hracId);
   otevrene.clear();
 }

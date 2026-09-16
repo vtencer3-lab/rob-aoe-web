@@ -17,18 +17,18 @@ export { zkusebniId };
 export const REZISER = "Rezie";
 
 /** Účty skutečných lidí, tedy všechno, co nezaložily zkušební dveře. */
-async function skutecneUcty(): Promise<{ steamId: string; alias: string | null }[]> {
-  const { rows } = await getPool().query<{ steam_id: string; alias: string | null }>(
-    "SELECT steam_id, alias FROM player WHERE steam_id NOT LIKE 'test:%' ORDER BY steam_id",
+async function skutecneUcty(): Promise<{ hracId: string; alias: string | null }[]> {
+  const { rows } = await getPool().query<{ hrac_id: string; alias: string | null }>(
+    "SELECT hrac_id, alias FROM player WHERE hrac_id NOT LIKE 'test:%' ORDER BY hrac_id",
   );
-  return rows.map((r) => ({ steamId: r.steam_id, alias: r.alias }));
+  return rows.map((r) => ({ hracId: r.hrac_id, alias: r.alias }));
 }
 
-async function steamIdAdmina(): Promise<string | null> {
-  const { rows } = await getPool().query<{ steam_id: string }>(
-    "SELECT steam_id FROM player WHERE je_admin ORDER BY steam_id LIMIT 1",
+async function hracIdAdmina(): Promise<string | null> {
+  const { rows } = await getPool().query<{ hrac_id: string }>(
+    "SELECT hrac_id FROM player WHERE je_admin ORDER BY hrac_id LIMIT 1",
   );
-  return rows[0]?.steam_id ?? null;
+  return rows[0]?.hrac_id ?? null;
 }
 
 /**
@@ -55,12 +55,12 @@ export function registerDevRoutes(app: FastifyInstance): void {
     zkontrolujDvere();
     return {
       hraci: ZKUSEBNI.map((z) => z.jmeno),
-      reziser: { jmeno: REZISER, steamId: zkusebniId(REZISER) },
+      reziser: { jmeno: REZISER, hracId: zkusebniId(REZISER) },
       // Aby se šlo vrátit k sobě: po přihlášení za Pepu je vlastní session
       // pryč a Steam na localhostu zpátky nepomůže — návrat ze Steamu míří
       // na BASE_URL, tedy sem, ale přihlašuje se přes veřejný Steam.
       skutecni: await skutecneUcty(),
-      admin: await steamIdAdmina(),
+      admin: await hracIdAdmina(),
     };
   });
 
@@ -68,16 +68,16 @@ export function registerDevRoutes(app: FastifyInstance): void {
   // být postupně čtyřmi lidmi — a čtyři skutečné Steam účty nikdo nemá.
   app.get("/api/dev/login", async (request, reply) => {
     zkontrolujDvere();
-    const dotaz = request.query as { jmeno?: string; steamId?: string };
-    const steamId = dotaz.steamId?.trim() || zkusebniId(dotaz.jmeno ?? "Pepa");
+    const dotaz = request.query as { jmeno?: string; hracId?: string };
+    const hracId = dotaz.hracId?.trim() || zkusebniId(dotaz.jmeno ?? "Pepa");
 
     // jeAdmin = null znamená „nesahej na to“: přihlášení pod vlastním Steam ID
     // tak zkušebními dveřmi nemůže Robovi sebrat režii.
-    await upsertPlayer(steamId, null);
-    if (steamId.startsWith("test:")) {
+    await upsertPlayer(hracId, null);
+    if (hracId.startsWith("test:")) {
       const jmeno = dotaz.jmeno?.trim() || "Pepa";
       const vzor = ZKUSEBNI.find((z) => z.jmeno.toLowerCase() === jmeno.toLowerCase());
-      await savePlayerStats(steamId, {
+      await savePlayerStats(hracId, {
         alias: jmeno,
         steamName: jmeno,
         elo1v1: vzor?.elo ?? 1000,
@@ -86,7 +86,7 @@ export function registerDevRoutes(app: FastifyInstance): void {
       });
     }
 
-    const sid = await createSession(steamId);
+    const sid = await createSession(hracId);
     return reply
       .setCookie(config.cookieNazev, sid, nastaveniCookie())
       .redirect(config.domovskaCesta, 302);
@@ -97,17 +97,17 @@ export function registerDevRoutes(app: FastifyInstance): void {
   // panel režie svítil pořád.
   app.get("/api/dev/rezie", async (request, reply) => {
     zkontrolujDvere();
-    const dotaz = request.query as { steamId?: string };
-    const komu = dotaz.steamId?.trim() || (await currentUser(request));
+    const dotaz = request.query as { hracId?: string };
+    const komu = dotaz.hracId?.trim() || (await currentUser(request));
     if (!komu) {
-      throw new HttpError(400, "Není komu režii dát: buď se přihlas, nebo pošli steamId.");
+      throw new HttpError(400, "Není komu režii dát: buď se přihlas, nebo pošli hracId.");
     }
 
     await upsertPlayer(komu, null);
     // Jedním příkazem, ne dvěma: mezistav se dvěma adminy (nebo bez jediného)
     // by přes SSE stihl proletět ven a panel by na okamžik viděl někdo, kdo
     // ho vidět nemá.
-    await getPool().query("UPDATE player SET je_admin = (steam_id = $1)", [komu]);
+    await getPool().query("UPDATE player SET je_admin = (hrac_id = $1)", [komu]);
 
     const akce = await getAktivniAkce();
     if (akce) await broadcastAkce();
@@ -124,9 +124,9 @@ export function registerDevRoutes(app: FastifyInstance): void {
     if (!akce) throw new HttpError(409, "Napřed založ akci, teprve pak do ní zvi hráče.");
 
     for (const { jmeno, elo, her } of ZKUSEBNI.slice(0, pocet)) {
-      const steamId = zkusebniId(jmeno);
-      await upsertPlayer(steamId, null);
-      await savePlayerStats(steamId, {
+      const hracId = zkusebniId(jmeno);
+      await upsertPlayer(hracId, null);
+      await savePlayerStats(hracId, {
         alias: jmeno,
         steamName: jmeno,
         elo1v1: elo,
@@ -134,7 +134,7 @@ export function registerDevRoutes(app: FastifyInstance): void {
         odehranoHer: her,
         chyba: null,
       });
-      await signUp(akce.id, steamId);
+      await signUp(akce.id, hracId);
     }
 
     await broadcastAkce();

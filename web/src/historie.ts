@@ -17,7 +17,7 @@ import { BARVA_NAZEV, type SestavaVstup } from "../../src/shared/types.js";
 
 /**
  * Jeden krok historie pro Ctrl+Z / Ctrl+Y: co bylo před a po, věta pro toast
- * a cíl zvýraznění (steamId řádku, nebo klíč nastavení).
+ * a cíl zvýraznění (hracId řádku, nebo klíč nastavení).
  */
 export interface ZaznamSkladani {
   druh: "skladani";
@@ -38,27 +38,27 @@ export type Zaznam = ZaznamSkladani | ZaznamNastaveni;
 const popisTymu = (t: number) => (t === 0 ? "–" : `tým ${t}`);
 
 /** Věta o změně sestavy a řádek, který se má zvýraznit. */
-export function popisZmenySestavy(pred: SestavaVstup[], po: SestavaVstup[], jmeno: (steamId: string) => string): { text: string; cil: string | null } {
-  const predIds = new Set(pred.map((v) => v.steamId));
-  const poIds = new Set(po.map((v) => v.steamId));
-  const pridani = po.filter((v) => !predIds.has(v.steamId));
-  const odebrani = pred.filter((v) => !poIds.has(v.steamId));
-  if (pridani.length === 1 && odebrani.length === 0) return { text: `${jmeno(pridani[0]!.steamId)} přidán do sestavy`, cil: pridani[0]!.steamId };
-  if (odebrani.length === 1 && pridani.length === 0) return { text: `${jmeno(odebrani[0]!.steamId)} vyřazen ze sestavy`, cil: null };
+export function popisZmenySestavy(pred: SestavaVstup[], po: SestavaVstup[], jmeno: (hracId: string) => string): { text: string; cil: string | null } {
+  const predIds = new Set(pred.map((v) => v.hracId));
+  const poIds = new Set(po.map((v) => v.hracId));
+  const pridani = po.filter((v) => !predIds.has(v.hracId));
+  const odebrani = pred.filter((v) => !poIds.has(v.hracId));
+  if (pridani.length === 1 && odebrani.length === 0) return { text: `${jmeno(pridani[0]!.hracId)} přidán do sestavy`, cil: pridani[0]!.hracId };
+  if (odebrani.length === 1 && pridani.length === 0) return { text: `${jmeno(odebrani[0]!.hracId)} vyřazen ze sestavy`, cil: null };
   if (odebrani.length > 0 && po.length === 0) return { text: "Sestava vyprázdněna", cil: null };
   if (pridani.length > 0 || odebrani.length > 0) return { text: "Sestava změněna", cil: null };
 
   for (const a of pred) {
-    const b = po.find((x) => x.steamId === a.steamId)!;
-    if (a.barva !== b.barva) return { text: `${jmeno(a.steamId)}: barva ${BARVA_NAZEV[a.barva]} → ${BARVA_NAZEV[b.barva]}`, cil: a.steamId };
-    if (a.tym !== b.tym) return { text: `${jmeno(a.steamId)}: ${popisTymu(a.tym)} → ${popisTymu(b.tym)}`, cil: a.steamId };
-    if ((a.civ ?? null) !== (b.civ ?? null)) return { text: `${jmeno(a.steamId)}: civilizace ${nazevCivilizace(a.civ ?? null)} → ${nazevCivilizace(b.civ ?? null)}`, cil: a.steamId };
+    const b = po.find((x) => x.hracId === a.hracId)!;
+    if (a.barva !== b.barva) return { text: `${jmeno(a.hracId)}: barva ${BARVA_NAZEV[a.barva]} → ${BARVA_NAZEV[b.barva]}`, cil: a.hracId };
+    if (a.tym !== b.tym) return { text: `${jmeno(a.hracId)}: ${popisTymu(a.tym)} → ${popisTymu(b.tym)}`, cil: a.hracId };
+    if ((a.civ ?? null) !== (b.civ ?? null)) return { text: `${jmeno(a.hracId)}: civilizace ${nazevCivilizace(a.civ ?? null)} → ${nazevCivilizace(b.civ ?? null)}`, cil: a.hracId };
   }
-  const predPoradi = pred.map((v) => v.steamId).join(",");
-  const poPoradi = po.map((v) => v.steamId).join(",");
+  const predPoradi = pred.map((v) => v.hracId).join(",");
+  const poPoradi = po.map((v) => v.hracId).join(",");
   if (predPoradi !== poPoradi) {
-    const presunuty = po.find((v, i) => pred[i]?.steamId !== v.steamId);
-    return { text: "Pořadí slotů změněno", cil: presunuty?.steamId ?? null };
+    const presunuty = po.find((v, i) => pred[i]?.hracId !== v.hracId);
+    return { text: "Pořadí slotů změněno", cil: presunuty?.hracId ?? null };
   }
   return { text: "Sestava beze změny", cil: null };
 }

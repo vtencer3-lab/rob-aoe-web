@@ -19,7 +19,7 @@ export const MAX_HRACU = 8;
 export function zkontrolujSestavu(sestava: SestavaVstup[]): string | null {
   if (sestava.length < MIN_HRACU) return `Zápas potřebuje aspoň ${MIN_HRACU} hráče.`;
   if (sestava.length > MAX_HRACU) return `Do lobby se vejde nejvýš ${MAX_HRACU} hráčů.`;
-  if (new Set(sestava.map((s) => s.steamId)).size !== sestava.length) {
+  if (new Set(sestava.map((s) => s.hracId)).size !== sestava.length) {
     return "Stejný hráč nemůže být v zápase dvakrát.";
   }
   for (const s of sestava) {

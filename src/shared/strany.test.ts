@@ -12,19 +12,19 @@ import {
 } from "./strany.js";
 import type { Barva, Tym } from "./types.js";
 
-function c(steamId: string, tym: Tym, barva: Barva, poradi: number, alias: string | null = null): ClenStrany {
-  return { steamId, tym, barva, poradi, alias: alias ?? steamId.toUpperCase(), steamName: null };
+function c(hracId: string, tym: Tym, barva: Barva, poradi: number, alias: string | null = null): ClenStrany {
+  return { hracId, tym, barva, poradi, alias: alias ?? hracId.toUpperCase(), steamName: null };
 }
 
 describe("strany", () => {
   it("týmy jdou podle čísla, sólo hráči za nimi podle slotů", () => {
     const s = strany([c("d", 0, 4, 3), c("a", 2, 2, 0), c("b", 1, 1, 1), c("e", 0, 5, 2)]);
-    expect(s.map((x) => x.vitez)).toEqual([{ tym: 1 }, { tym: 2 }, { steamId: "e" }, { steamId: "d" }]);
+    expect(s.map((x) => x.vitez)).toEqual([{ tym: 1 }, { tym: 2 }, { hracId: "e" }, { hracId: "d" }]);
   });
 
   it("členové týmu jsou v pořadí slotů", () => {
     const s = strany([c("b", 1, 1, 1), c("a", 1, 1, 0)]);
-    expect(s[0]!.clenove.map((x) => x.steamId)).toEqual(["a", "b"]);
+    expect(s[0]!.clenove.map((x) => x.hracId)).toEqual(["a", "b"]);
   });
 });
 
@@ -53,8 +53,8 @@ describe("nazevStrany a titulekViteze", () => {
 describe("stejnyVitez a stranaHrace", () => {
   it("porovná tým s týmem a hráče s hráčem", () => {
     expect(stejnyVitez({ tym: 1 }, { tym: 1 })).toBe(true);
-    expect(stejnyVitez({ tym: 1 }, { steamId: "a" })).toBe(false);
-    expect(stejnyVitez({ steamId: "a" }, { steamId: "a" })).toBe(true);
+    expect(stejnyVitez({ tym: 1 }, { hracId: "a" })).toBe(false);
+    expect(stejnyVitez({ hracId: "a" }, { hracId: "a" })).toBe(true);
     expect(stejnyVitez(null, null)).toBe(true);
     expect(stejnyVitez(null, { tym: 1 })).toBe(false);
   });
@@ -62,7 +62,7 @@ describe("stejnyVitez a stranaHrace", () => {
   it("hráč bez týmu je svoje vlastní strana", () => {
     const u = [c("a", 1, 1, 0), c("s", 0, 3, 1)];
     expect(stranaHrace(u, "a")).toEqual({ tym: 1 });
-    expect(stranaHrace(u, "s")).toEqual({ steamId: "s" });
+    expect(stranaHrace(u, "s")).toEqual({ hracId: "s" });
     expect(stranaHrace(u, "z")).toBeNull();
   });
 });
@@ -71,7 +71,7 @@ describe("sdiliCivilizaci a popisFormatu", () => {
   const coop = [c("a", 1, 1, 0), c("b", 1, 1, 1), c("x", 2, 2, 2), c("y", 2, 2, 3)];
 
   it("stejná barva = sdílená civilizace", () => {
-    expect(sdiliCivilizaci(coop, "a").map((u) => u.steamId)).toEqual(["b"]);
+    expect(sdiliCivilizaci(coop, "a").map((u) => u.hracId)).toEqual(["b"]);
     expect(sdiliCivilizaci([c("a", 1, 1, 0), c("b", 2, 2, 1)], "a")).toEqual([]);
   });
 
@@ -102,6 +102,6 @@ describe("rod vítěze", () => {
 
   it("ve větě se rod drží taky", () => {
     const sestava = [c("ai:1", 0, 1, 0, "AI"), c("76561198000000001", 0, 2, 1, "Pepa")];
-    expect(vitezVeVete(sestava, { steamId: "ai:1" })).toBe("vyhrála AI");
+    expect(vitezVeVete(sestava, { hracId: "ai:1" })).toBe("vyhrála AI");
   });
 });

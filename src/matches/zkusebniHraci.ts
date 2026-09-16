@@ -25,6 +25,6 @@ export function zkusebniId(jmeno: string): string {
   return `test:${jmeno.trim().toLowerCase()}`;
 }
 
-export function jeZkusebni(steamId: string): boolean {
-  return steamId.startsWith("test:");
+export function jeZkusebni(hracId: string): boolean {
+  return hracId.startsWith("test:");
 }

@@ -23,7 +23,7 @@ export function StranyZapasu({ ucastnici, ja }: { ucastnici: UcastnikView[]; ja:
           <div className="skladani jen-ke-cteni">
             <ul className="sestava">
               {strana.clenove.map((u) => (
-                <li key={u.steamId} className={u.steamId === ja ? "radek ja" : "radek"} data-testid="radek-strany">
+                <li key={u.hracId} className={u.hracId === ja ? "radek ja" : "radek"} data-testid="radek-strany">
                   <span className={`volba volba-barva barva-${u.barva}`} aria-label={`Barva ${BARVA_NAZEV[u.barva]}`}>
                     {u.barva}
                   </span>

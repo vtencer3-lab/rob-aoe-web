@@ -17,7 +17,7 @@ export interface Obsluha {
   /** Zrušený zápas úplně odebrat, ať v režii nestraší celý večer. */
   onSmazat: (zapasId: number) => void;
   onVysledek: (zapasId: number, vitez: Vitez) => void;
-  onHost: (zapasId: number, steamId: string) => void;
+  onHost: (zapasId: number, hracId: string) => void;
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
   /** Dohraný zápas zavřít křížkem (true), nebo z debug módu znovu otevřít (false). */
   onZavrit: (zapasId: number) => void;
@@ -185,7 +185,7 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
       <div className="skladani jen-ke-cteni">
       <ul className="sestava sestava-zapasu">
         {zapas.ucastnici.map((u) => (
-          <li key={u.steamId} className={[`radek barva-${u.barva}`, jeVitez(zapas, u) ? "vyhral" : ""].filter(Boolean).join(" ")}>
+          <li key={u.hracId} className={[`radek barva-${u.barva}`, jeVitez(zapas, u) ? "vyhral" : ""].filter(Boolean).join(" ")}>
             <span className={`volba volba-barva barva-${u.barva}`} aria-label={`Barva ${BARVA_NAZEV[u.barva]}`}>
               {u.barva}
             </span>
@@ -195,7 +195,7 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
             <span className="jmeno">
               {jmenoHrace(u)}
               {jeVitez(zapas, u) ? (
-                <strong className="odznak-vitez" data-testid="odznak-vitez" title={jeAi(u.steamId) ? "Vyhrála" : "Vyhrál"}>
+                <strong className="odznak-vitez" data-testid="odznak-vitez" title={jeAi(u.hracId) ? "Vyhrála" : "Vyhrál"}>
                   VÍTĚZ
                 </strong>
               ) : null}
@@ -217,7 +217,7 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
             ) : obsluha && bezi ? (
               <button
                 onClick={() => {
-                  if (potvrdZmenuHosta(jmenoHrace(u))) obsluha.onHost(zapas.id, u.steamId);
+                  if (potvrdZmenuHosta(jmenoHrace(u))) obsluha.onHost(zapas.id, u.hracId);
                 }}
               >
                 Udělat hostem
@@ -329,7 +329,7 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
 }
 
 function klicStrany(strana: Strana): string {
-  return "tym" in strana.vitez ? `tym-${strana.vitez.tym}` : `hrac-${strana.vitez.steamId}`;
+  return "tym" in strana.vitez ? `tym-${strana.vitez.tym}` : `hrac-${strana.vitez.hracId}`;
 }
 
 /**
@@ -347,7 +347,7 @@ function TlacitkoViteze({
   onVysledek: (zapasId: number, vitez: Vitez) => void;
 }) {
   const barva = strana.clenove[0]?.barva ?? 1;
-  const hraci = strana.clenove.length > 1 ? strana.clenove.map((c) => jmenoHrace({ steamId: c.steamId, alias: c.alias ?? null, steamName: c.steamName ?? null })) : [];
+  const hraci = strana.clenove.length > 1 ? strana.clenove.map((c) => jmenoHrace({ hracId: c.hracId, alias: c.alias ?? null, steamName: c.steamName ?? null })) : [];
   return (
     <button className={`vysledek barva-${barva}`} onClick={() => onVysledek(zapas.id, strana.vitez)}>
       <span>{titulekViteze(strana)}</span>

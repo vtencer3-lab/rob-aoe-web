@@ -60,7 +60,7 @@ it("odebrání odhlásí jen zkušební, skuteční hráči zůstanou", async ()
 
   const res = await app.inject({ method: "DELETE", url: `/api/akce/${akceId}/zkusebni-hraci`, cookies: { sid: robSid } });
   expect(res.json()).toEqual({ odebrano: 2 });
-  expect((await listSignups(akceId)).map((h) => h.steamId)).toEqual([HRAC]);
+  expect((await listSignups(akceId)).map((h) => h.hracId)).toEqual([HRAC]);
   await app.close();
 });
 
@@ -91,13 +91,13 @@ it("odebrání smaže i zápasy se zkušebním hráčem a jeho řádek v player"
   const app = buildServer();
   await app.inject({ method: "POST", url: `/api/akce/${akceId}/prihlaska`, cookies: { sid: hracSid } });
   await app.inject({ method: "POST", url: `/api/akce/${akceId}/zkusebni-hraci`, cookies: { sid: robSid } });
-  const zkusebniId = (await listSignups(akceId)).find((h) => h.steamId.startsWith("test:"))!.steamId;
+  const zkusebniId = (await listSignups(akceId)).find((h) => h.hracId.startsWith("test:"))!.hracId;
 
   const zapas = await app.inject({
     method: "POST",
     url: `/api/akce/${akceId}/zapas`,
     cookies: { sid: robSid },
-    payload: { sestava: [{ steamId: HRAC, tym: 1, barva: 1 }, { steamId: zkusebniId, tym: 2, barva: 2 }] },
+    payload: { sestava: [{ hracId: HRAC, tym: 1, barva: 1 }, { hracId: zkusebniId, tym: 2, barva: 2 }] },
   });
   expect(zapas.statusCode).toBe(200);
 
@@ -105,10 +105,10 @@ it("odebrání smaže i zápasy se zkušebním hráčem a jeho řádek v player"
 
   const { rows: zapasy } = await getPool().query("SELECT id FROM zapas WHERE akce_id = $1", [akceId]);
   expect(zapasy).toHaveLength(0);
-  const { rows: hraci } = await getPool().query("SELECT steam_id FROM player WHERE steam_id LIKE 'test:%'");
+  const { rows: hraci } = await getPool().query("SELECT hrac_id FROM player WHERE hrac_id LIKE 'test:%'");
   expect(hraci).toHaveLength(0);
   // Skutečný hráč zůstane i s přihláškou — mazal se zkušební, ne večer.
-  expect((await listSignups(akceId)).map((h) => h.steamId)).toEqual([HRAC]);
+  expect((await listSignups(akceId)).map((h) => h.hracId)).toEqual([HRAC]);
   await app.close();
 });
 
@@ -123,7 +123,7 @@ it("zápas bez zkušebních hráčů odebrání přežije", async () => {
     method: "POST",
     url: `/api/akce/${akceId}/zapas`,
     cookies: { sid: robSid },
-    payload: { sestava: [{ steamId: HRAC, tym: 1, barva: 1 }, { steamId: ROB, tym: 2, barva: 2 }] },
+    payload: { sestava: [{ hracId: HRAC, tym: 1, barva: 1 }, { hracId: ROB, tym: 2, barva: 2 }] },
   });
 
   await app.inject({ method: "DELETE", url: `/api/akce/${akceId}/zkusebni-hraci`, cookies: { sid: robSid } });

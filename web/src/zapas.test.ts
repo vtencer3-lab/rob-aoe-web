@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { UcastnikView, ZapasView } from "../../src/shared/types.js";
 import { jmenoHrace, mojeZapasy, mujUcastnik, souperi, spoluhraci, verejneZapasy } from "./zapas.js";
 
-const u = (steamId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikView => ({
-  steamId,
-  alias: steamId.toUpperCase(),
+const u = (hracId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikView => ({
+  hracId,
+  alias: hracId.toUpperCase(),
   steamName: null,
   tym,
   barva,
@@ -39,7 +39,7 @@ describe("mujUcastnik", () => {
 
 describe("spoluhraci", () => {
   it("v Coop Kings je to ten se stejnou barvou, bez mě", () => {
-    expect(spoluhraci(coop, "a").map((s) => s.steamId)).toEqual(["b"]);
+    expect(spoluhraci(coop, "a").map((s) => s.hracId)).toEqual(["b"]);
   });
 
   it("v 1v1 nikdo", () => {
@@ -50,7 +50,7 @@ describe("spoluhraci", () => {
 
 describe("souperi", () => {
   it("jsou z druhého týmu", () => {
-    expect(souperi(coop, "a").map((s) => s.steamId)).toEqual(["c", "d"]);
+    expect(souperi(coop, "a").map((s) => s.hracId)).toEqual(["c", "d"]);
   });
 });
 
@@ -68,7 +68,7 @@ describe("mojeZapasy", () => {
 
 describe("jmenoHrace", () => {
   const kdo = (alias: string | null, steamName: string | null): UcastnikView => ({
-    steamId: "76561199091641101",
+    hracId: "76561199091641101",
     alias,
     steamName,
     tym: 1,
@@ -95,7 +95,7 @@ describe("jmenoHrace", () => {
 });
 
 describe("verejneZapasy", () => {
-  const zapas = (id: number, stav: string, steamIds: string[]): ZapasView => ({
+  const zapas = (id: number, stav: string, hracIds: string[]): ZapasView => ({
     id,
     poradi: id,
     stav,
@@ -105,9 +105,9 @@ describe("verejneZapasy", () => {
     joinUri: null,
     spectatorUri: null,
     vitez: null,
-    ucastnici: steamIds.map((steamId, i) => ({
-      steamId,
-      alias: steamId,
+    ucastnici: hracIds.map((hracId, i) => ({
+      hracId,
+      alias: hracId,
       steamName: null,
       tym: (i % 2 === 0 ? 1 : 2) as 1 | 2,
       barva: (i % 2 === 0 ? 1 : 2) as 1 | 2,

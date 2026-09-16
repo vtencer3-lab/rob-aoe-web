@@ -6,7 +6,7 @@ import type { Barva, Tym } from "../shared/types.js";
  * Seznam otevřených lobby ze stejného backendu, ze kterého web bere žebříček.
  * Nezdokumentovaný, bez přihlášení, vrací veřejné lobby před startem hry.
  * Ověřeno 7. 9. 2026: `id` inzerátu je přesně číslo z odkazu
- * `aoe2de://0/<id>`, host i členové jsou v `avatars` pod `/steam/<steamId>`.
+ * `aoe2de://0/<id>`, host i členové jsou v `avatars` pod `/steam/<hracId>`.
  *
  * Endpoint vrací nejvýš 100 lobby na stránku (nejnovější první) a starší
  * odsouvá na `start=100`, `start=200`, … Filtrovat neumí (parametry
@@ -23,7 +23,7 @@ import type { Barva, Tym } from "../shared/types.js";
 export interface LobbyInzerat extends PoznatekLobby {
   nazev: string;
   /** Steam ID všech, kdo v lobby sedí (včetně hosta). Totéž co sloty, jen jména. */
-  clenoveSteamIds: string[];
+  clenoveHraci: string[];
 }
 
 const ZAKLAD = "https://aoe-api.worldsedgelink.com/community/advertisement";
@@ -43,7 +43,7 @@ function cisloJakoText(hodnota: unknown): string | null {
 }
 
 /** Z pole `avatars` postaví mapu profile_id → Steam ID (jen účty ze Steamu). */
-function mapaSteamId(avatars: unknown): Map<number, string> {
+function mapaHracu(avatars: unknown): Map<number, string> {
   const mapa = new Map<number, string>();
   if (!Array.isArray(avatars)) return mapa;
   for (const a of avatars) {
@@ -52,8 +52,8 @@ function mapaSteamId(avatars: unknown): Map<number, string> {
     const name = a["name"];
     if (typeof id !== "number" || typeof name !== "string") continue;
     if (!name.startsWith(STEAM_PREFIX)) continue;
-    const steamId = name.slice(STEAM_PREFIX.length);
-    if (/^\d{17}$/.test(steamId)) mapa.set(id, steamId);
+    const hracId = name.slice(STEAM_PREFIX.length);
+    if (/^\d{17}$/.test(hracId)) mapa.set(id, hracId);
   }
   return mapa;
 }
@@ -223,9 +223,9 @@ export function parseSloty(
     if (!jeObjekt(s)) continue;
     if (s["status"] !== STAV_ZAVRENY) pocetSlotu++;
     const pid = s["profileInfo.id"];
-    const steamId = typeof pid === "number" ? steam.get(pid) : undefined;
-    if (steamId) {
-      lide.push({ steamId, ...slotZMetadat(s) });
+    const hracId = typeof pid === "number" ? steam.get(pid) : undefined;
+    if (hracId) {
+      lide.push({ hracId, ...slotZMetadat(s) });
       continue;
     }
     if (s["status"] === STAV_AI) ai.push(slotZMetadat(s));
@@ -237,7 +237,7 @@ export function parseAdvertisements(json: unknown): LobbyInzerat[] {
   if (!jeObjekt(json)) return [];
   const matches = json["matches"];
   if (!Array.isArray(matches)) return [];
-  const steam = mapaSteamId(json["avatars"]);
+  const steam = mapaHracu(json["avatars"]);
 
   const vysledek: LobbyInzerat[] = [];
   for (const m of matches) {
@@ -258,11 +258,11 @@ export function parseAdvertisements(json: unknown): LobbyInzerat[] {
     const options = parseOptions(m["options"]);
     vysledek.push({
       lobbyId,
-      hostSteamId: typeof host === "number" ? (steam.get(host) ?? null) : null,
+      hostHracId: typeof host === "number" ? (steam.get(host) ?? null) : null,
       nazev: typeof m["description"] === "string" ? m["description"] : "",
       maHeslo: m["passwordprotected"] === 1 || m["passwordprotected"] === true,
       povolujeDivaky: m["isobservable"] === 1 || m["isobservable"] === true,
-      clenoveSteamIds: clenove,
+      clenoveHraci: clenove,
       ...(({ lide, ai, pocetSlotu }) => ({ sloty: lide, aiSloty: ai, pocetSlotu }))(parseSloty(m["slotinfo"], steam)),
       preLobby: {
         lobbyTyp: typeof m["matchtype_id"] === "number" ? m["matchtype_id"] : null,

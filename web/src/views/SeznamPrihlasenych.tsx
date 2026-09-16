@@ -20,7 +20,7 @@ interface Props {
    */
   skladani?: Skladani;
   /**
-   * Jen pro režii: kdo právě hraje běžící zápas (steamId → číslo zápasu).
+   * Jen pro režii: kdo právě hraje běžící zápas (hracId → číslo zápasu).
    * U takového hráče je v posledním sloupci ikona zkřížených mečů, ať Rob
    * nesestavuje další zápas z lidí, kteří jsou zrovna ve hře.
    */
@@ -30,7 +30,7 @@ interface Props {
   /** Debug mód: kliknutí na ikonu hry cykluje její stavy, ať jde vidět všechny. */
   ladeni?: boolean;
   /** Admin: zvonek u hráče — svolání do radnice (poplach ve hráčově prohlížeči). */
-  onSvolat?: (steamId: string) => void;
+  onSvolat?: (hracId: string) => void;
   /** Admin: super zvonek v hlavičce — svolá naráz všechny, u kterých je zvonek. */
   onSvolatVsechny?: () => void;
   /** Lhůta aktivity večera; z ní se počítá práh pro „Jsem tu!“. */
@@ -256,23 +256,23 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   // Debug: klik na ikonu hry přepne její stav jen v prohlížeči (má → nelze
   // ověřit → nemá), ať jde všechny tři podoby vidět bez cizího účtu.
   const [prepsaneHry, setPrepsaneHry] = useState<Record<string, SteamVlastnictvi>>({});
-  const stavHry = (h: PlayerView): SteamVlastnictvi | null => prepsaneHry[h.steamId] ?? h.steamHra ?? null;
+  const stavHry = (h: PlayerView): SteamVlastnictvi | null => prepsaneHry[h.hracId] ?? h.steamHra ?? null;
   const dalsiStavHry = (h: PlayerView) => {
     const poradi: SteamVlastnictvi[] = ["ma", "soukromy", "nema"];
     const ted = stavHry(h) ?? "nema";
-    setPrepsaneHry((p) => ({ ...p, [h.steamId]: poradi[(poradi.indexOf(ted) + 1) % poradi.length]! }));
+    setPrepsaneHry((p) => ({ ...p, [h.hracId]: poradi[(poradi.indexOf(ted) + 1) % poradi.length]! }));
   };
   // „Hráč nemá hru“: + zůstává klikací, ale napřed se ptá.
   const [potvrditVyber, setPotvrditVyber] = useState<PlayerView | null>(null);
   // Zvonek jde použít jednou za pět vteřin (po tu dobu je zašedlý); admin
   // sám ho slyší jen na desetinu své hlasitosti, ať ví, že odešel.
   const [zvonekChladne, setZvonekChladne] = useState<Record<string, boolean>>({});
-  const zazvon = (steamId: string) => {
-    if (!onSvolat || zvonekChladne[steamId]) return;
-    onSvolat(steamId);
+  const zazvon = (hracId: string) => {
+    if (!onSvolat || zvonekChladne[hracId]) return;
+    onSvolat(hracId);
     prehraj(poplachUrl, hlasitost() * 0.3);
-    setZvonekChladne((z) => ({ ...z, [steamId]: true }));
-    setTimeout(() => setZvonekChladne((z) => ({ ...z, [steamId]: false })), ZVONEK_CHLADNUTI_MS);
+    setZvonekChladne((z) => ({ ...z, [hracId]: true }));
+    setTimeout(() => setZvonekChladne((z) => ({ ...z, [hracId]: false })), ZVONEK_CHLADNUTI_MS);
   };
   // Super zvonek: totéž pro všechny, u kterých by byl zvonek; chladne pod
   // klíčem „*“. Ukáže se, jen když má koho svolat.
@@ -293,7 +293,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   useEffect(() => {
     const srovnej = (e: Event) => {
       const id = jmenoPodKurzorem(e, tabulka.current);
-      setNahled(id ? (prihlaseni.find((h) => h.steamId === id) ?? null) : null);
+      setNahled(id ? (prihlaseni.find((h) => h.hracId === id) ?? null) : null);
     };
     window.addEventListener(KONEC_TAHU, srovnej);
     return () => window.removeEventListener(KONEC_TAHU, srovnej);
@@ -302,7 +302,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   // konec za všech okolností — i za seřazeného seznamu.
   const ted = useTed();
   const radky = podleAktivity(skladani ? serad(skladani.nevybrani, razeni) : prihlaseni, ted);
-  usePresouvani(tabulka, radky.map((h) => h.steamId).join(","));
+  usePresouvani(tabulka, radky.map((h) => h.hracId).join(","));
 
   const prepni = (sloupec: Sloupec) => {
     const nove = dalsiRazeni(razeni, sloupec);
@@ -352,7 +352,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
             );
           })}
           <th className="jsem-tu-bunka" aria-label="Návrat mezi aktivní">
-            {onSvolatVsechny && prihlaseni.some((h) => h.steamId !== ja && !jeAi(h.steamId) && nabidnoutZvonek(h.aktivniDo, ted, lhutaMinut)) ? (
+            {onSvolatVsechny && prihlaseni.some((h) => h.hracId !== ja && !jeAi(h.hracId) && nabidnoutZvonek(h.aktivniDo, ted, lhutaMinut)) ? (
               <button
                 type="button"
                 className={zvonekChladne["*"] ? "zvonek super-zvonek chladne" : "zvonek super-zvonek"}
@@ -373,17 +373,17 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
       </thead>
       <tbody>
         {radky.map((hrac) => {
-          const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
+          const jmeno = hrac.alias ?? hrac.steamName ?? hrac.hracId;
           // Přetahovat jde jen ve vlastním pořadí — v seřazeném seznamu by
           // přesun nebyl vidět.
           // Aktivní se řadí jen mezi aktivními, spící mezi spícími — v seznamu
           // jsou tak stejně oddělení, ať je pořadí v paměti jakékoli.
-          const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId, jeAktivni(hrac.aktivniDo, ted) ? "aktivni" : "spici") : {};
+          const tah = skladani && !razeni ? tahani("nevybrani", hrac.hracId, jeAktivni(hrac.aktivniDo, ted) ? "aktivni" : "spici") : {};
           return (
             <tr
-              key={hrac.steamId}
-              data-hrac={hrac.steamId}
-              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : ""]
+              key={hrac.hracId}
+              data-hrac={hrac.hracId}
+              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.hracId === ja ? "muj-radek" : ""]
                 .filter(Boolean)
                 .join(" ")}
               {...tah}
@@ -395,7 +395,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                     className={stavHry(hrac) === "nema" ? "plus bez-hry" : "plus"}
                     aria-label={`Vybrat hráče ${jmeno}`}
                     title={stavHry(hrac) === "nema" ? "Hráč nemá hru na svém účtě" : "Vybrat hráče"}
-                    onClick={() => (stavHry(hrac) === "nema" ? setPotvrditVyber(hrac) : skladani.vyber(hrac.steamId))}
+                    onClick={() => (stavHry(hrac) === "nema" ? setPotvrditVyber(hrac) : skladani.vyber(hrac.hracId))}
                   >
                     +
                   </button>
@@ -404,7 +404,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
               <td>
                 <span
                   className="jmeno-hrace"
-                  data-jmeno-hrace={hrac.steamId}
+                  data-jmeno-hrace={hrac.hracId}
                   data-testid="jmeno-hrace"
                   onPointerEnter={() => {
                     if (!tahneSe()) setNahled(hrac);
@@ -436,7 +436,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   tlačítka odsouvala odpočet a ten by se řádek od řádku
                   neshodoval. */}
               <td className="jsem-tu-bunka">
-                {ja === hrac.steamId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted, lhutaMinut) ? (
+                {ja === hrac.hracId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted, lhutaMinut) ? (
                   <button
                     type="button"
                     className="jsem-tu"
@@ -451,14 +451,14 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   >
                     Jsem tu!
                   </button>
-                ) : onSvolat && ja !== hrac.steamId && !jeAi(hrac.steamId) && nabidnoutZvonek(hrac.aktivniDo, ted, lhutaMinut) ? (
+                ) : onSvolat && ja !== hrac.hracId && !jeAi(hrac.hracId) && nabidnoutZvonek(hrac.aktivniDo, ted, lhutaMinut) ? (
                   <button
                     type="button"
-                    className={zvonekChladne[hrac.steamId] ? "zvonek chladne" : "zvonek"}
+                    className={zvonekChladne[hrac.hracId] ? "zvonek chladne" : "zvonek"}
                     aria-label={`Svolat hráče ${jmeno}`}
                     title="Svolat do radnice — hráči zazvoní poplach"
-                    disabled={Boolean(zvonekChladne[hrac.steamId])}
-                    onClick={() => zazvon(hrac.steamId)}
+                    disabled={Boolean(zvonekChladne[hrac.hracId])}
+                    onClick={() => zazvon(hrac.hracId)}
                   >
                     🔔
                   </button>
@@ -469,7 +469,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   <ZnackaHrace
                     hrac={hrac}
                     ted={ted}
-                    vlastni={ja !== null && ja !== undefined && ja === hrac.steamId}
+                    vlastni={ja !== null && ja !== undefined && ja === hrac.hracId}
                     admin={admin}
                     vZapase={vZapase}
                   />
@@ -495,7 +495,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
           potvrdit="Přidat"
           zrusit="Zrušit"
           onPotvrdit={() => {
-            skladani.vyber(potvrditVyber.steamId);
+            skladani.vyber(potvrditVyber.hracId);
             setPotvrditVyber(null);
           }}
           onZrusit={() => setPotvrditVyber(null)}
@@ -569,7 +569,7 @@ function ZnackaHrace({
   admin: boolean;
   vZapase?: Map<string, number>;
 }) {
-  const zapas = vZapase?.get(hrac.steamId);
+  const zapas = vZapase?.get(hrac.hracId);
   if (zapas !== undefined) {
     // Meče zaberou místo odpočtu i „Zzz“, tak lhůta zůstává aspoň v bublině:
     // kdo v zápase usnul, má tam i jak dlouho. Kdo je v lhůtě, nic navíc.

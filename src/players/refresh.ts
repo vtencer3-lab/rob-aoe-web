@@ -26,18 +26,18 @@ export function maCerstveStaty(
 }
 
 export interface RefreshDeps {
-  nactiZebricek: (steamId: string) => Promise<LeaderboardStats | null>;
-  nactiProfil: (steamId: string) => Promise<SteamProfile | null>;
+  nactiZebricek: (hracId: string) => Promise<LeaderboardStats | null>;
+  nactiProfil: (hracId: string) => Promise<SteamProfile | null>;
   /** `undefined` = nevíme (chybí klíč), hodnoty v databázi nesaháme. Jinak hodiny (null = skryté) a vlastnictví. */
-  nactiHru: (steamId: string) => Promise<SteamHra | undefined>;
-  uloz: (steamId: string, staty: PlayerStatsUpdate) => Promise<void>;
+  nactiHru: (hracId: string) => Promise<SteamHra | undefined>;
+  uloz: (hracId: string, staty: PlayerStatsUpdate) => Promise<void>;
 }
 
 /**
  * Stáhne a uloží statistiky. Nikdy nevyhodí výjimku — selhání externího zdroje
  * se zapíše do sloupce staty_chyba a nesmí zablokovat přihlášení uživatele.
  */
-export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Promise<void> {
+export async function refreshPlayerStats(hracId: string, deps: RefreshDeps): Promise<void> {
   // Obaluje celé tělo: jednotlivé .catch() níže chytí jen odmítnuté přísliby.
   // Závislost, která vyhodí synchronně (dřív, než příslib vůbec vznikne),
   // by jinak unikla a porušila garanci, že tato funkce nikdy nevyhodí výjimku.
@@ -45,15 +45,15 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
     const chyby: string[] = [];
 
     const [zebricek, profil, hra] = await Promise.all([
-      deps.nactiZebricek(steamId).catch((err: unknown) => {
+      deps.nactiZebricek(hracId).catch((err: unknown) => {
         chyby.push(`Žebříček: ${popis(err)}`);
         return null;
       }),
-      deps.nactiProfil(steamId).catch((err: unknown) => {
+      deps.nactiProfil(hracId).catch((err: unknown) => {
         chyby.push(`Steam profil: ${popis(err)}`);
         return null;
       }),
-      deps.nactiHru(steamId).catch((err: unknown) => {
+      deps.nactiHru(hracId).catch((err: unknown) => {
         chyby.push(`Steam hodiny: ${popis(err)}`);
         return undefined;
       }),
@@ -80,7 +80,7 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
       staty.steamHra = hra.vlastnictvi;
     }
 
-    await deps.uloz(steamId, staty);
+    await deps.uloz(hracId, staty);
   } catch (err: unknown) {
     // Cokoliv selhalo mimo výše ošetřené případy (včetně synchronního pádu
     // některé závislosti nebo pádu zápisu). Přihlášení tím nesmí spadnout, ale
@@ -91,7 +91,7 @@ export async function refreshPlayerStats(steamId: string, deps: RefreshDeps): Pr
     // záchytu — a to zrovna v handleru, který tu je kvůli garanci „nikdy
     // nevyhodí výjimku“.
     try {
-      await deps.uloz(steamId, { chyba: `Obnova selhala: ${popis(err)}` });
+      await deps.uloz(hracId, { chyba: `Obnova selhala: ${popis(err)}` });
     } catch {
       // Zapsat chybu se nepovedlo. Přihlášení tím spadnout nesmí, a víc už
       // udělat nejde.

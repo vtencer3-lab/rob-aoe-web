@@ -14,12 +14,12 @@ export interface VybranyHrac {
 export interface Skladani {
   vybrani: VybranyHrac[];
   nevybrani: PlayerView[];
-  jeVybrany: (steamId: string) => boolean;
-  vyber: (steamId: string) => void;
+  jeVybrany: (hracId: string) => boolean;
+  vyber: (hracId: string) => void;
   /** Přidá do sestavy počítačového protivníka; nad osm slotů už neudělá nic. */
   pridejAi: () => void;
-  odeber: (steamId: string) => void;
-  uprav: (steamId: string, zmena: (v: SestavaVstup) => SestavaVstup) => void;
+  odeber: (hracId: string) => void;
+  uprav: (hracId: string, zmena: (v: SestavaVstup) => SestavaVstup) => void;
   presun: (skupina: Skupina, odId: string, naId: string) => void;
   vynuluj: () => void;
   /** Nasadí celou sestavu (zpět/znovu) — bez hlášení jako uživatelská změna. */
@@ -65,11 +65,11 @@ function ulozPoradi(poradi: string[]): void {
  * 1v1 to sedí rovnou, u 2v2 stačí prohodit jedno tlačítko. Barva je první
  * volná, takže první dva hráči jsou modrý a červený jako ve hře.
  */
-export function vychoziVstup(steamId: string, vybrani: SestavaVstup[]): SestavaVstup {
+export function vychoziVstup(hracId: string, vybrani: SestavaVstup[]): SestavaVstup {
   const obsazene = new Set(vybrani.map((v) => v.barva));
   const barva = BARVY.find((b) => !obsazene.has(b)) ?? 1;
   const tym: Tym = vybrani.length % 2 === 0 ? 1 : 2;
-  return { steamId, tym, barva, civ: null };
+  return { hracId, tym, barva, civ: null };
 }
 
 function presunout<T>(pole: T[], klic: (x: T) => string, odId: string, naId: string): T[] {
@@ -85,7 +85,7 @@ function presunout<T>(pole: T[], klic: (x: T) => string, odId: string, naId: str
 function stejnaSestava(a: SestavaVstup[], b: SestavaVstup[]): boolean {
   return a.length === b.length && a.every((x, i) => {
     const y = b[i]!;
-    return x.steamId === y.steamId && x.tym === y.tym && x.barva === y.barva && (x.civ ?? null) === (y.civ ?? null);
+    return x.hracId === y.hracId && x.tym === y.tym && x.barva === y.barva && (x.civ ?? null) === (y.civ ?? null);
   });
 }
 
@@ -123,22 +123,22 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
   // AI se do akce nehlásí, takže v přihlášených nikdy není. Do mapy patří
   // přesto: podle ní se poznává, kdo ze sestavy vypadl, a počítač z ní
   // vypadnout nesmí.
-  const podleId = new Map([...prihlaseni, ...AI_HRACI].map((h) => [h.steamId, h]));
+  const podleId = new Map([...prihlaseni, ...AI_HRACI].map((h) => [h.hracId, h]));
   // Kdo se odhlásil z akce, ze sestavy vypadne sám.
-  const platni = vybrani.filter((v) => podleId.has(v.steamId));
-  const vybraneId = new Set(platni.map((v) => v.steamId));
+  const platni = vybrani.filter((v) => podleId.has(v.hracId));
+  const vybraneId = new Set(platni.map((v) => v.hracId));
   const nevybrani = [...prihlaseni]
-    .filter((h) => !vybraneId.has(h.steamId))
+    .filter((h) => !vybraneId.has(h.hracId))
     .sort((a, b) => {
-      const ia = poradiNevybranych.indexOf(a.steamId);
-      const ib = poradiNevybranych.indexOf(b.steamId);
+      const ia = poradiNevybranych.indexOf(a.hracId);
+      const ib = poradiNevybranych.indexOf(b.hracId);
       return (ia === -1 ? Number.MAX_SAFE_INTEGER : ia) - (ib === -1 ? Number.MAX_SAFE_INTEGER : ib);
     });
 
   const nastav = (navrzene: SestavaVstup[], hlasit = true) => {
     // Kdo už není přihlášený, do sestavy nepatří — ani při zpět/znovu, kdy
     // by ho starý snímek vrátil natvrdo.
-    const nove = navrzene.filter((v) => podleId.has(v.steamId));
+    const nove = navrzene.filter((v) => podleId.has(v.hracId));
     if (hlasit) sdilene?.naZmenu?.(platni, nove);
     setLokalni(nove);
     if (!sdilene) return;
@@ -161,35 +161,35 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
   };
 
   return {
-    vybrani: platni.map((vstup) => ({ vstup, hrac: podleId.get(vstup.steamId)! })),
+    vybrani: platni.map((vstup) => ({ vstup, hrac: podleId.get(vstup.hracId)! })),
     nevybrani,
-    jeVybrany: (steamId) => vybraneId.has(steamId),
-    vyber: (steamId) => {
-      if (vybraneId.has(steamId) || !podleId.has(steamId) || platni.length >= MAX_HRACU) return;
-      nastav([...platni, vychoziVstup(steamId, platni)]);
+    jeVybrany: (hracId) => vybraneId.has(hracId),
+    vyber: (hracId) => {
+      if (vybraneId.has(hracId) || !podleId.has(hracId) || platni.length >= MAX_HRACU) return;
+      nastav([...platni, vychoziVstup(hracId, platni)]);
     },
     pridejAi: () => {
       if (platni.length >= MAX_HRACU) return;
       // První AI, která v sestavě ještě není: odebráním se id uvolní a použije
       // se znovu, takže čísla nerostou do nesmyslu.
-      const volna = AI_HRACI.find((a) => !vybraneId.has(a.steamId));
+      const volna = AI_HRACI.find((a) => !vybraneId.has(a.hracId));
       if (!volna) return;
-      nastav([...platni, vychoziVstup(volna.steamId, platni)]);
+      nastav([...platni, vychoziVstup(volna.hracId, platni)]);
     },
-    odeber: (steamId) => {
-      nastav(platni.filter((v) => v.steamId !== steamId));
+    odeber: (hracId) => {
+      nastav(platni.filter((v) => v.hracId !== hracId));
       // Vyřazený jde na konec nevybraných; kdo v uloženém pořadí nebyl (nově
       // přihlášený), zůstává před ním v pořadí přihlášení. AI mezi nevybrané
       // nepatří — ta se nebere z tabulky přihlášených, ale vlastním tlačítkem.
-      if (jeAi(steamId)) return;
-      ulozNevybrane([...nevybrani.map((h) => h.steamId).filter((id) => id !== steamId), steamId]);
+      if (jeAi(hracId)) return;
+      ulozNevybrane([...nevybrani.map((h) => h.hracId).filter((id) => id !== hracId), hracId]);
     },
-    uprav: (steamId, zmena) => {
-      nastav(platni.map((v) => (v.steamId === steamId ? zmena(v) : v)));
+    uprav: (hracId, zmena) => {
+      nastav(platni.map((v) => (v.hracId === hracId ? zmena(v) : v)));
     },
     presun: (skupina, odId, naId) => {
-      if (skupina === "vybrani") nastav(presunout(platni, (v) => v.steamId, odId, naId));
-      else ulozNevybrane(presunout(nevybrani.map((h) => h.steamId), (id) => id, odId, naId));
+      if (skupina === "vybrani") nastav(presunout(platni, (v) => v.hracId, odId, naId));
+      else ulozNevybrane(presunout(nevybrani.map((h) => h.hracId), (id) => id, odId, naId));
     },
     vynuluj: () => nastav([]),
     nastavCelou: (sestava) => nastav(sestava, false),

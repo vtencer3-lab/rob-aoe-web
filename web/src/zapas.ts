@@ -8,25 +8,25 @@ export { sdiliCivilizaci, popisFormatu, strany, titulekViteze, vitezVeVete } fro
  * ho nemají. Bez druhého kroku by v sestavě zápasu svítilo syrové 64bitové
  * Steam ID, přestože soupiska hned vedle jméno zná ze Steamu.
  */
-export function jmenoHrace(u: Pick<UcastnikView, "steamId" | "alias" | "steamName">): string {
-  return u.alias ?? u.steamName ?? u.steamId;
+export function jmenoHrace(u: Pick<UcastnikView, "hracId" | "alias" | "steamName">): string {
+  return u.alias ?? u.steamName ?? u.hracId;
 }
 
-export function mujUcastnik(zapas: ZapasView, steamId: string): UcastnikView | null {
-  return zapas.ucastnici.find((u) => u.steamId === steamId) ?? null;
+export function mujUcastnik(zapas: ZapasView, hracId: string): UcastnikView | null {
+  return zapas.ucastnici.find((u) => u.hracId === hracId) ?? null;
 }
 
 /** Spoluhráči = stejný tým 1 až 4. Hráč bez týmu („–“) žádné nemá. */
-export function spoluhraci(zapas: ZapasView, steamId: string): UcastnikView[] {
-  const ja = mujUcastnik(zapas, steamId);
+export function spoluhraci(zapas: ZapasView, hracId: string): UcastnikView[] {
+  const ja = mujUcastnik(zapas, hracId);
   if (!ja || ja.tym === 0) return [];
-  return zapas.ucastnici.filter((u) => u.tym === ja.tym && u.steamId !== steamId);
+  return zapas.ucastnici.filter((u) => u.tym === ja.tym && u.hracId !== hracId);
 }
 
-export function souperi(zapas: ZapasView, steamId: string): UcastnikView[] {
-  const ja = mujUcastnik(zapas, steamId);
+export function souperi(zapas: ZapasView, hracId: string): UcastnikView[] {
+  const ja = mujUcastnik(zapas, hracId);
   if (!ja) return [];
-  return zapas.ucastnici.filter((u) => u.steamId !== steamId && (ja.tym === 0 || u.tym !== ja.tym));
+  return zapas.ucastnici.filter((u) => u.hracId !== hracId && (ja.tym === 0 || u.tym !== ja.tym));
 }
 
 /** Zápas, který má večer ještě před sebou: ani dohraný, ani zrušený. */
@@ -34,8 +34,8 @@ export function jeVeHre(zapas: Pick<ZapasView, "stav">): boolean {
   return zapas.stav !== "dohrano" && zapas.stav !== "zruseny";
 }
 
-export function mojeZapasy(zapasy: ZapasView[], steamId: string): ZapasView[] {
-  return zapasy.filter((z) => jeVeHre(z) && z.ucastnici.some((u) => u.steamId === steamId));
+export function mojeZapasy(zapasy: ZapasView[], hracId: string): ZapasView[] {
+  return zapasy.filter((z) => jeVeHre(z) && z.ucastnici.some((u) => u.hracId === hracId));
 }
 
 /**
@@ -44,8 +44,8 @@ export function mojeZapasy(zapasy: ZapasView[], steamId: string): ZapasView[] {
  * z mojeZapasy() vypadnou; bez toho by hráči po zapsání výsledku zápas zmizel
  * z obrazovky beze stopy.
  */
-export function verejneZapasy(zapasy: ZapasView[], steamId: string | null): ZapasView[] {
-  const naKarte = new Set(steamId === null ? [] : mojeZapasy(zapasy, steamId).map((z) => z.id));
+export function verejneZapasy(zapasy: ZapasView[], hracId: string | null): ZapasView[] {
+  const naKarte = new Set(hracId === null ? [] : mojeZapasy(zapasy, hracId).map((z) => z.id));
   return zapasy.filter((z) => z.stav !== "zruseny" && !z.zavreny && !naKarte.has(z.id));
 }
 
@@ -53,9 +53,9 @@ export function verejneZapasy(zapasy: ZapasView[], steamId: string | null): Zapa
  * Vyhrál tenhle hráč? U dohraného zápasu buď vyhrál celý tým, nebo jeden
  * konkrétní hráč — podle toho, jak Rob výsledek zapsal.
  */
-export function jeVitez(zapas: Pick<ZapasView, "vitez">, u: Pick<UcastnikView, "steamId" | "tym">): boolean {
+export function jeVitez(zapas: Pick<ZapasView, "vitez">, u: Pick<UcastnikView, "hracId" | "tym">): boolean {
   if (!zapas.vitez) return false;
-  return "tym" in zapas.vitez ? u.tym === zapas.vitez.tym : u.steamId === zapas.vitez.steamId;
+  return "tym" in zapas.vitez ? u.tym === zapas.vitez.tym : u.hracId === zapas.vitez.hracId;
 }
 
 /** „tým 2“, nebo „bez týmu“ pro hráče, který hraje sám za sebe. */

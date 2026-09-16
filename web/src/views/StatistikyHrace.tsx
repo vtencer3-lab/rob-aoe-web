@@ -8,7 +8,7 @@ import { procentoVyher, ZEBRICKY } from "../../../src/shared/zebricky.js";
  * Sedí v pravém dolním rohu okna, ať nepřekrývá řádek, na kterém je myš.
  */
 export function StatistikyHrace({ hrac }: { hrac: PlayerView }) {
-  const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
+  const jmeno = hrac.alias ?? hrac.steamName ?? hrac.hracId;
   const karta = useRef<HTMLElement>(null);
   // Toasty vpravo dole se odsunou nad kartu: výška karty jde do CSS proměnné.
   useLayoutEffect(() => {

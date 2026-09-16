@@ -425,36 +425,45 @@ export interface PlayerRow {
 Jinak by u nového hráče zůstalo `steam_id` prázdné a sekce 7 ho v lobby
 nenajde.
 
+**Pozor na zkušební hráče.** `upsertPlayer` volají čtyři místa a tři z nich
+posílají `test:pepa` (`src/auth/devRoutes.ts:76,106,128`,
+`src/http/routes/zkusebni.ts:51`). Takový řádek by dostal
+`steam_id = 'test:pepa'` — lež, a navíc by to zabralo unikátní hodnotu.
+
+Řeší to `CASE` přímo v dotazu, podle stejné podmínky, jakou používá migrace.
+Žádná druhá funkce a žádné volající místo se nemění:
+
 ```ts
-export async function upsertPlayer(steamId: string, jeAdmin: boolean | null): Promise<PlayerRow> {
+export async function upsertPlayer(hracId: string, jeAdmin: boolean | null): Promise<PlayerRow> {
   const { rows } = await getPool().query<DbRow>(
+    // Zkušební hráč (`test:pepa`) projde toutéž cestou, ale Steam ID nedostane:
+    // atrapa pro večer nasucho žádný účet nemá a unikátní hodnotu by jen zabrala.
     `INSERT INTO player (hrac_id, platforma, steam_id, je_admin)
-     VALUES ($1, 'steam', $1, COALESCE($2::boolean, false))
+     VALUES ($1, 'steam', CASE WHEN $1 ~ '^\d{17}$' THEN $1 END,
+             COALESCE($2::boolean, false))
      ON CONFLICT (hrac_id) DO UPDATE SET
-       steam_id = EXCLUDED.steam_id,
+       steam_id = COALESCE(EXCLUDED.steam_id, player.steam_id),
        je_admin = COALESCE($2::boolean, player.je_admin)
      RETURNING ${SLOUPCE}`,
-    [steamId, jeAdmin],
+    [hracId, jeAdmin],
   );
   return mapuj(rows[0]!);
 }
 ```
 
-**Pozor:** `src/auth/devRoutes.ts` volá `upsertPlayer` se zkušebním
-`test:pepa`. Takový řádek by dostal `steam_id = 'test:pepa'`, což je lež
-a sebralo by to unikátní hodnotu. Zkušební větev proto dostane vlastní zápis:
+Test, který to hlídá, do `src/db/players.db.test.ts`:
 
 ```ts
-/** Zkušební hráč nemá žádnou platformu — je to atrapa pro nasucho. */
-export async function upsertZkusebniho(hracId: string): Promise<PlayerRow> {
-  const { rows } = await getPool().query<DbRow>(
-    `INSERT INTO player (hrac_id, platforma) VALUES ($1, 'steam')
-     ON CONFLICT (hrac_id) DO NOTHING
-     RETURNING ${SLOUPCE}`,
-    [hracId],
-  );
-  return rows[0] ? mapuj(rows[0]) : (await getPlayer(hracId))!;
-}
+it("zkušební hráč projde bez Steam ID", async () => {
+  const hrac = await upsertPlayer("test:pepa", null);
+  expect(hrac.steamId).toBeNull();
+  expect(hrac.platforma).toBe("steam");
+});
+
+it("Steam hráč dostane steam_id shodné s klíčem", async () => {
+  const hrac = await upsertPlayer("76561198014056480", null);
+  expect(hrac.steamId).toBe("76561198014056480");
+});
 ```
 
 - [ ] **Krok 7: Spustit celou kontrolu**

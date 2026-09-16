@@ -12,16 +12,16 @@ export class HttpError extends Error {
 }
 
 export async function requireUser(request: FastifyRequest): Promise<string> {
-  const steamId = await currentUser(request);
-  if (!steamId) throw new HttpError(401, "Nejsi přihlášený.");
-  return steamId;
+  const hracId = await currentUser(request);
+  if (!hracId) throw new HttpError(401, "Nejsi přihlášený.");
+  return hracId;
 }
 
 export async function requireAdmin(request: FastifyRequest): Promise<string> {
-  const steamId = await requireUser(request);
-  const hrac = await getPlayer(steamId);
+  const hracId = await requireUser(request);
+  const hrac = await getPlayer(hracId);
   if (!hrac?.jeAdmin) throw new HttpError(403, "Tohle smí jen Rob.");
-  return steamId;
+  return hracId;
 }
 
 /** Největší hodnota, kterou unese sloupec typu integer v Postgresu. */

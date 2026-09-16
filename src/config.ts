@@ -62,7 +62,7 @@ export const config = {
    * jsou normální stav: Rob a ten, kdo mu web spravuje. Prázdný seznam =
    * proměnná chybí.
    */
-  get adminSteamIds(): string[] {
+  get adminHracIds(): string[] {
     return (process.env["ADMIN_STEAM_ID"] ?? "")
       .split(/[\s,;]+/)
       .map((id) => id.trim())
@@ -98,7 +98,7 @@ export const config = {
  *
  * ADMIN_STEAM_ID je tu proto, že jeho chybějící hodnota se navenek nijak
  * neprojeví — jen tiše ublíží: přihlašovací routa volá při KAŽDÉM přihlášení
- * `upsertPlayer(steamId, config.adminSteamIds.includes(steamId))` a `upsertPlayer`
+ * `upsertPlayer(hracId, config.adminHracIds.includes(hracId))` a `upsertPlayer`
  * dělá `ON CONFLICT DO UPDATE SET je_admin = EXCLUDED.je_admin`. Bez proměnné
  * je porovnání vždy nepravda, takže první Robovo přihlášení po restartu jeho
  * `je_admin` přepíše na false a režie zmizí bez jediné chybové hlášky.
@@ -107,7 +107,7 @@ export const config = {
  */
 export function zkontrolujProstredi(): void {
   povinne("DATABASE_URL", "Bez připojení k databázi web neobslouží ani jeden požadavek.");
-  if (config.adminSteamIds.length === 0 && !config.adminBootstrap) {
+  if (config.adminHracIds.length === 0 && !config.adminBootstrap) {
     throw new Error(
       "Chybí proměnná prostředí ADMIN_STEAM_ID. Je to 64bitové Steam ID Robova " +
         "účtu (víc účtů oddělených čárkou). Bez něj by se Robovi při dalším přihlášení tiše odebrala práva " +
@@ -128,7 +128,7 @@ export function zkontrolujProstredi(): void {
  * než mlčet, když je režie volná.
  */
 export function varovaniProstredi(adminUzExistuje: boolean): string | null {
-  if (config.adminSteamIds.length > 0 || !config.adminBootstrap) return null;
+  if (config.adminHracIds.length > 0 || !config.adminBootstrap) return null;
   if (adminUzExistuje) return null;
   return (
     "ADMIN_BOOTSTRAP je zapnutý a admin zatím neexistuje: stane se jím první, " +

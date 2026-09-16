@@ -2,8 +2,19 @@ import type { SteamVlastnictvi } from "../shared/types.js";
 import type { ZebricekRadek } from "../shared/zebricky.js";
 import { getPool } from "./pool.js";
 
+export type Platforma = "steam" | "xbox";
+
 export interface PlayerRow {
-  steamId: string;
+  hracId: string;
+  platforma: Platforma;
+  /** Vyplněné jen u Steam hráčů; u Microsoft hráčů null. */
+  steamId: string | null;
+  xboxXuid: string | null;
+  xboxGamertag: string | null;
+  /** Kanonické jméno profilu ve Worlds Edge, `/steam/…` nebo `/xboxlive/…`. */
+  weProfil: string | null;
+  /** Číselný profil ve Worlds Edge; na něm stojí rozpoznání v lobby. */
+  weProfilId: number | null;
   alias: string | null;
   steamName: string | null;
   avatarUrl: string | null;
@@ -41,7 +52,13 @@ export interface PlayerStatsUpdate {
 // jména. `listSignups` v events.ts z něj skládá stejný seznam s aliasem
 // tabulky, aby JOINy nemusely sloupce vyjmenovávat znovu a nezávisle.
 export const PLAYER_SLOUPEC_NAZVY = [
+  "hrac_id",
+  "platforma",
   "steam_id",
+  "xbox_xuid",
+  "xbox_gamertag",
+  "we_profil",
+  "we_profil_id",
   "alias",
   "steam_name",
   "avatar_url",
@@ -61,7 +78,13 @@ export const PLAYER_SLOUPEC_NAZVY = [
 const SLOUPCE = PLAYER_SLOUPEC_NAZVY.join(", ");
 
 export interface DbRow {
-  steam_id: string;
+  hrac_id: string;
+  platforma: Platforma;
+  steam_id: string | null;
+  xbox_xuid: string | null;
+  xbox_gamertag: string | null;
+  we_profil: string | null;
+  we_profil_id: number | null;
   alias: string | null;
   steam_name: string | null;
   avatar_url: string | null;
@@ -80,7 +103,13 @@ export interface DbRow {
 
 export function mapuj(row: DbRow): PlayerRow {
   return {
+    hracId: row.hrac_id,
+    platforma: row.platforma,
     steamId: row.steam_id,
+    xboxXuid: row.xbox_xuid,
+    xboxGamertag: row.xbox_gamertag,
+    weProfil: row.we_profil,
+    weProfilId: row.we_profil_id,
     alias: row.alias,
     steamName: row.steam_name,
     avatarUrl: row.avatar_url,
@@ -104,12 +133,18 @@ export function mapuj(row: DbRow): PlayerRow {
  * `je_admin` přepsalo zpátky na false, protože se nerovná prázdnému
  * ADMIN_STEAM_ID. Nový řádek při `null` vzniká vždy jako neadmin.
  */
-export async function upsertPlayer(steamId: string, jeAdmin: boolean | null): Promise<PlayerRow> {
+export async function upsertPlayer(hracId: string, jeAdmin: boolean | null): Promise<PlayerRow> {
   const { rows } = await getPool().query<DbRow>(
-    `INSERT INTO player (steam_id, je_admin) VALUES ($1, COALESCE($2::boolean, false))
-     ON CONFLICT (steam_id) DO UPDATE SET je_admin = COALESCE($2::boolean, player.je_admin)
+    // Zkušební hráč (`test:pepa`) projde toutéž cestou, ale Steam ID nedostane:
+    // atrapa pro večer nasucho žádný účet nemá a unikátní hodnotu by jen zabrala.
+    `INSERT INTO player (hrac_id, platforma, steam_id, je_admin)
+     VALUES ($1, 'steam', CASE WHEN $1 ~ '^\d{17}$' THEN $1 END,
+             COALESCE($2::boolean, false))
+     ON CONFLICT (hrac_id) DO UPDATE SET
+       steam_id = COALESCE(EXCLUDED.steam_id, player.steam_id),
+       je_admin = COALESCE($2::boolean, player.je_admin)
      RETURNING ${SLOUPCE}`,
-    [steamId, jeAdmin],
+    [hracId, jeAdmin],
   );
   return mapuj(rows[0]!);
 }
@@ -122,7 +157,7 @@ export async function existujeAdmin(): Promise<boolean> {
   return rows[0]!.existuje;
 }
 
-export async function savePlayerStats(steamId: string, staty: PlayerStatsUpdate): Promise<void> {
+export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate): Promise<void> {
   await getPool().query(
     `UPDATE player SET
        alias           = COALESCE($2, alias),
@@ -138,9 +173,9 @@ export async function savePlayerStats(steamId: string, staty: PlayerStatsUpdate)
        staty_stazeny_v = now(),
        staty_chyba     = $12,
        zebricky        = COALESCE($13::jsonb, zebricky)
-     WHERE steam_id = $1`,
+     WHERE hrac_id = $1`,
     [
-      steamId,
+      hracId,
       staty.alias ?? null,
       staty.steamName ?? null,
       staty.avatarUrl ?? null,
@@ -159,19 +194,19 @@ export async function savePlayerStats(steamId: string, staty: PlayerStatsUpdate)
   );
 }
 
-export async function getPlayer(steamId: string): Promise<PlayerRow | null> {
+export async function getPlayer(hracId: string): Promise<PlayerRow | null> {
   const { rows } = await getPool().query<DbRow>(
-    `SELECT ${SLOUPCE} FROM player WHERE steam_id = $1`,
-    [steamId],
+    `SELECT ${SLOUPCE} FROM player WHERE hrac_id = $1`,
+    [hracId],
   );
   return rows[0] ? mapuj(rows[0]) : null;
 }
 
-export async function getPlayers(steamIds: string[]): Promise<PlayerRow[]> {
-  if (steamIds.length === 0) return [];
+export async function getPlayers(hracIds: string[]): Promise<PlayerRow[]> {
+  if (hracIds.length === 0) return [];
   const { rows } = await getPool().query<DbRow>(
-    `SELECT ${SLOUPCE} FROM player WHERE steam_id = ANY($1::text[])`,
-    [steamIds],
+    `SELECT ${SLOUPCE} FROM player WHERE hrac_id = ANY($1::text[])`,
+    [hracIds],
   );
   return rows.map(mapuj);
 }

@@ -14,9 +14,9 @@ afterEach(() => zapomenEmoty());
 // DinkDonk (větší), slovo se jménem emotu je obrázek, číslo tauntu je taunt.
 it("vykřičník admina je DinkDonk, KEKW je obrázek, 11 je taunt Laugh", async () => {
   const zpravy: NonNullable<ZapasView["zpravy"]> = [
-    { id: 1, steamId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "!", poslano: "2026-09-12T12:01:00.000Z" },
-    { id: 2, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "to je KEKW fakt", poslano: "2026-09-12T12:02:00.000Z" },
-    { id: 3, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "11", poslano: "2026-09-12T12:03:00.000Z" },
+    { id: 1, hracId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "!", poslano: "2026-09-12T12:01:00.000Z" },
+    { id: 2, hracId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "to je KEKW fakt", poslano: "2026-09-12T12:02:00.000Z" },
+    { id: 3, hracId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "11", poslano: "2026-09-12T12:03:00.000Z" },
   ];
   render(<Chat ja="a" onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
   const dink = await screen.findByAltText("DinkDonk");
@@ -46,9 +46,9 @@ it("kreslí zprávy s barvou slotu, admini svou barvou a září", () => {
       ja="a"
       onOdeslat={vi.fn()}
       zapas={zapas([
-        { id: 1, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "jdu", poslano: "2026-09-12T12:00:00.000Z" },
-        { id: 2, steamId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "zakládám", poslano: "2026-09-12T12:01:00.000Z" },
-        { id: 3, steamId: "x", jmeno: "Jiný admin", jeAdmin: true, barva: null, tym: null, text: "ok", poslano: "2026-09-12T12:02:00.000Z" },
+        { id: 1, hracId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "jdu", poslano: "2026-09-12T12:00:00.000Z" },
+        { id: 2, hracId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "zakládám", poslano: "2026-09-12T12:01:00.000Z" },
+        { id: 3, hracId: "x", jmeno: "Jiný admin", jeAdmin: true, barva: null, tym: null, text: "ok", poslano: "2026-09-12T12:02:00.000Z" },
       ])}
     />,
   );
@@ -65,8 +65,8 @@ it("kreslí zprávy s barvou slotu, admini svou barvou a září", () => {
 // u hráče vykřičník nic nedělá. Admin při psaní vidí poznámku.
 it("admin s vykřičníkem píše důležitou zprávu — tučně, s poznámkou; hráči vykřičník nic nedělá", () => {
   const zpravy: NonNullable<ZapasView["zpravy"]> = [
-    { id: 1, steamId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "!go", poslano: "2026-09-12T12:01:00.000Z" },
-    { id: 2, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "!ok", poslano: "2026-09-12T12:02:00.000Z" },
+    { id: 1, hracId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "!go", poslano: "2026-09-12T12:01:00.000Z" },
+    { id: 2, hracId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "!ok", poslano: "2026-09-12T12:02:00.000Z" },
   ];
   render(<Chat ja="76561198147631465" jaAdmin onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
   const texty = screen.getAllByTestId("zprava").map((li) => li.querySelector(".text")!);
@@ -102,7 +102,7 @@ it("Enter odešle oříznutý text a pole vyprázdní", async () => {
 
 it("admin má u zprávy křížek, hráč ne; debug nabídne přepnutí autora", () => {
   const onSmazat = vi.fn();
-  const zpravy = [{ id: 1, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3 as const, tym: 1 as const, text: "jdu", poslano: "2026-09-12T12:00:00.000Z" }];
+  const zpravy = [{ id: 1, hracId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3 as const, tym: 1 as const, text: "jdu", poslano: "2026-09-12T12:00:00.000Z" }];
   const { rerender } = render(<Chat ja="a" onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
   expect(screen.queryByRole("button", { name: /smazat zprávu/i })).not.toBeInTheDocument();
   rerender(<Chat ja="rob" onOdeslat={vi.fn()} onSmazat={onSmazat} ladeni zapas={zapas(zpravy)} />);
@@ -116,9 +116,9 @@ it("admin má u zprávy křížek, hráč ne; debug nabídne přepnutí autora",
 it("šipka nahoru v prázdném poli načte poslední vlastní zprávu, Uložit ji pošle k úpravě", async () => {
   const onUpravit = vi.fn(async () => undefined);
   const zpravy = [
-    { id: 1, steamId: "a", jmeno: "Já", jeAdmin: false, barva: 1 as const, tym: 1 as const, text: "prvni", poslano: "2026-09-12T12:00:00.000Z" },
-    { id: 2, steamId: "b", jmeno: "Jiný", jeAdmin: false, barva: 2 as const, tym: 2 as const, text: "cizi", poslano: "2026-09-12T12:01:00.000Z" },
-    { id: 3, steamId: "a", jmeno: "Já", jeAdmin: false, barva: 1 as const, tym: 1 as const, text: "moje posledni", poslano: "2026-09-12T12:02:00.000Z", upraveno: true },
+    { id: 1, hracId: "a", jmeno: "Já", jeAdmin: false, barva: 1 as const, tym: 1 as const, text: "prvni", poslano: "2026-09-12T12:00:00.000Z" },
+    { id: 2, hracId: "b", jmeno: "Jiný", jeAdmin: false, barva: 2 as const, tym: 2 as const, text: "cizi", poslano: "2026-09-12T12:01:00.000Z" },
+    { id: 3, hracId: "a", jmeno: "Já", jeAdmin: false, barva: 1 as const, tym: 1 as const, text: "moje posledni", poslano: "2026-09-12T12:02:00.000Z", upraveno: true },
   ];
   render(<Chat ja="a" onOdeslat={vi.fn()} onUpravit={onUpravit} zapas={zapas(zpravy)} />);
   expect(screen.getAllByText("(editováno)")).toHaveLength(1);
@@ -134,8 +134,8 @@ it("šipka nahoru v prázdném poli načte poslední vlastní zprávu, Uložit j
 
 it("admini mají twitch odznak: Rob vysílající, Jouki moderátor", () => {
   const zpravy = [
-    { id: 1, steamId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "a", poslano: "2026-09-12T12:00:00.000Z" },
-    { id: 2, steamId: "76561198014056480", jmeno: "Jouki", jeAdmin: true, barva: null, tym: null, text: "b", poslano: "2026-09-12T12:01:00.000Z" },
+    { id: 1, hracId: "76561198147631465", jmeno: "Rob", jeAdmin: true, barva: null, tym: null, text: "a", poslano: "2026-09-12T12:00:00.000Z" },
+    { id: 2, hracId: "76561198014056480", jmeno: "Jouki", jeAdmin: true, barva: null, tym: null, text: "b", poslano: "2026-09-12T12:01:00.000Z" },
   ];
   render(<Chat ja="x" onOdeslat={vi.fn()} zapas={zapas(zpravy)} />);
   expect(screen.getByTestId("twitch-broadcaster")).toBeInTheDocument();
@@ -148,8 +148,8 @@ it("admini mají twitch odznak: Rob vysílající, Jouki moderátor", () => {
 it("odpověď: pruh nad polem, odeslání s id původní, klik na náhled bliká", async () => {
   const onOdeslat = vi.fn().mockResolvedValue(undefined);
   const zpravy: NonNullable<ZapasView["zpravy"]> = [
-    { id: 5, steamId: "b", jmeno: "Pepa", jeAdmin: false, barva: 2, tym: 2, text: "jdeme?", poslano: "2026-09-12T12:00:00.000Z" },
-    { id: 6, steamId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "jo", poslano: "2026-09-12T12:01:00.000Z", odpovedNa: { id: 5, jmeno: "Pepa", text: "jdeme?" } },
+    { id: 5, hracId: "b", jmeno: "Pepa", jeAdmin: false, barva: 2, tym: 2, text: "jdeme?", poslano: "2026-09-12T12:00:00.000Z" },
+    { id: 6, hracId: "a", jmeno: "Hráč", jeAdmin: false, barva: 3, tym: 1, text: "jo", poslano: "2026-09-12T12:01:00.000Z", odpovedNa: { id: 5, jmeno: "Pepa", text: "jdeme?" } },
   ];
   render(<Chat ja="a" onOdeslat={onOdeslat} zapas={zapas(zpravy)} />);
   fireEvent.click(screen.getByRole("button", { name: /odpovědět na zprávu pepa/i }));
@@ -170,7 +170,7 @@ it("odpověď: pruh nad polem, odeslání s id původní, klik na náhled bliká
 // Tab cykluje, Escape zavře; @ se otevře při psaní a Enter jen zavře.
 it("Tab dokončí emote a cykluje, @ nabídne hráče při psaní", async () => {
   const onOdeslat = vi.fn().mockResolvedValue(undefined);
-  const sHracem = { ...zapas([]), ucastnici: [{ steamId: "a", alias: "Hráč", steamName: null, tym: 1 as const, barva: 3 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null }] };
+  const sHracem = { ...zapas([]), ucastnici: [{ hracId: "a", alias: "Hráč", steamName: null, tym: 1 as const, barva: 3 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null }] };
   render(<Chat ja="a" onOdeslat={onOdeslat} zapas={sHracem} />);
   await screen.findByRole("textbox", { name: /zpráva do chatu/i });
   const pole = screen.getByRole("textbox", { name: /zpráva do chatu/i }) as HTMLInputElement;

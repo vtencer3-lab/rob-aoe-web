@@ -36,7 +36,7 @@ export const TYMY: readonly Tym[] = [0, 1, 2, 3, 4];
 
 /** Jeden řádek sestavy, jak ho Rob naklikal: kdo, jaký tým, jaká barva. Pořadí pole = pořadí slotů v lobby. */
 export interface SestavaVstup {
-  steamId: string;
+  hracId: string;
   tym: Tym;
   barva: Barva;
   /** Herní id civilizace (civilizace.ts); null nebo chybí = libovolná. */
@@ -56,7 +56,7 @@ export interface Seat extends SestavaVstup {
 export type SteamVlastnictvi = "ma" | "nema" | "soukromy";
 
 export interface PlayerView {
-  steamId: string;
+  hracId: string;
   alias: string | null;
   steamName: string | null;
   avatarUrl: string | null;
@@ -107,7 +107,7 @@ export interface AkceView {
 }
 
 export interface UcastnikView {
-  steamId: string;
+  hracId: string;
   alias: string | null;
   steamName: string | null;
   tym: Tym;
@@ -126,7 +126,7 @@ export interface UcastnikView {
  * Kdo vyhrál: tým (1 až 4), nebo jeden hráč, když hrál sám za sebe („–“).
  * Strany zápasu vznikají ze sestavy, viz strany.ts.
  */
-export type Vitez = { tym: Tym } | { steamId: string };
+export type Vitez = { tym: Tym } | { hracId: string };
 
 /** Lobby ještě stojí (sedí se v ní), nebo už hra běží. Null = nevíme. */
 export type FazeLobby = "lobby" | "hraje_se";
@@ -155,7 +155,7 @@ export interface ZapasView {
 /** Zpráva v chatu zápasu. Jméno, barva a tým jsou aktuální, ne z doby odeslání. */
 export interface ZpravaView {
   id: number;
-  steamId: string;
+  hracId: string;
   jmeno: string;
   jeAdmin: boolean;
   /** Barva a tým z účasti v zápase; admin, který v něm nehraje, má null. */

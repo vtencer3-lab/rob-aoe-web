@@ -71,7 +71,7 @@ it("přihláška a odhlášení mění seznam", async () => {
 
   await withdraw(akce.id, "76561198000000031");
   const zbyli = await listSignups(akce.id);
-  expect(zbyli.map((h) => h.steamId)).toEqual(["76561198000000032"]);
+  expect(zbyli.map((h) => h.hracId)).toEqual(["76561198000000032"]);
 });
 
 it("dvojí přihlášení nezaloží druhý řádek", async () => {

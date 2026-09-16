@@ -3,7 +3,7 @@ import { BARVA_NAZEV, type Barva, type Tym, type Vitez } from "./types.js";
 
 /** Minimum, které strany potřebují vědět o hráči; sedí na UcastnikView i Seat. */
 export interface ClenStrany {
-  steamId: string;
+  hracId: string;
   tym: Tym;
   barva: Barva;
   poradi: number;
@@ -23,7 +23,7 @@ export interface Strana {
 }
 
 export function jmenoClena(c: ClenStrany): string {
-  return c.alias ?? c.steamName ?? c.steamId;
+  return c.alias ?? c.steamName ?? c.hracId;
 }
 
 /** Týmy vzestupně podle čísla, pak sólo hráči v pořadí slotů. */
@@ -37,20 +37,20 @@ export function strany<T extends ClenStrany>(ucastnici: T[]): Array<{ vitez: Vit
   const tymy = [...podleTymu.entries()]
     .sort(([a], [b]) => a - b)
     .map(([tym, clenove]) => ({ vitez: { tym } as Vitez, clenove }));
-  return [...tymy, ...sami.map((u) => ({ vitez: { steamId: u.steamId } as Vitez, clenove: [u] }))];
+  return [...tymy, ...sami.map((u) => ({ vitez: { hracId: u.hracId } as Vitez, clenove: [u] }))];
 }
 
 export function stejnyVitez(a: Vitez | null, b: Vitez | null): boolean {
   if (a === null || b === null) return a === b;
   if ("tym" in a) return "tym" in b && a.tym === b.tym;
-  return "steamId" in b && a.steamId === b.steamId;
+  return "hracId" in b && a.hracId === b.hracId;
 }
 
 /** Ke které straně hráč patří; null, když v zápase nehraje. */
-export function stranaHrace(ucastnici: ClenStrany[], steamId: string): Vitez | null {
-  const u = ucastnici.find((x) => x.steamId === steamId);
+export function stranaHrace(ucastnici: ClenStrany[], hracId: string): Vitez | null {
+  const u = ucastnici.find((x) => x.hracId === hracId);
   if (!u) return null;
-  return u.tym === 0 ? { steamId } : { tym: u.tym };
+  return u.tym === 0 ? { hracId } : { tym: u.tym };
 }
 
 /**
@@ -86,23 +86,23 @@ const PRIDAVNE: Record<Barva, string> = {
  */
 export function titulekViteze(strana: Strana): string {
   const [prvni] = strana.clenove;
-  const zena = strana.clenove.length === 1 && prvni !== undefined && jeAi(prvni.steamId);
+  const zena = strana.clenove.length === 1 && prvni !== undefined && jeAi(prvni.hracId);
   return `${zena ? "Vyhrála" : "Vyhrál"} ${nazevStrany(strana)}`;
 }
 
 /** Totéž do věty: „dohráno — vyhrál modrý tým“. */
 export function vitezVeVete(ucastnici: ClenStrany[], vitez: Vitez): string {
   const strana = strany(ucastnici).find((s) => stejnyVitez(s.vitez, vitez));
-  if (!strana) return "vyhrál " + ("tym" in vitez ? `tým ${vitez.tym}` : vitez.steamId);
+  if (!strana) return "vyhrál " + ("tym" in vitez ? `tým ${vitez.tym}` : vitez.hracId);
   const titulek = titulekViteze(strana);
   return titulek.charAt(0).toLowerCase() + titulek.slice(1);
 }
 
 /** Hráči, kteří mají stejnou barvu jako daný hráč — ve hře sdílejí civilizaci (Coop Kings). */
-export function sdiliCivilizaci<T extends ClenStrany>(ucastnici: T[], steamId: string): T[] {
-  const ja = ucastnici.find((u) => u.steamId === steamId);
+export function sdiliCivilizaci<T extends ClenStrany>(ucastnici: T[], hracId: string): T[] {
+  const ja = ucastnici.find((u) => u.hracId === hracId);
   if (!ja) return [];
-  return ucastnici.filter((u) => u.steamId !== steamId && u.barva === ja.barva);
+  return ucastnici.filter((u) => u.hracId !== hracId && u.barva === ja.barva);
 }
 
 /**

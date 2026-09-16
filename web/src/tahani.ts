@@ -13,7 +13,7 @@ export const DOBA_POSUNU_MS = 150;
 export const KONEC_TAHU = "tahani-konec";
 
 /**
- * Po konci tažení: má karta se statistikami zůstat? Vrátí steamId jména,
+ * Po konci tažení: má karta se statistikami zůstat? Vrátí hracId jména,
  * nad kterým kurzor skončil, jinak null (karta se má schovat).
  */
 /**
@@ -35,7 +35,7 @@ export function tahneSe(): boolean {
 }
 
 interface Tazeny {
-  steamId: string;
+  hracId: string;
   skupina: Skupina;
   /** Zóna v seznamu (aktivní / spící); prohazuje se jen uvnitř ní. */
   zona: string | undefined;
@@ -82,7 +82,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
   // Posluchače na window žijí přes překreslení; volají vždy aktuální presun.
   const presunRef = useRef(presun);
   presunRef.current = presun;
-  const tazenyHtml5 = useRef<{ steamId: string; skupina: Skupina; zona: string | undefined } | null>(null);
+  const tazenyHtml5 = useRef<{ hracId: string; skupina: Skupina; zona: string | undefined } | null>(null);
   const tazeny = useRef<Tazeny | null>(null);
   const prvky = useRef(new Map<string, HTMLElement>());
   const predchoziTop = useRef(new Map<string, number>());
@@ -149,7 +149,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
       const stred = r.top - animovanyPosunY(s) + r.height / 2;
       const sousedJePred = Boolean(s.compareDocumentPosition(t.el) & Node.DOCUMENT_POSITION_FOLLOWING);
       if ((sousedJePred && e.clientY < stred) || (!sousedJePred && e.clientY > stred)) {
-        presunRef.current(t.skupina, t.steamId, s.dataset["tahId"]!);
+        presunRef.current(t.skupina, t.hracId, s.dataset["tahId"]!);
         break;
       }
     }
@@ -178,19 +178,19 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
   // Odpojení komponenty uprostřed tažení nesmí nechat posluchače na window.
   useEffect(() => poloz, []);
 
-  return (skupina: Skupina, steamId: string, zona?: string) => ({
+  return (skupina: Skupina, hracId: string, zona?: string) => ({
     ref: (el: HTMLElement | null) => {
-      if (el) prvky.current.set(steamId, el);
-      else prvky.current.delete(steamId);
+      if (el) prvky.current.set(hracId, el);
+      else prvky.current.delete(hracId);
     },
-    "data-tah-id": steamId,
+    "data-tah-id": hracId,
     "data-tah-zona": zona,
     onPointerDown: (e: PointerEvent<HTMLElement>) => {
       // jsdom pointer událostem tlačítko nedává — chybějící bereme jako levé.
       if ((e.button ?? 0) !== 0 || (e.target as HTMLElement).closest(NETAHAT)) return;
       const el = e.currentTarget;
       if (tazeny.current) poloz();
-      tazeny.current = { steamId, skupina, zona, el, pointerId: e.pointerId, posledniX: e.clientX, vychoziY: e.clientY, posledniY: e.clientY };
+      tazeny.current = { hracId, skupina, zona, el, pointerId: e.pointerId, posledniX: e.clientX, vychoziY: e.clientY, posledniY: e.clientY };
       el.classList.add("v-ruce");
       el.style.transition = "none";
       document.body.classList.add("tahne-se");
@@ -202,7 +202,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
 
     // Záloha: HTML5 drag & drop (testy, prohlížeče bez pointer událostí).
     onDragStart: () => {
-      tazenyHtml5.current = { steamId, skupina, zona };
+      tazenyHtml5.current = { hracId, skupina, zona };
     },
     onDragOver: (e: DragEvent) => {
       // Přetahovat jde jen v rámci skupiny a zóny; cizí tažení se nepřijme.
@@ -210,7 +210,7 @@ export function useTahani(presun: (skupina: Skupina, odId: string, naId: string)
     },
     onDrop: (e: DragEvent) => {
       e.preventDefault();
-      if (tazenyHtml5.current?.skupina === skupina && tazenyHtml5.current.zona === zona) presun(skupina, tazenyHtml5.current.steamId, steamId);
+      if (tazenyHtml5.current?.skupina === skupina && tazenyHtml5.current.zona === zona) presun(skupina, tazenyHtml5.current.hracId, hracId);
       tazenyHtml5.current = null;
     },
     onDragEnd: () => {
