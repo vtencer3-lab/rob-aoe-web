@@ -81,7 +81,7 @@ it("/api/me vrátí null bez cookie a hráče s cookie", async () => {
   const app = buildServer({ overSteam: async () => true, obnovStaty: async () => {} });
 
   const bez = await app.inject({ method: "GET", url: "/api/me" });
-  expect(bez.json()).toEqual({ hrac: null });
+  expect(bez.json().hrac).toBeNull();
 
   const prihlaseni = await app.inject({
     method: "GET",
@@ -130,7 +130,7 @@ it("odhlášení zneplatní relaci", async () => {
 
   await app.inject({ method: "POST", url: "/api/auth/logout", cookies: { sid } });
   const po = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
-  expect(po.json()).toEqual({ hrac: null });
+  expect(po.json().hrac).toBeNull();
   await app.close();
 });
 

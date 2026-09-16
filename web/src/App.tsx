@@ -3,6 +3,7 @@ import { hlasitostAdmina as nactiHlasitostAdmina, spustPrehravacHlasu, zesileniM
 import { jeDulezita } from "../../src/shared/cenzura.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
+import { cesta } from "./cesty.js";
 import { doplnNastaveni, type NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import { VERZE } from "../../src/shared/verze.js";
 import type { Vitez, ZapasView } from "../../src/shared/types.js";
@@ -142,6 +143,10 @@ export function App() {
   const [nastaveniVidet, setNastaveniVidet] = useState(false);
   // Okno volby platformy (Steam/Microsoft) místo dvou odkazů vedle sebe v záhlaví.
   const [prihlaseniVidet, setPrihlaseniVidet] = useState(false);
+  // Je Microsoft cesta na tomhle nasazení vůbec zaregistrovaná? Ostrá verze
+  // proměnné nemá, takže tam okno s volbou nedává smysl — a druhý erb by vedl
+  // na syrový JSON. Dokud /api/me neodpoví, chová se web jako dřív.
+  const [maMicrosoft, setMaMicrosoft] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
@@ -263,7 +268,10 @@ export function App() {
   const zaznamenejRef = useRef<(z: Zaznam) => void>(() => {});
 
   useEffect(() => {
-    void api.me().then((odpoved) => setMe(odpoved.hrac));
+    void api.me().then((odpoved) => {
+      setMe(odpoved.hrac);
+      setMaMicrosoft(odpoved.maMicrosoft === true);
+    });
     void api
       .nastaveni()
       .then((n) => setZkusebniHraci(n.zkusebniHraci))
@@ -484,10 +492,17 @@ export function App() {
               {jmenoHrace(me)}{" "}
               <button onClick={() => void api.odhlasitSe().then(() => setMe(null))}>Odhlásit</button>
             </span>
-          ) : (
+          ) : maMicrosoft ? (
             <button type="button" className="tlacitko" onClick={() => setPrihlaseniVidet(true)}>
               Přihlásit se
             </button>
+          ) : (
+            /* Jediná cesta = jedno kliknutí. Okno s jedním erbem by z přihlášení
+               udělalo dva kroky místo jednoho, a tomu se návrh (§11) vyhýbá:
+               bez Microsoft registrace se má web chovat přesně jako dřív. */
+            <a className="tlacitko" href={cesta("/api/auth/steam")}>
+              Přihlásit se přes Steam
+            </a>
           )}
           {/* Přepínač pohledu pod řádkem se jménem, jen pro adminy. */}
           {me?.jeAdmin ? (

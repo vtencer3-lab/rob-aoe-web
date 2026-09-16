@@ -4,6 +4,14 @@ import { cesta } from "./cesty.js";
 
 export interface Me {
   hrac: { hracId: string; alias: string | null; platformaJmeno: string | null; jeAdmin: boolean } | null;
+  /**
+   * Má tohle nasazení zaregistrované Microsoft přihlašovací routy? Bez
+   * `MS_CLIENT_ID` a `MS_CLIENT_SECRET` je server nemá (viz `server.ts`) a
+   * odkaz na `/api/auth/microsoft` by skončil na syrovém JSON. Chybějící
+   * hodnota se čte jako „nemá“ — starší server (a testovací snímky) příznak
+   * neposílá a Steam cesta je ta, která tu byla vždycky.
+   */
+  maMicrosoft?: boolean;
 }
 
 async function json<T>(res: Response): Promise<T> {

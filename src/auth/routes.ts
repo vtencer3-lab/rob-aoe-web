@@ -124,9 +124,19 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       .send({ ok: true });
   });
 
+  /**
+   * Vedle hráče nese `/api/me` i příznak, jestli Microsoft přihlašovací cesta
+   * na tomhle nasazení vůbec existuje: bez `MS_CLIENT_ID` a `MS_CLIENT_SECRET`
+   * se routy v `server.ts` neregistrují a odkaz na `/api/auth/microsoft` by
+   * skončil na syrovém JSON „Neznámá cesta.“ (prefix `/api/` obchází SPA
+   * fallback). Příznak je v odpovědi i pro nepřihlášeného — právě ten vidí
+   * přihlašovací tlačítko. Vlastní endpoint by to nezasloužilo: `/api/me`
+   * si frontend stejně načítá hned při startu.
+   */
   app.get("/api/me", async (request) => {
+    const maMicrosoft = config.maMicrosoft;
     const hracId = await currentUser(request);
-    if (!hracId) return { hrac: null };
+    if (!hracId) return { hrac: null, maMicrosoft };
     // Úplně první přihlášení: řádek hráče v tu chvíli existuje, ale je prázdný,
     // protože stahování statistik běží mimo přihlašovací cestu. Kdybychom
     // odpověděli hned, v záhlaví by svítilo Steam ID, dokud si člověk stránku
@@ -138,7 +148,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         deps.obnovStaty(hracId).catch(() => {}),
         new Promise((hotovo) => setTimeout(hotovo, CEKANI_NA_JMENO_MS)),
       ]);
-      return { hrac: (await getPlayer(hracId)) ?? cerstvy };
+      return { hrac: (await getPlayer(hracId)) ?? cerstvy, maMicrosoft };
     }
     // Statistiky se dřív obnovovaly jen při přihlášení, a sezení drží měsíc:
     // kdo se nepřihlásil znovu, měl v tabulce data z prvního dne. Načtení
@@ -147,6 +157,6 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     void Promise.resolve()
       .then(() => deps.obnovStaty(hracId))
       .catch(() => {});
-    return { hrac: await getPlayer(hracId) };
+    return { hrac: await getPlayer(hracId), maMicrosoft };
   });
 }

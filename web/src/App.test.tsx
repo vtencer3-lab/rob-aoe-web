@@ -215,7 +215,7 @@ it("běžný hráč bez akce formulář na založení nevidí", async () => {
 // Dvě cesty vedle sebe v záhlaví (Steam, Microsoft) vypadaly jako dvě různé
 // akce. Jedno tlačítko otevře okno, kde jsou obě.
 it("nepřihlášenému nabídne jediné tlačítko, ne dvě cesty", async () => {
-  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  vi.mocked(api.me).mockResolvedValue({ hrac: null, maMicrosoft: true });
   nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [] });
 
   render(<App />);
@@ -225,7 +225,7 @@ it("nepřihlášenému nabídne jediné tlačítko, ne dvě cesty", async () => 
 });
 
 it("tlačítko otevře okno s oběma platformami", async () => {
-  vi.mocked(api.me).mockResolvedValue({ hrac: null });
+  vi.mocked(api.me).mockResolvedValue({ hrac: null, maMicrosoft: true });
   nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [] });
 
   render(<App />);
@@ -233,6 +233,23 @@ it("tlačítko otevře okno s oběma platformami", async () => {
   await userEvent.click(await screen.findByRole("button", { name: "Přihlásit se" }));
   expect(screen.getByRole("link", { name: /Steam/ })).toHaveAttribute("href", expect.stringContaining("/api/auth/steam"));
   expect(screen.getByRole("link", { name: /Microsoft/ })).toHaveAttribute("href", expect.stringContaining("/api/auth/microsoft"));
+});
+
+// Na ostré verzi MS_CLIENT_ID a MS_CLIENT_SECRET nastavené nejsou, takže
+// server Microsoft routy vůbec nezaregistruje. Okno s jediným erbem je horší
+// než žádné okno — a druhý erb by vedl na syrový JSON „Neznámá cesta.“, protože
+// prefix /api/ obchází SPA fallback. Web se má chovat jako dřív: jedno kliknutí.
+it("bez Microsoft cesty vede tlačítko rovnou na Steam a okno se neotevře", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: null, maMicrosoft: false });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi" }, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  const odkaz = await screen.findByRole("link", { name: /Přihlásit se/ });
+  expect(odkaz).toHaveAttribute("href", expect.stringContaining("/api/auth/steam"));
+  // Žádné tlačítko, které by otevřelo okno, a nikde odkaz na Microsoft cestu.
+  expect(screen.queryByRole("button", { name: /Přihlásit se/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /Microsoft/ })).not.toBeInTheDocument();
 });
 
 it("anonym vidí, kdo proti komu hraje", async () => {
