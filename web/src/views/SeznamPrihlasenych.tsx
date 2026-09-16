@@ -434,7 +434,12 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                     />
                   ) : null}
                   {jmeno}
-                  <OdznakHry stav={stavHry(hrac)} platforma={hrac.platforma} onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined} />
+                  <OdznakHry
+                    stav={stavHry(hrac)}
+                    platforma={hrac.platforma}
+                    hranoV={hrac.hraHranoV}
+                    onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined}
+                  />
                 </span>
                 {hrac.statyChyba ? (
                   <span className="varovani" title={hrac.statyChyba}>
@@ -646,27 +651,70 @@ const POPIS_HRY: Record<"steam" | "xbox", Record<Vlastnictvi, string>> = {
 };
 
 /**
+ * Kolik dní od posledního spuštění se ještě počítá jako „hrál nedávno“ u
+ * Microsoft hráčů — jediné místo, které tenhle práh zná. Vlastnictví hry se
+ * u Steamu ověřuje doopravdy (knihovna), takže se tam čerstvost neřeší vůbec;
+ * proto tenhle konstantní práh žije tady na frontendu, ne v databázi vedle
+ * `hraHranoV` — do databáze patří fakt (datum), práh je jen dnešní úsudek nad
+ * ním a časem se může změnit.
+ */
+const CERSTVOST_DNI = 14;
+const CERSTVOST_MS = CERSTVOST_DNI * 24 * 60 * 60 * 1000;
+
+function jeCerstve(hranoV: string): boolean {
+  return Date.now() - new Date(hranoV).getTime() <= CERSTVOST_MS;
+}
+
+/**
+ * Text bubliny pro Microsoft hráče se stavem `ma` rozlišuje čerstvost jen
+ * tehdy, když datum vůbec známe. Bez data (starší přihlášení, řádek se ještě
+ * neobnovil) zůstává dnešní věta — netvrdí ani „nedávno“, ani „dávno“, což by
+ * bylo lež stejně jako to druhé.
+ */
+function popisHry(stav: Vlastnictvi, platforma: "steam" | "xbox", hranoV?: string | null): string {
+  if (platforma === "xbox" && stav === "ma" && hranoV) {
+    return jeCerstve(hranoV)
+      ? "Hráč hrál v posledních dvou týdnech"
+      : "Hráč hrál před více jak dvěma týdny";
+  }
+  return POPIS_HRY[platforma][stav];
+}
+
+/**
  * Ikona hry vedle jména: potvrzení, že hráč AoE2 na svém účtu má (Steam) nebo
  * hrál (Microsoft). Skryté soukromí dostane siluetu s tichým otazníkem
  * (ověřit nejde), účet bez hry ikonu s vykřičníkem — to je stav, na který má
  * Rob přijít před večerem, ne až v lobby. Dokud platforma nic neřekla (bez
  * Steam klíče, před prvním stažením), nic.
+ *
+ * U Microsoft hráče se stavem „má“ navíc řeší čerstvost: „hrál na tomhle
+ * účtu“ bez data by mátlo hráče, který mezitím přišel o Game Pass — přesně
+ * tenhle případ nahlásil uživatel. Vzhled dostává vlastní třídu `davno`, ne
+ * `soukromy`: jde o dvě různé věci (nevíme × víme, ale je to staré) a sdílet
+ * jejich vzhled by je pletlo. Ikona i tak zůstává siluetou, jak chtěl
+ * uživatel — jen s odlišným (teplejším) odstínem a beze značky, protože
+ * otazník by tu tvrdil, že to je totéž jako skryté soukromí.
  */
 function OdznakHry({
   stav,
   platforma,
+  hranoV,
   onKlik,
 }: {
   stav: Vlastnictvi | null;
   /** Chybí u starších snímků a zástupných hráčů; Steam je ta cesta, co tu byla vždycky. */
   platforma?: "steam" | "xbox";
+  /** ISO datum posledního spuštění; jen Microsoft, jen když ho Xbox vrátil. */
+  hranoV?: string | null;
   onKlik?: () => void;
 }) {
   if (stav === null) return null;
-  const popis = POPIS_HRY[platforma === "xbox" ? "xbox" : "steam"][stav];
+  const plat = platforma === "xbox" ? "xbox" : "steam";
+  const davno = plat === "xbox" && stav === "ma" && !!hranoV && !jeCerstve(hranoV);
+  const popis = popisHry(stav, plat, hranoV);
   return (
     <span
-      className={`odznak-hry ${stav} napoveda${onKlik ? " klikaci" : ""}`}
+      className={`odznak-hry ${stav}${davno ? " davno" : ""} napoveda${onKlik ? " klikaci" : ""}`}
       role="img"
       aria-label={popis}
       data-napoveda={popis}

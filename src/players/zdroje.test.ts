@@ -4,7 +4,7 @@ import { zdrojeProHrace } from "./zdroje.js";
 const ZAKLAD = {
   alias: null, platformaJmeno: null, avatarUrl: null, country: null,
   elo1v1: null, eloNejvyssi: null, odehranoHer: null, posledniZapas: null,
-  steamHodiny: null, hraVlastnictvi: null, statyStazenyV: null,
+  steamHodiny: null, hraVlastnictvi: null, hraHranoV: null, statyStazenyV: null,
   statyChyba: null, zebricky: null, jeAdmin: false, steamId: null,
   xboxXuid: null, xboxGamertag: null, weProfil: null, weProfilId: null,
 };

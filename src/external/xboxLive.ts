@@ -70,16 +70,38 @@ export function parseGamerpic(json: unknown): string | null {
 }
 
 /**
+ * Stav vlastnictví plus datum posledního spuštění. Obojí se čte ze stejného
+ * záznamu `titles[]`, takže jde o jednu funkci, ne dvě: druhá by musela buď
+ * parsovat tutéž odpověď znovu (riziko, že se při změně tvaru Xboxu rozjedou),
+ * nebo by si musely posílat rozparsovaný titul mezi sebou, což je zbytečná
+ * vazba navíc — jediný volající (`nactiVlastnictvi`) obě hodnoty stejně
+ * potřebuje pohromadě.
+ */
+export interface HerniHistorie {
+  stav: Vlastnictvi;
+  /**
+   * Kdy hráč hru na tomhle účtu naposledy spustil (`titleHistory.lastTimePlayed`).
+   * `null` když ji nemá, má skryté soukromí, nebo Xbox u nalezeného titulu
+   * datum nevrátil / vrátil nesmysl — nikdy nepadá, jen datum nenastaví.
+   */
+  hranoV: Date | null;
+}
+
+/**
  * Skryté soukromí a chybějící hra jsou dvě různé věci: Xbox na skrytou historii
  * odpoví bez pole `titles`. Sloučit je by znamenalo ukázat vykřičník člověku,
  * který hru má — přesně to, kvůli čemu má `soukromy` vlastní stav už u Steamu.
  */
-export function parseHerniHistorii(json: unknown): Vlastnictvi {
-  if (!jeObjekt(json)) return "soukromy";
+export function parseHerniHistorii(json: unknown): HerniHistorie {
+  if (!jeObjekt(json)) return { stav: "soukromy", hranoV: null };
   const titles = json["titles"];
-  if (!Array.isArray(titles)) return "soukromy";
-  const ma = titles.some((t) => jeObjekt(t) && String(t["titleId"]) === AOE2_TITLE_ID);
-  return ma ? "ma" : "nema";
+  if (!Array.isArray(titles)) return { stav: "soukromy", hranoV: null };
+  const nalezen = titles.find((t) => jeObjekt(t) && String(t["titleId"]) === AOE2_TITLE_ID);
+  if (!jeObjekt(nalezen)) return { stav: "nema", hranoV: null };
+  const historie = nalezen["titleHistory"];
+  const raw = jeObjekt(historie) ? historie["lastTimePlayed"] : null;
+  const datum = typeof raw === "string" ? new Date(raw) : null;
+  return { stav: "ma", hranoV: datum && !Number.isNaN(datum.getTime()) ? datum : null };
 }
 
 async function postJson(
@@ -166,14 +188,14 @@ export async function nactiGamerpic(
 export async function nactiVlastnictvi(
   id: XboxIdentita,
   fetchImpl: typeof fetch = fetch,
-): Promise<Vlastnictvi | undefined> {
+): Promise<HerniHistorie | undefined> {
   const url = `${TITULY}/users/xuid(${id.xuid})/titles/titlehistory/decoration/detail`;
   const res = await fetchImpl(url, {
     headers: { ...hlavicka(id, "2"), "accept-language": "en-US" },
     signal: AbortSignal.timeout(10_000),
   });
   // 403 je odpověď na skryté soukromí, ne porucha.
-  if (res.status === 403) return "soukromy";
+  if (res.status === 403) return { stav: "soukromy", hranoV: null };
   if (!res.ok) return undefined;
   return parseHerniHistorii(await res.json());
 }

@@ -10,12 +10,17 @@ import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
 import { getPlayer, savePlayerStats, type PlayerStatsUpdate } from "../db/players.js";
 import { vymenKodZaToken } from "../external/microsoftToken.js";
-import { nactiGamerpic, nactiVlastnictvi, ziskejXboxIdentitu, type XboxIdentita } from "../external/xboxLive.js";
+import {
+  nactiGamerpic,
+  nactiVlastnictvi,
+  ziskejXboxIdentitu,
+  type HerniHistorie,
+  type XboxIdentita,
+} from "../external/xboxLive.js";
 import { fetchPersonalStatPodleAliasu, type LeaderboardStats } from "../external/worldsEdge.js";
 import { seznamLobby } from "../matches/seznamLobby.js";
 import { maCerstveStaty, refreshPlayerStats } from "../players/refresh.js";
 import { zdrojeProHrace } from "../players/zdroje.js";
-import type { Vlastnictvi } from "../shared/types.js";
 import { HttpError } from "./guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { registerEventRoutes } from "./routes/events.js";
@@ -31,7 +36,7 @@ export type ServerDeps = AuthDeps & MatchDeps & MicrosoftDeps;
 
 export interface DoplnkyPoPrihlaseni {
   gamerpic: (identita: XboxIdentita) => Promise<string | null>;
-  vlastnictvi: (identita: XboxIdentita) => Promise<Vlastnictvi | undefined>;
+  vlastnictvi: (identita: XboxIdentita) => Promise<HerniHistorie | undefined>;
   zebricek: (gamertag: string) => Promise<LeaderboardStats | null>;
 }
 
@@ -68,9 +73,12 @@ export function vychoziPoPrihlaseni(
       avatarUrl: pic.status === "fulfilled" ? pic.value : null,
       chyba: chyby.length > 0 ? chyby.join("; ") : null,
     };
-    // undefined = nepovedlo se zjistit; hodnotu v databázi nesaháme.
+    // undefined = nepovedlo se zjistit; hodnotu v databázi nesaháme. Datum
+    // se přepisuje spolu se stavem — když se zjistilo znovu, staré datum
+    // (třeba z doby, kdy hru ještě měl) nesmí zůstat viset.
     if (hra.status === "fulfilled" && hra.value !== undefined) {
-      staty.hraVlastnictvi = hra.value;
+      staty.hraVlastnictvi = hra.value.stav;
+      staty.hraHranoV = hra.value.hranoV;
     }
     await savePlayerStats(hracId, staty);
     await broadcastAkce();

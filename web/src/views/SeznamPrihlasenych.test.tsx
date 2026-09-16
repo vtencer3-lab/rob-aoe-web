@@ -128,6 +128,60 @@ it("u Microsoft hráče mluví bublina o Microsoft účtu, ne o Steamu", () => {
   expect(screen.getByRole("img", { name: /herní historii.*hra není/i })).toHaveClass("nema");
 });
 
+// Uživatel narazil přesně na tohle: hru na účtu kdysi hrál, ale Game Pass
+// dnes nemá a k ní se nedostane. „Hrál" bez data o čerstvosti je zavádějící.
+it("Microsoft hráč, který hrál nedávno, dostane dnešní podobu ikony a větu o dvou týdnech", () => {
+  const pred3dny = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ hracId: "a", alias: "Ma", platforma: "xbox", hraVlastnictvi: "ma", hraHranoV: pred3dny })]}
+    />,
+  );
+  const odznak = screen.getByRole("img", { name: /^Hráč hrál v posledních dvou týdnech$/i });
+  expect(odznak).toHaveClass("ma");
+  expect(odznak).not.toHaveClass("davno");
+});
+
+it("Microsoft hráč, který hrál před víc jak dvěma týdny, dostane siluetu a odpovídající větu", () => {
+  const pred20dny = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ hracId: "a", alias: "Ma", platforma: "xbox", hraVlastnictvi: "ma", hraHranoV: pred20dny })]}
+    />,
+  );
+  const odznak = screen.getByRole("img", { name: /^Hráč hrál před více jak dvěma týdny$/i });
+  expect(odznak).toHaveClass("ma");
+  expect(odznak).toHaveClass("davno");
+});
+
+// Hráč se přihlásil dřív, než tahle funkce existovala: stav je "ma", ale
+// datum ještě nikdo nedoplnil. Nesmí to tvrdit ani "nedávno", ani "dávno" —
+// zůstane dnešní chování beze zmínky o čerstvosti.
+it("Microsoft hráč se stavem ma bez data hraní nedostane tvrzení o čerstvosti", () => {
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ hracId: "a", alias: "Ma", platforma: "xbox", hraVlastnictvi: "ma" })]}
+    />,
+  );
+  const odznak = screen.getByRole("img", { name: /hru na tomhle Microsoft účtu hrál/i });
+  expect(odznak).not.toHaveClass("davno");
+  expect(odznak.getAttribute("aria-label")).not.toMatch(/týdn/i);
+});
+
+// Steam vlastnictví ověřuje doopravdy — čerstvost tam nemá co dělat, i kdyby
+// v datech omylem nějaké staré datum bylo.
+it("Steam hráče se čerstvost netýká, i kdyby měl staré datum vyplněné", () => {
+  const pred20dny = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString();
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ hracId: "a", alias: "Ma", hraVlastnictvi: "ma", hraHranoV: pred20dny })]}
+    />,
+  );
+  const odznak = screen.getByRole("img", { name: /^Hru má v knihovně na Steamu$/i });
+  expect(odznak).toHaveClass("ma");
+  expect(odznak).not.toHaveClass("davno");
+});
+
 // Chybějící platforma (starší snímek stavu, AI hráči) se čte jako Steam —
 // tak to na webu bylo roky a Steam hráčů je drtivá většina.
 it("bez uvedené platformy mluví bublina jako dřív, o Steamu", () => {

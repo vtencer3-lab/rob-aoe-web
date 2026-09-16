@@ -24,6 +24,7 @@ export function playerView(hrac: PlayerRow): PlayerView {
     // tohle je totéž pro tabulku přihlášených.
     platforma: hrac.platforma,
     hraVlastnictvi: hrac.hraVlastnictvi,
+    hraHranoV: hrac.hraHranoV?.toISOString() ?? null,
     posledniZapas: hrac.posledniZapas?.toISOString() ?? null,
     statyStazenyV: hrac.statyStazenyV?.toISOString() ?? null,
     statyChyba: hrac.statyChyba,

@@ -219,14 +219,15 @@ const ZEBRICEK_XBOX = {
   profilId: 6458213,
 };
 
-it("po přihlášení doplní avatar, vlastnictví hry a herní profil", async () => {
+it("po přihlášení doplní avatar, vlastnictví hry, datum posledního hraní a herní profil", async () => {
   zapniMicrosoft();
+  const hranoV = new Date("2026-09-14T23:05:11.685Z");
   const app = buildServer({
     vymenKod: async () => "ms-token",
     ziskejIdentitu: async () => IDENTITA,
     poPrihlaseni: vychoziPoPrihlaseni({
       gamerpic: async () => "https://images-eds.xboxlive.com/x",
-      vlastnictvi: async () => "ma" as const,
+      vlastnictvi: async () => ({ stav: "ma", hranoV }) as const,
       zebricek: async () => ZEBRICEK_XBOX,
     }),
   });
@@ -239,10 +240,49 @@ it("po přihlášení doplní avatar, vlastnictví hry a herní profil", async (
   expect(await getPlayer("xbox:2535412345678901")).toMatchObject({
     avatarUrl: "https://images-eds.xboxlive.com/x",
     hraVlastnictvi: "ma",
+    hraHranoV: hranoV,
     weProfil: "/xboxlive/D3B6B94FC53483297CEEA5A85933D3129D8A5B36",
     elo1v1: 1200,
   });
   await app.close();
+});
+
+it("nové zjištění bez hry smaže i staré datum posledního hraní", async () => {
+  // Hráč měl hru dřív a datum se uložilo; teď ji v historii nemá (Game Pass
+  // skončil a Xbox titul vůbec nevrátil). Staré datum nesmí zůstat viset —
+  // tvrdilo by čerstvost, kterou nic nepotvrzuje.
+  zapniMicrosoft();
+  const hranoV = new Date("2026-08-01T00:00:00.000Z");
+  const appPrvni = buildServer({
+    vymenKod: async () => "ms-token",
+    ziskejIdentitu: async () => IDENTITA,
+    poPrihlaseni: vychoziPoPrihlaseni({
+      gamerpic: async () => null,
+      vlastnictvi: async () => ({ stav: "ma", hranoV }) as const,
+      zebricek: async () => null,
+    }),
+  });
+  await prihlas(appPrvni);
+  await vi.waitFor(async () => {
+    expect((await getPlayer("xbox:2535412345678901"))?.hraHranoV).toEqual(hranoV);
+  });
+  await appPrvni.close();
+
+  const appDruhy = buildServer({
+    vymenKod: async () => "ms-token",
+    ziskejIdentitu: async () => IDENTITA,
+    poPrihlaseni: vychoziPoPrihlaseni({
+      gamerpic: async () => null,
+      vlastnictvi: async () => ({ stav: "nema", hranoV: null }) as const,
+      zebricek: async () => null,
+    }),
+  });
+  await prihlas(appDruhy);
+  await vi.waitFor(async () => {
+    expect((await getPlayer("xbox:2535412345678901"))?.hraVlastnictvi).toBe("nema");
+  });
+  expect((await getPlayer("xbox:2535412345678901"))?.hraHranoV).toBeNull();
+  await appDruhy.close();
 });
 
 it("selhání kteréhokoliv doplňku nechá hráče přihlášeného", async () => {
@@ -280,7 +320,7 @@ it("hráč, kterému se herní profil nenajde, zůstane plnohodnotný, jen bez E
     ziskejIdentitu: async () => IDENTITA,
     poPrihlaseni: vychoziPoPrihlaseni({
       gamerpic: async () => "https://images-eds.xboxlive.com/x",
-      vlastnictvi: async () => "ma" as const,
+      vlastnictvi: async () => ({ stav: "ma", hranoV: null }) as const,
       zebricek: async () => null,
     }),
   });

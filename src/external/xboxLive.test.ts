@@ -70,16 +70,32 @@ describe("parseGamerpic", () => {
 });
 
 describe("parseHerniHistorii", () => {
-  it("hra v historii znamená, že ji hráč má", () => {
+  it("hra v historii znamená, že ji hráč má, a nese datum posledního spuštění", () => {
+    // Hodnota naměřená sondou 16. 9. 2026 na živém účtu.
     expect(
       parseHerniHistorii({
-        titles: [{ titleId: "2064168993", name: "Age of Empires II: Definitive Edition" }],
+        titles: [
+          {
+            titleId: "2064168993",
+            name: "Age of Empires II: Definitive Edition",
+            titleHistory: { lastTimePlayed: "2026-09-14T23:05:11.6856768Z" },
+          },
+        ],
       }),
-    ).toBe("ma");
+    ).toEqual({ stav: "ma", hranoV: new Date("2026-09-14T23:05:11.6856768Z") });
   });
 
-  it("historie bez té hry znamená, že ji nemá", () => {
-    expect(parseHerniHistorii({ titles: [{ titleId: "1", name: "Forza Horizon 5" }] })).toBe("nema");
+  it("hra bez titleHistory má stav ma, ale datum null — nesmí spadnout", () => {
+    expect(
+      parseHerniHistorii({ titles: [{ titleId: "2064168993", name: "AoE2 DE" }] }),
+    ).toEqual({ stav: "ma", hranoV: null });
+  });
+
+  it("historie bez té hry znamená, že ji nemá, a datum je null", () => {
+    expect(parseHerniHistorii({ titles: [{ titleId: "1", name: "Forza Horizon 5" }] })).toEqual({
+      stav: "nema",
+      hranoV: null,
+    });
   });
 
   it("jiná hra ze série se za ni nevydává", () => {
@@ -87,13 +103,21 @@ describe("parseHerniHistorii", () => {
     // Porovnávání podle jména by na ni sedlo.
     expect(
       parseHerniHistorii({ titles: [{ titleId: "1297289123", name: "Age of Empires Online" }] }),
-    ).toBe("nema");
+    ).toEqual({ stav: "nema", hranoV: null });
   });
 
   it("skryté soukromí není totéž co chybějící hra", () => {
     // Xbox na skrytou historii odpoví bez pole titles. Kdyby se to sloučilo
     // s „nema“, ukázal by web vykřičník člověku, který hru má.
-    expect(parseHerniHistorii({})).toBe("soukromy");
+    expect(parseHerniHistorii({})).toEqual({ stav: "soukromy", hranoV: null });
+  });
+
+  it("nesmyslné datum se nepoužije, ale hru to nesebere", () => {
+    expect(
+      parseHerniHistorii({
+        titles: [{ titleId: "2064168993", titleHistory: { lastTimePlayed: "neplatne-datum" } }],
+      }),
+    ).toEqual({ stav: "ma", hranoV: null });
   });
 });
 
@@ -214,7 +238,10 @@ describe("nactiVlastnictvi", () => {
 
   it("HTTP 403 znamená skryté soukromí", async () => {
     const fetchImpl = vi.fn(async () => odpoved(403, {}));
-    await expect(nactiVlastnictvi(id, fetchImpl as unknown as typeof fetch)).resolves.toBe("soukromy");
+    await expect(nactiVlastnictvi(id, fetchImpl as unknown as typeof fetch)).resolves.toEqual({
+      stav: "soukromy",
+      hranoV: null,
+    });
   });
 
   it("jiná chyba HTTP je undefined, ne soukromy — nepovedlo se zeptat, DB se nesahá", async () => {
@@ -229,6 +256,24 @@ describe("nactiVlastnictvi", () => {
       return odpoved(200, { titles: [] });
     });
 
-    await expect(nactiVlastnictvi(id, fetchImpl as unknown as typeof fetch)).resolves.toBe("nema");
+    await expect(nactiVlastnictvi(id, fetchImpl as unknown as typeof fetch)).resolves.toEqual({
+      stav: "nema",
+      hranoV: null,
+    });
+  });
+
+  it("úspěšná odpověď protáhne i datum posledního spuštění", async () => {
+    const fetchImpl = vi.fn(async () =>
+      odpoved(200, {
+        titles: [
+          { titleId: "2064168993", titleHistory: { lastTimePlayed: "2026-09-14T23:05:11.6856768Z" } },
+        ],
+      }),
+    );
+
+    await expect(nactiVlastnictvi(id, fetchImpl as unknown as typeof fetch)).resolves.toEqual({
+      stav: "ma",
+      hranoV: new Date("2026-09-14T23:05:11.6856768Z"),
+    });
   });
 });

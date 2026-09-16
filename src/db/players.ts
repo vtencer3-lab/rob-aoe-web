@@ -26,6 +26,12 @@ export interface PlayerRow {
   steamHodiny: number | null;
   /** Vlastnictví hry; null = ještě nezjištěno. */
   hraVlastnictvi: Vlastnictvi | null;
+  /**
+   * Kdy hráč hru naposledy spustil (jen Microsoft — Xbox `titleHistory.lastTimePlayed`,
+   * Steam knihovna datum poslední hry nevrací). Práh čerstvosti pro ikonu
+   * počítá frontend, tady je jen holý fakt.
+   */
+  hraHranoV: Date | null;
   statyStazenyV: Date | null;
   statyChyba: string | null;
   /** Všechny žebříčky (karta se statistikami); null = ještě nestaženo. */
@@ -44,6 +50,7 @@ export interface PlayerStatsUpdate {
   posledniZapas?: Date | null;
   steamHodiny?: number | null;
   hraVlastnictvi?: Vlastnictvi | null;
+  hraHranoV?: Date | null;
   zebricky?: ZebricekRadek[] | null;
   /** Kanonické jméno profilu ve Worlds Edge, `/steam/…` nebo `/xboxlive/…`. */
   weProfil?: string | null;
@@ -73,6 +80,7 @@ export const PLAYER_SLOUPEC_NAZVY = [
   "posledni_zapas",
   "steam_hodiny",
   "hra_vlastnictvi",
+  "hra_hrana_v",
   "staty_stazeny_v",
   "staty_chyba",
   "zebricky",
@@ -99,6 +107,7 @@ export interface DbRow {
   posledni_zapas: Date | null;
   steam_hodiny: number | null;
   hra_vlastnictvi: Vlastnictvi | null;
+  hra_hrana_v: Date | null;
   staty_stazeny_v: Date | null;
   staty_chyba: string | null;
   zebricky: ZebricekRadek[] | null;
@@ -124,6 +133,7 @@ export function mapuj(row: DbRow): PlayerRow {
     posledniZapas: row.posledni_zapas,
     steamHodiny: row.steam_hodiny,
     hraVlastnictvi: row.hra_vlastnictvi,
+    hraHranoV: row.hra_hrana_v,
     statyStazenyV: row.staty_stazeny_v,
     statyChyba: row.staty_chyba,
     zebricky: Array.isArray(row.zebricky) ? row.zebricky : null,
@@ -210,7 +220,8 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
        staty_chyba     = $12,
        zebricky        = COALESCE($13::jsonb, zebricky),
        we_profil       = COALESCE($16, we_profil),
-       we_profil_id    = COALESCE($17::integer, we_profil_id)
+       we_profil_id    = COALESCE($17::integer, we_profil_id),
+       hra_hrana_v     = CASE WHEN $18::boolean THEN $19::timestamptz ELSE hra_hrana_v END
      WHERE hrac_id = $1`,
     [
       hracId,
@@ -230,6 +241,8 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
       staty.hraVlastnictvi ?? null,
       staty.weProfil ?? null,
       staty.weProfilId ?? null,
+      "hraHranoV" in staty,
+      staty.hraHranoV ?? null,
     ],
   );
 }

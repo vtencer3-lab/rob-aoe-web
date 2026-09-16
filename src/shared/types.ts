@@ -74,6 +74,13 @@ export interface PlayerView {
   platforma?: "steam" | "xbox";
   /** Vlastnictví hry; null = ještě nezjištěno (nebo bez klíče k dané platformě). */
   hraVlastnictvi?: Vlastnictvi | null;
+  /**
+   * Kdy hráč hru naposledy spustil (ISO); jen Microsoft — Steam knihovna
+   * tohle datum nevrací. `null`/chybí u Steamu, u hráče bez zjištěného data
+   * (starší přihlášení, před touhle funkcí) i u toho, kdo hru nikdy nehrál.
+   * Práh, od kdy je to ještě „nedávno“, počítá frontend (`SeznamPrihlasenych`).
+   */
+  hraHranoV?: string | null;
   posledniZapas: string | null;
   statyStazenyV: string | null;
   statyChyba: string | null;

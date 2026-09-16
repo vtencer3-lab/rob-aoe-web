@@ -109,6 +109,30 @@ it("nulové hodiny se uloží jako 0, ne jako null", async () => {
   expect((await getPlayer("76561198000000008"))?.steamHodiny).toBe(0);
 });
 
+it("uloží datum posledního hraní a nepřepíše ho, když se příště nezjišťovalo", async () => {
+  await upsertPlayer("76561198000000006", false);
+  const hranoV = new Date("2026-09-14T23:05:11.685Z");
+  await savePlayerStats("76561198000000006", { hraVlastnictvi: "ma", hraHranoV: hranoV, chyba: null });
+  expect((await getPlayer("76561198000000006"))?.hraHranoV).toEqual(hranoV);
+
+  // Další uložení bez klíče hraHranoV (dotaz na herní historii selhal tentokrát) —
+  // undefined, staré datum se nesmí ztratit.
+  await savePlayerStats("76561198000000006", { chyba: "Herní historie: timeout" });
+  expect((await getPlayer("76561198000000006"))?.hraHranoV).toEqual(hranoV);
+});
+
+it("úspěšné zjištění bez data (hru už nemá) staré datum smaže", async () => {
+  await upsertPlayer("76561198000000007", false);
+  await savePlayerStats("76561198000000007", {
+    hraVlastnictvi: "ma",
+    hraHranoV: new Date("2026-08-01T00:00:00.000Z"),
+    chyba: null,
+  });
+  await savePlayerStats("76561198000000007", { hraVlastnictvi: "nema", hraHranoV: null, chyba: null });
+  expect((await getPlayer("76561198000000007"))?.hraHranoV).toBeNull();
+  expect((await getPlayer("76561198000000007"))?.hraVlastnictvi).toBe("nema");
+});
+
 it("vrátí null pro neznámého hráče", async () => {
   expect(await getPlayer("76561198000000099")).toBeNull();
 });
