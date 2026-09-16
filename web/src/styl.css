@@ -750,6 +750,8 @@ h2.nadpis-akce::after {
   color: var(--zlato-svetle);
 }
 .prihlaseni-volby img {
+  position: relative;
+  z-index: 1;
   /* Soubor je 512 px, na obrazovce nejvýš 256. Obrázek vykreslený přesně
      v cílové velikosti se při systémovém zvětšení (150 % ve Windows) nebo na
      displeji s vysokou hustotou roztáhne a rozmaže — proto se posílá
@@ -757,7 +759,6 @@ h2.nadpis-akce::after {
      i na úzkém mobilu. */
   width: 100%;
   height: auto;
-  transition: transform 120ms ease;
 }
 .prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
   transform: scale(1.06);
@@ -769,10 +770,14 @@ h2.nadpis-akce::after {
 
    Přechod patří na `filter` u všech erbů, ne jen na záři: bez něj ztmavení
    skočí naráz a celé to vypadá jako bliknutí, ne jako rozsvícení. */
-.prihlaseni-volby a {
-  transition: filter 280ms ease;
+/* Tlumení sedí na obrázku, ne na odkazu. `filter` na rodiči totiž zakládá
+   vlastní vykreslovací kontext a tím odřízne `mix-blend-mode` světelného
+   kuželu od pozadí desky — soft light by neměl s čím míchat a spadl by na
+   obyčejnou bílou placku. */
+.prihlaseni-volby a img {
+  transition: filter 280ms ease, transform 120ms ease;
 }
-.prihlaseni-volby:hover a, .prihlaseni-volby:focus-within a {
+.prihlaseni-volby:hover a img, .prihlaseni-volby:focus-within a img {
   filter: brightness(0.34) saturate(0.5);
 }
 
@@ -788,6 +793,9 @@ h2.nadpis-akce::after {
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   border-radius: 50%;
+  /* Za štítem, ne přes něj: světlo dopadá na desku a erb na něm stojí.
+     Nad štítem by ho jen zamlžilo. */
+  z-index: 0;
   /* Soft light místo prosté bílé: zlato zesvětlí, aniž by zešedlo, a tmavé
      dřevo pod ním zůstane dřevem. Nejsilnější je uprostřed a k okraji mizí,
      takže hrana kruhu není vidět. */
@@ -799,7 +807,7 @@ h2.nadpis-akce::after {
   pointer-events: none;
 }
 /* Až za tlumením: stejná váha, takže o vybraném erbu rozhoduje pořadí. */
-.prihlaseni-volby a:hover, .prihlaseni-volby a:focus-visible {
+.prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
   filter: brightness(1.06);
 }
 .prihlaseni-volby a:hover::before, .prihlaseni-volby a:focus-visible::before {
