@@ -490,10 +490,10 @@ export function zkontrolujLobby(
 
 
   // Lidi porovnává klíč hráče (`hracId` — Steam ID i `xbox:<xuid>`), AI barva:
-  // počítač žádné id nemá, takže se dvě
-  // AI od sebe v datech nepoznají. Napřed se spárují ty, které barvu mají
-  // podle sestavy, zbylé se doplní v pořadí — aby se u nich dala vypsat
-  // aspoň hláška „má náhodnou barvu, má mít žlutá“ jako u člověka.
+  // počítač žádné id nemá, takže se dvě AI od sebe v datech nepoznají. Napřed
+  // se spárují ty, které barvu mají podle sestavy, zbylé se doplní v pořadí —
+  // aby se u nich dala vypsat aspoň hláška „má náhodnou barvu, má mít žlutá“
+  // jako u člověka.
   const lide = ucastnici.filter((u) => !jeAi(u.hracId));
   const aiVSestave = ucastnici.filter((u) => jeAi(u.hracId));
   const aiVLobby = lobby.aiSloty ?? [];
