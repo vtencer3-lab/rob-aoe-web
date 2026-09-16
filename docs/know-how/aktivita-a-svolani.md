@@ -14,7 +14,8 @@ vzbudit.
   Původně (migrace 021) byla sloupcem akce a nová akce ji dědila; uživatel ji
   chtěl vidět i mimo akci a mít ji přes akce stejnou, tak se z ní stalo jedno
   číslo pro celý web. Migrace převzala hodnotu z poslední akce.
-- `prihlaska.svolan_v`, `svolal_steam_id` (migrace 021, 023) — poslední
+- `prihlaska.svolan_v`, `svolal_hrac_id` (migrace 021, 023; sloupec se
+  jmenoval `svolal_steam_id`, migrace 027 ho přejmenovala) — poslední
   svolání a kdo zvonil.
 
 **Past v testech:** `TRUNCATE player, akce` globální lhůtu nevrátí; DB testy
@@ -71,8 +72,8 @@ odpočet (`MujCas`, číslice stejné šíře, ať se nepřelévá), admin ho vi
 ## Zvonek a super zvonek
 
 - **Zvonek** u cizího řádku (admin, ne u AI, ne u sebe), jen když
-  `nabidnoutZvonek`; klik → `POST /api/akce/:id/hraci/:steamId/svolat` →
-  `svolej` (`svolan_v = now()`, `svolal_steam_id`). Po kliknutí chladne 5 s
+  `nabidnoutZvonek`; klik → `POST /api/akce/:id/hraci/:hracId/svolat` →
+  `svolej` (`svolan_v = now()`, `svolal_hrac_id`). Po kliknutí chladne 5 s
   (`ZVONEK_CHLADNUTI_MS`, zašedlý, animace návratu), admin sám slyší poplach
   na 30 % Master Volume jako potvrzení. Zvonek se **nemění podle ničeho
   jiného** — dřívější „klik odečte 3 minuty“ uživatel zrušil.
@@ -80,8 +81,8 @@ odpočet (`MujCas`, číslice stejné šíře, ať se nepřelévá), admin ho vi
   vpředu se stínem): `POST /api/akce/:id/svolat-vsechny` → `svolejVsechny`:
 
   ```sql
-  UPDATE prihlaska SET svolan_v = now(), svolal_steam_id = $2
-   WHERE akce_id = $1 AND stav = 'prihlasen' AND steam_id <> $2
+  UPDATE prihlaska SET svolan_v = now(), svolal_hrac_id = $2
+   WHERE akce_id = $1 AND stav = 'prihlasen' AND hrac_id <> $2
      AND aktivni_do <= now() + ((SELECT lhuta_aktivity_minut FROM nastaveni_webu) - $3) * interval '1 minute'
   ```
   Týž práh jako `nabidnoutZvonek` (včetně spících, admin sám ne). Ukáže se

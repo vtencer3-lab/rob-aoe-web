@@ -10,7 +10,7 @@ Tabulka `zprava` (migrace `database/020_chat.sql` a doplňky):
 
 | sloupec | migrace | význam |
 |---|---|---|
-| `id`, `zapas_id`, `steam_id`, `text`, `poslano` | 020 | základ; `text` má CHECK 1–500 znaků, `zapas_id` je `ON DELETE CASCADE` |
+| `id`, `zapas_id`, `hrac_id`, `text`, `poslano` | 020 | základ (sloupec se jmenoval `steam_id`, migrace 027 ho přejmenovala); `text` má CHECK 1–500 znaků, `zapas_id` je `ON DELETE CASCADE` |
 | `upraveno_v` | 022 | čas poslední úpravy autorem („(editováno)“) |
 | `text_puvodni` | 023 | původní znění, když cenzura něco změnila (jen v DB, do stavu nikdy) |
 | `odpoved_na` | 026 | odkaz na zprávu téhož zápasu, `ON DELETE SET NULL` |
@@ -147,8 +147,10 @@ přeposílá cizím API).
 
 ## Odznaky a barvy adminů
 
-`ADMIN_BARVY` (Steam ID → třída `rob` / `jouki` / `tonner`, jinak
-`admin-jiny`), `TWITCH_ROLE` (Rob broadcaster, Jouki a Tonner moderátor) —
+`ADMIN_BARVY` (`hracId` → třída `rob` / `jouki` / `tonner`, jinak
+`admin-jiny`; klíče jsou dnes Steam ID těch tří konkrétních adminů, ale
+mapa je obecně na `hracId`, klidně i `xbox:<xuid>`), `TWITCH_ROLE` (Rob
+broadcaster, Jouki a Tonner moderátor) —
 odznaky jsou **oficiální Twitch PNG stažené lokálně** do
 `web/src/assets/twitch-{broadcaster,moderator}.png` (72 px), ne z CDN, ať
 nezávisí na cizí adrese. Admin má dvojitou záři (`text-shadow` malá ostrá +
@@ -167,4 +169,4 @@ zabírá místo.
 
 Přenositelné beze změny: cenzura (`cenzura.ts`), logika oddělovače a
 viditelnosti, odpovědi (schéma + poddotaz), náhledy odpovědí přes JOIN.
-Specifické: identity adminů podle Steam ID, vazba na zápas a SSE celý stav.
+Specifické: identity adminů podle `hracId`, vazba na zápas a SSE celý stav.

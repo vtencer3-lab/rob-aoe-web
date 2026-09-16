@@ -52,9 +52,10 @@ v localStorage; hráčům se nic neztlumí). Popisky jsou vlastní bublina
   `/^[A-Za-z0-9_-]{1,64}$/`, `poradi` celé ≥ 0, `data` ≤ 200 000 znaků
   base64 (`MAX_KOUSEK_B64`), prázdný kousek jen se `konec`.
 - `HlasUdalost` (`src/shared/types.ts`): `zapasId, kdo, jmeno, sezeni,
-  poradi, konec, data, mime?, prijemci` — `prijemci` jsou Steam ID účastníků
-  zápasu, server je přibalí ke každému kousku (jeden `getZapas` na kousek,
-  4×/s, v pořádku).
+  poradi, konec, data, mime?, prijemci` — `prijemci` jsou `hracId` účastníků
+  zápasu (dnes Steam i Microsoft, viz `docs/prehled-praci-a-zameru.md` §3.57),
+  server je přibalí ke každému kousku (jeden `getZapas` na kousek, 4×/s,
+  v pořádku).
 - `hlasHub` je **vlastní** `Hub<HlasUdalost>` (ne stavový hub): hlas není
   stav, přírůstky se nespojují, pro pozdní příchozí se nic nedrží.
 - Stream (`src/http/routes/stream.ts`) má druhý odběr:

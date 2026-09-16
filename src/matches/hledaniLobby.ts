@@ -2,7 +2,9 @@ import type { LobbyInzerat } from "../external/worldsEdgeLobby.js";
 
 /**
  * Jak jsme lobby poznali. Název ani heslo nejsou podmínkou — hosté si je
- * často nastaví jinak, než web předepsal. Rozhoduje Steam ID lidí v lobby.
+ * často nastaví jinak, než web předepsal. Rozhoduje `hracId` lidí v lobby —
+ * dřív to bylo Steam ID, ale od přechodu na rozpoznání přes `profile_id`
+ * (viz `worldsEdgeLobby.ts`) funguje stejně pro Steam i Microsoft hráče.
  * Pořadí od nejjistějšího: host zápasu ji hostuje, host v ní sedí, hostuje ji
  * jiný účastník zápasu, sedí v ní jiný účastník.
  */
