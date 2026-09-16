@@ -1,7 +1,8 @@
+import type { FastifyInstance } from "fastify";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { closePool, getPool } from "../db/pool.js";
 import { getPlayer } from "../db/players.js";
-import { buildServer } from "../http/server.js";
+import { buildServer, vychoziPoPrihlaseni } from "../http/server.js";
 
 const IDENTITA = {
   xuid: "2535412345678901",
@@ -29,6 +30,20 @@ function server(deps: {
     vymenKod: deps.vymenKod ?? (async () => "ms-token"),
     ziskejIdentitu: deps.ziskejIdentitu ?? (async () => IDENTITA),
     poPrihlaseni: async () => {},
+  });
+}
+
+/** Projde celou přihlašovací cestou a vrátí odpověď z návratové routy. */
+async function prihlas(app: FastifyInstance) {
+  const start = await app.inject({ method: "GET", url: "/api/auth/microsoft" });
+  const cookie = decodeURIComponent(
+    String(start.headers["set-cookie"]).match(/ms_stav=([^;]+)/)![1]!,
+  );
+  const stav = cookie.split("|")[0]!;
+  return app.inject({
+    method: "GET",
+    url: `/api/auth/microsoft/return?code=k&state=${stav}`,
+    cookies: { ms_stav: cookie },
   });
 }
 
@@ -127,13 +142,7 @@ describe("GET /api/auth/microsoft/return", () => {
 
   it("založí hráče s klíčem xbox:<xuid> a vrátí sezení", async () => {
     const app = server();
-    const start = await app.inject({ method: "GET", url: "/api/auth/microsoft" });
-    const stav = String(start.headers["set-cookie"]).match(/ms_stav=([^;]+)/)![1]!;
-    const res = await app.inject({
-      method: "GET",
-      url: `/api/auth/microsoft/return?code=k&state=${decodeURIComponent(stav).split("|")[0]}`,
-      cookies: { ms_stav: decodeURIComponent(stav) },
-    });
+    const res = await prihlas(app);
     expect(res.statusCode).toBe(302);
     const hrac = await getPlayer("xbox:2535412345678901");
     expect(hrac).toMatchObject({
@@ -153,16 +162,73 @@ describe("GET /api/auth/microsoft/return", () => {
         throw new Error("Tenhle Microsoft účet nemá Xbox profil.");
       },
     });
-    const start = await app.inject({ method: "GET", url: "/api/auth/microsoft" });
-    const stav = String(start.headers["set-cookie"]).match(/ms_stav=([^;]+)/)![1]!;
-    const res = await app.inject({
-      method: "GET",
-      url: `/api/auth/microsoft/return?code=k&state=${decodeURIComponent(stav).split("|")[0]}`,
-      cookies: { ms_stav: decodeURIComponent(stav) },
-    });
+    const res = await prihlas(app);
     expect(res.statusCode).toBe(401);
     expect(res.json().chyba).toContain("Xbox profil");
     expect(res.cookies.find((c) => c.name === "ms_stav")?.value).toBe("");
     await app.close();
   });
+});
+
+const ZEBRICEK_XBOX = {
+  alias: "Jouki in Rage",
+  country: "cz",
+  elo1v1: 1200,
+  eloNejvyssi: 1250,
+  odehranoHer: 40,
+  posledniZapas: new Date(0),
+  zebricky: [],
+  profil: "/xboxlive/D3B6B94FC53483297CEEA5A85933D3129D8A5B36",
+  profilId: 6458213,
+};
+
+it("po přihlášení doplní avatar, vlastnictví hry a herní profil", async () => {
+  zapniMicrosoft();
+  const app = buildServer({
+    vymenKod: async () => "ms-token",
+    ziskejIdentitu: async () => IDENTITA,
+    poPrihlaseni: vychoziPoPrihlaseni({
+      gamerpic: async () => "https://images-eds.xboxlive.com/x",
+      vlastnictvi: async () => "ma" as const,
+      zebricek: async () => ZEBRICEK_XBOX,
+    }),
+  });
+  await prihlas(app);
+  // poPrihlaseni visí mimo přihlašovací cestu, takže se musí počkat na jeho
+  // doběhnutí — jinak by test měřil stav, který ještě nenastal.
+  await vi.waitFor(async () => {
+    expect((await getPlayer("xbox:2535412345678901"))?.weProfilId).toBe(6458213);
+  });
+  expect(await getPlayer("xbox:2535412345678901")).toMatchObject({
+    avatarUrl: "https://images-eds.xboxlive.com/x",
+    hraVlastnictvi: "ma",
+    weProfil: "/xboxlive/D3B6B94FC53483297CEEA5A85933D3129D8A5B36",
+    elo1v1: 1200,
+  });
+  await app.close();
+});
+
+it("selhání kteréhokoliv doplňku nechá hráče přihlášeného", async () => {
+  zapniMicrosoft();
+  const app = buildServer({
+    vymenKod: async () => "ms-token",
+    ziskejIdentitu: async () => IDENTITA,
+    poPrihlaseni: vychoziPoPrihlaseni({
+      gamerpic: async () => {
+        throw new Error("Xbox profil odpověděl 500");
+      },
+      vlastnictvi: async () => {
+        throw new Error("titlehub 500");
+      },
+      zebricek: async () => {
+        throw new Error("Worlds Edge 500");
+      },
+    }),
+  });
+  const res = await prihlas(app);
+  expect(res.statusCode).toBe(302);
+  await vi.waitFor(async () => {
+    expect((await getPlayer("xbox:2535412345678901"))?.statyChyba).toContain("Worlds Edge");
+  });
+  await app.close();
 });

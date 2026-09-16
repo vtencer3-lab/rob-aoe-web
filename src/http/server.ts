@@ -9,11 +9,13 @@ import { buildTokenBody, TOKEN_URL } from "../auth/microsoftOAuth.js";
 import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
-import { getPlayer } from "../db/players.js";
-import { ziskejXboxIdentitu } from "../external/xboxLive.js";
+import { getPlayer, savePlayerStats, type PlayerStatsUpdate } from "../db/players.js";
+import { nactiGamerpic, nactiVlastnictvi, ziskejXboxIdentitu, type XboxIdentita } from "../external/xboxLive.js";
+import { fetchPersonalStatPodleAliasu, type LeaderboardStats } from "../external/worldsEdge.js";
 import { seznamLobby } from "../matches/seznamLobby.js";
 import { maCerstveStaty, refreshPlayerStats } from "../players/refresh.js";
 import { zdrojeProHrace } from "../players/zdroje.js";
+import type { Vlastnictvi } from "../shared/types.js";
 import { HttpError } from "./guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { registerEventRoutes } from "./routes/events.js";
@@ -26,6 +28,58 @@ import { registerEmotyRoutes } from "./routes/emoty.js";
 import { VERZE } from "../shared/verze.js";
 
 export type ServerDeps = AuthDeps & MatchDeps & MicrosoftDeps;
+
+export interface DoplnkyPoPrihlaseni {
+  gamerpic: (identita: XboxIdentita) => Promise<string | null>;
+  vlastnictvi: (identita: XboxIdentita) => Promise<Vlastnictvi | undefined>;
+  zebricek: (gamertag: string) => Promise<LeaderboardStats | null>;
+}
+
+/**
+ * Co se k Microsoft hráči dotáhne hned po přihlášení. Tři nezávislé dotazy:
+ * `allSettled`, aby jeden výpadek nesebral zbylé dva, a celé to visí mimo
+ * přihlašovací cestu, takže přihlášení nezdrží ani nemůže shodit.
+ */
+export function vychoziPoPrihlaseni(
+  doplnky: DoplnkyPoPrihlaseni,
+): (hracId: string, identita: XboxIdentita) => Promise<void> {
+  return async (hracId, identita) => {
+    const [pic, hra, zebricek] = await Promise.allSettled([
+      doplnky.gamerpic(identita),
+      doplnky.vlastnictvi(identita),
+      doplnky.zebricek(identita.gamertag),
+    ]);
+
+    const chyby: string[] = [];
+    if (zebricek.status === "rejected") chyby.push(`Žebříček: ${popisChyby(zebricek.reason)}`);
+    if (pic.status === "rejected") chyby.push(`Xbox profil: ${popisChyby(pic.reason)}`);
+    if (hra.status === "rejected") chyby.push(`Herní historie: ${popisChyby(hra.reason)}`);
+
+    const staty: PlayerStatsUpdate = {
+      alias: zebricek.status === "fulfilled" ? (zebricek.value?.alias ?? null) : null,
+      country: zebricek.status === "fulfilled" ? (zebricek.value?.country ?? null) : null,
+      elo1v1: zebricek.status === "fulfilled" ? (zebricek.value?.elo1v1 ?? null) : null,
+      eloNejvyssi: zebricek.status === "fulfilled" ? (zebricek.value?.eloNejvyssi ?? null) : null,
+      odehranoHer: zebricek.status === "fulfilled" ? (zebricek.value?.odehranoHer ?? null) : null,
+      posledniZapas: zebricek.status === "fulfilled" ? (zebricek.value?.posledniZapas ?? null) : null,
+      zebricky: zebricek.status === "fulfilled" ? (zebricek.value?.zebricky ?? null) : null,
+      weProfil: zebricek.status === "fulfilled" ? (zebricek.value?.profil ?? null) : null,
+      weProfilId: zebricek.status === "fulfilled" ? (zebricek.value?.profilId ?? null) : null,
+      avatarUrl: pic.status === "fulfilled" ? pic.value : null,
+      chyba: chyby.length > 0 ? chyby.join("; ") : null,
+    };
+    // undefined = nepovedlo se zjistit; hodnotu v databázi nesaháme.
+    if (hra.status === "fulfilled" && hra.value !== undefined) {
+      staty.hraVlastnictvi = hra.value;
+    }
+    await savePlayerStats(hracId, staty);
+    await broadcastAkce();
+  };
+}
+
+function popisChyby(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
 
 function vychoziDeps(): ServerDeps {
   return {
@@ -66,7 +120,11 @@ function vychoziDeps(): ServerDeps {
       return token;
     },
     ziskejIdentitu: (accessToken) => ziskejXboxIdentitu(accessToken),
-    poPrihlaseni: async () => {}, // naplní úkoly 8 a 9
+    poPrihlaseni: vychoziPoPrihlaseni({
+      gamerpic: (identita) => nactiGamerpic(identita),
+      vlastnictvi: (identita) => nactiVlastnictvi(identita),
+      zebricek: (gamertag) => fetchPersonalStatPodleAliasu(gamertag),
+    }),
   };
 }
 
