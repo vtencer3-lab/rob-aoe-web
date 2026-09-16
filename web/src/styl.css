@@ -1586,7 +1586,7 @@ h2 input.nazev-akce-pole {
 h2 .nazev-akce-mira {
   display: block;
   visibility: hidden;
-  white-space: pre;
+  white-space: pre-line;
   min-width: 6ch;
   /* Pole si nad text drží pevnou rezervu (naměřeno 10-11 px, nezávisle na
      délce — nejspíš místo pro kurzor). Bez ní se text v poli odroloval a
