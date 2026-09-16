@@ -5,6 +5,7 @@ import {
   getPlayer,
   getPlayers,
   hraciPodleProfilu,
+  hraciPodleSteamId,
   savePlayerStats,
   upsertHracXbox,
   upsertPlayer,
@@ -133,6 +134,24 @@ it("přeloží profily z lobby na hráče webu jedním dotazem", async () => {
 
 it("prázdný seznam profilů se do databáze vůbec nezeptá", async () => {
   expect(await hraciPodleProfilu([])).toEqual(new Map());
+});
+
+// Záloha k hraciPodleProfilu pro hráče, kterým se we_profil_id ještě
+// nedoplnilo (nebo se nedoplní nikdy). Klíč hráče se u Steam hráčů rovná jeho
+// Steam ID, ale sloupec je jiný — hledá se podle steam_id, ne podle hrac_id.
+it("hraciPodleSteamId najde Steam hráče i bez we_profil_id", async () => {
+  await upsertPlayer("76561198000000011", false);
+  await upsertHracXbox("2535412345678901", "Konzolista", false);
+
+  const mapa = await hraciPodleSteamId(["76561198000000011", "76561198999999999"]);
+  expect(mapa.get("76561198000000011")).toBe("76561198000000011");
+  expect(mapa.has("76561198999999999")).toBe(false);
+  // Microsoft hráč Steam ID nemá, takže se tudy najít nedá — a nemusí.
+  expect([...mapa.values()]).not.toContain("xbox:2535412345678901");
+});
+
+it("prázdný seznam Steam ID se do databáze vůbec nezeptá", async () => {
+  expect(await hraciPodleSteamId([])).toEqual(new Map());
 });
 
 it("upsertPlayer s null práva admina nemění", async () => {

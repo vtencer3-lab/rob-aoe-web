@@ -300,6 +300,42 @@ export function parseAdvertisements(json: unknown): InzeratSProfily[] {
   return vysledek;
 }
 
+/**
+ * Prefix, pod kterým `avatars` nese Steam účty. Xbox účty mají `/xboxlive/`
+ * a identifikátor, který se z Microsoft přihlášení nedá spočítat — pro ty
+ * žádná záložní cesta neexistuje a ani být nemusí: Microsoft hráč dostane
+ * `we_profil_id` hned při přihlášení.
+ */
+const STEAM_PREFIX = "/steam/";
+
+/**
+ * Z `avatars` mapa číslo profilu → Steam ID. Záloha pro rozpoznání v lobby:
+ * hlavní cesta vede přes `player.we_profil_id`, které se ale u stávajících
+ * hráčů doplní teprve při první obnově statistik (a ta se patnáct minut po
+ * předchozí přeskakuje). Než se doplní — a u hráče, kterému se dotaz na
+ * Worlds Edge nikdy nepovede, natrvalo — drží rozpoznání tohle: Steam ID je
+ * v odpovědi vždycky a na ničem, co si web sám doplnil, nezávisí.
+ *
+ * Modul zůstává hermetický: vrací jen to, co bylo v odpovědi. Na hráče webu
+ * to překládá `src/matches/seznamLobby.ts`, jediné místo s databází.
+ */
+export function steamIdyZAvatars(json: unknown): Map<number, string> {
+  const mapa = new Map<number, string>();
+  if (!jeObjekt(json)) return mapa;
+  const avatars = json["avatars"];
+  if (!Array.isArray(avatars)) return mapa;
+  for (const a of avatars) {
+    if (!jeObjekt(a)) continue;
+    const id = a["profile_id"];
+    const name = a["name"];
+    if (typeof id !== "number" || typeof name !== "string") continue;
+    if (!name.startsWith(STEAM_PREFIX)) continue;
+    const steamId = name.slice(STEAM_PREFIX.length);
+    if (/^\d{17}$/.test(steamId)) mapa.set(id, steamId);
+  }
+  return mapa;
+}
+
 /** Všechna čísla profilů, na která se pak databáze zeptá jedním dotazem. */
 export function profilyVInzeratech(inzeraty: InzeratSProfily[]): number[] {
   const vsechny = new Set<number>();
@@ -341,11 +377,19 @@ export function prelozHrace(
   }));
 }
 
+/** Co ze stažení vypadne: inzeráty a záložní mapa Steam ID ze všech stránek. */
+export interface StazeneInzeraty {
+  inzeraty: InzeratSProfily[];
+  /** Číslo profilu → Steam ID, slité ze všech stránek (`avatars` je po stránkách). */
+  steamIdy: Map<number, string>;
+}
+
 /** Stáhne všechny stránky (po 100) a slije je do jednoho seznamu. */
 export async function fetchAdvertisements(
   fetchImpl: typeof fetch = fetch,
-): Promise<InzeratSProfily[]> {
+): Promise<StazeneInzeraty> {
   const vsechny: InzeratSProfily[] = [];
+  const steamIdy = new Map<number, string>();
   for (let start = 0; start < 1000; start += STRANKA) {
     const res = await fetchImpl(`${ZAKLAD}/findAdvertisements?title=age2&start=${start}`, {
       signal: AbortSignal.timeout(10_000),
@@ -354,10 +398,11 @@ export async function fetchAdvertisements(
     const json: unknown = await res.json();
     const stranka = parseAdvertisements(json);
     vsechny.push(...stranka);
+    for (const [profil, steamId] of steamIdyZAvatars(json)) steamIdy.set(profil, steamId);
     const surovych = jeObjekt(json) && Array.isArray(json["matches"]) ? json["matches"].length : 0;
     if (surovych < STRANKA) break;
   }
   // Stránky se občas překrývají (mezi dotazy přibude lobby); stejné id jen jednou.
   const podleId = new Map(vsechny.map((l) => [l.lobbyId, l]));
-  return [...podleId.values()];
+  return { inzeraty: [...podleId.values()], steamIdy };
 }

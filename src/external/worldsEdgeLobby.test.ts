@@ -2,7 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import inzeraty from "./fixtures/worldsedge-advertisements.json" with { type: "json" };
 import robova from "./fixtures/worldsedge-lobby-robdiesalot.json" with { type: "json" };
 import { deflateSync } from "node:zlib";
-import { fetchAdvertisements, parseAdvertisements, parseSloty, prelozHrace } from "./worldsEdgeLobby.js";
+import {
+  fetchAdvertisements,
+  parseAdvertisements,
+  parseSloty,
+  prelozHrace,
+  steamIdyZAvatars,
+} from "./worldsEdgeLobby.js";
 
 describe("parseAdvertisements", () => {
   it("převede inzerát na číslo lobby a profily hosta a členů", () => {
@@ -146,11 +152,48 @@ describe("parseAdvertisements — sloty a nastavení", () => {
   });
 });
 
+// Záložní překlad pro hráče, kterým se ještě nedoplnilo `we_profil_id`.
+// Steam ID v `avatars` je tam odjakživa a nezávisí na ničem, co si web sám
+// doplnil — proto je to záchrana, když číslo profilu chybí.
+describe("steamIdyZAvatars", () => {
+  it("vrátí Steam ID u profilů, které mají /steam/<17 číslic>", () => {
+    expect(steamIdyZAvatars(inzeraty)).toEqual(
+      new Map([
+        [101, "76561198014056480"],
+        [202, "76561198000000072"],
+        [203, "76561198000000073"],
+      ]),
+    );
+  });
+
+  it("xboxový profil do mapy nepatří — Steam ID nemá", () => {
+    expect(steamIdyZAvatars(inzeraty).has(303)).toBe(false);
+  });
+
+  it("nesmysly v avatars nevyhodí, jen se vynechají", () => {
+    expect(steamIdyZAvatars(null)).toEqual(new Map());
+    expect(steamIdyZAvatars({ avatars: "ne" })).toEqual(new Map());
+    expect(
+      steamIdyZAvatars({
+        avatars: [
+          null,
+          { profile_id: "ne", name: "/steam/76561198014056480" },
+          { profile_id: 1, name: 42 },
+          // Steam ID musí mít přesně 17 číslic; cokoliv jiného je cizí tvar.
+          { profile_id: 2, name: "/steam/123" },
+          { profile_id: 3, name: "/steam/76561198014056480x" },
+        ],
+      }),
+    ).toEqual(new Map());
+  });
+});
+
 describe("fetchAdvertisements", () => {
   it("volá findAdvertisements a odpověď rozparsuje", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(inzeraty), { status: 200 }));
-    const seznam = await fetchAdvertisements(fetchImpl as unknown as typeof fetch);
+    const { inzeraty: seznam, steamIdy } = await fetchAdvertisements(fetchImpl as unknown as typeof fetch);
     expect(seznam).toHaveLength(3);
+    expect(steamIdy.get(101)).toBe("76561198014056480");
     expect(String(fetchImpl.mock.calls[0]![0])).toContain("/advertisement/findAdvertisements?title=age2&start=0");
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
@@ -158,16 +201,18 @@ describe("fetchAdvertisements", () => {
   // Endpoint dává nejvýš 100 lobby na stránku; když je jich sto, je za nimi
   // další stránka. Vaše lobby na ní klidně může být — 7. 9. 2026 se to stalo.
   it("při plné stránce stáhne i další a stejné id nezdvojí", async () => {
-    const plna = { matches: Array.from({ length: 100 }, (_, i) => ({ id: 1000 + i, host_profile_id: 0, description: "x", matchmembers: [] })), avatars: [] };
-    const zbytek = { matches: [{ id: 1099, host_profile_id: 0, description: "dup", matchmembers: [] }, { id: 2000, host_profile_id: 0, description: "posledni", matchmembers: [] }], avatars: [] };
+    const plna = { matches: Array.from({ length: 100 }, (_, i) => ({ id: 1000 + i, host_profile_id: 0, description: "x", matchmembers: [] })), avatars: [{ profile_id: 1, name: "/steam/76561198000000001" }] };
+    const zbytek = { matches: [{ id: 1099, host_profile_id: 0, description: "dup", matchmembers: [] }, { id: 2000, host_profile_id: 0, description: "posledni", matchmembers: [] }], avatars: [{ profile_id: 2, name: "/steam/76561198000000002" }] };
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(new Response(JSON.stringify(plna), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify(zbytek), { status: 200 }));
-    const seznam = await fetchAdvertisements(fetchImpl as unknown as typeof fetch);
+    const { inzeraty: seznam, steamIdy } = await fetchAdvertisements(fetchImpl as unknown as typeof fetch);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(String(fetchImpl.mock.calls[1]![0])).toContain("start=100");
     expect(seznam).toHaveLength(101);
+    // Avatars jsou na každé stránce vlastní; záložní mapa musí nést obě.
+    expect(steamIdy).toEqual(new Map([[1, "76561198000000001"], [2, "76561198000000002"]]));
   });
 
   it("neúspěšná odpověď vyhodí chybu se stavovým kódem", async () => {

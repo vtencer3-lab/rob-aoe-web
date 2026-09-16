@@ -264,3 +264,22 @@ export async function hraciPodleProfilu(profily: number[]): Promise<Map<number, 
   );
   return new Map(rows.map((r) => [r.we_profil_id, r.hrac_id]));
 }
+
+/**
+ * Záloha k `hraciPodleProfilu`: Steam ID z lobby na hráče webu. Stojí vedle,
+ * protože se ptá na jiný sloupec, ale ke stejné věci — rozpoznání v lobby.
+ *
+ * Proč existuje: `we_profil_id` se stávajícím hráčům doplní až při obnově
+ * statistik, a komu se dotaz na Worlds Edge nikdy nepovede, tomu zůstane
+ * prázdné. Steam ID je u Steam hráče od prvního přihlášení a `avatars`
+ * z lobby ho nese vždy, takže tahle cesta drží i tam, kde hlavní selže.
+ * Je záloha, ne náhrada — Microsoft hráč Steam ID nemá.
+ */
+export async function hraciPodleSteamId(steamIds: string[]): Promise<Map<string, string>> {
+  if (steamIds.length === 0) return new Map();
+  const { rows } = await getPool().query<{ steam_id: string; hrac_id: string }>(
+    `SELECT steam_id, hrac_id FROM player WHERE steam_id = ANY($1::text[])`,
+    [steamIds],
+  );
+  return new Map(rows.map((r) => [r.steam_id, r.hrac_id]));
+}
