@@ -74,10 +74,19 @@ export function Soukromi() {
 
       <h2>Chat a zápasy</h2>
       <p>
-        Zprávy v chatu u zápasu zůstávají v databázi i po skončení večera — patří k tomu, jak zápas probíhal,
-        ne k jednorázové konverzaci, co po večeru zmizí. Když moderace zprávu kvůli slušnosti smaže nebo
-        upraví, původní znění zůstává jen v databázi pro dohledání, na obrazovce ho už nikdo neuvidí. Ke
-        každému zápasu se taky ukládá nastavení lobby a tvoje ELO v tu chvíli, aby šel večer později přehrát.
+        Zprávy v chatu u zápasu zůstávají v databázi i po skončení večera — ale jen když ten večer skončil
+        aspoň jedním dohraným zápasem se zapsaným vítězem. Když admin ukončí večer, který takový zápas neměl
+        (nic se nedohrálo, nebo se všechno jen zrušilo), smaže se celá akce i se zápasy, přihláškami a
+        chatem — nezůstane z ní nic. Admin může kdykoliv úplně smazat i jednotlivý zrušený zápas i s jeho
+        chatem, aby nestrašil v přehledu.
+      </p>
+      <p>
+        Když moderace zprávu kvůli slušnosti upraví, původní znění zůstává jen v databázi pro dohledání — na
+        obrazovce ho už nikdo neuvidí. Smazaná zpráva ale zmizí úplně a nedá se dohledat vůbec.
+      </p>
+      <p>
+        Ke každému zápasu se taky ukládá nastavení lobby a tvoje ELO v tu chvíli, aby šel večer později
+        přehrát.
       </p>
 
       <h2>Smazání účtu</h2>

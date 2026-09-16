@@ -27,10 +27,22 @@ it("uvádí, že krátkodobá cookie z Microsoft přihlášení žije 10 minut",
   expect(screen.getByText(/10 minut/)).toBeInTheDocument();
 });
 
-it("říká, že zprávy z chatu zůstávají v databázi i po skončení večera", () => {
+// src/db/events.ts: smazAkciBezVysledku smaže celou akci (kaskádou i zápasy,
+// přihlášky a chat), když admin ukončí večer, který nemá žádný dohraný zápas
+// se zapsaným vítězem. Tvrzení „zprávy zůstávají" bez tyhle výjimky je lež.
+it("říká, že zprávy zůstávají jen po večeru s dohraným zápasem — jinak zmizí s celou akcí", () => {
   render(<Soukromi />);
-  expect(screen.getByText(/zprávy/i)).toBeInTheDocument();
-  expect(screen.getByText(/zůstávají/i)).toBeInTheDocument();
+  expect(screen.getByText(/zůstávají v databázi i po skončení večera/i)).toBeInTheDocument();
+  expect(screen.getByText(/dohraným zápasem/i)).toBeInTheDocument();
+  expect(screen.getByText(/smaže se celá akce/i)).toBeInTheDocument();
+});
+
+// src/db/chat.ts: upravZpravu drží text_puvodni (dohledatelné), ale
+// smazZpravu dělá tvrdé DELETE — řádek zmizí bezezbytku, nic nezůstává.
+it("rozlišuje upravenou zprávu (dohledatelná) od smazané (zmizí úplně)", () => {
+  render(<Soukromi />);
+  expect(screen.getByText(/upraví.*dohledání/is)).toBeInTheDocument();
+  expect(screen.getByText(/smazaná zpráva.*zmizí úplně/is)).toBeInTheDocument();
 });
 
 it("říká, že statistiky jsou z veřejného žebříčku hry, ne z něčeho soukromého", () => {
