@@ -483,7 +483,7 @@ main > .prazdno::after {
 /* Rám panelu je devítidílný obrázek (`nastroje/grafika/devitidil.py`): rohy
    se nekreslí znovu, strany se opakují. Výplň drží `background-clip:
    padding-box`, aby tmavé dřevo nevykukovalo zpod průhledných rohů rámu. */
-.karta, .zapas, .host, .sprava-akce, .zalozeni-akce, .panel-prihlaseni {
+.karta, .zapas, .host, .sprava-akce, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
   border-radius: 0;
@@ -517,6 +517,22 @@ main > .prazdno::after {
      v pozadí, aby lícovala s rámem (viz výš). */
   box-shadow: 0 12px 38px rgba(0, 0, 0, 0.6);
 }
+/* Podmínky a soukromí jsou souvislý text, ne karta se skóre — dostanou víc
+   vnitřního odstupu než těsné `.karta`/`.zapas`, ale rám i dřevo mají stejné. */
+.pravni-stranka { padding: 1rem 1.4rem 1.6rem; max-width: 46rem; margin-left: auto; margin-right: auto; }
+.pravni-stranka h1 { text-align: center; }
+.pravni-stranka h2 { font-size: 1.15rem; margin-top: 1.6rem; }
+.pravni-stranka ul { padding-left: 1.2rem; }
+.pravni-stranka li { margin: 0.5rem 0; }
+.pravni-stranka-zvyrazneni {
+  border: 1px solid var(--zlato-tmave);
+  background: rgba(216, 168, 58, 0.1);
+  border-radius: 4px;
+  padding: 0.8rem 1rem;
+}
+.pravni-stranka-zvyrazneni code { color: var(--zlato-svetle); }
+.pravni-stranka-zmeneno { margin-top: 2rem; color: var(--tlumene); font-size: 0.85rem; }
+.pravni-stranka-zpet { text-align: center; }
 .karta .hero, .host .hero {
   border-radius: 2px;
   padding: 1.1rem;

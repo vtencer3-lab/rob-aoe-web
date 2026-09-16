@@ -38,7 +38,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | `origin/dev` | 1.10.7, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.7.2) navíc hlasitost administrátora a oprava lupání při zesílení (§3.50) a **přihlášení Microsoft účtem** (§3.57): klíč hráče `hrac_id` místo `steam_id` (migrace 027–028), `src/auth/microsoftOAuth.ts` + `microsoftRoutes.ts`, `src/external/xboxLive.ts`, `src/players/zdroje.ts`, rozpoznání hráčů v lobby podle profilu Worlds Edge místo Steam ID. Vyžaduje `MS_CLIENT_ID`/`MS_CLIENT_SECRET` v Coolify — zatím nastavené jen u vývojové aplikace, ostrá a pokusná je nemají, takže tam se tlačítko neukazuje. Od 0.28.3 přibylo i: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
 | Migrace | 001–028, poslední `028_platforma_jmeno.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 341, frontend 305 — zelené (16. 9. 2026, tahle session, `npx tsc --noEmit` a `npm --prefix web exec tsc -- -b --force` bez chyb, `npm run build` EXIT=0). Databázové byly 169 k 12. 9., v týhle session neběžely (lokálně žádný Postgres, spouští se na VPS). Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | backend hermetické 361, frontend 330 — zelené (17. 9. 2026, tahle session, `npm --prefix web exec tsc -- -b --force` bez chyb, `npm run build` EXIT=0). Databázové byly 169 k 12. 9., v týhle session neběžely lokálně (žádný Postgres na stroji), ověřovaly se přes `ssh` na VPS. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý na úrovni kódu; netrackované `_grafika/` a syrové PNG přihlašovacích erbů ve `web/src/assets/ui/` (zdrojové podklady ke commitnutým `.webp`, mimo git schválně — stejná konvence jako u ostatní grafiky) nejsou rozdělaná změna a nepatří do commitu |
@@ -1718,6 +1718,36 @@ profil se samostatným ELO (ověřeno sondou, viz sekce 4) — datový model to
 unese, `steam_id` i `xbox_xuid` by šly na jeden řádek `player`, ale spojení
 dvou existujících webových účtů do jednoho implementované není. Nikdo se na
 to zatím neptal.
+
+### 3.58 Podmínky použití a zásady soukromí (1.11.0, 17. 9. 2026)
+
+Microsoft na souhlasné obrazovce Entra registrace ukazoval „Vydavatel
+neposkytl odkazy…“, dokud aplikace nemá vyplněný odkaz na podmínky
+a soukromí. Uživatel do Azure vyplnil `https://jouki.cz/aoe/podminky`
+a `/aoe/soukromi` předem — tahle session je musela postavit, aby odkaz
+nemířil do prázdna.
+
+**Web nemá router** (žádný `react-router`, žádné větvení podle
+`location.pathname`) — architektonické rozhodnutí (žádná knihovna, jeden
+`if` nad `window.location.pathname`) šlo zpátky na potvrzení, než se
+stavělo. Zjištění, které rozhodnutí zjednodušilo: server (`src/http/server.ts`
+`setNotFoundHandler`) už dnes vrací `index.html` se stavem **200** pro
+cokoliv mimo `/api/` — ověřeno přes `app.inject()` bez potřeby běžící
+databáze — takže přímé načtení i F5 fungovalo, aniž by se server vůbec
+upravoval.
+
+Klientská strana: `web/src/pravniCesty.ts` (čistá funkce, odřezává základ
+webu z `cesty.ts` a snáší koncové lomítko) rozhoduje, `web/src/vstupniStranka.tsx`
+podle ní vybere `<Podminky/>`, `<Soukromi/>` nebo `<App/>`, a `main.tsx` už
+jen vykreslí, co dostane. Obě stránky sdílejí rám `views/PravniStranka.tsx`
+(nadpis, deska `.pravni-stranka` přidaná do stejného `border-image` pravidla
+jako `.karta`, datum změny, cesta zpátky, `document.title`), obsah mají
+oddělený. Fakta o datech (schéma `player` přes migrace 001–028, `steam.ts`,
+`xboxLive.ts`, `worldsEdge.ts`, `microsoftOAuth.ts`, cookies v `routes.ts`
+a `microsoftRoutes.ts`) jsou ověřená proti kódu, ne odhadnutá — nejviditelnější
+věc na stránce: Microsoft scope je jen `XboxLive.signin` a přístupový token
+se nikde neukládá. Plný report s doklady TDD a kontrolami je
+v `.superpowers/sdd/2026-09-16-microsoft-prihlaseni/stranky-podminky.md`.
 
 ## 4. Externí API — co je ověřené a co ne
 
