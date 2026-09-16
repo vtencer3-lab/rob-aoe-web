@@ -52,6 +52,20 @@ export function registerMicrosoftRoutes(app: FastifyInstance, deps: MicrosoftDep
       smazStavCookie(reply);
       return reply.code(401).send({ chyba: "Neplatný návrat z Microsoftu." });
     }
+    // Kliknutí na „Zrušit“ na Microsoftí obrazovce se vrací jako
+    // `error=access_denied`, a bez přečtení téhle hodnoty by hráč dostal
+    // hlášku o chybějícím kódu — technicky pravdivou, ale o něčem jiném, než
+    // co udělal. Doslova se text z dotazu nikdy neopakuje: `error` je parametr
+    // z adresního řádku, který tam mohl podstrčit kdokoliv.
+    if (dotaz.error) {
+      smazStavCookie(reply);
+      return reply.code(401).send({
+        chyba:
+          dotaz.error === "access_denied"
+            ? "Přihlášení Microsoft účtem jsi zrušil. Zkusit to můžeš znovu."
+            : "Microsoft přihlášení odmítl. Zkus to prosím znovu.",
+      });
+    }
     if (!dotaz.code) {
       smazStavCookie(reply);
       return reply.code(401).send({ chyba: "Microsoft nevrátil přihlašovací kód." });

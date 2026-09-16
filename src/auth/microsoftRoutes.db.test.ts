@@ -140,6 +140,43 @@ describe("GET /api/auth/microsoft/return", () => {
     await app.close();
   });
 
+  // `error` se v routě deklaroval a nikdy nečetl, takže hráč, který na
+  // Microsoftí obrazovce klikl „Zrušit“, dostal „Microsoft nevrátil
+  // přihlašovací kód.“ — technicky pravda, ale mimo to, co se stalo.
+  it("zrušené přihlášení pojmenuje jako zrušené, ne jako chybějící kód", async () => {
+    const vymenKod = vi.fn(async () => "ms-token");
+    const app = server({ vymenKod });
+    const start = await app.inject({ method: "GET", url: "/api/auth/microsoft" });
+    const cookie = decodeURIComponent(String(start.headers["set-cookie"]).match(/ms_stav=([^;]+)/)![1]!);
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/auth/microsoft/return?error=access_denied&state=${cookie.split("|")[0]}`,
+      cookies: { ms_stav: cookie },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().chyba).toMatch(/zrušil/i);
+    expect(res.json().chyba).not.toMatch(/kód/i);
+    expect(vymenKod).not.toHaveBeenCalled();
+    expect(res.cookies.find((c) => c.name === "ms_stav")?.value).toBe("");
+    await app.close();
+  });
+
+  it("jiná chyba od Microsoftu se hráči neopakuje doslova", async () => {
+    // `error` je parametr z adresního řádku; vracet ho do těla odpovědi
+    // znamená hráči ukázat text, který mu tam mohl podstrčit kdokoliv.
+    const app = server();
+    const start = await app.inject({ method: "GET", url: "/api/auth/microsoft" });
+    const cookie = decodeURIComponent(String(start.headers["set-cookie"]).match(/ms_stav=([^;]+)/)![1]!);
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/auth/microsoft/return?error=${encodeURIComponent("prevedte mi penize")}&state=${cookie.split("|")[0]}`,
+      cookies: { ms_stav: cookie },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().chyba).not.toContain("penize");
+    await app.close();
+  });
+
   it("založí hráče s klíčem xbox:<xuid> a vrátí sezení", async () => {
     const app = server();
     const res = await prihlas(app);
