@@ -763,30 +763,64 @@ h2.nadpis-akce::after {
   transform: scale(1.06);
 }
 
-/* Reflektor. Jakmile se vybírá, zbytek couvne do stínu a vybraný erb zůstane
-   nasvícený — čte se to jako světlo namířené na jednu volbu. Skutečný kruh
-   ztmavení se středem přesně na erbu by potřeboval měřit jeho polohu
-   v JavaScriptu; tohle dělá totéž bez měření a nerozbije se při změně okna. */
-.prihlaseni-volby:hover a, .prihlaseni-volby:focus-within a {
-  filter: brightness(0.38) saturate(0.55);
+/* Reflektor. Jakmile se vybírá, okolí couvne do stínu a na vybraný erb dopadne
+   světlo. Skutečný kruh ztmavení se středem přesně na erbu by potřeboval měřit
+   jeho polohu v JavaScriptu; tohle dělá totéž bez měření a přežije změnu okna.
+
+   Přechod patří na `filter` u všech erbů, ne jen na záři: bez něj ztmavení
+   skočí naráz a celé to vypadá jako bliknutí, ne jako rozsvícení. */
+.prihlaseni-volby a {
+  transition: filter 280ms ease;
 }
+.prihlaseni-volby:hover a, .prihlaseni-volby:focus-within a {
+  filter: brightness(0.34) saturate(0.5);
+}
+
+/* Světelný kužel. `aspect-ratio` místo `inset`: rámeček odkazu nemusí být
+   čtverec a `inset` by z kruhu udělal elipsu. Střed je nad polovinou výšky,
+   protože štít má špičku dole — těžiště kresby leží výš než střed rámečku. */
 .prihlaseni-volby a::before {
   content: "";
   position: absolute;
-  inset: -20%;
+  left: 50%;
+  top: 45%;
+  width: 190%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(216, 168, 58, 0.3), transparent 68%);
+  /* Soft light místo prosté bílé: zlato zesvětlí, aniž by zešedlo, a tmavé
+     dřevo pod ním zůstane dřevem. Nejsilnější je uprostřed a k okraji mizí,
+     takže hrana kruhu není vidět. */
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.33), rgba(255, 255, 255, 0.12) 45%, transparent 72%);
+  mix-blend-mode: soft-light;
   opacity: 0;
-  transition: opacity 220ms ease;
+  transition: opacity 280ms ease;
   /* Záře nesmí brát kliknutí ani hover, jinak by si erb bral pozornost sám. */
   pointer-events: none;
 }
 /* Až za tlumením: stejná váha, takže o vybraném erbu rozhoduje pořadí. */
 .prihlaseni-volby a:hover, .prihlaseni-volby a:focus-visible {
-  filter: none;
+  filter: brightness(1.06);
 }
 .prihlaseni-volby a:hover::before, .prihlaseni-volby a:focus-visible::before {
   opacity: 1;
+}
+
+/* Couvne i okolí, ne jen druhý erb — jinak reflektor svítí do rozsvícené
+   místnosti. Nadpis se ztlumí, deska dostane stín od krajů dovnitř. */
+.prihlaseni-okno h1 {
+  transition: filter 280ms ease;
+}
+.prihlaseni-okno:has(.prihlaseni-volby a:hover) h1,
+.prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) h1 {
+  filter: brightness(0.5);
+}
+.prihlaseni-okno {
+  transition: box-shadow 280ms ease;
+}
+.prihlaseni-okno:has(.prihlaseni-volby a:hover),
+.prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) {
+  box-shadow: inset 0 0 12rem 2rem rgba(0, 0, 0, 0.55);
 }
 .skladani .sestava {
   list-style: none;
