@@ -340,6 +340,38 @@ starým klíčem v jiném projektu.
 Přihlašovací údaje patří **jen** do `~/.scenario_api.json`, nikdy do repozitáře
 (je veřejný).
 
+## 4.1a Když pozadí odstraní někdo jiný: lem se dá spočítat pryč
+
+Sekce výš platí pro assety, které se odklíčovávají tady. Když ale hotový
+obrázek s alfou přijde **zvenčí** (uživatel ho protáhl GPT Image nebo jiným
+nástrojem), mívá kolem okrajů tmavý lem — a Scenario se na něj už pouštět
+nedá, protože pozadí je pryč a odstraňovat není co.
+
+Ten lem je spočitatelný. Nástroj obrázek odklíčoval z černé, takže okrajový
+pixel nese barvu **už smíchanou s černou**: `observed = true × alfa`. Původní
+barva se z toho dostane zpátky dělením:
+
+```python
+alfa = a[..., 3:4] / 255.0
+a[..., :3] = np.where(alfa > 0.02, np.clip(a[..., :3] / alfa, 0, 255), a[..., :3])
+```
+
+Naměřeno 16. 9. 2026 na štítech přihlášení (`_grafika/prihlaseni/`), stejnou
+metrikou jako tabulka výš:
+
+| Asset | Lem před | Lem po |
+|---|---|---|
+| `prihlaseni-steam` | −38 | **+2** |
+| `prihlaseni-xbox` | −40 | **+2** |
+
+Je to lepší výsledek než Scenario (−16 a −4 v tabulce výš) a nestojí kredity.
+**Pořadí operací je ale závazné:** zmenšuje se ještě v premultiplikovaném
+tvaru, protože tak se okraje míchají správně, a odpremultiplikovává se až
+hotový náhled. Obráceně lem vznikne znovu.
+
+Na assety generované tady to nesahá — tam pořád platí Scenario, protože se
+řeší jiný problém (vyříznout objekt z pozadí, ne opravit hotovou masku).
+
 ## 4.2 Praporec: srovnat tón, ne kresbu
 
 Prostřední dlaždice praporce se opakuje přes celou šířku, takže si nese vlastní
