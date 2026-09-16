@@ -9,12 +9,11 @@ import { buildTokenBody, TOKEN_URL } from "../auth/microsoftOAuth.js";
 import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
-import { getPlayer, savePlayerStats } from "../db/players.js";
-import { steamZdroje } from "../external/steam.js";
+import { getPlayer } from "../db/players.js";
 import { ziskejXboxIdentitu } from "../external/xboxLive.js";
-import { fetchPersonalStat } from "../external/worldsEdge.js";
 import { seznamLobby } from "../matches/seznamLobby.js";
 import { maCerstveStaty, refreshPlayerStats } from "../players/refresh.js";
+import { zdrojeProHrace } from "../players/zdroje.js";
 import { HttpError } from "./guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { registerEventRoutes } from "./routes/events.js";
@@ -37,11 +36,8 @@ function vychoziDeps(): ServerDeps {
       // stahuje nejvýš jednou za patnáct minut na hráče.
       const hrac = await getPlayer(hracId);
       if (maCerstveStaty(hrac)) return;
-      await refreshPlayerStats(hracId, {
-        nactiZebricek: (id) => fetchPersonalStat(id),
-        ...steamZdroje(config.steamApiKey),
-        uloz: savePlayerStats,
-      });
+      if (!hrac) return;
+      await refreshPlayerStats(hracId, zdrojeProHrace(hrac, config.steamApiKey));
       // Nová data v tabulce přihlášených musí doputovat i těm, kdo stránku
       // právě mají otevřenou — jinak by čekali na jiný broadcast.
       await broadcastAkce();

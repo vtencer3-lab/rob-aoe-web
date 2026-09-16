@@ -28,7 +28,11 @@ export function maCerstveStaty(
 export interface RefreshDeps {
   nactiZebricek: (hracId: string) => Promise<LeaderboardStats | null>;
   nactiProfil: (hracId: string) => Promise<SteamProfile | null>;
-  /** `undefined` = nevíme (chybí klíč), hodnoty v databázi nesaháme. Jinak hodiny (null = skryté) a vlastnictví. */
+  /**
+   * `undefined` = nevíme (chybí Steam klíč, nebo se u téhle platformy Steamu
+   * neptáme vůbec — Microsoft hráč), hodnoty v databázi nesaháme. Jinak
+   * hodiny (null = skryté) a vlastnictví.
+   */
   nactiHru: (hracId: string) => Promise<SteamHra | undefined>;
   uloz: (hracId: string, staty: PlayerStatsUpdate) => Promise<void>;
 }
