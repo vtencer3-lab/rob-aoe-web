@@ -325,7 +325,7 @@ header h1 {
 /* Tlačítka se kreslí v CSS, ne z obrázku: zůstanou ostrá v každé velikosti
    a nepotřebují devítidílný řez. Zlaté je hlavní akce, tmavé je všechno
    ostatní. Obojí má nahoře světlou hranu a dole stín, jako ražený kov. */
-a.tlacitko, .cta, button.vytvorit, button.plus {
+a.tlacitko, button.tlacitko, .cta, button.vytvorit, button.plus {
   display: inline-block;
   background: linear-gradient(#e2c47c, #c99a35 45%, #9d7420);
   color: #23150a;
@@ -375,7 +375,7 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
 button.bez-vzhledu { all: unset; cursor: pointer; }
 
 button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(:where(.bez-vzhledu)):not(.polozka):not(.odpoved-na),
-a.tlacitko, .cta:not(.spectate) {
+a.tlacitko, button.tlacitko, .cta:not(.spectate) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -728,8 +728,11 @@ h2.nadpis-akce::after {
 
 .prihlaseni-volby {
   /* Odsazení ustupuje na nízkém okně: při pevných 50 px přeroste obsah
-     maximální výšku desky a naskočí posuvník. */
-  margin: clamp(1rem, 4vh, 50px) clamp(1rem, 4vw, 50px);
+     maximální výšku desky a naskočí posuvník. Svisle je to `padding`, ne
+     `margin`: světelný kužel štít přesahuje a jako absolutně umístěný prvek
+     se počítá do rolovatelné plochy desky — padding ho udrží uvnitř. */
+  margin-inline: clamp(1rem, 4vw, 50px);
+  padding-block: clamp(1.25rem, 4vh, 3rem);
   display: flex;
   /* Vedle sebe, nikdy pod sebou: štít se radši zmenší, než aby se dvojice
      rozpadla na sloupec. Proto `nowrap` a smrštitelný základ níž.
@@ -795,7 +798,7 @@ h2.nadpis-akce::after {
   position: absolute;
   left: 50%;
   top: 45%;
-  width: 190%;
+  width: 140%;
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   border-radius: 50%;
@@ -841,7 +844,7 @@ h2.nadpis-akce::after {
    které sahá až k okrajům. */
 .prelobby-stin:has(.prihlaseni-volby a:hover),
 .prelobby-stin:has(.prihlaseni-volby a:focus-visible) {
-  background: rgba(2, 1, 0, 0.96);
+  background: rgba(2, 1, 0, 0.93);
 }
 .skladani .sestava {
   list-style: none;
