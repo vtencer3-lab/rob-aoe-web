@@ -157,6 +157,16 @@ describe("zkontrolujLobby", () => {
     expect(t["cheaty"]).toBe("Cheaty jsou povolené, mají být vypnuté");
   });
 
+  // Hra má čtyři rychlosti (Slow, Casual, Normal, Fast), ne tři. Naživo
+  // ověřeno 17. 9. 2026 (84 lobby, hodnoty 0–3 v options[41], 2 = Normal
+  // nejčastější) — tabulka do 17. 9. 2026 mapovala 1 na „Slow“, takže hráč
+  // s Casual (options[41] = 1) dostal hlášku „Rychlost: Slow, má být Normal“.
+  it("rozezná Casual (0 Slow, 1 Casual, 2 Normal, 3 Fast)", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ nastaveni: { ...podleOcekavani, rychlost: 1 } }));
+    const t = Object.fromEntries(k.map((x) => [x.klic, x.text]));
+    expect(t["rychlost"]).toBe("Rychlost: Casual, má být Normal");
+  });
+
   // Další nastavení se hlásí ve své sekci; červená tam fajfku bere stejně
   // jako v hlavní. Co Rob nastaví na „–“, je „je to jedno“: vypíše se šedě
   // a nikdy není chyba.

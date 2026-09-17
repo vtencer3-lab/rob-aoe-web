@@ -21,8 +21,8 @@ export interface NastaveniLobby {
   mapaId: number | null;
   /** Velikost mapy v dílcích (options[8]); null = podle počtu hráčů. */
   velikost: number | null;
-  /** 1 Slow, 2 Normal, 3 Fast (options[41]). */
-  rychlost: 1 | 2 | 3;
+  /** 0 Slow, 1 Casual, 2 Normal, 3 Fast (options[41]). */
+  rychlost: 0 | 1 | 2 | 3;
   /** Populační limit (options[28]). */
   populace: number;
   /** Druh vítězství (options[81]); hodnoty viz VITEZSTVI. */
@@ -137,7 +137,15 @@ export const VELIKOSTI: Record<number, string> = {
   480: "Ludicrous",
 };
 
-export const RYCHLOSTI: Record<number, string> = { 1: "Slow", 2: "Normal", 3: "Fast" };
+/**
+ * Hra má v nabídce čtyři rychlosti, ne tři — tabulka do 17. 9. 2026 mapovala
+ * 1 na „Slow“ a hodnotu 0 vůbec neznala. Naživo ověřeno 17. 9. 2026: hráč
+ * s Casual v lobby inzeroval `options[41] = 1` (kontrola mu hlásila „Slow“
+ * místo „Casual“) a měření 84 lobby z `findAdvertisements` ukázalo všechny
+ * čtyři hodnoty 0–3, nejčastější 2 (Normal) — viz
+ * `docs/analyza-automaticke-hledani-lobby.md` §6.
+ */
+export const RYCHLOSTI: Record<number, string> = { 0: "Slow", 1: "Casual", 2: "Normal", 3: "Fast" };
 export const VITEZSTVI: Record<number, string> = {
   1: "Conquest",
   7: "Time Limit",

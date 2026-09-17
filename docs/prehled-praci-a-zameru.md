@@ -1756,7 +1756,7 @@ Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
 | Co | Stav |
 |---|---|
 | Seznam otevřených lobby: `id` = číslo z `aoe2de://` odkazu, Steam ID hosta a hráčů ve slotech, stránkování po 100 (`start=`) | ověřeno |
-| Klíče `options` (mapa 10, …) | zmapované v `docs/analyza-automaticke-hledani-lobby.md` §6; hodnoty AI 3/1, resources 0/3, ages 0/3/6, 0/4 ověřené, zbytek odvozený z pořadí v jazykovém souboru a **označený jako neověřený** |
+| Klíče `options` (mapa 10, …) | zmapované v `docs/analyza-automaticke-hledani-lobby.md` §6; hodnoty AI 3/1, resources 0/3, ages 0/3/6, 0/4 ověřené, **Game Speed (41) ověřeno 17. 9. 2026** (0 Slow, 1 Casual, 2 Normal, 3 Fast — tabulka byla do té doby posunutá o jedna a 0 vůbec neznala, viz `docs/superpowers/sdd/2026-09-16-microsoft-prihlaseni/rychlost-hry.md`), zbytek dál odvozený z pořadí v jazykovém souboru a **označený jako neověřený** |
 | Heslo lobby | jen příznak `passwordprotected`; klíč 52 **není** hash hesla; správnost hesla z API zjistit nejde |
 | `getPersonalStat`: leaderboard 3 (1v1 RM), 4 (Team RM) | ověřeno |
 | leaderboard 1, 2, 13, 14, 27, 28 | **předpoklad** (Death Match, Team DM, Empire Wars, Team EW, Return of Rome, Team RoR) |
