@@ -154,6 +154,49 @@ it("Microsoft hráč, který hrál před víc jak dvěma týdny, dostane siluetu
   expect(odznak).toHaveClass("davno");
 });
 
+// Hranici drží v kódu jediný znak (`<=`, ne `<`) a nic ho nehlídalo — kdyby
+// se při refaktoru překlopil, sada by zůstala zelená a chování by se tiše
+// změnilo. Čas je zmrazený (`zmrazCas`/`TED`/`za`, zavedené níž u aktivity),
+// ať test nezávisí na tom, kdy se skutečně spustí.
+it("těsně pod čtrnácti dny je pořád čerstvé", () => {
+  zmrazCas();
+  const tesnePod = za(-(14 * 24 * 60 - 1));
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ hracId: "a", alias: "Ma", platforma: "xbox", hraVlastnictvi: "ma", hraHranoV: tesnePod })]}
+    />,
+  );
+  const odznak = screen.getByRole("img", { name: /^Hráč hrál v posledních dvou týdnech$/i });
+  expect(odznak).toHaveClass("ma");
+  expect(odznak).not.toHaveClass("davno");
+});
+
+it("přesně čtrnáct dní staré datum se ještě počítá jako čerstvé", () => {
+  zmrazCas();
+  const naHranici = za(-14 * 24 * 60);
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ hracId: "a", alias: "Ma", platforma: "xbox", hraVlastnictvi: "ma", hraHranoV: naHranici })]}
+    />,
+  );
+  const odznak = screen.getByRole("img", { name: /^Hráč hrál v posledních dvou týdnech$/i });
+  expect(odznak).toHaveClass("ma");
+  expect(odznak).not.toHaveClass("davno");
+});
+
+it("těsně nad čtrnácti dny je už dávno", () => {
+  zmrazCas();
+  const tesneNad = za(-(14 * 24 * 60 + 1));
+  render(
+    <SeznamPrihlasenych
+      prihlaseni={[hrac({ hracId: "a", alias: "Ma", platforma: "xbox", hraVlastnictvi: "ma", hraHranoV: tesneNad })]}
+    />,
+  );
+  const odznak = screen.getByRole("img", { name: /^Hráč hrál před více jak dvěma týdny$/i });
+  expect(odznak).toHaveClass("ma");
+  expect(odznak).toHaveClass("davno");
+});
+
 // Hráč se přihlásil dřív, než tahle funkce existovala: stav je "ma", ale
 // datum ještě nikdo nedoplnil. Nesmí to tvrdit ani "nedávno", ani "dávno" —
 // zůstane dnešní chování beze zmínky o čerstvosti.
