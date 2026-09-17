@@ -299,13 +299,89 @@ Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 | `PORT` | `3000` | `3000` | `3000` |
 | `ADMIN_STEAM_ID` | seznam `hrac_id` s režií oddělený čárkou (Rob + správce); bere Steam ID i `xbox:<xuid>`, jméno proměnné zůstalo kvůli nasazení (viz `docs/prehled-praci-a-zameru.md` §3.57) | totéž | totéž |
 | `STEAM_API_KEY` | volitelné | volitelné | volitelné |
-| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | **nenastaveno** — přihlášení Microsoft účtem tu zatím vypnuté | registrace z entra.microsoft.com — jediná aplikace, která je má | **nenastaveno** |
+| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | nastaveno 17. 9. 2026 — táž registrace jako dev | registrace z entra.microsoft.com | **nenastaveno** — pokusná Microsoft přihlášení nemá |
 | `LOG_LEVEL` | `info` | `info` | `info` |
 | `DEV_PRISTUP` | nenastavovat | nenastavovat | nenastavovat |
-| `ZKUSEBNI_HRACI` | nenastavovat | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` |
+| `ZKUSEBNI_HRACI` | `true` — na výslovné přání uživatele od 9. 9. 2026, ať jdou zkušební hráči a přetáčení času i na ostré | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` |
 
 Zkušební dveře (`/api/dev/*`) se na `https` samy zavírají, takže na jouki.cz
 nejsou dostupné ani ve vývojové verzi. Zkouška večera nasucho se dělá lokálně.
+
+---
+
+### 3.6.1 Přihlášení Microsoft účtem: co je kde
+
+Zprovozněno na ostré 17. 9. 2026. Kód sám nestačí — drží to tři věci, každá
+jinde, a když jedna chybí, selže to jinak:
+
+**Registrace v Azure.** Jediná, sdílená všemi nasazeními, `AoE 2 komunitky`,
+ID aplikace `87a13d9c-6d99-4090-abbd-ad985c042691`, adresář *Default Directory*
+(`mjoukalgmail.onmicrosoft.com`). Má čtyři návratové adresy — ostrá, dev,
+pokusná a `http://localhost:3000` — všechny ve tvaru
+`<base>/api/auth/microsoft/return`. Adresa **musí být zapsaná v té registraci,
+jejíž `client_id` server posílá**; jinak Microsoft vrátí chybovou stránku až po
+přesměrování, ne dřív.
+
+Ověřit zvenku jde bez přihlašování: vzít `Location` z `/api/auth/microsoft`,
+podstrčit do něj jinou `redirect_uri` a porovnat velikost odpovědi. Přijatá
+adresa vrátí přihlašovací stránku (desítky kB), nezapsaná chybovou (~3 kB).
+
+17. 9. 2026 existovala krátce **druhá registrace** (`75037941-…`), založená
+omylem a bez tajného kódu. Smazána. Kdyby se někdy zdálo, že „adresa je
+zapsaná a stejně to nefunguje“, tohle je ten případ — zapsaná byla ve špatné
+aplikaci.
+
+**Tajemství v Coolify.** `MS_CLIENT_ID` a `MS_CLIENT_SECRET` u každé aplikace
+zvlášť. Tajný kód Azure podruhé neukáže; když se ztratí, generuje se nový.
+Bez obou proměnných se routy Microsoftu **vůbec nezaregistrují** (viz
+`src/http/server.ts`), `/api/auth/microsoft` vrací 404 a frontend erb neukáže —
+`GET /api/me` v tom případě vrací `maMicrosoft: false` a tlačítko se vykreslí
+jako prosté „Přihlásit se přes Steam“. Je to záměr, ne porucha: nenabízet
+cestu, která končí chybou.
+
+**Admin práva.** Viz §3.6.2 — je to past.
+
+#### 3.6.2 `ADMIN_STEAM_ID` je jediný zdroj pravdy o právech
+
+`je_admin` v databázi **není** místo, kam se práva zapisují ručně.
+`komuDatAdmina()` (`src/auth/routes.ts`) vrací při neprázdném seznamu
+`config.adminHracIds.includes(hracId)` — tedy `false` pro každý účet, který
+v proměnné chybí — a `upsertPlayer`/`upsertHracXbox` to přes
+`COALESCE($4, player.je_admin)` zapíšou. **Práva nastavená jen v databázi se
+tedy při nejbližším přihlášení toho účtu sama smažou.**
+
+Proměnná bere Steam ID i `xbox:<xuid>`, odděluje se čárkou, mezerou nebo
+středníkem. Xbox XUID se zjistí z `player.hrac_id` (tvar `xbox:<xuid>`).
+
+Zjištěno 17. 9. 2026 při zprovozňování ostré: obě aplikace měly v proměnné
+jediné Steam ID, zatímco databáze vedla tři adminy. Rob i Trokner by o režii
+přišli při svém dalším přihlášení, aniž by kdokoliv sáhl na nastavení. Seznamy
+byly srovnány s tím, co v databázích platilo, a doplněny o `xbox:` položku.
+
+**Při přidávání admina tedy vždycky proměnná, ne `UPDATE`.** Kontrola, že
+proměnná a databáze nejsou rozejité:
+
+```bash
+docker exec <postgres> psql -U postgres -d rob_aoe -t \
+  -c "SELECT hrac_id FROM player WHERE je_admin;"
+```
+
+#### 3.6.3 Zkouška přihlášení od nuly
+
+Souhlasnou obrazovku (to, co uvidí nový hráč) vrátí zpět odebrání souhlasu na
+<https://account.live.com/consent/Manage> → *AoE 2 komunitky* → odebrat
+oprávnění. S právy na webu to nesouvisí — ta se řídí výhradně §3.6.2.
+
+#### 3.6.4 Azure kredit
+
+Předplatné `Azure subscription 1` má bezplatný kredit 200 US$ s platností do
+16. 10. 2026. Na některých obrazovkách je přepočtený na eura (171,73 €) — je to
+táž položka, ne úbytek. Náklady jsou nulové a v předplatném nejsou žádné
+prostředky.
+
+Vypršení kreditu nemá na přihlašování dopadnout: registrace aplikace je objekt
+adresáře (Entra ID Free), ne předplatného, a jde založit i bez Azure
+předplatného. **Neověřeno praxí** — ověří se až 16. 10. 2026.
 
 ---
 
@@ -375,6 +451,21 @@ V obou případech se `dev` nechává být — chyba se opraví tam a vydá znov
   `BASE_URL` neodpovídá adrese v prohlížeči (jiná cesta, lomítko na konci).
 - **Ostrá verze zobrazuje zastaralý stav.** Ověř verzi v patičce; prohlížeč
   může držet starý bundle. Assety mají v názvu hash, takže tvrdý refresh stačí.
+- **Tentýž dotaz vrací jednou 404 a podruhé 302 (nebo dvě různé verze).**
+  Během nasazení běží krátce **dva kontejnery** a proxy mezi ně dělí provoz;
+  starý ještě nezná nové proměnné. Není to chyba konfigurace a nic se s tím
+  nedělá — Coolify starý kontejner po zdravotní kontrole sám zastaví, řádově
+  do minuty. Ověřit:
+
+  ```bash
+  docker ps --filter "name=<uuid aplikace>" --format "{{.Names}}\t{{.Status}}"
+  ```
+
+  Dokud to vypisuje dva řádky, jakékoliv měření zvenku je nespolehlivé —
+  počkat, až zbude jeden, a teprve pak měřit. Měřit se má **jedním**
+  požadavkem (`curl -i -o soubor -w '%{http_code}'`), ne dvěma voláními po
+  sobě: dvě volání mohou padnout na dva různé kontejnery a vypadá to jako
+  protiřečící si výsledky.
 
 Cokoliv, co vyžaduje přístup na server, řeší správce serveru. V repu má být
 všechno, co je potřeba k tomu, aby nasazení proběhlo samo: `Dockerfile`,

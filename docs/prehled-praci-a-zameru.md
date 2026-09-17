@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 16. 9. 2026, main 1.7.2, dev 1.10.7)
+# Přehled prací a záměrů (stav k 17. 9. 2026, main 1.13.9, dev 1.13.9)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -30,15 +30,17 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 ---
 
-## 1. Stav k 16. 9. 2026
+## 1. Stav k 17. 9. 2026
 
 | | |
 |---|---|
-| `origin/main` | 1.7.2, nasazeno na <https://jouki.cz/aoe> (PR #19, 15. 9. 2026); stav před ním nese značku `v1.7.0`, starší `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.10.7, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.7.2) navíc hlasitost administrátora a oprava lupání při zesílení (§3.50) a **přihlášení Microsoft účtem** (§3.57): klíč hráče `hrac_id` místo `steam_id` (migrace 027–028), `src/auth/microsoftOAuth.ts` + `microsoftRoutes.ts`, `src/external/xboxLive.ts`, `src/players/zdroje.ts`, rozpoznání hráčů v lobby podle profilu Worlds Edge místo Steam ID. Vyžaduje `MS_CLIENT_ID`/`MS_CLIENT_SECRET` v Coolify — zatím nastavené jen u vývojové aplikace, ostrá a pokusná je nemají, takže tam se tlačítko neukazuje. Od 0.28.3 přibylo i: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/main` | **1.13.9**, nasazeno na <https://jouki.cz/aoe> (PR #20, 17. 9. 2026 — velký release z 1.7.2, 63 commitů, migrace 027–029); stav před ním nese značku `v1.7.2`, starší `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
+| `origin/dev` | 1.13.9, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
+| Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
-| Migrace | 001–028, poslední `028_platforma_jmeno.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 361, frontend 330 — zelené (17. 9. 2026, tahle session, `npm --prefix web exec tsc -- -b --force` bez chyb, `npm run build` EXIT=0). Databázové byly 169 k 12. 9., v týhle session neběžely lokálně (žádný Postgres na stroji), ověřovaly se přes `ssh` na VPS. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Migrace | 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
+| Testy | backend hermetické 370, frontend 347 — zelené (17. 9. 2026, `npm --prefix web exec tsc -- -b --force` bez chyb, `npm run build` EXIT=0). Databázové 191 na devu přes `/root/aoe-deploy/test-db.sh` na VPS (lokálně Postgres neběží). Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Admini | `ADMIN_STEAM_ID` je **jediný zdroj pravdy**, ne sloupec `je_admin` — přihlášení ho přepisuje. 17. 9. 2026 srovnáno s databází a doplněno o `xbox:` položku; do té doby měly obě aplikace v proměnné jediné Steam ID, zatímco DB vedla tři adminy (Rob a Trokner by o práva přišli při svém dalším přihlášení). Rozbor v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2 |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
 | Pracovní strom | čistý na úrovni kódu; netrackované `_grafika/` a syrové PNG přihlašovacích erbů ve `web/src/assets/ui/` (zdrojové podklady ke commitnutým `.webp`, mimo git schválně — stejná konvence jako u ostatní grafiky) nejsou rozdělaná změna a nepatří do commitu |
@@ -46,7 +48,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
 PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
 kabátek) a PR #11 (0.19.1) 8. 9.; PR #12 (0.24.37) a PR #13 (0.28.3) 9. 9.;
-PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele); PR #15 (1.1.1, globální lhůta); PR #16 (1.1.2, mazání akcí bez výsledku); PR #17 (1.1.4, soumrak jako výchozí pozadí); PR #18 (1.7.0, chat: našeptávání, odpovědi, 7TV emoty, taunty; push-to-talk; globální lhůta; poslední nastavení lobby).
+PR #14 (**1.0.0**, 13. 9. ráno — první číslo na pokyn uživatele); PR #15 (1.1.1, globální lhůta); PR #16 (1.1.2, mazání akcí bez výsledku); PR #17 (1.1.4, soumrak jako výchozí pozadí); PR #18 (1.7.0, chat: našeptávání, odpovědi, 7TV emoty, taunty; push-to-talk; globální lhůta; poslední nastavení lobby); PR #19 (1.7.2, zesílení mikrofonu, mapy a erby); **PR #20 (1.13.9, 17. 9. 2026 — přihlášení Microsoft účtem, právní stránky, verdikt kontroly lobby, oprava Game Speed; 63 commitů, migrace 027–029)**.
 Před releasem se na dosavadní `main` věší značka
 `vX.Y.Z`; jak se podle ní vrátit zpátky, popisuje
 [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7.
@@ -1763,6 +1765,15 @@ Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
 | `getRecentMatchHistory` pro rozehranou hru | vrátilo nic — data o právě běžící hře přes veřejné API **nejsou** |
 | Limity dotazů | neznámé; proto cache 15 min u statistik a jedna sdílená cache seznamu lobby (`src/matches/seznamLobby.ts`), sledování po 10 s |
 
+**Doplněno 17. 9. 2026 (Microsoft účty — co pořád nikdo nezkusil).**
+
+| Co | Stav |
+|---|---|
+| Odkaz `aoe2de://` na verzi hry z **Microsoft Store / Game Passu** | **NEOVĚŘENO, a je to nejrizikovější místo celé funkce.** Celý produkt stojí na tom, že odkaz otevře hru a připojí do lobby. U Steam verze ověřeno tisíckrát, u Store verze **ani jednou** — tester ji nikdy nespustil. Když Store verze ten protokol neregistruje, jsou Microsoft hráči přihlášení, viditelní, se statistikami — a stejně se do lobby nedostanou. Zjistí to jediný člověk s tou verzí za pět minut; do té doby je funkce nedokončená, ať testy svítí jakkoliv zeleně |
+| `titlehub` u účtu se **skrytým soukromím** herní historie | **NEOVĚŘENO.** Návrh počítá se třemi stavy (má / nemá / soukromý) a kód na prázdnou odpověď nespadne, ale skutečný účet s vypnutým sdílením historie se nikdy nevyzkoušel. Projeví se to tak, že hráč bude mít trvale siluetu ikony, i když hraje denně |
+| Vlastnictví hry u Microsoft účtu | **nelze zjistit, ověřeno rešerší.** Collections API i `licensing.xboxlive.com` jsou zamčené na vydavatele titulu (Partner Center). Proto se místo vlastnictví ukazuje **poslední hraní**: do 14 dnů plná ikona, výš silueta. Není to náhrada, je to jiná informace — a tak je i popsaná v bublině |
+| Platnost Azure kreditu po 16. 10. 2026 | **NEOVĚŘENO.** Očekává se, že přihlašování poběží dál (registrace aplikace je objekt adresáře, ne předplatného). Ověří se až tím dnem; viz `docs/nasazeni-jouki-cz.md` §3.6.4 |
+
 **Doplněno 9. 9. 2026 (měřeno na živých lobby).**
 
 | Co | Stav |
@@ -1896,7 +1907,7 @@ Drobné známé nedodělky:
 
 ---
 
-## 6. Historie verzí (7.–16. 9. 2026)
+## 6. Historie verzí (7.–17. 9. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 
@@ -2027,6 +2038,18 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
+| 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |
+| 1.13.7 | 17. 9. 03:16 | Mrtvý prop `onVerdikt` pryč; verdikt pod tlačítko a blíž k výpisu, větší písmo |
+| 1.13.6 | 17. 9. 03:08 | Dokumentace hlásí naměřená čísla, ne ta, která jí někdo podal (§7) |
+| 1.13.5 | 17. 9. 02:59 | **Oprava: hra má čtyři rychlosti, tabulka znala tři** — Casual se hlásil jako Slow (§3.57) |
+| 1.13.4 | 17. 9. 02:58 | Verdikt kontroly lobby nad výpis nastavení, červený i zelený na stejném místě |
+| 1.13.3 | 17. 9. 02:47 | Hranice čerstvosti 14 dní přibita hraničním testem |
+| 1.13.2 | 17. 9. 02:36 | Odhlášení z webu odhlásí i z akce |
+| 1.13.1 | 17. 9. 02:30 | Adresa pro smazání účtu pojmenovaná v zásadách soukromí |
+| 1.13.0 | 17. 9. 01:20 | Dlouhá bublina nápovědy se zalomí místo roztažení přes tabulku |
+| 1.12.x | 17. 9. 00:58 | Ukládá se, kdy Microsoft hráč naposled hrál; ikona hry to ukáže (do 14 dnů plná, výš silueta) |
+| 1.11.x | 17. 9. 00:19–00:55 | Právní stránky `/podminky` a `/soukromi` (§3.58) — včetně opravy dvou nepravdivých tvrzení o mazání zpráv; erby platforem u hráčů; reflektor v přihlašovacím okně (čtyři kola připomínek) |
 | 1.10.7 | 16. 9. 23:01 | Přejmenování pomocné třídy nápovědy v přihlašovacím okně |
 | 1.10.6 | 16. 9. 22:51 | Přihlašovací obrazovka se ptá, kterou platformou se přihlásit, v okně (§3.57) |
 | 1.10.5 | 16. 9. 22:31 | Rozpoznání hráčů v lobby podle čísla profilu Worlds Edge místo Steam ID (§3.57) |
@@ -2068,6 +2091,31 @@ i když je to jen odstup nebo barva.
 
 ## 7. Poučení (aby se neopakovalo)
 
+- **Konfiguraci číst od serveru, ne z obrazovky.** 17. 9. 2026 jsem opsal
+  `MS_CLIENT_ID` z portálu Azure a poradil ho uživateli — byl to jiný
+  identifikátor, než jaký server doopravdy posílá. Existovaly dvě registrace
+  aplikace. Stačilo se zeptat běžícího webu:
+  `curl -i /api/auth/microsoft | grep -i ^location` ukáže `client_id`
+  i `redirect_uri`, které se skutečně používají. Obrazovka ukazuje, co si
+  člověk kde založil; server ukazuje, co platí.
+- **Během nasazení neměřit dvěma voláními.** Krátce běží dva kontejnery a
+  proxy mezi ně dělí provoz — první `curl` vrátil 404, druhý 302 a vypadalo
+  to na nesmysl. Jeden požadavek, ze kterého se vezme kód i hlavičky, a
+  předtím ověřit `docker ps`, že běží jediný kontejner. Rozvedeno v
+  [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §4.
+- **Než něco nazvu nálezem, ověřit, jestli to není něčí rozhodnutí.**
+  `ZKUSEBNI_HRACI=true` na ostré jsem 17. 9. ohlásil jako chybu konfigurace
+  proti komentáři v kódu. Bylo to výslovné přání uživatele z 9. 9.; zastaralý
+  byl ten komentář. Poplach stál důvěru zbytečně.
+- **Značku před releasem pověsit dřív, než se mergne.** 17. 9. jsem
+  release 1.13.9 slil do `main` a teprve pak si všiml, že stav před ním
+  nemá `v1.7.2`. Doplnit jde zpětně, ale při potřebě rychlého návratu by ta
+  značka chyběla právě ve chvíli, kdy na hledání není čas. Postup je
+  v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.7 — přečíst ho
+  **před** mergem, ne po něm.
+- **Práva do proměnné, ne do databáze.** `UPDATE player SET je_admin = true`
+  vydrží do nejbližšího přihlášení toho účtu. Rozbor v
+  [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2.
 - **Frontend typy se kontrolují zvlášť.** 0.14.0 se pushnul s chybou
   v cleanupu efektu (vracel string), `vite build` se nespustil a dev
   zůstal na staré verzi. Vždy `npm --prefix web exec tsc -- -b --force`
