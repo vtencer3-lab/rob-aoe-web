@@ -20,12 +20,14 @@ interface Props {
 }
 
 /**
- * Obrazovka hosta: velký titulek zápasu, pruh s barvou, a pak tři kroky pod
- * sebou — „Zakládáš!“ (fajfka, jakmile web lobby najde), „Kontrola lobby“
- * (fajfka, když hlavní sekce prošla) a nakonec „Výborně, můžete hrát!“. Host
- * tak i uprostřed streamu vidí, kde je. Tlačítko do lobby tu není: host ji
- * zakládá, do lobby se odkazem připojují ostatní (KartaHrace). Pod kroky
- * strany zápasu s VS jako na kartě hráče (uživatel 13. 9. 2026), pak chat.
+ * Obrazovka hosta: velký titulek zápasu, pruh s barvou, a pak dva kroky pod
+ * sebou — „Zakládáš!“ (fajfka, jakmile web lobby najde) a „Kontrola lobby“,
+ * která si od 17. 9. 2026 nese vlastní velký verdikt („Výborně, můžete
+ * hrát!“/„Opravte Lobby, než půjdete hrát!“) hned pod svým záhlavím, ne tady
+ * dole. Host tak i uprostřed streamu vidí, kde je, bez rolování. Tlačítko do
+ * lobby tu není: host ji zakládá, do lobby se odkazem připojují ostatní
+ * (KartaHrace). Pod kroky strany zápasu s VS jako na kartě hráče (uživatel
+ * 13. 9. 2026), pak chat.
  */
 export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby, chat }: Props) {
   // Po kliknutí na „Spustit hru“ host lobby zakládá právě teď: hledání zrychlí
@@ -41,9 +43,6 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
     if (driv === undefined || driv !== null || zapas.lobbyId === null) return;
     setTimeout(() => kontrola.current?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 50);
   }, [zapas.lobbyId]);
-  // Verdikt kontroly drží sekce kontroly; sem ho jen hlásí.
-  const [vPoradku, setVPoradku] = useState<boolean | null>(null);
-
   // Host dostane tuhle obrazovku *místo* KartaHrace, ne k ní — svoji barvu by
   // jinak neviděl, zatímco každý druhý účastník má pruh přes půl obrazovky.
   const muj = mujUcastnik(zapas, ja);
@@ -104,19 +103,8 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
 
       {zapas.lobbyId ? (
         <div ref={kontrola}>
-          <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} onVerdikt={setVPoradku} />
+          <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} />
         </div>
-      ) : null}
-
-      {zapas.lobbyId && vPoradku ? (
-        <section className="sekce-krok hotovo finale" data-testid="muzete-hrat">
-          <header className="zahlavi-sekce">
-            <h3>Výborně, můžete hrát!</h3>
-            <span className="fajfka" aria-hidden="true">
-              ✓
-            </span>
-          </header>
-        </section>
       ) : null}
 
       <section className="sekce-krok" data-testid="strany-zapasu">

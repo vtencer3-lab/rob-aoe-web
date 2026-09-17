@@ -123,10 +123,60 @@ it("lobby mimo seznam a chyba serveru mají vlastní hlášky a verdikt nemají"
   render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} onVerdikt={onVerdikt} />);
   // První kontrola běží sama po připojení (1.3.5).
   expect(await screen.findByRole("status")).toHaveTextContent(/není/i);
+  // Ani „lobby mimo seznam“, ani chyba serveru nejsou důvod pro velký nápis nahoře.
+  expect(screen.queryByTestId("verdikt-lobby")).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
   expect(await screen.findByRole("alert")).toHaveTextContent(/nepodařilo/i);
   expect(onVerdikt).toHaveBeenCalledWith(null);
   expect(onVerdikt).not.toHaveBeenCalledWith(true);
+  expect(screen.queryByTestId("verdikt-lobby")).not.toBeInTheDocument();
+});
+
+// Velký nápis (uživatel 17. 9. 2026): nahoře v panelu, ne dole pod výpisem —
+// host se dívá nahoru a spěchá. Střídá se se stejným `vPoradku`, ze kterého
+// se dnes počítá fajfka v záhlaví; žádný druhý výpočet.
+it("když je vše v pořádku, nahoře je zelený verdikt před první sekcí", async () => {
+  const onKontrola = vi.fn().mockResolvedValue({
+    nalezeno: true,
+    kontroly: [
+      { klic: "lobbyTyp", stav: "ok", text: "Lobby Type: Unranked", sekce: "prelobby" },
+      { klic: "divaci", stav: "ok", text: "Diváci povoleni", sekce: "hlavni" },
+    ],
+  });
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
+  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  const verdikt = await screen.findByTestId("verdikt-lobby");
+  expect(verdikt).toHaveClass("v-poradku");
+  expect(verdikt).toHaveTextContent(/výborně, můžete hrát!/i);
+  // Nad výpisem nastavení, ne pod ním.
+  const poradi = verdikt.compareDocumentPosition(screen.getByTestId("prelobby-nastaveni"));
+  expect(poradi & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+it("když něco nesedí, nahoře je červený verdikt s obdobnou značkou jako zelený", async () => {
+  const onKontrola = vi.fn().mockResolvedValue(vysledek);
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
+  await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
+  const verdikt = await screen.findByTestId("verdikt-lobby");
+  expect(verdikt).toHaveClass("k-oprave");
+  expect(verdikt).toHaveTextContent(/opravte lobby, než půjdete hrát!/i);
+  expect(verdikt.querySelector(".znak-verdiktu")).toHaveTextContent("✗");
+});
+
+// Mezi připojením komponenty a doběhnutím první kontroly se nesmí probliknout
+// červená — „zatím nevíme“ a „je to špatně“ jsou dvě různé věci.
+it("dokud první kontrola nedoběhla, verdikt (ani červený) se neukazuje", async () => {
+  let doresit: ((v: KontrolaLobbyVysledek) => void) | undefined;
+  const cekani = new Promise<KontrolaLobbyVysledek>((resolve) => {
+    doresit = resolve;
+  });
+  const onKontrola = vi.fn().mockReturnValue(cekani);
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
+  // Automatická kontrola po připojení (1.3.5) už běží, ale ještě nedoběhla.
+  expect(onKontrola).toHaveBeenCalled();
+  expect(screen.queryByTestId("verdikt-lobby")).not.toBeInTheDocument();
+  doresit?.(vysledek);
+  expect(await screen.findByTestId("verdikt-lobby")).toHaveClass("k-oprave");
 });
 
 it("v automatickém režimu kontroluje sama a po odpojení přestane", async () => {

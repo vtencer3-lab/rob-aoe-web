@@ -1422,13 +1422,19 @@ button.odebrat:hover { color: var(--chyba); }
 .zahlavi-sekce { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .zahlavi-sekce h3 { margin: 0 0 0.3rem; font-size: 1.15rem; }
 .zahlavi-sekce .fajfka { font-size: 2.2rem; line-height: 1; font-weight: 700; color: var(--ok); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
-.sekce-krok.finale { border-color: rgba(168, 196, 124, 0.55); }
-.sekce-krok.finale h3 { color: var(--ok-svetle); font-size: 1.4rem; }
 .sekce-krok .zahlavi-sekce { justify-content: center; position: relative; }
 .sekce-krok .zahlavi-sekce .fajfka { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .sekce-krok .hostovi { justify-content: center; }
 .sekce-krok .hostovi .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .sekce-kontrola .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+/* Verdikt kontroly lobby nahoře v panelu (uživatel 17. 9. 2026): červená,
+   dokud něco nesedí, zelená, jakmile sedí všechno — nikdy obojí a nikdy dole
+   pod výpisem, kam by ho host na streamu musel odrolovat. Barva jede
+   z existující palety (--ok-svetle/--chyba), žádná nová. */
+.verdikt-lobby { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.2rem 0 0.8rem; font-family: "Cinzel", Georgia, serif; font-size: 1.3rem; font-weight: 700; text-align: center; }
+.verdikt-lobby.v-poradku { color: var(--ok-svetle); }
+.verdikt-lobby.k-oprave { color: var(--chyba); }
+.verdikt-lobby .znak-verdiktu { font-size: 1.7rem; line-height: 1; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
 button.odebrat-zapas { color: var(--tlumene); }
 button.odebrat-zapas:hover { color: var(--chyba); }
 .hledani-lobby .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }

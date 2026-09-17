@@ -34,6 +34,13 @@ const ZNAK: Record<Kontrola["stav"], string> = { ok: "✓", spatne: "✗", varov
  * O velké fajfce v záhlaví rozhoduje jedině to, že není nic červené —
  * v hlavní sekci ani v „Dalším nastavení“. To druhé je rozbalené a
  * pamatuje si, jak si ho kdo sbalil, i přes další kontroly.
+ *
+ * Verdikt (velký zelený/červený nápis) stojí hned pod záhlavím, nad celým
+ * výpisem — host se dívá nahoru na streamu a spěchá, dole ho musel odrolovat
+ * (uživatel 17. 9. 2026). Počítá se ze stejného `vPoradku` jako fajfka výš,
+ * ať se ty dvě věci nikdy nerozejdou. Dokud `vPoradku` je `null` (kontrola
+ * ještě neproběhla, lobby mimo seznam, chyba serveru), verdikt se neukazuje
+ * vůbec — „zatím nevíme“ není totéž co „je to špatně“.
  */
 export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, intervalMs = INTERVAL_KONTROLY_MS, onVerdikt }: Props) {
   // Poslední výsledek se drží i během další kontroly — seznam nesmí při
@@ -111,6 +118,14 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
           </span>
         ) : null}
       </header>
+      {vPoradku !== null ? (
+        <p className={`verdikt-lobby ${vPoradku ? "v-poradku" : "k-oprave"}`} data-testid="verdikt-lobby">
+          <span className="znak-verdiktu" aria-hidden="true">
+            {vPoradku ? "✓" : "✗"}
+          </span>{" "}
+          {vPoradku ? "Výborně, můžete hrát!" : "Opravte Lobby, než půjdete hrát!"}
+        </p>
+      ) : null}
       <div className="ovladani">
         <button type="button" onClick={() => void zkontroluj(true)} disabled={kontroluji}>
           {kontroluji ? "Kontroluji…" : "Zkontrolovat lobby"}
