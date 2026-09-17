@@ -204,7 +204,7 @@ web proto stahuje všechny stránky.
 | AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, **−1 Extreme** (ne 5, jak tu stálo do 9. 9. 2026 — ověřeno naživo 9. 9. 2026, kdy lobby s Extreme poslala `-1`; dřív ověřeno 3 a 1) |
 | Resources | `37` | 0 Standard, 1 Low, 2 Medium, 3 High, 4 Ultra High, 5 Infinite, 6 Random (ověřeno 0 a 3) |
 | Population | `28` | jen z herní nabídky: po 25 do 250, pak 300, 400, 500 (odečteno z herní nabídky 9. 9. 2026) |
-| Game Speed | `41` | 0 Slow, 1 Casual, 2 Normal, 3 Fast — **ověřeno naživo 17. 9. 2026** (84 lobby z `findAdvertisements`: hodnoty 0–3, nejčastější 2 = Normal; navíc hráč s Casual v lobby inzeroval `41 = 1`). Tabulka do 17. 9. 2026 byla posunutá o jedna a hodnotu 0 vůbec neznala — odvozená jen z pořadí v jazykovém souboru, viz `docs/prehled-praci-a-zameru.md` §4 |
+| Game Speed | `41` | 0 Slow, 1 Casual, 2 Normal, 3 Fast — **ověřeno naživo 17. 9. 2026** (dva nezávislé běhy přes `findAdvertisements`, 91 a poté 89 unikátních lobby: v obou hodnoty 0–3, nejčastější 2 = Normal; navíc hráč s Casual v lobby inzeroval `41 = 1`). Tabulka do 17. 9. 2026 byla posunutá o jedna a hodnotu 0 vůbec neznala — odvozená jen z pořadí v jazykovém souboru, viz `docs/prehled-praci-a-zameru.md` §4 |
 | Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible (ověřeno; „No Fog“ jako 3 tu stálo do 9. 9. 2026, hra ho nezná) |
 | Starting Age | `0` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial, 6 Post-Imperial (ověřeno 0, 3, 6) |
 | Ending Age | `4` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial (ověřeno 0 a 4) |

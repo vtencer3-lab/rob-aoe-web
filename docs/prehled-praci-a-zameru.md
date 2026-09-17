@@ -1756,7 +1756,7 @@ Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
 | Co | Stav |
 |---|---|
 | Seznam otevřených lobby: `id` = číslo z `aoe2de://` odkazu, Steam ID hosta a hráčů ve slotech, stránkování po 100 (`start=`) | ověřeno |
-| Klíče `options` (mapa 10, …) | zmapované v `docs/analyza-automaticke-hledani-lobby.md` §6; hodnoty AI 3/1, resources 0/3, ages 0/3/6, 0/4 ověřené, **Game Speed (41) ověřeno 17. 9. 2026** (0 Slow, 1 Casual, 2 Normal, 3 Fast — tabulka byla do té doby posunutá o jedna a 0 vůbec neznala, viz `docs/superpowers/sdd/2026-09-16-microsoft-prihlaseni/rychlost-hry.md`), zbytek dál odvozený z pořadí v jazykovém souboru a **označený jako neověřený** |
+| Klíče `options` (mapa 10, …) | zmapované v `docs/analyza-automaticke-hledani-lobby.md` §6; hodnoty AI 3/1, resources 0/3, ages 0/3/6, 0/4 ověřené, **Game Speed (41) ověřeno 17. 9. 2026** — dva nezávislé běhy `findAdvertisements` (91 a 89 lobby) daly v obou hodnoty 0–3, nejčastější 2; k tomu hráč s Casual v lobby inzeroval `41 = 1`. Správně je tedy 0 Slow, 1 Casual, 2 Normal, 3 Fast — tabulka byla do té doby posunutá o jedna a 0 vůbec neznala. Zbytek dál odvozený z pořadí v jazykovém souboru a **označený jako neověřený** |
 | Heslo lobby | jen příznak `passwordprotected`; klíč 52 **není** hash hesla; správnost hesla z API zjistit nejde |
 | `getPersonalStat`: leaderboard 3 (1v1 RM), 4 (Team RM) | ověřeno |
 | leaderboard 1, 2, 13, 14, 27, 28 | **předpoklad** (Death Match, Team DM, Empire Wars, Team EW, Return of Rome, Team RoR) |
@@ -1798,6 +1798,24 @@ přihlášení Microsoft účtem funguje, hráč vznikne s klíčem `xbox:<xuid>
 statistiky a herní profil se dohledají. **Neověřené naživo v provozu:**
 gamerpic a ikona vlastnictví hry — ověřené jsou jen sondou mimo aplikaci a
 hermetickými testy s podstrčenou sítí (fixtury místo skutečného volání).
+
+**Doplněno 17. 9. 2026 (oprava Game Speed, §6 v `docs/analyza-automaticke-hledani-lobby.md`).**
+Při opravě `RYCHLOSTI` se stejným měřením (dva běhy `findAdvertisements`,
+91 a 89 lobby, hodnoty přečtené vlastním parserem repa) prošly i ostatní
+číselníky v `lobbyKontrola.ts`. Tři z nich mají v provozu hodnotu, kterou
+naše tabulka nezná — na rozdíl od Game Speed se ale zatím **neopravovaly**,
+protože bez znalosti, co číslo ve hře znamená, by oprava byla jen další
+odhad:
+
+| Klíč | Chybějící hodnota | Jak často (ze vzorku 89 lobby) | Jak to zjistit |
+|---|---|---|---|
+| `vitezstvi` (`options[81]`, tabulka `VITEZSTVI`) | `0` | 16× — skoro pětina, není okrajový případ | Ve hře v Game Settings postupně vyzkoušet zbylé položky nabídky Victory (ne jen Conquest/Standard, které už tabulka zná) a podívat se, co která pošle v `options[81]`; kontrola lobby u neznámé hodnoty vypíše přímo číslo místo jména |
+| `rezim` (`options[5]`, tabulka `REZIMY`) | `15` | 2–3× | Ve hře postupně projet zbylé položky Game Mode (nabídka jich má víc, než kolik jich `REZIMY` zná) a sledovat `options[5]`; kontrola lobby zase u neznámé hodnoty vypíše číslo |
+| `preLobby.lobbyTyp` (`matchtype_id`, tabulka `LOBBY_TYPY`) | `61` | 2× | Založit lobby s jinou volbou Lobby Type, než jsou dnešní tři (Unranked, Ranked 1v1 DM, Ranked Team DM), a podívat se na `matchtype_id` v inzerátu |
+
+Postup na příště je stejný jako u Game Speed: přepnout ve hře, podívat se,
+co pošle živé `findAdvertisements` (nebo co kontrola lobby vypíše jako
+neznámé číslo), a teprve pak dopsat jméno do tabulky.
 
 ---
 
