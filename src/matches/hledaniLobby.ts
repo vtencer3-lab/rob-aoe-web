@@ -2,7 +2,9 @@ import type { LobbyInzerat } from "../external/worldsEdgeLobby.js";
 
 /**
  * Jak jsme lobby poznali. Název ani heslo nejsou podmínkou — hosté si je
- * často nastaví jinak, než web předepsal. Rozhoduje Steam ID lidí v lobby.
+ * často nastaví jinak, než web předepsal. Rozhoduje `hracId` lidí v lobby —
+ * dřív to bylo Steam ID, ale od přechodu na rozpoznání přes `profile_id`
+ * (viz `worldsEdgeLobby.ts`) funguje stejně pro Steam i Microsoft hráče.
  * Pořadí od nejjistějšího: host zápasu ji hostuje, host v ní sedí, hostuje ji
  * jiný účastník zápasu, sedí v ní jiný účastník.
  */
@@ -14,19 +16,19 @@ export interface NalezenaLobby {
 }
 
 interface Ucastnik {
-  steamId: string;
+  hracId: string;
   jeHost: boolean;
 }
 
 export function najdiLobby(ucastnici: Ucastnik[], inzeraty: LobbyInzerat[]): NalezenaLobby | null {
-  const host = ucastnici.find((u) => u.jeHost)?.steamId ?? null;
-  const vsichni = new Set(ucastnici.map((u) => u.steamId));
+  const host = ucastnici.find((u) => u.jeHost)?.hracId ?? null;
+  const vsichni = new Set(ucastnici.map((u) => u.hracId));
 
   const pravidla: Array<[DuvodShody, (l: LobbyInzerat) => boolean]> = [
-    ["host_hostuje", (l) => host !== null && l.hostSteamId === host],
-    ["host_sedi", (l) => host !== null && l.clenoveSteamIds.includes(host)],
-    ["ucastnik_hostuje", (l) => l.hostSteamId !== null && vsichni.has(l.hostSteamId)],
-    ["ucastnik_sedi", (l) => l.clenoveSteamIds.some((s) => vsichni.has(s))],
+    ["host_hostuje", (l) => host !== null && l.hostHracId === host],
+    ["host_sedi", (l) => host !== null && l.clenoveHraci.includes(host)],
+    ["ucastnik_hostuje", (l) => l.hostHracId !== null && vsichni.has(l.hostHracId)],
+    ["ucastnik_sedi", (l) => l.clenoveHraci.some((s) => vsichni.has(s))],
   ];
   for (const [duvod, sedi] of pravidla) {
     const lobby = inzeraty.find(sedi);

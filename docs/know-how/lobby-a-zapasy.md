@@ -14,9 +14,12 @@ Hra má veřejný seznam otevřených lobby (Worlds Edge; klíče nastavení a
 stránkování jsou zmapované v
 [`../analyza-automaticke-hledani-lobby.md`](../analyza-automaticke-hledani-lobby.md)).
 `src/matches/hledaniLobby.ts` — `najdiLobby(ucastnici, inzeraty)`: název
-ani heslo nejsou podmínkou (hosté si je nastaví jinak), rozhodují **Steam ID
-lidí v lobby**, od nejjistějšího: host zápasu ji hostuje, host v ní sedí,
-hostuje ji jiný účastník, sedí v ní jiný účastník. Seznam je jeden pro
+ani heslo nejsou podmínkou (hosté si je nastaví jinak), rozhodují **hráči
+webu v lobby** (`hracId`, od 16. 9. 2026 přeložení z `profile_id` přes
+`player.we_profil_id` — funguje pro Steam i Microsoft hráče stejně, viz
+`docs/prehled-praci-a-zameru.md` §3.57), od nejjistějšího: host zápasu ji
+hostuje, host v ní sedí, hostuje ji jiný účastník, sedí v ní jiný účastník.
+Seznam je jeden pro
 všechny zápasy (~100 kB), dotazy se sdružují. Web si lobby hledá sám
 (`HledaniLobby`, hostovi rychleji po kliknutí na „Spustit hru“), fáze
 `lobby` / `hraje_se` se drží v paměti serveru (`realtime/fazeLobby.ts`,

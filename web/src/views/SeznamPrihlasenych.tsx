@@ -1,6 +1,6 @@
 import { jeAi } from "../../../src/shared/aiHraci.js";
 import { Potvrzeni } from "./Potvrzeni.js";
-import type { SteamVlastnictvi } from "../../../src/shared/types.js";
+import type { Vlastnictvi } from "../../../src/shared/types.js";
 import ikonaHryUrl from "../assets/aoe2-ikona.png";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { jeAktivni, nabidnoutJsemTu, nabidnoutZvonek, zbyvaMs } from "../../../src/shared/aktivita.js";
@@ -11,6 +11,8 @@ import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
 import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani, animovanyPosunY } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
+import steamZnak from "../assets/ui/platforma-steam.webp";
+import xboxZnak from "../assets/ui/platforma-xbox.webp";
 
 interface Props {
   prihlaseni: PlayerView[];
@@ -20,17 +22,17 @@ interface Props {
    */
   skladani?: Skladani;
   /**
-   * Jen pro režii: kdo právě hraje běžící zápas (steamId → číslo zápasu).
+   * Jen pro režii: kdo právě hraje běžící zápas (hracId → číslo zápasu).
    * U takového hráče je v posledním sloupci ikona zkřížených mečů, ať Rob
    * nesestavuje další zápas z lidí, kteří jsou zrovna ve hře.
    */
   vZapase?: Map<string, number>;
-  /** Steam ID přihlášeného návštěvníka: jen on u sebe vidí „Jsem tu!“. */
+  /** Klíč přihlášeného návštěvníka (`hracId`): jen on u sebe vidí „Jsem tu!“. */
   ja?: string | null;
   /** Debug mód: kliknutí na ikonu hry cykluje její stavy, ať jde vidět všechny. */
   ladeni?: boolean;
   /** Admin: zvonek u hráče — svolání do radnice (poplach ve hráčově prohlížeči). */
-  onSvolat?: (steamId: string) => void;
+  onSvolat?: (hracId: string) => void;
   /** Admin: super zvonek v hlavičce — svolá naráz všechny, u kterých je zvonek. */
   onSvolatVsechny?: () => void;
   /** Lhůta aktivity večera; z ní se počítá práh pro „Jsem tu!“. */
@@ -255,24 +257,24 @@ const ZVONEK_CHLADNUTI_MS = 5_000;
 export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = false, onJsemTu, ladeni, onSvolat, onSvolatVsechny, lhutaMinut, onZkusebniSvolani }: Props) {
   // Debug: klik na ikonu hry přepne její stav jen v prohlížeči (má → nelze
   // ověřit → nemá), ať jde všechny tři podoby vidět bez cizího účtu.
-  const [prepsaneHry, setPrepsaneHry] = useState<Record<string, SteamVlastnictvi>>({});
-  const stavHry = (h: PlayerView): SteamVlastnictvi | null => prepsaneHry[h.steamId] ?? h.steamHra ?? null;
+  const [prepsaneHry, setPrepsaneHry] = useState<Record<string, Vlastnictvi>>({});
+  const stavHry = (h: PlayerView): Vlastnictvi | null => prepsaneHry[h.hracId] ?? h.hraVlastnictvi ?? null;
   const dalsiStavHry = (h: PlayerView) => {
-    const poradi: SteamVlastnictvi[] = ["ma", "soukromy", "nema"];
+    const poradi: Vlastnictvi[] = ["ma", "soukromy", "nema"];
     const ted = stavHry(h) ?? "nema";
-    setPrepsaneHry((p) => ({ ...p, [h.steamId]: poradi[(poradi.indexOf(ted) + 1) % poradi.length]! }));
+    setPrepsaneHry((p) => ({ ...p, [h.hracId]: poradi[(poradi.indexOf(ted) + 1) % poradi.length]! }));
   };
   // „Hráč nemá hru“: + zůstává klikací, ale napřed se ptá.
   const [potvrditVyber, setPotvrditVyber] = useState<PlayerView | null>(null);
   // Zvonek jde použít jednou za pět vteřin (po tu dobu je zašedlý); admin
   // sám ho slyší jen na desetinu své hlasitosti, ať ví, že odešel.
   const [zvonekChladne, setZvonekChladne] = useState<Record<string, boolean>>({});
-  const zazvon = (steamId: string) => {
-    if (!onSvolat || zvonekChladne[steamId]) return;
-    onSvolat(steamId);
+  const zazvon = (hracId: string) => {
+    if (!onSvolat || zvonekChladne[hracId]) return;
+    onSvolat(hracId);
     prehraj(poplachUrl, hlasitost() * 0.3);
-    setZvonekChladne((z) => ({ ...z, [steamId]: true }));
-    setTimeout(() => setZvonekChladne((z) => ({ ...z, [steamId]: false })), ZVONEK_CHLADNUTI_MS);
+    setZvonekChladne((z) => ({ ...z, [hracId]: true }));
+    setTimeout(() => setZvonekChladne((z) => ({ ...z, [hracId]: false })), ZVONEK_CHLADNUTI_MS);
   };
   // Super zvonek: totéž pro všechny, u kterých by byl zvonek; chladne pod
   // klíčem „*“. Ukáže se, jen když má koho svolat.
@@ -293,7 +295,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   useEffect(() => {
     const srovnej = (e: Event) => {
       const id = jmenoPodKurzorem(e, tabulka.current);
-      setNahled(id ? (prihlaseni.find((h) => h.steamId === id) ?? null) : null);
+      setNahled(id ? (prihlaseni.find((h) => h.hracId === id) ?? null) : null);
     };
     window.addEventListener(KONEC_TAHU, srovnej);
     return () => window.removeEventListener(KONEC_TAHU, srovnej);
@@ -302,7 +304,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   // konec za všech okolností — i za seřazeného seznamu.
   const ted = useTed();
   const radky = podleAktivity(skladani ? serad(skladani.nevybrani, razeni) : prihlaseni, ted);
-  usePresouvani(tabulka, radky.map((h) => h.steamId).join(","));
+  usePresouvani(tabulka, radky.map((h) => h.hracId).join(","));
 
   const prepni = (sloupec: Sloupec) => {
     const nove = dalsiRazeni(razeni, sloupec);
@@ -352,7 +354,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
             );
           })}
           <th className="jsem-tu-bunka" aria-label="Návrat mezi aktivní">
-            {onSvolatVsechny && prihlaseni.some((h) => h.steamId !== ja && !jeAi(h.steamId) && nabidnoutZvonek(h.aktivniDo, ted, lhutaMinut)) ? (
+            {onSvolatVsechny && prihlaseni.some((h) => h.hracId !== ja && !jeAi(h.hracId) && nabidnoutZvonek(h.aktivniDo, ted, lhutaMinut)) ? (
               <button
                 type="button"
                 className={zvonekChladne["*"] ? "zvonek super-zvonek chladne" : "zvonek super-zvonek"}
@@ -373,17 +375,17 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
       </thead>
       <tbody>
         {radky.map((hrac) => {
-          const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
+          const jmeno = hrac.alias ?? hrac.platformaJmeno ?? hrac.hracId;
           // Přetahovat jde jen ve vlastním pořadí — v seřazeném seznamu by
           // přesun nebyl vidět.
           // Aktivní se řadí jen mezi aktivními, spící mezi spícími — v seznamu
           // jsou tak stejně oddělení, ať je pořadí v paměti jakékoli.
-          const tah = skladani && !razeni ? tahani("nevybrani", hrac.steamId, jeAktivni(hrac.aktivniDo, ted) ? "aktivni" : "spici") : {};
+          const tah = skladani && !razeni ? tahani("nevybrani", hrac.hracId, jeAktivni(hrac.aktivniDo, ted) ? "aktivni" : "spici") : {};
           return (
             <tr
-              key={hrac.steamId}
-              data-hrac={hrac.steamId}
-              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.steamId === ja ? "muj-radek" : ""]
+              key={hrac.hracId}
+              data-hrac={hrac.hracId}
+              className={[jeAktivni(hrac.aktivniDo, ted) ? "" : "spici", hrac.hracId === ja ? "muj-radek" : ""]
                 .filter(Boolean)
                 .join(" ")}
               {...tah}
@@ -395,7 +397,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                     className={stavHry(hrac) === "nema" ? "plus bez-hry" : "plus"}
                     aria-label={`Vybrat hráče ${jmeno}`}
                     title={stavHry(hrac) === "nema" ? "Hráč nemá hru na svém účtě" : "Vybrat hráče"}
-                    onClick={() => (stavHry(hrac) === "nema" ? setPotvrditVyber(hrac) : skladani.vyber(hrac.steamId))}
+                    onClick={() => (stavHry(hrac) === "nema" ? setPotvrditVyber(hrac) : skladani.vyber(hrac.hracId))}
                   >
                     +
                   </button>
@@ -404,7 +406,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
               <td>
                 <span
                   className="jmeno-hrace"
-                  data-jmeno-hrace={hrac.steamId}
+                  data-jmeno-hrace={hrac.hracId}
                   data-testid="jmeno-hrace"
                   onPointerEnter={() => {
                     if (!tahneSe()) setNahled(hrac);
@@ -417,8 +419,27 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   tabIndex={0}
                 >
                   {hrac.avatarUrl ? <img src={hrac.avatarUrl} alt="" width={28} height={28} /> : null}
+                  {/* Odkud se ten člověk hlásí. Starší snímky stavu pole
+                      `platforma` nenesou — pak se neukazuje nic, protože
+                      hádat je horší než mlčet. */}
+                  {hrac.platforma ? (
+                    <img
+                      className="znak-platformy"
+                      src={hrac.platforma === "xbox" ? xboxZnak : steamZnak}
+                      alt={hrac.platforma === "xbox" ? "Microsoft" : "Steam"}
+                      title={hrac.platforma === "xbox" ? "Přihlášen Microsoft účtem" : "Přihlášen přes Steam"}
+                      width={96}
+                      height={96}
+                      data-testid="znak-platformy"
+                    />
+                  ) : null}
                   {jmeno}
-                  <OdznakHry stav={stavHry(hrac)} onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined} />
+                  <OdznakHry
+                    stav={stavHry(hrac)}
+                    platforma={hrac.platforma}
+                    hranoV={hrac.hraHranoV}
+                    onKlik={ladeni ? () => dalsiStavHry(hrac) : undefined}
+                  />
                 </span>
                 {hrac.statyChyba ? (
                   <span className="varovani" title={hrac.statyChyba}>
@@ -429,14 +450,16 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
               <td>{formatElo(hrac.elo1v1)}</td>
               <td>{formatElo(hrac.eloNejvyssi)}</td>
               <td>{formatOdehrano(hrac.odehranoHer)}</td>
-              {/* Bez avataru se Steamu nikdo neptal (chybí klíč, nebo dotaz
-                  selhal) — pak NULL neznamená skrytý profil, ale „nevíme“. */}
+              {/* Bez avataru se platformy nikdo nezeptal (chybí Steam klíč,
+                  nebo dotaz selhal) — pak NULL neznamená skrytý profil, ale
+                  „nevíme“. Microsoft hodiny nezveřejňuje vůbec, tam je pomlčka
+                  správná odpověď i s avatarem. */}
               <td>{hrac.steamHodiny !== null || hrac.avatarUrl ? formatHodiny(hrac.steamHodiny) : "—"}</td>
               {/* Tlačítko a značka mají vlastní sloupce. V jednom by šířka
                   tlačítka odsouvala odpočet a ten by se řádek od řádku
                   neshodoval. */}
               <td className="jsem-tu-bunka">
-                {ja === hrac.steamId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted, lhutaMinut) ? (
+                {ja === hrac.hracId && onJsemTu && nabidnoutJsemTu(hrac.aktivniDo, ted, lhutaMinut) ? (
                   <button
                     type="button"
                     className="jsem-tu"
@@ -451,14 +474,14 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   >
                     Jsem tu!
                   </button>
-                ) : onSvolat && ja !== hrac.steamId && !jeAi(hrac.steamId) && nabidnoutZvonek(hrac.aktivniDo, ted, lhutaMinut) ? (
+                ) : onSvolat && ja !== hrac.hracId && !jeAi(hrac.hracId) && nabidnoutZvonek(hrac.aktivniDo, ted, lhutaMinut) ? (
                   <button
                     type="button"
-                    className={zvonekChladne[hrac.steamId] ? "zvonek chladne" : "zvonek"}
+                    className={zvonekChladne[hrac.hracId] ? "zvonek chladne" : "zvonek"}
                     aria-label={`Svolat hráče ${jmeno}`}
                     title="Svolat do radnice — hráči zazvoní poplach"
-                    disabled={Boolean(zvonekChladne[hrac.steamId])}
-                    onClick={() => zazvon(hrac.steamId)}
+                    disabled={Boolean(zvonekChladne[hrac.hracId])}
+                    onClick={() => zazvon(hrac.hracId)}
                   >
                     🔔
                   </button>
@@ -469,7 +492,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
                   <ZnackaHrace
                     hrac={hrac}
                     ted={ted}
-                    vlastni={ja !== null && ja !== undefined && ja === hrac.steamId}
+                    vlastni={ja !== null && ja !== undefined && ja === hrac.hracId}
                     admin={admin}
                     vZapase={vZapase}
                   />
@@ -495,7 +518,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
           potvrdit="Přidat"
           zrusit="Zrušit"
           onPotvrdit={() => {
-            skladani.vyber(potvrditVyber.steamId);
+            skladani.vyber(potvrditVyber.hracId);
             setPotvrditVyber(null);
           }}
           onZrusit={() => setPotvrditVyber(null)}
@@ -569,7 +592,7 @@ function ZnackaHrace({
   admin: boolean;
   vZapase?: Map<string, number>;
 }) {
-  const zapas = vZapase?.get(hrac.steamId);
+  const zapas = vZapase?.get(hrac.hracId);
   if (zapas !== undefined) {
     // Meče zaberou místo odpočtu i „Zzz“, tak lhůta zůstává aspoň v bublině:
     // kdo v zápase usnul, má tam i jak dlouho. Kdo je v lhůtě, nic navíc.
@@ -608,22 +631,90 @@ function ZnackaHrace({
 }
 
 /**
- * Ikona hry vedle jména: potvrzení ze Steamu, že hráč AoE2 má. Skrytá knihovna
- * dostane siluetu s tichým otazníkem (ověřit nejde), veřejná knihovna bez hry
- * ikonu s vykřičníkem — to je stav, na který má Rob přijít před večerem, ne
- * až v lobby. Dokud Steam nic neřekl (bez klíče, před prvním stažením), nic.
+ * Co která platforma o hře doopravdy říká. Ptáme se jinde a hráči se to má
+ * říct tak, jak to je: u Steamu rozhoduje knihovna účtu, u Microsoftu herní
+ * historie Xbox profilu (vlastnictví se u něj zjistit nedá, viz návrh §6.1).
+ * Společné oběma je „tuhle hru na tomhle účtu hrál“ — a přesně tohle ikona
+ * znamená.
  */
-function OdznakHry({ stav, onKlik }: { stav: SteamVlastnictvi | null; onKlik?: () => void }) {
+const POPIS_HRY: Record<"steam" | "xbox", Record<Vlastnictvi, string>> = {
+  steam: {
+    ma: "Hru má v knihovně na Steamu",
+    soukromy: "Knihovna na Steamu je skrytá, ověřit hru nejde",
+    nema: "V knihovně na Steamu tahle hra není",
+  },
+  xbox: {
+    ma: "Hru na tomhle Microsoft účtu hrál",
+    soukromy: "Herní historie na Microsoft účtu je skrytá, ověřit hru nejde",
+    nema: "V herní historii Microsoft účtu tahle hra není",
+  },
+};
+
+/**
+ * Kolik dní od posledního spuštění se ještě počítá jako „hrál nedávno“ u
+ * Microsoft hráčů — jediné místo, které tenhle práh zná. Vlastnictví hry se
+ * u Steamu ověřuje doopravdy (knihovna), takže se tam čerstvost neřeší vůbec;
+ * proto tenhle konstantní práh žije tady na frontendu, ne v databázi vedle
+ * `hraHranoV` — do databáze patří fakt (datum), práh je jen dnešní úsudek nad
+ * ním a časem se může změnit.
+ */
+const CERSTVOST_DNI = 14;
+const CERSTVOST_MS = CERSTVOST_DNI * 24 * 60 * 60 * 1000;
+
+function jeCerstve(hranoV: string): boolean {
+  return Date.now() - new Date(hranoV).getTime() <= CERSTVOST_MS;
+}
+
+/**
+ * Text bubliny pro Microsoft hráče se stavem `ma` rozlišuje čerstvost jen
+ * tehdy, když datum vůbec známe. Bez data (starší přihlášení, řádek se ještě
+ * neobnovil) zůstává dnešní věta — netvrdí ani „nedávno“, ani „dávno“, což by
+ * bylo lež stejně jako to druhé.
+ */
+function popisHry(stav: Vlastnictvi, platforma: "steam" | "xbox", hranoV?: string | null): string {
+  if (platforma === "xbox" && stav === "ma" && hranoV) {
+    return jeCerstve(hranoV)
+      ? "Hráč hrál v posledních dvou týdnech"
+      : "Hráč hrál před více jak dvěma týdny";
+  }
+  return POPIS_HRY[platforma][stav];
+}
+
+/**
+ * Ikona hry vedle jména: potvrzení, že hráč AoE2 na svém účtu má (Steam) nebo
+ * hrál (Microsoft). Skryté soukromí dostane siluetu s tichým otazníkem
+ * (ověřit nejde), účet bez hry ikonu s vykřičníkem — to je stav, na který má
+ * Rob přijít před večerem, ne až v lobby. Dokud platforma nic neřekla (bez
+ * Steam klíče, před prvním stažením), nic.
+ *
+ * U Microsoft hráče se stavem „má“ navíc řeší čerstvost: „hrál na tomhle
+ * účtu“ bez data by mátlo hráče, který mezitím přišel o Game Pass — přesně
+ * tenhle případ nahlásil uživatel. Vzhled dostává vlastní třídu `davno`, ne
+ * `soukromy`: jde o dvě různé věci (nevíme × víme, ale je to staré) a sdílet
+ * jejich vzhled by je pletlo. Ikona i tak zůstává siluetou, jak chtěl
+ * uživatel — jen s odlišným (teplejším) odstínem a beze značky, protože
+ * otazník by tu tvrdil, že to je totéž jako skryté soukromí.
+ */
+function OdznakHry({
+  stav,
+  platforma,
+  hranoV,
+  onKlik,
+}: {
+  stav: Vlastnictvi | null;
+  /** Chybí u starších snímků a zástupných hráčů; Steam je ta cesta, co tu byla vždycky. */
+  platforma?: "steam" | "xbox";
+  /** ISO datum posledního spuštění; jen Microsoft, jen když ho Xbox vrátil. */
+  hranoV?: string | null;
+  onKlik?: () => void;
+}) {
   if (stav === null) return null;
-  const popis =
-    stav === "ma"
-      ? "Hru má na Steamu"
-      : stav === "soukromy"
-        ? "Soukromý Steam profil, nejde ověřit, že hru má"
-        : "Hra na Steam účtu nebyla nalezena";
+  const plat = platforma === "xbox" ? "xbox" : "steam";
+  const davno = plat === "xbox" && stav === "ma" && !!hranoV && !jeCerstve(hranoV);
+  const popis = popisHry(stav, plat, hranoV);
   return (
     <span
-      className={`odznak-hry ${stav} napoveda${onKlik ? " klikaci" : ""}`}
+      className={`odznak-hry ${stav}${davno ? " davno" : ""} napoveda${onKlik ? " klikaci" : ""}`}
       role="img"
       aria-label={popis}
       data-napoveda={popis}

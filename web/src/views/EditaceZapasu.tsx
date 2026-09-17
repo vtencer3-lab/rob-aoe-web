@@ -40,7 +40,7 @@ export function chybyNavrhu(n: Navrh): { sestava: string | null; hraci: string[]
   for (const s of n.sestava) podleBarvy.set(s.barva, [...(podleBarvy.get(s.barva) ?? []), s]);
   const hraci: string[] = [];
   for (const skupina of podleBarvy.values()) {
-    if (new Set(skupina.map((s) => s.tym)).size > 1) hraci.push(...skupina.map((s) => s.steamId));
+    if (new Set(skupina.map((s) => s.tym)).size > 1) hraci.push(...skupina.map((s) => s.hracId));
   }
   return { sestava, hraci };
 }
@@ -67,7 +67,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
   // Stav při otevření — kam se vrátí „zahodit všechny změny“.
   const pocatek = useRef<Navrh>({
     nastaveni: doplnNastaveni(zapas.nastaveni as Partial<Nastaveni>),
-    sestava: zapas.ucastnici.map((u) => ({ steamId: u.steamId, tym: u.tym, barva: u.barva, civ: u.civ ?? null })),
+    sestava: zapas.ucastnici.map((u) => ({ hracId: u.hracId, tym: u.tym, barva: u.barva, civ: u.civ ?? null })),
   });
   const [navrh, setNavrh] = useState<Navrh>(pocatek.current);
   // Co server naposledy dostal — ať se neposílá totéž dvakrát.
@@ -100,7 +100,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
     for (const r of el.querySelectorAll(".chyba")) r.classList.remove("chyba");
     if (!chyby || chyby.sestava === null) return;
     el.querySelector('[data-testid="souhrn-sestavy"]')?.classList.add("chyba");
-    for (const steamId of chyby.hraci) el.querySelector(`[data-tah-id="${steamId}"]`)?.classList.add("chyba");
+    for (const hracId of chyby.hraci) el.querySelector(`[data-tah-id="${hracId}"]`)?.classList.add("chyba");
   }, [chyby, navrh]);
 
   /** Uložit / klik vedle: platný návrh hned propsat a zavřít, neplatný zvýraznit a zůstat. */

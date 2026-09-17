@@ -25,6 +25,18 @@ describe("prectiNastaveniLobby", () => {
   it("Extreme (−1) u AI obtížnosti projde", () => {
     expect(prectiNastaveniLobby({ aiObtiznost: -1 })).toEqual({ aiObtiznost: -1 });
   });
+
+  // Rychlost 0 (Slow) do 17. 9. 2026 API vůbec neznalo — validace pouštěla
+  // jen 1, 2 a 3, takže Slow (0) tiše propadl stejně jako kdysi vítězství výš.
+  it("přijme všechny čtyři rychlosti, které hra zná (Slow 0 nově)", () => {
+    for (const r of [0, 1, 2, 3]) {
+      expect(prectiNastaveniLobby({ rychlost: r })).toEqual({ rychlost: r });
+    }
+  });
+
+  it("vymyšlenou rychlost nepustí", () => {
+    expect(prectiNastaveniLobby({ rychlost: 9, populace: 200 })).toEqual({ populace: 200 });
+  });
 });
 
 // Pre-lobby: okno „Create Lobby“ ve hře. Stejná pravidla jako u zbytku —

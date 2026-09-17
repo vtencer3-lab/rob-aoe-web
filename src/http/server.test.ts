@@ -1,6 +1,34 @@
 import { VERZE } from "../shared/verze.js";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildServer } from "./server.js";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+// Příznak musí být v odpovědi i pro nepřihlášeného — právě ten vidí přihlašovací
+// tlačítko a podle příznaku se rozhoduje, jestli má otevřít okno s volbou
+// platformy, nebo vést rovnou na Steam. Nepřihlášená větev `/api/me` se do
+// databáze nedívá, takže se dá ověřit tady, v hermetické sadě.
+describe("/api/me — příznak Microsoft cesty", () => {
+  it("bez MS_CLIENT_ID a MS_CLIENT_SECRET hlásí, že Microsoft cesta není", async () => {
+    vi.stubEnv("MS_CLIENT_ID", undefined);
+    vi.stubEnv("MS_CLIENT_SECRET", undefined);
+    const app = buildServer();
+    const res = await app.inject({ method: "GET", url: "/api/me" });
+    expect(res.json()).toEqual({ hrac: null, maMicrosoft: false });
+    await app.close();
+  });
+
+  it("s oběma proměnnými hlásí, že Microsoft cesta je", async () => {
+    vi.stubEnv("MS_CLIENT_ID", "test-client-id");
+    vi.stubEnv("MS_CLIENT_SECRET", "test-client-secret");
+    const app = buildServer();
+    const res = await app.inject({ method: "GET", url: "/api/me" });
+    expect(res.json()).toEqual({ hrac: null, maMicrosoft: true });
+    await app.close();
+  });
+});
 
 describe("server", () => {
   it("odpovídá na /api/health", async () => {

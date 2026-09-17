@@ -2,6 +2,12 @@
 
 *Stav k 7. 9. 2026. Zdroje jsou uvedené na konci; co je ověřené naživo, je tak označené.*
 
+> **Aktualizace 16. 9. 2026:** rozpoznání hráčů v lobby dnes běží přes
+> `profile_id` / `player.we_profil_id`, ne přes Steam ID — viz
+> `docs/prehled-praci-a-zameru.md` §3.57. Zbytek dokumentu popisuje stav
+> a implementaci k 7.–9. 9. 2026, kdy web uměl jen Steam přihlášení; klíče
+> nastavení lobby v §6 tím nejsou dotčené a platí dál.
+
 ## Odpověď zkrátka
 
 **Ano, jde to.** Oficiální backend hry (Worlds Edge, stejný, ze kterého web už
@@ -146,8 +152,12 @@ hráče ne.
   Steam ID hosta, název je jen kontrola.
 - **Host založil lobby dřív, než Rob složil zápas.** Nevadí, seznam ji
   obsahuje, dokud je otevřená. První cyklus po složení ji najde.
-- **Verze z Microsoft Store.** Steam ID by v `avatars` bylo `/xboxlive/…`;
-  hráč bez Steamu se ale na web ani nepřihlásí, takže totéž omezení jako dnes.
+- **Verze z Microsoft Store.** V `avatars` je Xbox profil `/xboxlive/<hash>`,
+  ne `/steam/<steamId64>` — v době tohohle dokumentu (7. 9. 2026) se hráč bez
+  Steamu na web ani nepřihlásil, takže to nevadilo. Od 16. 9. 2026 web umí
+  i přihlášení Microsoft účtem a rozpoznání v seznamu lobby přešlo z tohohle
+  Steam ID na `profile_id` (viz `docs/prehled-praci-a-zameru.md` §3.57) —
+  `/xboxlive/…` hráče už rozpozná stejně jako `/steam/…`.
 
 ## 5. Co se tím získá navíc
 
@@ -194,7 +204,7 @@ web proto stahuje všechny stránky.
 | AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, **−1 Extreme** (ne 5, jak tu stálo do 9. 9. 2026 — ověřeno naživo 9. 9. 2026, kdy lobby s Extreme poslala `-1`; dřív ověřeno 3 a 1) |
 | Resources | `37` | 0 Standard, 1 Low, 2 Medium, 3 High, 4 Ultra High, 5 Infinite, 6 Random (ověřeno 0 a 3) |
 | Population | `28` | jen z herní nabídky: po 25 do 250, pak 300, 400, 500 (odečteno z herní nabídky 9. 9. 2026) |
-| Game Speed | `41` | 1 Slow, 2 Normal, 3 Fast |
+| Game Speed | `41` | 0 Slow, 1 Casual, 2 Normal, 3 Fast — **ověřeno naživo 17. 9. 2026** (dva nezávislé běhy přes `findAdvertisements`, 91 a poté 89 unikátních lobby: v obou hodnoty 0–3, nejčastější 2 = Normal; navíc hráč s Casual v lobby inzeroval `41 = 1`). Tabulka do 17. 9. 2026 byla posunutá o jedna a hodnotu 0 vůbec neznala — odvozená jen z pořadí v jazykovém souboru, viz `docs/prehled-praci-a-zameru.md` §4 |
 | Reveal Map | `82` | 0 Normal, 1 Explored, 2 All Visible (ověřeno; „No Fog“ jako 3 tu stálo do 9. 9. 2026, hra ho nezná) |
 | Starting Age | `0` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial, 6 Post-Imperial (ověřeno 0, 3, 6) |
 | Ending Age | `4` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial (ověřeno 0 a 4) |

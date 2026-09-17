@@ -8,9 +8,9 @@ import { buildServer } from "../server.js";
 const HRAC = "76561198000000040";
 const ROB = "76561198000000041";
 
-async function prihlasenyKlient(steamId: string, jeAdmin: boolean) {
-  await upsertPlayer(steamId, jeAdmin);
-  return { sid: await createSession(steamId) };
+async function prihlasenyKlient(hracId: string, jeAdmin: boolean) {
+  await upsertPlayer(hracId, jeAdmin);
+  return { sid: await createSession(hracId) };
 }
 
 beforeEach(async () => {

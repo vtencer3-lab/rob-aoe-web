@@ -1,9 +1,10 @@
 # Pokyny pro práci na tomhle repu
 
 Web pro komunitní večery českého AoE2 DE streamera Robdiesalota. Lidé se
-přihlásí Steamem, Rob za vysílání skládá zápasy, každý dostane instrukce na
-míru, host jednou vloží odkaz z lobby a všem — včetně Robova Spectate — z něj
-vznikne funkční odkaz.
+přihlásí Steamem nebo Microsoft účtem (hráči z Microsoft Store a Game Passu),
+Rob za vysílání skládá zápasy, každý dostane instrukce na míru, host jednou
+vloží odkaz z lobby a všem — včetně Robova Spectate — z něj vznikne funkční
+odkaz.
 
 > **Nejsi autor repa?** Tenhle soubor popisuje zvyky a **lokální prostředí
 > autora** — cesty a jména databází níž platí na jeho stroji, ne na tvém.
@@ -100,7 +101,8 @@ Testy schválně ne.
 - **`DATABASE_URL` nikdy nemíří na `rob_aoe`, když běží `npm run test:db`.**
   Ty testy volají `TRUNCATE`. Kontrola na příponu `_test` je druhá pojistka, ne
   první — první jsi ty.
-- `.env` je gitignorované a musí takové zůstat. Obsahuje Steam API klíč.
+- `.env` je gitignorované a musí takové zůstat. Obsahuje Steam API klíč
+  a Microsoft Client Secret.
 - Zkušební dveře (`/api/dev/*`) mají dva zámky: bez `DEV_PRISTUP=true` se
   routy vůbec neregistrují a i se zapnutou proměnnou odmítají obsluhovat,
   jakmile `BASE_URL` míří na `https`. Ten druhý zámek je ten, který drží —

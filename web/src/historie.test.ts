@@ -4,7 +4,7 @@ import type { SestavaVstup } from "../../src/shared/types.js";
 import { popisZmenyNastaveni, popisZmenySestavy } from "./historie.js";
 
 const jmeno = (id: string) => ({ a: "Trokner", b: "Jouki" })[id] ?? id;
-const h = (steamId: string, tym: 0 | 1 | 2, barva: 1 | 2 | 3, civ: number | null = null): SestavaVstup => ({ steamId, tym, barva, civ });
+const h = (hracId: string, tym: 0 | 1 | 2, barva: 1 | 2 | 3, civ: number | null = null): SestavaVstup => ({ hracId, tym, barva, civ });
 
 describe("popisZmenySestavy", () => {
   it("pojmenuje přidání, vyřazení, barvu, tým, civilizaci a pořadí", () => {

@@ -3,8 +3,8 @@ import { expect, it, vi } from "vitest";
 import type { PlayerView, ZapasView } from "../../../src/shared/types.js";
 import { EditaceZapasu, ODKLAD_PROPISU_MS } from "./EditaceZapasu.js";
 
-const hrac = (steamId: string, alias: string): PlayerView => ({
-  steamId, alias, steamName: null, avatarUrl: null, country: null, elo1v1: 1500, eloNejvyssi: null, odehranoHer: 10, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null,
+const hrac = (hracId: string, alias: string): PlayerView => ({
+  hracId, alias, platformaJmeno: null, avatarUrl: null, country: null, elo1v1: 1500, eloNejvyssi: null, odehranoHer: 10, steamHodiny: null, posledniZapas: null, statyStazenyV: null, statyChyba: null,
 });
 
 const zapas: ZapasView = {
@@ -19,8 +19,8 @@ const zapas: ZapasView = {
   vitez: null,
   nastaveni: { mapaId: 10895, populace: 150, aiObtiznost: 3, maxHracu: 8 },
   ucastnici: [
-    { steamId: "a", alias: "Adam", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { steamId: "b", alias: "Bára", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 1, kliknulPripojit: null },
+    { hracId: "a", alias: "Adam", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { hracId: "b", alias: "Bára", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 1, kliknulPripojit: null },
   ],
 };
 const prihlaseni = [hrac("a", "Adam"), hrac("b", "Bára"), hrac("c", "Cyril")];
@@ -98,9 +98,9 @@ it("Pre-Lobby je vnořené okno a jméno lobby se uloží po dopsání", () => {
 
 it("hráči se stejnou barvou v různých týmech se zvýrazní, nastavení lobby ne", () => {
   const konflikt = { ...zapas, ucastnici: [
-    { steamId: "a", alias: "Adam", steamName: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { steamId: "b", alias: "Bára", steamName: null, tym: 2 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 1, kliknulPripojit: null },
-    { steamId: "c", alias: "Cyril", steamName: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: false, poradi: 2, kliknulPripojit: null },
+    { hracId: "a", alias: "Adam", platformaJmeno: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { hracId: "b", alias: "Bára", platformaJmeno: null, tym: 2 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 1, kliknulPripojit: null },
+    { hracId: "c", alias: "Cyril", platformaJmeno: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: false, poradi: 2, kliknulPripojit: null },
   ], nastaveni: { maxHracu: 2, aiObtiznost: null } };
   const p = otevri({ zapas: konflikt });
   fireEvent.click(screen.getByTestId("ulozit-zapas"));

@@ -37,13 +37,13 @@ export function prectiSkladani(telo: unknown): SestavaVstup[] {
   const videne = new Set<string>();
   for (const radek of sestava) {
     if (typeof radek !== "object" || radek === null) throw new HttpError(400, "Řádek sestavy není objekt.");
-    const { steamId, tym, barva, civ } = radek as { steamId?: unknown; tym?: unknown; barva?: unknown; civ?: unknown };
-    if (typeof steamId !== "string" || steamId === "" || videne.has(steamId)) throw new HttpError(400, "Řádek sestavy nemá hráče, nebo je tam dvakrát.");
+    const { hracId, tym, barva, civ } = radek as { hracId?: unknown; tym?: unknown; barva?: unknown; civ?: unknown };
+    if (typeof hracId !== "string" || hracId === "" || videne.has(hracId)) throw new HttpError(400, "Řádek sestavy nemá hráče, nebo je tam dvakrát.");
     if (typeof tym !== "number" || !TYMY.includes(tym as Tym)) throw new HttpError(400, "Tým musí být – nebo 1 až 4.");
     if (typeof barva !== "number" || !BARVY.includes(barva as Barva)) throw new HttpError(400, "Barva musí být 1 až 8.");
     if (civ !== undefined && civ !== null && typeof civ !== "number") throw new HttpError(400, "Civilizace musí být číslo, nebo prázdná.");
-    videne.add(steamId);
-    vysledek.push({ steamId, tym: tym as Tym, barva: barva as Barva, civ: typeof civ === "number" ? civ : null });
+    videne.add(hracId);
+    vysledek.push({ hracId, tym: tym as Tym, barva: barva as Barva, civ: typeof civ === "number" ? civ : null });
   }
   return vysledek;
 }
@@ -117,11 +117,11 @@ export function registerEventRoutes(app: FastifyInstance): void {
   });
 
   // Zvonek u hráče: svolání do radnice — hráči zazvoní poplach ze hry.
-  app.post("/api/akce/:id/hraci/:steamId/svolat", async (request) => {
+  app.post("/api/akce/:id/hraci/:hracId/svolat", async (request) => {
     const admin = await requireAdmin(request);
     const akceId = requireId(request);
-    const steamId = String((request.params as { steamId?: string }).steamId ?? "");
-    if (!(await svolej(akceId, steamId, admin))) throw new HttpError(404, "Hráč v akci není.");
+    const hracId = String((request.params as { hracId?: string }).hracId ?? "");
+    if (!(await svolej(akceId, hracId, admin))) throw new HttpError(404, "Hráč v akci není.");
     await broadcastAkce();
     return { ok: true };
   });
@@ -186,7 +186,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
   });
 
   app.post("/api/akce/:id/prihlaska", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const akceId = requireId(request);
     const akce = await getAktivniAkce();
     // Skončenou akci getAktivniAkce nevrací, takže „akce běží“ a „hlásit se lze“
@@ -195,16 +195,16 @@ export function registerEventRoutes(app: FastifyInstance): void {
     if (!akce || akce.id !== akceId) {
       throw new HttpError(409, "Tahle akce neběží.");
     }
-    await signUp(akceId, steamId);
+    await signUp(akceId, hracId);
     await broadcastAkce();
     return { ok: true };
   });
 
   // „Jsem tu!“ z tabulky přihlášených: plná lhůta, ať vypršela nebo ne.
   app.post("/api/akce/:id/jsem-tu", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const akceId = requireId(request);
-    if (await obnovAktivitu(akceId, steamId)) await broadcastAkce();
+    if (await obnovAktivitu(akceId, hracId)) await broadcastAkce();
     return { ok: true };
   });
 
@@ -212,16 +212,16 @@ export function registerEventRoutes(app: FastifyInstance): void {
   // když se nic nezmění (lhůta je na stropu, nebo je puls dřív než za odstup),
   // odpověď je stejná a stav se nerozesílá.
   app.post("/api/akce/:id/aktivita", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const akceId = requireId(request);
-    if (await pulsAktivity(akceId, steamId)) await broadcastAkce();
+    if (await pulsAktivity(akceId, hracId)) await broadcastAkce();
     return { ok: true };
   });
 
   app.delete("/api/akce/:id/prihlaska", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const akceId = requireId(request);
-    await withdraw(akceId, steamId);
+    await withdraw(akceId, hracId);
     await broadcastAkce();
     return { ok: true };
   });

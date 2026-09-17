@@ -43,21 +43,21 @@ export function registerZkusebniRoutes(app: FastifyInstance): void {
     const akce = await getAktivniAkce();
     if (!akce || akce.id !== akceId) throw new HttpError(409, "Tahle akce neběží.");
 
-    const prihlaseni = new Set((await listSignups(akceId)).map((h) => h.steamId));
+    const prihlaseni = new Set((await listSignups(akceId)).map((h) => h.hracId));
     const dalsi = ZKUSEBNI_HRACI.find((z) => !prihlaseni.has(zkusebniId(z.jmeno)));
     if (!dalsi) throw new HttpError(409, `Všech ${ZKUSEBNI_HRACI.length} zkušebních hráčů už v akci je.`);
 
-    const steamId = zkusebniId(dalsi.jmeno);
-    await upsertPlayer(steamId, null);
-    await savePlayerStats(steamId, {
+    const hracId = zkusebniId(dalsi.jmeno);
+    await upsertPlayer(hracId, null);
+    await savePlayerStats(hracId, {
       alias: dalsi.jmeno,
-      steamName: dalsi.jmeno,
+      platformaJmeno: dalsi.jmeno,
       elo1v1: dalsi.elo,
       eloNejvyssi: dalsi.elo + 60,
       odehranoHer: dalsi.her,
       chyba: null,
     });
-    await signUp(akceId, steamId);
+    await signUp(akceId, hracId);
     await broadcastAkce();
     return { pridan: dalsi.jmeno };
   });

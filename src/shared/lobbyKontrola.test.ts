@@ -6,7 +6,7 @@ import type { Barva, Tym } from "./types.js";
 const HOST = "76561198014710095";
 const JA = "76561198014056480";
 
-const u = (steamId: string, tym: Tym, barva: Barva, alias: string) => ({ steamId, tym, barva, alias });
+const u = (hracId: string, tym: Tym, barva: Barva, alias: string) => ({ hracId, tym, barva, alias });
 
 /** Nastavení ze hry přesně podle výchozího očekávání (velikost pro dva). */
 const podleOcekavani = { ...VYCHOZI_NASTAVENI, velikost: 120 };
@@ -14,12 +14,12 @@ const podleOcekavani = { ...VYCHOZI_NASTAVENI, velikost: 120 };
 function lobby(cast: Partial<PoznatekLobby> = {}): PoznatekLobby {
   return {
     lobbyId: "504987862",
-    hostSteamId: HOST,
+    hostHracId: HOST,
     maHeslo: true,
     povolujeDivaky: true,
     sloty: [
-      { steamId: HOST, barva: 1, tym: 1, civ: null, pripraven: true },
-      { steamId: JA, barva: 2, tym: 0, civ: null, pripraven: true },
+      { hracId: HOST, barva: 1, tym: 1, civ: null, pripraven: true },
+      { hracId: JA, barva: 2, tym: 0, civ: null, pripraven: true },
     ],
     nastaveni: podleOcekavani,
     ...cast,
@@ -54,7 +54,7 @@ describe("zkontrolujLobby", () => {
   });
 
   it("chybějící a cizí hráče pojmenuje", () => {
-    const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ steamId: HOST, barva: 1, tym: 1, civ: null, pripraven: true }, { steamId: "cizi", barva: 3, tym: 0, civ: null, pripraven: false }] }));
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ hracId: HOST, barva: 1, tym: 1, civ: null, pripraven: true }, { hracId: "cizi", barva: 3, tym: 0, civ: null, pripraven: false }] }));
     const hraci = k.find((x) => x.klic === "hraci")!;
     expect(hraci.stav).toBe("spatne");
     expect(hraci.text).toBe("Chybí Jouki; navíc 1 cizí");
@@ -99,7 +99,7 @@ describe("zkontrolujLobby", () => {
   });
 
   it("špatná barva říká, co má být; v 1v1 tým nevadí, dokud není stejný jako soupeřův", () => {
-    const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ steamId: HOST, barva: null, tym: "?", civ: null, pripraven: true }, { steamId: JA, barva: 4, tym: 2, civ: null, pripraven: true }] }));
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ hracId: HOST, barva: null, tym: "?", civ: null, pripraven: true }, { hracId: JA, barva: 4, tym: 2, civ: null, pripraven: true }] }));
     expect(k.find((x) => x.klic === `barva:${HOST}`)!.text).toBe("Trokner má náhodnou barvu, má mít modrou");
     expect(k.find((x) => x.klic === `barva:${JA}`)!.text).toBe("Jouki má žlutou, má mít červenou");
     expect(k.find((x) => x.klic === `tym:${HOST}`)).toMatchObject({ stav: "ok", text: "Trokner: náhodný" });
@@ -107,7 +107,7 @@ describe("zkontrolujLobby", () => {
   });
 
   it("v 1v1 je chyba jen stejné číslo týmu u obou", () => {
-    const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ steamId: HOST, barva: 1, tym: 1, civ: null, pripraven: true }, { steamId: JA, barva: 2, tym: 1, civ: null, pripraven: true }] }));
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ sloty: [{ hracId: HOST, barva: 1, tym: 1, civ: null, pripraven: true }, { hracId: JA, barva: 2, tym: 1, civ: null, pripraven: true }] }));
     expect(k.find((x) => x.klic === `tym:${HOST}`)).toMatchObject({ stav: "spatne", text: /Trokner a Jouki mají oba tým 1/ });
     expect(k.find((x) => x.klic === `tym:${JA}`)!.stav).toBe("spatne");
   });
@@ -115,7 +115,7 @@ describe("zkontrolujLobby", () => {
   it("v týmové hře musí spoluhráči sdílet číslo týmu a soupeři mít jiné", () => {
     const dvaNaDva = [u(HOST, 1, 1, "Trokner"), u("b", 1, 1, "Pepa"), u(JA, 2, 2, "Jouki"), u("d", 2, 2, "Lukas")];
     const sloty = (t: Array<import("./lobbyKontrola.js").SlotLobby["tym"]>) =>
-      [HOST, "b", JA, "d"].map((steamId, i) => ({ steamId, barva: (i < 2 ? 1 : 2) as Barva, tym: t[i]!, civ: null, pripraven: true }));
+      [HOST, "b", JA, "d"].map((hracId, i) => ({ hracId, barva: (i < 2 ? 1 : 2) as Barva, tym: t[i]!, civ: null, pripraven: true }));
     const ok = zkontrolujLobby(dvaNaDva, ocekavane, lobby({ sloty: sloty([3, 3, 4, 4]) }));
     expect(ok.filter((x) => x.klic.startsWith("tym:")).every((x) => x.stav === "ok")).toBe(true);
 
@@ -128,10 +128,10 @@ describe("zkontrolujLobby", () => {
 
   it("předepsaná civilizace se porovná, libovolná se přeskočí", () => {
     const s2 = [{ ...sestava[0]!, civ: 18 }, sestava[1]!];
-    const k = zkontrolujLobby(s2, ocekavane, lobby({ sloty: [{ steamId: HOST, barva: 1, tym: 1, civ: 2, pripraven: true }, { steamId: JA, barva: 2, tym: 0, civ: null, pripraven: true }] }));
+    const k = zkontrolujLobby(s2, ocekavane, lobby({ sloty: [{ hracId: HOST, barva: 1, tym: 1, civ: 2, pripraven: true }, { hracId: JA, barva: 2, tym: 0, civ: null, pripraven: true }] }));
     expect(k.find((x) => x.klic === `civ:${HOST}`)).toMatchObject({ stav: "spatne", text: "Trokner má Franks, má mít Koreans" });
     expect(k.some((x) => x.klic === `civ:${JA}`)).toBe(false);
-    const ok = zkontrolujLobby(s2, ocekavane, lobby({ sloty: [{ steamId: HOST, barva: 1, tym: 1, civ: 18, pripraven: true }] }));
+    const ok = zkontrolujLobby(s2, ocekavane, lobby({ sloty: [{ hracId: HOST, barva: 1, tym: 1, civ: 18, pripraven: true }] }));
     expect(ok.find((x) => x.klic === `civ:${HOST}`)).toMatchObject({ stav: "ok", text: "Trokner: Koreans" });
   });
 
@@ -155,6 +155,16 @@ describe("zkontrolujLobby", () => {
     expect(t["populace"]).toBe("Populace: 150, má být 200");
     expect(t["vitezstvi"]).toBe("Victory: Standard, má být Conquest");
     expect(t["cheaty"]).toBe("Cheaty jsou povolené, mají být vypnuté");
+  });
+
+  // Hra má čtyři rychlosti (Slow, Casual, Normal, Fast), ne tři. Naživo
+  // ověřeno 17. 9. 2026 (84 lobby, hodnoty 0–3 v options[41], 2 = Normal
+  // nejčastější) — tabulka do 17. 9. 2026 mapovala 1 na „Slow“, takže hráč
+  // s Casual (options[41] = 1) dostal hlášku „Rychlost: Slow, má být Normal“.
+  it("rozezná Casual (0 Slow, 1 Casual, 2 Normal, 3 Fast)", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobby({ nastaveni: { ...podleOcekavani, rychlost: 1 } }));
+    const t = Object.fromEntries(k.map((x) => [x.klic, x.text]));
+    expect(t["rychlost"]).toBe("Rychlost: Casual, má být Normal");
   });
 
   // Další nastavení se hlásí ve své sekci; červená tam fajfku bere stejně
@@ -192,7 +202,7 @@ describe("zkontrolujLobby", () => {
       u(JA, 2, 2, "Jouki"),
       u("76561198000000002", 2, 2, "Soupeř"),
     ];
-    const sloty = coop.map((c) => ({ steamId: c.steamId, barva: c.barva, tym: c.tym, civ: null, pripraven: true }));
+    const sloty = coop.map((c) => ({ hracId: c.hracId, barva: c.barva, tym: c.tym, civ: null, pripraven: true }));
     const k = zkontrolujLobby(coop, ocekavane, lobby({ sloty, nastaveni: { ...VYCHOZI_NASTAVENI, velikost: 120 } }));
     expect(k.find((x) => x.klic === "velikost")!.stav).toBe("ok");
 
@@ -347,8 +357,8 @@ describe("barvy v 1v1", () => {
   it("špatná barva je jen upozornění", () => {
     const k = zkontrolujLobby(sestava, ocekavane, lobby({
       sloty: [
-        { steamId: HOST, barva: 5, tym: 1, civ: null, pripraven: true },
-        { steamId: JA, barva: 2, tym: 0, civ: null, pripraven: true },
+        { hracId: HOST, barva: 5, tym: 1, civ: null, pripraven: true },
+        { hracId: JA, barva: 2, tym: 0, civ: null, pripraven: true },
       ],
     }));
     expect(k.find((x) => x.klic === `barva:${HOST}`)).toMatchObject({ stav: "varovani" });
@@ -360,10 +370,10 @@ describe("barvy v 1v1", () => {
     const ctyri = [u(HOST, 1, 1, "Trokner"), u(JA, 1, 2, "Jouki"), u("A", 2, 3, "A"), u("B", 2, 4, "B")];
     const k = zkontrolujLobby(ctyri, ocekavane, lobby({
       sloty: [
-        { steamId: HOST, barva: 5, tym: 1, civ: null, pripraven: true },
-        { steamId: JA, barva: 2, tym: 1, civ: null, pripraven: true },
-        { steamId: "A", barva: 3, tym: 2, civ: null, pripraven: true },
-        { steamId: "B", barva: 4, tym: 2, civ: null, pripraven: true },
+        { hracId: HOST, barva: 5, tym: 1, civ: null, pripraven: true },
+        { hracId: JA, barva: 2, tym: 1, civ: null, pripraven: true },
+        { hracId: "A", barva: 3, tym: 2, civ: null, pripraven: true },
+        { hracId: "B", barva: 4, tym: 2, civ: null, pripraven: true },
       ],
     }));
     expect(k.find((x) => x.klic === `barva:${HOST}`)).toMatchObject({ stav: "spatne" });

@@ -2,35 +2,83 @@ import { describe, expect, it, vi } from "vitest";
 import inzeraty from "./fixtures/worldsedge-advertisements.json" with { type: "json" };
 import robova from "./fixtures/worldsedge-lobby-robdiesalot.json" with { type: "json" };
 import { deflateSync } from "node:zlib";
-import { fetchAdvertisements, parseAdvertisements, parseSloty } from "./worldsEdgeLobby.js";
+import {
+  fetchAdvertisements,
+  parseAdvertisements,
+  parseSloty,
+  prelozHrace,
+  steamIdyZAvatars,
+} from "./worldsEdgeLobby.js";
 
 describe("parseAdvertisements", () => {
-  it("převede inzerát na číslo lobby, hosta a členy podle Steam ID", () => {
+  it("převede inzerát na číslo lobby a profily hosta a členů", () => {
     const [prvni] = parseAdvertisements(inzeraty);
     expect(prvni).toMatchObject({
       lobbyId: "504953429",
-      hostSteamId: "76561198014056480",
+      hostProfilId: 101,
       nazev: "Jouki in Rage's Game",
       maHeslo: false,
       povolujeDivaky: true,
-      clenoveSteamIds: ["76561198014056480"],
+      clenoveProfily: [101],
     });
   });
 
-  it("členy bez záznamu v avatars a nesmyslné prvky přeskočí", () => {
-    const rob03 = parseAdvertisements(inzeraty).find((l) => l.nazev === "ROB-03");
+  it("po překladu na hráče webu vyjde host a členové podle Steam ID", () => {
+    const mapa = new Map([[101, "76561198014056480"]]);
+    const [prvni] = prelozHrace(parseAdvertisements(inzeraty), mapa);
+    expect(prvni).toMatchObject({
+      hostHracId: "76561198014056480",
+      clenoveHraci: ["76561198014056480"],
+    });
+  });
+
+  it("členy bez záznamu na webu a nesmyslné prvky přeskočí", () => {
+    const surove = parseAdvertisements(inzeraty);
+    const rob03 = surove.find((l) => l.nazev === "ROB-03");
     expect(rob03).toMatchObject({
       lobbyId: "504951828",
-      hostSteamId: "76561198000000072",
+      hostProfilId: 202,
       maHeslo: true,
       povolujeDivaky: false,
-      clenoveSteamIds: ["76561198000000072", "76561198000000073"],
+      // 999 nemá na webu protějšek, ale parser (hermetický) ho stejně vrátí —
+      // odfiltruje ho až prelozHrace.
+      clenoveProfily: [202, 203, 999],
+    });
+    const mapa = new Map([
+      [202, "76561198000000072"],
+      [203, "76561198000000073"],
+    ]);
+    const [prelozeny] = prelozHrace([rob03!], mapa);
+    expect(prelozeny).toMatchObject({
+      hostHracId: "76561198000000072",
+      clenoveHraci: ["76561198000000072", "76561198000000073"],
     });
   });
 
-  it("host mimo Steam (Xbox) dostane null, id jako text projde", () => {
+  it("host z Xboxu už se nezahazuje — parser vrací číslo profilu", () => {
+    // Dřív dostal null: filtr bral jen /steam/. Microsoft hráč tím byl v lobby
+    // neviditelný, i když se na web přihlásil.
     const xbox = parseAdvertisements(inzeraty).find((l) => l.nazev === "xbox host");
-    expect(xbox).toMatchObject({ lobbyId: "504951802", hostSteamId: null, clenoveSteamIds: [] });
+    expect(xbox).toMatchObject({ lobbyId: "504951802" });
+    expect(xbox?.hostProfilId).toBeTypeOf("number");
+    expect(xbox?.clenoveProfily.length).toBeGreaterThan(0);
+  });
+
+  it("překlad na hráče webu platí pro obě platformy stejně", () => {
+    const surove = parseAdvertisements(inzeraty);
+    const xbox = surove.find((l) => l.nazev === "xbox host")!;
+    const mapa = new Map([[xbox.hostProfilId!, "xbox:2535412345678901"]]);
+    const prelozene = prelozHrace(surove, mapa);
+    expect(prelozene.find((l) => l.nazev === "xbox host")).toMatchObject({
+      hostHracId: "xbox:2535412345678901",
+      clenoveHraci: ["xbox:2535412345678901"],
+    });
+  });
+
+  it("profil, který na webu není, zůstane nerozpoznaný, ne vymyšlený", () => {
+    const prelozene = prelozHrace(parseAdvertisements(inzeraty), new Map());
+    expect(prelozene.every((l) => l.hostHracId === null)).toBe(true);
+    expect(prelozene.every((l) => l.clenoveHraci.length === 0)).toBe(true);
   });
 
   it("inzerát bez id a nesmysly vynechá, celkem zbydou tři", () => {
@@ -45,7 +93,7 @@ describe("parseAdvertisements", () => {
 
   it("neplatná slotinfo a options nevyhodí, jen zůstanou prázdné", () => {
     const [l] = parseAdvertisements(inzeraty);
-    expect(l!.sloty).toEqual([]);
+    expect(l!.slotyProfily).toEqual([]);
     expect(l!.nastaveni).toBeNull();
   });
 });
@@ -56,11 +104,16 @@ describe("parseAdvertisements", () => {
 // co bylo ve hře nastavené v okamžiku snímku.
 describe("parseAdvertisements — sloty a nastavení", () => {
   const [lobby] = parseAdvertisements(robova);
+  const mapa = new Map([
+    [20087158, "76561198014710095"],
+    [15260548, "76561198014056480"],
+  ]);
+  const [prelozena] = prelozHrace([lobby!], mapa);
 
   it("rozbalí sloty: barvu z ScenarioPlayerIndex, tým z Team", () => {
-    expect(lobby!.sloty).toEqual([
-      { steamId: "76561198014710095", barva: 1, tym: 1, civ: null, pripraven: true },
-      { steamId: "76561198014056480", barva: 2, tym: 0, civ: null, pripraven: true },
+    expect(prelozena!.sloty).toEqual([
+      { hracId: "76561198014710095", barva: 1, tym: 1, civ: null, pripraven: true },
+      { hracId: "76561198014056480", barva: 2, tym: 0, civ: null, pripraven: true },
     ]);
   });
 
@@ -95,15 +148,52 @@ describe("parseAdvertisements — sloty a nastavení", () => {
       antiquity: false,
       recordGame: true,
     });
-    expect(lobby!).toMatchObject({ lobbyId: "504987862", maHeslo: false, povolujeDivaky: true, hostSteamId: "76561198014710095" });
+    expect(prelozena!).toMatchObject({ lobbyId: "504987862", maHeslo: false, povolujeDivaky: true, hostHracId: "76561198014710095" });
+  });
+});
+
+// Záložní překlad pro hráče, kterým se ještě nedoplnilo `we_profil_id`.
+// Steam ID v `avatars` je tam odjakživa a nezávisí na ničem, co si web sám
+// doplnil — proto je to záchrana, když číslo profilu chybí.
+describe("steamIdyZAvatars", () => {
+  it("vrátí Steam ID u profilů, které mají /steam/<17 číslic>", () => {
+    expect(steamIdyZAvatars(inzeraty)).toEqual(
+      new Map([
+        [101, "76561198014056480"],
+        [202, "76561198000000072"],
+        [203, "76561198000000073"],
+      ]),
+    );
+  });
+
+  it("xboxový profil do mapy nepatří — Steam ID nemá", () => {
+    expect(steamIdyZAvatars(inzeraty).has(303)).toBe(false);
+  });
+
+  it("nesmysly v avatars nevyhodí, jen se vynechají", () => {
+    expect(steamIdyZAvatars(null)).toEqual(new Map());
+    expect(steamIdyZAvatars({ avatars: "ne" })).toEqual(new Map());
+    expect(
+      steamIdyZAvatars({
+        avatars: [
+          null,
+          { profile_id: "ne", name: "/steam/76561198014056480" },
+          { profile_id: 1, name: 42 },
+          // Steam ID musí mít přesně 17 číslic; cokoliv jiného je cizí tvar.
+          { profile_id: 2, name: "/steam/123" },
+          { profile_id: 3, name: "/steam/76561198014056480x" },
+        ],
+      }),
+    ).toEqual(new Map());
   });
 });
 
 describe("fetchAdvertisements", () => {
   it("volá findAdvertisements a odpověď rozparsuje", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(inzeraty), { status: 200 }));
-    const seznam = await fetchAdvertisements(fetchImpl as unknown as typeof fetch);
+    const { inzeraty: seznam, steamIdy } = await fetchAdvertisements(fetchImpl as unknown as typeof fetch);
     expect(seznam).toHaveLength(3);
+    expect(steamIdy.get(101)).toBe("76561198014056480");
     expect(String(fetchImpl.mock.calls[0]![0])).toContain("/advertisement/findAdvertisements?title=age2&start=0");
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
@@ -111,16 +201,18 @@ describe("fetchAdvertisements", () => {
   // Endpoint dává nejvýš 100 lobby na stránku; když je jich sto, je za nimi
   // další stránka. Vaše lobby na ní klidně může být — 7. 9. 2026 se to stalo.
   it("při plné stránce stáhne i další a stejné id nezdvojí", async () => {
-    const plna = { matches: Array.from({ length: 100 }, (_, i) => ({ id: 1000 + i, host_profile_id: 0, description: "x", matchmembers: [] })), avatars: [] };
-    const zbytek = { matches: [{ id: 1099, host_profile_id: 0, description: "dup", matchmembers: [] }, { id: 2000, host_profile_id: 0, description: "posledni", matchmembers: [] }], avatars: [] };
+    const plna = { matches: Array.from({ length: 100 }, (_, i) => ({ id: 1000 + i, host_profile_id: 0, description: "x", matchmembers: [] })), avatars: [{ profile_id: 1, name: "/steam/76561198000000001" }] };
+    const zbytek = { matches: [{ id: 1099, host_profile_id: 0, description: "dup", matchmembers: [] }, { id: 2000, host_profile_id: 0, description: "posledni", matchmembers: [] }], avatars: [{ profile_id: 2, name: "/steam/76561198000000002" }] };
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(new Response(JSON.stringify(plna), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify(zbytek), { status: 200 }));
-    const seznam = await fetchAdvertisements(fetchImpl as unknown as typeof fetch);
+    const { inzeraty: seznam, steamIdy } = await fetchAdvertisements(fetchImpl as unknown as typeof fetch);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(String(fetchImpl.mock.calls[1]![0])).toContain("start=100");
     expect(seznam).toHaveLength(101);
+    // Avatars jsou na každé stránce vlastní; záložní mapa musí nést obě.
+    expect(steamIdy).toEqual(new Map([[1, "76561198000000001"], [2, "76561198000000002"]]));
   });
 
   it("neúspěšná odpověď vyhodí chybu se stavovým kódem", async () => {
@@ -145,10 +237,9 @@ function zabalSloty(sloty: unknown[]): string {
 
 describe("parseSloty s AI", () => {
   it("AI pozná podle stavu slotu a vrátí ji zvlášť od lidí", () => {
-    const steam = new Map([[15260548, "76561198014056480"]]);
-    const { lide, ai } = parseSloty(zabalSloty(SLOTY_S_AI), steam);
+    const { lide, ai } = parseSloty(zabalSloty(SLOTY_S_AI));
 
-    expect(lide.map((s) => s.steamId)).toEqual(["76561198014056480"]);
+    expect(lide.map((s) => s.profilId)).toEqual([15260548]);
     expect(ai).toHaveLength(2);
   });
 
@@ -156,14 +247,14 @@ describe("parseSloty s AI", () => {
     const sAi = [
       { "profileInfo.id": -1, isReady: 0, status: 2, metaData: "IkJBRUFBQUF4QlFBQUFEWTFOVE0zQVFBQUFEQUtBQUFBTkRJNU5EazJOekk1TlJNQUFBQlRZMlZ1WVhKcGIxQnNZWGxsY2tsdVpHVjRDZ0FBQURReU9UUTVOamN5T1RVRUFBQUFWR1ZoYlFFQUFBQTIi" },
     ];
-    const { ai } = parseSloty(zabalSloty(sAi), new Map());
+    const { ai } = parseSloty(zabalSloty(sAi));
     // Ve vzorku měla AI náhodnou barvu (ScenarioPlayerIndex −1) a tým „?“.
     expect(ai[0]).toMatchObject({ barva: null, tym: "?" });
   });
 
   it("prázdný slot není ani člověk, ani AI", () => {
     const prazdne = [{ "profileInfo.id": -1, isReady: 0, status: 1, metaData: "IkFBPT0i" }];
-    const { lide, ai } = parseSloty(zabalSloty(prazdne), new Map());
+    const { lide, ai } = parseSloty(zabalSloty(prazdne));
     expect(lide).toHaveLength(0);
     expect(ai).toHaveLength(0);
   });

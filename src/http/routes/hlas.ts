@@ -33,12 +33,12 @@ export function registerHlasRoutes(app: FastifyInstance): void {
     const udalost: HlasUdalost = {
       zapasId,
       kdo,
-      jmeno: mluvci?.alias ?? mluvci?.steamName ?? "Admin",
+      jmeno: mluvci?.alias ?? mluvci?.platformaJmeno ?? "Admin",
       sezeni,
       poradi,
       konec,
       data,
-      prijemci: nacteny.ucastnici.map((u) => u.steamId),
+      prijemci: nacteny.ucastnici.map((u) => u.hracId),
       ...(mime ? { mime } : {}),
     };
     hlasHub.publish(KANAL_AKCE, udalost);

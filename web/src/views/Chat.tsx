@@ -99,7 +99,7 @@ function OdznakTwitch({ role }: { role: "broadcaster" | "moderator" }) {
 }
 
 function tridaAutora(z: ZpravaView): string {
-  if (z.jeAdmin) return `autor admin ${ADMIN_BARVY[z.steamId] ?? "admin-jiny"}`;
+  if (z.jeAdmin) return `autor admin ${ADMIN_BARVY[z.hracId] ?? "admin-jiny"}`;
   return z.barva === null ? "autor" : `autor barva-${z.barva}`;
 }
 
@@ -149,9 +149,9 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
   const zpravy = (zapas.zpravy ?? []).map((z) => {
     const kdo = prepsanyAutor[z.id];
     if (!kdo) return z;
-    if (ADMIN_JMENA[kdo]) return { ...z, steamId: kdo, jmeno: ADMIN_JMENA[kdo]!, jeAdmin: true, barva: null, tym: null };
-    const hrac = zapas.ucastnici.find((u) => u.steamId === kdo);
-    return hrac ? { ...z, steamId: kdo, jmeno: jmenoHrace(hrac), jeAdmin: false, barva: hrac.barva, tym: hrac.tym } : z;
+    if (ADMIN_JMENA[kdo]) return { ...z, hracId: kdo, jmeno: ADMIN_JMENA[kdo]!, jeAdmin: true, barva: null, tym: null };
+    const hrac = zapas.ucastnici.find((u) => u.hracId === kdo);
+    return hrac ? { ...z, hracId: kdo, jmeno: jmenoHrace(hrac), jeAdmin: false, barva: hrac.barva, tym: hrac.tym } : z;
   });
   const posledniId = zpravy.at(-1)?.id ?? 0;
   const novychPocet = zpravy.filter((z) => z.id > posledniVidene.current).length;
@@ -347,7 +347,7 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
       if (!["Shift", "Control", "Alt", "Meta"].includes(e.key)) setAc(null);
     }
     if (e.key === "ArrowUp" && text === "" && upravovana === null && onUpravit) {
-      const moje = [...zpravy].reverse().find((z) => z.steamId === ja);
+      const moje = [...zpravy].reverse().find((z) => z.hracId === ja);
       if (!moje) return;
       e.preventDefault();
       setUpravovana(moje.id);
@@ -448,8 +448,8 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
           >
             {zpravy.length === 0 ? <li className="prazdno">Zatím ticho. Napiš první.</li> : null}
             {zpravy.map((z) => {
-              const role = z.jeAdmin ? TWITCH_ROLE[z.steamId] : undefined;
-              const tridy = ["zprava", z.steamId === ja ? "moje" : "", upravovana === z.id ? "upravuje-se" : "", blika === z.id ? "blika" : ""].filter(Boolean).join(" ");
+              const role = z.jeAdmin ? TWITCH_ROLE[z.hracId] : undefined;
+              const tridy = ["zprava", z.hracId === ja ? "moje" : "", upravovana === z.id ? "upravuje-se" : "", blika === z.id ? "blika" : ""].filter(Boolean).join(" ");
               return (
                 <Fragment key={z.id}>
                   {prvniNova === z.id ? (
@@ -507,7 +507,7 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
                           </option>
                         ))}
                         {zapas.ucastnici.map((u) => (
-                          <option key={u.steamId} value={u.steamId}>
+                          <option key={u.hracId} value={u.hracId}>
                             {jmenoHrace(u)}
                           </option>
                         ))}

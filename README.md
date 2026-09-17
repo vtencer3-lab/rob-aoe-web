@@ -3,8 +3,9 @@
 ## K čemu to je
 
 Web pro přihlašování na Robovy komunitní custom hry v Age of Empires II: Definitive
-Edition — nahrazuje ruční hlášení na Discordu ověřenými Steam údaji a dává Robovi
-spolehlivé tlačítko Spectate do každé lobby. Podrobný návrh a zdůvodnění je v
+Edition — nahrazuje ruční hlášení na Discordu ověřeným herním účtem (Steam nebo
+Microsoft) a dává Robovi spolehlivé tlačítko Spectate do každé lobby. Podrobný
+návrh a zdůvodnění je v
 [`docs/superpowers/specs/2026-09-03-aoe2-komunitni-hry-web-design.md`](docs/superpowers/specs/2026-09-03-aoe2-komunitni-hry-web-design.md).
 
 Jestli k repu přispíváš (nebo tě sem poslal někdo s Claude Code), začni
@@ -26,6 +27,10 @@ v [`docs/prehled-praci-a-zameru.md`](docs/prehled-praci-a-zameru.md).
 - Node.js 24 nebo novější.
 - PostgreSQL (vyvíjeno a testováno na verzi 17).
 - Bezplatný Steam Web API klíč z <https://steamcommunity.com/dev/apikey>.
+- Volitelně registraci aplikace na <https://entra.microsoft.com> (App
+  registrations, typ účtů „Personal Microsoft accounts only“), pokud chceš
+  vedle Steamu i přihlášení Microsoft účtem — bez ní web funguje jen se
+  Steamem, nic se nerozbije.
 
 ## Rozjetí
 
@@ -91,15 +96,26 @@ další přihlášený režii převezme.
 Vyplněné `ADMIN_STEAM_ID` má vždycky přednost a `ADMIN_BOOTSTRAP` přebije, takže
 zapsáním Robova ID se prvnímu adminovi práva při jeho dalším přihlášení odeberou.
 
+**Web má dvě přihlašovací cesty, ne jednu.** Vedle Steamu jde přihlásit i
+Microsoft účtem — pro hráče, kteří mají AoE2 DE z Microsoft Store nebo Game
+Passu a Steam vůbec nemají. Obě cesty vedou na stejný web, žádná není náhrada
+druhé. Klíč hráče v databázi (`hrac_id`) proto není vždycky Steam ID: u Steam
+hráčů je to 64bitové Steam ID (`76561198…`), u Microsoft hráčů `xbox:<xuid>`
+a u zkušebních hráčů (viz sekce „Zkouška večera nasucho“ níž) `test:<jméno>`.
+`ADMIN_STEAM_ID` bere obě skutečné podoby klíče — jméno proměnné zůstalo,
+protože je stejné ve všech třech nasazeních v Coolify a přejmenovat by ji
+šlo jen se současnou úpravou tam, bez jakéhokoliv přínosu pro chování webu.
+
 | Proměnná | K čemu | Co se stane bez ní |
 |---|---|---|
 | `DATABASE_URL` | připojení k PostgreSQL, tvar `postgres://uzivatel:heslo@host:port/databaze` | server se nespustí — „Chybí proměnná prostředí DATABASE_URL." |
-| `ADMIN_STEAM_ID` | Steam ID (64bitové) účtů s režií; víc účtů oddělených čárkou (`id1,id2`), typicky Rob a ten, kdo mu web spravuje | server se nespustí, dokud nezapneš `ADMIN_BOOTSTRAP`. (Kdyby se spustil, přihlašovací routa by při každém přihlášení zapsala `je_admin = false` a Robovi by uprostřed večera zmizel panel režie bez jediné chybové hlášky.) |
-| `ADMIN_BOOTSTRAP` | pojistka pro provoz bez Robova Steam ID: `true` udělá admina z prvního přihlášeného, dokud žádný admin neexistuje | nic — je to náhrada za `ADMIN_STEAM_ID`, ne doplněk. Když je vyplněné `ADMIN_STEAM_ID`, tahle proměnná se ignoruje |
-| `BASE_URL` | veřejná adresa, na které web lidem běží, včetně případné cesty (`https://jouki.cz/aoe`); musí přesně sedět s tím, kam se prohlížeč skutečně dívá. Z cesty se odvozuje přesměrování po přihlášení, cesta i název cookie | použije se `http://localhost:3000`. Steam se po ověření vrací na `BASE_URL` a návrat na jinou adresu se odmítne, takže přihlášení přes tunel bez správné hodnoty neprojde |
+| `ADMIN_STEAM_ID` | ID účtů s režií (`hrac_id`: Steam ID nebo `xbox:<xuid>`); víc účtů oddělených čárkou (`id1,id2`), typicky Rob a ten, kdo mu web spravuje | server se nespustí, dokud nezapneš `ADMIN_BOOTSTRAP`. (Kdyby se spustil, přihlašovací routa by při každém přihlášení zapsala `je_admin = false` a Robovi by uprostřed večera zmizel panel režie bez jediné chybové hlášky.) |
+| `ADMIN_BOOTSTRAP` | pojistka pro provoz bez Robova ID: `true` udělá admina z prvního přihlášeného, dokud žádný admin neexistuje | nic — je to náhrada za `ADMIN_STEAM_ID`, ne doplněk. Když je vyplněné `ADMIN_STEAM_ID`, tahle proměnná se ignoruje |
+| `BASE_URL` | veřejná adresa, na které web lidem běží, včetně případné cesty (`https://jouki.cz/aoe`); musí přesně sedět s tím, kam se prohlížeč skutečně dívá. Z cesty se odvozuje přesměrování po přihlášení, cesta i název cookie | použije se `http://localhost:3000`. Steam i Microsoft se po ověření vrací na `BASE_URL` a návrat na jinou adresu se odmítne, takže přihlášení přes tunel bez správné hodnoty neprojde |
 | `PORT` | port, na kterém backend poslouchá (výchozí 3000) | použije se výchozí hodnota 3000 |
 | `HOST` | adresa, na které backend poslouchá (výchozí `127.0.0.1`, v Docker kontejneru `0.0.0.0`) | poslouchá jen na loopbacku, ven vede vždy tunel nebo proxy |
 | `STEAM_API_KEY` | bezplatný klíč z <https://steamcommunity.com/dev/apikey>, kterým se web ptá Steamu na odehrané hodiny v AoE2 a na profilovou přezdívku s avatarem | neukážou se odehrané hodiny ani avatary. ELO, herní přezdívka i počet odehraných her chodí ze žebříčku Worlds Edge, který žádný klíč nechce, takže zbytek funguje beze změny. Bez klíče se Steamu vůbec neptáme, takže se nikomu u jména neobjeví varování o chybě |
+| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | Client ID a Client Secret z registrace aplikace na <https://entra.microsoft.com> (App registrations, „Personal Microsoft accounts only“), kterými web ověřuje Microsoft přihlášení | Microsoft routy se vůbec nezaregistrují a tlačítko „Přihlásit se Microsoft účtem“ se na přihlašovací obrazovce neukáže. Steam přihlášení funguje beze změny |
 | `LOG_LEVEL` | úroveň serverového logu (výchozí `info`) | loguje se od `info` výš |
 
 ## Testy
@@ -125,7 +141,8 @@ Celý večer se dá projít samotný, na jednom stroji. Zapni v `.env`
 - `http://localhost:3000/api/dev/login?jmeno=Pepa` — přihlásí tě jako ten
   zkušební hráč, bez Steamu. Otevři si to v anonymním okně a máš vedle sebe
   dvě různé role naráz: v jednom okně režii, ve druhém obrazovku hráče nebo
-  hosta. Zpátky k sobě se dostaneš přes `?steamId=<tvoje Steam ID>`.
+  hosta. Zpátky k sobě se dostaneš přes `?hracId=<tvůj hrac_id>` (Steam ID,
+  nebo `xbox:<xuid>` u Microsoft účtu).
 
 Na stránce je k tomu dole čárkovaná lišta „Zkušební režim“, takže se adresy
 nemusí psát ručně.
@@ -154,7 +171,7 @@ o panel režie a v UI se k němu nedostane. Cesta zpátky vede jen přes databá
 jedním příkazem (dvěma by mezistav bez admina stihl proletět ven přes SSE):
 
 ```
-UPDATE player SET je_admin = (steam_id = '76561198xxxxxxxxx');
+UPDATE player SET je_admin = (hrac_id = '76561198xxxxxxxxx');
 ```
 
 **Dveře se samy zavírají.** Zapnutá proměnná nestačí: obě routy odmítají
@@ -205,8 +222,9 @@ cloudflared tunnel --url http://localhost:3000
 ```
 
 Vezmi vypsanou adresu `https://…trycloudflare.com`, nastav ji do `BASE_URL` a
-server restartuj — Steam se po přihlášení vrací právě na `BASE_URL`, takže se
-to musí shodovat. **Při restartu nastav znovu i všechny ostatní proměnné**
+server restartuj — Steam i Microsoft se po přihlášení vrací právě na
+`BASE_URL`, takže se to musí shodovat. **Při restartu nastav znovu i všechny
+ostatní proměnné**
 (hlavně `ADMIN_STEAM_ID`), jinak se server odmítne spustit:
 
 ```
@@ -328,9 +346,11 @@ lobby — liší se jen prvním číslem za `aoe2de://`. Ukládá se jen čísel
 lobby a oba odkazy se z něj odvozují (viz `src/aoe/lobbyUri.ts`).
 
 Číslo lobby si web umí najít sám: backend hry vydává seznam všech otevřených
-veřejných lobby včetně Steam ID hosta a sedících hráčů
+veřejných lobby včetně profilového čísla hosta a sedících hráčů
 (`src/external/worldsEdgeLobby.ts`), a `id` v něm je přesně číslo z odkazu
-(ověřeno 7. 9. 2026). Web hledá podle Steam ID lidí ze zápasu, ne podle názvu
+(ověřeno 7. 9. 2026). Rozpoznání běží přes číslo profilu ve Worlds Edge
+(`player.we_profil_id`), ne přes Steam ID — to platí stejně pro Steam
+i Microsoft hráče. Web hledá podle profilů lidí ze zápasu, ne podle názvu
 lobby — ten si hosté často nastaví jinak. Lobby musí být **veřejná**, jinak
 v seznamu není; to je i podmínka pro diváky, takže to nic nového nevyžaduje.
 Podrobně v [`docs/analyza-automaticke-hledani-lobby.md`](docs/analyza-automaticke-hledani-lobby.md).
@@ -343,8 +363,10 @@ Podrobně v [`docs/analyza-automaticke-hledani-lobby.md`](docs/analyza-automatic
 - Předaná režie na zkušebním účtu přežije zavření zkušebních dveří, takže
   vystavení ven tě může o panel režie připravit — viz konec sekce „Zkouška
   večera nasucho“. Vyplněné `ADMIN_STEAM_ID` tuhle díru zavírá celou.
-- Chování na verzi hry z Microsoft Store / Xbox aplikace není ověřené — nikdo
-  z týmu tuhle verzi nemá k dispozici na otestování.
+- Chování odkazu `aoe2de://` na verzi hry z Microsoft Store / Xbox aplikace
+  není ověřené — nikdo z týmu tuhle verzi nemá k dispozici na otestování.
+  Přihlášení Microsoft účtem samo o sobě ověřené je, včetně živého provozu —
+  viz `docs/prehled-praci-a-zameru.md` §4.
 - URL helper AoE2 DE (`AOEURLHelper.exe`), který odkazy `aoe2de://` zpracovává,
   je hlášeně nespolehlivý, pokud hráč v dané herní relaci ještě nebyl v lobby
   prohlížeči. Proto je na kontrolní obrazovce vždy vidět i název lobby a číslo

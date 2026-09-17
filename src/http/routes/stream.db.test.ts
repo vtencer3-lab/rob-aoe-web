@@ -324,10 +324,10 @@ it("cizímu divákovi neodteče ve streamu heslo ani číslo lobby", async () =>
   const akce = await createAkce("večer");
 
   const hraci = ["76561198000000081", "76561198000000082"];
-  for (const [i, steamId] of hraci.entries()) {
-    await upsertPlayer(steamId, false);
-    await savePlayerStats(steamId, { alias: `Hrac${i}`, odehranoHer: i * 10, chyba: null });
-    await signUp(akce.id, steamId);
+  for (const [i, hracId] of hraci.entries()) {
+    await upsertPlayer(hracId, false);
+    await savePlayerStats(hracId, { alias: `Hrac${i}`, odehranoHer: i * 10, chyba: null });
+    await signUp(akce.id, hracId);
   }
   const zapas = await createZapas(akce.id, sestavaKazdyProtiKazdemu(hraci));
   await setLobbyId(zapas.id, "234230181");
@@ -368,10 +368,10 @@ it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu div�
   const robSid = await createSession(rob);
 
   const hraci = ["76561198000000081", "76561198000000082"];
-  for (const [i, steamId] of hraci.entries()) {
-    await upsertPlayer(steamId, false);
-    await savePlayerStats(steamId, { alias: `Hrac${i}`, odehranoHer: i * 10, chyba: null });
-    await signUp(akce.id, steamId);
+  for (const [i, hracId] of hraci.entries()) {
+    await upsertPlayer(hracId, false);
+    await savePlayerStats(hracId, { alias: `Hrac${i}`, odehranoHer: i * 10, chyba: null });
+    await signUp(akce.id, hracId);
   }
   const zapas = await createZapas(akce.id, sestavaKazdyProtiKazdemu(hraci));
   await setLobbyId(zapas.id, "234230181");

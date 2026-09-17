@@ -325,7 +325,7 @@ header h1 {
 /* Tlačítka se kreslí v CSS, ne z obrázku: zůstanou ostrá v každé velikosti
    a nepotřebují devítidílný řez. Zlaté je hlavní akce, tmavé je všechno
    ostatní. Obojí má nahoře světlou hranu a dole stín, jako ražený kov. */
-a.tlacitko, .cta, button.vytvorit, button.plus {
+a.tlacitko, button.tlacitko, .cta, button.vytvorit, button.plus {
   display: inline-block;
   background: linear-gradient(#e2c47c, #c99a35 45%, #9d7420);
   color: #23150a;
@@ -345,6 +345,7 @@ a.tlacitko, .cta, button.vytvorit, button.plus {
 /* Specifičtější než `button:hover:enabled` níž — jinak by zlaté tlačítko při
    najetí zhnědlo do barvy běžných tlačítek. */
 a.tlacitko:hover, .cta:hover,
+button.tlacitko:hover:enabled,
 button.vytvorit:hover:enabled, button.plus:hover:enabled {
   /* Barva textu musí být řečená i tady: obecné pravidlo pro odkazy pod
      kurzorem je zesvětluje, a zlaté tlačítko je odkaz — nápis pak zbělal. */
@@ -375,7 +376,7 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
 button.bez-vzhledu { all: unset; cursor: pointer; }
 
 button:not(.vysledek):not(.kopirovatelne):not(.jmeno):not(.razeni):not(.volba):not(:where(.bez-vzhledu)):not(.polozka):not(.odpoved-na),
-a.tlacitko, .cta:not(.spectate) {
+a.tlacitko, button.tlacitko, .cta:not(.spectate) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -466,6 +467,12 @@ main > .prazdno::after {
 .odznak-hry { position: relative; display: inline-block; margin-left: 0.35rem; vertical-align: middle; line-height: 0; cursor: help; }
 .odznak-hry img, .seznam > tbody > tr > td .jmeno-hrace .odznak-hry img { width: 28px; height: 28px; border: none; box-shadow: none; border-radius: 0; display: block; }
 .odznak-hry.soukromy img { filter: grayscale(1) brightness(0.45); opacity: 0.55; }
+/* Microsoft hráč, který hru hrál, ale ne v posledních dvou týdnech (Game Pass
+   mezitím mohl vypršet — přesně tenhle případ web dřív tvrdil špatně).
+   Vlastní odstín schválně, ne `soukromy`: sdílet vzhled by spletlo „nevíme“
+   (skryté soukromí) s „víme, ale je to staré“ — dvě různé věci. Sépiový tón
+   místo čistě šedé připomíná zašlou fotografii, ne otazník. */
+.odznak-hry.davno img { filter: grayscale(0.7) sepia(0.45) brightness(0.55); opacity: 0.6; }
 .odznak-hry .znacka {
   position: absolute; right: -0.35rem; bottom: -0.3rem;
   font-size: 0.8rem; line-height: 1; font-weight: 700;
@@ -483,7 +490,7 @@ main > .prazdno::after {
 /* Rám panelu je devítidílný obrázek (`nastroje/grafika/devitidil.py`): rohy
    se nekreslí znovu, strany se opakují. Výplň drží `background-clip:
    padding-box`, aby tmavé dřevo nevykukovalo zpod průhledných rohů rámu. */
-.karta, .zapas, .host, .sprava-akce, .zalozeni-akce, .panel-prihlaseni {
+.karta, .zapas, .host, .sprava-akce, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
   border-radius: 0;
@@ -517,6 +524,24 @@ main > .prazdno::after {
      v pozadí, aby lícovala s rámem (viz výš). */
   box-shadow: 0 12px 38px rgba(0, 0, 0, 0.6);
 }
+/* Podmínky a soukromí jsou souvislý text, ne karta se skóre — dostanou víc
+   vnitřního odstupu než těsné `.karta`/`.zapas`, ale rám i dřevo mají stejné. */
+.pravni-stranka { padding: 1rem 1.4rem 1.6rem; max-width: 46rem; margin-left: auto; margin-right: auto; }
+.pravni-stranka h1 { text-align: center; }
+.pravni-stranka h2 { font-size: 1.15rem; margin-top: 1.6rem; }
+.pravni-stranka ul { padding-left: 1.2rem; }
+.pravni-stranka li { margin: 0.5rem 0; }
+.pravni-stranka-zvyrazneni {
+  border: 1px solid var(--zlato-tmave);
+  /* `--zlato` s průhledností přes color-mix, ne rozepsané RGB — stejná
+     technika jako `.chat .autor.admin` o kus níž. */
+  background: color-mix(in srgb, var(--zlato) 10%, transparent);
+  border-radius: 4px;
+  padding: 0.8rem 1rem;
+}
+.pravni-stranka-zvyrazneni code { color: var(--zlato-svetle); }
+.pravni-stranka-zmeneno { margin-top: 2rem; color: var(--tlumene); font-size: 0.85rem; }
+.pravni-stranka-zpet { text-align: center; }
 .karta .hero, .host .hero {
   border-radius: 2px;
   padding: 1.1rem;
@@ -534,6 +559,8 @@ main > .prazdno::after {
 }
 .karta .hero strong, .host .hero strong { font-family: "Cinzel", Georgia, serif; }
 .karta .hero strong { display: block; font-size: 2rem; text-transform: uppercase; }
+/* Drobný popisek platformy vedle barvy a týmu; barvu nese samo pozadí heroa. */
+.karta .hero .platforma { display: block; margin-top: 0.3rem; font-size: 0.75rem; opacity: 0.85; }
 .karta.barva-1 .hero, .host.barva-1 .hero { background: var(--b1); }
 .karta.barva-2 .hero, .host.barva-2 .hero { background: var(--b2); }
 .karta.barva-3 .hero, .host.barva-3 .hero { background: var(--b3); }
@@ -644,7 +671,7 @@ h2.nadpis-akce::after {
    běžné nastavování, tak stojí v modálním okně — okolí ztmavne a kliknutí
    vedle (nebo Escape) ho zavře. */
 .hlavicka-akce .prelobby-tlacitko { margin-left: auto; }
-.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); }
+.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); transition: background 280ms ease; }
 .prelobby-okno {
   width: min(34rem, 100%);
   max-height: calc(100vh - 4rem);
@@ -690,6 +717,142 @@ h2.nadpis-akce::after {
 .prelobby-okno input[readonly] { color: var(--akcent); font-weight: 700; }
 .prelobby-dvojice { display: flex; gap: 1.4rem; }
 .prelobby-okno label.zaskrtavaci { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+/* Okno volby platformy: dvě cesty vedle sebe, na úzké obrazovce pod sebe. */
+/* Přihlašovací okno je proti ostatním modálům širší: nese dva erby vedle sebe,
+   ne formulář. Šířku přebíjí jen ono — `.prelobby-okno` sdílí sedm dalších oken. */
+.prihlaseni-okno { width: min(54rem, 100%); }
+.prihlaseni-okno h1 { margin: 0; text-align: center; font-size: 1.9rem; }
+/* Táž ozdoba, jakou má prázdný stav pod nadpisem; okno tím patří ke zbytku webu. */
+.prihlaseni-okno h1::after {
+  content: "";
+  display: block;
+  width: 21rem;
+  max-width: 100%;
+  height: 1.37rem;
+  margin: 0.9rem auto 0;
+  background: url(./assets/ui/oddelovac.webp) center / 100% 100% no-repeat;
+}
+
+.prihlaseni-volby {
+  /* Odsazení ustupuje na nízkém okně: při pevných 50 px přeroste obsah
+     maximální výšku desky a naskočí posuvník. Svisle je to `padding`, ne
+     `margin`: světelný kužel štít přesahuje a jako absolutně umístěný prvek
+     se počítá do rolovatelné plochy desky — padding ho udrží uvnitř. */
+  margin-inline: clamp(1rem, 4vw, 50px);
+  padding-block: clamp(1.25rem, 4vh, 3rem);
+  display: flex;
+  /* Vedle sebe, nikdy pod sebou: štít se radši zmenší, než aby se dvojice
+     rozpadla na sloupec. Proto `nowrap` a smrštitelný základ níž.
+     Mezera i šířka jsou v procentech tohohle okna, ne ve `vw` — `vw` měří
+     obrazovku, ne modál, takže na širokém displeji nafoukla štíty přes jeho
+     šířku a zalomila je. */
+  flex-wrap: nowrap;
+  gap: clamp(1.5rem, 6vw, 12rem);
+  justify-content: center;
+  align-items: center;
+}
+.prihlaseni-volby a {
+  display: flex;
+  position: relative;
+  /* Základ 256 px, ale smrštitelný: na úzkém okně se štít zmenší místo zalomení.
+     Strop podle výšky okna je tu proto, že štít je čtverec — bez něj by na
+     nízké obrazovce přerostl desku na výšku a přinesl posuvník. */
+  flex: 0 1 min(256px, 34vh);
+  min-width: 0;
+  /* Odkaz s obrázkem si nesmí vzít reliéf ražené destičky (grafika.md §7). */
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--zlato-svetle);
+}
+.prihlaseni-volby img {
+  position: relative;
+  z-index: 1;
+  /* Soubor je 512 px, na obrazovce nejvýš 256. Obrázek vykreslený přesně
+     v cílové velikosti se při systémovém zvětšení (150 % ve Windows) nebo na
+     displeji s vysokou hustotou roztáhne a rozmaže — proto se posílá
+     dvojnásobek a zmenšuje se až tady. Clamp dole drží dvojici vedle sebe
+     i na úzkém mobilu. */
+  width: 100%;
+  height: auto;
+}
+.prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
+  transform: scale(1.06);
+}
+
+/* Reflektor. Jakmile se vybírá, okolí couvne do stínu a na vybraný erb dopadne
+   světlo. Skutečný kruh ztmavení se středem přesně na erbu by potřeboval měřit
+   jeho polohu v JavaScriptu; tohle dělá totéž bez měření a přežije změnu okna.
+
+   Přechod patří na `filter` u všech erbů, ne jen na záři: bez něj ztmavení
+   skočí naráz a celé to vypadá jako bliknutí, ne jako rozsvícení. */
+/* Tlumení sedí na obrázku, ne na odkazu. `filter` na rodiči totiž zakládá
+   vlastní vykreslovací kontext a tím odřízne `mix-blend-mode` světelného
+   kuželu od pozadí desky — soft light by neměl s čím míchat a spadl by na
+   obyčejnou bílou placku. */
+.prihlaseni-volby a img {
+  transition: filter 280ms ease, transform 120ms ease;
+}
+.prihlaseni-volby:hover a img, .prihlaseni-volby:focus-within a img {
+  filter: brightness(0.34) saturate(0.5);
+}
+
+/* Světelný kužel. `aspect-ratio` místo `inset`: rámeček odkazu nemusí být
+   čtverec a `inset` by z kruhu udělal elipsu. Střed je nad polovinou výšky,
+   protože štít má špičku dole — těžiště kresby leží výš než střed rámečku. */
+.prihlaseni-volby a::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 140%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  /* Za štítem, ne přes něj: světlo dopadá na desku a erb na něm stojí.
+     Nad štítem by ho jen zamlžilo. */
+  z-index: 0;
+  /* Soft light místo prosté bílé: zlato zesvětlí, aniž by zešedlo, a tmavé
+     dřevo pod ním zůstane dřevem. Nejsilnější je uprostřed a k okraji mizí,
+     takže hrana kruhu není vidět. */
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.33), rgba(255, 255, 255, 0.12) 45%, transparent 72%);
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  /* Záře nesmí brát kliknutí ani hover, jinak by si erb bral pozornost sám. */
+  pointer-events: none;
+}
+/* Až za tlumením: stejná váha, takže o vybraném erbu rozhoduje pořadí. */
+.prihlaseni-volby a:hover img, .prihlaseni-volby a:focus-visible img {
+  filter: brightness(1.15);
+}
+.prihlaseni-volby a:hover::before, .prihlaseni-volby a:focus-visible::before {
+  opacity: 1;
+}
+
+/* Couvne i okolí, ne jen druhý erb — jinak reflektor svítí do rozsvícené
+   místnosti. Nadpis se ztlumí, deska dostane stín od krajů dovnitř. */
+.prihlaseni-okno h1 {
+  transition: filter 280ms ease;
+}
+.prihlaseni-okno:has(.prihlaseni-volby a:hover) h1,
+.prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) h1 {
+  filter: brightness(0.5);
+}
+.prihlaseni-okno {
+  transition: box-shadow 280ms ease;
+}
+.prihlaseni-okno:has(.prihlaseni-volby a:hover),
+.prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) {
+  box-shadow: inset 0 0 12rem 2rem rgba(0, 0, 0, 0.55);
+}
+/* Setmít se musí celá obrazovka, ne jen deska: reflektor nad osvětlenou
+   scénou není reflektor. Zatmívací vrstva pod oknem je na to jediné místo,
+   které sahá až k okrajům. */
+.prelobby-stin:has(.prihlaseni-volby a:hover),
+.prelobby-stin:has(.prihlaseni-volby a:focus-visible) {
+  background: rgba(2, 1, 0, 0.93);
+}
 .skladani .sestava {
   list-style: none;
   padding: 0;
@@ -1259,13 +1422,23 @@ button.odebrat:hover { color: var(--chyba); }
 .zahlavi-sekce { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .zahlavi-sekce h3 { margin: 0 0 0.3rem; font-size: 1.15rem; }
 .zahlavi-sekce .fajfka { font-size: 2.2rem; line-height: 1; font-weight: 700; color: var(--ok); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
-.sekce-krok.finale { border-color: rgba(168, 196, 124, 0.55); }
-.sekce-krok.finale h3 { color: var(--ok-svetle); font-size: 1.4rem; }
 .sekce-krok .zahlavi-sekce { justify-content: center; position: relative; }
 .sekce-krok .zahlavi-sekce .fajfka { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .sekce-krok .hostovi { justify-content: center; }
 .sekce-krok .hostovi .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .sekce-kontrola .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+/* Verdikt kontroly lobby nahoře v panelu (uživatel 17. 9. 2026): červená,
+   dokud něco nesedí, zelená, jakmile sedí všechno — nikdy obojí a nikdy dole
+   pod výpisem, kam by ho host na streamu musel odrolovat. Barva jede
+   z existující palety (--ok-svetle/--chyba), žádná nová. Sedí za tlačítkem
+   „Zkontrolovat lobby“, ne hned za záhlavím: mluví o výpisu pod sebou, tak
+   má být k němu blíž než k záhlaví (uživatel 17. 9. 2026, doplnění) — proto
+   výraznější mezera nahoře (odstup od tlačítka) a malá dole (drží nadpis u
+   seznamu). */
+.verdikt-lobby { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.9rem 0 0.35rem; font-family: "Cinzel", Georgia, serif; font-size: 1.75rem; font-weight: 700; text-align: center; }
+.verdikt-lobby.v-poradku { color: var(--ok-svetle); }
+.verdikt-lobby.k-oprave { color: var(--chyba); }
+.verdikt-lobby .znak-verdiktu { font-size: 2.2rem; line-height: 1; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
 button.odebrat-zapas { color: var(--tlumene); }
 button.odebrat-zapas:hover { color: var(--chyba); }
 .hledani-lobby .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
@@ -1423,7 +1596,7 @@ h2 input.nazev-akce-pole {
 h2 .nazev-akce-mira {
   display: block;
   visibility: hidden;
-  white-space: pre;
+  white-space: pre-line;
   min-width: 6ch;
   /* Pole si nad text drží pevnou rezervu (naměřeno 10-11 px, nezávisle na
      délce — nejspíš místo pro kurzor). Bez ní se text v poli odroloval a
@@ -1589,6 +1762,10 @@ h2 input.nazev-akce-pole {
 .seznam > tbody > tr > td { vertical-align: middle; }
 .seznam > tbody > tr > td .jmeno-hrace { cursor: help; display: flex; align-items: center; gap: 0.5rem; }
 .seznam > tbody > tr > td .jmeno-hrace img { width: 28px; height: 28px; border-radius: 2px; flex: none; border: 1px solid var(--zlato-tmave); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+/* Znak platformy není portrét: menší, bez rámečku a bez zaoblení, aby vedle
+   avatara nevypadal jako druhá tvář. Soubor je 96 px kvůli systémovému
+   zvětšení, na obrazovce jich je osmnáct. */
+.seznam > tbody > tr > td .jmeno-hrace img.znak-platformy { width: 18px; height: 18px; border: none; border-radius: 0; box-shadow: none; opacity: 0.92; }
 
 /* Tažený řádek „v ruce“: jede s kurzorem, nad ostatními, se stínem. Ostatní
    řádky se na nové místo posouvají animací (tahani.ts, FLIP). */
@@ -2013,6 +2190,9 @@ body.bez-scrollu { overflow: hidden; }
 .nastaveni-uzivatele .radek-nastaveni > span:first-child { color: var(--tlumene); }
 /* Kroužek (i) za popiskem: bublina .napoveda bez prodlevy. */
 .nastaveni-uzivatele .info { display: inline-flex; align-items: center; justify-content: center; width: 1.05rem; height: 1.05rem; margin-left: 0.4rem; border: 1px solid var(--zlato-tmave); border-radius: 50%; font-family: Georgia, serif; font-size: 0.7rem; font-style: italic; color: var(--zlato); cursor: help; vertical-align: 0.1rem; }
+.nastaveni-uzivatele .zkouska-mikrofonu { display: flex; align-items: center; gap: 0.7rem; margin: -0.3rem 0 0.8rem; }
+.nastaveni-uzivatele .zkouska-mikrofonu button { padding: 0.2rem 0.7rem; font-size: 0.8rem; }
+.nastaveni-uzivatele .zkouska-mikrofonu small { color: var(--tlumene); font-size: 0.78rem; }
 .nastaveni-uzivatele .info::after { right: auto; left: 50%; transform: translateX(-50%); white-space: normal; width: 16rem; font-size: 0.85rem; text-align: center; }
 .nastaveni-uzivatele .radek-nastaveni small { grid-column: 2 / -1; color: var(--tlumene); }
 .nastaveni-uzivatele input[type="range"] { --podil: 70%; width: 100%; height: 1.4rem; margin: 0; padding: 0; border: 0; border-radius: 0.5rem; box-shadow: none; appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }

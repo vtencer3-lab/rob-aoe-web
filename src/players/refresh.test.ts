@@ -10,6 +10,8 @@ const ZEBRICEK = {
   odehranoHer: 512,
   zebricky: [],
   posledniZapas: new Date("2026-08-30T10:00:00Z"),
+  profil: "/steam/76561198000000001",
+  profilId: 123456,
 };
 
 function depsSe(prepis: Partial<RefreshDeps> = {}) {
@@ -65,9 +67,9 @@ describe("refreshPlayerStats", () => {
       alias: "TenceR",
       elo1v1: 1847,
       odehranoHer: 512,
-      steamName: "Vlasta",
+      platformaJmeno: "Vlasta",
       steamHodiny: 1230,
-      steamHra: "ma",
+      hraVlastnictvi: "ma",
       chyba: null,
     });
   });
@@ -76,7 +78,7 @@ describe("refreshPlayerStats", () => {
     const { deps, ulozeno } = depsSe({ nactiHru: vi.fn(async () => ({ hodiny: null, vlastnictvi: "soukromy" as const })) });
     await refreshPlayerStats("76561198000000001", deps);
     expect(ulozeno[0]!.steamHodiny).toBeNull();
-    expect(ulozeno[0]!.steamHra).toBe("soukromy");
+    expect(ulozeno[0]!.hraVlastnictvi).toBe("soukromy");
     expect(ulozeno[0]!.chyba).toBeNull();
   });
 
@@ -97,7 +99,7 @@ describe("refreshPlayerStats", () => {
       }),
     });
     await refreshPlayerStats("76561198000000001", deps);
-    expect(ulozeno[0]!.steamName).toBe("Vlasta");
+    expect(ulozeno[0]!.platformaJmeno).toBe("Vlasta");
     expect(ulozeno[0]!.steamHodiny).toBe(1230);
   });
 

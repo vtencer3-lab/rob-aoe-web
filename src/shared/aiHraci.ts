@@ -24,8 +24,8 @@ export function aiId(cislo: number): string {
   return `ai:${cislo}`;
 }
 
-export function jeAi(steamId: string): boolean {
-  return steamId.startsWith("ai:");
+export function jeAi(hracId: string): boolean {
+  return hracId.startsWith("ai:");
 }
 
 /**
@@ -34,9 +34,9 @@ export function jeAi(steamId: string): boolean {
  * součtu ELO týmu nevstupují.
  */
 export const AI_HRACI: readonly PlayerView[] = Array.from({ length: POCET_AI }, (_, i) => ({
-  steamId: aiId(i + 1),
+  hracId: aiId(i + 1),
   alias: JMENO_AI,
-  steamName: JMENO_AI,
+  platformaJmeno: JMENO_AI,
   avatarUrl: null,
   country: null,
   elo1v1: null,

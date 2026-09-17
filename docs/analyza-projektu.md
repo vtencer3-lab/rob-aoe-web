@@ -52,23 +52,29 @@ erDiagram
     player ||--o{ ucastnik : "hraje jako"
 
     player {
-        text steam_id PK
+        text hrac_id PK "Steam ID nebo xbox:<xuid>"
+        text platforma "steam nebo xbox"
+        text steam_id "jen u Steam hracu, UNIQUE"
+        text xbox_xuid "jen u Microsoft hracu, UNIQUE"
+        text xbox_gamertag
+        text we_profil_id "cislo profilu ve Worlds Edge, UNIQUE"
         text alias "z zebricku Worlds Edge"
-        text steam_name "ze Steam API"
+        text platforma_jmeno "ze Steam API nebo gamertag"
         text avatar_url
         text country
         int elo_1v1
         int elo_nejvyssi
         int odehrano_her
         timestamptz posledni_zapas
-        int steam_hodiny "null = skryty profil"
+        int steam_hodiny "null = skryty profil; Microsoft je nema"
+        text hra_vlastnictvi "ma, nema, soukromy"
         timestamptz staty_stazeny_v "cache 15 min"
         text staty_chyba
         bool je_admin "jediny zdroj prav rezie"
     }
     session {
         text sid PK "32 nahodnych bajtu hex"
-        text steam_id FK
+        text hrac_id FK
         timestamptz plati_do "30 dni"
     }
     akce {
@@ -78,7 +84,7 @@ erDiagram
     }
     prihlaska {
         int akce_id PK
-        text steam_id PK
+        text hrac_id PK
         text stav "prihlasen nebo odhlasen"
         timestamptz kdy
     }
@@ -96,7 +102,7 @@ erDiagram
     }
     ucastnik {
         int zapas_id PK
-        text steam_id PK
+        text hrac_id PK
         smallint tym "1 nebo 2"
         smallint barva "1 modra, 2 cervena"
         bool je_host

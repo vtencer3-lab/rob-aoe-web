@@ -55,14 +55,29 @@ export const config = {
   },
   port: Number(process.env["PORT"] ?? 3000),
   steamApiKey: process.env["STEAM_API_KEY"] ?? "",
+  // Gettery, ne pole: config.test.ts přepíná MS_CLIENT_ID/MS_CLIENT_SECRET
+  // přes vi.stubEnv v běhu, hodnota nastavená jednou při načtení modulu by to
+  // nezachytila.
+  get msClientId(): string {
+    return process.env["MS_CLIENT_ID"] ?? "";
+  },
+  get msClientSecret(): string {
+    return process.env["MS_CLIENT_SECRET"] ?? "";
+  },
+  /** Bez obou hodnot se Microsoft routy vůbec neregistrují a tlačítko se neukáže. */
+  get maMicrosoft(): boolean {
+    return this.msClientId !== "" && this.msClientSecret !== "";
+  },
   // Obojí se čte při každém přístupu, ne jednou při načtení modulu: startovní
   // kontrola i přihlašovací routa se tím dají otestovat podstrčeným prostředím.
   /**
-   * Steam ID účtů s režií, čárkou oddělený seznam (`id1,id2`). Dva admini
-   * jsou normální stav: Rob a ten, kdo mu web spravuje. Prázdný seznam =
-   * proměnná chybí.
+   * Klíče účtů s režií (`hracId`), čárkou oddělený seznam (`id1,id2`). Bere
+   * obojí: Steam ID i `xbox:<xuid>`. Jméno proměnné zůstalo ADMIN_STEAM_ID
+   * schválně — přejmenovat ji je riziko (viz `zkontrolujProstredi` níž) a zisk
+   * žádný. Dva admini jsou normální stav: Rob a ten, kdo mu web spravuje.
+   * Prázdný seznam = proměnná chybí.
    */
-  get adminSteamIds(): string[] {
+  get adminHracIds(): string[] {
     return (process.env["ADMIN_STEAM_ID"] ?? "")
       .split(/[\s,;]+/)
       .map((id) => id.trim())
@@ -98,7 +113,7 @@ export const config = {
  *
  * ADMIN_STEAM_ID je tu proto, že jeho chybějící hodnota se navenek nijak
  * neprojeví — jen tiše ublíží: přihlašovací routa volá při KAŽDÉM přihlášení
- * `upsertPlayer(steamId, config.adminSteamIds.includes(steamId))` a `upsertPlayer`
+ * `upsertPlayer(hracId, config.adminHracIds.includes(hracId))` a `upsertPlayer`
  * dělá `ON CONFLICT DO UPDATE SET je_admin = EXCLUDED.je_admin`. Bez proměnné
  * je porovnání vždy nepravda, takže první Robovo přihlášení po restartu jeho
  * `je_admin` přepíše na false a režie zmizí bez jediné chybové hlášky.
@@ -107,7 +122,7 @@ export const config = {
  */
 export function zkontrolujProstredi(): void {
   povinne("DATABASE_URL", "Bez připojení k databázi web neobslouží ani jeden požadavek.");
-  if (config.adminSteamIds.length === 0 && !config.adminBootstrap) {
+  if (config.adminHracIds.length === 0 && !config.adminBootstrap) {
     throw new Error(
       "Chybí proměnná prostředí ADMIN_STEAM_ID. Je to 64bitové Steam ID Robova " +
         "účtu (víc účtů oddělených čárkou). Bez něj by se Robovi při dalším přihlášení tiše odebrala práva " +
@@ -128,7 +143,7 @@ export function zkontrolujProstredi(): void {
  * než mlčet, když je režie volná.
  */
 export function varovaniProstredi(adminUzExistuje: boolean): string | null {
-  if (config.adminSteamIds.length > 0 || !config.adminBootstrap) return null;
+  if (config.adminHracIds.length > 0 || !config.adminBootstrap) return null;
   if (adminUzExistuje) return null;
   return (
     "ADMIN_BOOTSTRAP je zapnutý a admin zatím neexistuje: stane se jím první, " +
@@ -160,4 +175,17 @@ export { povinne };
 export function varovaniSteamKlic(): string | null {
   if (config.steamApiKey !== "") return null;
   return "STEAM_API_KEY chybí: avatary, jména ze Steamu ani odehrané hodiny se nestahují. Klíč je zdarma na https://steamcommunity.com/dev/apikey.";
+}
+
+/**
+ * Chybějící registrace se navenek projeví jen tím, že tlačítko není vidět —
+ * a to vypadá stejně jako záměr. Řádek při startu je jediné místo, kde se to
+ * dá poznat.
+ */
+export function varovaniMicrosoft(): string | null {
+  if (config.maMicrosoft) return null;
+  return (
+    "MS_CLIENT_ID nebo MS_CLIENT_SECRET chybí: přihlášení Microsoft účtem je " +
+    "vypnuté a tlačítko se neukáže. Registrace se zakládá na entra.microsoft.com."
+  );
 }

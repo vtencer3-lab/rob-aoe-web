@@ -17,6 +17,7 @@ import {
   POPULACE,
   PRIMERI,
   REZIMY,
+  RYCHLOSTI,
   SADY_CIVILIZACI,
   SERVERY,
   SUROVINY,
@@ -44,8 +45,10 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   else if (cislo(t["mapaId"]) !== undefined) v.mapaId = cislo(t["mapaId"])!;
   if (t["velikost"] === null) v.velikost = null;
   else if (cislo(t["velikost"]) !== undefined) v.velikost = cislo(t["velikost"])!;
+  // RYCHLOSTI je jediný zdroj hodnot, které hra opravdu nabízí — stejně
+  // jako u vitezstvi a populace níž, ať se rozsah nemusí opisovat na dvou místech.
   const r = cislo(t["rychlost"]);
-  if (r === 1 || r === 2 || r === 3) v.rychlost = r;
+  if (r !== undefined && r in RYCHLOSTI) v.rychlost = r as NastaveniLobby["rychlost"];
   // Populace jen z herní nabídky (POPULACE) — od 9. 9. 2026 je to výběr,
   // ne volné číslo, a co panel nenabízí, nemá projít ani přes API.
   const p = cislo(t["populace"]);
@@ -105,13 +108,13 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
  */
 export function registerKontrolaLobbyRoutes(app: FastifyInstance, deps: MatchDeps): void {
   app.post("/api/zapas/:id/kontrola-lobby", async (request) => {
-    const steamId = await requireUser(request);
+    const hracId = await requireUser(request);
     const zapasId = requireId(request);
     const nacteny = await getZapas(zapasId);
     if (!nacteny) throw new HttpError(404, "Takový zápas neexistuje.");
     const { zapas, ucastnici } = nacteny;
-    const hrac = await getPlayer(steamId);
-    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.steamId === steamId)) {
+    const hrac = await getPlayer(hracId);
+    if (!hrac?.jeAdmin && !ucastnici.some((u) => u.hracId === hracId)) {
       throw new HttpError(403, "V tomhle zápase nehraješ.");
     }
     if (zapas.stav !== "bezi") throw new HttpError(409, `Zápas je ve stavu „${zapas.stav}“.`);

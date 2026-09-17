@@ -25,10 +25,10 @@ beforeEach(async () => {
   // dědil hodnotu z jiného souboru.
   await getPool().query("UPDATE nastaveni_webu SET lhuta_aktivity_minut = 15");
   akceId = (await createAkce("večer")).id;
-  for (const [i, steamId] of HRACI.entries()) {
-    await upsertPlayer(steamId, false);
-    await savePlayerStats(steamId, { alias: `Hrac${i}`, odehranoHer: i * 100, chyba: null });
-    await signUp(akceId, steamId);
+  for (const [i, hracId] of HRACI.entries()) {
+    await upsertPlayer(hracId, false);
+    await savePlayerStats(hracId, { alias: `Hrac${i}`, odehranoHer: i * 100, chyba: null });
+    await signUp(akceId, hracId);
   }
 });
 
@@ -47,7 +47,7 @@ it("ukončení maže akci bez dohraného zápasu s vítězem, s výsledkem ji ne
   expect((await getPool().query("SELECT 1 FROM zapas WHERE id = $1", [rozehrany.id])).rowCount).toBe(0);
 
   const druha = (await novaAkce("s výsledkem")).id;
-  for (const steamId of HRACI.slice(0, 2)) await signUp(druha, steamId);
+  for (const hracId of HRACI.slice(0, 2)) await signUp(druha, hracId);
   const dohrany = await createZapas(druha, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   await setZapasStav(dohrany.id, "dohrano");
   await setVysledek(dohrany.id, { tym: 2 });
@@ -97,7 +97,7 @@ it("hostem je nejzkušenější hráč", async () => {
   const zapas = await createZapas(akceId, sestavaCoop(HRACI));
   const { ucastnici } = (await getZapas(zapas.id))!;
   const host = ucastnici.find((u) => u.jeHost)!;
-  expect(host.steamId).toBe(HRACI[3]);
+  expect(host.hracId).toBe(HRACI[3]);
 });
 
 it("účastníci nesou jméno ve hře", async () => {
@@ -107,12 +107,12 @@ it("účastníci nesou jméno ve hře", async () => {
 });
 
 it("odmítne hráče, který se mezitím odhlásil", async () => {
-  await getPool().query("UPDATE prihlaska SET stav = 'odhlasen' WHERE steam_id = $1", [HRACI[1]]);
+  await getPool().query("UPDATE prihlaska SET stav = 'odhlasen' WHERE hrac_id = $1", [HRACI[1]]);
   await expect(createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)))).rejects.toThrow(/není přihlášený/i);
 });
 
 it("neúspěšné vytvoření nezanechá poloviční zápas", async () => {
-  await getPool().query("UPDATE prihlaska SET stav = 'odhlasen' WHERE steam_id = $1", [HRACI[1]]);
+  await getPool().query("UPDATE prihlaska SET stav = 'odhlasen' WHERE hrac_id = $1", [HRACI[1]]);
   await expect(createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)))).rejects.toThrow();
   expect(await listZapasy(akceId)).toHaveLength(0);
 });
@@ -162,20 +162,20 @@ it("změna hosta zahodí staré číslo lobby", async () => {
 
   const nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBeNull();
-  expect(nacteny.ucastnici.filter((u) => u.jeHost).map((u) => u.steamId)).toEqual([HRACI[0]]);
+  expect(nacteny.ucastnici.filter((u) => u.jeHost).map((u) => u.hracId)).toEqual([HRACI[0]]);
 });
 
 it("setHost odmítne hráče, který není účastníkem, a zachová hosta i lobby_id", async () => {
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   await setLobbyId(zapas.id, "234230181");
   const pred = (await getZapas(zapas.id))!;
-  const puvodniHost = pred.ucastnici.find((u) => u.jeHost)!.steamId;
+  const puvodniHost = pred.ucastnici.find((u) => u.jeHost)!.hracId;
 
   await expect(setHost(zapas.id, HRACI[2]!)).rejects.toThrow(/není účastníkem/);
 
   const po = (await getZapas(zapas.id))!;
   expect(po.zapas.lobbyId).toBe("234230181");
-  expect(po.ucastnici.find((u) => u.jeHost)!.steamId).toBe(puvodniHost);
+  expect(po.ucastnici.find((u) => u.jeHost)!.hracId).toBe(puvodniHost);
 });
 
 it("setZapasStav odmítne zápis, pokud stav mezitím změnil někdo jiný", async () => {
@@ -209,8 +209,8 @@ it("zaznamená kliknutí na připojení", async () => {
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   await oznacKliknutiPripojit(zapas.id, HRACI[0]!);
   const { ucastnici } = (await getZapas(zapas.id))!;
-  expect(ucastnici.find((u) => u.steamId === HRACI[0])!.kliknulPripojit).toBeInstanceOf(Date);
-  expect(ucastnici.find((u) => u.steamId === HRACI[1])!.kliknulPripojit).toBeNull();
+  expect(ucastnici.find((u) => u.hracId === HRACI[0])!.kliknulPripojit).toBeInstanceOf(Date);
+  expect(ucastnici.find((u) => u.hracId === HRACI[1])!.kliknulPripojit).toBeNull();
 });
 
 it("uloží vítězný tým", async () => {
@@ -225,19 +225,19 @@ it("neznámý zápas vrátí null", async () => {
 
 // Účet bez jediné hodnocené hry nemá ve Worlds Edge alias, takže by v sestavě
 // zápasu zbylo syrové 64bitové Steam ID — soupiska přitom vedle ukazuje jméno
-// ze Steamu. Sestava proto musí steamName nést taky.
-it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříčku", async () => {
+// ze Steamu. Sestava proto musí platformaJmeno nést taky.
+it("účastník nese platformaJmeno, aby se dal pojmenovat i bez aliasu ze žebříčku", async () => {
   const bezAliasu = "76561199091641101";
   await upsertPlayer(bezAliasu, false);
-  await savePlayerStats(bezAliasu, { alias: null, steamName: "TibbarZmr", chyba: null });
+  await savePlayerStats(bezAliasu, { alias: null, platformaJmeno: "TibbarZmr", chyba: null });
   await signUp(akceId, bezAliasu);
 
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[0]!, bezAliasu]));
   const [zaznam] = await listZapasy(akceId);
-  const host = zaznam!.ucastnici.find((u) => u.steamId === bezAliasu)!;
+  const host = zaznam!.ucastnici.find((u) => u.hracId === bezAliasu)!;
 
   expect(host.alias).toBeNull();
-  expect(host.steamName).toBe("TibbarZmr");
+  expect(host.platformaJmeno).toBe("TibbarZmr");
   expect(zapas.poradi).toBe(1);
 });
 
@@ -247,7 +247,7 @@ it("účastník nese steamName, aby se dal pojmenovat i bez aliasu ze žebříč
 // čísla a nešlo by zjistit, na jaké mapě se hrál.
 
 it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
-  await savePlayerStats(HRACI[0]!, { alias: "A", steamName: "A", elo1v1: 1234, eloNejvyssi: 1300, odehranoHer: 10, chyba: null });
+  await savePlayerStats(HRACI[0]!, { alias: "A", platformaJmeno: "A", elo1v1: 1234, eloNejvyssi: 1300, odehranoHer: 10, chyba: null });
   await setNastaveniLobby(akceId, { location: "Arabia", population: 200 });
 
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
@@ -258,11 +258,11 @@ it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
   );
   expect(rows[0]?.nastaveni).toMatchObject({ location: "Arabia", population: 200 });
 
-  const { rows: ucastnici } = await getPool().query<{ steam_id: string; elo_pri_zapasu: number | null }>(
-    "SELECT steam_id, elo_pri_zapasu FROM ucastnik WHERE zapas_id = $1 ORDER BY steam_id",
+  const { rows: ucastnici } = await getPool().query<{ hrac_id: string; elo_pri_zapasu: number | null }>(
+    "SELECT hrac_id, elo_pri_zapasu FROM ucastnik WHERE zapas_id = $1 ORDER BY hrac_id",
     [zapas.id],
   );
-  const otisk = new Map(ucastnici.map((u) => [u.steam_id, u.elo_pri_zapasu]));
+  const otisk = new Map(ucastnici.map((u) => [u.hrac_id, u.elo_pri_zapasu]));
   expect(otisk.get(HRACI[0]!)).toBe(1234);
   expect(otisk.get(HRACI[1]!)).toBeNull();
 });
@@ -288,14 +288,14 @@ it("pozdější změna nastavení akce zápasem nehne", async () => {
 it("založí zápas s AI, i když AI v akci přihlášená není", async () => {
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[0]!, "ai:1"]));
 
-  const { rows } = await getPool().query<{ steam_id: string; je_host: boolean; elo_pri_zapasu: number | null }>(
-    "SELECT steam_id, je_host, elo_pri_zapasu FROM ucastnik WHERE zapas_id = $1 ORDER BY steam_id",
+  const { rows } = await getPool().query<{ hrac_id: string; je_host: boolean; elo_pri_zapasu: number | null }>(
+    "SELECT hrac_id, je_host, elo_pri_zapasu FROM ucastnik WHERE zapas_id = $1 ORDER BY hrac_id",
     [zapas.id],
   );
-  expect(rows.map((r) => r.steam_id).sort()).toEqual([HRACI[0]!, "ai:1"].sort());
+  expect(rows.map((r) => r.hrac_id).sort()).toEqual([HRACI[0]!, "ai:1"].sort());
   // Hostem je člověk: lobby zakládá někdo, kdo sedí u hry.
-  expect(rows.find((r) => r.je_host)?.steam_id).toBe(HRACI[0]);
-  expect(rows.find((r) => r.steam_id === "ai:1")?.elo_pri_zapasu).toBeNull();
+  expect(rows.find((r) => r.je_host)?.hrac_id).toBe(HRACI[0]);
+  expect(rows.find((r) => r.hrac_id === "ai:1")?.elo_pri_zapasu).toBeNull();
 });
 
 // Účastník zápasu je cizím klíčem navázaný na player, takže AI tam řádek mít
@@ -304,8 +304,8 @@ it("založí zápas s AI, i když AI v akci přihlášená není", async () => {
 it("AI si řádek v tabulce player založí sama při prvním zápase", async () => {
   await createZapas(akceId, sestavaKazdyProtiKazdemu([HRACI[0]!, "ai:3"]));
 
-  const { rows } = await getPool().query<{ steam_id: string; alias: string; elo_1v1: number | null }>(
-    "SELECT steam_id, alias, elo_1v1 FROM player WHERE steam_id = 'ai:3'",
+  const { rows } = await getPool().query<{ hrac_id: string; alias: string; elo_1v1: number | null }>(
+    "SELECT hrac_id, alias, elo_1v1 FROM player WHERE hrac_id = 'ai:3'",
   );
   expect(rows).toHaveLength(1);
   expect(rows[0]!.alias).toBe("AI");
@@ -366,27 +366,27 @@ it("nahradSestavu nechá hosta i lobby, když host zůstal; bez něj lobby pust�
   const { nahradSestavu } = await import("./matches.js");
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
   await setLobbyId(zapas.id, "234230181");
-  const host = (await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.steamId;
+  const host = (await getZapas(zapas.id))!.ucastnici.find((u) => u.jeHost)!.hracId;
   const druhy = HRACI.slice(0, 2).find((s) => s !== host)!;
 
   // Host zůstává, jen si prohodí tým a barvu s třetím hráčem místo druhého.
   await nahradSestavu(zapas.id, [
-    { steamId: host, tym: 2, barva: 2, civ: null },
-    { steamId: HRACI[2]!, tym: 1, barva: 1, civ: null },
+    { hracId: host, tym: 2, barva: 2, civ: null },
+    { hracId: HRACI[2]!, tym: 1, barva: 1, civ: null },
   ]);
   let nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBe("234230181");
-  expect(nacteny.ucastnici.map((u) => u.steamId).sort()).toEqual([host, HRACI[2]!].sort());
-  expect(nacteny.ucastnici.find((u) => u.jeHost)!.steamId).toBe(host);
-  expect(nacteny.ucastnici.find((u) => u.steamId === host)!.barva).toBe(2);
-  expect(nacteny.ucastnici.some((u) => u.steamId === druhy)).toBe(false);
+  expect(nacteny.ucastnici.map((u) => u.hracId).sort()).toEqual([host, HRACI[2]!].sort());
+  expect(nacteny.ucastnici.find((u) => u.jeHost)!.hracId).toBe(host);
+  expect(nacteny.ucastnici.find((u) => u.hracId === host)!.barva).toBe(2);
+  expect(nacteny.ucastnici.some((u) => u.hracId === druhy)).toBe(false);
 
   // Host vypadl: lobby se pustí a hostem je někdo z nové sestavy.
   await nahradSestavu(zapas.id, sestavaKazdyProtiKazdemu([HRACI[2]!, HRACI[3]!]));
   nacteny = (await getZapas(zapas.id))!;
   expect(nacteny.zapas.lobbyId).toBeNull();
   expect(nacteny.ucastnici.filter((u) => u.jeHost)).toHaveLength(1);
-  expect(nacteny.ucastnici.map((u) => u.steamId).sort()).toEqual([HRACI[2]!, HRACI[3]!].sort());
+  expect(nacteny.ucastnici.map((u) => u.hracId).sort()).toEqual([HRACI[2]!, HRACI[3]!].sort());
 });
 
 it("nastavení a jméno lobby jde změnit jen tomu jednomu zápasu", async () => {
@@ -410,7 +410,7 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   await setLhutaAktivity(30);
   await prihlas(akceId, HRACI[0]!);
   // Nové přihlášení posune hráče na konec seznamu (řadí se podle času), tak podle id.
-  const najdi = async () => (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
+  const najdi = async () => (await listSignups(akceId)).find((r) => r.hracId === HRACI[0])!;
   const radek = await najdi();
   const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
   expect(zaMinut).toBeGreaterThan(28);
@@ -428,9 +428,9 @@ it("lhůta aktivity akce řídí, na jak dlouho se přihláška počítá", asyn
   // Super zvonek: čerstvě přihlášení mají plnou lhůtu, zvonek by u nich nebyl,
   // takže se nesvolá nikdo; kdo spí (lhůta pryč), svolá se — admin sám ne.
   expect(await svolejVsechny(akceId, HRACI[1]!)).toBe(0);
-  await getPool().query("UPDATE prihlaska SET aktivni_do = now() - interval '1 minute' WHERE akce_id = $1 AND steam_id = ANY($2)", [akceId, [HRACI[1], HRACI[2]]]);
+  await getPool().query("UPDATE prihlaska SET aktivni_do = now() - interval '1 minute' WHERE akce_id = $1 AND hrac_id = ANY($2)", [akceId, [HRACI[1], HRACI[2]]]);
   expect(await svolejVsechny(akceId, HRACI[1]!)).toBe(1);
-  expect((await listSignups(akceId)).find((r) => r.steamId === HRACI[2])!.svolanV).toBeInstanceOf(Date);
+  expect((await listSignups(akceId)).find((r) => r.hracId === HRACI[2])!.svolanV).toBeInstanceOf(Date);
   // „Jsem tu!“ svolání vyřídí; nové přihlášení po odhlášení ho nesmí zdědit.
   expect(await obnovAktivitu(akceId, HRACI[0]!)).toBe(true);
   expect((await najdi()).svolanV).toBeNull();
@@ -448,7 +448,7 @@ it("lhůta je globální — platí další akci a přepočítá běžící při
   await prihlas(akceId, HRACI[0]!);
   await setLhutaAktivity(40);
   expect(await getLhutaAktivity()).toBe(40);
-  const radek = (await listSignups(akceId)).find((r) => r.steamId === HRACI[0])!;
+  const radek = (await listSignups(akceId)).find((r) => r.hracId === HRACI[0])!;
   const zaMinut = (radek.aktivniDo.getTime() - Date.now()) / 60_000;
   expect(zaMinut).toBeGreaterThan(38);
   expect(zaMinut).toBeLessThanOrEqual(40);
@@ -456,6 +456,6 @@ it("lhůta je globální — platí další akci a přepočítá běžící při
   await nastavStavAkce(akceId, "konec");
   const dalsi = await novaAkce("zítra");
   await prihlas(dalsi.id, HRACI[1]!);
-  const vDalsi = (await listSignups(dalsi.id)).find((r) => r.steamId === HRACI[1])!;
+  const vDalsi = (await listSignups(dalsi.id)).find((r) => r.hracId === HRACI[1])!;
   expect((vDalsi.aktivniDo.getTime() - Date.now()) / 60_000).toBeGreaterThan(38);
 });

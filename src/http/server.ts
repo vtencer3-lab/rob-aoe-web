@@ -4,14 +4,23 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 import { registerDevRoutes } from "../auth/devRoutes.js";
+import { registerMicrosoftRoutes, type MicrosoftDeps } from "../auth/microsoftRoutes.js";
 import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
-import { getPlayer, savePlayerStats } from "../db/players.js";
-import { steamZdroje } from "../external/steam.js";
-import { fetchPersonalStat } from "../external/worldsEdge.js";
+import { getPlayer, savePlayerStats, type PlayerStatsUpdate } from "../db/players.js";
+import { vymenKodZaToken } from "../external/microsoftToken.js";
+import {
+  nactiGamerpic,
+  nactiVlastnictvi,
+  ziskejXboxIdentitu,
+  type HerniHistorie,
+  type XboxIdentita,
+} from "../external/xboxLive.js";
+import { fetchPersonalStatPodleAliasu, type LeaderboardStats } from "../external/worldsEdge.js";
 import { seznamLobby } from "../matches/seznamLobby.js";
 import { maCerstveStaty, refreshPlayerStats } from "../players/refresh.js";
+import { zdrojeProHrace } from "../players/zdroje.js";
 import { HttpError } from "./guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { registerEventRoutes } from "./routes/events.js";
@@ -23,26 +32,92 @@ import { registerHlasRoutes } from "./routes/hlas.js";
 import { registerEmotyRoutes } from "./routes/emoty.js";
 import { VERZE } from "../shared/verze.js";
 
-export type ServerDeps = AuthDeps & MatchDeps;
+export type ServerDeps = AuthDeps & MatchDeps & MicrosoftDeps;
+
+export interface DoplnkyPoPrihlaseni {
+  gamerpic: (identita: XboxIdentita) => Promise<string | null>;
+  vlastnictvi: (identita: XboxIdentita) => Promise<HerniHistorie | undefined>;
+  zebricek: (gamertag: string) => Promise<LeaderboardStats | null>;
+}
+
+/**
+ * Co se k Microsoft hráči dotáhne hned po přihlášení. Tři nezávislé dotazy:
+ * `allSettled`, aby jeden výpadek nesebral zbylé dva, a celé to visí mimo
+ * přihlašovací cestu, takže přihlášení nezdrží ani nemůže shodit.
+ */
+export function vychoziPoPrihlaseni(
+  doplnky: DoplnkyPoPrihlaseni,
+): (hracId: string, identita: XboxIdentita) => Promise<void> {
+  return async (hracId, identita) => {
+    const [pic, hra, zebricek] = await Promise.allSettled([
+      doplnky.gamerpic(identita),
+      doplnky.vlastnictvi(identita),
+      doplnky.zebricek(identita.gamertag),
+    ]);
+
+    const chyby: string[] = [];
+    if (zebricek.status === "rejected") chyby.push(`Žebříček: ${popisChyby(zebricek.reason)}`);
+    if (pic.status === "rejected") chyby.push(`Xbox profil: ${popisChyby(pic.reason)}`);
+    if (hra.status === "rejected") chyby.push(`Herní historie: ${popisChyby(hra.reason)}`);
+
+    const staty: PlayerStatsUpdate = {
+      alias: zebricek.status === "fulfilled" ? (zebricek.value?.alias ?? null) : null,
+      country: zebricek.status === "fulfilled" ? (zebricek.value?.country ?? null) : null,
+      elo1v1: zebricek.status === "fulfilled" ? (zebricek.value?.elo1v1 ?? null) : null,
+      eloNejvyssi: zebricek.status === "fulfilled" ? (zebricek.value?.eloNejvyssi ?? null) : null,
+      odehranoHer: zebricek.status === "fulfilled" ? (zebricek.value?.odehranoHer ?? null) : null,
+      posledniZapas: zebricek.status === "fulfilled" ? (zebricek.value?.posledniZapas ?? null) : null,
+      zebricky: zebricek.status === "fulfilled" ? (zebricek.value?.zebricky ?? null) : null,
+      weProfil: zebricek.status === "fulfilled" ? (zebricek.value?.profil ?? null) : null,
+      weProfilId: zebricek.status === "fulfilled" ? (zebricek.value?.profilId ?? null) : null,
+      avatarUrl: pic.status === "fulfilled" ? pic.value : null,
+      chyba: chyby.length > 0 ? chyby.join("; ") : null,
+    };
+    // undefined = nepovedlo se zjistit; hodnotu v databázi nesaháme. Datum
+    // se přepisuje spolu se stavem — když se zjistilo znovu, staré datum
+    // (třeba z doby, kdy hru ještě měl) nesmí zůstat viset.
+    if (hra.status === "fulfilled" && hra.value !== undefined) {
+      staty.hraVlastnictvi = hra.value.stav;
+      staty.hraHranoV = hra.value.hranoV;
+    }
+    await savePlayerStats(hracId, staty);
+    await broadcastAkce();
+  };
+}
+
+function popisChyby(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
 
 function vychoziDeps(): ServerDeps {
   return {
     nactiInzeraty: () => seznamLobby.aktualni(),
     overSteam: (params) => verifyWithSteam(params),
-    obnovStaty: async (steamId) => {
+    obnovStaty: async (hracId) => {
       // Worlds Edge je nezdokumentovaný endpoint bez známých limitů, takže se
       // stahuje nejvýš jednou za patnáct minut na hráče.
-      const hrac = await getPlayer(steamId);
+      const hrac = await getPlayer(hracId);
       if (maCerstveStaty(hrac)) return;
-      await refreshPlayerStats(steamId, {
-        nactiZebricek: (id) => fetchPersonalStat(id),
-        ...steamZdroje(config.steamApiKey),
-        uloz: savePlayerStats,
-      });
+      if (!hrac) return;
+      await refreshPlayerStats(hracId, zdrojeProHrace(hrac, config.steamApiKey));
       // Nová data v tabulce přihlášených musí doputovat i těm, kdo stránku
       // právě mají otevřenou — jinak by čekali na jiný broadcast.
       await broadcastAkce();
     },
+    vymenKod: (kod, verifier) =>
+      vymenKodZaToken({
+        baseUrl: config.baseUrl,
+        clientId: config.msClientId,
+        clientSecret: config.msClientSecret,
+        kod,
+        verifier,
+      }),
+    ziskejIdentitu: (accessToken) => ziskejXboxIdentitu(accessToken),
+    poPrihlaseni: vychoziPoPrihlaseni({
+      gamerpic: (identita) => nactiGamerpic(identita),
+      vlastnictvi: (identita) => nactiVlastnictvi(identita),
+      zebricek: (gamertag) => fetchPersonalStatPodleAliasu(gamertag),
+    }),
   };
 }
 
@@ -67,6 +142,8 @@ export function buildServer(castDeps: Partial<ServerDeps> = {}): FastifyInstance
   // opravdu ten build, který měl.
   app.get("/api/health", async () => ({ ok: true, verze: VERZE }));
   registerAuthRoutes(app, deps);
+  // Bez registrace v Entra by routy jen vracely chyby; ať radši nejsou.
+  if (config.maMicrosoft) registerMicrosoftRoutes(app, deps);
   registerEventRoutes(app);
   registerMatchRoutes(app, deps);
   registerStreamRoutes(app);

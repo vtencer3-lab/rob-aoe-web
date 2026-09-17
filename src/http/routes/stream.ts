@@ -67,7 +67,7 @@ export function registerStreamRoutes(app: FastifyInstance): void {
 
       const divak = await zjistiDivaka(request);
       // Anonymní divák se z ničeho odhlašovat nemusí.
-      if (divak.steamId) odesel = sledujPritomnost(divak.steamId);
+      if (divak.hracId) odesel = sledujPritomnost(divak.hracId);
 
       const posli = (payload: AkceStavPayload) =>
         reply.raw.write(`data: ${JSON.stringify(redigujProDivaka(payload, divak))}\n\n`);

@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import {
   config,
+  varovaniMicrosoft,
   varovaniSteamKlic,
   nazevCookie,
   varovaniDevPristup,
@@ -154,14 +155,21 @@ it("HOST je bez proměnné loopback", () => {
 
 it("ADMIN_STEAM_ID může být seznam oddělený čárkou", () => {
   nastav({ ADMIN_STEAM_ID: "76561198000000070, 76561198000000071" });
-  expect(config.adminSteamIds).toEqual(["76561198000000070", "76561198000000071"]);
+  expect(config.adminHracIds).toEqual(["76561198000000070", "76561198000000071"]);
   nastav({ ADMIN_STEAM_ID: " , " });
-  expect(config.adminSteamIds).toEqual([]);
+  expect(config.adminHracIds).toEqual([]);
   nastav({ ADMIN_STEAM_ID: undefined });
-  expect(config.adminSteamIds).toEqual([]);
+  expect(config.adminHracIds).toEqual([]);
 });
 
 it("bez STEAM_API_KEY varuje, s klíčem mlčí", () => {
   nastav({ STEAM_API_KEY: undefined });
   expect(varovaniSteamKlic()).toMatch(/STEAM_API_KEY/);
+});
+
+it("varuje, když Microsoft registrace chybí, a mlčí, když je", () => {
+  nastav({ MS_CLIENT_ID: undefined, MS_CLIENT_SECRET: undefined });
+  expect(varovaniMicrosoft()).toContain("MS_CLIENT_ID");
+  nastav({ MS_CLIENT_ID: "a", MS_CLIENT_SECRET: "b" });
+  expect(varovaniMicrosoft()).toBeNull();
 });

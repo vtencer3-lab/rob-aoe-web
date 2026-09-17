@@ -36,7 +36,7 @@ it("vrátí posledních N zpráv každého zápasu, od nejstarší", async () =>
   const okno = await listZpravy(akceId, 3);
   expect(okno.get(prvni.id)!.map((z) => z.text)).toEqual(["a2", "a3", "a4"]);
   expect(okno.get(druhy.id)!.map((z) => z.text)).toEqual(["b1"]);
-  expect(okno.get(druhy.id)![0]).toMatchObject({ steamId: HRACI[1], tym: 2, barva: 2, jeAdmin: false });
+  expect(okno.get(druhy.id)![0]).toMatchObject({ hracId: HRACI[1], tym: 2, barva: 2, jeAdmin: false });
 });
 
 // Cenzura běží v db vrstvě a pamatuje si originál; zpětná cenzura dožene
@@ -69,7 +69,7 @@ it("schová zakázané slovo, originál nechá v text_puvodni a zpětně docenzu
   expect(rows[1]).toEqual({ text: "ahoj", text_puvodni: null });
 
   // Zpráva „z doby před seznamem“: uložená natvrdo, projde až zpětnou cenzurou.
-  await getPool().query("INSERT INTO zprava (zapas_id, steam_id, text) VALUES ($1, $2, 'negroidovy')", [zapas.id, HRACI[1]!]);
+  await getPool().query("INSERT INTO zprava (zapas_id, hrac_id, text) VALUES ($1, $2, 'negroidovy')", [zapas.id, HRACI[1]!]);
   expect(await cenzurujZpetne()).toBe(1);
   const { rows: po } = await getPool().query<{ text: string; text_puvodni: string | null }>("SELECT text, text_puvodni FROM zprava WHERE zapas_id = $1 ORDER BY id DESC LIMIT 1", [zapas.id]);
   expect(po[0]).toEqual({ text: "**********", text_puvodni: "negroidovy" });

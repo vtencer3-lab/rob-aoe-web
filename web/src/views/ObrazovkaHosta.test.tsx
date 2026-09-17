@@ -26,10 +26,10 @@ const zaklad: ZapasView = {
   spectatorUri: null,
   vitez: null,
   ucastnici: [
-    { steamId: "ja", alias: "TenceR", steamName: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-    { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "c", alias: "Marek", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
-    { steamId: "d", alias: "Lukas", steamName: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "ja", alias: "TenceR", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { hracId: "b", alias: "Pepa_CZ", platformaJmeno: null, tym: 1, barva: 1, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "c", alias: "Marek", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+    { hracId: "d", alias: "Lukas", platformaJmeno: null, tym: 2, barva: 2, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
   ],
 };
 
@@ -57,8 +57,8 @@ it("pruh nese barvu toho, kdo se dívá", () => {
   const cerveny = {
     ...zaklad,
     ucastnici: [
-      { steamId: "ja", alias: "TenceR", steamName: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
-      { steamId: "b", alias: "Pepa_CZ", steamName: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
+      { hracId: "ja", alias: "TenceR", platformaJmeno: null, tym: 2 as const, barva: 2 as const, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+      { hracId: "b", alias: "Pepa_CZ", platformaJmeno: null, tym: 1 as const, barva: 1 as const, civ: null, jeHost: false, poradi: 0, kliknulPripojit: null },
     ],
   };
   render(<ObrazovkaHosta zapas={cerveny} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
@@ -143,9 +143,11 @@ it("když lobby ze seznamu zmizí, tlačítko hledání zase ožije", () => {
   expect(screen.getByRole("button", { name: /vyhledat lobby/i })).toBeEnabled();
 });
 
-// Tři kroky pod sebou: „Zakládáš!“ dostane fajfku, jakmile web lobby
-// najde; „Kontrola lobby“ jakmile hlavní sekce projde; pak „Výborně, můžete
-// hrát!“. Heslo ani další nastavení hostovi fajfku neberou.
+// Dva kroky pod sebou: „Zakládáš!“ dostane fajfku, jakmile web lobby najde;
+// „Kontrola lobby“ jakmile hlavní sekce projde. Velký verdikt („Výborně,
+// můžete hrát!“/„Opravte Lobby, než půjdete hrát!“) od 17. 9. 2026 kreslí
+// sama KontrolaLobby nahoře ve svém panelu (KontrolaLobby.test.tsx) — tady
+// se testuje jen to, že sem dolů nepatří žádný duplicitní nápis.
 it("krok „Zakládáš!“ má fajfku až po nalezení lobby", () => {
   const { rerender } = render(<ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />);
   expect(screen.getByRole("heading", { name: /zakládáš/i })).toBeInTheDocument();
@@ -156,10 +158,9 @@ it("krok „Zakládáš!“ má fajfku až po nalezení lobby", () => {
     <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} />,
   );
   expect(screen.getByTestId("fajfka-lobby")).toBeInTheDocument();
-  expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
 });
 
-it("po kontrole bez červené se objeví „Výborně, můžete hrát!“", async () => {
+it("po kontrole bez červené je verdikt vidět v panelu kontroly, ne jako samostatná sekce dole", async () => {
   const kontrola = vi.fn().mockResolvedValue({
     nalezeno: true,
     kontroly: [
@@ -171,11 +172,13 @@ it("po kontrole bez červené se objeví „Výborně, můžete hrát!“", asyn
   render(
     <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={kontrola} />,
   );
-  expect(await screen.findByTestId("muzete-hrat")).toHaveTextContent(/výborně, můžete hrát/i);
-  expect(screen.getByTestId("fajfka-kontrola")).toBeInTheDocument();
+  const verdikt = await screen.findByTestId("verdikt-lobby");
+  expect(verdikt).toHaveTextContent(/výborně, můžete hrát/i);
+  // Starý samostatný krok dole je pryč — nápis kreslí jen KontrolaLobby.
+  expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
 });
 
-it("s červenou finále není", async () => {
+it("s červenou je verdikt v panelu kontroly červený, ne zelené finále dole", async () => {
   const kontrola = vi.fn().mockResolvedValue({
     nalezeno: true,
     kontroly: [{ klic: "divaci", stav: "spatne", text: "Diváci nejsou povoleni", sekce: "hlavni" }],
@@ -184,5 +187,6 @@ it("s červenou finále není", async () => {
     <ObrazovkaHosta zapas={{ ...zaklad, lobbyId: "504953429", joinUri: "aoe2de://0/504953429", fazeLobby: "lobby" }} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={kontrola} />,
   );
   expect(await screen.findByTestId("kontrola-souhrn")).toHaveTextContent(/1 věc k opravě/);
+  expect(screen.getByTestId("verdikt-lobby")).toHaveTextContent(/opravte lobby, než půjdete hrát/i);
   expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
 });

@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 15. 9. 2026, main i dev 1.7.2)
+# Přehled prací a záměrů (stav k 16. 9. 2026, main 1.7.2, dev 1.10.7)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -30,18 +30,18 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 ---
 
-## 1. Stav k 12. 9. 2026
+## 1. Stav k 16. 9. 2026
 
 | | |
 |---|---|
 | `origin/main` | 1.7.2, nasazeno na <https://jouki.cz/aoe> (PR #19, 15. 9. 2026); stav před ním nese značku `v1.7.0`, starší `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.7.2, nasazeno na <https://jouki.cz/aoe/dev> — shodné s `main`. Od 0.28.3 přibylo: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
-| `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS) |
-| Migrace | 001–023, poslední `023_cenzura_a_svolal.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
-| Testy | backend hermetické 300, databázové 169, frontend 294 — všechny zelené (15. 9. 2026, 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| `origin/dev` | 1.10.7, nasazeno na <https://jouki.cz/aoe/dev> — proti `main` (1.7.2) navíc hlasitost administrátora a oprava lupání při zesílení (§3.50) a **přihlášení Microsoft účtem** (§3.57): klíč hráče `hrac_id` místo `steam_id` (migrace 027–028), `src/auth/microsoftOAuth.ts` + `microsoftRoutes.ts`, `src/external/xboxLive.ts`, `src/players/zdroje.ts`, rozpoznání hráčů v lobby podle profilu Worlds Edge místo Steam ID. Vyžaduje `MS_CLIENT_ID`/`MS_CLIENT_SECRET` v Coolify — zatím nastavené jen u vývojové aplikace, ostrá a pokusná je nemají, takže tam se tlačítko neukazuje. Od 0.28.3 přibylo i: zkušební pozadí (§3.28), fialová #bd2bbb, doba neaktivity v bublině meče, heslo večera (§3.29), ikona vlastnictví hry (§3.30), zvon z radnice (§3.31), výběr map s minimapami (§3.32), chat zápasu s moderací (§3.34), úprava založeného zápasu (§3.35), zvonek admina, hlasitost a lhůta aktivity per akce (§3.36) |
+| `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
+| Migrace | 001–028, poslední `028_platforma_jmeno.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`) |
+| Testy | backend hermetické 361, frontend 330 — zelené (17. 9. 2026, tahle session, `npm --prefix web exec tsc -- -b --force` bez chyb, `npm run build` EXIT=0). Databázové byly 169 k 12. 9., v týhle session neběžely lokálně (žádný Postgres na stroji), ověřovaly se přes `ssh` na VPS. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
-| Pracovní strom | čistý, žádná rozdělaná změna mimo repo |
+| Pracovní strom | čistý na úrovni kódu; netrackované `_grafika/` a syrové PNG přihlašovacích erbů ve `web/src/assets/ui/` (zdrojové podklady ke commitnutým `.webp`, mimo git schválně — stejná konvence jako u ostatní grafiky) nejsou rozdělaná změna a nepatří do commitu |
 
 Releasy do `main` proběhly: PR #4 (0.11.2, 7. 9. večer), PR #5 (0.16.0),
 PR #6 (0.16.2), PR #7 (0.16.3), 0.17.0 jako hotfix, PR #9 (0.18.0, grafický
@@ -1483,12 +1483,36 @@ ID, server je přibalí) a všichni admini; anonym, divák mimo zápas a mluvč�
 sám ne. Admin si ostatní adminy ztlumí v prohlížeči (`hlas.ztlumit-adminy`);
 hráčům se nic neztlumí. Hlasitost = Master Volume.
 
+**Hlasitost administrátora (1.7.3, uživatel):** posuvník v nastavení jen
+pro adminy — hlasitost hlasu adminů (push-to-talk), výchozí 100 %, klíč
+`hlas.hlasitost-admina`; reproduktor u mikrofonu je umlčí úplně jako dřív.
+Od **1.7.5 je mimo Master Volume** (uživatel: „v prvé řadě ať je output
+stopy na maximum“): `Prehravani` nastaví `audio.volume` přímo z posuvníku,
+takže při výchozích 100 % jde hlas ven naplno a **nemusí se zesilovat
+vstup** — zesílení mikrofonu ubírá z kvality, i s měkkým omezením. Hráči
+slyší hlas taky naplno a posuvník nevidí. Zkouška mikrofonu přehrává
+také naplno, ať odpovídá tomu, co uslyší ostatní.
+
 **Zesílení mikrofonu (1.7.2, uživatel):** v nastavení posuvník „Zesílení
 mikrofonu“ 100–400 % po pěti (jen admin, klíč `hlas.zesileni-mikrofonu`).
-Nahrávka jde přes Web Audio: zdroj → `GainNode` (procenta/100) → měkký
-limiter (`DynamicsCompressor`, práh −3 dB, poměr 20:1) → výstupní proud,
-ať zesílení nekřupe. Při 100 % nebo bez Web Audia se proud nechává být.
+Nahrávka jde přes Web Audio: zdroj → `GainNode` (procenta/100) → měkké
+omezení → výstupní proud. Při 100 % nebo bez Web Audia se proud nechává být.
 Hodnota se čte při každém stisku tlačítka, takže změna platí hned.
+
+**Lupání po zesílení (1.7.4, uživatel):** čtyři příčiny naráz.
+(1) `DynamicsCompressor` má náběh (attack), takže začátek každé hlasité
+slabiky projde nezkrácený a usekne se natvrdo — nahradil ho `WaveShaper`
+s křivkou `tanh` (4× převzorkování), která ohne každý vzorek hned a nikdy
+nepřeteče. (2) `AudioContext` se zakládal s vlastní vzorkovací frekvencí;
+teď se bere ze stopy mikrofonu (`getSettings().sampleRate`), jinak
+prohlížeč převzorkovává a cvaká na hranicích bloků. (3) Uspaný kontext
+posílá ticho — hned se `resume()`. (4) Automatické řízení hlasitosti
+prohlížeče se pralo s naším ziskem, proto `autoGainControl: false`;
+datový tok nahrávky z 32 na 64 kb/s, zesílenému hlasu 32 nestačilo.
+
+**Zkouška mikrofonu (1.7.4):** tlačítko „Zkusit mikrofon“ pod posuvníkem
+nahraje tři vteřiny týmž řetězcem jako push-to-talk a hned je přehraje
+(`nahrajZkousku`), ať jde zesílení nastavit bez druhého člověka.
 
 **Prohlížeč:** `hlas.ts` (přehrávač `spustPrehravacHlasu`, nahrávání
 `vytvorNahravani`, zesílení `zesilProud`), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
@@ -1626,6 +1650,105 @@ Uživatel: „všechny obrázky map vyexportuj v maximální velikosti, minimál
   1:1 (60 erbů, bez custom/disabled/fullrandom/mirror), webp q90. Velké
   štítové `civ_emblems/*.png` (450×280) jsou jiná grafika, web ji nepoužívá.
 
+### 3.57 Přihlášení Microsoft účtem (1.8.0–1.10.7, 16. 9. 2026)
+
+Cíl: hráči, kteří mají AoE2 DE z Microsoft Store nebo Game Passu a Steam
+vůbec nemají, se předtím na web nemohli přihlásit — teď mají druhou cestu
+vedle Steamu, ne náhradu za něj. Návrh a zdůvodnění jednotlivých rozhodnutí
+je v [`docs/superpowers/specs/2026-09-16-microsoft-prihlaseni-design.md`](superpowers/specs/2026-09-16-microsoft-prihlaseni-design.md);
+tady je shrnuté „co a proč“ na jednom místě.
+
+**Datový model.** `player.steam_id` byl primární klíč a cíl cizích klíčů
+v šesti tabulkách; Microsoft hráč žádné Steam ID nemá, takže klíč hráče
+musel přestat být vázaný na platformu. Migrace `027_hrac_id.sql` přejmenovává
+`steam_id` na `hrac_id` všude (`player`, `session`, `prihlaska` +
+`svolal_steam_id` → `svolal_hrac_id`, `ucastnik`, `zprava`) a přidává sloupce
+`platforma` (`steam`/`xbox`), samostatné `steam_id`, `xbox_xuid`,
+`xbox_gamertag` a profil ve Worlds Edge (`we_profil`, `we_profil_id`).
+Hodnoty existujících řádků se neměnily, jen jméno sloupce. Tvar `hrac_id`:
+17 číslic u Steamu, `xbox:<xuid>` u Microsoftu, `test:<jméno>` u zkušebních
+hráčů. Migrace `028_platforma_jmeno.sql` přejmenovává `steam_name` na
+`platforma_jmeno` a `steam_hra` na `hra_vlastnictvi`, protože obojí teď plní
+i Microsoft hráč, jen z jiného zdroje; `steam_hodiny` zůstává beze změny —
+Microsoft odehrané hodiny nezveřejňuje vůbec, takže u Microsoft hráčů
+zůstane prázdné.
+
+**Proč zůstal `ADMIN_STEAM_ID`.** Historicky steamovský název proměnné teď
+bere libovolný `hrac_id`, tedy i `xbox:<xuid>` — porovnání v `config.ts` je
+prostá shoda řetězců, žádné omezení na tvar. Přejmenovat ji na obecnější
+jméno by znamenalo přepsat proměnnou ve všech třech Coolify aplikacích
+souběžně s nasazením kódu, který ji čte pod novým jménem — riziko (výpadek
+admina při jediném překlepu nebo špatném pořadí kroků) bez jakéhokoliv
+přínosu pro chování webu. Rozhodnuto nechat; komentář u `zkontrolujProstredi`
+v `src/config.ts` vysvětluje důsledky chybějící hodnoty.
+
+**Přihlašovací tok** (`src/auth/microsoftOAuth.ts`, `src/auth/microsoftRoutes.ts`):
+standardní OAuth2 + PKCE proti `login.microsoftonline.com/consumers` (jen
+osobní účty, ne firemní), scope jen `XboxLive.signin` — žádný e-mail, žádný
+profil a hlavně žádný `offline_access`, protože refresh token by byl jen
+tajemství navíc, které by se muselo hlídat. Vrácený token se vymění za Xbox
+identitu (`src/external/xboxLive.ts`): XBL `user/authenticate` → XSTS pro
+`http://xboxlive.com`, ze kterého se dostane `gtg` (gamertag) a `xid`
+(XUID). Bez `MS_CLIENT_ID`/`MS_CLIENT_SECRET` se Microsoft routy vůbec
+nezaregistrují a tlačítko se na přihlašovací obrazovce neukáže — schválně,
+ať chybějící registrace nevypadá jako rozbitý web, jen jako jedna možnost
+míň.
+
+**Statistiky a herní profil** (`src/players/zdroje.ts`): Microsoft hráč nemá
+Steam profil ani hodiny; jeho žebříček se hledá poprvé podle gamertagu
+(`getPersonalStat` s `aliases`), a jakmile má web uložené číslo profilu
+(`we_profil_id`), podruhé už podle něj — protože herní jméno (alias) si jde
+ve hře změnit, ale profil ne. Gamerpic a herní historie (`titlehub`,
+AoE2 DE `titleId 2064168993`) se stahují až po přihlášení a nesmí ho
+zdržet ani shodit — selhání doplňků běží mimo přihlašovací cestu stejně
+jako u Steamu.
+
+**Rozpoznání v lobby.** Dřívější `mapaSteamId()` ve `worldsEdgeLobby.ts`
+zahazovala všechno, co nezačínalo `/steam/`, takže Xbox hostitel by dostal
+`hostSteamId: null` a web by jeho lobby nikdy nenašel. Nahrazeno mapováním
+přes `profile_id`, které Worlds Edge posílá u obou platforem a které web
+ukládá do `player.we_profil_id` — jedna cesta pro Steam i Xbox, žádné
+větvení podle prefixu. Parser `worldsEdgeLobby.ts` zůstal hermetický (na
+databázi nesahá, vrací jen čísla profilů); překlad na `hracId` hráčů webu
+dělá až `src/matches/seznamLobby.ts`, jediné místo v tomhle řetězci, které
+databázi má. Podrobnosti v `docs/analyza-automaticke-hledani-lobby.md`.
+
+**Vědomě neřešené: slučování účtů.** Jeden člověk může mít Steam i Xbox
+profil se samostatným ELO (ověřeno sondou, viz sekce 4) — datový model to
+unese, `steam_id` i `xbox_xuid` by šly na jeden řádek `player`, ale spojení
+dvou existujících webových účtů do jednoho implementované není. Nikdo se na
+to zatím neptal.
+
+### 3.58 Podmínky použití a zásady soukromí (1.11.0, 17. 9. 2026)
+
+Microsoft na souhlasné obrazovce Entra registrace ukazoval „Vydavatel
+neposkytl odkazy…“, dokud aplikace nemá vyplněný odkaz na podmínky
+a soukromí. Uživatel do Azure vyplnil `https://jouki.cz/aoe/podminky`
+a `/aoe/soukromi` předem — tahle session je musela postavit, aby odkaz
+nemířil do prázdna.
+
+**Web nemá router** (žádný `react-router`, žádné větvení podle
+`location.pathname`) — architektonické rozhodnutí (žádná knihovna, jeden
+`if` nad `window.location.pathname`) šlo zpátky na potvrzení, než se
+stavělo. Zjištění, které rozhodnutí zjednodušilo: server (`src/http/server.ts`
+`setNotFoundHandler`) už dnes vrací `index.html` se stavem **200** pro
+cokoliv mimo `/api/` — ověřeno přes `app.inject()` bez potřeby běžící
+databáze — takže přímé načtení i F5 fungovalo, aniž by se server vůbec
+upravoval.
+
+Klientská strana: `web/src/pravniCesty.ts` (čistá funkce, odřezává základ
+webu z `cesty.ts` a snáší koncové lomítko) rozhoduje, `web/src/vstupniStranka.tsx`
+podle ní vybere `<Podminky/>`, `<Soukromi/>` nebo `<App/>`, a `main.tsx` už
+jen vykreslí, co dostane. Obě stránky sdílejí rám `views/PravniStranka.tsx`
+(nadpis, deska `.pravni-stranka` přidaná do stejného `border-image` pravidla
+jako `.karta`, datum změny, cesta zpátky, `document.title`), obsah mají
+oddělený. Fakta o datech (schéma `player` přes migrace 001–028, `steam.ts`,
+`xboxLive.ts`, `worldsEdge.ts`, `microsoftOAuth.ts`, cookies v `routes.ts`
+a `microsoftRoutes.ts`) jsou ověřená proti kódu, ne odhadnutá — nejviditelnější
+věc na stránce: Microsoft scope je jen `XboxLive.signin` a přístupový token
+se nikde neukládá. Plný report s doklady TDD a kontrolami je
+v `.superpowers/sdd/2026-09-16-microsoft-prihlaseni/stranky-podminky.md`.
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -1633,7 +1756,7 @@ Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
 | Co | Stav |
 |---|---|
 | Seznam otevřených lobby: `id` = číslo z `aoe2de://` odkazu, Steam ID hosta a hráčů ve slotech, stránkování po 100 (`start=`) | ověřeno |
-| Klíče `options` (mapa 10, …) | zmapované v `docs/analyza-automaticke-hledani-lobby.md` §6; hodnoty AI 3/1, resources 0/3, ages 0/3/6, 0/4 ověřené, zbytek odvozený z pořadí v jazykovém souboru a **označený jako neověřený** |
+| Klíče `options` (mapa 10, …) | zmapované v `docs/analyza-automaticke-hledani-lobby.md` §6; hodnoty AI 3/1, resources 0/3, ages 0/3/6, 0/4 ověřené, **Game Speed (41) ověřeno 17. 9. 2026** — dva nezávislé běhy `findAdvertisements` (91 a 89 lobby) daly v obou hodnoty 0–3, nejčastější 2; k tomu hráč s Casual v lobby inzeroval `41 = 1`. Správně je tedy 0 Slow, 1 Casual, 2 Normal, 3 Fast — tabulka byla do té doby posunutá o jedna a 0 vůbec neznala. Zbytek dál odvozený z pořadí v jazykovém souboru a **označený jako neověřený** |
 | Heslo lobby | jen příznak `passwordprotected`; klíč 52 **není** hash hesla; správnost hesla z API zjistit nejde |
 | `getPersonalStat`: leaderboard 3 (1v1 RM), 4 (Team RM) | ověřeno |
 | leaderboard 1, 2, 13, 14, 27, 28 | **předpoklad** (Death Match, Team DM, Empire Wars, Team EW, Return of Rome, Team RoR) |
@@ -1653,6 +1776,46 @@ Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
 | Herní panel může ukazovat něco jiného, než co lobby inzeruje | pozorováno u Lock Teams: hra si po přepnutí režimu nechala zaškrtnuté políčko, ale posílala vypnuto. Není to zpoždění přenosu — jedno přepnutí se propsalo okamžitě |
 
 Steam Web API: klíč od uživatele (7. 9.), jen v Coolify env obou aplikací.
+
+**Doplněno 16. 9. 2026 — Microsoft/Xbox Live (sonda na skutečném účtu, spec §2.3).**
+
+| Co | Stav |
+|---|---|
+| `XboxLive.signin` pro vlastní registraci v Entra | ověřeno — souhlasná obrazovka oprávnění nabídne |
+| XSTS pro `http://xboxlive.com` vrací `gtg` (gamertag) i `xid` (XUID) | ověřeno |
+| `alias` Xbox profilu ve hře **je** gamertag | ověřeno — na tom stojí celé párování hráče s herním profilem |
+| gamerpic přes `profile.xboxlive.com`, `GameDisplayPicRaw` | ověřeno |
+| `titlehub` herní historie, AoE2 DE má `titleId` `2064168993` | ověřeno |
+| `titlehub` vidí hru i tehdy, když se hrála přes Steam | ověřeno |
+| jeden člověk může mít dva herní profily — steamový i xboxový, každý s vlastním ELO | ověřeno |
+| `getPersonalStat` odpovídá na `profile_names`, `aliases` i `profile_ids` | ověřeno |
+| v jedné stránce seznamu lobby bylo 229 Steam, 24 Xbox a 18 PlayStation profilů | ověřeno |
+| chování `aoe2de://` na verzi z Microsoft Store | **neověřeno** — nikdo z týmu ji nemá |
+| chování `titlehub` při skrytém soukromí herní historie | **neověřeno** |
+
+**Živě ověřené v provozu** (skutečné přihlášení, ne jen sonda mimo aplikaci):
+přihlášení Microsoft účtem funguje, hráč vznikne s klíčem `xbox:<xuid>`,
+statistiky a herní profil se dohledají. **Neověřené naživo v provozu:**
+gamerpic a ikona vlastnictví hry — ověřené jsou jen sondou mimo aplikaci a
+hermetickými testy s podstrčenou sítí (fixtury místo skutečného volání).
+
+**Doplněno 17. 9. 2026 (oprava Game Speed, §6 v `docs/analyza-automaticke-hledani-lobby.md`).**
+Při opravě `RYCHLOSTI` se stejným měřením (dva běhy `findAdvertisements`,
+91 a 89 lobby, hodnoty přečtené vlastním parserem repa) prošly i ostatní
+číselníky v `lobbyKontrola.ts`. Tři z nich mají v provozu hodnotu, kterou
+naše tabulka nezná — na rozdíl od Game Speed se ale zatím **neopravovaly**,
+protože bez znalosti, co číslo ve hře znamená, by oprava byla jen další
+odhad:
+
+| Klíč | Chybějící hodnota | Jak často (ze vzorku 89 lobby) | Jak to zjistit |
+|---|---|---|---|
+| `vitezstvi` (`options[81]`, tabulka `VITEZSTVI`) | `0` | 16× — skoro pětina, není okrajový případ | Ve hře v Game Settings postupně vyzkoušet zbylé položky nabídky Victory (ne jen Conquest/Standard, které už tabulka zná) a podívat se, co která pošle v `options[81]`; kontrola lobby u neznámé hodnoty vypíše přímo číslo místo jména |
+| `rezim` (`options[5]`, tabulka `REZIMY`) | `15` | 2–3× | Ve hře postupně projet zbylé položky Game Mode (nabídka jich má víc, než kolik jich `REZIMY` zná) a sledovat `options[5]`; kontrola lobby zase u neznámé hodnoty vypíše číslo |
+| `preLobby.lobbyTyp` (`matchtype_id`, tabulka `LOBBY_TYPY`) | `61` | 2× | Založit lobby s jinou volbou Lobby Type, než jsou dnešní tři (Unranked, Ranked 1v1 DM, Ranked Team DM), a podívat se na `matchtype_id` v inzerátu |
+
+Postup na příště je stejný jako u Game Speed: přepnout ve hře, podívat se,
+co pošle živé `findAdvertisements` (nebo co kontrola lobby vypíše jako
+neznámé číslo), a teprve pak dopsat jméno do tabulky.
 
 ---
 
@@ -1726,10 +1889,14 @@ Drobné známé nedodělky:
 - README obsahuje starší sekce o tunelu a nasazení u Roba
   (`docs/nasazeni-u-roba.md`), které se od nasazení na jouki.cz nepoužívají,
   ale nejsou špatně.
+- **Slučování Steam a Microsoft účtu jednoho člověka** (§3.57): datový model
+  to unese (`steam_id` i `xbox_xuid` na jednom řádku `player`), ale spojení
+  dvou existujících webových účtů do jednoho implementované není a nikdo se
+  na to zatím neptal.
 
 ---
 
-## 6. Historie verzí (7.–12. 9. 2026)
+## 6. Historie verzí (7.–16. 9. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 
@@ -1860,6 +2027,24 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.10.7 | 16. 9. 23:01 | Přejmenování pomocné třídy nápovědy v přihlašovacím okně |
+| 1.10.6 | 16. 9. 22:51 | Přihlašovací obrazovka se ptá, kterou platformou se přihlásit, v okně (§3.57) |
+| 1.10.5 | 16. 9. 22:31 | Rozpoznání hráčů v lobby podle čísla profilu Worlds Edge místo Steam ID (§3.57) |
+| 1.10.4 | 16. 9. 22:15 | Pokryt případ, kdy se herní profil přihlášeného hráče nikdy nenajde |
+| 1.10.3 | 16. 9. 21:57 | Po Microsoft přihlášení se doplní gamerpic, herní historie a herní profil (§3.57) |
+| 1.10.2 | 16. 9. 21:47 | Zdroj statistik se volí podle platformy hráče, `src/players/zdroje.ts` (§3.57) |
+| 1.10.1 | 16. 9. 21:39 | Pokryt případ nezaregistrovaných Microsoft rout a chybějícího kódu z návratu |
+| 1.10.0 | 16. 9. 20:43 | Přihlášení Microsoft účtem zapojené do routy (§3.57) |
+| 1.9.4 | 16. 9. 20:29 | Hermetické testy pro síťové funkce Xbox Live |
+| 1.9.3 | 16. 9. 20:16 | Výměna Microsoft tokenu za Xbox identitu, XBL → XSTS (§3.57) |
+| 1.9.2 | 16. 9. 20:09 | Výpočetní půlka Microsoft přihlášení (PKCE, adresy) |
+| 1.9.1 | 16. 9. 19:59 | Žebříčkové profily jde hledat i podle aliasu a podle čísla profilu |
+| 1.9.0 | 16. 9. 19:47 | `steam_name` a `steam_hra` přejmenované na `platforma_jmeno` a `hra_vlastnictvi`, migrace 028 (§3.57) |
+| 1.8.1 | 16. 9. 19:29 | Oprava: regulární výraz na `steam_id` pohlcený escapováním v JS stringu |
+| 1.8.0 | 16. 9. 19:25 | Klíč hráče přejmenován ze `steam_id` na `hrac_id`, migrace 027 — Microsoft hráč žádné Steam ID nemá (§3.57) |
+| 1.7.5 | 16. 9. | Hlas admina hraje naplno mimo Master Volume, ať se nemusí zesilovat vstup (§3.50) |
+| 1.7.4 | 16. 9. | Konec lupání po zesílení (měkké omezení místo kompresoru, frekvence mikrofonu, bez AGC, 64 kb/s) + zkouška mikrofonu (§3.50) |
+| 1.7.3 | 15. 9. | Hlasitost administrátora: podíl hlasu adminů z Master Volume, jen pro adminy (§3.50) |
 | 1.7.2 | 15. 9. | Zesílení mikrofonu pro push-to-talk 100–400 % s limiterem (§3.50); **release PR #19** do `main` (značka `v1.7.0`) |
 | 1.7.1 | 15. 9. | Náhledy map 420 px (nativní) a erby 104 px, exportní skript erbů (§3.56) |
 | 1.7.0 | 14. 9. 15:30 | Zvuk všech 105 tauntů přesně ze hry (`wwise/en/Base.pck`), hraje místo cinknutí i autorovi (§3.52); **release PR #18** do `main` (značka `v1.1.4`) |

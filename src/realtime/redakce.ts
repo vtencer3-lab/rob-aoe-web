@@ -4,7 +4,7 @@ import { getPlayer } from "../db/players.js";
 import type { AkceStavPayload, ZapasView } from "../shared/types.js";
 
 export interface Divak {
-  steamId: string | null;
+  hracId: string | null;
   jeAdmin: boolean;
 }
 
@@ -13,9 +13,9 @@ export interface Divak {
  * (redigujProDivaka) — ať se diváka nikde jinde neurčuje o kousek jinak.
  */
 export async function zjistiDivaka(request: FastifyRequest): Promise<Divak> {
-  const steamId = await currentUser(request);
-  const hrac = steamId ? await getPlayer(steamId) : null;
-  return { steamId, jeAdmin: hrac?.jeAdmin ?? false };
+  const hracId = await currentUser(request);
+  const hrac = hracId ? await getPlayer(hracId) : null;
+  return { hracId, jeAdmin: hrac?.jeAdmin ?? false };
 }
 
 /**
@@ -40,7 +40,7 @@ export function redigujProDivaka(payload: AkceStavPayload, divak: Divak): AkceSt
 
 function redigujZapas(zapas: ZapasView, divak: Divak): ZapasView {
   const jeUcastnik =
-    divak.steamId !== null && zapas.ucastnici.some((u) => u.steamId === divak.steamId);
+    divak.hracId !== null && zapas.ucastnici.some((u) => u.hracId === divak.hracId);
 
   if (divak.jeAdmin) return { ...zapas };
   if (jeUcastnik) return { ...zapas, spectatorUri: null };

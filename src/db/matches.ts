@@ -9,6 +9,7 @@ import {
 } from "../matches/stateMachine.js";
 import type { Barva, Seat, SestavaVstup, Tym, Vitez } from "../shared/types.js";
 import { getPool, withTransaction } from "./pool.js";
+import type { Platforma } from "./players.js";
 
 export interface ZapasRow {
   id: number;
@@ -33,9 +34,11 @@ export interface ZapasRow {
 export class UcastnikOdhlasenChyba extends Error {}
 
 export interface UcastnikRow {
-  steamId: string;
+  hracId: string;
   alias: string | null;
-  steamName: string | null;
+  platformaJmeno: string | null;
+  /** Platforma přihlášení — karta hráče podle ní ukazuje značku Microsoft. */
+  platforma: Platforma;
   tym: Tym;
   barva: Barva;
   civ: number | null;
@@ -47,11 +50,11 @@ export interface UcastnikRow {
 }
 
 /**
- * Vítěz v databázi je text: „tym:2“ nebo „hrac:<steam_id>“. Sloupec pro
+ * Vítěz v databázi je text: „tym:2“ nebo „hrac:<hrac_id>“. Sloupec pro
  * číslo týmu nestačí od chvíle, kdy hráč bez týmu hraje sám za sebe.
  */
 export function vitezDoTextu(vitez: Vitez): string {
-  return "tym" in vitez ? `tym:${vitez.tym}` : `hrac:${vitez.steamId}`;
+  return "tym" in vitez ? `tym:${vitez.tym}` : `hrac:${vitez.hracId}`;
 }
 
 export function vitezZTextu(text: string | null): Vitez | null {
@@ -59,7 +62,7 @@ export function vitezZTextu(text: string | null): Vitez | null {
   const tym = /^tym:([1-4])$/.exec(text);
   if (tym) return { tym: Number(tym[1]) as Tym };
   const hrac = /^hrac:(.+)$/.exec(text);
-  if (hrac) return { steamId: hrac[1]! };
+  if (hrac) return { hracId: hrac[1]! };
   return null;
 }
 
@@ -90,36 +93,36 @@ function jeObjekt(v: unknown): v is Record<string, unknown> {
  * pozdější úpravu sestavy, aby obojí kontrolovalo totéž.
  */
 async function pripravSedadla(client: PoolClient, akceId: number, sestava: SestavaVstup[]) {
-  const steamIds = sestava.map((s) => s.steamId);
+  const hracIds = sestava.map((s) => s.hracId);
   const { rows: prihlaseni } = await client.query<{
-    steam_id: string;
+    hrac_id: string;
     odehrano_her: number | null;
     elo_1v1: number | null;
   }>(
-    `SELECT p.steam_id, p.odehrano_her, p.elo_1v1
-       FROM prihlaska pr JOIN player p ON p.steam_id = pr.steam_id
-      WHERE pr.akce_id = $1 AND pr.stav = 'prihlasen' AND pr.steam_id = ANY($2::text[])`,
-    [akceId, steamIds],
+    `SELECT p.hrac_id, p.odehrano_her, p.elo_1v1
+       FROM prihlaska pr JOIN player p ON p.hrac_id = pr.hrac_id
+      WHERE pr.akce_id = $1 AND pr.stav = 'prihlasen' AND pr.hrac_id = ANY($2::text[])`,
+    [akceId, hracIds],
   );
-  const odehrano = new Map(prihlaseni.map((r) => [r.steam_id, r.odehrano_her]));
+  const odehrano = new Map(prihlaseni.map((r) => [r.hrac_id, r.odehrano_her]));
   // ELO se hráči přepisuje s každým stažením statistik; pro archiv se otiskne
   // to, které platilo v okamžiku založení zápasu.
-  const elo = new Map(prihlaseni.map((r) => [r.steam_id, r.elo_1v1]));
-  for (const steamId of steamIds) {
+  const elo = new Map(prihlaseni.map((r) => [r.hrac_id, r.elo_1v1]));
+  for (const hracId of hracIds) {
     // AI se do akce nehlásí — sedí rovnou v sestavě, takže tahle kontrola
     // se jí netýká. Zato potřebuje řádek v player, jinak ji cizí klíč
     // účastníka nepustí; zakládá se tady ze sdíleného seznamu, aby jméno
     // AI existovalo v celém repu jen jednou (shared/aiHraci.ts).
-    if (jeAi(steamId)) {
+    if (jeAi(hracId)) {
       await client.query(
-        `INSERT INTO player (steam_id, alias, steam_name) VALUES ($1, $2, $2)
-           ON CONFLICT (steam_id) DO NOTHING`,
-        [steamId, JMENO_AI],
+        `INSERT INTO player (hrac_id, alias, platforma_jmeno) VALUES ($1, $2, $2)
+           ON CONFLICT (hrac_id) DO NOTHING`,
+        [hracId, JMENO_AI],
       );
       continue;
     }
-    if (!odehrano.has(steamId)) {
-      throw new UcastnikOdhlasenChyba(`Hráč ${steamId} už není přihlášený do akce.`);
+    if (!odehrano.has(hracId)) {
+      throw new UcastnikOdhlasenChyba(`Hráč ${hracId} už není přihlášený do akce.`);
     }
   }
   return { seats: sestavSedadla(sestava, odehrano), elo };
@@ -128,9 +131,9 @@ async function pripravSedadla(client: PoolClient, akceId: number, sestava: Sesta
 async function vlozSedadla(client: PoolClient, zapasId: number, seats: Seat[], elo: ReadonlyMap<string, number | null>): Promise<void> {
   for (const seat of seats) {
     await client.query(
-      `INSERT INTO ucastnik (zapas_id, steam_id, tym, barva, civ, je_host, poradi, elo_pri_zapasu)
+      `INSERT INTO ucastnik (zapas_id, hrac_id, tym, barva, civ, je_host, poradi, elo_pri_zapasu)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [zapasId, seat.steamId, seat.tym, seat.barva, seat.civ, seat.jeHost, seat.poradi, elo.get(seat.steamId) ?? null],
+      [zapasId, seat.hracId, seat.tym, seat.barva, seat.civ, seat.jeHost, seat.poradi, elo.get(seat.hracId) ?? null],
     );
   }
 }
@@ -188,12 +191,12 @@ export async function nahradSestavu(zapasId: number, sestava: SestavaVstup[]): P
     const { rows } = await client.query<{ akce_id: number; stav: string }>("SELECT akce_id, stav FROM zapas WHERE id = $1 FOR UPDATE", [zapasId]);
     const radek = rows[0];
     if (!radek) throw new Error(`Zápas ${zapasId} neexistuje.`);
-    const { rows: hostRows } = await client.query<{ steam_id: string }>("SELECT steam_id FROM ucastnik WHERE zapas_id = $1 AND je_host", [zapasId]);
-    const dosavadniHost = hostRows[0]?.steam_id ?? null;
+    const { rows: hostRows } = await client.query<{ hrac_id: string }>("SELECT hrac_id FROM ucastnik WHERE zapas_id = $1 AND je_host", [zapasId]);
+    const dosavadniHost = hostRows[0]?.hrac_id ?? null;
 
     const { seats, elo } = await pripravSedadla(client, radek.akce_id, sestava);
-    const hostZustava = dosavadniHost !== null && seats.some((s) => s.steamId === dosavadniHost);
-    const nova = hostZustava ? seats.map((s) => ({ ...s, jeHost: s.steamId === dosavadniHost })) : seats;
+    const hostZustava = dosavadniHost !== null && seats.some((s) => s.hracId === dosavadniHost);
+    const nova = hostZustava ? seats.map((s) => ({ ...s, jeHost: s.hracId === dosavadniHost })) : seats;
 
     await client.query("DELETE FROM ucastnik WHERE zapas_id = $1", [zapasId]);
     await vlozSedadla(client, zapasId, nova, elo);
@@ -232,18 +235,19 @@ export async function setNazevLobby(zapasId: number, nazev: string): Promise<voi
 
 async function nactiUcastniky(zapasId: number): Promise<UcastnikRow[]> {
   const { rows } = await getPool().query(
-    `SELECT u.steam_id, p.alias, p.steam_name, p.elo_1v1, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
-       FROM ucastnik u JOIN player p ON p.steam_id = u.steam_id
+    `SELECT u.hrac_id, p.alias, p.platforma_jmeno, p.platforma, p.elo_1v1, u.tym, u.barva, u.civ, u.je_host, u.poradi, u.kliknul_pripojit
+       FROM ucastnik u JOIN player p ON p.hrac_id = u.hrac_id
       WHERE u.zapas_id = $1
-      ORDER BY u.poradi, u.steam_id`,
+      ORDER BY u.poradi, u.hrac_id`,
     [zapasId],
   );
   return rows.map((r) => {
     const row = r as Record<string, unknown>;
     return {
-      steamId: row["steam_id"] as string,
+      hracId: row["hrac_id"] as string,
       alias: row["alias"] as string | null,
-      steamName: row["steam_name"] as string | null,
+      platformaJmeno: row["platforma_jmeno"] as string | null,
+      platforma: row["platforma"] as Platforma,
       tym: row["tym"] as Tym,
       barva: row["barva"] as Barva,
       civ: (row["civ"] as number | null) ?? null,
@@ -328,17 +332,17 @@ export async function setLobbyId(zapasId: number, lobbyId: string): Promise<void
   await getPool().query("UPDATE zapas SET lobby_id = $2 WHERE id = $1", [zapasId, lobbyId]);
 }
 
-export async function setHost(zapasId: number, steamId: string): Promise<void> {
+export async function setHost(zapasId: number, hracId: string): Promise<void> {
   await withTransaction(async (client) => {
     // UPDATE samo o sobě trefí každého účastníka zápasu bez ohledu na to, jestli
-    // steamId mezi nimi je — u cizího steamId by tiše smazalo hosta ze všech řádků.
+    // hracId mezi nimi je — u cizího hracId by tiše smazalo hosta ze všech řádků.
     // RETURNING je_host prozradí, jestli aspoň jeden řádek skutečně hostem zůstal.
     const { rows } = await client.query<{ je_host: boolean }>(
-      "UPDATE ucastnik SET je_host = (steam_id = $2) WHERE zapas_id = $1 RETURNING je_host",
-      [zapasId, steamId],
+      "UPDATE ucastnik SET je_host = (hrac_id = $2) WHERE zapas_id = $1 RETURNING je_host",
+      [zapasId, hracId],
     );
     if (!rows.some((r) => r.je_host)) {
-      throw new Error(`Hráč ${steamId} není účastníkem zápasu ${zapasId}.`);
+      throw new Error(`Hráč ${hracId} není účastníkem zápasu ${zapasId}.`);
     }
     // Staré číslo lobby patřilo předchozímu hostovi — nikdo se do mrtvé lobby
     // připojovat nebude.
@@ -346,10 +350,10 @@ export async function setHost(zapasId: number, steamId: string): Promise<void> {
   });
 }
 
-export async function oznacKliknutiPripojit(zapasId: number, steamId: string): Promise<void> {
+export async function oznacKliknutiPripojit(zapasId: number, hracId: string): Promise<void> {
   await getPool().query(
-    "UPDATE ucastnik SET kliknul_pripojit = now() WHERE zapas_id = $1 AND steam_id = $2",
-    [zapasId, steamId],
+    "UPDATE ucastnik SET kliknul_pripojit = now() WHERE zapas_id = $1 AND hrac_id = $2",
+    [zapasId, hracId],
   );
 }
 

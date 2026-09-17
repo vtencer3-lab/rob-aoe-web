@@ -81,7 +81,7 @@ it("/api/me vrátí null bez cookie a hráče s cookie", async () => {
   const app = buildServer({ overSteam: async () => true, obnovStaty: async () => {} });
 
   const bez = await app.inject({ method: "GET", url: "/api/me" });
-  expect(bez.json()).toEqual({ hrac: null });
+  expect(bez.json().hrac).toBeNull();
 
   const prihlaseni = await app.inject({
     method: "GET",
@@ -90,7 +90,7 @@ it("/api/me vrátí null bez cookie a hráče s cookie", async () => {
   const sid = prihlaseni.cookies.find((c) => c.name === "sid")!.value;
 
   const s = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
-  expect(s.json().hrac.steamId).toBe(STEAM_ID);
+  expect(s.json().hrac.hracId).toBe(STEAM_ID);
   await app.close();
 });
 
@@ -99,8 +99,8 @@ it("/api/me vrátí null bez cookie a hráče s cookie", async () => {
 // větvi, protože ta má vlastní čistou databázi). První dotaz na /api/me proto
 // na obnovu chvíli počká.
 it("/api/me počká při prvním přihlášení na jméno hráče", async () => {
-  const obnovStaty = vi.fn(async (steamId: string) => {
-    await savePlayerStats(steamId, { alias: "Jouki in Rage", steamName: "Jouki in Rage", chyba: null });
+  const obnovStaty = vi.fn(async (hracId: string) => {
+    await savePlayerStats(hracId, { alias: "Jouki in Rage", platformaJmeno: "Jouki in Rage", chyba: null });
   });
   const app = buildServer({ overSteam: async () => true, obnovStaty });
 
@@ -130,7 +130,7 @@ it("odhlášení zneplatní relaci", async () => {
 
   await app.inject({ method: "POST", url: "/api/auth/logout", cookies: { sid } });
   const po = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
-  expect(po.json()).toEqual({ hrac: null });
+  expect(po.json().hrac).toBeNull();
   await app.close();
 });
 
@@ -235,15 +235,15 @@ it("odmítne návrat, kde claimed_id není mezi podepsanými poli", async () => 
 // nikdo do režie nedostal, tak se adminem stane první přihlášený — ale jen
 // dokud žádný admin neexistuje, jinak by režii uzmul kdokoliv další.
 
-function navratPro(steamId: string): string {
+function navratPro(hracId: string): string {
   const p = new URLSearchParams(NAVRAT);
-  p.set("openid.claimed_id", `https://steamcommunity.com/openid/id/${steamId}`);
+  p.set("openid.claimed_id", `https://steamcommunity.com/openid/id/${hracId}`);
   return p.toString();
 }
 
-async function prihlas(steamId: string): Promise<void> {
+async function prihlas(hracId: string): Promise<void> {
   const app = buildServer({ overSteam: async () => true, obnovStaty: async () => {} });
-  const res = await app.inject({ method: "GET", url: `/api/auth/steam/return?${navratPro(steamId)}` });
+  const res = await app.inject({ method: "GET", url: `/api/auth/steam/return?${navratPro(hracId)}` });
   expect(res.statusCode).toBe(302);
   await app.close();
 }
@@ -274,7 +274,7 @@ it("druhý přihlášený už adminem není", async () => {
 });
 
 it("dočasnému adminovi se práva při dalším přihlášení neodeberou", async () => {
-  // Tohle je ta past: upsertPlayer původně psal je_admin = (steamId === ADMIN_STEAM_ID),
+  // Tohle je ta past: upsertPlayer původně psal je_admin = (hracId === ADMIN_STEAM_ID),
   // takže s prázdnou proměnnou by si dočasný admin druhým přihlášením sám sebe
   // degradoval a režie by zmizela bez hlášky.
   vi.stubEnv("ADMIN_STEAM_ID", "");

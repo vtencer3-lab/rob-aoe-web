@@ -70,7 +70,8 @@ createdb -U postgres rob_aoe_test
 ```
 
 Zkopíruj `.env.example` na `.env` a uprav `DATABASE_URL`. **`.env` je
-gitignorovaný a musí takový zůstat** — patří do něj Steam API klíč.
+gitignorovaný a musí takový zůstat** — patří do něj Steam API klíč a
+Microsoft Client Secret.
 
 ```bash
 npm run db:migrate     # čte .env
@@ -107,12 +108,14 @@ Backend, `src/`:
 |---|---|
 | `main.ts`, `http/server.ts` | složení aplikace, registrace rout, servírování `web/dist` |
 | `config.ts` | proměnné prostředí a jejich kontrola při startu |
-| `auth/` | Steam OpenID (`steamOpenId.ts`), sezení, `devRoutes.ts` |
+| `auth/` | Steam OpenID (`steamOpenId.ts`) a Microsoft/Xbox OAuth (`microsoftOAuth.ts` — adresy a PKCE, `microsoftRoutes.ts` — routy), sezení, `devRoutes.ts` |
 | `db/` | přístup k databázi, jedna tabulka = jeden modul |
+| `players/zdroje.ts` | volba zdroje statistik podle platformy hráče (`zdrojeProHrace()`) — Steam hráč ze Steamu, Microsoft hráč z Worlds Edge podle profilu/aliasu, hodiny a vlastnictví hry Microsoft nezveřejňuje |
 | `http/routes/` | `events.ts` (akce, nastavení lobby), `matches.ts` (zápasy, hledání lobby, `DELETE /api/zapas/:id`), `kontrolaLobby.ts` („Zkontrolovat lobby“), `zkusebni.ts` (zkušební hráči na dev), `stream.ts` (SSE) |
 | `realtime/` | `hub.ts` (jeden kanál), `akceStav.ts` (staví stav), `redakce.ts` (zaslepení), `fazeLobby.ts` (lobby / hraje se, s pojistkou proti výpadku v seznamu), `pritomnost.ts` (zavření poslední karty odhlásí z akce) |
-| `matches/` | `composition.ts` (sedadla, PIN), `stateMachine.ts`, `hledaniLobby.ts` (výběr lobby podle Steam ID), `seznamLobby.ts` (cache seznamu), `sledovaniLobby.ts` (každých 10 s hlídá, jestli lobby ještě stojí), `zkusebniHraci.ts` |
-| `external/worldsEdgeLobby.ts` | stahuje a rozbaluje seznam otevřených lobby ze hry (stránkované po 100, sloty i nastavení) — klíče viz `docs/analyza-automaticke-hledani-lobby.md` §6 |
+| `matches/` | `composition.ts` (sedadla, PIN), `stateMachine.ts`, `hledaniLobby.ts` (výběr lobby podle hráčů zápasu — `hracId`, ne platforma), `seznamLobby.ts` (cache seznamu, překládá profily z `worldsEdgeLobby.ts` na hráče webu), `sledovaniLobby.ts` (každých 10 s hlídá, jestli lobby ještě stojí), `zkusebniHraci.ts` |
+| `external/worldsEdgeLobby.ts` | stahuje a rozbaluje seznam otevřených lobby ze hry (stránkované po 100, sloty i nastavení) — klíče viz `docs/analyza-automaticke-hledani-lobby.md` §6. Hermetický: na databázi nesahá, vrací jen čísla profilů (`profile_id`); na `hracId` je překládá až `matches/seznamLobby.ts` |
+| `external/xboxLive.ts` | výměna Microsoft tokenu za Xbox identitu (XBL → XSTS), gamerpic, herní historie (`titlehub`, AoE2 DE `titleId 2064168993`) |
 | `aoe/lobbyUri.ts` | rozbor a stavba `aoe2de://` — malé a důležité |
 | `shared/types.ts` | typy sdílené s frontendem, importuje se přímo z `web/` |
 | `shared/verze.ts` | verze webu; mění se jen přes `npm run verze` |

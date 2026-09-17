@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { nastavZesileniMikrofonu, VYCHOZI_ZESILENI, zesileniMikrofonu, zesilProud, ZESILENI_MAX, ZESILENI_MIN } from "./hlas.js";
+import { spustPrehravacHlasu, UDALOST_HLAS, hlasitostAdmina, nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, zesileniMikrofonu, zesilProud, ZESILENI_MAX, ZESILENI_MIN } from "./hlas.js";
 
 afterEach(() => {
   localStorage.clear();
@@ -18,6 +18,40 @@ it("zesílení mikrofonu se ukládá a ořezává na povolený rozsah", () => {
   expect(zesileniMikrofonu()).toBe(ZESILENI_MIN);
 });
 
+// Hlasitost hlasu adminů je vlastní podíl, taky jen v prohlížeči.
+it("hlasitost administrátora se ukládá a ořezává na 0–100", () => {
+  expect(hlasitostAdmina()).toBe(VYCHOZI_HLASITOST_ADMINA);
+  nastavHlasitostAdmina(40);
+  expect(localStorage.getItem("hlas.hlasitost-admina")).toBe("40");
+  expect(hlasitostAdmina()).toBe(40);
+  nastavHlasitostAdmina(-5);
+  expect(hlasitostAdmina()).toBe(0);
+});
+
+// Hlas jde ven naplno bez ohledu na Master Volume (uživatel 16. 9. 2026):
+// ať se nemusí zesilovat vstup a ubírat z kvality.
+it("hlas admina hraje na svou hlasitost, ne na podíl z Master Volume", () => {
+  localStorage.setItem("zvuk.hlasitost", "30");
+  const hlasitosti: number[] = [];
+  vi.stubGlobal(
+    "Audio",
+    vi.fn(function () {
+      return {
+        set volume(v: number) {
+          hlasitosti.push(v);
+        },
+        play: () => Promise.resolve(),
+        addEventListener: () => {},
+      };
+    }),
+  );
+  const odhlasit = spustPrehravacHlasu("ja", true);
+  const kousek = { zapasId: 1, kdo: "rob", jmeno: "Rob", sezeni: "s1", poradi: 0, konec: true, data: "AAAA", prijemci: ["ja"] };
+  window.dispatchEvent(new CustomEvent(UDALOST_HLAS, { detail: kousek }));
+  expect(hlasitosti).toEqual([1]);
+  odhlasit();
+});
+
 // Při 100 % se proud nechává být; nad 100 % jde přes zisk a limiter.
 it("zesilProud vrací původní proud při 100 % a zesílený nad ním", () => {
   const proud = { id: "puvodni" } as unknown as MediaStream;
@@ -25,23 +59,35 @@ it("zesilProud vrací původní proud při 100 % a zesílený nad ním", () => {
 
   const zavreno = vi.fn().mockResolvedValue(undefined);
   const gain = { gain: { value: 1 }, connect: vi.fn((cil: unknown) => cil) };
-  const limiter = { threshold: { value: 0 }, knee: { value: 0 }, ratio: { value: 0 }, attack: { value: 0 }, release: { value: 0 }, connect: vi.fn((cil: unknown) => cil) };
+  const tvar = { curve: null as Float32Array | null, oversample: "none", connect: vi.fn((cil: unknown) => cil) };
   const cil = { stream: { id: "zesileny" } };
   const zdroj = { connect: vi.fn((c: unknown) => c) };
+  const probuzeno = vi.fn().mockResolvedValue(undefined);
+  const nastaveni: unknown[] = [];
   vi.stubGlobal(
     "AudioContext",
-    vi.fn(() => ({
-      createGain: () => gain,
-      createDynamicsCompressor: () => limiter,
-      createMediaStreamDestination: () => cil,
-      createMediaStreamSource: () => zdroj,
-      close: zavreno,
-    })),
+    vi.fn((o: unknown) => {
+      nastaveni.push(o);
+      return {
+        createGain: () => gain,
+        createWaveShaper: () => tvar,
+        createMediaStreamDestination: () => cil,
+        createMediaStreamSource: () => zdroj,
+        resume: probuzeno,
+        close: zavreno,
+      };
+    }),
   );
-  const v = zesilProud(proud, 300);
+  const sProudem = { getAudioTracks: () => [{ getSettings: () => ({ sampleRate: 48_000 }) }] } as unknown as MediaStream;
+  const v = zesilProud(sProudem, 300);
   expect(v.proud).toBe(cil.stream);
   expect(gain.gain.value).toBe(3);
-  expect(limiter.ratio.value).toBe(20);
+  // Kontext má frekvenci mikrofonu a probudí se; omezení je měkká křivka.
+  expect(nastaveni[0]).toMatchObject({ sampleRate: 48_000 });
+  expect(probuzeno).toHaveBeenCalled();
+  expect(tvar.curve).toBeInstanceOf(Float32Array);
+  expect(tvar.curve!.at(-1)).toBeCloseTo(1, 5);
+  expect(Math.max(...Array.from(tvar.curve!).map(Math.abs))).toBeLessThanOrEqual(1);
   v.zavri();
   expect(zavreno).toHaveBeenCalled();
 });

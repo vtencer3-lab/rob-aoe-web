@@ -21,6 +21,6 @@ export const hlasHub = new Hub<HlasUdalost>();
  * slyšel by se s ozvěnou.
  */
 export function smiSlyset(divak: Divak, udalost: HlasUdalost): boolean {
-  if (!divak.steamId || divak.steamId === udalost.kdo) return false;
-  return divak.jeAdmin || udalost.prijemci.includes(divak.steamId);
+  if (!divak.hracId || divak.hracId === udalost.kdo) return false;
+  return divak.jeAdmin || udalost.prijemci.includes(divak.hracId);
 }

@@ -52,9 +52,10 @@ v localStorage; hráčům se nic neztlumí). Popisky jsou vlastní bublina
   `/^[A-Za-z0-9_-]{1,64}$/`, `poradi` celé ≥ 0, `data` ≤ 200 000 znaků
   base64 (`MAX_KOUSEK_B64`), prázdný kousek jen se `konec`.
 - `HlasUdalost` (`src/shared/types.ts`): `zapasId, kdo, jmeno, sezeni,
-  poradi, konec, data, mime?, prijemci` — `prijemci` jsou Steam ID účastníků
-  zápasu, server je přibalí ke každému kousku (jeden `getZapas` na kousek,
-  4×/s, v pořádku).
+  poradi, konec, data, mime?, prijemci` — `prijemci` jsou `hracId` účastníků
+  zápasu (dnes Steam i Microsoft, viz `docs/prehled-praci-a-zameru.md` §3.57),
+  server je přibalí ke každému kousku (jeden `getZapas` na kousek, 4×/s,
+  v pořádku).
 - `hlasHub` je **vlastní** `Hub<HlasUdalost>` (ne stavový hub): hlas není
   stav, přírůstky se nespojují, pro pozdní příchozí se nic nedrží.
 - Stream (`src/http/routes/stream.ts`) má druhý odběr:
@@ -100,8 +101,26 @@ poslouchá tam a drží `Map<kdo/sezeni, Prehravani>`:
 
 Tichý mikrofon jde v nastavení zesílit na 100–400 % (`hlas.zesileni-mikrofonu`
 v localStorage). `zesilProud(proud, procenta)` postaví řetěz Web Audia
-`createMediaStreamSource` → `GainNode` → `DynamicsCompressor` (práh −3 dB,
-knee 0, poměr 20:1, attack 3 ms, release 100 ms) → `createMediaStreamDestination`
-a nahrává se z jeho `stream`. Limiter je tam proto, že samotný zisk nad 1 by
-hlasitější slabiky ořezal natvrdo. Kontext se zavírá se zastavením nahrávání.
-Při 100 % se nic nevytváří — vrací se původní proud.
+`createMediaStreamSource` → `GainNode` → `WaveShaper` (křivka `tanh`,
+oversample 4×) → `createMediaStreamDestination` a nahrává se z jeho `stream`.
+
+**Past (16. 9. 2026): kompresor lupe.** `DynamicsCompressor` má náběh, takže
+transient projde nezkrácený a usekne se natvrdo. Měkká křivka `tanh` ohne
+každý vzorek okamžitě a nikdy nepřeteče přes 1. Další tři příčiny lupání:
+kontext se musí založit se vzorkovací frekvencí stopy
+(`track.getSettings().sampleRate`), jinak se převzorkovává; uspaný kontext
+(`state === "suspended"`) posílá ticho, proto `resume()`; a
+`autoGainControl: false` v `getUserMedia`, jinak se automatika prohlížeče
+pere s naším ziskem. Bitrate nahrávky 64 kb/s (32 zesílenému hlasu nestačí).
+Kontext se zavírá se zastavením nahrávání; při 100 % se nic nevytváří.
+
+`nahrajZkousku(procent, ms)` nahraje týmž řetězcem pár vteřin a vrátí
+`objectURL` k přehrání — nastavení tak jde ladit bez druhého člověka.
+
+## Hlasitost hlasu adminů (1.7.3)
+
+Vedle úplného ztlumení (`hlas.ztlumit-adminy`) má admin i plynulý posuvník
+„Hlasitost administrátora“ (`hlas.hlasitost-admina`, výchozí 100).
+`Prehravani` z něj nastaví `audio.volume` **přímo, mimo Master Volume**:
+výstup má jít naplno, aby se nemusel zesilovat vstup z mikrofonu (zesílení
+na vstupu ubírá z kvality). U hráče se posuvník nenabízí a hlas hraje naplno.

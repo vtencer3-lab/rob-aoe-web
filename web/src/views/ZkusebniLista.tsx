@@ -3,8 +3,8 @@ import { cesta } from "../cesty.js";
 
 interface DevInfo {
   hraci: string[];
-  reziser: { jmeno: string; steamId: string };
-  skutecni: { steamId: string; alias: string | null }[];
+  reziser: { jmeno: string; hracId: string };
+  skutecni: { hracId: string; alias: string | null }[];
   admin: string | null;
 }
 
@@ -16,7 +16,7 @@ interface DevInfo {
  * Odkazy, ne fetch: všechny tyhle routy odpovídají přesměrováním na kořen,
  * takže obyčejný proklik udělá přesně to, co má, včetně nastavení cookie.
  */
-export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
+export function ZkusebniLista({ jaHracId }: { jaHracId: string | null }) {
   const [info, setInfo] = useState<DevInfo | null>(null);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
   const kdoMaRezii =
     info.admin === null
       ? "nikdo"
-      : (info.skutecni.find((u) => u.steamId === info.admin)?.alias ?? info.admin);
+      : (info.skutecni.find((u) => u.hracId === info.admin)?.alias ?? info.admin);
 
   return (
     <section className="zkusebni">
@@ -61,10 +61,10 @@ export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
           Jsem {info.reziser.jmeno}
         </a>
         {info.skutecni
-          .filter((u) => u.steamId !== jaSteamId)
+          .filter((u) => u.hracId !== jaHracId)
           .map((u) => (
-            <a key={u.steamId} href={cesta(`/api/dev/login?steamId=${encodeURIComponent(u.steamId)}`)}>
-              Jsem {u.alias ?? u.steamId}
+            <a key={u.hracId} href={cesta(`/api/dev/login?hracId=${encodeURIComponent(u.hracId)}`)}>
+              Jsem {u.alias ?? u.hracId}
             </a>
           ))}
       </div>
@@ -74,7 +74,7 @@ export function ZkusebniLista({ jaSteamId }: { jaSteamId: string | null }) {
           svítí i uprostřed zápasu, který zrovna hraje. */}
       <p className="zaloha">Režii má: {kdoMaRezii}</p>
       <div className="ovladani">
-        <a href={cesta(`/api/dev/rezie?steamId=${encodeURIComponent(info.reziser.steamId)}`)}>
+        <a href={cesta(`/api/dev/rezie?hracId=${encodeURIComponent(info.reziser.hracId)}`)}>
           Režii dej účtu {info.reziser.jmeno}
         </a>
         <a href={cesta("/api/dev/rezie")}>Režii dej tomuhle účtu</a>

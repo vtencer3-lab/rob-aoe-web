@@ -4,7 +4,10 @@ import {
   existujeAdmin,
   getPlayer,
   getPlayers,
+  hraciPodleProfilu,
+  hraciPodleSteamId,
   savePlayerStats,
+  upsertHracXbox,
   upsertPlayer,
 } from "./players.js";
 
@@ -18,7 +21,7 @@ afterAll(async () => {
 
 it("založí hráče a podruhé ho jen vrátí", async () => {
   const prvni = await upsertPlayer("76561198000000001", false);
-  expect(prvni.steamId).toBe("76561198000000001");
+  expect(prvni.hracId).toBe("76561198000000001");
   expect(prvni.alias).toBeNull();
 
   await upsertPlayer("76561198000000001", false);
@@ -31,6 +34,17 @@ it("nastaví příznak admina", async () => {
   expect(hrac.jeAdmin).toBe(true);
 });
 
+it("zkušební hráč projde bez Steam ID", async () => {
+  const hrac = await upsertPlayer("test:pepa", null);
+  expect(hrac.steamId).toBeNull();
+  expect(hrac.platforma).toBe("steam");
+});
+
+it("Steam hráč dostane steam_id shodné s klíčem", async () => {
+  const hrac = await upsertPlayer("76561198014056480", null);
+  expect(hrac.steamId).toBe("76561198014056480");
+});
+
 it("uloží statistiky včetně času stažení", async () => {
   await upsertPlayer("76561198000000003", false);
   await savePlayerStats("76561198000000003", {
@@ -39,7 +53,7 @@ it("uloží statistiky včetně času stažení", async () => {
     eloNejvyssi: 1901,
     odehranoHer: 512,
     steamHodiny: 1230,
-    steamHra: "ma",
+    hraVlastnictvi: "ma",
     chyba: null,
   });
 
@@ -47,9 +61,23 @@ it("uloží statistiky včetně času stažení", async () => {
   expect(hrac?.alias).toBe("TenceR");
   expect(hrac?.elo1v1).toBe(1847);
   expect(hrac?.steamHodiny).toBe(1230);
-  expect(hrac?.steamHra).toBe("ma");
+  expect(hrac?.hraVlastnictvi).toBe("ma");
   expect(hrac?.statyStazenyV).toBeInstanceOf(Date);
   expect(hrac?.statyChyba).toBeNull();
+});
+
+it("uloží we_profil a we_profil_id, i pro Steam hráče", async () => {
+  await upsertPlayer("76561198000000010", false);
+  await savePlayerStats("76561198000000010", {
+    alias: "TenceR",
+    weProfil: "/steam/76561198000000010",
+    weProfilId: 654321,
+    chyba: null,
+  });
+
+  const hrac = await getPlayer("76561198000000010");
+  expect(hrac?.weProfil).toBe("/steam/76561198000000010");
+  expect(hrac?.weProfilId).toBe(654321);
 });
 
 it("zapíše chybu, ale nepřepíše dřívější hodnoty", async () => {
@@ -81,6 +109,30 @@ it("nulové hodiny se uloží jako 0, ne jako null", async () => {
   expect((await getPlayer("76561198000000008"))?.steamHodiny).toBe(0);
 });
 
+it("uloží datum posledního hraní a nepřepíše ho, když se příště nezjišťovalo", async () => {
+  await upsertPlayer("76561198000000006", false);
+  const hranoV = new Date("2026-09-14T23:05:11.685Z");
+  await savePlayerStats("76561198000000006", { hraVlastnictvi: "ma", hraHranoV: hranoV, chyba: null });
+  expect((await getPlayer("76561198000000006"))?.hraHranoV).toEqual(hranoV);
+
+  // Další uložení bez klíče hraHranoV (dotaz na herní historii selhal tentokrát) —
+  // undefined, staré datum se nesmí ztratit.
+  await savePlayerStats("76561198000000006", { chyba: "Herní historie: timeout" });
+  expect((await getPlayer("76561198000000006"))?.hraHranoV).toEqual(hranoV);
+});
+
+it("úspěšné zjištění bez data (hru už nemá) staré datum smaže", async () => {
+  await upsertPlayer("76561198000000007", false);
+  await savePlayerStats("76561198000000007", {
+    hraVlastnictvi: "ma",
+    hraHranoV: new Date("2026-08-01T00:00:00.000Z"),
+    chyba: null,
+  });
+  await savePlayerStats("76561198000000007", { hraVlastnictvi: "nema", hraHranoV: null, chyba: null });
+  expect((await getPlayer("76561198000000007"))?.hraHranoV).toBeNull();
+  expect((await getPlayer("76561198000000007"))?.hraVlastnictvi).toBe("nema");
+});
+
 it("vrátí null pro neznámého hráče", async () => {
   expect(await getPlayer("76561198000000099")).toBeNull();
 });
@@ -89,7 +141,41 @@ it("načte víc hráčů najednou", async () => {
   await upsertPlayer("76561198000000006", false);
   await upsertPlayer("76561198000000007", false);
   const hraci = await getPlayers(["76561198000000006", "76561198000000007", "neznamy"]);
-  expect(hraci.map((h) => h.steamId).sort()).toEqual(["76561198000000006", "76561198000000007"]);
+  expect(hraci.map((h) => h.hracId).sort()).toEqual(["76561198000000006", "76561198000000007"]);
+});
+
+it("přeloží profily z lobby na hráče webu jedním dotazem", async () => {
+  await upsertPlayer("76561198000000011", false);
+  await savePlayerStats("76561198000000011", { weProfilId: 111111, chyba: null });
+  await upsertHracXbox("2535412345678901", "Konzolista", false);
+  await savePlayerStats("xbox:2535412345678901", { weProfilId: 222222, chyba: null });
+
+  const mapa = await hraciPodleProfilu([111111, 222222, 999999]);
+  expect(mapa.get(111111)).toBe("76561198000000011");
+  expect(mapa.get(222222)).toBe("xbox:2535412345678901");
+  expect(mapa.has(999999)).toBe(false);
+});
+
+it("prázdný seznam profilů se do databáze vůbec nezeptá", async () => {
+  expect(await hraciPodleProfilu([])).toEqual(new Map());
+});
+
+// Záloha k hraciPodleProfilu pro hráče, kterým se we_profil_id ještě
+// nedoplnilo (nebo se nedoplní nikdy). Klíč hráče se u Steam hráčů rovná jeho
+// Steam ID, ale sloupec je jiný — hledá se podle steam_id, ne podle hrac_id.
+it("hraciPodleSteamId najde Steam hráče i bez we_profil_id", async () => {
+  await upsertPlayer("76561198000000011", false);
+  await upsertHracXbox("2535412345678901", "Konzolista", false);
+
+  const mapa = await hraciPodleSteamId(["76561198000000011", "76561198999999999"]);
+  expect(mapa.get("76561198000000011")).toBe("76561198000000011");
+  expect(mapa.has("76561198999999999")).toBe(false);
+  // Microsoft hráč Steam ID nemá, takže se tudy najít nedá — a nemusí.
+  expect([...mapa.values()]).not.toContain("xbox:2535412345678901");
+});
+
+it("prázdný seznam Steam ID se do databáze vůbec nezeptá", async () => {
+  expect(await hraciPodleSteamId([])).toEqual(new Map());
 });
 
 it("upsertPlayer s null práva admina nemění", async () => {

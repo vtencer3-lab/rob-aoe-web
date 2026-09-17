@@ -3,6 +3,7 @@ import { config } from "../config.js";
 import { existujeAdmin, getPlayer, upsertPlayer } from "../db/players.js";
 import { createSession, deleteSession, getSessionUser } from "../db/sessions.js";
 import { SESSION_TTL_MS } from "../db/sessions.js";
+import { odhlasZAkce } from "../realtime/pritomnost.js";
 import {
   buildAuthUrl,
   extractSteamId,
@@ -16,7 +17,7 @@ export const CEKANI_NA_JMENO_MS = 4_000;
 
 export interface AuthDeps {
   overSteam: (params: URLSearchParams) => Promise<boolean>;
-  obnovStaty: (steamId: string) => Promise<void>;
+  obnovStaty: (hracId: string) => Promise<void>;
 }
 
 /**
@@ -27,8 +28,8 @@ export interface AuthDeps {
  * V nouzovém režimu povyšujeme jen dokud žádný admin neexistuje; jakmile ho
  * databáze má, nikomu dalšímu se nic nepřidá a nikomu nic neubere.
  */
-export async function komuDatAdmina(steamId: string): Promise<boolean | null> {
-  if (config.adminSteamIds.length > 0) return config.adminSteamIds.includes(steamId);
+export async function komuDatAdmina(hracId: string): Promise<boolean | null> {
+  if (config.adminHracIds.length > 0) return config.adminHracIds.includes(hracId);
   if (!config.adminBootstrap) return null;
   return (await existujeAdmin()) ? null : true;
 }
@@ -96,21 +97,21 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         .send({ chyba: "Neplatný návrat ze Steamu: přihlášení nepatří tomuhle webu." });
     }
 
-    const steamId = extractSteamId(params);
-    if (!steamId) return reply.code(401).send({ chyba: "Steam nevrátil platný identifikátor." });
+    const hracId = extractSteamId(params);
+    if (!hracId) return reply.code(401).send({ chyba: "Steam nevrátil platný identifikátor." });
     if (!(await deps.overSteam(params))) {
       return reply.code(401).send({ chyba: "Steam přihlášení se nepodařilo ověřit." });
     }
 
-    await upsertPlayer(steamId, await komuDatAdmina(steamId));
+    await upsertPlayer(hracId, await komuDatAdmina(hracId));
 
     // Statistiky se stahují mimo přihlašovací cestu. Když selžou — i synchronně,
     // dřív než vznikne příslib — přihlášení platí dál.
     void Promise.resolve()
-      .then(() => deps.obnovStaty(steamId))
+      .then(() => deps.obnovStaty(hracId))
       .catch(() => {});
 
-    const sid = await createSession(steamId);
+    const sid = await createSession(hracId);
     return reply
       .setCookie(config.cookieNazev, sid, nastaveniCookie())
       .redirect(config.domovskaCesta, 302);
@@ -118,35 +119,53 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
   app.post("/api/auth/logout", async (request, reply) => {
     const sid = request.cookies[config.cookieNazev];
-    if (sid) await deleteSession(sid);
+    if (sid) {
+      // Kdo se vědomě odhlásí z webu, ať zmizí i ze seznamu přihlášených na
+      // večer — stejnou cestou (odhlasZAkce) jako zavření poslední karty a
+      // tlačítko „Odhlásit se z akce“, ať se to nerozejde do tří implementací.
+      // Hráče je nutné zjistit dřív, než sezení smazáním zmizí.
+      const hracId = await getSessionUser(sid);
+      if (hracId) await odhlasZAkce(hracId);
+      await deleteSession(sid);
+    }
     return reply
       .clearCookie(config.cookieNazev, { path: config.domovskaCesta })
       .send({ ok: true });
   });
 
+  /**
+   * Vedle hráče nese `/api/me` i příznak, jestli Microsoft přihlašovací cesta
+   * na tomhle nasazení vůbec existuje: bez `MS_CLIENT_ID` a `MS_CLIENT_SECRET`
+   * se routy v `server.ts` neregistrují a odkaz na `/api/auth/microsoft` by
+   * skončil na syrovém JSON „Neznámá cesta.“ (prefix `/api/` obchází SPA
+   * fallback). Příznak je v odpovědi i pro nepřihlášeného — právě ten vidí
+   * přihlašovací tlačítko. Vlastní endpoint by to nezasloužilo: `/api/me`
+   * si frontend stejně načítá hned při startu.
+   */
   app.get("/api/me", async (request) => {
-    const steamId = await currentUser(request);
-    if (!steamId) return { hrac: null };
+    const maMicrosoft = config.maMicrosoft;
+    const hracId = await currentUser(request);
+    if (!hracId) return { hrac: null, maMicrosoft };
     // Úplně první přihlášení: řádek hráče v tu chvíli existuje, ale je prázdný,
     // protože stahování statistik běží mimo přihlašovací cestu. Kdybychom
     // odpověděli hned, v záhlaví by svítilo Steam ID, dokud si člověk stránku
     // nenačte znovu. Proto se u nepojmenovaného hráče na obnovu chvíli počká —
     // ale jen chvíli, ať přihlášení nedrží pohledem do nefunkčního Steamu.
-    const cerstvy = await getPlayer(steamId);
-    if (cerstvy && !cerstvy.alias && !cerstvy.steamName) {
+    const cerstvy = await getPlayer(hracId);
+    if (cerstvy && !cerstvy.alias && !cerstvy.platformaJmeno) {
       await Promise.race([
-        deps.obnovStaty(steamId).catch(() => {}),
+        deps.obnovStaty(hracId).catch(() => {}),
         new Promise((hotovo) => setTimeout(hotovo, CEKANI_NA_JMENO_MS)),
       ]);
-      return { hrac: (await getPlayer(steamId)) ?? cerstvy };
+      return { hrac: (await getPlayer(hracId)) ?? cerstvy, maMicrosoft };
     }
     // Statistiky se dřív obnovovaly jen při přihlášení, a sezení drží měsíc:
     // kdo se nepřihlásil znovu, měl v tabulce data z prvního dne. Načtení
     // stránky je dost častá a dost levná příležitost; obnova sama hlídá,
     // že se Steamu neptá častěji než jednou za patnáct minut.
     void Promise.resolve()
-      .then(() => deps.obnovStaty(steamId))
+      .then(() => deps.obnovStaty(hracId))
       .catch(() => {});
-    return { hrac: await getPlayer(steamId) };
+    return { hrac: await getPlayer(hracId), maMicrosoft };
   });
 }

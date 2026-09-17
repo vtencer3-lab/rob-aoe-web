@@ -36,7 +36,7 @@ export const TYMY: readonly Tym[] = [0, 1, 2, 3, 4];
 
 /** Jeden řádek sestavy, jak ho Rob naklikal: kdo, jaký tým, jaká barva. Pořadí pole = pořadí slotů v lobby. */
 export interface SestavaVstup {
-  steamId: string;
+  hracId: string;
   tym: Tym;
   barva: Barva;
   /** Herní id civilizace (civilizace.ts); null nebo chybí = libovolná. */
@@ -50,23 +50,37 @@ export interface Seat extends SestavaVstup {
 }
 
 /**
- * Co Steam řekl o vlastnictví hry: `ma` (je v knihovně), `nema` (veřejný
- * profil, hra v knihovně chybí), `soukromy` (knihovna je skrytá, nejde ověřit).
+ * Jestli hráč hru na svém účtu má: `ma`, `nema` (účet je vidět, hra tam není),
+ * `soukromy` (knihovna na Steamu nebo herní historie na Xboxu je skrytá,
+ * takže to ověřit nejde).
  */
-export type SteamVlastnictvi = "ma" | "nema" | "soukromy";
+export type Vlastnictvi = "ma" | "nema" | "soukromy";
 
 export interface PlayerView {
-  steamId: string;
+  hracId: string;
   alias: string | null;
-  steamName: string | null;
+  platformaJmeno: string | null;
   avatarUrl: string | null;
   country: string | null;
   elo1v1: number | null;
   eloNejvyssi: number | null;
   odehranoHer: number | null;
   steamHodiny: number | null;
-  /** Vlastnictví hry podle Steamu; null = ještě nezjištěno (nebo bez klíče). */
-  steamHra?: SteamVlastnictvi | null;
+  /**
+   * Platforma přihlášení; chybí ve starších snímcích a u zástupných hráčů
+   * (výchozí = Steam). Tabulka podle ní říká, co vlastně ikona hry ověřila:
+   * u Steamu knihovnu, u Microsoftu herní historii.
+   */
+  platforma?: "steam" | "xbox";
+  /** Vlastnictví hry; null = ještě nezjištěno (nebo bez klíče k dané platformě). */
+  hraVlastnictvi?: Vlastnictvi | null;
+  /**
+   * Kdy hráč hru naposledy spustil (ISO); jen Microsoft — Steam knihovna
+   * tohle datum nevrací. `null`/chybí u Steamu, u hráče bez zjištěného data
+   * (starší přihlášení, před touhle funkcí) i u toho, kdo hru nikdy nehrál.
+   * Práh, od kdy je to ještě „nedávno“, počítá frontend (`SeznamPrihlasenych`).
+   */
+  hraHranoV?: string | null;
   posledniZapas: string | null;
   statyStazenyV: string | null;
   statyChyba: string | null;
@@ -106,16 +120,24 @@ export interface AkceView {
   pristiHeslo?: string;
 }
 
+/**
+ * Redakce podle diváka (`redigujProDivaka`) je vedená na úrovni zápasu
+ * (`heslo`, `lobbyId`, `joinUri`, `spectatorUri`, `zpravy`), ne jednotlivých
+ * účastníků — pole tady dole vidí úplně každý divák. Kdo sem přidá něco
+ * citlivého, musí napřed rozšířit `redigujProDivaka` v `realtime/redakce.ts`.
+ */
 export interface UcastnikView {
-  steamId: string;
+  hracId: string;
   alias: string | null;
-  steamName: string | null;
+  platformaJmeno: string | null;
   tym: Tym;
   barva: Barva;
   /** Předepsaná civilizace (herní id), null = libovolná. */
   civ: number | null;
   /** 1v1 ELO ze žebříčku; chybí ve starších snímcích a testech. */
   elo1v1?: number | null;
+  /** Platforma přihlášení; chybí ve starších snímcích a testech (výchozí = Steam). */
+  platforma?: "steam" | "xbox";
   jeHost: boolean;
   /** Slot v lobby, od nuly; v tomhle pořadí Rob hráče naklikal. */
   poradi: number;
@@ -126,7 +148,7 @@ export interface UcastnikView {
  * Kdo vyhrál: tým (1 až 4), nebo jeden hráč, když hrál sám za sebe („–“).
  * Strany zápasu vznikají ze sestavy, viz strany.ts.
  */
-export type Vitez = { tym: Tym } | { steamId: string };
+export type Vitez = { tym: Tym } | { hracId: string };
 
 /** Lobby ještě stojí (sedí se v ní), nebo už hra běží. Null = nevíme. */
 export type FazeLobby = "lobby" | "hraje_se";
@@ -155,7 +177,7 @@ export interface ZapasView {
 /** Zpráva v chatu zápasu. Jméno, barva a tým jsou aktuální, ne z doby odeslání. */
 export interface ZpravaView {
   id: number;
-  steamId: string;
+  hracId: string;
   jmeno: string;
   jeAdmin: boolean;
   /** Barva a tým z účasti v zápase; admin, který v něm nehraje, má null. */

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { zkontrolujSestavu } from "./sestava.js";
 import type { Barva, SestavaVstup, Tym } from "./types.js";
 
-const h = (steamId: string, tym: Tym, barva: Barva): SestavaVstup => ({ steamId, tym, barva });
+const h = (hracId: string, tym: Tym, barva: Barva): SestavaVstup => ({ hracId, tym, barva });
 
 describe("zkontrolujSestavu", () => {
   it("1v1, 2v2 i Coop Kings projdou", () => {

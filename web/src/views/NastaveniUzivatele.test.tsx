@@ -11,6 +11,15 @@ it("posuvník chatu ukládá podíl z Master Volume", () => {
   expect(localStorage.getItem("zvuk.hlasitost-chat")).toBe("20");
 });
 
+// Hlasitost hlasu adminů (jen admin): podíl z Master Volume, ukládá se.
+it("posuvník hlasitosti administrátora ukládá podíl", () => {
+  const onHlasitostAdmina = vi.fn();
+  render(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} hlasitostChatu={50} onHlasitostChatu={vi.fn()} hlasitostAdmina={100} onHlasitostAdmina={onHlasitostAdmina} onZavrit={vi.fn()} />);
+  fireEvent.change(screen.getByRole("slider", { name: /hlasitost administrátora/i }), { target: { value: "40" } });
+  expect(onHlasitostAdmina).toHaveBeenCalledWith(40);
+  expect(localStorage.getItem("hlas.hlasitost-admina")).toBe("40");
+});
+
 // Zesílení mikrofonu (jen admin s push-to-talk): 100–400 %, ukládá se.
 it("posuvník zesílení mikrofonu ukládá procenta a hlásí je", () => {
   const onZesileni = vi.fn();
@@ -23,9 +32,17 @@ it("posuvník zesílení mikrofonu ukládá procenta a hlásí je", () => {
   expect(localStorage.getItem("hlas.zesileni-mikrofonu")).toBe("250");
 });
 
-it("bez push-to-talk se zesílení mikrofonu nenabízí", () => {
+// Zkouška mikrofonu: v testovacím prohlížeči není MediaRecorder, tak hláška.
+it("zkouška mikrofonu řekne, když ji prohlížeč neumí", async () => {
+  render(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} hlasitostChatu={50} onHlasitostChatu={vi.fn()} zesileniMikrofonu={150} onZesileniMikrofonu={vi.fn()} onZavrit={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: /zkusit mikrofon/i }));
+  expect(await screen.findByText(/nahrávání z mikrofonu neumí/i)).toBeInTheDocument();
+});
+
+it("hráč adminská nastavení zvuku nevidí", () => {
   render(<NastaveniUzivatele hlasitost={70} onHlasitost={vi.fn()} hlasitostChatu={50} onHlasitostChatu={vi.fn()} onZavrit={vi.fn()} />);
   expect(screen.queryByRole("slider", { name: /zesílení mikrofonu/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("slider", { name: /hlasitost administrátora/i })).not.toBeInTheDocument();
 });
 
 it("posuvník hlasitosti ukládá do prohlížeče a hlásí hodnotu", () => {

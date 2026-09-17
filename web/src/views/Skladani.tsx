@@ -15,7 +15,7 @@ interface Props {
   onVytvoritZapas: (sestava: SestavaVstup[]) => void;
   /** Civilization Set z nastavení akce — omezuje nabídku civilizací. */
   sadaCivilizaci: number | null;
-  /** Řádek (steamId) ke zvýraznění po změně / zpět / znovu; `cas` odliší opakování. */
+  /** Řádek (hracId) ke zvýraznění po změně / zpět / znovu; `cas` odliší opakování. */
   zvyraznit?: { cil: string | null; cas: number } | null;
   /**
    * První AI v sestavě. Volá se proto, aby šlo upozornit na AI Difficulty:
@@ -42,11 +42,11 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
     // AI do součtu nevstupuje a nepatří ani mezi „bez ELA“: tam se vypisují
     // lidé, kterým se statistiky nestáhly, a to je jiná informace. Tým, který
     // je celý AI, se ale v souhrnu ukáže — jinak by strany zmizely.
-    const lide = clenove.filter((v) => !jeAi(v.hrac.steamId));
+    const lide = clenove.filter((v) => !jeAi(v.hrac.hracId));
     vysledek.push({
       tym,
       soucet: lide.reduce((s, v) => s + (v.hrac.elo1v1 ?? 0), 0),
-      bezEla: lide.filter((v) => v.hrac.elo1v1 === null).map((v) => v.hrac.alias ?? v.hrac.steamName ?? v.hrac.steamId),
+      bezEla: lide.filter((v) => v.hrac.elo1v1 === null).map((v) => v.hrac.alias ?? v.hrac.platformaJmeno ?? v.hrac.hracId),
     });
   }
   return vysledek;
@@ -69,8 +69,8 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
   useEffect(() => {
     const srovnej = (e: Event) => {
       const id = jmenoPodKurzorem(e, seznam.current);
-      const hrac = id ? (skladani.vybrani.find((v) => v.hrac.steamId === id)?.hrac ?? null) : null;
-      setNahled(hrac && jeAi(hrac.steamId) ? null : hrac);
+      const hrac = id ? (skladani.vybrani.find((v) => v.hrac.hracId === id)?.hrac ?? null) : null;
+      setNahled(hrac && jeAi(hrac.hracId) ? null : hrac);
     };
     window.addEventListener(KONEC_TAHU, srovnej);
     return () => window.removeEventListener(KONEC_TAHU, srovnej);
@@ -92,7 +92,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
           aria-label="Přidat AI do sestavy"
           title={vstupy.length >= MAX_HRACU ? "Lobby je plná" : "Přisadí k sestavě počítačového protivníka"}
           onClick={() => {
-            const prvni = !vstupy.some((v) => jeAi(v.steamId));
+            const prvni = !vstupy.some((v) => jeAi(v.hracId));
             skladani.pridejAi();
             if (prvni) onPrvniAi?.();
           }}
@@ -103,9 +103,9 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
 
       <ul className="sestava" data-testid="vybrani" ref={seznam}>
         {skladani.vybrani.map(({ vstup: v, hrac }) => {
-          const jmeno = hrac.alias ?? hrac.steamName ?? hrac.steamId;
+          const jmeno = hrac.alias ?? hrac.platformaJmeno ?? hrac.hracId;
           return (
-            <li key={v.steamId} className={`radek vybrany barva-${v.barva}`} {...tahani("vybrani", v.steamId)}>
+            <li key={v.hracId} className={`radek vybrany barva-${v.barva}`} {...tahani("vybrani", v.hracId)}>
               <span className="uchyt" aria-hidden="true">
                 ⋮⋮
               </span>
@@ -114,10 +114,10 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
                 className={`volba volba-barva barva-${v.barva}`}
                 aria-label={`Barva ${jmeno}: ${BARVA_NAZEV[v.barva]}`}
                 title="Levé tlačítko další barva, pravé předchozí"
-                onClick={() => skladani.uprav(v.steamId, (x) => ({ ...x, barva: dalsi(BARVY, x.barva, 1) }))}
+                onClick={() => skladani.uprav(v.hracId, (x) => ({ ...x, barva: dalsi(BARVY, x.barva, 1) }))}
                 onContextMenu={(e) => {
                   e.preventDefault();
-                  skladani.uprav(v.steamId, (x) => ({ ...x, barva: dalsi(BARVY, x.barva, -1) }));
+                  skladani.uprav(v.hracId, (x) => ({ ...x, barva: dalsi(BARVY, x.barva, -1) }));
                 }}
               >
                 {v.barva}
@@ -127,21 +127,21 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
                 className="volba volba-tym"
                 aria-label={`Tým ${jmeno}: ${v.tym === 0 ? "bez týmu" : v.tym}`}
                 title="Levé tlačítko další tým, pravé předchozí"
-                onClick={() => skladani.uprav(v.steamId, (x) => ({ ...x, tym: dalsi(TYMY, x.tym, 1) }))}
+                onClick={() => skladani.uprav(v.hracId, (x) => ({ ...x, tym: dalsi(TYMY, x.tym, 1) }))}
                 onContextMenu={(e) => {
                   e.preventDefault();
-                  skladani.uprav(v.steamId, (x) => ({ ...x, tym: dalsi(TYMY, x.tym, -1) }));
+                  skladani.uprav(v.hracId, (x) => ({ ...x, tym: dalsi(TYMY, x.tym, -1) }));
                 }}
               >
                 {v.tym === 0 ? "–" : v.tym}
               </button>
               <span
                 className="jmeno jmeno-hrace"
-                data-jmeno-hrace={hrac.steamId}
+                data-jmeno-hrace={hrac.hracId}
                 data-testid="jmeno-vybraneho"
                 onPointerEnter={() => {
                   // Počítač žádné žebříčky nemá, karta by u něj byla prázdná.
-                  if (!tahneSe() && !jeAi(hrac.steamId)) setNahled(hrac);
+                  if (!tahneSe() && !jeAi(hrac.hracId)) setNahled(hrac);
                 }}
                 onPointerLeave={() => {
                   if (!tahneSe()) setNahled(null);
@@ -157,14 +157,14 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
                 popisek={`Civilizace ${jmeno}`}
                 sada={sadaCivilizaci}
                 hodnota={v.civ ?? null}
-                onZmena={(civ) => skladani.uprav(v.steamId, (x) => ({ ...x, civ }))}
+                onZmena={(civ) => skladani.uprav(v.hracId, (x) => ({ ...x, civ }))}
               />
               <button
                 type="button"
                 className="odebrat"
                 aria-label={`Vyřadit ${jmeno} ze sestavy`}
                 title="Vyřadit ze sestavy"
-                onClick={() => skladani.odeber(v.steamId)}
+                onClick={() => skladani.odeber(v.hracId)}
               >
                 ×
               </button>
@@ -195,7 +195,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
           className="vytvorit"
           disabled={chyba !== null}
           onClick={() => {
-            onVytvoritZapas(vstupy.map((v) => ({ steamId: v.steamId, tym: v.tym, barva: v.barva, civ: v.civ ?? null })));
+            onVytvoritZapas(vstupy.map((v) => ({ hracId: v.hracId, tym: v.tym, barva: v.barva, civ: v.civ ?? null })));
             skladani.vynuluj();
           }}
         >

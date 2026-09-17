@@ -8,7 +8,35 @@ export const KOUSEK_MS = 250;
 /** Preferovaný formát nahrávky; co prohlížeč neumí, nahradí výchozím. */
 export const MIME_HLASU = "audio/webm;codecs=opus";
 const KLIC_ZTLUMIT_ADMINY = "hlas.ztlumit-adminy";
+const KLIC_HLASITOST_ADMINA = "hlas.hlasitost-admina";
 const KLIC_ZESILENI = "hlas.zesileni-mikrofonu";
+/**
+ * Hlasitost hlasu administrátorů, 0–100; výchozí 100 = naplno.
+ *
+ * Schválně **mimo Master Volume** (uživatel 16. 9. 2026): výstup má jít na
+ * maximum, ať se nemusí zesilovat vstup z mikrofonu — zesílení na vstupu
+ * ukrajuje z kvality, i s měkkým omezením. Master Volume tedy hlas neztlumí;
+ * kdo chce kolegu ztišit, ubere tímhle posuvníkem, nebo ho umlčí úplně.
+ */
+export const VYCHOZI_HLASITOST_ADMINA = 100;
+
+export function hlasitostAdmina(): number {
+  try {
+    const ulozeno = localStorage.getItem(KLIC_HLASITOST_ADMINA);
+    const cislo = ulozeno === null ? NaN : Number(ulozeno);
+    return Number.isFinite(cislo) ? Math.min(100, Math.max(0, cislo)) : VYCHOZI_HLASITOST_ADMINA;
+  } catch {
+    return VYCHOZI_HLASITOST_ADMINA;
+  }
+}
+
+export function nastavHlasitostAdmina(procent: number): void {
+  try {
+    localStorage.setItem(KLIC_HLASITOST_ADMINA, String(Math.min(100, Math.max(0, Math.round(procent)))));
+  } catch {
+    // Bez úložiště platí do obnovení stránky jen výchozí.
+  }
+}
 /** Zesílení mikrofonu v procentech: 100 = bez zásahu, 400 = čtyřnásobek. */
 export const ZESILENI_MIN = 100;
 export const ZESILENI_MAX = 400;
@@ -33,31 +61,82 @@ export function nastavZesileniMikrofonu(procent: number): void {
 }
 
 /**
+ * Měkké omezení (tanh): nad prahem se křivka plynule ohýbá a nikdy nepřeteče
+ * přes 1. Kompresor (`DynamicsCompressor`) tady dřív lupal — má náběh (attack),
+ * takže první milisekundy hlasité slabiky projdou nezkrácené a useknou se
+ * natvrdo (uživatel 16. 9. 2026: „po tom zesílení ten zvuk lupe“). Tvar
+ * křivky nemá náběh, ohne každý vzorek hned.
+ */
+function krivkaOmezeni(delka = 2048): Float32Array<ArrayBuffer> {
+  const k = new Float32Array(new ArrayBuffer(delka * Float32Array.BYTES_PER_ELEMENT));
+  for (let i = 0; i < delka; i++) {
+    const x = (i / (delka - 1)) * 2 - 1;
+    // tanh se strmostí 1,6: do ±0,5 skoro rovné, dál plynule saturuje.
+    k[i] = Math.tanh(x * 1.6) / Math.tanh(1.6);
+  }
+  return k;
+}
+
+/**
  * Proud z mikrofonu zesílený podle nastavení (uživatel 15. 9. 2026: „možnost
- * boostnout svůj mikrofon“). Web Audio: zdroj → zisk → měkký limiter →
- * výstupní proud, ať zesílení nepřebudí a nekřupe. Vrací i zavření kontextu;
- * při 100 % nebo bez Web Audia se vrací původní proud a zavírat není co.
+ * boostnout svůj mikrofon“). Web Audio: zdroj → zisk → měkké omezení →
+ * výstupní proud. Vrací i zavření kontextu; při 100 % nebo bez Web Audia se
+ * vrací původní proud a zavírat není co.
+ *
+ * Kontext se zakládá se vzorkovací frekvencí mikrofonu: s jinou by prohlížeč
+ * musel převzorkovávat a na hranicích bloků to cvakalo. Zároveň se hned
+ * probouzí (`resume`) — uspaný kontext posílá do nahrávky ticho a mezery.
  */
 export function zesilProud(proud: MediaStream, procent: number): { proud: MediaStream; zavri: () => void } {
   const Kontext = typeof window === "undefined" ? undefined : (window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
   if (procent <= 100 || !Kontext) return { proud, zavri: () => {} };
-  const kontext = new Kontext();
+  const stopa = proud.getAudioTracks()[0];
+  const sampleRate = stopa?.getSettings?.().sampleRate;
+  const kontext = sampleRate ? new Kontext({ sampleRate, latencyHint: "interactive" }) : new Kontext({ latencyHint: "interactive" });
+  void kontext.resume?.().catch(() => {});
   const zisk = kontext.createGain();
   zisk.gain.value = procent / 100;
-  const limiter = kontext.createDynamicsCompressor();
-  limiter.threshold.value = -3;
-  limiter.knee.value = 0;
-  limiter.ratio.value = 20;
-  limiter.attack.value = 0.003;
-  limiter.release.value = 0.1;
+  const omezeni = kontext.createWaveShaper();
+  omezeni.curve = krivkaOmezeni();
+  omezeni.oversample = "4x";
   const cil = kontext.createMediaStreamDestination();
-  kontext.createMediaStreamSource(proud).connect(zisk).connect(limiter).connect(cil);
+  kontext.createMediaStreamSource(proud).connect(zisk).connect(omezeni).connect(cil);
   return {
     proud: cil.stream,
     zavri: () => {
       void kontext.close().catch(() => {});
     },
   };
+}
+
+/**
+ * Zkouška mikrofonu (uživatel 16. 9. 2026, ať jde zesílení nastavit bez
+ * druhého člověka): pár vteřin se nahraje přesně tím řetězcem, kterým jde
+ * push-to-talk, a vrátí se adresa nahrávky k přehrání. Volající ji po
+ * přehrání uvolní (`URL.revokeObjectURL`).
+ */
+export async function nahrajZkousku(procent: number, ms = 3_000): Promise<string> {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+    throw new Error("Tenhle prohlížeč nahrávání z mikrofonu neumí.");
+  }
+  const proud = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false } });
+  const zesileni = zesilProud(proud, procent);
+  const mime = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(MIME_HLASU) ? MIME_HLASU : undefined;
+  const rekorder = mime ? new MediaRecorder(zesileni.proud, { mimeType: mime, audioBitsPerSecond: 64_000 }) : new MediaRecorder(zesileni.proud);
+  const kusy: Blob[] = [];
+  rekorder.ondataavailable = (e: BlobEvent) => {
+    if (e.data.size > 0) kusy.push(e.data);
+  };
+  const konec = new Promise<void>((hotovo) => {
+    rekorder.onstop = () => hotovo();
+  });
+  rekorder.start();
+  await new Promise((dal) => setTimeout(dal, ms));
+  rekorder.stop();
+  await konec;
+  zesileni.zavri();
+  proud.getTracks().forEach((t) => t.stop());
+  return URL.createObjectURL(new Blob(kusy, { type: rekorder.mimeType || mime || MIME_HLASU }));
 }
 
 export function ztlumitAdminy(): boolean {
@@ -101,7 +180,8 @@ class Prehravani {
 
   constructor(mime: string) {
     this.#mime = mime;
-    this.#audio.volume = Math.min(1, Math.max(0, hlasitost() / 100));
+    // Naplno, nezávisle na Master Volume — viz hlasitostAdmina().
+    this.#audio.volume = Math.min(1, Math.max(0, hlasitostAdmina() / 100));
     this.#zive = typeof MediaSource !== "undefined" && typeof MediaSource.isTypeSupported === "function" && MediaSource.isTypeSupported(mime);
     if (this.#zive) {
       this.#zdroj = new MediaSource();
@@ -226,7 +306,9 @@ export function vytvorNahravani(odesli: OdesliKousek, onChyba?: (zprava: string)
         return;
       }
       try {
-        proud = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+        // Automatické řízení hlasitosti se při zesílení pere s naším ziskem
+        // (zvedne se šum, pak to škubne dolů), tak jen echo a šum.
+        proud = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false } });
       } catch {
         onChyba?.("Mikrofon se nepodařilo otevřít — povol ho stránce v prohlížeči.");
         return;
@@ -236,7 +318,8 @@ export function vytvorNahravani(odesli: OdesliKousek, onChyba?: (zprava: string)
       zavriZesileni = zesileni.zavri;
       const nahravany = zesileni.proud;
       const mime = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(MIME_HLASU) ? MIME_HLASU : undefined;
-      rekorder = mime ? new MediaRecorder(nahravany, { mimeType: mime, audioBitsPerSecond: 32_000 }) : new MediaRecorder(nahravany);
+      // 32 kb/s zesílenému hlasu nestačilo — hlasitější místa chrastila.
+      rekorder = mime ? new MediaRecorder(nahravany, { mimeType: mime, audioBitsPerSecond: 64_000 }) : new MediaRecorder(nahravany);
       sezeni = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
       poradi = 0;
       const skutecnyMime = rekorder.mimeType || mime || MIME_HLASU;

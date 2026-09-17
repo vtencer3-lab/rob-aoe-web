@@ -297,8 +297,9 @@ Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 | `BASE_PATH` (build) | `/aoe/` | `/aoe/dev/` | `/aoe/experimental/` |
 | `HOST` | `0.0.0.0` | `0.0.0.0` | `0.0.0.0` |
 | `PORT` | `3000` | `3000` | `3000` |
-| `ADMIN_STEAM_ID` | seznam Steam ID s režií oddělený čárkou (Rob + správce) | totéž | totéž |
+| `ADMIN_STEAM_ID` | seznam `hrac_id` s režií oddělený čárkou (Rob + správce); bere Steam ID i `xbox:<xuid>`, jméno proměnné zůstalo kvůli nasazení (viz `docs/prehled-praci-a-zameru.md` §3.57) | totéž | totéž |
 | `STEAM_API_KEY` | volitelné | volitelné | volitelné |
+| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | **nenastaveno** — přihlášení Microsoft účtem tu zatím vypnuté | registrace z entra.microsoft.com — jediná aplikace, která je má | **nenastaveno** |
 | `LOG_LEVEL` | `info` | `info` | `info` |
 | `DEV_PRISTUP` | nenastavovat | nenastavovat | nenastavovat |
 | `ZKUSEBNI_HRACI` | nenastavovat | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` |
@@ -316,13 +317,26 @@ Před každým releasem do `main` se na dosavadní stav `main` pověsí značka
 **Nejdřív zjisti, jestli mezi verzemi přibyla migrace:**
 
 ```bash
-git diff --name-only vX.Y.Z..main -- migrations/
+git diff --name-only vX.Y.Z..main -- database/
 ```
+
+Migrace jsou v `database/`; složka `migrations/` v repu nikdy nebyla, takže
+příkaz s ní vypsal prázdno pokaždé — i když migrace přibyly.
 
 Když je výpis prázdný, je návrat čistě otázka kódu a nic se neztratí. Když
 prázdný není, databáze už je napřed a **samotné vrácení kódu nestačí** —
 migrace se nevrací samy a stará verze nemusí novou strukturu unést. To je
 případ na rozmyšlenou, ne na rychlý příkaz.
+
+> **Migrace 027 a 028 zpátky nejdou.** Runner ve `scripts/migrate.ts` zná jen
+> dopředný směr a žádná migrace zpětnou variantu nemá. Migrace 027 přejmenovala
+> `player.steam_id` na `hrac_id` (a totéž v pěti dalších tabulkách), migrace 028
+> `steam_name` na `platforma_jmeno` a `steam_hra` na `hra_vlastnictvi`. Verze
+> 1.7.5 a starší po nich **nenaběhnou** — čtou sloupce, které už neexistují.
+> `git revert` tedy u téhle dvojice nestačí: buď se dopíše a pustí zpětná
+> migrace, nebo se obnoví záloha ostré databáze `rob_aoe` (§3.5), nebo se místo
+> návratu opraví to, co je rozbité, a vydá se další verze. Vybrat se to musí **dřív**, než se
+> revert pushne — jinak ostrá verze spadne na startu.
 
 **Vrácení, které nechává historii být** (doporučené, `main` jde dál dopředu):
 
@@ -365,3 +379,23 @@ V obou případech se `dev` nechává být — chyba se opraví tam a vydá znov
 Cokoliv, co vyžaduje přístup na server, řeší správce serveru. V repu má být
 všechno, co je potřeba k tomu, aby nasazení proběhlo samo: `Dockerfile`,
 migrace a tenhle popis.
+
+## Coolify API: přidání proměnné prostředí
+
+Ověřeno 16. 9. 2026 při zapínání Microsoft přihlášení na devu.
+
+```bash
+# UUID aplikací jsou v /root/aoe-deploy/watch.sh: main, dev, experimental
+A=https://coolify.jouki.cz/api/v1/applications/wxju55zz9imrhn9lco0drrvc
+curl -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" -H "Content-Type: application/json"      -d '{"key":"MS_CLIENT_ID","value":"..."}' "$A/envs"
+curl "https://coolify.jouki.cz/api/v1/deploy?uuid=wxju55zz9imrhn9lco0drrvc"      -H "Authorization: Bearer $COOLIFY_TOKEN"
+```
+
+**Pole `is_preview` a `is_build_time` v těle vracejí HTTP 422**, i když je
+dokumentace zmiňuje. Bez nich požadavek projde a vrátí `{"uuid": "..."}`.
+
+`GET /envs` vrací **každý klíč dvakrát** (běhové i buildové prostředí), takže
+seznam se čte přes množinu, ne přes pole.
+
+Po `POST /envs` musí přijít `/deploy`. Samotný `/restart` nové proměnné
+nenačte — to je zapsané výš a platí to i tady.

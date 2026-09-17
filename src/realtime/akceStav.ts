@@ -10,16 +10,21 @@ import { hub, KANAL_AKCE } from "./hub.js";
 
 export function playerView(hrac: PlayerRow): PlayerView {
   return {
-    steamId: hrac.steamId,
+    hracId: hrac.hracId,
     alias: hrac.alias,
-    steamName: hrac.steamName,
+    platformaJmeno: hrac.platformaJmeno,
     avatarUrl: hrac.avatarUrl,
     country: hrac.country,
     elo1v1: hrac.elo1v1,
     eloNejvyssi: hrac.eloNejvyssi,
     odehranoHer: hrac.odehranoHer,
     steamHodiny: hrac.steamHodiny,
-    steamHra: hrac.steamHra,
+    // Bez platformy se text u ikony hry nedá rozvětvit a Microsoft hráči by
+    // bublina dál tvrdila, co řekl Steam. `UcastnikView` ji nese od úkolu 11,
+    // tohle je totéž pro tabulku přihlášených.
+    platforma: hrac.platforma,
+    hraVlastnictvi: hrac.hraVlastnictvi,
+    hraHranoV: hrac.hraHranoV?.toISOString() ?? null,
     posledniZapas: hrac.posledniZapas?.toISOString() ?? null,
     statyStazenyV: hrac.statyStazenyV?.toISOString() ?? null,
     statyChyba: hrac.statyChyba,
@@ -46,9 +51,10 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
     zavreny: zapas.zavrenyV !== null,
     nastaveni: zapas.nastaveni,
     ucastnici: ucastnici.map((u) => ({
-      steamId: u.steamId,
+      hracId: u.hracId,
       alias: u.alias,
-      steamName: u.steamName,
+      platformaJmeno: u.platformaJmeno,
+      platforma: u.platforma,
       tym: u.tym,
       barva: u.barva,
       civ: u.civ,
@@ -59,8 +65,8 @@ function zapasView(zaznam: Awaited<ReturnType<typeof listZapasy>>[number], zprav
     })),
     zpravy: zpravy.map((z) => ({
       id: z.id,
-      steamId: z.steamId,
-      jmeno: z.alias ?? z.steamName ?? z.steamId,
+      hracId: z.hracId,
+      jmeno: z.alias ?? z.platformaJmeno ?? z.hracId,
       jeAdmin: z.jeAdmin,
       barva: z.barva,
       tym: z.tym,

@@ -3,7 +3,15 @@ import type { AkceStavPayload, HledaniLobbyVysledek, SestavaVstup, Vitez } from 
 import { cesta } from "./cesty.js";
 
 export interface Me {
-  hrac: { steamId: string; alias: string | null; steamName: string | null; jeAdmin: boolean } | null;
+  hrac: { hracId: string; alias: string | null; platformaJmeno: string | null; jeAdmin: boolean } | null;
+  /**
+   * Má tohle nasazení zaregistrované Microsoft přihlašovací routy? Bez
+   * `MS_CLIENT_ID` a `MS_CLIENT_SECRET` je server nemá (viz `server.ts`) a
+   * odkaz na `/api/auth/microsoft` by skončil na syrovém JSON. Chybějící
+   * hodnota se čte jako „nemá“ — starší server (a testovací snímky) příznak
+   * neposílá a Steam cesta je ta, která tu byla vždycky.
+   */
+  maMicrosoft?: boolean;
 }
 
 async function json<T>(res: Response): Promise<T> {
@@ -90,8 +98,8 @@ export const api = {
       body: JSON.stringify({ minut }),
     }).then((r) => json<{ lhutaAktivityMinut: number }>(r)),
   /** Zvonek u hráče: svolání do radnice, hráči zazvoní poplach. */
-  svolat: (akceId: number, steamId: string) =>
-    fetch(cesta(`/api/akce/${akceId}/hraci/${steamId}/svolat`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
+  svolat: (akceId: number, hracId: string) =>
+    fetch(cesta(`/api/akce/${akceId}/hraci/${hracId}/svolat`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   /** Sada 7TV emotů Robova kanálu (server ji hodinu drží). */
   emoty: () => fetch(cesta("/api/emoty")).then((r) => json<{ emoty: { jmeno: string; url: string; siroky: boolean; nulovaSirka: boolean }[] }>(r)),
   /** Push-to-talk admina: jeden kousek nahrávky (nebo značka konce) pro účastníky zápasu. */
@@ -179,10 +187,10 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ vitez }),
     }).then((r) => json<{ ok: true }>(r)),
-  zmenitHosta: (zapasId: number, steamId: string) =>
+  zmenitHosta: (zapasId: number, hracId: string) =>
     fetch(cesta(`/api/zapas/${zapasId}/host`), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ steamId }),
+      body: JSON.stringify({ hracId }),
     }).then((r) => json<{ ok: true }>(r)),
 };
