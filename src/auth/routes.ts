@@ -3,6 +3,7 @@ import { config } from "../config.js";
 import { existujeAdmin, getPlayer, upsertPlayer } from "../db/players.js";
 import { createSession, deleteSession, getSessionUser } from "../db/sessions.js";
 import { SESSION_TTL_MS } from "../db/sessions.js";
+import { odhlasZAkce } from "../realtime/pritomnost.js";
 import {
   buildAuthUrl,
   extractSteamId,
@@ -118,7 +119,15 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
   app.post("/api/auth/logout", async (request, reply) => {
     const sid = request.cookies[config.cookieNazev];
-    if (sid) await deleteSession(sid);
+    if (sid) {
+      // Kdo se vědomě odhlásí z webu, ať zmizí i ze seznamu přihlášených na
+      // večer — stejnou cestou (odhlasZAkce) jako zavření poslední karty a
+      // tlačítko „Odhlásit se z akce“, ať se to nerozejde do tří implementací.
+      // Hráče je nutné zjistit dřív, než sezení smazáním zmizí.
+      const hracId = await getSessionUser(sid);
+      if (hracId) await odhlasZAkce(hracId);
+      await deleteSession(sid);
+    }
     return reply
       .clearCookie(config.cookieNazev, { path: config.domovskaCesta })
       .send({ ok: true });

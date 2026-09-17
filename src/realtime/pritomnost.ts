@@ -12,6 +12,10 @@ import { broadcastAkce } from "./akceStav.js";
  * Hlídá se to podle SSE spojení, ne podle události `beforeunload` v prohlížeči:
  * ta se pouští i při obnovení stránky a při proklikávání a odhlásila by
  * člověka, který nikam neodešel.
+ *
+ * Odhlásit se dá i vědomě, tlačítkem „Odhlásit se z webu“ — to samé „už dnes
+ * nehraju“, jen bez čekání na odklad. `odhlasZAkce` níž je proto exportovaná
+ * a `auth/routes.ts` ji volá přímo z `/api/auth/logout`.
  */
 
 /**
@@ -61,10 +65,17 @@ export function sledujPritomnost(hracId: string): () => void {
   };
 }
 
-async function odhlasZAkce(hracId: string): Promise<void> {
+/**
+ * Odhlásí hráče z běžící akce (jestli v nějaké je) a rozešle stav dál.
+ *
+ * Exportovaná i pro `auth/routes.ts`: odhlášení z webu je totéž „už dnes
+ * nehraju" jako zavření poslední karty, takže obojí vede přes tuhle jednu
+ * cestu a ne přes dvě nezávislé kopie stejné logiky.
+ */
+export async function odhlasZAkce(hracId: string): Promise<void> {
   try {
-    // Akce se rozhoduje až tady: mezi zavřením karty a vypršením odkladu mohl
-    // večer skončit a jiný začít.
+    // Akce se rozhoduje až tady: mezi zavřením karty (nebo odhlášením z webu)
+    // a vypršením odkladu mohl večer skončit a jiný začít.
     const akce = await getAktivniAkce();
     if (!akce) return;
     await withdraw(akce.id, hracId);
