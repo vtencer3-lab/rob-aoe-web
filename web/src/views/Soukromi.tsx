@@ -91,8 +91,9 @@ export function Soukromi() {
 
       <h2>Smazání účtu</h2>
       <p>
-        O smazání účtu a všech dat, která o tobě web má, si kdykoliv řekni provozovateli — napiš Robovi nebo
-        tomu, kdo web zrovna spravuje, a smažou ho. Samoobslužné tlačítko na to web nemá.
+        O smazání účtu a všech dat, která o tobě web má, si kdykoliv řekni provozovateli. Napiš na{" "}
+        <a href="mailto:m.joukal+aoekomunitky@gmail.com">m.joukal+aoekomunitky@gmail.com</a> nebo Robovi,
+        a smažou ho. Samoobslužné tlačítko na to web nemá.
       </p>
     </PravniStranka>
   );
