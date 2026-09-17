@@ -10,11 +10,6 @@ interface Props {
   /** Dokud je zapnuté, kontroluje se samo; vypíná se, jakmile hra běží. */
   automaticky?: boolean;
   intervalMs?: number;
-  /**
-   * Rodič se dozví verdikt: true = nikde nic červeného, false = něco k
-   * opravě, null = bez výsledku (lobby mimo seznam, chyba, ještě neproběhlo).
-   */
-  onVerdikt?: (vPoradku: boolean | null) => void;
 }
 
 function skloňujVeci(n: number): string {
@@ -35,14 +30,16 @@ const ZNAK: Record<Kontrola["stav"], string> = { ok: "✓", spatne: "✗", varov
  * v hlavní sekci ani v „Dalším nastavení“. To druhé je rozbalené a
  * pamatuje si, jak si ho kdo sbalil, i přes další kontroly.
  *
- * Verdikt (velký zelený/červený nápis) stojí hned pod záhlavím, nad celým
- * výpisem — host se dívá nahoru na streamu a spěchá, dole ho musel odrolovat
- * (uživatel 17. 9. 2026). Počítá se ze stejného `vPoradku` jako fajfka výš,
+ * Verdikt (velký zelený/červený nápis) stojí za tlačítkem „Zkontrolovat
+ * lobby“, hned nad celým výpisem — host se dívá nahoru na streamu a spěchá,
+ * dole ho musel odrolovat (uživatel 17. 9. 2026). Mluví o výpisu pod sebou,
+ * tak má sedět těsně nad ním, ne za záhlavím odstrčený tlačítkem (uživatel
+ * 17. 9. 2026, doplnění). Počítá se ze stejného `vPoradku` jako fajfka výš,
  * ať se ty dvě věci nikdy nerozejdou. Dokud `vPoradku` je `null` (kontrola
  * ještě neproběhla, lobby mimo seznam, chyba serveru), verdikt se neukazuje
  * vůbec — „zatím nevíme“ není totéž co „je to špatně“.
  */
-export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, intervalMs = INTERVAL_KONTROLY_MS, onVerdikt }: Props) {
+export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, intervalMs = INTERVAL_KONTROLY_MS }: Props) {
   // Poslední výsledek se drží i během další kontroly — seznam nesmí při
   // každém kliknutí zmizet a znovu naskočit.
   const [vysledek, setVysledek] = useState<KontrolaLobbyVysledek | null>(null);
@@ -103,11 +100,6 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
   const vPoradku = nalezena ? lobbyVPoradku(nalezena.kontroly) : null;
   const prelobby = nalezena?.kontroly.filter((k) => k.sekce === "prelobby") ?? [];
 
-  useEffect(() => {
-    onVerdikt?.(vPoradku);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vPoradku]);
-
   return (
     <section className={vPoradku ? "sekce-kontrola hotovo" : "sekce-kontrola"} data-testid="kontrola-lobby">
       <header className="zahlavi-sekce">
@@ -118,14 +110,6 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
           </span>
         ) : null}
       </header>
-      {vPoradku !== null ? (
-        <p className={`verdikt-lobby ${vPoradku ? "v-poradku" : "k-oprave"}`} data-testid="verdikt-lobby">
-          <span className="znak-verdiktu" aria-hidden="true">
-            {vPoradku ? "✓" : "✗"}
-          </span>{" "}
-          {vPoradku ? "Výborně, můžete hrát!" : "Opravte Lobby, než půjdete hrát!"}
-        </p>
-      ) : null}
       <div className="ovladani">
         <button type="button" onClick={() => void zkontroluj(true)} disabled={kontroluji}>
           {kontroluji ? "Kontroluji…" : "Zkontrolovat lobby"}
@@ -136,6 +120,17 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
           </span>
         ) : null}
       </div>
+      {vPoradku !== null ? (
+        // Za tlačítkem, ne hned pod záhlavím: verdikt mluví o výpisu
+        // nastavení pod sebou, tak má sedět těsně nad ním, ne být od něj
+        // odstrčený tlačítkem (uživatel 17. 9. 2026).
+        <p className={`verdikt-lobby ${vPoradku ? "v-poradku" : "k-oprave"}`} data-testid="verdikt-lobby">
+          <span className="znak-verdiktu" aria-hidden="true">
+            {vPoradku ? "✓" : "✗"}
+          </span>{" "}
+          {vPoradku ? "Výborně, můžete hrát!" : "Opravte Lobby, než půjdete hrát!"}
+        </p>
+      ) : null}
       {chyba ? (
         <p className="chyba chyba-pole" role="alert">
           {chyba}

@@ -66,7 +66,6 @@ it("sbalené další nastavení zůstane sbalené i po další kontrole", async 
 
 // Upozornění (heslo) a „je to jedno“ fajfku neberou; jen červená.
 it("bez červené je lobby v pořádku i s upozorněním a šedým „je to jedno“", async () => {
-  const onVerdikt = vi.fn();
   const onKontrola = vi.fn().mockResolvedValue({
     nalezeno: true,
     kontroly: [
@@ -75,12 +74,13 @@ it("bez červené je lobby v pořádku i s upozorněním a šedým „je to jedn
       { klic: "lockTeams", stav: "jedno", text: "Lock Teams: vypnuto", sekce: "dalsi" },
     ],
   });
-  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} onVerdikt={onVerdikt} />);
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
   await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
   expect(await screen.findByTestId("kontrola-souhrn")).toHaveTextContent(/v pořádku/i);
   expect(screen.getByTestId("fajfka-kontrola")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /kontrola lobby/i })).toBeInTheDocument();
-  expect(onVerdikt).toHaveBeenLastCalledWith(true);
+  // Upozornění a „je to jedno“ nekazí ani verdikt nahoře — jen červená kazí.
+  expect(screen.getByTestId("verdikt-lobby")).toHaveClass("v-poradku");
 });
 
 it("červená v dalším nastavení fajfku bere", async () => {
@@ -118,17 +118,14 @@ it("po zmizení lobby ukáže sbalené poslední známé nastavení", async () =
 });
 
 it("lobby mimo seznam a chyba serveru mají vlastní hlášky a verdikt nemají", async () => {
-  const onVerdikt = vi.fn();
   const onKontrola = vi.fn().mockResolvedValueOnce({ nalezeno: false, kontroly: [] }).mockRejectedValueOnce(new Error("Seznam lobby se nepodařilo stáhnout."));
-  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} onVerdikt={onVerdikt} />);
+  render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
   // První kontrola běží sama po připojení (1.3.5).
   expect(await screen.findByRole("status")).toHaveTextContent(/není/i);
   // Ani „lobby mimo seznam“, ani chyba serveru nejsou důvod pro velký nápis nahoře.
   expect(screen.queryByTestId("verdikt-lobby")).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
   expect(await screen.findByRole("alert")).toHaveTextContent(/nepodařilo/i);
-  expect(onVerdikt).toHaveBeenCalledWith(null);
-  expect(onVerdikt).not.toHaveBeenCalledWith(true);
   expect(screen.queryByTestId("verdikt-lobby")).not.toBeInTheDocument();
 });
 

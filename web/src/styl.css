@@ -1430,11 +1430,15 @@ button.odebrat:hover { color: var(--chyba); }
 /* Verdikt kontroly lobby nahoře v panelu (uživatel 17. 9. 2026): červená,
    dokud něco nesedí, zelená, jakmile sedí všechno — nikdy obojí a nikdy dole
    pod výpisem, kam by ho host na streamu musel odrolovat. Barva jede
-   z existující palety (--ok-svetle/--chyba), žádná nová. */
-.verdikt-lobby { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.2rem 0 0.8rem; font-family: "Cinzel", Georgia, serif; font-size: 1.3rem; font-weight: 700; text-align: center; }
+   z existující palety (--ok-svetle/--chyba), žádná nová. Sedí za tlačítkem
+   „Zkontrolovat lobby“, ne hned za záhlavím: mluví o výpisu pod sebou, tak
+   má být k němu blíž než k záhlaví (uživatel 17. 9. 2026, doplnění) — proto
+   výraznější mezera nahoře (odstup od tlačítka) a malá dole (drží nadpis u
+   seznamu). */
+.verdikt-lobby { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.9rem 0 0.35rem; font-family: "Cinzel", Georgia, serif; font-size: 1.75rem; font-weight: 700; text-align: center; }
 .verdikt-lobby.v-poradku { color: var(--ok-svetle); }
 .verdikt-lobby.k-oprave { color: var(--chyba); }
-.verdikt-lobby .znak-verdiktu { font-size: 1.7rem; line-height: 1; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
+.verdikt-lobby .znak-verdiktu { font-size: 2.2rem; line-height: 1; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7); }
 button.odebrat-zapas { color: var(--tlumene); }
 button.odebrat-zapas:hover { color: var(--chyba); }
 .hledani-lobby .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
