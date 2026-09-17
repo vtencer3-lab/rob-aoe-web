@@ -26,16 +26,18 @@ const ZNAK: Record<Kontrola["stav"], string> = { ok: "✓", spatne: "✗", varov
  * věty, ne tabulka hodnot. Dokud se v lobby sedí, kontrola se sama opakuje,
  * ať host vidí, že opravil, co měl.
  *
- * O velké fajfce v záhlaví rozhoduje jedině to, že není nic červené —
- * v hlavní sekci ani v „Dalším nastavení“. To druhé je rozbalené a
- * pamatuje si, jak si ho kdo sbalil, i přes další kontroly.
+ * O verdiktu rozhoduje jedině to, že není nic červené — v hlavní sekci ani
+ * v „Dalším nastavení“. To druhé je rozbalené a pamatuje si, jak si ho kdo
+ * sbalil, i přes další kontroly.
  *
  * Verdikt (velký zelený/červený nápis) stojí za tlačítkem „Zkontrolovat
  * lobby“, hned nad celým výpisem — host se dívá nahoru na streamu a spěchá,
  * dole ho musel odrolovat (uživatel 17. 9. 2026). Mluví o výpisu pod sebou,
  * tak má sedět těsně nad ním, ne za záhlavím odstrčený tlačítkem (uživatel
- * 17. 9. 2026, doplnění). Počítá se ze stejného `vPoradku` jako fajfka výš,
- * ať se ty dvě věci nikdy nerozejdou. Dokud `vPoradku` je `null` (kontrola
+ * 17. 9. 2026, doplnění). V záhlaví bývala ještě zelená fajfka; po přesunu
+ * říkala totéž co nápis pod ní, tak šla pryč (uživatel 17. 9. 2026). Sekce
+ * si třídu `hotovo` drží dál — na tu se váže vzhled celého panelu, ne ten
+ * znak. Dokud `vPoradku` je `null` (kontrola
  * ještě neproběhla, lobby mimo seznam, chyba serveru), verdikt se neukazuje
  * vůbec — „zatím nevíme“ není totéž co „je to špatně“.
  */
@@ -104,11 +106,6 @@ export function KontrolaLobby({ zapasId, onKontrola, automaticky = false, interv
     <section className={vPoradku ? "sekce-kontrola hotovo" : "sekce-kontrola"} data-testid="kontrola-lobby">
       <header className="zahlavi-sekce">
         <h3>Kontrola lobby</h3>
-        {vPoradku ? (
-          <span className="fajfka" data-testid="fajfka-kontrola" aria-label="Lobby je v pořádku">
-            ✓
-          </span>
-        ) : null}
       </header>
       <div className="ovladani">
         <button type="button" onClick={() => void zkontroluj(true)} disabled={kontroluji}>

@@ -34,7 +34,7 @@ it("klik zkontroluje a vypíše čtyři stavy; souhrn počítá červené z obou
   expect(hlavni[1]).toHaveClass("varovani");
   expect(hlavni[2]).toHaveClass("spatne");
   expect(screen.getByTestId("kontrola-souhrn")).toHaveTextContent("3 věci k opravě");
-  expect(screen.queryByTestId("fajfka-kontrola")).not.toBeInTheDocument();
+  expect(screen.getByTestId("verdikt-lobby")).toHaveClass("k-oprave");
   // Hlavní nastavení má od 9. 9. 2026 vlastní záhlaví jako ostatní sekce.
   const hlavniSekce = screen.getByTestId("hlavni-nastaveni");
   expect(hlavniSekce).toHaveAttribute("open");
@@ -77,13 +77,12 @@ it("bez červené je lobby v pořádku i s upozorněním a šedým „je to jedn
   render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
   await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
   expect(await screen.findByTestId("kontrola-souhrn")).toHaveTextContent(/v pořádku/i);
-  expect(screen.getByTestId("fajfka-kontrola")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /kontrola lobby/i })).toBeInTheDocument();
   // Upozornění a „je to jedno“ nekazí ani verdikt nahoře — jen červená kazí.
   expect(screen.getByTestId("verdikt-lobby")).toHaveClass("v-poradku");
 });
 
-it("červená v dalším nastavení fajfku bere", async () => {
+it("červená v dalším nastavení verdikt bere", async () => {
   const onKontrola = vi.fn().mockResolvedValue({
     nalezeno: true,
     kontroly: [
@@ -94,7 +93,7 @@ it("červená v dalším nastavení fajfku bere", async () => {
   render(<KontrolaLobby zapasId={3} onKontrola={onKontrola} />);
   await userEvent.click(screen.getByRole("button", { name: /zkontrolovat lobby/i }));
   expect(await screen.findByTestId("kontrola-souhrn")).toHaveTextContent("1 věc k opravě");
-  expect(screen.queryByTestId("fajfka-kontrola")).not.toBeInTheDocument();
+  expect(screen.getByTestId("verdikt-lobby")).toHaveClass("k-oprave");
 });
 
 // Po zmizení lobby (hra běží) zůstane sbalená sekce s poslední kontrolou
@@ -131,7 +130,7 @@ it("lobby mimo seznam a chyba serveru mají vlastní hlášky a verdikt nemají"
 
 // Velký nápis (uživatel 17. 9. 2026): nahoře v panelu, ne dole pod výpisem —
 // host se dívá nahoru a spěchá. Střídá se se stejným `vPoradku`, ze kterého
-// se dnes počítá fajfka v záhlaví; žádný druhý výpočet.
+// se počítá i třída `hotovo` celé sekce; žádný druhý výpočet.
 it("když je vše v pořádku, nahoře je zelený verdikt před první sekcí", async () => {
   const onKontrola = vi.fn().mockResolvedValue({
     nalezeno: true,

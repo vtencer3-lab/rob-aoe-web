@@ -174,7 +174,6 @@ it("po kontrole bez červené je verdikt vidět v panelu kontroly, ne jako samos
   );
   const verdikt = await screen.findByTestId("verdikt-lobby");
   expect(verdikt).toHaveTextContent(/výborně, můžete hrát/i);
-  expect(screen.getByTestId("fajfka-kontrola")).toBeInTheDocument();
   // Starý samostatný krok dole je pryč — nápis kreslí jen KontrolaLobby.
   expect(screen.queryByTestId("muzete-hrat")).not.toBeInTheDocument();
 });
