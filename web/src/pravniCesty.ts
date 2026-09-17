@@ -3,6 +3,13 @@ import { ZAKLAD } from "./cesty.js";
 export type PravniStranka = "podminky" | "soukromi";
 
 /**
+ * Adresa, na kterou se píše o smazání účtu. Stojí tu, protože ji jmenují obě
+ * právní stránky — kdyby si ji každá držela svou, jedna by po změně mlčky
+ * posílala lidi jinam a nikdo by si toho nevšiml.
+ */
+export const KONTAKT_SMAZANI = "m.joukal+aoekomunitky@gmail.com";
+
+/**
  * Která právní stránka (pokud nějaká) patří k adrese z adresního řádku.
  * Web nemá router — tohle je jediné místo, kde se cesta z prohlížeče
  * porovnává s něčím konkrétním. Odřezává základ webu (`/aoe`, `/aoe/dev`,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pravniStrankaZCesty } from "./pravniCesty.js";
+import { KONTAKT_SMAZANI, pravniStrankaZCesty } from "./pravniCesty.js";
 
 // Traefik na jouki.cz odřeže `/aoe`, `/aoe/dev` nebo `/aoe/experimental` dřív,
 // než požadavek dorazí na server (viz src/config.ts: zakladniCesta) — ale
@@ -36,4 +36,11 @@ describe("pravniStrankaZCesty", () => {
     expect(pravniStrankaZCesty("/aoe/dev", "/aoe/dev")).toBeNull();
     expect(pravniStrankaZCesty("/aoe/dev/", "/aoe/dev")).toBeNull();
   });
+});
+
+// Adresa se píše na dvou stránkách z jedné konstanty; tenhle test je jediné
+// místo, kde je napsaná ručně. Překlep v ní znamená, že žádost o smazání
+// nikam nedojde a nikdo se to nedozví.
+it("kontakt na smazání účtu je adresa, kterou provozovatel čte", () => {
+  expect(KONTAKT_SMAZANI).toBe("m.joukal+aoekomunitky@gmail.com");
 });

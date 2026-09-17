@@ -1,4 +1,5 @@
 import { PravniStranka } from "./PravniStranka.js";
+import { KONTAKT_SMAZANI } from "../pravniCesty.js";
 
 /**
  * Podmínky použití. Odkaz na tuhle adresu čte Microsoft na souhlasné
@@ -27,8 +28,8 @@ export function Podminky() {
         zablokovat nebo smazat, aniž by to musel dopředu oznamovat.
       </p>
       <p>
-        O smazání účtu a dat, která o tobě web má, můžeš kdykoliv požádat provozovatele — napiš Robovi nebo
-        tomu, kdo web zrovna spravuje.
+        O smazání účtu a dat, která o tobě web má, můžeš kdykoliv požádat provozovatele — napiš na{" "}
+        <a href={`mailto:${KONTAKT_SMAZANI}`}>{KONTAKT_SMAZANI}</a> nebo Robovi.
       </p>
     </PravniStranka>
   );

@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { Soukromi } from "./Soukromi.js";
+import { KONTAKT_SMAZANI } from "../pravniCesty.js";
 
 it("vykreslí zásady soukromí s odkazem zpátky na web", () => {
   render(<Soukromi />);
@@ -57,4 +58,12 @@ it("nezmiňuje sledování, analytiku ani cookies třetích stran", () => {
   expect(text).not.toMatch(/sledová/i);
   expect(text).not.toMatch(/třetí strana/i);
   expect(text).not.toMatch(/třetích stran/i);
+});
+
+it("u smazání účtu dává adresu, na kterou se dá napsat", () => {
+  render(<Soukromi />);
+  expect(screen.getByRole("link", { name: KONTAKT_SMAZANI })).toHaveAttribute(
+    "href",
+    `mailto:${KONTAKT_SMAZANI}`,
+  );
 });
