@@ -493,10 +493,16 @@ nenačte — to je zapsané výš a platí to i tady.
 
 ---
 
-## 5. Přestěhování adresy na robdiesalot.com/aoe (rozpracováno 19. 9. 2026)
+## 5. Přestěhování adresy na robdiesalot.com/aoe (ODLOŽENO 19. 9. 2026)
+
+> **Stav: odloženo, nic z toho není nasazené.** Uživatel se rozhodl
+> nesahat kvůli tomu na DNS Robovy domény. Web zůstává na `jouki.cz/aoe`.
+> Kapitola zůstává, protože měření v ní stálo práci a platí dál — kdyby se
+> k tomu někdo vrátil, nemusí zkoušet slepé uličky znovu.
 
 Uživatel chce, aby web žil na `robdiesalot.com/aoe`. Není to kosmetika —
-rozhoduje to o tom, kudy poteče provoz **celého Robova webu**.
+rozhoduje to o tom, kudy poteče provoz **celého Robova webu**, a právě tahle
+cena rozhodla o odložení.
 
 ### 5.1 Proč to nejde jednodušeji
 
@@ -535,17 +541,23 @@ bez rizika ACME) a oslovením naší IP s hlavičkou `Host`:
 
 Testovací předpis byl smazán, veřejný web se o něm nedozvěděl.
 
-### 5.3 Co je připravené a kde
+### 5.3 Předpisy pro Traefik (smazané, k napsání znovu)
 
-Obojí leží **mimo** sledovanou složku, takže to zatím nic nedělá:
+Byly připravené dva soubory — rozcestník na profiwh a 308 ze starého
+`jouki.cz/aoe`. **Při odložení byly smazány**, ať na serveru nečíhají.
+Napsat je znovu je práce na deset minut; podstatné jsou tyhle tři věci,
+které při tom stály nejvíc přemýšlení:
 
-- `/root/aoe-deploy/robdiesalot.yaml` — rozcestník na profiwh
-- `/root/aoe-deploy/jouki-aoe-redirect.yaml` — 308 ze starého `jouki.cz/aoe`
-
-**Nenasazovat dřív, než DNS míří na nás.** Předpis nese `certresolver`
-a Traefik si o certifikát řekne hned, jak ho načte; dokud doména míří na
-profiwh, HTTP-01 výzva selže a opakovaná selhání se počítají do limitů
-Let's Encryptu.
+- Rozcestník na profiwh potřebuje `priority: 1` (aby `/aoe` vyhrálo),
+  `passHostHeader: true` a `serversTransport` se `serverName:
+  robdiesalot.com`. K originu se chodí **po HTTPS**, jinak WordPress
+  přesměrovává do smyčky.
+- Regex v přesměrování patří do **jednoduchých** uvozovek. V dvojitých YAML
+  zpětné lomítko bere jako escape sekvenci a soubor se nenačte.
+- **Nenasazovat dřív, než DNS míří na nás.** Předpis nese `certresolver`
+  a Traefik si o certifikát řekne hned, jak ho načte; dokud doména míří
+  jinam, HTTP-01 výzva selže a opakovaná selhání se počítají do limitů
+  Let's Encryptu.
 
 ### 5.4 Postup přepnutí
 

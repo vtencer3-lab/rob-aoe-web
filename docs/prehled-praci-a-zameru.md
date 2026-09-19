@@ -1832,15 +1832,15 @@ neznámé číslo), a teprve pak dopsat jméno do tabulky.
 
 ## 5. Čekající rozhodnutí a nápady (nic z toho není rozdělané v kódu)
 
-**Rozpracováno 19. 9. 2026 — adresa `robdiesalot.com/aoe`.** Uživatel chce web
-na Robově doméně v tomhle přesném tvaru. Iframe ani `.htaccess` to neumí
-(změřeno: Steam zakazuje rámování, profiwh nemá `mod_proxy`), takže doména
-zamíří na náš VPS a Traefik pošle `/aoe` k nám a zbytek zpátky na profiwh.
-Průchod na WordPress je **ověřený** (odpověď bajt na bajt shodná), oba předpisy
-leží připravené v `/root/aoe-deploy/` mimo sledovanou složku. **Čeká to na
-uživatele:** snížit TTL v Google Cloud DNS, přidat návratovou adresu do Azure
-a přepnout A záznam. Celý postup i cena (náš VPS se stane vstupními dveřmi
-Robova webu) je v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §5.
+**Odloženo 19. 9. 2026 — adresa `robdiesalot.com/aoe`.** Uživatel chtěl web na
+Robově doméně v tomhle tvaru. Iframe ani `.htaccess` to neumí (změřeno: Steam
+zakazuje rámování, profiwh nemá `mod_proxy`), takže jediná cesta vedla přes
+nasměrování domény na náš VPS — a tím by se náš server stal vstupními dveřmi
+celého Robova webu. **Uživatel to kvůli zásahu do DNS odložil**, nic se
+nenasadilo a web zůstává na `jouki.cz/aoe`. Průchod na WordPress je přitom
+ověřený (odpověď bajt na bajt shodná), takže kdyby se rozhodnutí změnilo,
+zbývá jen DNS a Azure. Rozbor slepých uliček i cena řešení:
+[`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §5.
 
 
 
