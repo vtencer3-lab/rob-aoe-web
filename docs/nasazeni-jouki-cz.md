@@ -490,3 +490,96 @@ seznam se čte přes množinu, ne přes pole.
 
 Po `POST /envs` musí přijít `/deploy`. Samotný `/restart` nové proměnné
 nenačte — to je zapsané výš a platí to i tady.
+
+---
+
+## 5. Přestěhování adresy na robdiesalot.com/aoe (rozpracováno 19. 9. 2026)
+
+Uživatel chce, aby web žil na `robdiesalot.com/aoe`. Není to kosmetika —
+rozhoduje to o tom, kudy poteče provoz **celého Robova webu**.
+
+### 5.1 Proč to nejde jednodušeji
+
+`robdiesalot.com` běží u **profiwh** (85.93.165.127, sdílený hosting, Apache,
+WordPress, přístup jen FTP + MySQL). Naše aplikace je Node se SSE a Postgresem,
+takže na tom hostingu běžet nemůže. Rozdvojení cesty `/aoe` tedy musí udělat
+někdo **před** profiwh. Změřeno 19. 9. 2026:
+
+| Možnost | Výsledek |
+|---|---|
+| iframe ve WordPressu | **Ne.** `steamcommunity.com/openid/login` posílá `X-Frame-Options: DENY`, naše cookie má `SameSite=Lax` (v cizím rámu se neposílá) a Safari s Firefoxem blokují cizí cookies plošně |
+| `.htaccess` s `RewriteRule [P]` | **Ne.** Chybí `mod_proxy` — pravidlo končí chybou 500, zatímco totéž bez `[P]` projde. `ProxyPass` v `.htaccess` neplatí vůbec |
+| PHP proxy skript | Technicky ano (`allow_url_fopen` i `curl` zapnuté), ale běží to jako **PHP-FPM**: každé SSE spojení drží jednoho workera navždy. Deset diváků = deset zabraných workerů |
+| Podoména `aoe.robdiesalot.com` | Funguje a je nejlevnější, ale uživatel trvá na tvaru s lomítkem |
+
+### 5.2 Zvolené řešení
+
+DNS `robdiesalot.com` míří na náš VPS. Traefik pak:
+
+- `Host(robdiesalot.com) && PathPrefix(/aoe)` → aplikace `aoe-web` (štítky od Coolify)
+- `Host(robdiesalot.com)` s `priority: 1` → zpátky na profiwh
+
+WordPress zůstává u profiwh a nikdo ho nestěhuje. K originu se chodí **po
+HTTPS** se `serverName: robdiesalot.com`, aby WordPress viděl skutečný https
+požadavek a nedělal přesměrovací smyčku.
+
+**Ověřeno 19. 9. 2026** dočasným předpisem jen na HTTP (bez certifikátu, tedy
+bez rizika ACME) a oslovením naší IP s hlavičkou `Host`:
+
+| Test | Výsledek |
+|---|---|
+| domovská stránka přes náš VPS vs. přímo z profiwh | **193 099 B v obou případech, bajt na bajt** |
+| `/wp-login.php` | 200 |
+| `/wp-admin/` | 302 na `https://robdiesalot.com/wp-login.php` — správná doména, žádná smyčka |
+| `/feed/`, CSS z tématu | 200, správný `content-type` |
+
+Testovací předpis byl smazán, veřejný web se o něm nedozvěděl.
+
+### 5.3 Co je připravené a kde
+
+Obojí leží **mimo** sledovanou složku, takže to zatím nic nedělá:
+
+- `/root/aoe-deploy/robdiesalot.yaml` — rozcestník na profiwh
+- `/root/aoe-deploy/jouki-aoe-redirect.yaml` — 308 ze starého `jouki.cz/aoe`
+
+**Nenasazovat dřív, než DNS míří na nás.** Předpis nese `certresolver`
+a Traefik si o certifikát řekne hned, jak ho načte; dokud doména míří na
+profiwh, HTTP-01 výzva selže a opakovaná selhání se počítají do limitů
+Let's Encryptu.
+
+### 5.4 Postup přepnutí
+
+1. **Google Cloud DNS** (tam je doména, ne u profiwh): snížit TTL A záznamu
+   `robdiesalot.com` z 14 400 na 300 a **počkat 4 hodiny**, než staré
+   odpovědi vyprší. `www` je CNAME na kořen, ten se neřeší.
+2. **Azure** → registrace `AoE 2 komunitky` → Authentication → přidat
+   `https://robdiesalot.com/aoe/api/auth/microsoft/return`. Udělat **předem**,
+   ať nevznikne okno, kdy přihlášení Microsoftem nefunguje.
+3. Přepnout A záznam na **178.104.160.182**.
+4. `mv /root/aoe-deploy/robdiesalot.yaml /data/coolify/proxy/dynamic/` —
+   Traefik složku sleduje (`providers.file.watch=true`), restart není potřeba.
+   Ověřit, že `https://robdiesalot.com/` vrací WordPress a že naskočil
+   certifikát.
+5. V Coolify u `aoe-web` přidat doménu `https://robdiesalot.com/aoe`
+   a nastavit `BASE_URL=https://robdiesalot.com/aoe`. `BASE_PATH` zůstává
+   `/aoe/` — cesta se nemění, takže frontend se překládat nemusí. Deploy.
+6. Odebrat `jouki.cz` z domén aplikace a nasadit
+   `jouki-aoe-redirect.yaml` do sledované složky.
+7. Ověřit: přihlášení Steamem, přihlášení Microsoftem, odkaz `aoe2de://`,
+   živý přenos stavu (SSE) a že `jouki.cz/aoe` přesměrovává.
+
+### 5.5 Co to stojí a jak couvnout
+
+Náš VPS se stává vstupními dveřmi celého `robdiesalot.com`. Naměřeno 19. 9.
+2026: `coolify-proxy` běží **4 měsíce s nulou restartů**, stroj **19 týdnů**,
+automatický restart po aktualizaci je vypnutý. Nasazení jednotlivých aplikací
+proxy nerestartují — ověřeno na kontejnerech s uptime 8 minut vedle proxy
+s uptime 4 měsíce.
+
+Robův web tedy **neshodí** nasazení `/aoe` ani žádné jiné aplikace. **Shodí ho**
+restart stroje (jeden čeká — `/var/run/reboot-required` existuje), restart
+`coolify-proxy` při aktualizaci Coolify, výpadek VPS a chyba v tomhle předpisu.
+
+**Záchranná brzda:** s TTL 300 stačí v Google Cloud DNS vrátit A záznam na
+`85.93.165.127` a WordPress je za pět minut zpátky i bez nás. Ztratí se jen
+`/aoe`. Proto se TTL po přepnutí **nezvyšuje zpátky**.
