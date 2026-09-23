@@ -479,8 +479,11 @@ Ověřeno 16. 9. 2026 při zapínání Microsoft přihlášení na devu.
 # UUID aplikací jsou v /root/aoe-deploy/watch.sh: main, dev, experimental
 A=https://coolify.jouki.cz/api/v1/applications/wxju55zz9imrhn9lco0drrvc
 curl -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" -H "Content-Type: application/json"      -d '{"key":"MS_CLIENT_ID","value":"..."}' "$A/envs"
-curl "https://coolify.jouki.cz/api/v1/deploy?uuid=wxju55zz9imrhn9lco0drrvc"      -H "Authorization: Bearer $COOLIFY_TOKEN"
+curl -X POST "https://coolify.jouki.cz/api/v1/deploy?uuid=wxju55zz9imrhn9lco0drrvc"      -H "Authorization: Bearer $COOLIFY_TOKEN"
 ```
+
+`/deploy` chce od Coolify 4.3.23 (samo se aktualizovalo 23. 9. 2026) **POST** — GET vrací
+405 a hlídač `watch.sh` i GitHub Action pak tiše nenasazovaly.
 
 **Pole `is_preview` a `is_build_time` v těle vracejí HTTP 422**, i když je
 dokumentace zmiňuje. Bez nich požadavek projde a vrátí `{"uuid": "..."}`.
