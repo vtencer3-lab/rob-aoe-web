@@ -1751,6 +1751,30 @@ věc na stránce: Microsoft scope je jen `XboxLive.signin` a přístupový token
 se nikde neukládá. Plný report s doklady TDD a kontrolami je
 v `.superpowers/sdd/2026-09-16-microsoft-prihlaseni/stranky-podminky.md`.
 
+### 3.59 DLC The Viking Sagas (1.13.10, 23. 9. 2026)
+
+Hra 22. 9. 2026 vydala DLC *The Viking Sagas* s update 185872. Převzato
+postupem z `CONTRIBUTING.md` → „Data ze hry“:
+
+- **Civilizace 60 Saxons, 61 Varangians, 62 Danes** (řetězce 10330–10332,
+  v `civilizations.json` všechny `era: "base"`, tedy sada Age of Empires II,
+  ne Chronicles). Erby `saxons`/`varangians`/`danes` ze
+  `nastroje/grafika/erby.py`, slugy se s názvy shodují, `civErby.ts` bez
+  výjimky.
+- **Mapa 11026 Arabian Desert** (nová soutěžní varianta Arábie) a její náhled
+  z `nastroje/grafika/mapy_nahledy.py`. Hra v patchi překreslila i ikony
+  Arabia a Steppe, náhledy se proto obnovily taky.
+
+Zkontrolováno a **nic dalšího na webu nevyžaduje**: v `maps.json` žádný nový
+herní režim ani příznak, sady civilizací dál jen All / AoE II / Chronicles,
+Longboat → Longship a Mounted Crossbowmen se webu netýkají. Patch změnil
+nastavení „Right Click Garrison“ ze zaškrtávátka na výběr Off / Alt Click
+Garrison / On — web ho nesleduje, zůstává mimo. Ranked Death Match má nově
+odemčené Team Positions a Turbo Mode; web hlídá vlastní nastavení večera,
+ne ranked pravidla, takže se to nepromítá. Neověřeno naživo: zda Worlds
+Edge seznam lobby vydává nové civ id 60–62 ve slotech stejně jako ostatní
+(očekává se, id je z téže řady).
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -2050,6 +2074,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.13.10 | 23. 9. | DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |
 | 1.13.7 | 17. 9. 03:16 | Mrtvý prop `onVerdikt` pryč; verdikt pod tlačítko a blíž k výpisu, větší písmo |

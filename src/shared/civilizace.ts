@@ -1,7 +1,7 @@
 /**
  * Civilizace podle herního id (1 = Britons … v pořadí, v jakém je hra zavedla).
  * Názvy jsou z jazykového souboru hry (řetězec 10270 + id), vygenerováno
- * 7. 9. 2026. Null v sestavě znamená „libovolná“ — hráč si vybere sám.
+ * 7. 9. 2026, doplněno 23. 9. 2026 o The Viking Sagas (60–62). Null v sestavě znamená „libovolná“ — hráč si vybere sám.
  */
 export const CIVILIZACE: Record<number, string> = {
   1: "Britons",
@@ -63,6 +63,9 @@ export const CIVILIZACE: Record<number, string> = {
   57: "Muisca",
   58: "Mapuche",
   59: "Tupi",
+  60: "Saxons",
+  61: "Varangians",
+  62: "Danes",
 };
 
 export function nazevCivilizace(id: number | null): string {
