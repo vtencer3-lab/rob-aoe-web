@@ -10,7 +10,7 @@ const post = (url: string, telo?: object) =>
     body: telo ? JSON.stringify(telo) : undefined,
   }).then((r) => json<{ ok: true }>(r));
 
-/** Routy Diplomacie (server: src/diplomacie/routy*.ts), stranou od jádra v `api.ts`. */
+/** Routy Diplomacie (server: src/diplomacie/routes.ts), stranou od jádra v `api.ts`. */
 export const diploApi = {
   nastupce: (zapasId: number, hracId: string) => post(`/api/diplo/zapas/${zapasId}/nastupce`, { hracId }),
   los: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/los`),

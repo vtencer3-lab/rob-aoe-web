@@ -13,8 +13,11 @@ import type { AkceStavPayload, RezimId, Seat, SestavaVstup } from "../shared/typ
  */
 export interface RezimAkce {
   id: RezimId;
-  /** Výchozí nastavení lobby nové akce (dostane výchozí nastavení jádra). */
-  vychoziNastaveniLobby(zaklad: NastaveniLobby): Promise<NastaveniLobby>;
+  /**
+   * Výchozí nastavení lobby nové akce (dostane výchozí nastavení jádra).
+   * Null = nic neukládat: akce zůstane s prázdným JSON jako klasický večer.
+   */
+  vychoziNastaveniLobby(zaklad: NastaveniLobby): Promise<Partial<NastaveniLobby> | null>;
   /** Před úpravou sestavy existujícího zápasu: věta (→ 409), nebo null. */
   predZmenouSestavy(zapasId: number): Promise<string | null>;
   /** Po uložené úpravě sestavy: mód srovná, co se k odstraněným hráčům vázalo. */
@@ -29,7 +32,7 @@ export interface RezimAkce {
 
 const klasicky: RezimAkce = {
   id: "klasicky",
-  vychoziNastaveniLobby: async (zaklad) => zaklad,
+  vychoziNastaveniLobby: async () => null,
   predZmenouSestavy: async () => null,
   poZmeneSestavy: async () => {},
   poVytvoreniZapasu: async () => {},

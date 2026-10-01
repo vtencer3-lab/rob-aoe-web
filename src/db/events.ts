@@ -1,4 +1,5 @@
 import { AKTIVITA_MINUT, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT, ZVONEK_PO_MINUTACH } from "../shared/aktivita.js";
+import type { NastaveniLobby } from "../shared/lobbyKontrola.js";
 import type { RezimId, SestavaVstup } from "../shared/types.js";
 import { generatePassword } from "../matches/composition.js";
 import { getPool, withTransaction } from "./pool.js";
@@ -161,7 +162,7 @@ export async function smazAkciBezVysledku(akceId: number): Promise<boolean> {
 
 export async function setNastaveniLobby(
   akceId: number,
-  nastaveni: Record<string, unknown>,
+  nastaveni: Partial<NastaveniLobby>,
 ): Promise<AkceRow> {
   const { rows } = await getPool().query<AkceDbRow>(
     `UPDATE akce SET nastaveni_lobby = $2::jsonb WHERE id = $1 RETURNING ${SLOUPCE_AKCE}`,

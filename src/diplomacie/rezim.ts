@@ -16,6 +16,11 @@ export function nastaveniScenare(aktivni: ScenarVerze | null, vsechny: ScenarVer
   return { scenar: aktivni.jmenoSouboru, scenarStarsi: [...new Set(starsi)], velikost: aktivni.rozbor?.velikostMapy ?? null };
 }
 
+/** Totéž z databáze: pro novou akci i pro propsání aktivace do běžící akce (routes.ts). */
+export async function nastaveniZAktivniVerze(): Promise<ReturnType<typeof nastaveniScenare>> {
+  return nastaveniScenare(await getAktivniVerze(), await listVerzi());
+}
+
 export const diplomacie: RezimAkce = {
   id: "diplomacie",
 
@@ -34,7 +39,7 @@ export const diplomacie: RezimAkce = {
       cheaty: false,
       povolitDivaky: true,
       maxHracu: 8,
-      ...nastaveniScenare(await getAktivniVerze(), await listVerzi()),
+      ...(await nastaveniZAktivniVerze()),
     };
   },
 

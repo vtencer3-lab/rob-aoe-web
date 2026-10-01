@@ -16,10 +16,11 @@ console.log(`Zkopírováno database/ -> ${dest}`);
 
 // Rozbor scénáře Diplomacie běží v Pythonu vedle zkompilovaného rozbor.js
 // (src/diplomacie/rozbor.ts ho hledá přes import.meta.dirname).
+// requirements.txt sem nepatří: čte ho jen Dockerfile, a to ze src/.
 const diplo = join(import.meta.dirname, "..", "src", "diplomacie");
 const diploCil = join(import.meta.dirname, "..", "dist", "src", "diplomacie");
 await mkdir(diploCil, { recursive: true });
-for (const soubor of ["rozbor.py", "barvy_terenu.json", "requirements.txt"]) {
+for (const soubor of ["rozbor.py", "barvy_terenu.json"]) {
   await cp(join(diplo, soubor), join(diploCil, soubor));
 }
 console.log(`Zkopírován rozbor scénáře -> ${diploCil}`);

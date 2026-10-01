@@ -14,6 +14,8 @@ export interface KontextZapasu {
 
 /** Co mód přidá do obrazovek jádra (spec §4.1 H9). Klasický večer nic. */
 export interface RezimKlienta {
+  /** Štítek módu u názvu v panelu akce; klasický večer žádný nemá. */
+  stitek?(): string;
   kartaHrace?(p: KontextZapasu): ReactNode;
   krokHosta?(p: KontextZapasu): ReactNode;
   verejnyZapas?(p: KontextZapasu): ReactNode;

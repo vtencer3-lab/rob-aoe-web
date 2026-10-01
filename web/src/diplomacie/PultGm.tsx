@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { odchylkySlozeni, povoleneCile, textPrehledu } from "../../../src/shared/diplomacie/los.js";
 import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
-import type { DiploData, Role } from "../../../src/shared/diplomacie/typy.js";
+import { ROLE_VOLITELNE, type DiploData, type Role } from "../../../src/shared/diplomacie/typy.js";
 import { BARVA_NAZEV, type Barva, type ZapasView } from "../../../src/shared/types.js";
 import type { Hlidej } from "../rezimy/index.js";
 import { Kopirovatelne } from "../views/Kopirovatelne.js";
@@ -14,7 +14,6 @@ import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
 import { ZNAK_ROLE } from "./znaky.js";
 
-const VOLITELNE_ROLE: Role[] = ["garda", "najezdnik", "sasek", "zoldak", "kat"];
 const POPIS_STAVU = { priprava: "Příprava", losovano: "Losováno", rozeslano: "Rozesláno" } as const;
 
 /** Otázka před změnou, kterou hráč už vidí (spec §6.2), a co se stane po „Ano“. */
@@ -114,7 +113,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                           <strong>{NAZEV_ROLE.nastupce}</strong>
                         ) : (
                           <select aria-label={`Role: ${jmeno(r.hracId)}`} value={r.role} disabled={pracuje} onChange={(e) => zmen(r.hracId, { role: e.target.value as Role })}>
-                            {VOLITELNE_ROLE.map((v) => (
+                            {ROLE_VOLITELNE.map((v) => (
                               <option key={v} value={v}>
                                 {NAZEV_ROLE[v]}
                               </option>

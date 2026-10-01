@@ -68,10 +68,10 @@ export function registerEventRoutes(app: FastifyInstance): void {
     try {
       const rezimId = (rezim as RezimId | undefined) ?? "klasicky";
       const akce = await createAkce(nazev.trim(), rezimId);
-      // Klasická akce zůstává s prázdným JSON jako dosud, ať se dnešní
-      // chování nemění — mód s vlastním výchozím nastavením si ho rovnou uloží.
+      // Mód s vlastním výchozím nastavením si ho rovnou uloží; klasický
+      // večer vrací null a akce zůstává s prázdným JSON jako dosud.
       const vychozi = await rezimAkce(rezimId).vychoziNastaveniLobby(VYCHOZI_NASTAVENI);
-      if (rezimId !== "klasicky") await setNastaveniLobby(akce.id, vychozi as unknown as Record<string, unknown>);
+      if (vychozi !== null) await setNastaveniLobby(akce.id, vychozi);
       await broadcastAkce();
       return { akce };
     } catch (err) {

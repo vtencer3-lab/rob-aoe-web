@@ -22,6 +22,11 @@ it("Diplomacie označí šedý slot jako GM, ostatní nechá bez štítku", () =
   expect(rk.popisSlotu?.(1)).toBeNull();
 });
 
+// Štítek u názvu v panelu akce dodává mód; klasický večer háček nemá (viz výš).
+it("Diplomacie dodá panelu akce svůj štítek", () => {
+  expect(rezimKlienta("diplomacie").stitek?.()).toBe("Diplomacie");
+});
+
 // Panel Nastavení lobby ukazuje v Custom Scenario podmínky vítězství z
 // rozboru aktivní verze; bez verze (nebo u starého rozboru bez nich) nic.
 it("Diplomacie dodá panelu nastavení popis vítězství z aktivní verze", () => {

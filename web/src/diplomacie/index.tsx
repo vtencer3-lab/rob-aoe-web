@@ -7,6 +7,7 @@ import { VerejnyRadek } from "./VerejnyRadek.js";
 
 /** Diplomacie na obrazovkách jádra (spec §4.2): GM dostane pult, ostatní kartu role, host stažení scénáře. */
 export const diplomacieKlient: RezimKlienta = {
+  stitek: () => "Diplomacie",
   kartaHrace: ({ zapas, stav, ja, hlidej }) => {
     if (!stav.rezim || !ja) return null;
     const d = diploZapasu(stav.rezim.data, zapas.id);

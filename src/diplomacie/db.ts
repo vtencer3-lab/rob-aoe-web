@@ -185,11 +185,13 @@ export async function ulozRole(zapasId: number, role: RoleHrace[], stav: StavDip
 }
 
 export async function upravRoli(zapasId: number, r: RoleHrace): Promise<void> {
-  await getPool().query(
-    `UPDATE diplo_role SET role = $3, cil_hrac_id = $4, upraveno_po_rozeslani = $5 WHERE zapas_id = $1 AND hrac_id = $2`,
-    [zapasId, r.hracId, r.role, r.cilHracId, r.upravenoPoRozeslani],
-  );
-  await getPool().query("UPDATE diplo_zapas SET upraveno_v = now() WHERE zapas_id = $1", [zapasId]);
+  await withTransaction(async (c) => {
+    await c.query(
+      `UPDATE diplo_role SET role = $3, cil_hrac_id = $4, upraveno_po_rozeslani = $5 WHERE zapas_id = $1 AND hrac_id = $2`,
+      [zapasId, r.hracId, r.role, r.cilHracId, r.upravenoPoRozeslani],
+    );
+    await c.query("UPDATE diplo_zapas SET upraveno_v = now() WHERE zapas_id = $1", [zapasId]);
+  });
 }
 
 export async function setStavDiplo(zapasId: number, stav: StavDiplo): Promise<void> {

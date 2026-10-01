@@ -31,6 +31,18 @@ export function nazevCookie(basePath: string): string {
   return `sid${basePath.replace(/\//g, "_")}`;
 }
 
+/**
+ * Seznam `hrac_id` z proměnné prostředí: čárkou (nebo mezerou, středníkem)
+ * oddělené hodnoty, prázdné se zahodí; chybějící proměnná = prázdný seznam.
+ * Bere Steam ID i `xbox:<xuid>`.
+ */
+function seznamId(jmeno: string): string[] {
+  return (process.env[jmeno] ?? "")
+    .split(/[\s,;]+/)
+    .map((id) => id.trim())
+    .filter((id) => id !== "");
+}
+
 export const config = {
   get baseUrl(): string {
     return process.env["BASE_URL"] ?? "http://localhost:3000";
@@ -78,20 +90,14 @@ export const config = {
    * Prázdný seznam = proměnná chybí.
    */
   get adminHracIds(): string[] {
-    return (process.env["ADMIN_STEAM_ID"] ?? "")
-      .split(/[\s,;]+/)
-      .map((id) => id.trim())
-      .filter((id) => id !== "");
+    return seznamId("ADMIN_STEAM_ID");
   },
   /**
    * Autoři scénáře Diplomacie (spec §5.1): smí nahrávat verze, i když
    * nejsou admini. Stejný tvar jako ADMIN_STEAM_ID.
    */
   get autoriScenare(): string[] {
-    return (process.env["AUTORI_SCENARE"] ?? "")
-      .split(/[\s,;]+/)
-      .map((id) => id.trim())
-      .filter((id) => id !== "");
+    return seznamId("AUTORI_SCENARE");
   },
   /** Nouzový režim pro rozjezd bez Roba: první přihlášený se stane adminem. */
   get adminBootstrap(): boolean {

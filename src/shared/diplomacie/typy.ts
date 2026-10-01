@@ -3,8 +3,11 @@ import type { RozborScenare } from "./scenar.js";
 /** Role hráče (spec §6.1). Nástupce se nelosuje — určí ho hra a odklikne GM. */
 export type Role = "nastupce" | "garda" | "najezdnik" | "sasek" | "zoldak" | "kat";
 
-/** Šest rolí, které web rozdá mezi hráče kromě Nástupce: 1+1+2+1+1. */
-export const ROLE_LOSOVANE: readonly Role[] = ["sasek", "garda", "najezdnik", "najezdnik", "zoldak", "kat"];
+/** Role, které GM může hráči přidělit roletkou (všechny kromě Nástupce), v pořadí pravidel. */
+export const ROLE_VOLITELNE: readonly Role[] = ["garda", "najezdnik", "sasek", "zoldak", "kat"];
+
+/** Šest rolí, které web rozdá mezi hráče kromě Nástupce: 1+1+2+1+1 — Nájezdníci jsou dva. */
+export const ROLE_LOSOVANE: readonly Role[] = ROLE_VOLITELNE.flatMap((r) => (r === "najezdnik" ? [r, r] : [r]));
 
 export type StavDiplo = "priprava" | "losovano" | "rozeslano";
 

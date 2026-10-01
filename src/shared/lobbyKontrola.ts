@@ -40,7 +40,11 @@ export interface NastaveniLobby {
    * Null = je to jedno. Hra posílá jen jméno, ne obsah (spec Diplomacie §2.2).
    */
   scenar: string | null;
-  /** Jména starších verzí téhož scénáře; lobby s nimi dostane větu „starší verze“. */
+  /**
+   * Jména ostatních verzí téhož scénáře (neaktivní — starší i novější);
+   * lobby s nimi dostane větu „jiná verze“. Jméno pole zůstává kvůli
+   * uloženým nastavením.
+   */
   scenarStarsi: string[] | null;
   /** AI Difficulty (options[61]): 3 Standard, 1 Hard. */
   aiObtiznost: number | null;
@@ -642,7 +646,7 @@ export function zkontrolujLobby(
     let text: string;
     if (ve === ma) text = `Scénář: ${ma}`;
     else if (ve === null) text = `Scénář: hra neposlala jméno scénáře, má být ${ma}`;
-    else if (ocekavane.scenarStarsi?.includes(ve)) text = `Scénář: v lobby je starší verze ${ve}, má být ${ma}`;
+    else if (ocekavane.scenarStarsi?.includes(ve)) text = `Scénář: v lobby je jiná verze ${ve}, má být ${ma}`;
     else text = `Scénář: v lobby je ${ve}, má být ${ma}`;
     hlavni("scenar", ve === ma, text);
   }

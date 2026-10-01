@@ -6,7 +6,7 @@ import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
 import { doplnNastaveni, type NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import { VERZE } from "../../src/shared/verze.js";
-import type { Vitez, ZapasView } from "../../src/shared/types.js";
+import type { RezimId, Vitez, ZapasView } from "../../src/shared/types.js";
 import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.js";
 import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
@@ -165,9 +165,10 @@ export function App() {
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
-  // Mód akce na obrazovkách jádra (H9): co Diplomacie přidá na kartu, hostovi
-  // a do veřejného řádku. Klasický večer nepřidává nic.
-  const rk = rezimKlienta(akce?.rezim);
+  // Mód akce (starší snímek bez `rezim` = klasický) a co přidá na obrazovky
+  // jádra (H9): kartu, krok hosta, veřejný řádek, štítek. Klasický večer nic.
+  const rezimAkce: RezimId = akce?.rezim ?? "klasicky";
+  const rk = rezimKlienta(rezimAkce);
   // Řádek „Scénář“ v Nastavení lobby (Custom Scenario): podmínky vítězství
   // z rozboru. Klasický večer háček nemá a panel zůstává, jak je.
   const scenarPanelu = stav ? (rk.nastaveniScenare?.(stav) ?? undefined) : undefined;
@@ -273,7 +274,7 @@ export function App() {
           },
         }
       : undefined,
-    akce?.rezim ?? "klasicky",
+    rezimAkce,
   );
   // useSkladani se volá dřív, než jsou definované pomocné funkce níž — refy to překlenou.
   const jmenoPodleIdRef = useRef<(hracId: string) => string>((id) => id);
@@ -665,6 +666,7 @@ export function App() {
       {admin ? (
         <SpravaAkce
           akce={akce}
+          stitek={rk.stitek?.() ?? null}
           onZalozit={(nazev, rezim) => void hlidej(() => api.vytvoritAkce(nazev, rezim))}
           onNastaveniLobby={(n) => {
             if (!akce) return;
@@ -695,7 +697,7 @@ export function App() {
                   setNovyZapas(zapas.id);
                 })
               }
-              rezim={akce.rezim ?? "klasicky"}
+              rezim={rezimAkce}
               popisSlotu={rk.popisSlotu}
               sadaCivilizaci={doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
               zvyraznit={zvyrazneni?.druh === "skladani" ? zvyrazneni : null}
@@ -725,7 +727,7 @@ export function App() {
             <EditaceZapasu
               zapas={zapasKUprave}
               prihlaseni={stav.prihlaseni}
-              rezim={akce.rezim ?? "klasicky"}
+              rezim={rezimAkce}
               scenar={scenarPanelu}
               onNastaveni={(n) => hlidej(() => api.nastaveniZapasu(zapasKUprave.id, n))}
               onNazev={(nazev) => hlidej(() => api.nazevLobbyZapasu(zapasKUprave.id, nazev))}

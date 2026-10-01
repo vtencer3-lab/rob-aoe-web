@@ -20,6 +20,8 @@ interface Props {
   onNoveHeslo?: () => void;
   /** Custom Scenario: podmínky vítězství z rozboru scénáře (dodá mód). */
   scenar?: { vitezstvi: string | null };
+  /** Štítek módu u nadpisu (dodá mód přes `RezimKlienta.stitek`); klasický večer nic. */
+  stitek?: string | null;
 }
 
 /**
@@ -27,7 +29,7 @@ interface Props {
  * vybraní hráči (sestava), vpravo Game Settings. Tlačítka debug módu stojí
  * nahoře u tabulky přihlášených — týkají se toho, kdo je v seznamu.
  */
-export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, children, zvyraznitNastaveni, onNoveHeslo, scenar }: Props) {
+export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, children, zvyraznitNastaveni, onNoveHeslo, scenar, stitek }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
@@ -39,7 +41,7 @@ export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaven
           ostatním a odehraje se v samostatném okně jako ve hře. */}
       <header className="hlavicka-akce">
         <h2>Nastavení Lobby</h2>
-        {akce.rezim === "diplomacie" ? <span className="stitek-rezimu">Diplomacie</span> : null}
+        {stitek ? <span className="stitek-rezimu">{stitek}</span> : null}
         <button type="button" className="prelobby-tlacitko" onClick={() => setPreLobbyVidet(true)}>
           Pre-Lobby Nastavení
         </button>

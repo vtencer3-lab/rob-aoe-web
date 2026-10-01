@@ -1569,7 +1569,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-role .role ul { margin: 0; padding-left: 1.2rem; }
 .karta-role .role li { margin: 0.15rem 0; }
 /* „GM upravil tvou roli“ nad názvem: barvu dává .varovani, tady jen důraz. */
-.karta-role .upozorneni { font-weight: 700; text-align: center; }
+/* Je to věta, ne bublina s nápovědou — otazník kurzoru z .varovani sem nepatří (jako .pult-gm .souhrn). */
+.karta-role .upozorneni { font-weight: 700; text-align: center; cursor: auto; }
 /* Pult GM (Diplomacie, PultGm.tsx): sekce jako karta role, stav zápasu
    vpravo v záhlaví na místě fajfky kroků. Dlaždice Nástupce mají celou
    plochu v barvě hráče jako tlačítka výsledku: GM čte ve hře „p3 ma: …“

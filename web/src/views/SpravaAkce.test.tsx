@@ -38,9 +38,12 @@ it("bez přepínače je akce klasická", () => {
   expect(onZalozit).toHaveBeenCalledWith("Čtvrtek", "klasicky");
 });
 
-it("běžící akce Diplomacie má v záhlaví štítek", () => {
-  render(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "D", stav: "bezi", rezim: "diplomacie" }} />);
+// Štítek dodává mód (háček `stitek` v rezimy/index.tsx), panel sám mód nezná.
+it("běžící akce má v záhlaví štítek módu, když ho mód dodá", () => {
+  const { rerender } = render(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "D", stav: "bezi", rezim: "diplomacie" }} stitek="Diplomacie" />);
   expect(screen.getByText("Diplomacie", { selector: ".stitek-rezimu" })).toBeTruthy();
+  rerender(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "D", stav: "bezi" }} />);
+  expect(document.querySelector(".stitek-rezimu")).toBeNull();
 });
 
 it("prázdný název neodešle", () => {

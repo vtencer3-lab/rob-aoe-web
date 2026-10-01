@@ -6,8 +6,8 @@ import { getZapas } from "../db/matches.js";
 import { HttpError, requireId, requireUser } from "../http/guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { losujRole, zmenCil, zmenRoli } from "../shared/diplomacie/los.js";
-import type { DiploZapas, Role } from "../shared/diplomacie/typy.js";
-import { jePlatneJmenoScenare } from "../shared/lobbyKontrola.js";
+import { ROLE_VOLITELNE, type DiploZapas, type Role } from "../shared/diplomacie/typy.js";
+import { jePlatneJmenoScenare, type NastaveniLobby } from "../shared/lobbyKontrola.js";
 import {
   aktivujVerzi,
   getAktivniVerze,
@@ -25,14 +25,12 @@ import {
   vratNaPripravu,
 } from "./db.js";
 import { smiNahratScenar } from "./opravneni.js";
-import { nastaveniScenare } from "./rezim.js";
+import { nastaveniZAktivniVerze } from "./rezim.js";
 import { jeHlavickaScenare, type rozeberScenar } from "./rozbor.js";
 
 export interface DiploDeps {
   rozeberScenar: typeof rozeberScenar;
 }
-
-const ROLE: readonly Role[] = ["garda", "najezdnik", "sasek", "zoldak", "kat"];
 
 /** Přihlášený musí být GM tohoto zápasu Diplomacie; admin výjimku nemá (spec §6.3). */
 async function requireGm(request: FastifyRequest): Promise<{ diplo: DiploZapas; hraci: string[] }> {
@@ -91,7 +89,7 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
     const telo = (request.body ?? {}) as { role?: unknown; cilHracId?: unknown };
     let role = diplo.role;
     if (telo.role !== undefined) {
-      if (!ROLE.includes(telo.role as Role)) throw new HttpError(400, "Neznámá role.");
+      if (!ROLE_VOLITELNE.includes(telo.role as Role)) throw new HttpError(400, "Neznámá role.");
       role = chybaPravidla(() => zmenRoli(role, hracId, telo.role as Role, diplo.nastupceHracId!, randomInt));
     }
     if (telo.cilHracId !== undefined) {
@@ -152,7 +150,7 @@ function hlavicka(request: FastifyRequest, jmeno: string): string | null {
 async function promitniDoAkce(): Promise<void> {
   const akce = await getAktivniAkce();
   if (!akce || akce.rezim !== "diplomacie") return;
-  await setNastaveniLobby(akce.id, { ...akce.nastaveniLobby, ...nastaveniScenare(await getAktivniVerze(), await listVerzi()) });
+  await setNastaveniLobby(akce.id, { ...(akce.nastaveniLobby as Partial<NastaveniLobby>), ...(await nastaveniZAktivniVerze()) });
 }
 
 const duplicita = (id: number) => new HttpError(409, `Tahle verze už je nahraná (č. ${id}).`);

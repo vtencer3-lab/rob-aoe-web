@@ -450,7 +450,8 @@ describe("závažnost pre-lobby", () => {
 
 // Game Mode Scenario (options[5] = 3): mapa z lobby je jen zbytek po
 // předchozí volbě, takže se u scénáře nekontroluje — jméno souboru scénáře
-// (options[38]) nahradí roli mapy a starší verze dostane vlastní hlášku.
+// (options[38]) nahradí roli mapy a jiná verze téhož scénáře dostane vlastní
+// hlášku (seznam nese každou neaktivní verzi, i novější — proto „jiná“).
 describe("scénář", () => {
   const ocekavane = { ...VYCHOZI_NASTAVENI, rezim: 3, mapaId: 10875, scenar: "Diplomacie LLC v2.aoe2scenario", scenarStarsi: ["Diplomacie LLC v1.aoe2scenario"] };
   const radek = (scenar: string | null | undefined) =>
@@ -459,8 +460,8 @@ describe("scénář", () => {
   it("shoda je zelená", () => {
     expect(radek("Diplomacie LLC v2.aoe2scenario")).toMatchObject({ stav: "ok", sekce: "hlavni", text: "Scénář: Diplomacie LLC v2.aoe2scenario" });
   });
-  it("starší verze je červená a řekne to", () => {
-    expect(radek("Diplomacie LLC v1.aoe2scenario")).toMatchObject({ stav: "spatne", text: "Scénář: v lobby je starší verze Diplomacie LLC v1.aoe2scenario, má být Diplomacie LLC v2.aoe2scenario" });
+  it("jiná verze téhož scénáře je červená a řekne to", () => {
+    expect(radek("Diplomacie LLC v1.aoe2scenario")).toMatchObject({ stav: "spatne", text: "Scénář: v lobby je jiná verze Diplomacie LLC v1.aoe2scenario, má být Diplomacie LLC v2.aoe2scenario" });
   });
   it("jiný soubor je červený", () => {
     expect(radek("Jiny.aoe2scenario")).toMatchObject({ stav: "spatne", text: "Scénář: v lobby je Jiny.aoe2scenario, má být Diplomacie LLC v2.aoe2scenario" });
