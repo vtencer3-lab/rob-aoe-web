@@ -108,7 +108,16 @@ Uživatel 1. 10. 2026 přidal návratovou adresu
 `AoE 2 komunitky`. Sonda bez přihlášení: diplo vrátí přihlašovací stránku
 (34 kB) stejně jako dev, nezapsaná adresa chybovou (3 kB).
 
-### 2.4 Co ověřené není
+### 2.4 Barvy minimapy z dat hry (sonda 1. 10. 2026)
+
+`genieutils-py` 0.1.2 přečte `resources/_common/dat/empires2_x2_p1.dat`
+(200 terénů). Každý terén má `colors` = tři indexy do palety
+`resources/_common/palettes/original.pal` (JASC-PAL, 256 barev). První index
+dává klasické barvy minimapy: Grass 55 → (0,169,0), Dirt 176 → (243,170,92),
+Pine Forest 197 → (37,116,57), Desert/Beach 137 → (248,201,138),
+Water Azure 4 → (0,84,176), Water Shallow 19 → (48,93,182).
+
+### 2.5 Co ověřené není
 
 - Jak se soubor scénáře jmenuje u hosta, když si ho stáhne z webu a lobby
   založí. Předpoklad: `options[38]` = jméno souboru bez cesty. Ověří první
@@ -160,7 +169,7 @@ Dokumentace: `docs/nasazeni-jouki-cz.md` dostane sloupec „diplo“ v tabulce
 | H2 | `src/db/events.ts` (`createAkce`, `SLOUPCE_AKCE`, `AkceRow`), `src/http/routes/events.ts` (`POST /api/akce`) | přijme a uloží `rezim`; neznámá hodnota → 400 |
 | H3 | `src/rezimy/index.ts` (nové) | seznam módů a rozhraní `RezimAkce` (§4.2); `klasicky` je prázdná implementace |
 | H4 | `createAkce` | výchozí nastavení lobby z módu |
-| H5 | `zkontrolujSestavu` (`src/shared/sestava.ts`) / `prectiSestavu` | po kontrole jádra ještě kontrola módu |
+| H5 | `src/shared/rezimy.ts` (nové, `zkontrolujSestavuRezimu`), `prectiSestavu` v `src/http/routes/matches.ts`, `Skladani.tsx` | po kontrole jádra ještě sdílená synchronní kontrola módu; před úpravou sestavy zápasu `rezim.predZmenouSestavy` |
 | H6 | `createZapas` (`src/db/matches.ts`) | v téže transakci `rezim.poVytvoreniZapasu(tx, zapas)` |
 | H7 | `buildAkceStav` (`src/realtime/akceStav.ts`) a `redigujProDivaka` (`src/realtime/redakce.ts`) | mód přidá svou větev stavu a sám ji zredukuje podle diváka |
 | H8 | `web/src/views/SpravaAkce.tsx` (`ZalozeniAkce`) | přepínač **Diplomacie** vedle „Název akce“ (`Prepinac.tsx`) |
@@ -194,9 +203,12 @@ módů a registraci rout. Sloupec `akce.rezim` a háčky zůstanou neutrální.
 export interface RezimAkce {
   id: "klasicky" | "diplomacie";
   vychoziNastaveniLobby(zaklad: NastaveniLobby): NastaveniLobby;
-  // chybová věta, nebo null; zapasId je vyplněné při úpravě sestavy existujícího
-  // zápasu (PUT /api/zapas/:id/sestava), při vytváření nového chybí
-  zkontrolujSestavu(sestava: SestavaVstup[], zapasId?: number): Promise<string | null>;
+  // Před úpravou sestavy existujícího zápasu (PUT /api/zapas/:id/sestava):
+  // chybová věta (→ 409), nebo null. Pravidla sestavy samotná jsou sdílená
+  // synchronní funkce zkontrolujSestavuRezimu (src/shared/rezimy.ts), protože
+  // je volá i frontend (Skladani.tsx), aby „Vytvořit zápas“ svítilo jen pro
+  // platnou sestavu — stejně jako dnes zkontrolujSestavu.
+  predZmenouSestavy(zapasId: number): Promise<string | null>;
   poVytvoreniZapasu(tx: Tx, zapas: { id: number; ucastnici: Seat[] }): Promise<void>;
   doplnStav(akce: AkceRow, zapasy: ZapasView[]): Promise<Record<string, unknown> | undefined>;
   rediguj(cast: unknown, divak: Divak): unknown;
@@ -499,7 +511,7 @@ Po každé změně `broadcastAkce()`, jako jinde.
 **Změna sestavy po losu** (`PUT /api/zapas/:id/sestava`): když diplo zápas
 není v `priprava`, změna sestavy vrátí 409 „Role už jsou rozdané — nejdřív
 Zpět na výběr Nástupce“. Jinak by role visely na lidech mimo zápas. Do jádra
-to přijde háčkem `zkontrolujSestavu` s kontextem zápasu, ne podmínkou
+to přijde háčkem `predZmenouSestavy`, ne podmínkou
 v routě.
 
 ## 7. Viditelnost
