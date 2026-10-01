@@ -252,9 +252,10 @@ nastroje/diplomacie/
 
 ```sql
 -- 031_diplomacie.sql
+-- GM se neukládá: je to vždy účastník na šedé (ucastnik.barva = 7), takže
+-- výměna GM změnou sestavy v přípravě se projeví sama.
 CREATE TABLE diplo_zapas (
   zapas_id    INTEGER PRIMARY KEY REFERENCES zapas(id) ON DELETE CASCADE,
-  gm_hrac_id  TEXT NOT NULL REFERENCES player(hrac_id),
   stav        TEXT NOT NULL DEFAULT 'priprava'
               CHECK (stav IN ('priprava','losovano','rozeslano')),
   nastupce_hrac_id TEXT REFERENCES player(hrac_id),
@@ -557,7 +558,7 @@ Pod kontrolou lobby v KartaHrace / ObrazovkaHosta:
 - **Pod kartou** (vidí všichni v zápase): „Nástupcem císaře je X“ a rozbalovací
   **Pravidla hry** (`PravidlaHry.tsx`, obsah z `role.ts` a z rozboru verze, kterou zápas hraje).
 
-Mimo zápas (`VerejnyZapas`, historie): „Diplomacie · Nástupce: X“.
+Mimo zápas (`VerejnyZapas`): „Diplomacie · Nástupce: X“. Historie dohraných zápasů zůstává v tomhle podprojektu beze změny — role se v ní ukážou až s odhalením v podprojektu 2.
 
 ### 8.3 Grafika
 
@@ -590,7 +591,7 @@ Podle `docs/grafika.md`, žádné ruční kreslení ani úpravy:
 | zápas zrušen nebo smazán | diplo data kaskádou pryč |
 | akce ukončena | jako dnes (`smazAkciBezVysledku`); diplo zápas bez výsledku zmizí s ní |
 | víc zápasů Diplomacie za večer | každý zápas má vlastní `diplo_zapas` |
-| GM se odhlásí z akce / odejde | pult nikdo jiný nemá; admin vymění GM změnou sestavy, jde jen v `priprava` (jinak „Zpět na výběr Nástupce“) |
+| GM se odhlásí z akce / odejde | pult nikdo jiný nemá; admin vymění GM změnou sestavy (GM = kdo sedí na šedé, neukládá se zvlášť); jde jen v `priprava`, jinak nejdřív „Zpět na výběr Nástupce“ |
 | scénář nerozdal cíl všem (restart hry) | GM „Zpět na výběr Nástupce“ |
 | žádná verze scénáře ještě není | akci Diplomacie jde založit, panel akce ukáže „Nahraj scénář“ (autorům) / „Scénář zatím nikdo nenahrál“ (ostatním); zápas jde vytvořit, `scenar_id` je NULL, pult GM funguje bez minimapy, karta bez čísel cílů jen s texty rolí, host nemá co stáhnout |
 | rozbor visí nebo spadne | po 60 s se proces zabije, verze se uloží s chybou (§5.2 bod 4) |
