@@ -1,7 +1,9 @@
+import { isValidElement } from "react";
 import { expect, it } from "vitest";
 import { ROZBOR } from "../../../src/shared/diplomacie/fixtures.js";
 import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import type { AkceStavPayload } from "../../../src/shared/types.js";
+import { ZAPAS } from "../diplomacie/fixtury.js";
 import { rezimKlienta } from "./index.js";
 
 // Klasický večer nic do obrazovek jádra nepřidává; chybějící mód (starší
@@ -28,4 +30,18 @@ it("Diplomacie dodá panelu nastavení popis vítězství z aktivní verze", () 
   expect(rk.nastaveniScenare?.(stav({ ...aktivni, rozbor: { ...ROZBOR, vitezstvi: undefined } }))).toEqual({ vitezstvi: null });
   // Snímek bez dat módu (starší stav) — nic k ukázání.
   expect(rk.nastaveniScenare?.({ akce: null, prihlaseni: [], zapasy: [] })).toBeNull();
+});
+
+// Karta role jen přihlášenému účastníkovi a jen se snímkem módu; veřejný
+// řádek stačí snímek módu, divák může být anonym.
+it("Diplomacie dodá kartu role a veřejný řádek jen se snímkem módu", () => {
+  const rk = rezimKlienta("diplomacie");
+  const hlidej = async () => {};
+  const bezModu: AkceStavPayload = { akce: null, prihlaseni: [], zapasy: [] };
+  const sModem: AkceStavPayload = { ...bezModu, rezim: { id: "diplomacie", data: { aktivni: null, verze: {}, zapasy: [] } } };
+  expect(rk.kartaHrace?.({ zapas: ZAPAS, stav: bezModu, ja: "h2", hlidej })).toBeNull();
+  expect(rk.kartaHrace?.({ zapas: ZAPAS, stav: sModem, ja: null, hlidej })).toBeNull();
+  expect(isValidElement(rk.kartaHrace?.({ zapas: ZAPAS, stav: sModem, ja: "h2", hlidej }))).toBe(true);
+  expect(rk.verejnyZapas?.({ zapas: ZAPAS, stav: bezModu, ja: null, hlidej })).toBeNull();
+  expect(isValidElement(rk.verejnyZapas?.({ zapas: ZAPAS, stav: sModem, ja: null, hlidej }))).toBe(true);
 });

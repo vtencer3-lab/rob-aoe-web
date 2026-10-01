@@ -1537,6 +1537,30 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ u hráče. Nepřijímá
    kliknutí, ať nepřekáží v tooltipu značky. */
 .mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; pointer-events: none; }
+/* Karta role (Diplomacie, KartaRole.tsx): sekce pod kontrolou lobby se
+   záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
+   kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,
+   druhý Nájezdník) tučně, ať je hráč najde na první pohled. Zakryti centruje,
+   text karty se čte zleva. Znaky rolí (spec §8.3) přijdou na `.role-<role>`. */
+.karta-role .role { max-width: 34rem; margin: 0 auto; padding: 0.6rem 1rem 0.8rem; text-align: left; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
+.karta-role .role h4 { margin: 0.2rem 0 0.5rem; font-size: 1.4rem; text-align: center; }
+.karta-role .role h5 { margin: 0.7rem 0 0.2rem; font-size: 0.95rem; color: var(--zlato); }
+.karta-role .role p { margin: 0.3rem 0; }
+.karta-role .role .cil { font-weight: 700; }
+.karta-role .role ul { margin: 0; padding-left: 1.2rem; }
+.karta-role .role li { margin: 0.15rem 0; }
+/* „GM upravil tvou roli“ nad názvem: barvu dává .varovani, tady jen důraz. */
+.karta-role .upozorneni { font-weight: 700; text-align: center; }
+/* Pravidla hry (PravidlaHry.tsx): sbalovací tahák jako sekce kontroly lobby
+   (Skladaci), ale nadpis ve zlaté kapitálce — je to kapitola, ne detail. */
+.pravidla-hry { margin-top: 0.8rem; text-align: left; }
+.pravidla-hry summary { cursor: pointer; color: var(--zlato); font-family: "Cinzel", Georgia, serif; }
+.pravidla-hry h4 { margin: 0.8rem 0 0.2rem; font-size: 1rem; }
+.pravidla-hry h5 { margin: 0.5rem 0 0.1rem; font-size: 0.95rem; color: var(--zlato); }
+.pravidla-hry p, .pravidla-hry ul { margin: 0.2rem 0; font-size: 0.92rem; }
+.pravidla-hry ul { padding-left: 1.2rem; }
+/* Veřejný řádek Diplomacie pod stranami zápasu (VerejnyRadek.tsx). */
+.diplo-radek { color: var(--zlato-svetle); font-size: 0.9rem; }
 .karta .ceka { margin: 0.4rem 0; }
 .karta .heslo { margin-top: 0.8rem; font-size: 1.05rem; }
 .karta .hledani-lobby .ovladani { justify-content: center; }
