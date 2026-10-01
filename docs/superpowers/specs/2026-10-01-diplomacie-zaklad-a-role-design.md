@@ -38,6 +38,9 @@ Podklady (mimo repo, u uživatele v `Downloads`):
    do `dev`, kde mód poběží pod přepínačem.
 6. **Scénář je součástí webu**: kontrola lobby hlídá soubor scénáře, web ho
    rozdává ke stažení, ukazuje jeho minimapu a pravidla čte přímo z něj.
+   **Nové verze nahrávají přes web admini a autor scénáře (Jin)**; web je
+   archivuje (záloha) a každou sám rozebere. Upřesněno týž den, když Jin
+   napsal, že se scénář bude ještě měnit.
 7. **Plnohodnotná grafika** (znaky rolí, minimapa) přes lokální modely
    a Codex, žádné ruční kreslení.
 8. **Karta role i pult GM jsou ve výchozím stavu zakryté**; kliknutí odkryje,
@@ -129,6 +132,8 @@ Postup jako u `experimental` (`docs/nasazeni-jouki-cz.md` §1.1, §3):
 | `STEAM_API_KEY` | zkopírovat z dev |
 | `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | zkopírovat z dev (táž registrace, adresa ověřená, §2.3) |
 | `ZKUSEBNI_HRACI` | `true` |
+| `AUTORI_SCENARE` | Jinovo `hrac_id`, až se poprvé přihlásí (§5.1); do té doby prázdné |
+| `PYTHON` | nenastavovat — výchozí `/opt/rozbor/bin/python` z Dockerfile sedí |
 | hlídač | dvojice `diplo:<uuid>` do `/root/aoe-deploy/watch.sh` |
 | GitHub Action | větev a UUID do `.github/workflows/deploy.yml` |
 
@@ -161,6 +166,8 @@ Dokumentace: `docs/nasazeni-jouki-cz.md` dostane sloupec „diplo“ v tabulce
 | H8 | `web/src/views/SpravaAkce.tsx` (`ZalozeniAkce`) | přepínač **Diplomacie** vedle „Název akce“ (`Prepinac.tsx`) |
 | H9 | `KartaHrace.tsx`, `ObrazovkaHosta.tsx`, `VerejnyZapas.tsx`, `Skladani.tsx` | místo pro vloženou komponentu (prop typu `ReactNode`, jako dnes `chat`); `App.tsx` je vyplní podle `akce.rezim` z klientského seznamu módů `web/src/rezimy/index.ts` |
 | H10 | `src/http/server.ts` | `registerDiplomacieRoutes(app)` |
+| H11 | `src/auth/routes.ts` (`GET /api/me`), `src/config.ts` | `smiNahratScenar` (admin nebo `AUTORI_SCENARE`); `config.autoriScenare`, `config.python` |
+| H12 | `Dockerfile` | Python, Pillow a AoE2ScenarioParser pro rozbor (§5.2) |
 
 **Obecné rozšíření jádra (ne jen pro diplo):** kontrola lobby se naučí
 scénáře:
@@ -177,7 +184,7 @@ Je to malé a užitečné i pro jiné scénářové večery, proto to jde do já
 ne do módu.
 
 Kdo chce mód vyjmout: smaže `src/diplomacie/`, `src/shared/diplomacie/`,
-`web/src/diplomacie/`, `web/public/diplomacie/`, řádek v obou seznamech
+`web/src/diplomacie/`, řádek v obou seznamech
 módů a registraci rout. Sloupec `akce.rezim` a háčky zůstanou neutrální.
 
 ### 4.2 Rozhraní módu
@@ -207,23 +214,26 @@ vždy**, i u admina: jádro nemá v tajných datech diplomacie žádnou výjimku
 
 ```
 src/shared/diplomacie/
-  scenar.ts        VYGENEROVÁNO nástrojem (§5.1): cíle, čísla, limity, sloty, jméno souboru
-  role.ts          role, texty z pravidel (cíl, výhody, nevýhody), složení 1+1+2+1+1+1
+  scenar.ts        typ RozborScenare (co rozbor vrací) a čtení z JSON s kontrolou tvaru
+  role.ts          role, texty z pravidel (cíl, výhody, nevýhody), složení 1+1+2+1+1+1;
+                   čísla cílů a limitů bere z RozborScenare verze, kterou zápas hraje
   los.ts           čisté funkce: los rolí a cílů, kontrola složení, povolené cíle
   viditelnost.ts   čistá funkce: co smí divák vidět
   typy.ts          DiploStav, DiploView, RoleHrace
 src/diplomacie/
   db.ts            dotazy nad diplo_*
   rezim.ts         implementace RezimAkce
-  routes.ts        /api/diplo/... (§6.3)
+  routes.ts        /api/diplo/... (§6.3, §5.3)
+  rozbor.ts        spustí Python rozbor nahraného souboru, ověří výstup, časový limit
+  rozbor.py        AoE2ScenarioParser: scénář → JSON (RozborScenare) + minimapa webp
+  barvy_terenu.json  VYGENEROVÁNO jednorázově z dat hry: id terénu → barva minimapy
+  requirements.txt   zamčené verze AoE2ScenarioParser a Pillow
+  fixtures/        kopie LLC pro testy (Jin souhlasil se zveřejněním)
 web/src/diplomacie/
   PultGm.tsx, KartaRole.tsx, Zakryti.tsx, PravidlaHry.tsx, MapaScenare.tsx,
-  VerejnyRadek.tsx, SkladaniDiplo.tsx
-web/public/diplomacie/
-  <soubor scénáře>, minimapa*.webp, znaky rolí
+  VerejnyRadek.tsx, SkladaniDiplo.tsx, SpravaScenare.tsx
 nastroje/diplomacie/
-  scenar.py        scénář → src/shared/diplomacie/scenar.ts
-  minimapa.py      scénář → minimapa a souřadnice startů
+  barvy_terenu.py  data hry → src/diplomacie/barvy_terenu.json (spouští vývojář na stroji s hrou)
 ```
 
 ### 4.4 Data
@@ -248,72 +258,172 @@ CREATE TABLE diplo_role (
   upraveno_po_rozeslani BOOLEAN NOT NULL DEFAULT false,
   PRIMARY KEY (zapas_id, hrac_id)
 );
+CREATE TABLE diplo_scenar (
+  id            SERIAL PRIMARY KEY,
+  jmeno_souboru TEXT NOT NULL,          -- jak ho nahrávající pojmenoval; to hlídá kontrola lobby
+  sha256        TEXT NOT NULL UNIQUE,   -- tentýž soubor podruhé nevznikne
+  data          BYTEA NOT NULL,         -- samotný .aoe2scenario (LLC má 132 kB, strop 5 MB)
+  rozbor        JSONB,                  -- RozborScenare; NULL = nepodařilo se přečíst
+  chyba_rozboru TEXT,
+  minimapa      BYTEA,                  -- webp; NULL spolu s rozborem
+  nahral_hrac_id TEXT NOT NULL REFERENCES player(hrac_id),
+  nahrano_v     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  poznamka      TEXT,                   -- „co je nového“, volitelně
+  aktivni       BOOLEAN NOT NULL DEFAULT false
+);
+CREATE UNIQUE INDEX diplo_scenar_jeden_aktivni ON diplo_scenar ((true)) WHERE aktivni;
+-- v diplo_zapas navíc:
+--   scenar_id INTEGER REFERENCES diplo_scenar(id)   -- verze otisknutá při vytvoření zápasu
 ```
+
+`diplo_zapas.scenar_id` si zápas otiskne při vytvoření (aktivní verze v tu
+chvíli), stejně jako si dnes otiskuje nastavení lobby. Když Jin během večera
+nahraje a aktivuje novou verzi, rozehraný zápas dál ukazuje pravidla té své.
+Verze se nemažou (záloha); mění se jen, která je aktivní. Tabulky se zakládají
+v pořadí `diplo_scenar` → `diplo_zapas` → `diplo_role` v jedné migraci.
 
 Klíč hráče je `player.hrac_id` (přejmenováno migrací 027). Zrušení nebo smazání zápasu smaže diplo data kaskádou.
 
 ## 5. Scénář jako součást webu
 
-### 5.1 Pravidla čtená ze scénáře
+Jin 1. 10. 2026 souhlasil se zveřejněním scénáře a upozornil, že se ještě
+bude měnit. Proto **scénář nežije v repu, ale v databázi s historií verzí**,
+nahrává se přes web a web si z každé verze sám přečte pravidla a minimapu.
+Kopie v repu je jen pro testy (`src/diplomacie/fixtures/`).
 
-`nastroje/diplomacie/scenar.py` (Python, AoE2ScenarioParser ≥ 0.9.2) přečte
-scénář a vygeneruje `src/shared/diplomacie/scenar.ts`:
+### 5.1 Kdo smí nahrávat
 
-- jméno souboru, pod kterým ho web rozdává, a jeho SHA-256,
-- 8 slotů: číslo → barva, který je GM (jméno hráče „GM“ ve scénáři),
-- sekundární cíle: text, cílové číslo (z podmínek triggerů, ne opsané),
-- výchozí suroviny, populace, limity jednotek (vesničané, rybářské lodě,
-  obchodní vozy — z triggerů „omezeni …“),
-- startovní pozice každé barvy (těžiště jejích budov) pro minimapu.
+- admini webu,
+- **autoři scénáře**: nová proměnná prostředí `AUTORI_SCENARE` (seznam
+  `hrac_id` oddělený čárkou, stejný tvar jako `ADMIN_STEAM_ID`). Jin tak nahrává
+  sám, i když není admin. Jeho `hrac_id` se doplní, až se poprvé přihlásí na
+  `/aoe/diplo`.
 
-Hlavička souboru: „vygenerováno z <soubor> <SHA> dne …, needitovat“.
-Texty rolí (výhody, nevýhody) ve scénáři nejsou — ty jsou v `role.ts` podle
-pravidel. Kde čísla z pravidel ve scénáři jsou (650, 99, 900, 150, 15, 5,
-limity), `role.ts` je bere ze `scenar.ts`.
+Ochrana `requireAutorScenare` = admin nebo hráč ze seznamu. `/api/me` dostane
+`smiNahratScenar: boolean`, aby frontend věděl, jestli ukázat správu scénáře.
 
-Při nové verzi scénáře: nahradit soubor, spustit nástroj, commit. Test
-zkontroluje, že SHA v `scenar.ts` sedí na soubor v `web/public/diplomacie/`.
+### 5.2 Nahrání a rozbor
 
-### 5.2 Soubor ke stažení
+1. `POST /api/diplo/scenar` s tělem `application/octet-stream` (samotný
+   soubor), jméno v hlavičce `X-Jmeno-Souboru` (URL-kódované kvůli diakritice),
+   volitelně `X-Poznamka`.
+   - Žádná nová knihovna na multipart: Fastify dostane
+     `addContentTypeParser('application/octet-stream', { parseAs: 'buffer' })`
+     a routa `bodyLimit` 5 MB.
+   - Jméno musí končit `.aoe2scenario`, bez lomítek, nejvýš 100 znaků; hra ho
+     pak ukáže v lobby a kontrola lobby ho porovnává.
+   - Začátek souboru musí být hlavička scénáře (verze formátu, např. `1.59`),
+     ať se nenahraje cokoliv.
+2. Server spočítá SHA-256. Stejný soubor už existuje → 409 s odkazem na tu
+   verzi.
+3. **Rozbor:** `rozbor.ts` spustí `python3 rozbor.py` (soubor na stdin, JSON
+   na stdout, minimapa jako base64 v témže JSON), limit 60 s. `rozbor.py`
+   používá AoE2ScenarioParser (verze zamčená v `requirements.txt`) a Pillow
+   a vrací `RozborScenare`:
+   - 8 slotů: číslo → barva, který je GM (hráč pojmenovaný „GM“; když takový
+     není, rozbor selže s chybou „scénář nemá hráče GM“),
+   - sekundární cíle: text z hlášky „TVUJ SEKUNDARNI CIL JE: …“ a cílové číslo
+     z podmínky triggeru, který cíl vyhodnocuje (ne opsané z pravidel),
+   - výchozí suroviny a populace hráčů,
+   - limity jednotek z triggerů „omezeni …“ (vesničané, rybářské lodě,
+     obchodní vozy),
+   - startovní pozice každé barvy (těžiště jejích budov) v souřadnicích
+     minimapy,
+   - velikost mapy,
+   - **minimapa** (webp, §5.4),
+   - varování (např. neznámý terén), která správa ukáže.
+4. `rozbor.ts` výstup ověří čtecí funkcí z `scenar.ts`. **Když rozbor selže**
+   (neznámá verze formátu, výjimka, limit, špatný tvar výstupu), soubor se
+   uloží s `rozbor = NULL` a `chyba_rozboru`. Nahrávající uvidí „Soubor je
+   uložený, ale nepodařilo se ho přečíst: … — pravidla a mapa zůstávají
+   z aktivní verze.“ Takovou verzi jde stáhnout, ale **ne aktivovat**: web by
+   pak neměl čísla cílů ani minimapu.
+5. Nová verze se **neaktivuje sama**, s jedinou výjimkou: úplně první verze
+   s úspěšným rozborem se aktivuje hned (jinak by nebylo co hrát). V odpovědi
+   i ve správě je tlačítko „Nastavit jako aktivní“. Jin tak může nahrát
+   rozpracovanou verzi jako zálohu, aniž by ji večer někdo omylem hrál.
 
-- Soubor leží ve `web/public/diplomacie/`, Vite ho servíruje pod
-  `<BASE_PATH>diplomacie/…`.
-- Návrh jména: `Diplomacie LLC.aoe2scenario`. Případná verze ze scénáře půjde
-  do jména, aby kontrola lobby poznala starou kopii.
-- **Jin 1. 10. 2026 souhlasil se zveřejněním** (repo je veřejné), takže soubor
-  jde do repa normálně, bez šifrování.
-- Host v kroku „Zakládáš!“ dostane tlačítko **Stáhnout scénář** a návod:
-  - kam soubor uložit: `%USERPROFILE%\Games\Age of Empires 2 DE\<ID>\resources\_common\scenario\`,
-    kde `<ID>` je Steam ID nebo Xbox XUID (ověřeno na autorově stroji 1. 10. 2026:
-    složky `76561198014056480` a `2533274952064423`). Web obě ID přihlášeného
-    hráče zná (`hrac_id`, resp. `xbox:<xuid>`), takže ukáže **cestu přímo pro
-    něj** s tlačítkem na zkopírování,
-  - že v Create Lobby zvolí Game Mode Scenario a tento scénář.
-- Ostatní hráči ho dostanou přenosem v lobby, stahovat nemusí.
+**Kontejner:** Dockerfile (stupeň runner) dostane `python3`, `py3-pip` a
+`py3-pillow` z apk a virtuální prostředí `/opt/rozbor` s AoE2ScenarioParser
+podle `src/diplomacie/requirements.txt`. Build zkopíruje `rozbor.py`,
+`barvy_terenu.json` a `requirements.txt` do `dist`. Interpret je
+`config.python` (proměnná `PYTHON`, výchozí `/opt/rozbor/bin/python`; na
+Windows při vývoji `python`).
 
-### 5.3 Minimapa
+### 5.3 Správa verzí a stažení
 
-`nastroje/diplomacie/minimapa.py` vykreslí z terénu scénáře (220×220)
-minimapu v barvách herní minimapy. Barvy terénů se vezmou z dat hry, žádný
-ruční odhad. Natočení jako ve hře (kosočtverec), výstup webp:
+| metoda a cesta | kdo | co |
+|---|---|---|
+| `GET /api/diplo/scenar` | kdokoliv | seznam verzí: id, jméno, kdo, kdy, poznámka, aktivní, rozbor v pořádku ano/ne, chyba |
+| `POST /api/diplo/scenar` | autor | nahrání (§5.2) |
+| `POST /api/diplo/scenar/:id/aktivni` | autor | aktivovat (jen s rozborem) |
+| `GET /api/diplo/scenar/:id/soubor` | kdokoliv | stažení s `Content-Disposition: attachment` a jménem verze |
+| `GET /api/diplo/scenar/aktivni/soubor` | kdokoliv | stažení aktivní verze (odkaz pro hosta) |
+| `GET /api/diplo/scenar/:id/minimapa.webp` | kdokoliv | minimapa verze, `Cache-Control: public, max-age=31536000, immutable` (obsah verze se nemění) |
 
-- **čistá** pro nastavení lobby,
-- **velká se starty všech barev** pro pult GM,
-- souřadnice startů v `scenar.ts` — karta hráče zvýrazní jen jeho pozici
-  překryvem v CSS/SVG, takže stačí jeden obrázek.
+Scénář je veřejný se souhlasem autora, proto čtení ani stažení nevyžaduje
+přihlášení.
 
-Grafickou úpravu (rám, popisky, styl) dělá §8 nástroji, ne ručně.
+Aktivní verze (id, jméno, rozbor bez minimapy) a verze každého diplo zápasu
+jdou do stavu pro prohlížeče ve větvi `rezim.data`. Rozbor tajný není.
 
-### 5.4 Kontrola lobby
+**Správa scénáře** (`SpravaScenare.tsx`) pro autory, dostupná i bez běžící
+akce (Jin nahrává, když se mu to hodí), jako rozbalovací sekce pod panelem
+akce, resp. na místě panelu, když akce neběží:
 
-Mód nastaví `nastaveniLobby.scenar` na jméno souboru ze `scenar.ts`
-a `rezim` na 3 (Scenario). Řádek „Scénář“ v kontrole lobby:
+- výběr souboru (i přetažením), pole „co je nového“,
+- seznam verzí: aktivní zvýrazněná, u každé stažení, „Nastavit jako
+  aktivní“, chyba rozboru,
+- náhled minimapy se starty a přečtených čísel cílů a limitů — Jin hned
+  vidí, že web scénář pochopil správně.
+
+**Host** v kroku „Zakládáš!“:
+
+- tlačítko **Stáhnout scénář** (verze zápasu),
+- kam soubor uložit: `%USERPROFILE%\Games\Age of Empires 2 DE\<ID>\resources\_common\scenario\`,
+  kde `<ID>` je Steam ID nebo Xbox XUID (ověřeno na autorově stroji
+  1. 10. 2026: složky `76561198014056480` a `2533274952064423`). Web obě ID
+  přihlášeného hráče zná (`hrac_id`, resp. `xbox:<xuid>`), takže ukáže
+  **cestu přímo pro něj** s tlačítkem na zkopírování,
+- že v Create Lobby zvolí Game Mode Scenario a tento scénář; **starou kopii
+  stejného jména je potřeba přepsat**.
+
+Ostatní hráči scénář dostanou přenosem v lobby.
+
+### 5.4 Minimapa
+
+`rozbor.py` vykreslí z terénu (např. 220×220) minimapu v barvách herní
+minimapy a natočí ji jako ve hře (kosočtverec):
+
+- Barvy terénů nejsou v kontejneru (není tam hra). Vezmou se z tabulky
+  `barvy_terenu.json`, kterou jednorázově vytáhne z dat hry nástroj
+  `nastroje/diplomacie/barvy_terenu.py` na stroji s hrou. Žádný ruční odhad;
+  neznámý terén dostane neutrální šedou a rozbor ho nahlásí ve varováních.
+- Výstup je jeden obrázek bez startů. Starty barev jsou v `RozborScenare`
+  jako souřadnice v obrázku: pult GM je přes obrázek vykreslí všechny (SVG
+  překryv), karta hráče jen tu jeho, nastavení lobby žádnou.
+- Rám a styl kolem minimapy dělá §8.3 nástroji, ne ručně.
+
+### 5.5 Kontrola lobby
+
+Mód nastaví `nastaveniLobby.scenar` na jméno souboru aktivní verze při
+založení akce a znovu při každé aktivaci jiné verze (běžící akce Diplomacie
+se přepíše) a `rezim` na 3 (Scenario). Zápas porovnává proti verzi, kterou
+si otiskl. Řádek „Scénář“ v kontrole lobby:
 
 | stav | ikona |
 |---|---|
 | shoda | zelená fajfka |
-| jiný soubor | červený křížek a věta „V lobby je X, má být Y“ |
+| jméno jako jedna ze starších verzí | červený křížek „V lobby je starší verze X, má být Y“ |
+| jiný soubor | červený křížek „V lobby je X, má být Y“ |
 | `options[38]` chybí | červený křížek |
+
+Rozlišení „starší verze“ dělá mód (zná seznam verzí), jádro jen porovná
+jméno. Hra posílá jen jméno, ne obsah: když Jin nahraje novou verzi **pod
+stejným jménem**, kontrola rozdíl nepozná. Správa proto při nahrání se
+jménem, které už některá verze má, upozorní „Doporučuju jiné jméno (např.
+s číslem verze), jinak kontrola lobby nepozná, že host má starou kopii“.
+Neblokuje.
 
 ## 6. Průběh
 
@@ -321,7 +431,7 @@ a `rezim` na 3 (Scenario). Řádek „Scénář“ v kontrole lobby:
 
 1. **Založení akce.**
    - Admin zapne přepínač **Diplomacie** a založí akci (`rezim = 'diplomacie'`).
-   - Výchozí nastavení lobby z módu: Game Mode Scenario, scénář ze `scenar.ts`,
+   - Výchozí nastavení lobby z módu: Game Mode Scenario, scénář = jméno souboru aktivní verze (§5.5),
      mapa a velikost „je to jedno“, populace 200, Lock Teams vypnuto,
      Shared Exploration vypnuto, cheaty vypnuto, diváci povoleni. Zbytek jako
      dnes. Admin může cokoli změnit v panelu.
@@ -433,7 +543,7 @@ Pod kontrolou lobby v KartaHrace / ObrazovkaHosta:
   - tajné údaje (oběť, pakt, druhý Nájezdník),
   - minimapa se zvýrazněnou vlastní startovní pozicí.
 - **Pod kartou** (vidí všichni v zápase): „Nástupcem císaře je X“ a rozbalovací
-  **Pravidla hry** (`PravidlaHry.tsx`, obsah z `role.ts` a `scenar.ts`).
+  **Pravidla hry** (`PravidlaHry.tsx`, obsah z `role.ts` a z rozboru verze, kterou zápas hraje).
 
 Mimo zápas (`VerejnyZapas`, historie): „Diplomacie · Nástupce: X“.
 
@@ -470,6 +580,10 @@ Podle `docs/grafika.md`, žádné ruční kreslení ani úpravy:
 | víc zápasů Diplomacie za večer | každý zápas má vlastní `diplo_zapas` |
 | GM se odhlásí z akce / odejde | pult nikdo jiný nemá; admin vymění GM změnou sestavy, jde jen v `priprava` (jinak „Zpět na výběr Nástupce“) |
 | scénář nerozdal cíl všem (restart hry) | GM „Zpět na výběr Nástupce“ |
+| žádná verze scénáře ještě není | akci Diplomacie jde založit, panel akce ukáže „Nahraj scénář“ (autorům) / „Scénář zatím nikdo nenahrál“ (ostatním); zápas jde vytvořit, `scenar_id` je NULL, pult GM funguje bez minimapy, karta bez čísel cílů jen s texty rolí, host nemá co stáhnout |
+| rozbor visí nebo spadne | po 60 s se proces zabije, verze se uloží s chybou (§5.2 bod 4) |
+| nahrání se stejným obsahem | 409 „Tahle verze už je nahraná (č. X)“ |
+| aktivní verze se změní během zápasu | zápas hraje svou otisknutou verzi; nastavení akce se přepne na novou (§5.5) |
 | klasická akce | stav bez větve `rezim`, žádné diplo routy nedávají smysl (404 pro zápas mimo Diplomacii) |
 
 ## 10. Testy
@@ -479,15 +593,28 @@ Podle `docs/grafika.md`, žádné ruční kreslení ani úpravy:
     cíl sebe ani Nástupce, 1000 losů pokryje každou roli u každého hráče,
   - úpravy: převzaté chování `assignValidTarget`, varování složení,
   - mapování pN → barva → hráč,
-  - `scenar.ts`: SHA sedí na soubor ve `web/public/diplomacie/`.
+  - `scenar.ts`: čtecí funkce přijme platný rozbor a odmítne každé chybějící
+    nebo špatně typované pole.
 - **Viditelnost, hlavní sada:** pro každou roli, GM, admina-ne-GM,
   nezúčastněného a nepřihlášeného ve všech třech stavech přesný tvar dat.
   Snímek celé zredigované větve, ne jen jednotlivé klíče, aby nové pole
   neprošlo bez povšimnutí.
+- **Rozbor scénáře** (`src/diplomacie/rozbor.test.ts`, hermetický, ale volá
+  Python; přeskočí se s jasnou hláškou, když interpret s knihovnou chybí):
+  fixtura LLC dá 8 slotů, GM = 7, 6 cílů s čísly 650/150/900/15/5/99, limity
+  30/5/5, starty všech 7 barev hráčů uvnitř mapy, minimapu (platný webp);
+  poškozený soubor → chyba, ne výjimka; limit času.
+- **Nahrávání** (`*.db.test.ts`): autor smí, hráč mimo seznam 403, nepřihlášený
+  401; špatné jméno nebo hlavička 400; duplicitní obsah 409; první úspěšná verze
+  se aktivuje sama, další ne; verzi bez rozboru nejde aktivovat; stažení vrací
+  přesně nahrané bajty a jméno; aktivace přepíše `scenar` v nastavení běžící
+  akce Diplomacie; zápas si otiskne `scenar_id`. Rozbor se v DB testech podstrčí
+  (závislost routy), Python se tam nespouští.
 - **Kontrola lobby:**
   - fixtura scénářové lobby z živé sondy 1. 10. 2026 (`options[38]`),
   - shoda, jiný soubor, chybějící klíč,
-  - u Scenario se mapa nekontroluje.
+  - u Scenario se mapa nekontroluje,
+  - jméno starší verze → věta o starší verzi.
 - **Databázové** (`*.db.test.ts`):
   - jen GM smí `nastupce/los/role/rozeslat/zpet` (admin-ne-GM 403, hráč 403),
   - přechody stavů,
