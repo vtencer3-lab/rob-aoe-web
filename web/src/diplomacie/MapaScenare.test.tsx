@@ -6,14 +6,16 @@ import { kraj, MapaScenare } from "./MapaScenare.js";
 
 const verze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null };
 
-// Starty u kraje mapy (na LLC p3 vlevo, p5 vpravo, p8 dole) nesou třídu,
-// podle které CSS posune popisek dovnitř — jinak delší jméno vyčnívá z mapy.
-it("start u kraje dostane třídu kraj-*, uprostřed žádnou", () => {
-  expect(kraj({ x: 0.1818, y: 0.5886 })).toBe(" kraj-levy");
-  expect(kraj({ x: 0.8756, y: 0.5108 })).toBe(" kraj-pravy");
-  expect(kraj({ x: 0.4955, y: 0.8795 })).toBe(" kraj-dolni");
-  expect(kraj({ x: 0.1, y: 0.9 })).toBe(" kraj-levy kraj-dolni");
-  expect(kraj({ x: 0.5, y: 0.5 })).toBe("");
+// Starty u levého a pravého kraje (na LLC p3 a p5) nesou třídu, podle které
+// CSS posune popisek dovnitř — jinak delší jméno vyčnívá z mapy. Spodní
+// kraj (p8) třídu nemá: popisek pod značkou se vejde a nad značkou by na
+// telefonu narazil do popisku p6.
+it("start u levého nebo pravého kraje dostane třídu kraj-*, ostatní žádnou", () => {
+  expect(kraj(0.1818)).toBe(" kraj-levy");
+  expect(kraj(0.8756)).toBe(" kraj-pravy");
+  expect(kraj(0.4955)).toBe("");
+  expect(kraj(0.2)).toBe("");
+  expect(kraj(0.8)).toBe("");
   const starty = [{ barva: 3 as Barva, x: 0.1818, y: 0.5886 }, { barva: 5 as Barva, x: 0.5, y: 0.5 }];
   render(<MapaScenare verze={{ ...verze, rozbor: { ...ROZBOR, starty } }} starty="vsechny" />);
   const [p3, p5] = screen.getAllByTestId("start");

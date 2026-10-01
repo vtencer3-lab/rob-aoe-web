@@ -1536,15 +1536,15 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .start.barva-8 { background: var(--b8); }
 /* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ u hráče. Nepřijímá
    kliknutí, ať nepřekáží v tooltipu značky. Na LLC leží p3 a p5 12 % od
-   levého a pravého kraje a p8 12 % od spodního: krátké jméno se tam vejde,
-   dvacetiznakové už na telefonu vyčnívalo z mapy přes rám panelu. Start
-   u kraje (třídy `kraj-*` z MapaScenare.tsx) má proto popisek zakotvený
-   k vnitřní straně značky, u spodního kraje nad ní; strop šířky s výpustkou
-   je pojistka pro extrémní jména — celá jsou na dlaždici a v tabulce. */
+   levého a pravého kraje: krátké jméno se tam vejde, dvacetiznakové už na
+   telefonu vyčnívalo z mapy přes rám panelu. Start u kraje (třídy `kraj-*`
+   z MapaScenare.tsx) má proto popisek zakotvený k vnitřní straně značky.
+   Spodní p8 zůstává pod značkou (vejde se; nad ní by narazil do p6); strop
+   šířky s výpustkou je pojistka pro extrémní jména — celá jsou na dlaždici
+   a v tabulce. */
 .mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 .mapa-scenare .start.kraj-levy .popisek { left: 0; transform: none; }
 .mapa-scenare .start.kraj-pravy .popisek { left: auto; right: 0; transform: none; }
-.mapa-scenare .start.kraj-dolni .popisek { top: auto; bottom: 100%; margin: 0 0 0.2rem; }
 /* Karta role (Diplomacie, KartaRole.tsx): sekce pod kontrolou lobby se
    záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
    kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,
@@ -1586,6 +1586,20 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 .tabulka-roli { width: 100%; max-width: 34rem; margin: 0.6rem auto; border-collapse: collapse; text-align: left; }
 .tabulka-roli th, .tabulka-roli td { padding: 0.3rem 0.4rem; border-bottom: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); vertical-align: middle; }
 .tabulka-roli th { font-weight: 700; white-space: nowrap; }
+/* Znak barvy před jménem (`.swatch` z `.barva-N` na th): GM si řádek spojí
+   s dlaždicí a s „pN“ ze hry i u dvou AI se stejným jménem. Barvy tu musí
+   být znovu a specifičtěji než obecné `.barva-N .swatch`: pult leží v panelu
+   `.karta.barva-7` (GM sedí na šedé), takže by jinak `.barva-7 .swatch`
+   přebarvilo všechny znaky na šedo — má stejnou váhu a v souboru je později. */
+.tabulka-roli th .swatch { margin-right: 0.4rem; vertical-align: -0.1em; border: 1px solid var(--obrys); box-shadow: 0 0 0 1px color-mix(in srgb, var(--zlato) 40%, transparent); }
+.tabulka-roli th.barva-1 .swatch { background: var(--b1); }
+.tabulka-roli th.barva-2 .swatch { background: var(--b2); }
+.tabulka-roli th.barva-3 .swatch { background: var(--b3); }
+.tabulka-roli th.barva-4 .swatch { background: var(--b4); }
+.tabulka-roli th.barva-5 .swatch { background: var(--b5); }
+.tabulka-roli th.barva-6 .swatch { background: var(--b6); }
+.tabulka-roli th.barva-7 .swatch { background: var(--b7); }
+.tabulka-roli th.barva-8 .swatch { background: var(--b8); }
 .tabulka-roli td select { width: 100%; box-sizing: border-box; }
 .tabulka-roli td > span { color: var(--tlumene); font-size: 0.9rem; }
 .pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }

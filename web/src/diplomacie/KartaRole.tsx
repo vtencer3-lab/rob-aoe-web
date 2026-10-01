@@ -4,7 +4,7 @@ import type { DiploData, DiploZapas, RoleHrace } from "../../../src/shared/diplo
 import type { ZapasView } from "../../../src/shared/types.js";
 import zvonUrl from "../assets/zvon.mp3";
 import { prehraj } from "../zvuk.js";
-import { jmenoHrace, mujUcastnik } from "../zapas.js";
+import { jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { MapaScenare } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
@@ -27,10 +27,8 @@ export function verzeZapasu(data: DiploData, d: DiploZapas | undefined) {
 /** Tajná karta role hráče (spec §8.2). Data jsou už zredigovaná serverem. */
 export function KartaRole({ zapas, data, ja }: Props) {
   const d = diploZapasu(data, zapas.id);
-  const jmeno = (hracId: string) => {
-    const u = zapas.ucastnici.find((x) => x.hracId === hracId);
-    return u ? jmenoHrace(u) : hracId;
-  };
+  // Sdílené s pultem GM: víc AI se jmenuje stejně, rozliší je barva.
+  const jmeno = (hracId: string) => jmenoVZapasu(zapas.ucastnici, hracId);
   // Zvon jen při přechodu do „rozesláno“, ne při načtení stránky s už
   // rozeslanými rolemi — stejně jako ostatní zvonění v App.tsx.
   const driv = useRef<string | undefined>(undefined);

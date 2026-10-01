@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
+import { aiId, JMENO_AI } from "../../../src/shared/aiHraci.js";
 import { stavDiplo, ZAPAS as zapas } from "./fixtury.js";
 import { KartaRole } from "./KartaRole.js";
 
@@ -39,6 +40,16 @@ it("při třech Nájezdnících vidí Nájezdník oba spojence", () => {
   expect(screen.getByText("Další Nájezdníci:")).toBeTruthy();
   expect(screen.getByText("Hráč 5, Hráč 8")).toBeTruthy();
   expect(screen.queryByText("Druhý Nájezdník:")).toBeNull();
+});
+
+// Dvě AI se jmenují stejně, takže oběť „AI“ by Katovi neřekla, kterou má
+// zabít — rozliší ji barva (stejný helper jako v pultu GM).
+it("oběť, která je jednou ze dvou AI, se rozliší barvou", () => {
+  const zapasAi = { ...zapas, ucastnici: zapas.ucastnici.map((u) => (u.barva === 3 || u.barva === 5 ? { ...u, hracId: aiId(u.barva), alias: JMENO_AI, platformaJmeno: JMENO_AI } : u)) };
+  render(<KartaRole zapas={zapasAi} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "kat", cilHracId: aiId(5), upravenoPoRozeslani: false }])} ja="h2" />);
+  fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
+  expect(screen.getByText("AI (p5)")).toBeTruthy();
+  expect(screen.getByText("Hráč 1")).toBeTruthy();
 });
 
 it("všichni v zápase vidí Nástupce a úprava GM se ohlásí", () => {

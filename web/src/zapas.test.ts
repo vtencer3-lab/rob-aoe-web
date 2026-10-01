@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { UcastnikView, ZapasView } from "../../src/shared/types.js";
-import { jmenoHrace, mojeZapasy, mujUcastnik, souperi, spoluhraci, verejneZapasy } from "./zapas.js";
+import type { Barva, UcastnikView, ZapasView } from "../../src/shared/types.js";
+import { jmenoHrace, jmenoVZapasu, mojeZapasy, mujUcastnik, souperi, spoluhraci, verejneZapasy } from "./zapas.js";
 
 const u = (hracId: string, tym: 1 | 2, barva: 1 | 2, jeHost = false): UcastnikView => ({
   hracId,
@@ -26,6 +26,21 @@ const coop: ZapasView = {
   vitez: null,
   ucastnici: [u("a", 1, 1, true), u("b", 1, 1), u("c", 2, 2), u("d", 2, 2)],
 };
+
+// AI mají všechny jméno „AI“ (shared/aiHraci.ts), takže tam, kde se o hráči
+// mluví mezi ostatními (tabulka rolí, oběť Kata), je musí rozlišit barva.
+describe("jmenoVZapasu", () => {
+  const hrac = (hracId: string, alias: string | null, barva: Barva): UcastnikView => ({ ...u(hracId, 1, 1), alias, barva });
+  const ucastnici = [hrac("a", "Rob", 1), hrac("ai:1", "AI", 3), hrac("ai:2", "AI", 5), hrac("x", null, 6)];
+
+  it("jedinečné jméno nechá, stejná jména rozliší barvou, neznámé id vrátí", () => {
+    expect(jmenoVZapasu(ucastnici, "a")).toBe("Rob");
+    expect(jmenoVZapasu(ucastnici, "ai:1")).toBe("AI (p3)");
+    expect(jmenoVZapasu(ucastnici, "ai:2")).toBe("AI (p5)");
+    expect(jmenoVZapasu(ucastnici, "x")).toBe("x");
+    expect(jmenoVZapasu(ucastnici, "neni")).toBe("neni");
+  });
+});
 
 describe("mujUcastnik", () => {
   it("najde mě", () => {

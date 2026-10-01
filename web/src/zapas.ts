@@ -12,6 +12,19 @@ export function jmenoHrace(u: Pick<UcastnikView, "hracId" | "alias" | "platforma
   return u.alias ?? u.platformaJmeno ?? u.hracId;
 }
 
+/**
+ * Jméno hráče tam, kde se o něm mluví mezi ostatními v zápase (tabulka rolí,
+ * oběť Kata, přehled pro Discord). AI mají všechny jméno „AI“ jako ve hře
+ * (shared/aiHraci.ts), takže je rozliší barva: „AI (p3)“, „AI (p5)“. Člověk
+ * s jedinečným jménem přívěsek nedostane; neznámé id se vrátí tak, jak je.
+ */
+export function jmenoVZapasu(ucastnici: readonly Pick<UcastnikView, "hracId" | "alias" | "platformaJmeno" | "barva">[], hracId: string): string {
+  const u = ucastnici.find((x) => x.hracId === hracId);
+  if (!u) return hracId;
+  const jmeno = jmenoHrace(u);
+  return ucastnici.some((x) => x.hracId !== hracId && jmenoHrace(x) === jmeno) ? `${jmeno} (p${u.barva})` : jmeno;
+}
+
 export function mujUcastnik(zapas: ZapasView, hracId: string): UcastnikView | null {
   return zapas.ucastnici.find((u) => u.hracId === hracId) ?? null;
 }
