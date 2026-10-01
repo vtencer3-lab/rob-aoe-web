@@ -185,7 +185,7 @@ export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, 
             <button type="button" className="prelobby-tlacitko" onClick={() => setPreLobbyVidet(true)}>
               Pre-Lobby Nastavení
             </button>
-            <NastaveniLobby zive={nastaveni as unknown as Record<string, unknown>} ulozene={null} onZmena={(n) => setNavrh((v) => ({ ...v, nastaveni: n }))} onUlozit={() => {}} bezResetu scenar={scenar} />
+            <NastaveniLobby zive={nastaveni as unknown as Record<string, unknown>} ulozene={null} onZmena={(n) => setNavrh((v) => ({ ...v, nastaveni: n }))} onUlozit={() => {}} onReset={() => {}} bezResetu scenar={scenar} />
           </div>
         </div>
       </div>

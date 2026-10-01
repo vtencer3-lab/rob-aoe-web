@@ -6,7 +6,7 @@ import { NastaveniLobby } from "./NastaveniLobby.js";
 const nic = () => {};
 
 it("bez uloženého nastavení nabídne výchozí: Arabia, Normal, 200, Conquest, bez cheatů", () => {
-  render(<NastaveniLobby zive={undefined} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  render(<NastaveniLobby zive={undefined} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   expect(screen.getByRole("button", { name: /location: arabia/i })).toBeInTheDocument();
   expect(screen.getByLabelText(/map size/i)).toHaveValue("");
   expect(screen.getByLabelText(/game speed/i)).toHaveValue("2");
@@ -18,7 +18,7 @@ it("bez uloženého nastavení nabídne výchozí: Arabia, Normal, 200, Conquest
 // změna dostala do kontroly lobby a k druhému adminovi.
 it("živé hodnoty převezme a každou změnu pošle sama", async () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ mapaId: 10878, populace: 150 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ mapaId: 10878, populace: 150 }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
   expect(screen.getByRole("button", { name: /location: black forest/i })).toBeInTheDocument();
 
   // Location otevře okno s minimapami; „libovolná“ vrátí null.
@@ -36,8 +36,8 @@ it("živé hodnoty převezme a každou změnu pošle sama", async () => {
 });
 
 it("změna ze serveru (druhý admin) se převezme, když tu nic nečeká", () => {
-  const { rerender } = render(<NastaveniLobby zive={{ populace: 150 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
-  rerender(<NastaveniLobby zive={{ populace: 300 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  const { rerender } = render(<NastaveniLobby zive={{ populace: 150 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
+  rerender(<NastaveniLobby zive={{ populace: 300 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   expect(screen.getByLabelText(/population/i)).toHaveValue("300");
 });
 
@@ -48,7 +48,7 @@ it("změna ze serveru (druhý admin) se převezme, když tu nic nečeká", () =>
 // → „–“, Allow Cheats jen vypnuto ↔ zapnuto.
 it("volby mimo hlavní kontrolu jde nastavit na „–“, zaškrtávátka mají tři stavy", async () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={undefined} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={undefined} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
   expect(screen.getByLabelText(/ai difficulty/i)).toHaveValue("");
   const lockTeams = screen.getByLabelText(/lock teams/i) as HTMLInputElement;
   expect(lockTeams.checked).toBe(true);
@@ -67,27 +67,35 @@ it("volby mimo hlavní kontrolu jde nastavit na „–“, zaškrtávátka mají
   expect(onZmena).toHaveBeenLastCalledWith({ ...VYCHOZI_NASTAVENI, sadaCivilizaci: 2, primeri: 20, lockTeams: null, recordGame: null, cheaty: false });
 });
 
-// Reset nasadí výchozí nastavení hned, bez odkladu — na rozdíl od psaní do
-// políček, které se posílá se zpožděním.
-it("Reset nasadí výchozí nastavení hned", () => {
+// Reset nechá výchozí hodnoty nasadit server (zná je podle módu akce —
+// Diplomacie má jiné než klasický večer); panel je ukáže hned a tlačítko
+// zhasne, jakmile živé nastavení výchozím odpovídá.
+it("Reset volá onReset, ukáže dodané výchozí hned a je zakázaný, když už platí", () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} onZmena={onZmena} onUlozit={vi.fn()} />);
+  const onReset = vi.fn();
+  const vychozi = { ...VYCHOZI_NASTAVENI, populace: 250 };
+  const { rerender } = render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} vychozi={vychozi} onZmena={onZmena} onUlozit={nic} onReset={onReset} />);
 
+  expect(screen.getByRole("button", { name: /reset nastavení/i })).toBeEnabled();
   fireEvent.click(screen.getByRole("button", { name: /reset nastavení/i }));
-  expect(screen.getByLabelText(/population/i)).toHaveValue("200");
-  expect(onZmena).toHaveBeenLastCalledWith(VYCHOZI_NASTAVENI);
+  expect(onReset).toHaveBeenCalledTimes(1);
+  expect(onZmena).not.toHaveBeenCalled();
+  expect(screen.getByLabelText(/population/i)).toHaveValue("250");
+
+  rerender(<NastaveniLobby zive={{ populace: 250 }} ulozene={null} vychozi={vychozi} onZmena={onZmena} onUlozit={nic} onReset={onReset} />);
+  expect(screen.getByRole("button", { name: /reset nastavení/i })).toBeDisabled();
 });
 
 // Preset se neosvědčil a od 9. 9. 2026 je schovaný. Server obě cesty umí
 // dál, takže se dá vrátit přepnutím konstanty PRESETY_VIDET.
 it("tlačítka na preset zatím nejsou vidět", () => {
-  render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} onZmena={vi.fn()} onUlozit={vi.fn()} />);
+  render(<NastaveniLobby zive={{ populace: 300 }} ulozene={{ populace: 150 }} onZmena={vi.fn()} onUlozit={vi.fn()} onReset={vi.fn()} />);
   expect(screen.queryByRole("button", { name: /uložit preset lobby/i })).toBeNull();
   expect(screen.queryByRole("button", { name: /načíst uložený preset/i })).toBeNull();
 });
 
 it("bez Team Together je Team Positions zašedlé a nastavené na „–“", () => {
-  render(<NastaveniLobby zive={{ teamPositions: true }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ teamPositions: true }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   const positions = screen.getByLabelText(/team positions/i) as HTMLInputElement;
   expect(positions).toBeEnabled();
   fireEvent.click(screen.getByLabelText(/team together/i)); // zapnuto → –
@@ -98,7 +106,7 @@ it("bez Team Together je Team Positions zašedlé a nastavené na „–“", ()
 });
 
 it("AI Difficulty je seřazená podle obtížnosti", () => {
-  render(<NastaveniLobby zive={undefined} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  render(<NastaveniLobby zive={undefined} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   const volby = Array.from((screen.getByLabelText(/ai difficulty/i) as HTMLSelectElement).options).map((o) => o.text);
   expect(volby).toEqual(["–", "Easiest", "Standard", "Moderate", "Hard", "Hardest", "Extreme"]);
 });
@@ -107,7 +115,7 @@ it("AI Difficulty je seřazená podle obtížnosti", () => {
 // vrátí na vypnuto; po levém (zapnuto → „–“) ho pravé vrátí na zapnuto.
 it("pravé tlačítko na zaškrtávátku dělá opačný krok než levé", async () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ turbo: false }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ turbo: false }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
   const turbo = screen.getByLabelText(/turbo mode/i) as HTMLInputElement;
   fireEvent.click(turbo); // vypnuto → zapnuto
   expect(turbo).toBeChecked();
@@ -128,7 +136,7 @@ it("pravé tlačítko na zaškrtávátku dělá opačný krok než levé", async
 // zrcadlit, ať Rob nenastaví kombinaci, která ve hře nejde.
 it("Game Mode Empire Wars odškrtne a zamkne zaškrtávátko Empire Wars", async () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ rezim: 0, empireWars: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ rezim: 0, empireWars: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
   const zaskrtavatko = screen.getByLabelText(/empire wars mode/i) as HTMLInputElement;
   expect(zaskrtavatko).toBeEnabled();
 
@@ -143,7 +151,7 @@ it("Game Mode Empire Wars odškrtne a zamkne zaškrtávátko Empire Wars", async
 // přehodilo i Starting Age na Feudal a Victory na Standard.
 it("Empire Wars nasadí i Feudal a Standard victory, jak to dělá hra", async () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ rezim: 0, pocatecniVek: 0, vitezstvi: 1 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ rezim: 0, pocatecniVek: 0, vitezstvi: 1 }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
 
   fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "13" } });
 
@@ -163,7 +171,7 @@ it("Empire Wars odškrtne modifikátory hry, Antiquity nechá být", async () =>
       zive={{ rezim: 0, regicide: true, cheaty: true, turbo: true, fullTechTree: true, suddenDeath: true, antiquity: true }}
       ulozene={null}
       onZmena={onZmena}
-      onUlozit={nic}
+      onUlozit={nic} onReset={nic}
     />,
   );
 
@@ -184,14 +192,14 @@ it("Empire Wars odškrtne modifikátory hry, Antiquity nechá být", async () =>
 
 // Starting Age a Victory hra v Empire Wars nezamyká — jen je přepne.
 it("Starting Age a Victory zůstanou v Empire Wars nastavitelné", () => {
-  render(<NastaveniLobby zive={{ rezim: 13 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ rezim: 13 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   expect(screen.getByLabelText(/starting age/i)).toBeEnabled();
   expect(screen.getByLabelText(/victory/i)).toBeEnabled();
 });
 
 it("odchod z Empire Wars nastavení nevrací — jen odemkne zaškrtávátko", () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ rezim: 13, pocatecniVek: 3, vitezstvi: 9 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ rezim: 13, pocatecniVek: 3, vitezstvi: 9 }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
 
   fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "0" } });
 
@@ -200,7 +208,7 @@ it("odchod z Empire Wars nastavení nevrací — jen odemkne zaškrtávátko", (
 });
 
 it("odchod z Empire Wars zaškrtávátko zase odemkne", () => {
-  render(<NastaveniLobby zive={{ rezim: 13 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ rezim: 13 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   expect(screen.getByLabelText(/empire wars mode/i)).toBeDisabled();
 
   fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "0" } });
@@ -211,7 +219,7 @@ it("odchod z Empire Wars zaškrtávátko zase odemkne", () => {
 // kroky do hodiny, po nich rovnou 90 minut. Volné pole svádělo k hodnotě,
 // kterou ve hře nejde nastavit.
 it("Treaty Length je nabídka, ne volné číslo", () => {
-  render(<NastaveniLobby zive={{ primeri: 30 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ primeri: 30 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   const pole = screen.getByLabelText(/treaty length/i) as HTMLSelectElement;
   expect(pole.tagName).toBe("SELECT");
   expect(pole).toHaveValue("30");
@@ -222,7 +230,7 @@ it("Treaty Length je nabídka, ne volné číslo", () => {
 
 it("výběr příměří pošle minuty jako číslo", async () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ primeri: 0 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ primeri: 0 }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
 
   fireEvent.change(screen.getByLabelText(/treaty length/i), { target: { value: "90" } });
 
@@ -233,7 +241,7 @@ it("výběr příměří pošle minuty jako číslo", async () => {
 // odškrtne a zamkne. Ostatního nastavení se nedotýká.
 it("Game Mode Regicide odškrtne a zamkne zaškrtávátko Regicide", async () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ rezim: 0, regicide: true, cheaty: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ rezim: 0, regicide: true, cheaty: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
 
   fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "1" } });
 
@@ -250,7 +258,7 @@ it("Game Mode Regicide odškrtne a zamkne zaškrtávátko Regicide", async () =>
 it("Game Mode Sudden Death zamkne svoje zaškrtávátko a nasadí Conquest", async () => {
   const onZmena = vi.fn();
   render(
-    <NastaveniLobby zive={{ rezim: 0, vitezstvi: 9, cheaty: true, turbo: true, antiquity: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} />,
+    <NastaveniLobby zive={{ rezim: 0, vitezstvi: 9, cheaty: true, turbo: true, antiquity: true }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />,
   );
 
   fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "11" } });
@@ -269,7 +277,7 @@ it("Game Mode Sudden Death zamkne svoje zaškrtávátko a nasadí Conquest", asy
 // Population taky není volné číslo: hra nabízí po pětadvaceti do 250 a pak
 // po stovkách do 500.
 it("Population je nabídka jako ve hře", () => {
-  render(<NastaveniLobby zive={{ populace: 200 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ populace: 200 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   const pole = screen.getByLabelText(/population/i) as HTMLSelectElement;
   expect(pole.tagName).toBe("SELECT");
   expect(pole).toHaveValue("200");
@@ -288,7 +296,7 @@ it("v Custom Scenario schová mapu, velikost a Victory a ukáže řádek Scéná
       zive={{ rezim: 3, scenar: "Diplomacie LLC v2.aoe2scenario", velikost: 220 }}
       ulozene={null}
       onZmena={vi.fn()}
-      onUlozit={nic}
+      onUlozit={nic} onReset={nic}
       scenar={{ vitezstvi: "Vlastní podmínky scénáře" }}
     />,
   );
@@ -306,7 +314,7 @@ it("v Custom Scenario schová mapu, velikost a Victory a ukáže řádek Scéná
 });
 
 it("bez nahraného scénáře a bez rozboru řádek Scénář řekne, co chybí", () => {
-  render(<NastaveniLobby zive={{ rezim: 3 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ rezim: 3 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
   const radek = screen.getByTestId("nastaveni-scenar");
   expect(radek).toHaveTextContent("scénář zatím nikdo nenahrál");
   expect(radek).toHaveTextContent("?");
@@ -317,7 +325,7 @@ it("bez nahraného scénáře a bez rozboru řádek Scénář řekne, co chybí"
 // schová a zase vrátí, uložené hodnoty se při tom nemění.
 it("přepnutí Game Mode z Custom Scenario zpět tři prvky vrátí, hodnoty nechá", async () => {
   const onZmena = vi.fn();
-  render(<NastaveniLobby zive={{ rezim: 0, mapaId: 10878, vitezstvi: 9 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  render(<NastaveniLobby zive={{ rezim: 0, mapaId: 10878, vitezstvi: 9 }} ulozene={null} onZmena={onZmena} onUlozit={nic} onReset={nic} />);
   expect(screen.getByTestId("vyber-mapy-tlacitko")).toBeInTheDocument();
 
   fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "3" } });
@@ -334,24 +342,26 @@ it("přepnutí Game Mode z Custom Scenario zpět tři prvky vrátí, hodnoty nec
   await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 0, mapaId: 10878, vitezstvi: 9 })));
 });
 
-// Reset vrací na výchozí i volby z okna Pre-Lobby — jsou to předvolby jako
-// každá jiná. Jméno lobby a heslo se ho netýkají, ty u nastavení nejsou.
-it("Reset vyčistí i pre-lobby volby", () => {
-  const onZmena = vi.fn();
-  render(
+// Volby z okna Pre-Lobby jsou předvolby jako každá jiná: i ony rozhodují,
+// jestli je nastavení výchozí (samotný reset dělá server, viz výš). Bez
+// dodaných výchozích hodnot (starší snímek) platí základ jádra.
+it("pre-lobby volby se počítají do „výchozí“; bez dodaných výchozích platí základ", () => {
+  const { rerender } = render(
     <NastaveniLobby
       zive={{ populace: 300, maxHracu: 4, server: "westeurope", zpozdeniDivaku: 3, lobbyTyp: 0 }}
       ulozene={null}
-      onZmena={onZmena}
-      onUlozit={nic}
+      onZmena={vi.fn()}
+      onUlozit={nic} onReset={nic}
     />,
   );
-
-  fireEvent.click(screen.getByRole("button", { name: /reset nastavení/i }));
-
-  // Co má vždycky platit, se vrátí na svoje (Unranked, bez zpoždění, Definitive
-  // Set); zbytek na „je to jedno“.
-  expect(onZmena).toHaveBeenLastCalledWith(
+  expect(screen.getByRole("button", { name: /reset nastavení/i })).toBeEnabled();
+  rerender(<NastaveniLobby zive={{ ...VYCHOZI_NASTAVENI, maxHracu: 4 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
+  expect(screen.getByRole("button", { name: /reset nastavení/i })).toBeEnabled();
+  rerender(<NastaveniLobby zive={{ ...VYCHOZI_NASTAVENI }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
+  expect(screen.getByRole("button", { name: /reset nastavení/i })).toBeDisabled();
+  // Co má vždycky platit, je v základu na svém (Unranked, bez zpoždění,
+  // Definitive Set); zbytek na „je to jedno“.
+  expect(VYCHOZI_NASTAVENI).toEqual(
     expect.objectContaining({
       maxHracu: 2,
       server: "Default",

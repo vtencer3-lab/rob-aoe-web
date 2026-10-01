@@ -120,6 +120,9 @@ export const api = {
     fetch(cesta(`/api/akce/${akceId}/pristi-heslo`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   ulozitNastaveniLobby: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby/ulozit`), { method: "POST" }).then((r) => json<{ akce: { id: number } }>(r)),
+  /** „Reset nastavení“: výchozí hodnoty podle módu akce zná server. */
+  resetNastaveniLobby: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby/vychozi`), { method: "POST" }).then((r) => json<{ akce: { id: number } }>(r)),
   skladani: (akceId: number, sestava: SestavaVstup[]) =>
     fetch(cesta(`/api/akce/${akceId}/skladani`), {
       method: "PUT",

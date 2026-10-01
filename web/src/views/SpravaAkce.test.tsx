@@ -6,7 +6,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const zaklad = { onZalozit: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn() };
+const zaklad = { onZalozit: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn(), onResetNastaveni: vi.fn() };
 
 // Dokud tahle obrazovka neexistovala, POST /api/akce neměl na webu žádného
 // volajícího: Rob se přihlásil, uviděl „Právě neběží žádná akce.“ a víc se

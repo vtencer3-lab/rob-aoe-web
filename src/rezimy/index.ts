@@ -2,7 +2,7 @@ import type { PoolClient } from "pg";
 import { getPool } from "../db/pool.js";
 import { diplomacie } from "../diplomacie/rezim.js";
 import type { AkceRow } from "../db/events.js";
-import type { NastaveniLobby } from "../shared/lobbyKontrola.js";
+import { VYCHOZI_NASTAVENI, type NastaveniLobby } from "../shared/lobbyKontrola.js";
 import type { Divak } from "../realtime/redakce.js";
 import type { AkceStavPayload, RezimId, Seat, SestavaVstup } from "../shared/types.js";
 
@@ -14,8 +14,10 @@ import type { AkceStavPayload, RezimId, Seat, SestavaVstup } from "../shared/typ
 export interface RezimAkce {
   id: RezimId;
   /**
-   * Výchozí nastavení lobby nové akce (dostane výchozí nastavení jádra).
-   * Null = nic neukládat: akce zůstane s prázdným JSON jako klasický večer.
+   * Výchozí nastavení lobby akce (dostane výchozí nastavení jádra). Null =
+   * mód vlastní výchozí hodnoty nemá: při založení se nic neukládá (akce
+   * zůstane s prázdným JSON jako klasický večer) a „Reset nastavení“ nasadí
+   * základ jádra (`vychoziNastaveniAkce`).
    */
   vychoziNastaveniLobby(zaklad: NastaveniLobby): Promise<Partial<NastaveniLobby> | null>;
   /** Před úpravou sestavy existujícího zápasu: věta (→ 409), nebo null. */
@@ -44,6 +46,15 @@ const REZIMY: Record<RezimId, RezimAkce> = { klasicky, diplomacie };
 
 export function rezimAkce(id: RezimId): RezimAkce {
   return REZIMY[id];
+}
+
+/**
+ * Co pro akci znamená „výchozí nastavení lobby“: hodnoty módu, nebo základ
+ * jádra, když mód žádné nemá. Jedno místo pro tlačítko Reset i pro stav
+ * ve snímku (`akce.vychoziNastaveniLobby`), ať obojí srovnává totéž.
+ */
+export async function vychoziNastaveniAkce(rezim: RezimId): Promise<Partial<NastaveniLobby>> {
+  return (await rezimAkce(rezim).vychoziNastaveniLobby(VYCHOZI_NASTAVENI)) ?? VYCHOZI_NASTAVENI;
 }
 
 export async function rezimAkceId(akceId: number): Promise<RezimId> {

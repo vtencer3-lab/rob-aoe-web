@@ -4,6 +4,7 @@ import { closePool, getPool } from "../db/pool.js";
 import { upsertPlayer } from "../db/players.js";
 import { buildServer } from "../http/server.js";
 import { losujRole } from "../shared/diplomacie/los.js";
+import { VYCHOZI_NASTAVENI } from "../shared/lobbyKontrola.js";
 import { aktivujVerzi, setNastupce, ulozRole, ulozVerziScenare } from "./db.js";
 import { ROB, VERZE, klient, zapasOsmi } from "./testPomocnici.js";
 
@@ -36,6 +37,37 @@ it("akce Diplomacie bez nahrané verze má scénář i velikost null", async () 
   const sid = await klient(ROB, true);
   await app.inject({ method: "POST", url: "/api/akce", cookies: { sid }, payload: { nazev: "D", rezim: "diplomacie" } });
   expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ rezim: 3, scenar: null, scenarStarsi: null, velikost: null });
+});
+
+// „Reset nastavení“ nasadí výchozí hodnoty módu, ne klasický základ — ten by
+// u Diplomacie dal Random Map, scénář null a Lock Teams zapnuté, a kontrola
+// lobby by hostovi vyčítala správně založenou scénářovou lobby. Klasická akce
+// dostane základ jádra jako dřív. Snímek nese totéž, ať panel srovnává stejně.
+it("reset nastavení dá akci Diplomacie výchozí hodnoty módu, klasické akci základ jádra", async () => {
+  await upsertPlayer("autor", false);
+  await ulozVerziScenare({ ...VERZE, jmenoSouboru: "LLC v1.aoe2scenario", sha256: "1" });
+  const sid = await klient(ROB, true);
+  const zaloz = (rezim: string) => app.inject({ method: "POST", url: "/api/akce", cookies: { sid }, payload: { nazev: "D", rezim } });
+  const rozhas = (id: number) => app.inject({ method: "POST", url: `/api/akce/${id}/nastaveni-lobby`, cookies: { sid }, payload: { ...VYCHOZI_NASTAVENI, lockTeams: true, maxHracu: 2 } });
+  const reset = (id: number) => app.inject({ method: "POST", url: `/api/akce/${id}/nastaveni-lobby/vychozi`, cookies: { sid } });
+
+  const diplo = (await zaloz("diplomacie")).json().akce.id;
+  await rozhas(diplo);
+  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ lockTeams: true, maxHracu: 2 });
+  expect((await reset(diplo)).statusCode).toBe(200);
+  const ocekavane = { rezim: 3, scenar: "LLC v1.aoe2scenario", velikost: 220, lockTeams: false, sharedExploration: false, maxHracu: 8, populace: 200 };
+  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject(ocekavane);
+  expect((await app.inject({ method: "GET", url: "/api/akce", cookies: { sid } })).json().akce.vychoziNastaveniLobby).toMatchObject(ocekavane);
+  await app.inject({ method: "POST", url: `/api/akce/${diplo}/stav`, cookies: { sid }, payload: { stav: "konec" } });
+
+  const klasicka = (await zaloz("klasicky")).json().akce.id;
+  await rozhas(klasicka);
+  expect((await reset(klasicka)).statusCode).toBe(200);
+  expect((await getAktivniAkce())!.nastaveniLobby).toEqual(VYCHOZI_NASTAVENI);
+  expect((await app.inject({ method: "GET", url: "/api/akce", cookies: { sid } })).json().akce.vychoziNastaveniLobby).toEqual(VYCHOZI_NASTAVENI);
+  // Nepřihlášený ani hráč reset nespustí.
+  expect((await app.inject({ method: "POST", url: `/api/akce/${klasicka}/nastaveni-lobby/vychozi` })).statusCode).toBe(401);
+  expect((await app.inject({ method: "POST", url: `/api/akce/${klasicka}/nastaveni-lobby/vychozi`, cookies: { sid: await klient("h1", false) } })).statusCode).toBe(403);
 });
 
 it("vytvoření zápasu Diplomacie založí diplo zápas s GM na šedé; stav ho nese, klasická akce ne", async () => {

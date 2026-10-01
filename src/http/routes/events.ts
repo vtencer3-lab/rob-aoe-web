@@ -22,7 +22,7 @@ import {
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
-import { rezimAkce } from "../../rezimy/index.js";
+import { rezimAkce, rezimAkceId, vychoziNastaveniAkce } from "../../rezimy/index.js";
 import { VYCHOZI_NASTAVENI } from "../../shared/lobbyKontrola.js";
 import { BARVY, REZIMY_AKCE, TYMY, type Barva, type RezimId, type SestavaVstup, type Tym } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
@@ -109,6 +109,17 @@ export function registerEventRoutes(app: FastifyInstance): void {
     await requireAdmin(request);
     const akceId = requireId(request);
     const akce = await setNastaveniLobby(akceId, prectiNastaveniLobby(request.body));
+    await broadcastAkce();
+    return { akce };
+  });
+
+  // „Reset nastavení“: výchozí hodnoty podle módu akce (Diplomacie: scénář,
+  // Custom Scenario, Lock Teams vypnuto…), ne klasický základ natvrdo —
+  // ten by u Diplomacie rozbil kontrolu lobby. Co je výchozí, ví server.
+  app.post("/api/akce/:id/nastaveni-lobby/vychozi", async (request) => {
+    await requireAdmin(request);
+    const akceId = requireId(request);
+    const akce = await setNastaveniLobby(akceId, await vychoziNastaveniAkce(await rezimAkceId(akceId)));
     await broadcastAkce();
     return { akce };
   });

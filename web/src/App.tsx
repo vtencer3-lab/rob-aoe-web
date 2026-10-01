@@ -680,6 +680,15 @@ export function App() {
           onUlozitNastaveni={() => {
             if (akce) void hlidej(() => api.ulozitNastaveniLobby(akce.id));
           }}
+          onResetNastaveni={() => {
+            if (!akce) return;
+            // Reset je změna jako každá jiná: do historie, ať jde vzít zpět.
+            const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
+            const po = doplnNastaveni(akce.vychoziNastaveniLobby);
+            const { text, cil } = popisZmenyNastaveni(pred, po);
+            if (cil) zaznamenej({ druh: "nastaveni", pred, po, text, cil });
+            void hlidej(() => api.resetNastaveniLobby(akce.id));
+          }}
           onNoveHeslo={() => {
             if (!akce) return;
             void hlidej(async () => {

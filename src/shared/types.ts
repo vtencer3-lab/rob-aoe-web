@@ -1,4 +1,5 @@
 import type { DiploData } from "./diplomacie/typy.js";
+import type { NastaveniLobby } from "./lobbyKontrola.js";
 import type { ZebricekRadek } from "./zebricky.js";
 
 /** Mód akce (migrace 030). Klasický večer, nebo scénář Diplomacie. */
@@ -111,6 +112,12 @@ export interface AkceView {
   nastaveniLobby?: Record<string, unknown>;
   /** Snímek nastavení uložený tlačítkem „Uložit nastavení lobby“; null = nic. */
   ulozeneNastaveniLobby?: Record<string, unknown> | null;
+  /**
+   * Výchozí nastavení podle módu akce (co nasadí „Reset nastavení“ a proti
+   * čemu panel pozná, že je nastavení výchozí); chybí ve starších snímcích
+   * = základ jádra.
+   */
+  vychoziNastaveniLobby?: Partial<NastaveniLobby>;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
   skladani?: SestavaVstup[];
   /**

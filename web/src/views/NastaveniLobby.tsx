@@ -36,6 +36,14 @@ interface Props {
   onZmena: (nastaveni: Nastaveni) => void;
   /** „Uložit preset lobby“: server si udělá snímek živého nastavení. */
   onUlozit: () => void;
+  /** „Reset nastavení“: výchozí hodnoty podle módu akce nasadí server. */
+  onReset: () => void;
+  /**
+   * Výchozí nastavení akce (ze snímku, podle módu): proti němu se pozná
+   * „Nastavení je výchozí“ a panel ho po Resetu ukáže hned. Chybí ve
+   * starších snímcích = základ jádra.
+   */
+  vychozi?: Partial<Nastaveni>;
   /** Klíč nastavení ke zvýraznění po změně / zpět / znovu. */
   zvyraznit?: { cil: string | null; cas: number } | null;
   /** Bez tlačítka „Reset nastavení“ (úprava zápasu: reset by přepsal, co host už má ve hře). */
@@ -193,7 +201,7 @@ function RadekScenare({ jmeno, velikost, vitezstvi }: { jmeno: string | null; ve
  * požadavek na každou číslici) a přes SSE ji uvidí všichni. „Uložit“ dělá
  * snímek, ke kterému se „Načíst uložený preset“ vrátí; „Reset“ nasadí výchozí.
  */
-export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, bezResetu, scenar }: Props) {
+export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, onReset, vychozi, zvyraznit, bezResetu, scenar }: Props) {
   const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(zive as Partial<Nastaveni>));
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
   const ceka = useRef(false);
@@ -227,10 +235,19 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
     }, ODKLAD_ZMENY_MS);
   };
 
+  // Reset dělá server (zná výchozí hodnoty módu); panel je ukáže hned a
+  // zahodí rozepsanou změnu, která by jinak po odkladu reset přepsala.
+  const reset = () => {
+    clearTimeout(casovac.current);
+    ceka.current = false;
+    setN(doplnNastaveni(vychozi));
+    onReset();
+  };
+
   const cislo = (v: string) => (v === "" ? null : Number(v));
   const stejne = (a: Nastaveni, b: Nastaveni) => (Object.keys(a) as Array<keyof Nastaveni>).every((k) => (a[k] ?? null) === (b[k] ?? null));
   const jakoUlozene = ulozene !== null && ulozene !== undefined && stejne(n, doplnNastaveni(ulozene as Partial<Nastaveni>));
-  const jakoVychozi = stejne(n, VYCHOZI_NASTAVENI);
+  const jakoVychozi = stejne(n, doplnNastaveni(vychozi));
   // Z živého stavu panelu, ne jen ze serveru: přepnutí Game Mode se má
   // projevit hned, ne až po cestě přes server a SSE.
   const scenarovy = n.rezim === REZIM_SCENARIO;
@@ -380,13 +397,13 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
           >
             Načíst uložený preset
           </button>
-          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={reset}>
             Reset nastavení
           </button>
         </div>
       ) : bezResetu ? null : (
         <div className="ovladani">
-          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={reset}>
             Reset nastavení
           </button>
         </div>

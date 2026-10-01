@@ -12,6 +12,8 @@ interface Props {
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
   /** „Uložit preset lobby“: snímek na serveru. */
   onUlozitNastaveni: () => void;
+  /** „Reset nastavení“: server nasadí výchozí hodnoty podle módu akce. */
+  onResetNastaveni: () => void;
   /** Levá půlka panelu: rozpracovaná sestava (Skladani), jako seznam hráčů v herní lobby. */
   children?: ReactNode;
   /** Klíč nastavení ke zvýraznění (historie kroků). */
@@ -29,7 +31,7 @@ interface Props {
  * vybraní hráči (sestava), vpravo Game Settings. Tlačítka debug módu stojí
  * nahoře u tabulky přihlášených — týkají se toho, kdo je v seznamu.
  */
-export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, children, zvyraznitNastaveni, onNoveHeslo, scenar, stitek }: Props) {
+export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, onResetNastaveni, children, zvyraznitNastaveni, onNoveHeslo, scenar, stitek }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
@@ -58,7 +60,16 @@ export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaven
       ) : null}
       <div className="lobby-rozlozeni">
         <div className="leva">{children}</div>
-        <NastaveniLobby zive={akce.nastaveniLobby} ulozene={akce.ulozeneNastaveniLobby} onZmena={onNastaveniLobby} onUlozit={onUlozitNastaveni} zvyraznit={zvyraznitNastaveni} scenar={scenar} />
+        <NastaveniLobby
+          zive={akce.nastaveniLobby}
+          ulozene={akce.ulozeneNastaveniLobby}
+          vychozi={akce.vychoziNastaveniLobby}
+          onZmena={onNastaveniLobby}
+          onUlozit={onUlozitNastaveni}
+          onReset={onResetNastaveni}
+          zvyraznit={zvyraznitNastaveni}
+          scenar={scenar}
+        />
       </div>
     </section>
   );
