@@ -1517,6 +1517,26 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .zakryti { margin: 0.8rem 0; text-align: center; }
 .zakryti-tlacitko { width: min(100%, 22rem); font-size: 1.05rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .zakryti.odkryto .zakryti-tlacitko { width: auto; font-size: 0.9rem; padding: 0.35rem 0.8rem; margin-bottom: 0.5rem; }
+/* Minimapa scénáře (Diplomacie, MapaScenare.tsx): obrázek ze serveru a nad
+   ním starty z rozboru v procentech, takže sedí při každé šířce. Rám je na
+   figure, ne na obrázku — absolutní značky se počítají od vnitřku rámu,
+   a ten je přesně obrázek. Šířky obou velikostí a průměr značky jsou
+   proměnné komponenty, ať je karta hráče i pult GM mění na jednom místě. */
+.mapa-scenare { --mapa-mala: 14rem; --mapa-velka: 28rem; --znacka: 0.9rem; position: relative; box-sizing: border-box; width: min(100%, var(--mapa-mala)); margin: 0.6rem auto; border: 1px solid var(--zlato-tmave); border-radius: 3px; }
+.mapa-scenare.velka { --znacka: 1.15rem; width: min(100%, var(--mapa-velka)); }
+.mapa-scenare img { display: block; width: 100%; height: auto; border-radius: 2px; }
+.mapa-scenare .start { position: absolute; width: var(--znacka); height: var(--znacka); box-sizing: border-box; border-radius: 50%; border: 2px solid var(--obrys); box-shadow: 0 0 0 1px var(--zlato-svetle), 0 1px 4px color-mix(in srgb, var(--obrys) 70%, transparent); transform: translate(-50%, -50%); }
+.mapa-scenare .start.barva-1 { background: var(--b1); }
+.mapa-scenare .start.barva-2 { background: var(--b2); }
+.mapa-scenare .start.barva-3 { background: var(--b3); }
+.mapa-scenare .start.barva-4 { background: var(--b4); }
+.mapa-scenare .start.barva-5 { background: var(--b5); }
+.mapa-scenare .start.barva-6 { background: var(--b6); }
+.mapa-scenare .start.barva-7 { background: var(--b7); }
+.mapa-scenare .start.barva-8 { background: var(--b8); }
+/* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ u hráče. Nepřijímá
+   kliknutí, ať nepřekáží v tooltipu značky. */
+.mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; pointer-events: none; }
 .karta .ceka { margin: 0.4rem 0; }
 .karta .heslo { margin-top: 0.8rem; font-size: 1.05rem; }
 .karta .hledani-lobby .ovladani { justify-content: center; }
