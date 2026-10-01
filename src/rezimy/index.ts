@@ -9,7 +9,9 @@ import type { AkceStavPayload, RezimId, Seat, SestavaVstup } from "../shared/typ
 /**
  * Mód akce (spec §4.2). Jádro volá jen tohle rozhraní; klasický večer je
  * prázdná implementace, takže bez Diplomacie se web chová jako dřív.
- * Odebrat mód = smazat jeho modul a řádek v REZIMY.
+ * Odebrat mód = smazat jeho modul, řádek v REZIMY (a v klientském registru)
+ * a registraci rout v server.ts; háčky jádra jsou obecné a zůstávají
+ * (výčet H1–H12: docs/prehled-praci-a-zameru.md §3.60).
  */
 export interface RezimAkce {
   id: RezimId;

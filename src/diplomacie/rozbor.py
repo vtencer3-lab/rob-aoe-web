@@ -158,6 +158,9 @@ def minimapa(sc, varovani):
 
 
 def starty(sc, gm: int):
+    # Start barvy = medián pozic jejích vlastních jednotek (spec §5.2): jedna
+    # jednotka odložená na kraji mapy by průměrem i těžištěm hnula, mediánem
+    # ne. GM na šedé start nemá.
     n = sc.map_manager.map_size
     vysledek = []
     for cislo in range(1, 9):

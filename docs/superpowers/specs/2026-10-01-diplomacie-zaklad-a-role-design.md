@@ -295,7 +295,9 @@ nahraje a aktivuje novou verzi, rozehraný zápas dál ukazuje pravidla té své
 Verze se nemažou (záloha); mění se jen, která je aktivní. Tabulky se zakládají
 v pořadí `diplo_scenar` → `diplo_zapas` → `diplo_role` v jedné migraci.
 
-Klíč hráče je `player.hrac_id` (přejmenováno migrací 027). Zrušení nebo smazání zápasu smaže diplo data kaskádou.
+Klíč hráče je `player.hrac_id` (přejmenováno migrací 027). Smazání zápasu
+(„Odebrat úplně“ u zrušeného, konec akce bez výsledku) smaže diplo data
+kaskádou; zrušený zápas si je nechá, dokud není odebrán — jde ho vrátit do hry.
 
 ## 5. Scénář jako součást webu
 
@@ -340,8 +342,8 @@ Ochrana `requireAutorScenare` = admin nebo hráč ze seznamu. `/api/me` dostane
    - výchozí suroviny a populace hráčů,
    - limity jednotek z triggerů „omezeni …“ (vesničané, rybářské lodě,
      obchodní vozy),
-   - startovní pozice každé barvy (těžiště jejích budov) v souřadnicích
-     minimapy,
+   - startovní pozice každé barvy (medián pozic jejích vlastních jednotek —
+     odolný proti jednotce odložené na kraji mapy) v souřadnicích minimapy,
    - velikost mapy,
    - **minimapa** (webp, §5.4),
    - varování (např. neznámý terén), která správa ukáže.
@@ -444,10 +446,13 @@ Neblokuje.
 
 1. **Založení akce.**
    - Admin zapne přepínač **Diplomacie** a založí akci (`rezim = 'diplomacie'`).
-   - Výchozí nastavení lobby z módu: Game Mode Scenario, scénář = jméno souboru aktivní verze (§5.5),
-     mapa a velikost „je to jedno“, populace 200, Lock Teams vypnuto,
-     Shared Exploration vypnuto, cheaty vypnuto, diváci povoleni. Zbytek jako
-     dnes. Admin může cokoli změnit v panelu.
+   - Výchozí nastavení lobby z módu: Game Mode Custom Scenario, scénář =
+     jméno souboru aktivní verze (§5.5), velikost mapy z rozboru (mapu
+     a Victory v Custom Scenario určuje scénář, panel je schová — úkol 22),
+     populace 200, 8 hráčů, Lock Teams vypnuto, Shared Exploration vypnuto,
+     cheaty vypnuto, diváci povoleni. Zbytek jako dnes. Admin může cokoli
+     změnit v panelu; „Reset nastavení“ vrací tyhle hodnoty módu
+     (`POST /api/akce/:id/nastaveni-lobby/vychozi`), ne klasický základ.
    - V záhlaví akce je u názvu štítek „Diplomacie“.
 2. **Skládání.**
    - Editor jádra beze změny. `SkladaniDiplo` přidá popisek slotu „GM“ u šedé
@@ -592,7 +597,9 @@ Podle `docs/grafika.md`, žádné ruční kreslení ani úpravy:
 
 | situace | chování |
 |---|---|
-| zápas zrušen nebo smazán | diplo data kaskádou pryč |
+| zápas smazán („Odebrat úplně“) | diplo data kaskádou pryč |
+| zápas zrušen | diplo data zůstávají (zápas jde vrátit do hry), pryč až s odebráním |
+| admin v přípravě vymění Nástupce v sestavě (nebo ho posadí na šedou) | `nastupce_hrac_id` se vynuluje (`poZmeneSestavy`), GM vybírá znovu; los s Nástupcem mimo zápas → 409 |
 | akce ukončena | jako dnes (`smazAkciBezVysledku`); diplo zápas bez výsledku zmizí s ní |
 | víc zápasů Diplomacie za večer | každý zápas má vlastní `diplo_zapas` |
 | GM se odhlásí z akce / odejde | pult nikdo jiný nemá; admin vymění GM změnou sestavy (GM = kdo sedí na šedé, neukládá se zvlášť); jde jen v `priprava`, jinak nejdřív „Zpět na výběr Nástupce“ |
@@ -712,3 +719,17 @@ přidané během provádění“):
 - Více hráčů AI v pultu GM se rozlišuje jménem v zápase, ne jen „AI“.
 - Grafika (§8.3): vybrané varianty jsou čisté z první dávky ComfyUI, Codex
   nebyl potřeba; postup a seedy v `docs/grafika.md`, „Mód Diplomacie“.
+- Start barvy na minimapě (§5.2) je **medián pozic jejích jednotek**, ne
+  těžiště budov — odolnější proti jednotce odložené stranou; spec srovnán
+  s kódem.
+
+**Opravná vlna po závěrečné recenzi** (1.13.10-21.9 → 21.13, 1. 10. 2026):
+`RezimAkce` má navíc `poZmeneSestavy` (Nástupce mimo novou sestavu se
+vynuluje, §9) a `vychoziNastaveniLobby` smí vrátit `null` (klasický večer:
+nic neukládat); `RezimKlienta` má `stitek` (štítek v panelu akce) a slot
+módu i v kartě zápasu v režii (admin vidí stav a po rozeslání Nástupce);
+`POST /api/akce/:id/nastaveni-lobby/vychozi` nasadí výchozí hodnoty módu
+a snímek nese `akce.vychoziNastaveniLobby`; parser `application/octet-stream`
+je jen u routy nahrání, autor se ověří dřív, než se čte tělo, poznámka má
+nejvýš 500 znaků; krok hosta se stažením scénáře stojí před oknem Create
+Lobby; hláška kontroly lobby u jiné verze téhož scénáře říká „jiná verze“.

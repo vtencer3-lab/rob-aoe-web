@@ -131,8 +131,9 @@ funguje — několik vad viditelných na první pohled jí prošlo. Vizuální k
 zůstává na uživateli.
 
 **Módy akce (Diplomacie) žijí vedle jádra, ne v něm.** Jádro mód zná jen
-přes háčky v registrech `src/rezimy/index.ts` a `web/src/rezimy/index.tsx`
-(a sdílené `src/shared/rezimy.ts`); modul módu je `src/diplomacie/`,
+přes háčky: registry `src/rezimy/index.ts` a `web/src/rezimy/index.tsx`,
+sdílené `src/shared/rezimy.ts` a sloty v obrazovkách jádra (výčet H1–H12
+v `docs/prehled-praci-a-zameru.md` §3.60); modul módu je `src/diplomacie/`,
 `src/shared/diplomacie/`, `web/src/diplomacie/`. Žádné
 `if (rezim === "diplomacie")` v jádru — chybí-li háček, přidat háček.
 Tajná data módu nikdy neopustí větev `rezim.data` stavu a zaslepuje je mód

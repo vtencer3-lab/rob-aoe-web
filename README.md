@@ -355,7 +355,8 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
 - **Založení akce.** Rob při zakládání akce zapne přepínač **Diplomacie**
   vedle názvu. Nastavení lobby se předvyplní z módu: Game Mode Custom
   Scenario, scénář (aktivní verze), velikost mapy ze scénáře, populace 200,
-  Lock Teams a Shared Exploration vypnuto, diváci povoleni. Mapu, velikost
+  Lock Teams a Shared Exploration vypnuto, diváci povoleni; „Reset
+  nastavení“ se vrací k těmhle hodnotám, ne ke klasickým. Mapu, velikost
   a Victory v panelu nenajdeš — v Custom Scenario je určuje scénář, panel
   místo nich ukáže jeden řádek „Scénář“.
 - **Kdo je GM.** Ten, kdo v sestavě sedí **na šedé barvě (7)** — stejně
@@ -368,8 +369,8 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   (sekce „Správa scénáře“ pod panelem akce, i když žádná akce neběží).
   Web si každou verzi uloží, sám ji rozebere (čísla sekundárních cílů,
   limity, starty, podmínky vítězství, minimapa) a archivuje; aktivní je
-  vždy nejvýš jedna, nová verze se neaktivuje sama (kromě úplně první) —
-  tlačítko „Nastavit jako aktivní“. Verze, kterou se nepodařilo přečíst,
+  vždy nejvýš jedna, nová verze se neaktivuje sama (kromě úplně první
+  úspěšně přečtené) — tlačítko „Nastavit jako aktivní“. Verze, kterou se nepodařilo přečíst,
   jde stáhnout, ale ne aktivovat. Pojmenovávej verze s číslem: hra hlásí
   jen jméno souboru, takže dvě verze stejného jména kontrola lobby
   nerozliší — správa na shodné jméno upozorní, ale nebrání mu.

@@ -168,10 +168,14 @@ tím není.
 
 **Módy akce žijí vedle jádra, ne v něm.** Jádro mód zná jen přes háčky
 (`src/rezimy/index.ts`, `web/src/rezimy/index.tsx`, sdílené
-`src/shared/rezimy.ts`); tajná data módu jsou jen ve větvi `rezim.data`
-stavu a zaslepuje je mód sám. Odebrat mód = smazat jeho tři složky a řádek
-v obou registrech. Když přidáváš něco do Diplomacie, nepiš `if (rezim ===
-"diplomacie")` do jádra — přidej háček.
+`src/shared/rezimy.ts` a sloty v obrazovkách — výčet H1–H12 je v
+`docs/prehled-praci-a-zameru.md` §3.60); tajná data módu jsou jen ve větvi
+`rezim.data` stavu a zaslepuje je mód sám. Odebrat mód = smazat jeho tři
+složky, řádek v obou registrech a `registerDiplomacieRoutes` v `server.ts`;
+háčky v jádru jsou obecné a zůstávají (s módem odejdou jen jeho hodnoty
+v `RezimId`, větve v `src/shared/rezimy.ts`, `smiNahratScenar` v `/api/me`,
+`SpravaScenare` v `App.tsx` a CHECK migrace 030). Když přidáváš něco do
+Diplomacie, nepiš `if (rezim === "diplomacie")` do jádra — přidej háček.
 
 ## Pět pravidel, která se nesmí porušit
 
