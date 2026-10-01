@@ -57,6 +57,8 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   return (
     <section className="sekce-krok pult-gm" data-testid="pult-gm">
       <header className="zahlavi-sekce">
+        {/* Žezlo s okem: GM roli nemá, znak ano — patří k pultu, ne do tabulky rolí. */}
+        <img className="znak-role" src={ZNAK_ROLE.gm} alt="GM" width={26} height={26} />
         <h3>Pult GM</h3>
         <span className="stav-diplo">{POPIS_STAVU[d.stav]}</span>
       </header>

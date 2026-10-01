@@ -1577,6 +1577,10 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    rolí se čte zleva, roletky vyplní buňku. Souhrn složení přebírá barvu
    z .varovani, ale ne jeho kurzor s otazníkem — není to nápověda. */
 .pult-gm .stav-diplo { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: var(--tlumene); font-family: "Cinzel", Georgia, serif; }
+/* Znak GM (žezlo) před nadpisem pultu, stejně velký jako znaky v tabulce;
+   záhlaví centruje, tak se mezera zmenší, ať znak a nadpis drží spolu. */
+.pult-gm .zahlavi-sekce { gap: 0.4rem; }
+.pult-gm .zahlavi-sekce .znak-role { width: 1.6rem; height: 1.6rem; margin-bottom: 0.3rem; }
 .pult-gm .zakryti > p { max-width: 34rem; margin: 0.6rem auto; }
 .dlazdice-nastupce { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem; max-width: 34rem; margin: 0.6rem auto 0.8rem; }
 button.dlazdice { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.55rem 0.6rem; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; text-shadow: 0 1px 2px color-mix(in srgb, var(--obrys) 60%, transparent); }

@@ -45,6 +45,8 @@ const odemceno = (tlacitko: string) => waitFor(() => expect(screen.getByRole("bu
 it("je zakrytý; v přípravě nabídne 7 dlaždic s pN a barvou", () => {
   render(<PultGm zapas={zapas} data={gmData("priprava", [])} hlidej={spust} />);
   expect(screen.queryByTestId("dlazdice")).toBeNull();
+  // Znak GM je v záhlaví, tedy vidět i na zakrytém pultu.
+  expect(screen.getByRole("img", { name: "GM" })).toHaveClass("znak-role");
   odkryj();
   const dlazdice = screen.getAllByTestId("dlazdice");
   expect(dlazdice).toHaveLength(7);
@@ -174,10 +176,11 @@ it("po rozeslání zmizí Přelosovat a Rozeslat, přehled se dá zkopírovat", 
 });
 
 // Velká minimapa se všemi starty a jmény hráčů (spec §8.1); GM na šedé
-// start nemá, takže značek je sedm.
+// start nemá, takže značek je sedm. Před odkrytím mapa není (znak GM
+// v záhlaví ano, proto dotaz na název mapy, ne na libovolný obrázek).
 it("odkrytý pult ukáže velkou minimapu se všemi starty a jmény", () => {
   render(<PultGm zapas={zapas} data={gmData("priprava", [])} hlidej={spust} />);
-  expect(screen.queryByRole("img")).toBeNull();
+  expect(screen.queryByRole("img", { name: /^Mapa scénáře/ })).toBeNull();
   odkryj();
   expect(screen.getByRole("img", { name: "Mapa scénáře LLC.aoe2scenario" })).toBeTruthy();
   const starty = screen.getAllByTestId("start");

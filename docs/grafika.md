@@ -20,7 +20,7 @@ znovu nebo dodělat nový kus ve stejném rukopisu.
 |---|---|
 | **Barvy** | vytažené z loga Brohemians nástrojem `nastroje/grafika/paleta.py`, ne odhadnuté od oka |
 | **Písmo** | Cinzel (OFL, hostujeme si ho sami) na nadpisy, Georgia na text |
-| **Pozadí, rám, praporec, ozdoba, textury** | vygenerované lokálně (Flux.2-dev), viz §4 |
+| **Pozadí, rám, praporec, ozdoba, textury; znaky rolí, rub karty a rám minimapy Diplomacie** | vygenerované lokálně (Flux.2-dev), viz §4 |
 | **Erby civilizací, ikony map, díly okna Create Lobby, znak Bohemians** | přímo z instalace hry, viz `CONTRIBUTING.md` → „Data ze hry“ |
 | **Tlačítka, pole, zaškrtávátka, přepínače, tabulky** | kreslené v CSS, žádné obrázky |
 
@@ -261,11 +261,24 @@ Dohromady zabírají necelých 600 kB.
 Znaky rolí, rub tajné karty a rám minimapy — ComfyUI (Flux.2-dev, stejné
 parametry jako výš), zadání a motivy v `nastroje/grafika/zadani/diplomacie.md`,
 prompty v `zadani/diplomacie.json`. Všechno ve `web/src/assets/diplomacie/`,
-dohromady 180 kB. Alfa záplavou od rohů (`klic.py --prah 12` — pozadí je
-L ≤ 3, výš už záplava žrala samet koruny a dřevo pochodně), bez Scenaria.
-Znaky se usazují na čtverec `export.py --ctverec`, protože každý má jiný
-poměr stran a na kartě i v tabulce mají zabírat stejné místo. Codex (GPT
-Image) nebyl potřeba — vybrané varianty jsou čisté z první dávky.
+dohromady 165,7 kB. Rendery leží vedle repa v `../_grafika/navrhy/diplomacie`.
+Codex (GPT Image) ani Scenario nebyly potřeba — vybrané varianty jsou čisté
+z první dávky. Přesné příkazy (ověřeno, že dávají shodu do pixelu):
+
+```bash
+python nastroje/grafika/davka.py nastroje/grafika/zadani/diplomacie.json -o ../_grafika/navrhy/diplomacie
+# znaky: alfa záplavou s prahem 12 (pozadí je L ≤ 3; práh 40 i 70 žral samet
+# koruny a dřevo pochodně), usazení na čtverec a 208 px — každý znak má jiný
+# poměr stran a CSS ho kreslí 104×104, bez --ctverec by se zdeformoval
+python nastroje/grafika/klic.py ../_grafika/navrhy/diplomacie/role-kat_00.png -o vyber/role-kat.png --prah 12
+python nastroje/grafika/export.py vyber/role-kat.png -o web/src/assets/diplomacie/role-kat.webp -q 86 --sirka 208 --ctverec
+# rub karty
+python nastroje/grafika/klic.py ../_grafika/navrhy/diplomacie/rub-karty_00.png -o vyber/rub-karty.png --prah 12
+python nastroje/grafika/export.py vyber/rub-karty.png -o web/src/assets/diplomacie/rub-karty.webp -q 82 --sirka 600
+# rám minimapy: devítidíl, výsledek 320×320 s řezem 112
+python nastroje/grafika/devitidil.py ../_grafika/navrhy/diplomacie/ram-mapy_00.png -o vyber/ram-mapy.png --roh 112 --pas 96 --prah 20 --vyhlad 0.85
+python nastroje/grafika/export.py vyber/ram-mapy.png -o web/src/assets/diplomacie/ram-mapy.webp -q 90
+```
 
 | Soubor | Předloha | Seed | Rozměr generování | Výstup |
 |---|---|---|---|---|
@@ -280,7 +293,8 @@ Image) nebyl potřeba — vybrané varianty jsou čisté z první dávky.
 | `ram-mapy.webp` | `ram-mapy` var. 00, `devitidil.py --roh 112 --pas 96 --prah 20` | 2975078811603106970 | 1024×1024 | 320×320 (řez 112) |
 
 Seedy vybraných variant jsou zapsané i v `diplomacie.json` (`seed`), takže
-nový běh dávky dá jako `_00` přesně to, co je na webu.
+nový běh dávky dá jako `_00` přesně to, co je na webu — čísla variant
+v tabulce platí pro původní nesemínkovaný běh (1. 10. 2026).
 
 ### Jak vygenerovat znovu
 
