@@ -91,7 +91,8 @@ it("aktivace přepíše scénář v nastavení běžící akce Diplomacie", asyn
   const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("x")]), "LLC v2.aoe2scenario")).json().id;
   expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "LLC v1.aoe2scenario" });
   await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2}/aktivni`, cookies: { sid: jin } });
-  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "LLC v2.aoe2scenario", scenarStarsi: ["LLC v1.aoe2scenario"], rezim: 3 });
+  // S jménem se propíše i velikost mapy z rozboru (podvrh vrací ROZBOR: 220).
+  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "LLC v2.aoe2scenario", scenarStarsi: ["LLC v1.aoe2scenario"], rezim: 3, velikost: 220 });
   expect(v1).toBeLessThan(v2);
 });
 

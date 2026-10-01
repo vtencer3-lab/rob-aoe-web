@@ -278,6 +278,62 @@ it("Population je nabídka jako ve hře", () => {
   expect(volby).toEqual(["25", "50", "75", "100", "125", "150", "175", "200", "225", "250", "300", "400", "500"]);
 });
 
+// Custom Scenario: hra v lobby Location, Map Size ani Victory nenabízí —
+// mapu a velikost určuje scénář, podmínky vítězství taky (uživatel 1. 10.
+// 2026: „neměla by být ani v kontrole ani v nastavení“). Panel je proto
+// schová a místo nich ukáže jeden řádek ke čtení.
+it("v Custom Scenario schová mapu, velikost a Victory a ukáže řádek Scénář", () => {
+  render(
+    <NastaveniLobby
+      zive={{ rezim: 3, scenar: "Diplomacie LLC v2.aoe2scenario", velikost: 220 }}
+      ulozene={null}
+      onZmena={vi.fn()}
+      onUlozit={nic}
+      scenar={{ vitezstvi: "Vlastní podmínky scénáře" }}
+    />,
+  );
+  expect(screen.queryByTestId("vyber-mapy-tlacitko")).toBeNull();
+  expect(screen.queryByLabelText(/map size/i)).toBeNull();
+  expect(screen.queryByLabelText(/victory/i)).toBeNull();
+  const radek = screen.getByTestId("nastaveni-scenar");
+  expect(radek).toHaveTextContent("Diplomacie LLC v2");
+  expect(radek).not.toHaveTextContent(".aoe2scenario");
+  expect(radek).toHaveTextContent("Large (8)");
+  expect(radek).toHaveTextContent("Vlastní podmínky scénáře");
+  // Ostatní řádky zůstávají.
+  expect(screen.getByLabelText(/game mode/i)).toHaveValue("3");
+  expect(screen.getByLabelText(/population/i)).toBeInTheDocument();
+});
+
+it("bez nahraného scénáře a bez rozboru řádek Scénář řekne, co chybí", () => {
+  render(<NastaveniLobby zive={{ rezim: 3 }} ulozene={null} onZmena={vi.fn()} onUlozit={nic} />);
+  const radek = screen.getByTestId("nastaveni-scenar");
+  expect(radek).toHaveTextContent("scénář zatím nikdo nenahrál");
+  expect(radek).toHaveTextContent("?");
+  expect(radek).toHaveTextContent("podle scénáře");
+});
+
+// Stav panelu je odvozený z režimu: přepnutí Game Mode tam a zpět prvky
+// schová a zase vrátí, uložené hodnoty se při tom nemění.
+it("přepnutí Game Mode z Custom Scenario zpět tři prvky vrátí, hodnoty nechá", async () => {
+  const onZmena = vi.fn();
+  render(<NastaveniLobby zive={{ rezim: 0, mapaId: 10878, vitezstvi: 9 }} ulozene={null} onZmena={onZmena} onUlozit={nic} />);
+  expect(screen.getByTestId("vyber-mapy-tlacitko")).toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "3" } });
+  expect(screen.queryByTestId("vyber-mapy-tlacitko")).toBeNull();
+  expect(screen.queryByLabelText(/map size/i)).toBeNull();
+  expect(screen.queryByLabelText(/victory/i)).toBeNull();
+  expect(screen.getByTestId("nastaveni-scenar")).toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText(/game mode/i), { target: { value: "0" } });
+  expect(screen.queryByTestId("nastaveni-scenar")).toBeNull();
+  expect(screen.getByRole("button", { name: /location: black forest/i })).toBeInTheDocument();
+  expect(screen.getByLabelText(/map size/i)).toBeInTheDocument();
+  expect(screen.getByLabelText(/victory/i)).toHaveValue("9");
+  await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 0, mapaId: 10878, vitezstvi: 9 })));
+});
+
 // Reset vrací na výchozí i volby z okna Pre-Lobby — jsou to předvolby jako
 // každá jiná. Jméno lobby a heslo se ho netýkají, ty u nastavení nejsou.
 it("Reset vyčistí i pre-lobby volby", () => {

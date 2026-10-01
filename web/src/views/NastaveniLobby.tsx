@@ -9,6 +9,7 @@ import {
   PRIMERI,
   REZIM_EMPIRE_WARS,
   REZIM_REGICIDE,
+  REZIM_SCENARIO,
   REZIM_SUDDEN_DEATH,
   REZIMY,
   ZASKRTAVATKO_REZIMU,
@@ -39,6 +40,11 @@ interface Props {
   zvyraznit?: { cil: string | null; cas: number } | null;
   /** Bez tlačítka „Reset nastavení“ (úprava zápasu: reset by přepsal, co host už má ve hře). */
   bezResetu?: boolean;
+  /**
+   * Custom Scenario: podmínky vítězství z rozboru aktivní verze scénáře
+   * (dodá mód přes App.tsx). Bez nich řádek „Scénář“ říká „podle scénáře“.
+   */
+  scenar?: { vitezstvi: string | null };
 }
 
 /**
@@ -73,6 +79,11 @@ const ADVANCED_SETTINGS: ReadonlyArray<{ klic: KlicTrojstavu | "cheaty"; popis: 
 
 /** AI podle obtížnosti, ne podle čísla ve hře (to jde obráceně a Extreme má −1). */
 const PORADI_AI = [4, 3, 2, 1, 0, -1];
+
+/** Victory jen z herní nabídky: nula („podle scénáře“) je v tabulce kvůli kontrole, ne k výběru. */
+const VITEZSTVI_NABIDKA = Object.keys(VITEZSTVI)
+  .map(Number)
+  .filter((v) => v !== 0);
 
 /**
  * Co s nastavením udělá přepnutí na Empire Wars — ověřeno 9. 9. 2026 na
@@ -152,6 +163,26 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
 }
 
 /**
+ * Custom Scenario: hra v lobby Location, Map Size ani Victory nenabízí —
+ * mapu i velikost určuje scénář, podmínky vítězství taky. Místo tří voleb
+ * jeden řádek ke čtení (uživatel 1. 10. 2026: schovat, ne zašedit).
+ */
+function RadekScenare({ jmeno, velikost, vitezstvi }: { jmeno: string | null; velikost: number | null; vitezstvi: string | null }) {
+  return (
+    <div className="radek" data-klic="scenar">
+      <span>Scénář:</span>
+      <span className="scenar-info" data-testid="nastaveni-scenar">
+        <span className="jmeno">{jmeno === null ? "scénář zatím nikdo nenahrál" : jmeno.replace(/\.aoe2scenario$/i, "")}</span>
+        {" · "}
+        {velikost === null ? "?" : (VELIKOSTI[velikost] ?? `${velikost} dílců`)}
+        {" · Victory: "}
+        {vitezstvi ?? "podle scénáře"}
+      </span>
+    </div>
+  );
+}
+
+/**
  * Očekávané nastavení lobby pro kontrolu, rozložené stejně jako herní panel
  * Game Settings: řádky ve stejném pořadí, pod nimi Team Settings a Advanced
  * Settings ve dvou sloupcích. Host tak srovnává jedna ku jedné. U voleb
@@ -162,7 +193,7 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
  * požadavek na každou číslici) a přes SSE ji uvidí všichni. „Uložit“ dělá
  * snímek, ke kterému se „Načíst uložený preset“ vrátí; „Reset“ nasadí výchozí.
  */
-export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, bezResetu }: Props) {
+export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, bezResetu, scenar }: Props) {
   const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(zive as Partial<Nastaveni>));
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
   const ceka = useRef(false);
@@ -200,6 +231,9 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
   const stejne = (a: Nastaveni, b: Nastaveni) => (Object.keys(a) as Array<keyof Nastaveni>).every((k) => (a[k] ?? null) === (b[k] ?? null));
   const jakoUlozene = ulozene !== null && ulozene !== undefined && stejne(n, doplnNastaveni(ulozene as Partial<Nastaveni>));
   const jakoVychozi = stejne(n, VYCHOZI_NASTAVENI);
+  // Z živého stavu panelu, ne jen ze serveru: přepnutí Game Mode se má
+  // projevit hned, ne až po cestě přes server a SSE.
+  const scenarovy = n.rezim === REZIM_SCENARIO;
 
   return (
     <form className="nastaveni-lobby" data-testid="nastaveni-lobby" onSubmit={(e) => e.preventDefault()} ref={formular}>
@@ -233,45 +267,51 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
           jedno
           onZmena={(v) => zmen({ ...n, ...(v === null ? {} : (NASTAVENI_REZIMU[v] ?? {})), rezim: v })}
         />
-        {/* Vypadá jako rozbalovací seznam, ale otevírá okno s minimapami —
-            u dvou set map řekne obrázek víc než jméno. */}
-        <div className="radek" data-klic="mapaId">
-          <span>Location:</span>
-          <button
-            type="button"
-            className="vyber-mapy-tlacitko"
-            aria-haspopup="dialog"
-            aria-expanded={vyberMap}
-            aria-label={`Location: ${nazevMapy(n.mapaId)}`}
-            data-testid="vyber-mapy-tlacitko"
-            onClick={() => setVyberMap(true)}
-          >
-            {nahledMapy(n.mapaId) ? <img src={nahledMapy(n.mapaId)!} alt="" width={22} height={22} /> : null}
-            <span className="jmeno">{nazevMapy(n.mapaId)}</span>
-            <span className="sipka" aria-hidden="true" />
-          </button>
-        </div>
-        {vyberMap ? (
-          <VyberMapy
-            hodnota={n.mapaId}
-            onVybrat={(id) => {
-              zmen({ ...n, mapaId: id });
-              setVyberMap(false);
-            }}
-            onZavrit={() => setVyberMap(false)}
-          />
-        ) : null}
-        <label className="radek" data-klic="velikost">
-          <span>Map Size:</span>
-          <select value={n.velikost ?? ""} onChange={(e) => zmen({ ...n, velikost: cislo(e.target.value) })}>
-            <option value="">podle počtu hráčů</option>
-            {Object.entries(VELIKOSTI).map(([v, nazev]) => (
-              <option key={v} value={v}>
-                {nazev}
-              </option>
-            ))}
-          </select>
-        </label>
+        {scenarovy ? (
+          <RadekScenare jmeno={n.scenar} velikost={n.velikost} vitezstvi={scenar?.vitezstvi ?? null} />
+        ) : (
+          <>
+            {/* Vypadá jako rozbalovací seznam, ale otevírá okno s minimapami —
+                u dvou set map řekne obrázek víc než jméno. */}
+            <div className="radek" data-klic="mapaId">
+              <span>Location:</span>
+              <button
+                type="button"
+                className="vyber-mapy-tlacitko"
+                aria-haspopup="dialog"
+                aria-expanded={vyberMap}
+                aria-label={`Location: ${nazevMapy(n.mapaId)}`}
+                data-testid="vyber-mapy-tlacitko"
+                onClick={() => setVyberMap(true)}
+              >
+                {nahledMapy(n.mapaId) ? <img src={nahledMapy(n.mapaId)!} alt="" width={22} height={22} /> : null}
+                <span className="jmeno">{nazevMapy(n.mapaId)}</span>
+                <span className="sipka" aria-hidden="true" />
+              </button>
+            </div>
+            {vyberMap ? (
+              <VyberMapy
+                hodnota={n.mapaId}
+                onVybrat={(id) => {
+                  zmen({ ...n, mapaId: id });
+                  setVyberMap(false);
+                }}
+                onZavrit={() => setVyberMap(false)}
+              />
+            ) : null}
+            <label className="radek" data-klic="velikost">
+              <span>Map Size:</span>
+              <select value={n.velikost ?? ""} onChange={(e) => zmen({ ...n, velikost: cislo(e.target.value) })}>
+                <option value="">podle počtu hráčů</option>
+                {Object.entries(VELIKOSTI).map(([v, nazev]) => (
+                  <option key={v} value={v}>
+                    {nazev}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
         <Vyber klic="aiObtiznost" popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno poradi={PORADI_AI} onZmena={(v) => zmen({ ...n, aiObtiznost: v })} />
         <Vyber klic="suroviny" popis="Resources" hodnota={n.suroviny} tabulka={SUROVINY} jedno onZmena={(v) => zmen({ ...n, suroviny: v })} />
         <Vyber klic="populace" popis="Population" hodnota={n.populace} tabulka={POPULACE} onZmena={(v) => zmen({ ...n, populace: v ?? VYCHOZI_NASTAVENI.populace })} />
@@ -280,7 +320,11 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
         <Vyber klic="pocatecniVek" popis="Starting Age" hodnota={n.pocatecniVek} tabulka={POCATECNI_VEKY} jedno onZmena={(v) => zmen({ ...n, pocatecniVek: v })} />
         <Vyber klic="konecnyVek" popis="Ending Age" hodnota={n.konecnyVek} tabulka={KONECNE_VEKY} jedno onZmena={(v) => zmen({ ...n, konecnyVek: v })} />
         <Vyber klic="primeri" popis="Treaty Length" hodnota={n.primeri} tabulka={PRIMERI} jedno onZmena={(v) => zmen({ ...n, primeri: v })} />
-        <Vyber klic="vitezstvi" popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} onZmena={(v) => zmen({ ...n, vitezstvi: v ?? VYCHOZI_NASTAVENI.vitezstvi })} />
+        {/* Victory ve scénáři určuje scénář (řádek „Scénář“ výš); nabídka bez
+            nuly — tu hra nenabízí, jen ji ve scénářové lobby posílá. */}
+        {scenarovy ? null : (
+          <Vyber klic="vitezstvi" popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} poradi={VITEZSTVI_NABIDKA} onZmena={(v) => zmen({ ...n, vitezstvi: v ?? VYCHOZI_NASTAVENI.vitezstvi })} />
+        )}
       </div>
 
       <div className="sloupce">

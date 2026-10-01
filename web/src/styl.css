@@ -1454,6 +1454,10 @@ button.odebrat:hover { color: var(--chyba); }
 .nastaveni-lobby .sloupce legend { font-weight: 700; font-size: 1rem; margin-bottom: 0.3rem; }
 .nastaveni-lobby .sloupce label.zaskrtavaci { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; padding: 0.1rem 0; }
 .nastaveni-lobby .jedno-znak { margin: 0; font-weight: 700; }
+/* Custom Scenario: místo Location, Map Size a Victory jeden řádek ke čtení
+   — obyčejný text v barvě hodnot, ne tlumený popisek jako levý sloupec. */
+.nastaveni-lobby .radek > .scenar-info { color: var(--text); font-size: 0.9rem; text-align: left; line-height: 1.35; }
+.nastaveni-lobby .scenar-info .jmeno { font-weight: 700; }
 .nastaveni-lobby .sloupce label.zaskrtavaci.vypnute { opacity: 0.45; }
 /* Panel zarovnaný doprava, jako je herní panel u pravého okraje. */
 .nastaveni-lobby { margin-left: auto; width: fit-content; max-width: 100%; }

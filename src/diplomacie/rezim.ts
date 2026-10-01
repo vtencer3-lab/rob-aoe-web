@@ -5,11 +5,15 @@ import type { DiploData, ScenarVerze } from "../shared/diplomacie/typy.js";
 import { redigujDiplo } from "../shared/diplomacie/viditelnost.js";
 import { getAktivniVerze, getDiploZapas, getVerze, listDiploZapasy, listVerzi, zalozDiploZapas } from "./db.js";
 
-/** Co z verzí scénáře patří do nastavení lobby akce (spec §5.5). */
-export function nastaveniScenare(aktivni: ScenarVerze | null, vsechny: ScenarVerze[]): Pick<NastaveniLobby, "scenar" | "scenarStarsi"> {
-  if (!aktivni) return { scenar: null, scenarStarsi: null };
+/**
+ * Co z verzí scénáře patří do nastavení lobby akce (spec §5.5). Velikost
+ * mapy jde z rozboru: v Custom Scenario ji hra v lobby nenabízí a posílá
+ * tu ze scénáře, takže odhad podle počtu hráčů by kontrole jen lhal.
+ */
+export function nastaveniScenare(aktivni: ScenarVerze | null, vsechny: ScenarVerze[]): Pick<NastaveniLobby, "scenar" | "scenarStarsi" | "velikost"> {
+  if (!aktivni) return { scenar: null, scenarStarsi: null, velikost: null };
   const starsi = vsechny.filter((v) => v.id !== aktivni.id && v.jmenoSouboru !== aktivni.jmenoSouboru).map((v) => v.jmenoSouboru);
-  return { scenar: aktivni.jmenoSouboru, scenarStarsi: [...new Set(starsi)] };
+  return { scenar: aktivni.jmenoSouboru, scenarStarsi: [...new Set(starsi)], velikost: aktivni.rozbor?.velikostMapy ?? null };
 }
 
 export const diplomacie: RezimAkce = {
@@ -18,11 +22,11 @@ export const diplomacie: RezimAkce = {
   async vychoziNastaveniLobby(zaklad) {
     return {
       ...zaklad,
-      // Spec §6.1 krok 1: scénář určuje mapu i velikost; diplomacie se mění
-      // během hry (Lock Teams vypnuto); spojenci bez společné vize.
+      // Spec §6.1 krok 1: scénář určuje mapu i velikost (velikost dodá
+      // nastaveniScenare z rozboru); diplomacie se mění během hry (Lock
+      // Teams vypnuto); spojenci bez společné vize.
       rezim: REZIM_SCENARIO,
       mapaId: null,
-      velikost: null,
       populace: 200,
       lockTeams: false,
       teamTogether: null,

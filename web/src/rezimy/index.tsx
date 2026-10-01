@@ -18,6 +18,11 @@ export interface RezimKlienta {
   krokHosta?(p: KontextZapasu): ReactNode;
   verejnyZapas?(p: KontextZapasu): ReactNode;
   popisSlotu?(barva: Barva): string | null;
+  /**
+   * Řádek „Scénář“ v panelu Nastavení lobby (Custom Scenario): podmínky
+   * vítězství z rozboru aktivní verze. Null = mód k tomu nemá co říct.
+   */
+  nastaveniScenare?(stav: AkceStavPayload): { vitezstvi: string | null } | null;
 }
 
 const KLIENTI: Record<RezimId, RezimKlienta> = { klasicky: {}, diplomacie: diplomacieKlient };

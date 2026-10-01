@@ -15,5 +15,7 @@ export const ROZBOR: RozborScenare = {
   limity: { vesnicane: 30, rybarskeLode: 5, obchodniVozy: 5 },
   starty: [1, 2, 3, 4, 5, 6, 8].map((b) => ({ barva: b as any, x: 0.5, y: 0.5 })),
   minimapa: { sirka: 440, vyska: 440 },
+  // LLC má v GlobalVictory mode 4 (Custom): vítězství řeší triggery scénáře.
+  vitezstvi: { rezim: "vlastni", popis: "Vlastní podmínky scénáře" },
   varovani: [],
 };

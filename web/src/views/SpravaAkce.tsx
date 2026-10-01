@@ -18,6 +18,8 @@ interface Props {
   zvyraznitNastaveni?: { cil: string | null; cas: number } | null;
   /** Kostka u hesla v okně Pre-Lobby: server vygeneruje nové. */
   onNoveHeslo?: () => void;
+  /** Custom Scenario: podmínky vítězství z rozboru scénáře (dodá mód). */
+  scenar?: { vitezstvi: string | null };
 }
 
 /**
@@ -25,7 +27,7 @@ interface Props {
  * vybraní hráči (sestava), vpravo Game Settings. Tlačítka debug módu stojí
  * nahoře u tabulky přihlášených — týkají se toho, kdo je v seznamu.
  */
-export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, children, zvyraznitNastaveni, onNoveHeslo }: Props) {
+export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, children, zvyraznitNastaveni, onNoveHeslo, scenar }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
 
@@ -54,7 +56,7 @@ export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaven
       ) : null}
       <div className="lobby-rozlozeni">
         <div className="leva">{children}</div>
-        <NastaveniLobby zive={akce.nastaveniLobby} ulozene={akce.ulozeneNastaveniLobby} onZmena={onNastaveniLobby} onUlozit={onUlozitNastaveni} zvyraznit={zvyraznitNastaveni} />
+        <NastaveniLobby zive={akce.nastaveniLobby} ulozene={akce.ulozeneNastaveniLobby} onZmena={onNastaveniLobby} onUlozit={onUlozitNastaveni} zvyraznit={zvyraznitNastaveni} scenar={scenar} />
       </div>
     </section>
   );

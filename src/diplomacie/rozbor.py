@@ -31,6 +31,10 @@ EFEKT_AKTIVUJ = 8
 # Skupiny jednotek v podmínce Own Objects u limitů ve scénáři LLC.
 SKUPINY_LIMITU = {4: "vesnicane", 21: "rybarskeLode", 19: "obchodniVozy"}
 ZVETSENI = 2
+# GlobalVictory.mode (VictoryCondition v AoE2ScenarioParser): 0 Standard,
+# 1 Conquest, 2 Score, 3 Time Limit, 4 Custom (triggery). Klíče musí sedět
+# s REZIMY_VITEZSTVI v src/shared/diplomacie/scenar.ts.
+REZIMY_VITEZSTVI = {0: "standard", 1: "dobyti", 2: "skore", 3: "cas", 4: "vlastni"}
 
 
 def nacti(data: bytes):
@@ -89,6 +93,36 @@ def limity(sc, hrac: int):
                 if vysledek[klic] is None:
                     vysledek[klic] = c.quantity
     return vysledek
+
+
+def roky(desetiny: int) -> str:
+    """Čas hry je v desetinách roku; celé roky bez desetinné části, jinak s čárkou."""
+    r = desetiny / 10
+    return str(int(r)) if r.is_integer() else f"{r:.1f}".replace(".", ",")
+
+
+def vitezstvi(sc, varovani):
+    """Podmínky vítězství ze sekce GlobalVictory, česky pro panel nastavení lobby."""
+    gv = sc.sections["GlobalVictory"]
+    mode = gv.mode
+    if mode == 0:
+        popis = "Standard"
+    elif mode == 1:
+        popis = "Dobytí"
+    elif mode == 2:
+        popis = f"Skóre {gv.required_score_for_score_victory}"
+    elif mode == 3:
+        popis = f"Čas {roky(gv.time_for_timed_game_in_10ths_of_a_year)} let"
+    elif mode == 4:
+        popis = "Vlastní podmínky scénáře"
+    else:
+        popis = f"Vlastní (mód {mode})"
+        varovani.append(f"neznámý druh vítězství {mode} — bere se jako vlastní podmínky")
+    # U vlastních podmínek rozhodují triggery; počet relikvií je tam jen zbytek
+    # z editoru (LLC má 25 a nic takového se nehraje).
+    if mode != 4 and gv.artifacts_required > 0:
+        popis += f", relikvie: {gv.artifacts_required}"
+    return {"rezim": REZIMY_VITEZSTVI.get(mode, "vlastni"), "popis": popis}
 
 
 def otoc(x: float, y: float, n: int):
@@ -155,6 +189,7 @@ def rozeber(data: bytes):
         "limity": limity(sc, hrac),
         "starty": starty(sc, gm),
         "minimapa": {"sirka": sirka, "vyska": vyska},
+        "vitezstvi": vitezstvi(sc, varovani),
         "varovani": varovani,
     }
     if len(rozbor["cile"]) == 0:
@@ -169,7 +204,9 @@ def main() -> None:
         vystup = {"ok": True, "rozbor": rozbor, "minimapa": base64.b64encode(webp).decode("ascii")}
     except Exception as chyba:  # noqa: BLE001 — každé selhání je odpověď, ne pád
         vystup = {"ok": False, "chyba": f"{type(chyba).__name__}: {chyba}"}
-    sys.stdout.write(json.dumps(vystup, ensure_ascii=False))
+    # Bajty, ne text: na Windows by Python psal na rouru v kódování locale
+    # (cp1250) a rozbor.ts, který čte UTF-8, by české popisy rozbil.
+    sys.stdout.buffer.write(json.dumps(vystup, ensure_ascii=False).encode("utf-8"))
 
 
 if __name__ == "__main__":

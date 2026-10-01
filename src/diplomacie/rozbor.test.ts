@@ -33,6 +33,9 @@ describe.skipIf(!maPython())("rozbor LLC (vyžaduje Python s AoE2ScenarioParser)
     expect(r.cile.find((c) => c.pocet === 650)?.text).toMatch(/zabij 650/);
     expect(r.limity).toEqual({ vesnicane: 30, rybarskeLode: 5, obchodniVozy: 5 });
     expect(r.suroviny).toEqual({ jidlo: 2000, drevo: 2000, zlato: 2000, kamen: 1000, populace: 200 });
+    // GlobalVictory.mode 4 = Custom; relikvie (25) se u vlastních podmínek nepřipisují.
+    expect(r.vitezstvi).toEqual({ rezim: "vlastni", popis: "Vlastní podmínky scénáře" });
+    expect(r.varovani).toEqual([]);
     expect(r.starty.map((s) => s.barva).sort()).toEqual([1, 2, 3, 4, 5, 6, 8]);
     for (const s of r.starty) {
       expect(s.x).toBeGreaterThan(0);

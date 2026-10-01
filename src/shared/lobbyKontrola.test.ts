@@ -245,7 +245,8 @@ describe("REZIMY", () => {
     expect(REZIMY[0]).toBe("Random Map");
     expect(REZIMY[1]).toBe("Regicide");
     expect(REZIMY[2]).toBe("Death Match");
-    expect(REZIMY[3]).toBe("Scenario");
+    // Hra té položce říká „Custom Scenario“ (snímek lobby 1. 10. 2026).
+    expect(REZIMY[3]).toBe("Custom Scenario");
     expect(REZIMY[5]).toBe("King of the Hill");
     expect(REZIMY[6]).toBe("Wonder Race");
     expect(REZIMY[7]).toBe("Defend the Wonder");
@@ -285,6 +286,12 @@ describe("číselníky nastavení", () => {
     expect(VITEZSTVI[7]).toBe("Time Limit");
     expect(VITEZSTVI[8]).toBe("Score");
     expect(VITEZSTVI[11]).toBe("Last Man Standing");
+  });
+
+  // Scénářové lobby posílají v options[81] vždycky 0 (živá sonda 12 lobby,
+  // 1. 10. 2026): Victory v nich hra nenabízí, určuje ho scénář.
+  it("vítězství 0 je „podle scénáře“", () => {
+    expect(VITEZSTVI[0]).toBe("Podle scénáře");
   });
 
   it("suroviny znají i Random", () => {
@@ -468,5 +475,34 @@ describe("scénář", () => {
   it("bez očekávaného scénáře řádek není", () => {
     const k = zkontrolujLobby(sestava, { ...VYCHOZI_NASTAVENI }, lobbySNastavenim({ scenar: "X.aoe2scenario" }));
     expect(k.find((r) => r.klic === "scenar")).toBeUndefined();
+  });
+
+  // V Custom Scenario hra v lobby Map Size nenabízí — options[8] nese
+  // skutečnou velikost ze scénáře (sonda 1. 10. 2026). Odhad podle počtu
+  // barev tu nemá co dělat: porovnává se s velikostí z rozboru, a když
+  // rozbor není, hodnota se jen vypíše.
+  it("velikost se porovná s velikostí ze scénáře, ne s počtem hráčů", () => {
+    const seScenarem = { ...ocekavane, velikost: 220 };
+    const ok = zkontrolujLobby(sestava, seScenarem, lobbySNastavenim({ rezim: 3, velikost: 220, scenar: ocekavane.scenar }));
+    expect(ok.find((r) => r.klic === "velikost")).toMatchObject({ stav: "ok", sekce: "hlavni", text: "Velikost: Large (8)" });
+    const spatne = zkontrolujLobby(sestava, seScenarem, lobbySNastavenim({ rezim: 3, velikost: 200, scenar: ocekavane.scenar }));
+    expect(spatne.find((r) => r.klic === "velikost")).toMatchObject({ stav: "spatne", text: "Velikost: Normal (6), má být Large (8)" });
+  });
+  it("bez velikosti z rozboru se velikost jen vypíše", () => {
+    const k = zkontrolujLobby(sestava, { ...ocekavane, velikost: null }, lobbySNastavenim({ rezim: 3, velikost: 240, scenar: ocekavane.scenar }));
+    expect(k.find((r) => r.klic === "velikost")).toMatchObject({ stav: "jedno", sekce: "hlavni", text: "Velikost: Giant (určuje scénář)" });
+    expect(lobbyVPoradku(k)).toBe(true);
+  });
+  // Victory hra ve scénářové lobby nenabízí a v options[81] posílá 0 —
+  // očekávaná hodnota je tu bezpředmětná a nikdy nesmí být křížek.
+  it("Victory určuje scénář, ať je očekávané cokoliv", () => {
+    const k = zkontrolujLobby(sestava, { ...ocekavane, vitezstvi: 1 }, lobbySNastavenim({ rezim: 3, vitezstvi: 0, scenar: ocekavane.scenar }));
+    expect(k.find((r) => r.klic === "vitezstvi")).toMatchObject({ stav: "jedno", sekce: "hlavni", text: "Victory: určuje scénář" });
+    expect(lobbyVPoradku(k)).toBe(true);
+  });
+  it("mimo scénář zůstává velikost podle počtu hráčů a Victory se porovnává", () => {
+    const k = zkontrolujLobby(sestava, { ...VYCHOZI_NASTAVENI, velikost: null, vitezstvi: 1 }, lobbySNastavenim({ velikost: 220, vitezstvi: 0 }));
+    expect(k.find((r) => r.klic === "velikost")).toMatchObject({ stav: "spatne", text: "Velikost: Large (8), má být Tiny (2)" });
+    expect(k.find((r) => r.klic === "vitezstvi")).toMatchObject({ stav: "spatne", text: "Victory: Podle scénáře, má být Conquest" });
   });
 });

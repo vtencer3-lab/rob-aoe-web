@@ -58,8 +58,10 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   // vit === 9`, takže Time Limit, Score a Last Man Standing server tiše
   // zahodil — panel je poslal, zpátky přes SSE přišla stará hodnota a výběr
   // se sám přepnul na původní.
+  // Nula je v tabulce jen kvůli výpisu scénářových lobby (hra ji posílá,
+  // ale nenabízí) — jako očekávání by neměla co porovnávat.
   const vit = cislo(t["vitezstvi"]);
-  if (vit !== undefined && vit in VITEZSTVI) v.vitezstvi = vit;
+  if (vit !== undefined && vit !== 0 && vit in VITEZSTVI) v.vitezstvi = vit;
   if (typeof t["cheaty"] === "boolean") v.cheaty = t["cheaty"];
 
   // Další nastavení: číselníky jen z hodnot, které hra opravdu vydává;

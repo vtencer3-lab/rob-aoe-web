@@ -26,4 +26,14 @@ describe("popisZmenyNastaveni", () => {
     expect(popisZmenyNastaveni(VYCHOZI_NASTAVENI, { ...VYCHOZI_NASTAVENI, lockTeams: false })).toEqual({ text: "Lock Teams: zapnuto → vypnuto", cil: "lockTeams" });
     expect(popisZmenyNastaveni(VYCHOZI_NASTAVENI, { ...VYCHOZI_NASTAVENI, rychlost: 3, cheaty: true }).text).toBe("Game Speed: Normal → Fast (+1 dalších)");
   });
+
+  // V Custom Scenario mapu, velikost a Victory určuje scénář a panel je
+  // neukazuje — věta o nich by ukazovala na řádek, který v panelu není.
+  it("v Custom Scenario o mapě, velikosti a Victory mlčí, o ostatním ne", () => {
+    const scenar = { ...VYCHOZI_NASTAVENI, rezim: 3 };
+    expect(popisZmenyNastaveni(scenar, { ...scenar, mapaId: 10878, velikost: 220, vitezstvi: 9 })).toEqual({ text: "Nastavení beze změny", cil: null });
+    expect(popisZmenyNastaveni(scenar, { ...scenar, mapaId: 10878, populace: 150 })).toEqual({ text: "Population: 200 → 150", cil: "populace" });
+    // Přepnutí režimu samo je změna a jmenuje se herním názvem.
+    expect(popisZmenyNastaveni(VYCHOZI_NASTAVENI, scenar)).toEqual({ text: "Game Mode: Random Map → Custom Scenario", cil: "rezim" });
+  });
 });

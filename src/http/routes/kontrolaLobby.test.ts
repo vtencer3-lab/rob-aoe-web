@@ -16,6 +16,12 @@ describe("prectiNastaveniLobby", () => {
     expect(prectiNastaveniLobby({ vitezstvi: 5, populace: 200 })).toEqual({ populace: 200 });
   });
 
+  // Nulu posílají jen scénářové lobby (VITEZSTVI ji zná kvůli výpisu);
+  // v herní nabídce není, takže ji jako očekávání nejde uložit.
+  it("„podle scénáře“ (0) jako očekávané vítězství nepustí", () => {
+    expect(prectiNastaveniLobby({ vitezstvi: 0, populace: 200 })).toEqual({ populace: 200 });
+  });
+
   it("populaci a příměří bere jen z herní nabídky", () => {
     expect(prectiNastaveniLobby({ populace: 225 })).toEqual({ populace: 225 });
     expect(prectiNastaveniLobby({ populace: 210, primeri: 90 })).toEqual({ primeri: 90 });

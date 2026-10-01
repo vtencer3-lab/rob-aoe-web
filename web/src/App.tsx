@@ -164,6 +164,9 @@ export function App() {
   // Mód akce na obrazovkách jádra (H9): co Diplomacie přidá na kartu, hostovi
   // a do veřejného řádku. Klasický večer nepřidává nic.
   const rk = rezimKlienta(akce?.rezim);
+  // Řádek „Scénář“ v Nastavení lobby (Custom Scenario): podmínky vítězství
+  // z rozboru. Klasický večer háček nemá a panel zůstává, jak je.
+  const scenarPanelu = stav ? (rk.nastaveniScenare?.(stav) ?? undefined) : undefined;
 
   // Zvon z radnice (odvolání poplachu, „zpět do práce“) jako ve hře: hráčům
   // zazvoní, když host potvrdí založení jejich lobby — je čas se připojit;
@@ -666,6 +669,7 @@ export function App() {
             void hlidej(() => api.nastaveniLobby(akce.id, n));
           }}
           zvyraznitNastaveni={zvyrazneni?.druh === "nastaveni" ? zvyrazneni : null}
+          scenar={scenarPanelu}
           onUlozitNastaveni={() => {
             if (akce) void hlidej(() => api.ulozitNastaveniLobby(akce.id));
           }}
@@ -712,6 +716,7 @@ export function App() {
               zapas={zapasKUprave}
               prihlaseni={stav.prihlaseni}
               rezim={akce.rezim ?? "klasicky"}
+              scenar={scenarPanelu}
               onNastaveni={(n) => hlidej(() => api.nastaveniZapasu(zapasKUprave.id, n))}
               onNazev={(nazev) => hlidej(() => api.nazevLobbyZapasu(zapasKUprave.id, nazev))}
               onSestava={(sestava) => hlidej(() => api.sestavaZapasu(zapasKUprave.id, sestava))}

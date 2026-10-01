@@ -20,6 +20,8 @@ interface Props {
   onNazev: (nazevLobby: string) => Promise<unknown> | void;
   onSestava: (sestava: SestavaVstup[]) => Promise<unknown> | void;
   onZavrit: () => void;
+  /** Custom Scenario: podmínky vítězství z rozboru scénáře (dodá mód). */
+  scenar?: { vitezstvi: string | null };
 }
 
 /** Jak dlouho po poslední změně se platný návrh propíše, dokud je okno otevřené. */
@@ -60,7 +62,7 @@ function stejne(a: unknown, b: unknown): boolean {
  * návrh okno nepustí — chybné řádky zčervenají — a křížek se napřed zeptá,
  * jestli zahodit všechno z téhle seance: pak se vrátí stav z otevření okna.
  */
-export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, onSestava, onZavrit }: Props) {
+export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, onSestava, onZavrit, scenar }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   const [ptaSeNaZahozeni, setPtaSeNaZahozeni] = useState(false);
   const [chyby, setChyby] = useState<{ sestava: string | null; hraci: string[] } | null>(null);
@@ -183,7 +185,7 @@ export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, 
             <button type="button" className="prelobby-tlacitko" onClick={() => setPreLobbyVidet(true)}>
               Pre-Lobby Nastavení
             </button>
-            <NastaveniLobby zive={nastaveni as unknown as Record<string, unknown>} ulozene={null} onZmena={(n) => setNavrh((v) => ({ ...v, nastaveni: n }))} onUlozit={() => {}} bezResetu />
+            <NastaveniLobby zive={nastaveni as unknown as Record<string, unknown>} ulozene={null} onZmena={(n) => setNavrh((v) => ({ ...v, nastaveni: n }))} onUlozit={() => {}} bezResetu scenar={scenar} />
           </div>
         </div>
       </div>

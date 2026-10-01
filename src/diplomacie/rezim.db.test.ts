@@ -26,8 +26,16 @@ it("akce Diplomacie dostane nastavení scénáře z aktivní verze", async () =>
   const sid = await klient(ROB, true);
   await app.inject({ method: "POST", url: "/api/akce", cookies: { sid }, payload: { nazev: "D", rezim: "diplomacie" } });
   const n = (await getAktivniAkce())!.nastaveniLobby;
-  expect(n).toMatchObject({ rezim: 3, scenar: "LLC v2.aoe2scenario", scenarStarsi: ["LLC v1.aoe2scenario"], mapaId: null, velikost: null, populace: 200, lockTeams: false, sharedExploration: false, cheaty: false, povolitDivaky: true, maxHracu: 8 });
+  // Velikost mapy bere z rozboru aktivní verze (fixtura ROZBOR: 220) — v
+  // Custom Scenario ji hra v lobby nenabízí, posílá tu ze scénáře.
+  expect(n).toMatchObject({ rezim: 3, scenar: "LLC v2.aoe2scenario", scenarStarsi: ["LLC v1.aoe2scenario"], mapaId: null, velikost: 220, populace: 200, lockTeams: false, sharedExploration: false, cheaty: false, povolitDivaky: true, maxHracu: 8 });
   expect(v1.aktivovana).toBe(true);
+});
+
+it("akce Diplomacie bez nahrané verze má scénář i velikost null", async () => {
+  const sid = await klient(ROB, true);
+  await app.inject({ method: "POST", url: "/api/akce", cookies: { sid }, payload: { nazev: "D", rezim: "diplomacie" } });
+  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ rezim: 3, scenar: null, scenarStarsi: null, velikost: null });
 });
 
 it("vytvoření zápasu Diplomacie založí diplo zápas s GM na šedé; stav ho nese, klasická akce ne", async () => {

@@ -11,8 +11,16 @@ export interface RozborScenare {
   /** Startovní pozice v souřadnicích obrázku minimapy (0–1 zleva a shora). */
   starty: { barva: Barva; x: number; y: number }[];
   minimapa: { sirka: number; vyska: number };
+  /**
+   * Podmínky vítězství ze sekce GlobalVictory (mode 0–4). Volitelné: verze
+   * rozebrané před 1. 10. 2026 je v databázi nemají — pak „podle scénáře“.
+   */
+  vitezstvi?: { rezim: RezimVitezstvi; popis: string };
   varovani: string[];
 }
+
+export const REZIMY_VITEZSTVI = ["standard", "dobyti", "skore", "cas", "vlastni"] as const;
+export type RezimVitezstvi = (typeof REZIMY_VITEZSTVI)[number];
 
 const cislo = (v: unknown, kde: string): number => {
   if (typeof v !== "number" || !Number.isFinite(v)) throw new Error(`Rozbor: ${kde} není číslo.`);
@@ -71,6 +79,14 @@ export function prectiRozbor(json: unknown): RozborScenare {
     minimapa: { sirka: cislo(m["sirka"], "minimapa.sirka"), vyska: cislo(m["vyska"], "minimapa.vyska") },
     varovani: pole(o["varovani"], "varovani").map((x) => text(x, "varování")),
   };
+  // Chybějící klíč zůstane chybět (ne `undefined`), ať JSON v databázi
+  // vypadá u starých i nových verzí stejně.
+  if (o["vitezstvi"] !== undefined) {
+    const v = objekt(o["vitezstvi"], "vitezstvi");
+    const rezim = v["rezim"];
+    if (!REZIMY_VITEZSTVI.includes(rezim as RezimVitezstvi)) throw new Error("Rozbor: vitezstvi.rezim není známý druh vítězství.");
+    rozbor.vitezstvi = { rezim: rezim as RezimVitezstvi, popis: text(v["popis"], "vitezstvi.popis") };
+  }
   if (rozbor.sloty.filter((x) => x.jeGm).length !== 1) throw new Error("Rozbor: scénář nemá právě jednoho GM.");
   return rozbor;
 }
