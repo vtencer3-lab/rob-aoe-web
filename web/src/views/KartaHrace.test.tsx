@@ -127,6 +127,14 @@ it("kliknutí na připojení se ohlásí serveru", async () => {
   expect(onPripojit).toHaveBeenCalledWith(1);
 });
 
+// Místo pro mód akce (Diplomacie sem dá kartu role): co App předá, karta
+// vykreslí mezi kontrolou lobby a stranami zápasu.
+it("doplněk módu se vykreslí na kartě", () => {
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} doplnek={<p>KARTA ROLE</p>} />);
+  expect(screen.getByText("KARTA ROLE")).toBeTruthy();
+  expect(screen.getByText("KARTA ROLE").compareDocumentPosition(screen.getByTestId("strany-zapasu"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+});
+
 // Druhý Steam účet bez hodnocené hry alias nemá. Bez fallbacku na platformaJmeno
 // stojí v „Proti vám“ syrové 64bitové číslo.
 it("spoluhráče i soupeře bez aliasu pojmenuje jménem ze Steamu", () => {

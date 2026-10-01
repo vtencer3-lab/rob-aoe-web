@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, popisFormatu, strany, vitezVeVete, vyhralHrac } from "../zapas.js";
 
@@ -10,6 +11,8 @@ interface Props {
   zapas: ZapasView;
   /** Steam ID diváka, když je přihlášený. Slouží jen k větě „Vyhrál jsi“. */
   ja?: string | null;
+  /** Doplněk módu akce pod stranami (Diplomacie: veřejný stav zápasu). */
+  doplnek?: ReactNode;
 }
 
 /**
@@ -20,7 +23,7 @@ interface Props {
  * Sahá vědomě jen na jména, pořadí, formát a výsledek. Heslo ani číslo lobby
  * se sem nedostanou ani omylem, i kdyby je server jednou poslal nezaslepené.
  */
-export function VerejnyZapas({ zapas, ja = null }: Props) {
+export function VerejnyZapas({ zapas, ja = null, doplnek }: Props) {
   const stranyText = strany(zapas.ucastnici)
     .map((s) => s.clenove.map(jmenoHrace).join(" + "))
     .join(" vs ");
@@ -40,6 +43,13 @@ export function VerejnyZapas({ zapas, ja = null }: Props) {
       <strong>Zápas #{zapas.poradi}</strong> · {popisFormatu(zapas.ucastnici)} · {popisStavu(zapas)}
       <br />
       <span className="strany">{stranyText}</span>
+      {/* Bez doplňku ani zalomení — prázdný řádek by řádek zápasu zbytečně natáhl. */}
+      {doplnek ? (
+        <>
+          <br />
+          {doplnek}
+        </>
+      ) : null}
       {verdikt !== null ? (
         <>
           <br />

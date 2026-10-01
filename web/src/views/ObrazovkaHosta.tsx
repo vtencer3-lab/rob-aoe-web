@@ -17,6 +17,10 @@ interface Props {
   nastaveniLobby?: Record<string, unknown>;
   onHledatLobby: (zapasId: number) => Promise<HledaniLobbyVysledek>;
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
+  /** Doplněk módu akce (např. karta role Diplomacie), pod kontrolou lobby. */
+  doplnek?: ReactNode;
+  /** Doplněk módu do kroku „Zakládáš!“ (Diplomacie: stažení scénáře), na jeho konci. */
+  doplnekKroku?: ReactNode;
 }
 
 /**
@@ -29,7 +33,7 @@ interface Props {
  * (KartaHrace). Pod kroky strany zápasu s VS jako na kartě hráče (uživatel
  * 13. 9. 2026), pak chat.
  */
-export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby, chat }: Props) {
+export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKontrolaLobby, chat, doplnek, doplnekKroku }: Props) {
   // Po kliknutí na „Spustit hru“ host lobby zakládá právě teď: hledání zrychlí
   // ze 4 s na 2 s, ať hráči dostanou odkaz, sotva lobby vznikne.
   const [hraSpustena, setHraSpustena] = useState(false);
@@ -99,6 +103,7 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           automaticky={zapas.lobbyId === null}
           intervalMs={hraSpustena ? 2_000 : 4_000}
         />
+        {doplnekKroku}
       </section>
 
       {zapas.lobbyId ? (
@@ -106,6 +111,7 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} />
         </div>
       ) : null}
+      {doplnek}
 
       <section className="sekce-krok" data-testid="strany-zapasu">
         <StranyZapasu ucastnici={zapas.ucastnici} ja={ja} />

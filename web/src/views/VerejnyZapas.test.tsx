@@ -112,6 +112,14 @@ it("u výsledku s víc vítězi to řekne každému z nich i poraženým", () =>
   expect(screen.getByTestId("verejny-zapas")).not.toHaveTextContent(/hrál jsi/i);
 });
 
+// Místo pro mód akce pod stranami (Diplomacie sem dá veřejný stav zápasu).
+it("doplněk módu se vykreslí pod stranami", () => {
+  render(<VerejnyZapas zapas={zaslepeny} doplnek={<span>ROLE ROZESLÁNY</span>} />);
+  const radek = screen.getByTestId("verejny-zapas");
+  expect(radek).toHaveTextContent("ROLE ROZESLÁNY");
+  expect(radek.querySelector(".strany")!.compareDocumentPosition(screen.getByText("ROLE ROZESLÁNY"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+});
+
 it("u běžícího zápasu se nikomu nic nepředpovídá", () => {
   render(<VerejnyZapas zapas={zaslepeny} ja="a" />);
   const radek = screen.getByTestId("verejny-zapas");

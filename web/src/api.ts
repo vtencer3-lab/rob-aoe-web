@@ -16,7 +16,8 @@ export interface Me {
   smiNahratScenar?: boolean;
 }
 
-async function json<T>(res: Response): Promise<T> {
+/** Odpověď serveru jako JSON; chybový stav se stane výjimkou s jeho hláškou. Sdílí ho i `diplomacie/api.ts`. */
+export async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const telo = (await res.json().catch(() => ({ chyba: "Neznámá chyba." }))) as { chyba?: string };
     throw new Error(telo.chyba ?? `Server odpověděl ${res.status}.`);

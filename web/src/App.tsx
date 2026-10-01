@@ -10,6 +10,7 @@ import type { Vitez, ZapasView } from "../../src/shared/types.js";
 import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.js";
 import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
+import { rezimKlienta } from "./rezimy/index.js";
 import { useSkladani } from "./skladani.js";
 import { useZmenaVysky } from "./vyska.js";
 import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
@@ -160,6 +161,9 @@ export function App() {
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
+  // Mód akce na obrazovkách jádra (H9): co Diplomacie přidá na kartu, hostovi
+  // a do veřejného řádku. Klasický večer nepřidává nic.
+  const rk = rezimKlienta(akce?.rezim);
 
   // Zvon z radnice (odvolání poplachu, „zpět do práce“) jako ve hře: hráčům
   // zazvoní, když host potvrdí založení jejich lobby — je čas se připojit;
@@ -413,6 +417,10 @@ export function App() {
       setChyba(err instanceof Error ? err.message : "Nepovedlo se to.");
     }
   }
+
+  /** Doplněk módu pro jedno místo v jádru; bez snímku stavu není co doplňovat. */
+  const doplnekModu = (misto: "kartaHrace" | "krokHosta" | "verejnyZapas", zapas: ZapasView, ja: string | null) =>
+    stav ? rk[misto]?.({ zapas, stav, ja, hlidej }) : null;
 
   // Tytéž ovládací prvky obsluhují běžící zápasy i historii, proto se předává
   // jeden balík dvěma sekcím místo dvou opsaných seznamů.
@@ -679,6 +687,7 @@ export function App() {
                 })
               }
               rezim={akce.rezim ?? "klasicky"}
+              popisSlotu={rk.popisSlotu}
               sadaCivilizaci={doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
               zvyraznit={zvyrazneni?.druh === "skladani" ? zvyrazneni : null}
               onPrvniAi={() => {
@@ -719,6 +728,8 @@ export function App() {
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
+                    doplnek={doplnekModu("kartaHrace", zapas, me.hracId)}
+                    doplnekKroku={doplnekModu("krokHosta", zapas, me.hracId)}
                     chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ) : (
@@ -729,6 +740,7 @@ export function App() {
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
+                    doplnek={doplnekModu("kartaHrace", zapas, me.hracId)}
                     chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
                   />
                 ),
@@ -747,7 +759,9 @@ export function App() {
             ? null
             : verejneZapasy(stav?.zapasy ?? [], me?.hracId ?? null)
                 .filter(jeVeHre)
-                .map((zapas) => <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.hracId ?? null} />)}
+                .map((zapas) => (
+                  <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.hracId ?? null} doplnek={doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} />
+                ))}
           {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
               má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
               karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}

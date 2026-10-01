@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { PlayerView, SestavaVstup } from "../../../src/shared/types.js";
+import type { Barva, PlayerView, SestavaVstup } from "../../../src/shared/types.js";
 import { useSkladani } from "../skladani.js";
 import { SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
 import { Skladani } from "./Skladani.js";
@@ -28,18 +28,32 @@ const prihlaseni = [hrac("a", "TenceR", 1136), hrac("b", "Pepa"), hrac("c", "Mar
 function Panel({
   onVytvoritZapas = vi.fn(),
   sadaCivilizaci = null,
+  popisSlotu,
 }: {
   onVytvoritZapas?: (s: SestavaVstup[]) => void;
   sadaCivilizaci?: number | null;
+  popisSlotu?: (barva: Barva) => string | null;
 }) {
   const skladani = useSkladani(prihlaseni);
   return (
     <>
       <SeznamPrihlasenych prihlaseni={prihlaseni} skladani={skladani} />
-      <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} rezim="klasicky" sadaCivilizaci={sadaCivilizaci} />
+      <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} rezim="klasicky" sadaCivilizaci={sadaCivilizaci} popisSlotu={popisSlotu} />
     </>
   );
 }
+
+// Mód akce může slot podle barvy pojmenovat (Diplomacie: šedá = GM). Štítek
+// je jen u řádku, kde mód něco vrátí.
+it("štítek slotu podle barvy ukáže jen tam, kde ho mód dá", () => {
+  render(<Panel popisSlotu={(barva) => (barva === 2 ? "GM" : null)} />);
+  vyber("Pepa");
+  vyber("Marek");
+  const stitky = screen.getAllByText("GM");
+  expect(stitky).toHaveLength(1);
+  expect(stitky[0]).toHaveClass("popis-slotu");
+  expect(stitky[0]!.closest("li")).toHaveTextContent("Marek");
+});
 
 beforeEach(() => {
   localStorage.clear();

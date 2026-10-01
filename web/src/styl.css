@@ -886,6 +886,26 @@ h2.nadpis-akce::after {
 }
 .skladani .radek .odebrat { grid-column: 8; }
 .skladani .radek:active { cursor: grabbing; }
+/* Štítek slotu od módu akce (Diplomacie: „GM“ na šedé) sedí v téže buňce
+   jako tlačítko barvy, přes jeho spodní hranu — vložený jako další položka
+   by posunul všechny sloupce o jeden. Klik jím prochází na tlačítko pod ním. */
+.skladani .radek .volba-barva { grid-column: 2; }
+.skladani .radek .popis-slotu {
+  grid-column: 2;
+  justify-self: center;
+  align-self: center;
+  transform: translateY(0.95rem);
+  pointer-events: none;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+  border-radius: 2px;
+  color: var(--obrys);
+  background: var(--zlato-svetle);
+  border: 1px solid var(--zlato-stin);
+}
 .skladani .uchyt { color: rgba(216, 168, 58, 0.45); font-size: 0.9rem; letter-spacing: -0.2em; width: 1rem; }
 .skladani .nevybrani { margin-top: 0.8rem; opacity: 0.5; }
 .skladani .nevybrani:not(:empty)::before { content: "Nevybraní"; display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); padding: 0.2rem 0.2rem; }
@@ -1481,6 +1501,12 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Karta hráče: krok „Připojuješ se!“ uprostřed, animované tečky, strany
    zápasu vedle sebe s VS. */
 .stred { text-align: center; }
+/* Zakrytý tajný obsah (Diplomacie, Zakryti.tsx): jedno velké tlačítko jako
+   u kroků karty, obsah až pod ním po odkrytí; odkryté má tlačítko „Zakrýt“
+   menší, ať nepřebíjí to, co je pod ním. */
+.zakryti { margin: 0.8rem 0; text-align: center; }
+.zakryti-tlacitko { width: min(100%, 22rem); font-size: 1.05rem; padding: 0.6rem 1rem; box-sizing: border-box; }
+.zakryti.odkryto .zakryti-tlacitko { width: auto; font-size: 0.9rem; padding: 0.35rem 0.8rem; margin-bottom: 0.5rem; }
 .karta .ceka { margin: 0.4rem 0; }
 .karta .heslo { margin-top: 0.8rem; font-size: 1.05rem; }
 .karta .hledani-lobby .ovladani { justify-content: center; }

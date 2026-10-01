@@ -4,7 +4,7 @@ import { jeAi } from "../../../src/shared/aiHraci.js";
 import { zkontrolujSestavuRezimu } from "../../../src/shared/rezimy.js";
 import { MAX_HRACU } from "../../../src/shared/sestava.js";
 import { popisFormatu } from "../../../src/shared/strany.js";
-import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type RezimId, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
+import { BARVA_NAZEV, BARVY, TYMY, type Barva, type PlayerView, type RezimId, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
 import type { VybranyHrac } from "../skladani.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
 import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani } from "../tahani.js";
@@ -27,6 +27,8 @@ interface Props {
   onPrvniAi?: () => void;
   /** Bez tlačítka „Vytvořit zápas“ — při úpravě zápasu se sestava propisuje sama (hook `odesli`). */
   bezTlacitka?: boolean;
+  /** Štítek slotu podle barvy od módu akce (Diplomacie: šedá = „GM“); null = bez štítku. */
+  popisSlotu?: (barva: Barva) => string | null;
 }
 
 /** Další hodnota v kruhu: levé tlačítko dopředu, pravé zpátky. */
@@ -61,7 +63,7 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
  * tabulce přihlášených nad tím, odkud se berou tlačítkem „+“. Pořadí tady je
  * pořadí slotů v lobby a dá se přetahovat. Formát se odvodí, nevybírá se.
  */
-export function Skladani({ skladani, onVytvoritZapas, rezim, sadaCivilizaci, zvyraznit, onPrvniAi, bezTlacitka }: Props) {
+export function Skladani({ skladani, onVytvoritZapas, rezim, sadaCivilizaci, zvyraznit, onPrvniAi, bezTlacitka, popisSlotu }: Props) {
   const tahani = useTahani(skladani.presun);
   const seznam = useRef<HTMLUListElement>(null);
   useEffect(() => {
@@ -107,6 +109,7 @@ export function Skladani({ skladani, onVytvoritZapas, rezim, sadaCivilizaci, zvy
       <ul className="sestava" data-testid="vybrani" ref={seznam}>
         {skladani.vybrani.map(({ vstup: v, hrac }) => {
           const jmeno = hrac.alias ?? hrac.platformaJmeno ?? hrac.hracId;
+          const stitek = popisSlotu?.(v.barva) ?? null;
           return (
             <li key={v.hracId} className={`radek vybrany barva-${v.barva}`} {...tahani("vybrani", v.hracId)}>
               <span className="uchyt" aria-hidden="true">
@@ -125,6 +128,8 @@ export function Skladani({ skladani, onVytvoritZapas, rezim, sadaCivilizaci, zvy
               >
                 {v.barva}
               </button>
+              {/* Štítek sedí v buňce barvy (CSS), ať neposune ostatní sloupce. */}
+              {stitek !== null ? <span className="popis-slotu">{stitek}</span> : null}
               <button
                 type="button"
                 className="volba volba-tym"
