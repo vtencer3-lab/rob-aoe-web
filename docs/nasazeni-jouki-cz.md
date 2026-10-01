@@ -309,7 +309,7 @@ Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 | `LOG_LEVEL` | `info` | `info` | `info` | `info` |
 | `DEV_PRISTUP` | nenastavovat | nenastavovat | nenastavovat | nenastavovat |
 | `ZKUSEBNI_HRACI` | `true` — na výslovné přání uživatele od 9. 9. 2026, ať jdou zkušební hráči a přetáčení času i na ostré | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` | `true` |
-| `AUTORI_SCENARE` | — | — | — | doplní úkol 10 |
+| `AUTORI_SCENARE` | — | — | — | seznam `hrac_id` autorů scénáře Diplomacie oddělený čárkou, stejný tvar jako `ADMIN_STEAM_ID` (smí nahrávat a aktivovat verze scénáře i bez režie, spec §5.1); admini nahrávat smí vždy. Zatím nenastaveno — Jinovo `hrac_id` po jeho prvním přihlášení na `/aoe/diplo` |
 
 Zkušební dveře (`/api/dev/*`) se na `https` samy zavírají, takže na jouki.cz
 nejsou dostupné ani ve vývojové verzi. Zkouška večera nasucho se dělá lokálně.
