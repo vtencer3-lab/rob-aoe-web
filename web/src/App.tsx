@@ -29,6 +29,7 @@ import { HistorieZapasu, Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { Skladani } from "./views/Skladani.js";
 import { SpravaAkce } from "./views/SpravaAkce.js";
+import { SpravaScenare } from "./diplomacie/SpravaScenare.js";
 import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
@@ -148,6 +149,9 @@ export function App() {
   // proměnné nemá, takže tam okno s volbou nedává smysl — a druhý erb by vedl
   // na syrový JSON. Dokud /api/me neodpoví, chová se web jako dřív.
   const [maMicrosoft, setMaMicrosoft] = useState(false);
+  // Admin nebo autor scénáře Diplomacie (spec §5.1): server to říká vedle
+  // řádku hráče, protože práva autora na řádku vidět nejsou.
+  const [smiNahratScenar, setSmiNahratScenar] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
@@ -279,6 +283,7 @@ export function App() {
     void api.me().then((odpoved) => {
       setMe(odpoved.hrac);
       setMaMicrosoft(odpoved.maMicrosoft === true);
+      setSmiNahratScenar(odpoved.smiNahratScenar === true);
     });
     void api
       .nastaveni()
@@ -707,6 +712,11 @@ export function App() {
           ) : null}
         </SpravaAkce>
       ) : null}
+
+      {/* Správa scénáře Diplomacie nepatří k jedné akci: Jin (autor, ne admin)
+          nahrává novou verzi, když se mu to hodí, i když žádná akce neběží
+          (spec §5.3). Proto stojí pod panelem akce samostatně, ne přes mód. */}
+      {me && smiNahratScenar ? <SpravaScenare hlidej={hlidej} /> : null}
 
       {akce ? (
         <>

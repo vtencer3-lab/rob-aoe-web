@@ -1,15 +1,22 @@
 import { GM_BARVA } from "../../../src/shared/diplomacie/sestava.js";
 import type { RezimKlienta } from "../rezimy/index.js";
-import { KartaRole } from "./KartaRole.js";
+import { diploZapasu, KartaRole, verzeZapasu } from "./KartaRole.js";
 import { PultGm } from "./PultGm.js";
+import { StazeniScenare } from "./StazeniScenare.js";
 import { VerejnyRadek } from "./VerejnyRadek.js";
 
-/** Diplomacie na obrazovkách jádra (spec §4.2): GM dostane pult, ostatní kartu role. */
+/** Diplomacie na obrazovkách jádra (spec §4.2): GM dostane pult, ostatní kartu role, host stažení scénáře. */
 export const diplomacieKlient: RezimKlienta = {
   kartaHrace: ({ zapas, stav, ja, hlidej }) => {
     if (!stav.rezim || !ja) return null;
-    const d = stav.rezim.data.zapasy.find((z) => z.zapasId === zapas.id);
+    const d = diploZapasu(stav.rezim.data, zapas.id);
     return d?.gmHracId === ja ? <PultGm zapas={zapas} data={stav.rezim.data} hlidej={hlidej} /> : <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} />;
+  },
+  // Verze, kterou zápas hraje (otisknutá při založení), ne nutně ta aktivní:
+  // host musí mít v lobby přesně tu, ke které web počítá pravidla.
+  krokHosta: ({ zapas, stav, ja }) => {
+    if (!stav.rezim || !ja) return null;
+    return <StazeniScenare verze={verzeZapasu(stav.rezim.data, diploZapasu(stav.rezim.data, zapas.id))} ja={ja} />;
   },
   verejnyZapas: ({ zapas, stav }) => (stav.rezim ? <VerejnyRadek zapas={zapas} data={stav.rezim.data} /> : null),
   popisSlotu: (barva) => (barva === GM_BARVA ? "GM" : null),

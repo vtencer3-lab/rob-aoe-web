@@ -490,7 +490,7 @@ main > .prazdno::after {
 /* Rám panelu je devítidílný obrázek (`nastroje/grafika/devitidil.py`): rohy
    se nekreslí znovu, strany se opakují. Výplň drží `background-clip:
    padding-box`, aby tmavé dřevo nevykukovalo zpod průhledných rohů rámu. */
-.karta, .zapas, .host, .sprava-akce, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka {
+.karta, .zapas, .host, .sprava-akce, .sprava-scenare, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
   border-radius: 0;
@@ -1472,7 +1472,7 @@ button.odebrat:hover { color: var(--chyba); }
 .sekce-krok .zahlavi-sekce { justify-content: center; position: relative; }
 .sekce-krok .zahlavi-sekce .fajfka { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .sekce-krok .hostovi { justify-content: center; }
-.sekce-krok .hostovi .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
+.sekce-krok .hostovi .cta, .stazeni-scenare .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .sekce-kontrola .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 /* Verdikt kontroly lobby nahoře v panelu (uživatel 17. 9. 2026): červená,
    dokud něco nesedí, zelená, jakmile sedí všechno — nikdy obojí a nikdy dole
@@ -1614,6 +1614,38 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 .pravidla-hry ul { padding-left: 1.2rem; }
 /* Veřejný řádek Diplomacie pod stranami zápasu (VerejnyRadek.tsx). */
 .diplo-radek { color: var(--zlato-svetle); font-size: 0.9rem; }
+/* Stažení scénáře pro hosta (StazeniScenare.tsx) na konci kroku „Zakládáš!“:
+   zlaté tlačítko jako „Spustit hru“ (šířku sdílí s `.hostovi .cta` výš),
+   pod ním instrukce na střed. Cesta ke složce je dlouhá a na telefonu se
+   musí zalomit — i uprostřed složky, mezery v ní nejsou. */
+.stazeni-scenare { margin-top: 1rem; text-align: center; }
+.stazeni-scenare p { margin: 0.5rem 0; }
+.stazeni-scenare button.kopirovatelne { max-width: 100%; }
+.stazeni-scenare button.kopirovatelne strong { overflow-wrap: anywhere; text-align: left; }
+/* Správa scénáře (SpravaScenare.tsx): panel s rámem jako panel akce (rám
+   dává společné pravidlo výš), sbalený jen na zlatý nadpis; i bez běžící
+   akce. Formulář v jednom řádku, upozornění a výsledek pod ním přes celou
+   šířku. Náhled: minimapa vlevo, cíle vedle ní. Seznam verzí bez odrážek,
+   aktivní verze světlejší; varování tu není nápověda, tak bez kurzoru
+   s otazníkem z obecného `.varovani`. */
+.sprava-scenare summary { cursor: pointer; color: var(--zlato); font-family: "Cinzel", Georgia, serif; font-size: 1.15rem; font-weight: 700; }
+.sprava-scenare form { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin: 0.7rem 0; }
+/* Pole souboru má vlastní šířku přes 300 px a na telefonu by vyjelo z rámu:
+   popisek s polem je pružný a pole smí být užší, než samo chce. */
+.sprava-scenare form label { display: flex; flex: 1 1 16rem; min-width: 0; align-items: center; gap: 0.4rem; }
+.sprava-scenare form input { flex: 1 1 8rem; min-width: 0; }
+.sprava-scenare form .varovani, .sprava-scenare form .vysledek { flex-basis: 100%; margin: 0; }
+.sprava-scenare .varovani { cursor: auto; margin-left: 0; }
+.nahled-scenare { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; align-items: flex-start; margin: 0.6rem 0; }
+.nahled-scenare .mapa-scenare { margin: 0; }
+.nahled-scenare .cile { flex: 1 1 14rem; min-width: 0; }
+.nahled-scenare h4 { margin: 0 0 0.2rem; font-size: 1rem; color: var(--zlato); }
+.nahled-scenare ul { margin: 0; padding-left: 1.2rem; }
+.verze-scenare { list-style: none; margin: 0.6rem 0 0; padding: 0; }
+.verze-scenare li { padding: 0.3rem 0; border-top: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); color: var(--tlumene); }
+.verze-scenare li.aktivni { color: var(--text); }
+.verze-scenare li strong { color: var(--zlato-svetle); }
+.verze-scenare li button { margin-left: 0.5rem; padding: 0.2rem 0.6rem; font-size: 0.85rem; }
 .karta .ceka { margin: 0.4rem 0; }
 .karta .heslo { margin-top: 0.8rem; font-size: 1.05rem; }
 .karta .hledani-lobby .ovladani { justify-content: center; }

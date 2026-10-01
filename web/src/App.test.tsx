@@ -117,6 +117,28 @@ it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async ()
   expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
 });
 
+// Správa scénáře Diplomacie patří autorovi (Jin není admin) a nezávisí na
+// běžící akci (spec §5.3): příznak jde z /api/me vedle řádku hráče.
+it("autor scénáře vidí správu scénáře i bez akce", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "jin", alias: "Jin", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: true });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByText("Scénář Diplomacie")).toBeInTheDocument();
+  expect(screen.getByText("Právě neběží žádná akce.")).toBeInTheDocument();
+});
+
+it("kdo scénář nahrávat nesmí, správu nevidí", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "h1", alias: "Hrac", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: false });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: "Odhlásit" })).toBeInTheDocument();
+  expect(screen.queryByText("Scénář Diplomacie")).not.toBeInTheDocument();
+});
+
 it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
   vi.mocked(api.me).mockResolvedValue({
     hrac: { hracId: "divak", alias: "Divak", platformaJmeno: null, jeAdmin: false },

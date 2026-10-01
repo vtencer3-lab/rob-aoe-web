@@ -3,9 +3,10 @@ import { expect, it } from "vitest";
 import { ROZBOR } from "../../../src/shared/diplomacie/fixtures.js";
 import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import type { AkceStavPayload } from "../../../src/shared/types.js";
-import { stavDiplo, ZAPAS } from "../diplomacie/fixtury.js";
+import { stavDiplo, VERZE, ZAPAS } from "../diplomacie/fixtury.js";
 import { KartaRole } from "../diplomacie/KartaRole.js";
 import { PultGm } from "../diplomacie/PultGm.js";
+import { StazeniScenare } from "../diplomacie/StazeniScenare.js";
 import { rezimKlienta } from "./index.js";
 
 // Klasický večer nic do obrazovek jádra nepřidává; chybějící mód (starší
@@ -55,4 +56,18 @@ it("Diplomacie dá GM zápasu pult, ostatním kartu role", () => {
   const stav: AkceStavPayload = { akce: null, prihlaseni: [], zapasy: [], rezim: { id: "diplomacie", data: stavDiplo("priprava", []) } };
   expect((rk.kartaHrace?.({ zapas: ZAPAS, stav, ja: "h7", hlidej }) as ReactElement).type).toBe(PultGm);
   expect((rk.kartaHrace?.({ zapas: ZAPAS, stav, ja: "h2", hlidej }) as ReactElement).type).toBe(KartaRole);
+});
+
+// Host v kroku „Zakládáš!“ dostane stažení verze, kterou zápas hraje (spec
+// §5.3) — jen se snímkem módu a jen přihlášený.
+it("Diplomacie dá hostovi stažení verze zápasu", () => {
+  const rk = rezimKlienta("diplomacie");
+  const hlidej = async () => {};
+  const bezModu: AkceStavPayload = { akce: null, prihlaseni: [], zapasy: [] };
+  const stav: AkceStavPayload = { ...bezModu, rezim: { id: "diplomacie", data: stavDiplo("priprava", []) } };
+  expect(rk.krokHosta?.({ zapas: ZAPAS, stav: bezModu, ja: "h7", hlidej })).toBeNull();
+  expect(rk.krokHosta?.({ zapas: ZAPAS, stav, ja: null, hlidej })).toBeNull();
+  const krok = rk.krokHosta?.({ zapas: ZAPAS, stav, ja: "h7", hlidej }) as ReactElement;
+  expect(krok.type).toBe(StazeniScenare);
+  expect(krok.props).toEqual({ verze: VERZE, ja: "h7" });
 });
