@@ -245,7 +245,12 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, onReset, vych
   };
 
   const cislo = (v: string) => (v === "" ? null : Number(v));
-  const stejne = (a: Nastaveni, b: Nastaveni) => (Object.keys(a) as Array<keyof Nastaveni>).every((k) => (a[k] ?? null) === (b[k] ?? null));
+  // Hodnoty jsou čísla, řetězce, booleany a null — až na `scenarStarsi`, což
+  // je pole: to se srovnává po prvcích, jinak by dvě stejná pole ze dvou
+  // snímků stavu nikdy nebyla „stejná“ a Reset by u Diplomacie nikdy nezhasl.
+  const stejnaHodnota = (a: unknown, b: unknown): boolean =>
+    Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((x, i) => x === b[i]) : (a ?? null) === (b ?? null);
+  const stejne = (a: Nastaveni, b: Nastaveni) => (Object.keys(a) as Array<keyof Nastaveni>).every((k) => stejnaHodnota(a[k], b[k]));
   const jakoUlozene = ulozene !== null && ulozene !== undefined && stejne(n, doplnNastaveni(ulozene as Partial<Nastaveni>));
   const jakoVychozi = stejne(n, doplnNastaveni(vychozi));
   // Z živého stavu panelu, ne jen ze serveru: přepnutí Game Mode se má

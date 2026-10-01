@@ -342,6 +342,23 @@ it("přepnutí Game Mode z Custom Scenario zpět tři prvky vrátí, hodnoty nec
   await waitFor(() => expect(onZmena).toHaveBeenLastCalledWith(expect.objectContaining({ rezim: 0, mapaId: 10878, vitezstvi: 9 })));
 });
 
+// Diplomacie má ve výchozím nastavení pole `scenarStarsi`; dvě stejná pole
+// z různých snímků stavu jsou různé objekty, takže srovnání `===` nikdy
+// neřeklo „výchozí“ a Reset v akci Diplomacie svítil pořád (živě 1. 10. 2026).
+it("pole scenarStarsi se srovnává po prvcích: shoda zhasne Reset, jiný obsah ne", () => {
+  const vychozi = { ...VYCHOZI_NASTAVENI, rezim: 3, scenar: "LLC v2.aoe2scenario", scenarStarsi: ["LLC v1.aoe2scenario"] };
+  const { rerender } = render(
+    <NastaveniLobby zive={{ ...vychozi, scenarStarsi: ["LLC v1.aoe2scenario"] }} ulozene={null} vychozi={vychozi} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />,
+  );
+  const reset = () => screen.getByRole("button", { name: /reset nastavení/i });
+  expect(reset()).toBeDisabled();
+  expect(reset()).toHaveAttribute("title", "Nastavení je výchozí");
+  rerender(<NastaveniLobby zive={{ ...vychozi, scenarStarsi: ["LLC v0.aoe2scenario"] }} ulozene={null} vychozi={vychozi} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
+  expect(reset()).toBeEnabled();
+  rerender(<NastaveniLobby zive={{ ...vychozi, scenarStarsi: [] }} ulozene={null} vychozi={{ ...vychozi, scenarStarsi: [] }} onZmena={vi.fn()} onUlozit={nic} onReset={nic} />);
+  expect(reset()).toBeDisabled();
+});
+
 // Volby z okna Pre-Lobby jsou předvolby jako každá jiná: i ony rozhodují,
 // jestli je nastavení výchozí (samotný reset dělá server, viz výš). Bez
 // dodaných výchozích hodnot (starší snímek) platí základ jádra.
