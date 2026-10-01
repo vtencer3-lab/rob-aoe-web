@@ -102,6 +102,14 @@ export const config = {
   get zkusebniHraci(): boolean {
     return process.env["ZKUSEBNI_HRACI"] === "true";
   },
+  /**
+   * Interpret pro rozbor scénáře Diplomacie (src/diplomacie/rozbor.py).
+   * V kontejneru virtuální prostředí z Dockerfile; ve vývoji na Windows
+   * `PYTHON=python` v .env.
+   */
+  get python(): string {
+    return process.env["PYTHON"] ?? "/opt/rozbor/bin/python";
+  },
   get jeProdukce(): boolean {
     return this.baseUrl.startsWith("https://");
   },

@@ -27,8 +27,13 @@ RUN npm ci --omit=dev
 
 # -------- 3. Běh --------
 FROM node:24-alpine AS runner
-# curl kvůli healthchecku, který Coolify do kontejneru vkládá sám.
-RUN apk add --no-cache curl
+# curl kvůli healthchecku, který Coolify do kontejneru vkládá sám. Python
+# s AoE2ScenarioParser rozebírá nahrané scénáře Diplomacie (spec §5.2);
+# Pillow z apk, ať se nemusí kompilovat.
+RUN apk add --no-cache curl python3 py3-pillow \
+ && python3 -m venv --system-site-packages /opt/rozbor
+COPY src/diplomacie/requirements.txt /opt/rozbor/requirements.txt
+RUN /opt/rozbor/bin/pip install --no-cache-dir -r /opt/rozbor/requirements.txt
 WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0

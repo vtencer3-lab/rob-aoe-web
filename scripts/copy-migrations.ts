@@ -13,3 +13,13 @@ const dest = join(import.meta.dirname, "..", "dist", "database");
 await mkdir(dest, { recursive: true });
 await cp(src, dest, { recursive: true });
 console.log(`Zkopírováno database/ -> ${dest}`);
+
+// Rozbor scénáře Diplomacie běží v Pythonu vedle zkompilovaného rozbor.js
+// (src/diplomacie/rozbor.ts ho hledá přes import.meta.dirname).
+const diplo = join(import.meta.dirname, "..", "src", "diplomacie");
+const diploCil = join(import.meta.dirname, "..", "dist", "src", "diplomacie");
+await mkdir(diploCil, { recursive: true });
+for (const soubor of ["rozbor.py", "barvy_terenu.json", "requirements.txt"]) {
+  await cp(join(diplo, soubor), join(diploCil, soubor));
+}
+console.log(`Zkopírován rozbor scénáře -> ${diploCil}`);
