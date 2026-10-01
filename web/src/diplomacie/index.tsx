@@ -1,12 +1,16 @@
 import { GM_BARVA } from "../../../src/shared/diplomacie/sestava.js";
 import type { RezimKlienta } from "../rezimy/index.js";
 import { KartaRole } from "./KartaRole.js";
+import { PultGm } from "./PultGm.js";
 import { VerejnyRadek } from "./VerejnyRadek.js";
 
-/** Diplomacie na obrazovkách jádra; pult GM přibude v úkolu 14. */
+/** Diplomacie na obrazovkách jádra (spec §4.2): GM dostane pult, ostatní kartu role. */
 export const diplomacieKlient: RezimKlienta = {
-  // Do úkolu 14 vidí kartu role i GM — pro něj jen „čeká se“; pult ji pak vystřídá.
-  kartaHrace: ({ zapas, stav, ja }) => (stav.rezim && ja ? <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} /> : null),
+  kartaHrace: ({ zapas, stav, ja, hlidej }) => {
+    if (!stav.rezim || !ja) return null;
+    const d = stav.rezim.data.zapasy.find((z) => z.zapasId === zapas.id);
+    return d?.gmHracId === ja ? <PultGm zapas={zapas} data={stav.rezim.data} hlidej={hlidej} /> : <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} />;
+  },
   verejnyZapas: ({ zapas, stav }) => (stav.rezim ? <VerejnyRadek zapas={zapas} data={stav.rezim.data} /> : null),
   popisSlotu: (barva) => (barva === GM_BARVA ? "GM" : null),
   // Verze rozebrané před úkolem 22 podmínky vítězství nemají — pak null

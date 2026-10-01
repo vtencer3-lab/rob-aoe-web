@@ -1,9 +1,11 @@
-import { isValidElement } from "react";
+import { isValidElement, type ReactElement } from "react";
 import { expect, it } from "vitest";
 import { ROZBOR } from "../../../src/shared/diplomacie/fixtures.js";
 import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import type { AkceStavPayload } from "../../../src/shared/types.js";
-import { ZAPAS } from "../diplomacie/fixtury.js";
+import { stavDiplo, ZAPAS } from "../diplomacie/fixtury.js";
+import { KartaRole } from "../diplomacie/KartaRole.js";
+import { PultGm } from "../diplomacie/PultGm.js";
 import { rezimKlienta } from "./index.js";
 
 // Klasický večer nic do obrazovek jádra nepřidává; chybějící mód (starší
@@ -44,4 +46,13 @@ it("Diplomacie dodá kartu role a veřejný řádek jen se snímkem módu", () =
   expect(isValidElement(rk.kartaHrace?.({ zapas: ZAPAS, stav: sModem, ja: "h2", hlidej }))).toBe(true);
   expect(rk.verejnyZapas?.({ zapas: ZAPAS, stav: bezModu, ja: null, hlidej })).toBeNull();
   expect(isValidElement(rk.verejnyZapas?.({ zapas: ZAPAS, stav: sModem, ja: null, hlidej }))).toBe(true);
+});
+
+// GM zápasu dostane místo karty role pult (spec §8.1); ostatní kartu.
+it("Diplomacie dá GM zápasu pult, ostatním kartu role", () => {
+  const rk = rezimKlienta("diplomacie");
+  const hlidej = async () => {};
+  const stav: AkceStavPayload = { akce: null, prihlaseni: [], zapasy: [], rezim: { id: "diplomacie", data: stavDiplo("priprava", []) } };
+  expect((rk.kartaHrace?.({ zapas: ZAPAS, stav, ja: "h7", hlidej }) as ReactElement).type).toBe(PultGm);
+  expect((rk.kartaHrace?.({ zapas: ZAPAS, stav, ja: "h2", hlidej }) as ReactElement).type).toBe(KartaRole);
 });

@@ -15,6 +15,15 @@ interface Props {
  * starty jsou překryv — souřadnice 0–1 z rozboru, takže sedí při každé
  * velikosti. Barvy značek jsou třídy `barva-N` z palety, ne čísla napevno.
  */
+/**
+ * Start u kraje mapy dostane třídu, podle které CSS posune popisek dovnitř:
+ * na LLC leží p3 a p5 12 % od levého a pravého kraje a p8 12 % od spodního,
+ * kde by delší jméno vyčnívalo z mapy přes rám panelu.
+ */
+export function kraj(s: { x: number; y: number }): string {
+  return `${s.x < 0.2 ? " kraj-levy" : s.x > 0.8 ? " kraj-pravy" : ""}${s.y > 0.85 ? " kraj-dolni" : ""}`;
+}
+
 export function MapaScenare({ verze, starty, jmena = {}, velikost = "mala" }: Props) {
   if (!verze.rozbor) return null;
   const viditelne = verze.rozbor.starty.filter((s) => starty === "vsechny" || s.barva === starty);
@@ -24,7 +33,7 @@ export function MapaScenare({ verze, starty, jmena = {}, velikost = "mala" }: Pr
       {starty === "zadne"
         ? null
         : viditelne.map((s) => (
-            <span key={s.barva} data-testid="start" className={`start barva-${s.barva}`} style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%` }} title={BARVA_NAZEV[s.barva]}>
+            <span key={s.barva} data-testid="start" className={`start barva-${s.barva}${kraj(s)}`} style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%` }} title={BARVA_NAZEV[s.barva]}>
               <span className="popisek">{starty === "vsechny" ? (jmena[s.barva] ?? BARVA_NAZEV[s.barva]) : "Tady začínáš"}</span>
             </span>
           ))}

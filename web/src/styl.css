@@ -1535,8 +1535,16 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .start.barva-7 { background: var(--b7); }
 .mapa-scenare .start.barva-8 { background: var(--b8); }
 /* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ u hráče. Nepřijímá
-   kliknutí, ať nepřekáží v tooltipu značky. */
-.mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; pointer-events: none; }
+   kliknutí, ať nepřekáží v tooltipu značky. Na LLC leží p3 a p5 12 % od
+   levého a pravého kraje a p8 12 % od spodního: krátké jméno se tam vejde,
+   dvacetiznakové už na telefonu vyčnívalo z mapy přes rám panelu. Start
+   u kraje (třídy `kraj-*` z MapaScenare.tsx) má proto popisek zakotvený
+   k vnitřní straně značky, u spodního kraje nad ní; strop šířky s výpustkou
+   je pojistka pro extrémní jména — celá jsou na dlaždici a v tabulce. */
+.mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.mapa-scenare .start.kraj-levy .popisek { left: 0; transform: none; }
+.mapa-scenare .start.kraj-pravy .popisek { left: auto; right: 0; transform: none; }
+.mapa-scenare .start.kraj-dolni .popisek { top: auto; bottom: 100%; margin: 0 0 0.2rem; }
 /* Karta role (Diplomacie, KartaRole.tsx): sekce pod kontrolou lobby se
    záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
    kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,
@@ -1551,6 +1559,37 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-role .role li { margin: 0.15rem 0; }
 /* „GM upravil tvou roli“ nad názvem: barvu dává .varovani, tady jen důraz. */
 .karta-role .upozorneni { font-weight: 700; text-align: center; }
+/* Pult GM (Diplomacie, PultGm.tsx): sekce jako karta role, stav zápasu
+   vpravo v záhlaví na místě fajfky kroků. Dlaždice Nástupce mají celou
+   plochu v barvě hráče jako tlačítka výsledku: GM čte ve hře „p3 ma: …“
+   a hledá zelenou, ne jméno. Vybraná dlaždice dostane zlatý rám. Tabulka
+   rolí se čte zleva, roletky vyplní buňku. Souhrn složení přebírá barvu
+   z .varovani, ale ne jeho kurzor s otazníkem — není to nápověda. */
+.pult-gm .stav-diplo { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: var(--tlumene); font-family: "Cinzel", Georgia, serif; }
+.pult-gm .zakryti > p { max-width: 34rem; margin: 0.6rem auto; }
+.dlazdice-nastupce { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem; max-width: 34rem; margin: 0.6rem auto 0.8rem; }
+button.dlazdice { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.55rem 0.6rem; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; text-shadow: 0 1px 2px color-mix(in srgb, var(--obrys) 60%, transparent); }
+button.dlazdice .cislo { font-family: "Cinzel", Georgia, serif; font-weight: 800; font-size: 1.25rem; }
+button.dlazdice .barva { font-size: 0.8rem; opacity: 0.9; }
+button.dlazdice strong { font-weight: 700; overflow-wrap: anywhere; }
+button.dlazdice.barva-1 { background: var(--b1); border-color: var(--b1); }
+button.dlazdice.barva-2 { background: var(--b2); border-color: var(--b2); }
+button.dlazdice.barva-3 { background: var(--b3); border-color: var(--b3); }
+button.dlazdice.barva-4 { background: var(--b4); border-color: var(--b4); }
+button.dlazdice.barva-5 { background: var(--b5); border-color: var(--b5); }
+button.dlazdice.barva-6 { background: var(--b6); border-color: var(--b6); }
+button.dlazdice.barva-7 { background: var(--b7); border-color: var(--b7); }
+button.dlazdice.barva-8 { background: var(--b8); border-color: var(--b8); }
+/* Světlé barvy (žlutá, oranžová) mají tmavé písmo bez stínu — jako u výsledků. */
+button.dlazdice.barva-4, button.dlazdice.barva-8 { color: var(--obrys); text-shadow: none; }
+button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0 0 2px var(--zlato), 0 2px 6px color-mix(in srgb, var(--obrys) 70%, transparent); }
+.tabulka-roli { width: 100%; max-width: 34rem; margin: 0.6rem auto; border-collapse: collapse; text-align: left; }
+.tabulka-roli th, .tabulka-roli td { padding: 0.3rem 0.4rem; border-bottom: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); vertical-align: middle; }
+.tabulka-roli th { font-weight: 700; white-space: nowrap; }
+.tabulka-roli td select { width: 100%; box-sizing: border-box; }
+.tabulka-roli td > span { color: var(--tlumene); font-size: 0.9rem; }
+.pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }
+.pult-gm .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 0.6rem; }
 /* Pravidla hry (PravidlaHry.tsx): sbalovací tahák jako sekce kontroly lobby
    (Skladaci), ale nadpis ve zlaté kapitálce — je to kapitola, ne detail. */
 .pravidla-hry { margin-top: 0.8rem; text-align: left; }
