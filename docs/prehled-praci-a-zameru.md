@@ -1943,6 +1943,16 @@ Drobné známé nedodělky:
 
 ---
 
+**Doplněno 1. 10. 2026 (mód Diplomacie, odložený nápad).** Při návrhu módu
+Diplomacie (scénář „Ať žije císař“, `LLC.aoe2scenario`, autor Jin) padl
+nápad, aby **web vyráběl scénář na míru každému zápasu** — např. přes
+AoE2ScenarioParser vložit předem vylosované role do triggerů (každý hráč by
+roli viděl i ve hře) a Nástupci rovnou přidat +2 relikvie, které dnes
+rozdává GM ručně. Zatím odloženo: znamenalo by to zasahovat do Jinova
+scénáře a host by musel před každým zápasem stahovat nový soubor (a hra by
+pak sama nelosovala sekundární cíle, na kterých dnes výběr Nástupce stojí).
+Vrátit se k tomu, až mód poběží a bude jasné, co GM nejvíc zdržuje.
+
 ## 6. Historie verzí (7.–17. 9. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
