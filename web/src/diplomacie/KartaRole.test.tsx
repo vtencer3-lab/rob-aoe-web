@@ -29,6 +29,18 @@ it("Nájezdník vidí druhého Nájezdníka, Žoldák pakt", () => {
   expect(screen.getByText("Pokrevní pouto:")).toBeTruthy();
 });
 
+// Nestandardní složení (spec §6.2: třeba 3× Nájezdník) — redakce posílá
+// Nájezdníkovi všechny Nájezdníky a karta musí ukázat oba spojence, ne
+// jen prvního; jinak hráč zaútočí na vlastního.
+it("při třech Nájezdnících vidí Nájezdník oba spojence", () => {
+  const najezdnik = (hracId: string) => ({ hracId, role: "najezdnik" as const, cilHracId: null, upravenoPoRozeslani: false });
+  render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [najezdnik("h2"), najezdnik("h5"), najezdnik("h8")])} ja="h2" />);
+  fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
+  expect(screen.getByText("Další Nájezdníci:")).toBeTruthy();
+  expect(screen.getByText("Hráč 5, Hráč 8")).toBeTruthy();
+  expect(screen.queryByText("Druhý Nájezdník:")).toBeNull();
+});
+
 it("všichni v zápase vidí Nástupce a úprava GM se ohlásí", () => {
   render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "sasek", cilHracId: null, upravenoPoRozeslani: true }])} ja="h2" />);
   expect(screen.getByText(/Nástupcem císaře je/)).toBeTruthy();

@@ -70,7 +70,9 @@ export function KartaRole({ zapas, data, ja }: Props) {
 
 function ObsahRole({ moje, vse, jmeno }: { moje: RoleHrace; vse: RoleHrace[]; jmeno: (id: string) => string }) {
   const popis = POPIS_ROLE[moje.role];
-  const parak = moje.role === "najezdnik" ? vse.find((r) => r.role === "najezdnik" && r.hracId !== moje.hracId) : undefined;
+  // Všichni ostatní Nájezdníci, ne jen první: GM smí rozeslat i tři (spec
+  // §6.2) a redakce je Nájezdníkovi posílá všechny.
+  const ostatni = moje.role === "najezdnik" ? vse.filter((r) => r.role === "najezdnik" && r.hracId !== moje.hracId) : [];
   return (
     <div className={`role role-${moje.role}`}>
       {moje.upravenoPoRozeslani ? <p className="upozorneni varovani">GM upravil tvou roli.</p> : null}
@@ -86,9 +88,9 @@ function ObsahRole({ moje, vse, jmeno }: { moje: RoleHrace; vse: RoleHrace[]; jm
           <span>Pokrevní pouto:</span> <strong>{jmeno(moje.cilHracId)}</strong>
         </p>
       ) : null}
-      {parak ? (
+      {ostatni.length > 0 ? (
         <p>
-          <span>Druhý Nájezdník:</span> <strong>{jmeno(parak.hracId)}</strong>
+          <span>{ostatni.length === 1 ? "Druhý Nájezdník:" : "Další Nájezdníci:"}</span> <strong>{ostatni.map((r) => jmeno(r.hracId)).join(", ")}</strong>
         </p>
       ) : null}
       {popis.vyhody.length > 0 ? (
