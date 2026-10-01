@@ -41,5 +41,5 @@ jobs:
             echo "::notice::Secret COOLIFY_TOKEN není nastavený. Nasazení zajistí hlídač na serveru (do 1 minuty)."
             exit 0
           fi
-          curl -fsS -H "Authorization: Bearer $COOLIFY_TOKEN" \
+          curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
             "https://coolify.jouki.cz/api/v1/deploy?uuid=$UUID"

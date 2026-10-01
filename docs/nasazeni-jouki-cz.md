@@ -299,13 +299,89 @@ Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 | `PORT` | `3000` | `3000` | `3000` |
 | `ADMIN_STEAM_ID` | seznam `hrac_id` s režií oddělený čárkou (Rob + správce); bere Steam ID i `xbox:<xuid>`, jméno proměnné zůstalo kvůli nasazení (viz `docs/prehled-praci-a-zameru.md` §3.57) | totéž | totéž |
 | `STEAM_API_KEY` | volitelné | volitelné | volitelné |
-| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | **nenastaveno** — přihlášení Microsoft účtem tu zatím vypnuté | registrace z entra.microsoft.com — jediná aplikace, která je má | **nenastaveno** |
+| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | nastaveno 17. 9. 2026 — táž registrace jako dev | registrace z entra.microsoft.com | **nenastaveno** — pokusná Microsoft přihlášení nemá |
 | `LOG_LEVEL` | `info` | `info` | `info` |
 | `DEV_PRISTUP` | nenastavovat | nenastavovat | nenastavovat |
-| `ZKUSEBNI_HRACI` | nenastavovat | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` |
+| `ZKUSEBNI_HRACI` | `true` — na výslovné přání uživatele od 9. 9. 2026, ať jdou zkušební hráči a přetáčení času i na ostré | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` |
 
 Zkušební dveře (`/api/dev/*`) se na `https` samy zavírají, takže na jouki.cz
 nejsou dostupné ani ve vývojové verzi. Zkouška večera nasucho se dělá lokálně.
+
+---
+
+### 3.6.1 Přihlášení Microsoft účtem: co je kde
+
+Zprovozněno na ostré 17. 9. 2026. Kód sám nestačí — drží to tři věci, každá
+jinde, a když jedna chybí, selže to jinak:
+
+**Registrace v Azure.** Jediná, sdílená všemi nasazeními, `AoE 2 komunitky`,
+ID aplikace `87a13d9c-6d99-4090-abbd-ad985c042691`, adresář *Default Directory*
+(`mjoukalgmail.onmicrosoft.com`). Má čtyři návratové adresy — ostrá, dev,
+pokusná a `http://localhost:3000` — všechny ve tvaru
+`<base>/api/auth/microsoft/return`. Adresa **musí být zapsaná v té registraci,
+jejíž `client_id` server posílá**; jinak Microsoft vrátí chybovou stránku až po
+přesměrování, ne dřív.
+
+Ověřit zvenku jde bez přihlašování: vzít `Location` z `/api/auth/microsoft`,
+podstrčit do něj jinou `redirect_uri` a porovnat velikost odpovědi. Přijatá
+adresa vrátí přihlašovací stránku (desítky kB), nezapsaná chybovou (~3 kB).
+
+17. 9. 2026 existovala krátce **druhá registrace** (`75037941-…`), založená
+omylem a bez tajného kódu. Smazána. Kdyby se někdy zdálo, že „adresa je
+zapsaná a stejně to nefunguje“, tohle je ten případ — zapsaná byla ve špatné
+aplikaci.
+
+**Tajemství v Coolify.** `MS_CLIENT_ID` a `MS_CLIENT_SECRET` u každé aplikace
+zvlášť. Tajný kód Azure podruhé neukáže; když se ztratí, generuje se nový.
+Bez obou proměnných se routy Microsoftu **vůbec nezaregistrují** (viz
+`src/http/server.ts`), `/api/auth/microsoft` vrací 404 a frontend erb neukáže —
+`GET /api/me` v tom případě vrací `maMicrosoft: false` a tlačítko se vykreslí
+jako prosté „Přihlásit se přes Steam“. Je to záměr, ne porucha: nenabízet
+cestu, která končí chybou.
+
+**Admin práva.** Viz §3.6.2 — je to past.
+
+#### 3.6.2 `ADMIN_STEAM_ID` je jediný zdroj pravdy o právech
+
+`je_admin` v databázi **není** místo, kam se práva zapisují ručně.
+`komuDatAdmina()` (`src/auth/routes.ts`) vrací při neprázdném seznamu
+`config.adminHracIds.includes(hracId)` — tedy `false` pro každý účet, který
+v proměnné chybí — a `upsertPlayer`/`upsertHracXbox` to přes
+`COALESCE($4, player.je_admin)` zapíšou. **Práva nastavená jen v databázi se
+tedy při nejbližším přihlášení toho účtu sama smažou.**
+
+Proměnná bere Steam ID i `xbox:<xuid>`, odděluje se čárkou, mezerou nebo
+středníkem. Xbox XUID se zjistí z `player.hrac_id` (tvar `xbox:<xuid>`).
+
+Zjištěno 17. 9. 2026 při zprovozňování ostré: obě aplikace měly v proměnné
+jediné Steam ID, zatímco databáze vedla tři adminy. Rob i Trokner by o režii
+přišli při svém dalším přihlášení, aniž by kdokoliv sáhl na nastavení. Seznamy
+byly srovnány s tím, co v databázích platilo, a doplněny o `xbox:` položku.
+
+**Při přidávání admina tedy vždycky proměnná, ne `UPDATE`.** Kontrola, že
+proměnná a databáze nejsou rozejité:
+
+```bash
+docker exec <postgres> psql -U postgres -d rob_aoe -t \
+  -c "SELECT hrac_id FROM player WHERE je_admin;"
+```
+
+#### 3.6.3 Zkouška přihlášení od nuly
+
+Souhlasnou obrazovku (to, co uvidí nový hráč) vrátí zpět odebrání souhlasu na
+<https://account.live.com/consent/Manage> → *AoE 2 komunitky* → odebrat
+oprávnění. S právy na webu to nesouvisí — ta se řídí výhradně §3.6.2.
+
+#### 3.6.4 Azure kredit
+
+Předplatné `Azure subscription 1` má bezplatný kredit 200 US$ s platností do
+16. 10. 2026. Na některých obrazovkách je přepočtený na eura (171,73 €) — je to
+táž položka, ne úbytek. Náklady jsou nulové a v předplatném nejsou žádné
+prostředky.
+
+Vypršení kreditu nemá na přihlašování dopadnout: registrace aplikace je objekt
+adresáře (Entra ID Free), ne předplatného, a jde založit i bez Azure
+předplatného. **Neověřeno praxí** — ověří se až 16. 10. 2026.
 
 ---
 
@@ -375,6 +451,21 @@ V obou případech se `dev` nechává být — chyba se opraví tam a vydá znov
   `BASE_URL` neodpovídá adrese v prohlížeči (jiná cesta, lomítko na konci).
 - **Ostrá verze zobrazuje zastaralý stav.** Ověř verzi v patičce; prohlížeč
   může držet starý bundle. Assety mají v názvu hash, takže tvrdý refresh stačí.
+- **Tentýž dotaz vrací jednou 404 a podruhé 302 (nebo dvě různé verze).**
+  Během nasazení běží krátce **dva kontejnery** a proxy mezi ně dělí provoz;
+  starý ještě nezná nové proměnné. Není to chyba konfigurace a nic se s tím
+  nedělá — Coolify starý kontejner po zdravotní kontrole sám zastaví, řádově
+  do minuty. Ověřit:
+
+  ```bash
+  docker ps --filter "name=<uuid aplikace>" --format "{{.Names}}\t{{.Status}}"
+  ```
+
+  Dokud to vypisuje dva řádky, jakékoliv měření zvenku je nespolehlivé —
+  počkat, až zbude jeden, a teprve pak měřit. Měřit se má **jedním**
+  požadavkem (`curl -i -o soubor -w '%{http_code}'`), ne dvěma voláními po
+  sobě: dvě volání mohou padnout na dva různé kontejnery a vypadá to jako
+  protiřečící si výsledky.
 
 Cokoliv, co vyžaduje přístup na server, řeší správce serveru. V repu má být
 všechno, co je potřeba k tomu, aby nasazení proběhlo samo: `Dockerfile`,
@@ -388,8 +479,11 @@ Ověřeno 16. 9. 2026 při zapínání Microsoft přihlášení na devu.
 # UUID aplikací jsou v /root/aoe-deploy/watch.sh: main, dev, experimental
 A=https://coolify.jouki.cz/api/v1/applications/wxju55zz9imrhn9lco0drrvc
 curl -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" -H "Content-Type: application/json"      -d '{"key":"MS_CLIENT_ID","value":"..."}' "$A/envs"
-curl "https://coolify.jouki.cz/api/v1/deploy?uuid=wxju55zz9imrhn9lco0drrvc"      -H "Authorization: Bearer $COOLIFY_TOKEN"
+curl -X POST "https://coolify.jouki.cz/api/v1/deploy?uuid=wxju55zz9imrhn9lco0drrvc"      -H "Authorization: Bearer $COOLIFY_TOKEN"
 ```
+
+`/deploy` chce od Coolify 4.3.23 (samo se aktualizovalo 23. 9. 2026) **POST** — GET vrací
+405 a hlídač `watch.sh` i GitHub Action pak tiše nenasazovaly.
 
 **Pole `is_preview` a `is_build_time` v těle vracejí HTTP 422**, i když je
 dokumentace zmiňuje. Bez nich požadavek projde a vrátí `{"uuid": "..."}`.
@@ -399,3 +493,108 @@ seznam se čte přes množinu, ne přes pole.
 
 Po `POST /envs` musí přijít `/deploy`. Samotný `/restart` nové proměnné
 nenačte — to je zapsané výš a platí to i tady.
+
+---
+
+## 5. Přestěhování adresy na robdiesalot.com/aoe (ODLOŽENO 19. 9. 2026)
+
+> **Stav: odloženo, nic z toho není nasazené.** Uživatel se rozhodl
+> nesahat kvůli tomu na DNS Robovy domény. Web zůstává na `jouki.cz/aoe`.
+> Kapitola zůstává, protože měření v ní stálo práci a platí dál — kdyby se
+> k tomu někdo vrátil, nemusí zkoušet slepé uličky znovu.
+
+Uživatel chce, aby web žil na `robdiesalot.com/aoe`. Není to kosmetika —
+rozhoduje to o tom, kudy poteče provoz **celého Robova webu**, a právě tahle
+cena rozhodla o odložení.
+
+### 5.1 Proč to nejde jednodušeji
+
+`robdiesalot.com` běží u **profiwh** (85.93.165.127, sdílený hosting, Apache,
+WordPress, přístup jen FTP + MySQL). Naše aplikace je Node se SSE a Postgresem,
+takže na tom hostingu běžet nemůže. Rozdvojení cesty `/aoe` tedy musí udělat
+někdo **před** profiwh. Změřeno 19. 9. 2026:
+
+| Možnost | Výsledek |
+|---|---|
+| iframe ve WordPressu | **Ne.** `steamcommunity.com/openid/login` posílá `X-Frame-Options: DENY`, naše cookie má `SameSite=Lax` (v cizím rámu se neposílá) a Safari s Firefoxem blokují cizí cookies plošně |
+| `.htaccess` s `RewriteRule [P]` | **Ne.** Chybí `mod_proxy` — pravidlo končí chybou 500, zatímco totéž bez `[P]` projde. `ProxyPass` v `.htaccess` neplatí vůbec |
+| PHP proxy skript | Technicky ano (`allow_url_fopen` i `curl` zapnuté), ale běží to jako **PHP-FPM**: každé SSE spojení drží jednoho workera navždy. Deset diváků = deset zabraných workerů |
+| Podoména `aoe.robdiesalot.com` | Funguje a je nejlevnější, ale uživatel trvá na tvaru s lomítkem |
+
+### 5.2 Zvolené řešení
+
+DNS `robdiesalot.com` míří na náš VPS. Traefik pak:
+
+- `Host(robdiesalot.com) && PathPrefix(/aoe)` → aplikace `aoe-web` (štítky od Coolify)
+- `Host(robdiesalot.com)` s `priority: 1` → zpátky na profiwh
+
+WordPress zůstává u profiwh a nikdo ho nestěhuje. K originu se chodí **po
+HTTPS** se `serverName: robdiesalot.com`, aby WordPress viděl skutečný https
+požadavek a nedělal přesměrovací smyčku.
+
+**Ověřeno 19. 9. 2026** dočasným předpisem jen na HTTP (bez certifikátu, tedy
+bez rizika ACME) a oslovením naší IP s hlavičkou `Host`:
+
+| Test | Výsledek |
+|---|---|
+| domovská stránka přes náš VPS vs. přímo z profiwh | **193 099 B v obou případech, bajt na bajt** |
+| `/wp-login.php` | 200 |
+| `/wp-admin/` | 302 na `https://robdiesalot.com/wp-login.php` — správná doména, žádná smyčka |
+| `/feed/`, CSS z tématu | 200, správný `content-type` |
+
+Testovací předpis byl smazán, veřejný web se o něm nedozvěděl.
+
+### 5.3 Předpisy pro Traefik (smazané, k napsání znovu)
+
+Byly připravené dva soubory — rozcestník na profiwh a 308 ze starého
+`jouki.cz/aoe`. **Při odložení byly smazány**, ať na serveru nečíhají.
+Napsat je znovu je práce na deset minut; podstatné jsou tyhle tři věci,
+které při tom stály nejvíc přemýšlení:
+
+- Rozcestník na profiwh potřebuje `priority: 1` (aby `/aoe` vyhrálo),
+  `passHostHeader: true` a `serversTransport` se `serverName:
+  robdiesalot.com`. K originu se chodí **po HTTPS**, jinak WordPress
+  přesměrovává do smyčky.
+- Regex v přesměrování patří do **jednoduchých** uvozovek. V dvojitých YAML
+  zpětné lomítko bere jako escape sekvenci a soubor se nenačte.
+- **Nenasazovat dřív, než DNS míří na nás.** Předpis nese `certresolver`
+  a Traefik si o certifikát řekne hned, jak ho načte; dokud doména míří
+  jinam, HTTP-01 výzva selže a opakovaná selhání se počítají do limitů
+  Let's Encryptu.
+
+### 5.4 Postup přepnutí
+
+1. **Google Cloud DNS** (tam je doména, ne u profiwh): snížit TTL A záznamu
+   `robdiesalot.com` z 14 400 na 300 a **počkat 4 hodiny**, než staré
+   odpovědi vyprší. `www` je CNAME na kořen, ten se neřeší.
+2. **Azure** → registrace `AoE 2 komunitky` → Authentication → přidat
+   `https://robdiesalot.com/aoe/api/auth/microsoft/return`. Udělat **předem**,
+   ať nevznikne okno, kdy přihlášení Microsoftem nefunguje.
+3. Přepnout A záznam na **178.104.160.182**.
+4. `mv /root/aoe-deploy/robdiesalot.yaml /data/coolify/proxy/dynamic/` —
+   Traefik složku sleduje (`providers.file.watch=true`), restart není potřeba.
+   Ověřit, že `https://robdiesalot.com/` vrací WordPress a že naskočil
+   certifikát.
+5. V Coolify u `aoe-web` přidat doménu `https://robdiesalot.com/aoe`
+   a nastavit `BASE_URL=https://robdiesalot.com/aoe`. `BASE_PATH` zůstává
+   `/aoe/` — cesta se nemění, takže frontend se překládat nemusí. Deploy.
+6. Odebrat `jouki.cz` z domén aplikace a nasadit
+   `jouki-aoe-redirect.yaml` do sledované složky.
+7. Ověřit: přihlášení Steamem, přihlášení Microsoftem, odkaz `aoe2de://`,
+   živý přenos stavu (SSE) a že `jouki.cz/aoe` přesměrovává.
+
+### 5.5 Co to stojí a jak couvnout
+
+Náš VPS se stává vstupními dveřmi celého `robdiesalot.com`. Naměřeno 19. 9.
+2026: `coolify-proxy` běží **4 měsíce s nulou restartů**, stroj **19 týdnů**,
+automatický restart po aktualizaci je vypnutý. Nasazení jednotlivých aplikací
+proxy nerestartují — ověřeno na kontejnerech s uptime 8 minut vedle proxy
+s uptime 4 měsíce.
+
+Robův web tedy **neshodí** nasazení `/aoe` ani žádné jiné aplikace. **Shodí ho**
+restart stroje (jeden čeká — `/var/run/reboot-required` existuje), restart
+`coolify-proxy` při aktualizaci Coolify, výpadek VPS a chyba v tomhle předpisu.
+
+**Záchranná brzda:** s TTL 300 stačí v Google Cloud DNS vrátit A záznam na
+`85.93.165.127` a WordPress je za pět minut zpátky i bez nás. Ztratí se jen
+`/aoe`. Proto se TTL po přepnutí **nezvyšuje zpátky**.

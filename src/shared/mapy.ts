@@ -140,6 +140,7 @@ export const MAPY: Record<number, string> = {
   11023: "Stonefront",
   11024: "Thames",
   11025: "Vulpine",
+  11026: "Arabian Desert",
   13544: "Iberia",
   13545: "Britain",
   13546: "Mideast",
