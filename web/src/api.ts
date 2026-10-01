@@ -12,6 +12,8 @@ export interface Me {
    * neposílá a Steam cesta je ta, která tu byla vždycky.
    */
   maMicrosoft?: boolean;
+  /** Admin nebo autor scénáře Diplomacie (AUTORI_SCENARE). */
+  smiNahratScenar?: boolean;
 }
 
 async function json<T>(res: Response): Promise<T> {

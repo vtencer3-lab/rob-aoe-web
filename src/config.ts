@@ -83,6 +83,16 @@ export const config = {
       .map((id) => id.trim())
       .filter((id) => id !== "");
   },
+  /**
+   * Autoři scénáře Diplomacie (spec §5.1): smí nahrávat verze, i když
+   * nejsou admini. Stejný tvar jako ADMIN_STEAM_ID.
+   */
+  get autoriScenare(): string[] {
+    return (process.env["AUTORI_SCENARE"] ?? "")
+      .split(/[\s,;]+/)
+      .map((id) => id.trim())
+      .filter((id) => id !== "");
+  },
   /** Nouzový režim pro rozjezd bez Roba: první přihlášený se stane adminem. */
   get adminBootstrap(): boolean {
     return process.env["ADMIN_BOOTSTRAP"] === "true";

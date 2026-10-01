@@ -1,12 +1,32 @@
-import { randomInt } from "node:crypto";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import { createHash, randomInt } from "node:crypto";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { jeUnikatniKonflikt } from "../db/chyby.js";
+import { getAktivniAkce, setNastaveniLobby } from "../db/events.js";
 import { getZapas } from "../db/matches.js";
 import { HttpError, requireId, requireUser } from "../http/guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { losujRole, zmenCil, zmenRoli } from "../shared/diplomacie/los.js";
 import type { DiploZapas, Role } from "../shared/diplomacie/typy.js";
-import type { rozeberScenar } from "./rozbor.js";
-import { getDiploZapas, setNastupce, setStavDiplo, ulozRole, upravRoli, vratNaPripravu } from "./db.js";
+import { jePlatneJmenoScenare } from "../shared/lobbyKontrola.js";
+import {
+  aktivujVerzi,
+  getAktivniVerze,
+  getDiploZapas,
+  getMinimapuVerze,
+  getSouborVerze,
+  getVerze,
+  listVerzi,
+  najdiVerziPodleSha,
+  setNastupce,
+  setStavDiplo,
+  ulozRole,
+  ulozVerziScenare,
+  upravRoli,
+  vratNaPripravu,
+} from "./db.js";
+import { smiNahratScenar } from "./opravneni.js";
+import { nastaveniScenare } from "./rezim.js";
+import { jeHlavickaScenare, type rozeberScenar } from "./rozbor.js";
 
 export interface DiploDeps {
   rozeberScenar: typeof rozeberScenar;
@@ -102,5 +122,115 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
   registerScenarRoutes(app, deps);
 }
 
-/** Routy verzí scénáře (spec §5.3) přidá úkol 10; zatím žádné nejsou. */
-function registerScenarRoutes(_app: FastifyInstance, _deps: DiploDeps): void {}
+/** Scénář má přes 100 kB; 5 MB nechává rezervu, ale nepustí libovolný balast (spec §5.2). */
+const MAX_VELIKOST = 5 * 1024 * 1024;
+
+async function requireAutorScenare(request: FastifyRequest): Promise<string> {
+  const hracId = await requireUser(request);
+  if (!(await smiNahratScenar(hracId))) throw new HttpError(403, "Scénář smí nahrávat jen admin nebo autor scénáře.");
+  return hracId;
+}
+
+/** Hlavička s textem (jméno, poznámka) chodí URL-kódovaná kvůli diakritice. */
+function hlavicka(request: FastifyRequest, jmeno: string): string | null {
+  const h = request.headers[jmeno];
+  if (typeof h !== "string" || h === "") return null;
+  try {
+    return decodeURIComponent(h);
+  } catch {
+    throw new HttpError(400, `Hlavička ${jmeno} není platně zakódovaná.`);
+  }
+}
+
+/** Běžící akce Diplomacie hlídá v lobby vždy aktivní verzi (spec §5.5). */
+async function promitniDoAkce(): Promise<void> {
+  const akce = await getAktivniAkce();
+  if (!akce || akce.rezim !== "diplomacie") return;
+  await setNastaveniLobby(akce.id, { ...akce.nastaveniLobby, ...nastaveniScenare(await getAktivniVerze(), await listVerzi()) });
+}
+
+const duplicita = (id: number) => new HttpError(409, `Tahle verze už je nahraná (č. ${id}).`);
+
+function posliSoubor(reply: FastifyReply, soubor: { jmenoSouboru: string; data: Buffer }): FastifyReply {
+  return reply
+    .header("content-type", "application/octet-stream")
+    .header("content-disposition", `attachment; filename*=UTF-8''${encodeURIComponent(soubor.jmenoSouboru)}`)
+    .send(soubor.data);
+}
+
+/** Routy verzí scénáře (spec §5.3). Čtení a stažení jsou veřejné — scénář je se souhlasem autora. */
+function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
+  // Soubor chodí jako syrové tělo, ne multipart — žádná nová závislost (spec §5.2 bod 1).
+  app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_VELIKOST }, (_req, telo, hotovo) => hotovo(null, telo));
+
+  app.get("/api/diplo/scenar", async () => ({ verze: await listVerzi() }));
+
+  app.post("/api/diplo/scenar", { bodyLimit: MAX_VELIKOST }, async (request) => {
+    const hracId = await requireAutorScenare(request);
+    const jmeno = hlavicka(request, "x-jmeno-souboru");
+    if (jmeno === null || !jePlatneJmenoScenare(jmeno)) throw new HttpError(400, "Soubor musí být .aoe2scenario a jméno bez cesty (nejvýš 100 znaků).");
+    const data = request.body;
+    if (!Buffer.isBuffer(data) || !jeHlavickaScenare(data)) throw new HttpError(400, "Tohle není scénář AoE2 DE.");
+    const sha256 = createHash("sha256").update(data).digest("hex");
+    const existujici = await najdiVerziPodleSha(sha256);
+    if (existujici !== null) throw duplicita(existujici);
+    const vysledek = await deps.rozeberScenar(data);
+    let ulozeno: { id: number; aktivovana: boolean };
+    try {
+      ulozeno = await ulozVerziScenare({
+        jmenoSouboru: jmeno,
+        sha256,
+        data,
+        rozbor: vysledek.ok ? vysledek.rozbor : null,
+        chybaRozboru: vysledek.ok ? null : vysledek.chyba,
+        minimapa: vysledek.ok ? vysledek.minimapa : null,
+        nahralHracId: hracId,
+        poznamka: hlavicka(request, "x-poznamka"),
+      });
+    } catch (e) {
+      if (!jeUnikatniKonflikt(e)) throw e;
+      // Rozbor trvá sekundy, takže se mezitím mohl stihnout jiný upload:
+      // buď týž soubor (unikátní sha256), nebo úplně první verze — obě
+      // transakce viděly prázdnou tabulku a obě se chtěly aktivovat
+      // (index diplo_scenar_jeden_aktivni). Ani jedno není chyba serveru.
+      const mezitim = await najdiVerziPodleSha(sha256);
+      if (mezitim !== null) throw duplicita(mezitim);
+      throw new HttpError(409, "Někdo právě nahrál první verzi — zkus to znovu.");
+    }
+    if (ulozeno.aktivovana) await promitniDoAkce();
+    await broadcastAkce();
+    return { id: ulozeno.id, aktivni: ulozeno.aktivovana, chybaRozboru: vysledek.ok ? null : vysledek.chyba };
+  });
+
+  app.post("/api/diplo/scenar/:id/aktivni", async (request) => {
+    await requireAutorScenare(request);
+    const verze = await getVerze(requireId(request));
+    if (!verze) throw new HttpError(404, "Taková verze není.");
+    if (verze.rozbor === null) throw new HttpError(409, "Verze bez rozboru se nedá aktivovat.");
+    await aktivujVerzi(verze.id);
+    await promitniDoAkce();
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Statický segment má u Fastify přednost před `:id`, takže „aktivni“ se nikdy nečte jako číslo.
+  app.get("/api/diplo/scenar/aktivni/soubor", async (_request, reply) => {
+    const aktivni = await getAktivniVerze();
+    const soubor = aktivni ? await getSouborVerze(aktivni.id) : null;
+    if (!soubor) throw new HttpError(404, "Scénář zatím nikdo nenahrál.");
+    return posliSoubor(reply, soubor);
+  });
+
+  app.get("/api/diplo/scenar/:id/soubor", async (request, reply) => {
+    const soubor = await getSouborVerze(requireId(request));
+    if (!soubor) throw new HttpError(404, "Taková verze není.");
+    return posliSoubor(reply, soubor);
+  });
+
+  app.get("/api/diplo/scenar/:id/minimapa.webp", async (request, reply) => {
+    const mapa = await getMinimapuVerze(requireId(request));
+    if (!mapa) throw new HttpError(404, "Tahle verze minimapu nemá.");
+    // Obsah verze se nikdy nemění — prohlížeč si ji smí pamatovat napořád.
+    return reply.header("content-type", "image/webp").header("cache-control", "public, max-age=31536000, immutable").send(mapa);
+  });
+}
