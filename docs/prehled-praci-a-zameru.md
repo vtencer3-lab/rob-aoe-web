@@ -1751,7 +1751,7 @@ věc na stránce: Microsoft scope je jen `XboxLive.signin` a přístupový token
 se nikde neukládá. Plný report s doklady TDD a kontrolami je
 v `.superpowers/sdd/2026-09-16-microsoft-prihlaseni/stranky-podminky.md`.
 
-### 3.59 DLC The Viking Sagas (1.13.10, 23. 9. 2026)
+### 3.59 DLC The Viking Sagas (1.13.10, 23. 9. 2026, v `main` od 1. 10. 2026)
 
 Hra 22. 9. 2026 vydala DLC *The Viking Sagas* s update 185872. Převzato
 postupem z `CONTRIBUTING.md` → „Data ze hry“:
@@ -2074,7 +2074,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
-| 1.13.10 | 23. 9. | DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
+| **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |
 | 1.13.7 | 17. 9. 03:16 | Mrtvý prop `onVerdikt` pryč; verdikt pod tlačítko a blíž k výpisu, větší písmo |
