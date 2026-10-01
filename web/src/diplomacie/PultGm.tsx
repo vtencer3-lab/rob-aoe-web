@@ -8,10 +8,11 @@ import { Kopirovatelne } from "../views/Kopirovatelne.js";
 import { Potvrzeni } from "../views/Potvrzeni.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
-import { diploZapasu, verzeZapasu } from "./KartaRole.js";
+import { diploZapasu, RubKarty, verzeZapasu } from "./KartaRole.js";
 import { MapaScenare } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
+import { ZNAK_ROLE } from "./znaky.js";
 
 const VOLITELNE_ROLE: Role[] = ["garda", "najezdnik", "sasek", "zoldak", "kat"];
 const POPIS_STAVU = { priprava: "Příprava", losovano: "Losováno", rozeslano: "Rozesláno" } as const;
@@ -59,7 +60,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         <h3>Pult GM</h3>
         <span className="stav-diplo">{POPIS_STAVU[d.stav]}</span>
       </header>
-      <Zakryti popisek="Pult GM — klikni pro odkrytí">
+      <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<RubKarty />}>
         {verze ? <MapaScenare verze={verze} starty="vsechny" jmena={jmena} velikost="velka" /> : null}
 
         {d.stav === "priprava" ? (
@@ -96,6 +97,11 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                         {barva === undefined ? null : <span className="swatch" aria-hidden="true" />}
                         {jmeno(r.hracId)}
                       </th>
+                      {/* Znak ve vlastní buňce, ne v th: v hlavičce řádku by alt
+                          přepsal přístupné jméno hráče, vedle roletky by ji zalomil. */}
+                      <td className="znak">
+                        <img className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={26} height={26} />
+                      </td>
                       <td>
                         {r.role === "nastupce" ? (
                           <strong>{NAZEV_ROLE.nastupce}</strong>

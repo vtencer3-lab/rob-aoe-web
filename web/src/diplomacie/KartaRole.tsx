@@ -8,6 +8,7 @@ import { jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { MapaScenare } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
+import { RUB_KARTY, ZNAK_ROLE } from "./znaky.js";
 
 interface Props {
   zapas: ZapasView;
@@ -22,6 +23,14 @@ export function diploZapasu(data: DiploData, zapasId: number): DiploZapas | unde
 /** Verze scénáře, kterou zápas hraje (otisknutá při založení); bez otisku aktivní. */
 export function verzeZapasu(data: DiploData, d: DiploZapas | undefined) {
   return d?.scenarId != null ? (data.verze[d.scenarId] ?? null) : data.aktivni;
+}
+
+/**
+ * Rub zakryté karty pro `Zakryti` — tady i v pultu GM. Bez `alt`: je to
+ * jen obrázek „karta leží rubem nahoru“, co pod ní je, říká tlačítko nad ní.
+ */
+export function RubKarty() {
+  return <img className="rub-karty" src={RUB_KARTY} alt="" width={600} height={362} />;
 }
 
 /** Tajná karta role hráče (spec §8.2). Data jsou už zredigovaná serverem. */
@@ -55,7 +64,7 @@ export function KartaRole({ zapas, data, ja }: Props) {
           <p className="stred">
             Nástupcem císaře je <strong>{d.nastupceHracId ? jmeno(d.nastupceHracId) : "?"}</strong>.
           </p>
-          <Zakryti popisek="Tvá tajná role — klikni pro odkrytí">
+          <Zakryti popisek="Tvá tajná role — klikni pro odkrytí" rub={<RubKarty />}>
             <ObsahRole moje={moje} vse={d.role} jmeno={jmeno} />
             {verze && barva !== undefined ? <MapaScenare verze={verze} starty={barva} /> : null}
           </Zakryti>
@@ -74,6 +83,8 @@ function ObsahRole({ moje, vse, jmeno }: { moje: RoleHrace; vse: RoleHrace[]; jm
   return (
     <div className={`role role-${moje.role}`}>
       {moje.upravenoPoRozeslani ? <p className="upozorneni varovani">GM upravil tvou roli.</p> : null}
+      {/* Znak mimo h4: uvnitř by alt zdvojil přístupný název nadpisu. */}
+      <img className="znak-role" src={ZNAK_ROLE[moje.role]} alt={NAZEV_ROLE[moje.role]} width={104} height={104} />
       <h4>{NAZEV_ROLE[moje.role]}</h4>
       <p className="cil">{popis.cil}</p>
       {moje.role === "kat" && moje.cilHracId ? (

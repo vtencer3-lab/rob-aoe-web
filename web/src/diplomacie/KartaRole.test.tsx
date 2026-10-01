@@ -13,10 +13,14 @@ it("před rozesláním čeká", () => {
 });
 
 it("po rozeslání je karta zakrytá a po odkrytí ukáže roli, cíl a oběť", () => {
-  render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "kat", cilHracId: "h4", upravenoPoRozeslani: false }])} ja="h2" />);
+  const { container } = render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "kat", cilHracId: "h4", upravenoPoRozeslani: false }])} ja="h2" />);
   expect(screen.queryByText("Kat")).toBeNull();
+  // Zakrytá karta leží rubem nahoru (bez alt — není to informace, jen obrázek).
+  expect(container.querySelector("img.rub-karty")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role — klikni pro odkrytí" }));
+  expect(container.querySelector("img.rub-karty")).toBeNull();
   expect(screen.getByRole("heading", { name: "Kat" })).toBeTruthy();
+  expect(screen.getByRole("img", { name: "Kat" })).toHaveClass("znak-role");
   expect(screen.getByText("Tvá oběť:")).toBeTruthy();
   expect(screen.getByText("Hráč 4")).toBeTruthy();
 });
@@ -72,11 +76,14 @@ it("bez rozboru scénáře karta funguje jen s texty rolí", () => {
   render(<KartaRole zapas={zapas} data={{ ...stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null, upravenoPoRozeslani: false }]), aktivni: null, verze: {} }} ja="h2" />);
   fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
   expect(screen.getByRole("heading", { name: "Královská Garda" })).toBeTruthy();
-  expect(screen.queryByRole("img")).toBeNull();
+  // Znak role zůstává, mapa ne.
+  expect(screen.getByRole("img", { name: "Královská Garda" })).toBeTruthy();
+  expect(screen.queryByRole("img", { name: /^Mapa scénáře/ })).toBeNull();
 });
 
 // Odkrytá karta ukáže minimapu jen s vlastním startem (spec §8.2) — h2 sedí
-// na červené, takže značka je jedna a červená.
+// na červené, takže značka je jedna a červená. Před odkrytím není žádný
+// obrázek s názvem: rub karty je bez alt, tedy mimo roli img.
 it("odkrytá karta ukáže minimapu jen s vlastním startem", () => {
   render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null, upravenoPoRozeslani: false }])} ja="h2" />);
   expect(screen.queryByRole("img")).toBeNull();

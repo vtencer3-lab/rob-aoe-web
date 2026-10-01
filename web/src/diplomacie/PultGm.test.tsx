@@ -75,6 +75,8 @@ it("po losu tabulka s roletkami, cíle jen povolené, souhrn složení a rozesl�
   fireEvent.change(screen.getByRole("combobox", { name: `Role: ${jmeno(kat.hracId)}` }), { target: { value: "garda" } });
   expect(diploApi.role).toHaveBeenCalledWith(zapas.id, kat.hracId, { role: "garda" });
   expect(screen.getByText("Složení odpovídá pravidlům.")).toBeTruthy();
+  // Znak role u každého řádku: dva Nájezdníci = dva stejné znaky.
+  expect(screen.getAllByRole("img", { name: "Nájezdník" })).toHaveLength(2);
   await odemceno("Rozeslat role");
   fireEvent.click(screen.getByRole("button", { name: "Rozeslat role" }));
   expect(diploApi.rozeslat).toHaveBeenCalledWith(zapas.id);

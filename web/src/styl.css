@@ -1517,14 +1517,22 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .zakryti { margin: 0.8rem 0; text-align: center; }
 .zakryti-tlacitko { width: min(100%, 22rem); font-size: 1.05rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .zakryti.odkryto .zakryti-tlacitko { width: auto; font-size: 0.9rem; padding: 0.35rem 0.8rem; margin-bottom: 0.5rem; }
+/* Rub zakryté karty (`RubKarty` v KartaRole.tsx): stejně široký jako tlačítko
+   nad ním, ať spolu tvoří jednu „kartu rubem nahoru“; stín jako u praporce
+   přes drop-shadow, protože karta má průhledné rohy. */
+.zakryti .rub-karty { display: block; width: min(100%, 22rem); height: auto; margin: 0.6rem auto 0; filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--obrys) 70%, transparent)); }
 /* Minimapa scénáře (Diplomacie, MapaScenare.tsx): obrázek ze serveru a nad
    ním starty z rozboru v procentech, takže sedí při každé šířce. Rám je na
    figure, ne na obrázku — absolutní značky se počítají od vnitřku rámu,
    a ten je přesně obrázek. Šířky obou velikostí a průměr značky jsou
-   proměnné komponenty, ať je karta hráče i pult GM mění na jednom místě. */
-.mapa-scenare { --mapa-mala: 14rem; --mapa-velka: 28rem; --znacka: 0.9rem; position: relative; box-sizing: border-box; width: min(100%, var(--mapa-mala)); margin: 0.6rem auto; border: 1px solid var(--zlato-tmave); border-radius: 3px; }
-.mapa-scenare.velka { --znacka: 1.15rem; width: min(100%, var(--mapa-velka)); }
-.mapa-scenare img { display: block; width: 100%; height: auto; border-radius: 2px; }
+   proměnné komponenty, ať je karta hráče i pult GM mění na jednom místě.
+   Rám je devítidílný zlatý obrázek jako u desek (`.karta`), jen tenčí:
+   řez 112 je v pixelech předlohy (320×320 z `devitidil.py --roh 112 --pas
+   96`), na obrazovce `--ram` — malá mapa 14 rem unese 12 px, velká 16 px;
+   víc by z rohových ozdob udělalo nárožníky těžší než mapa sama. */
+.mapa-scenare { --mapa-mala: 14rem; --mapa-velka: 28rem; --znacka: 0.9rem; --ram: 12px; position: relative; box-sizing: border-box; width: min(100%, var(--mapa-mala)); margin: 0.6rem auto; border: var(--ram) solid transparent; border-image: url(./assets/diplomacie/ram-mapy.webp) 112 / var(--ram) / 0 repeat; border-radius: 0; }
+.mapa-scenare.velka { --znacka: 1.15rem; --ram: 16px; width: min(100%, var(--mapa-velka)); }
+.mapa-scenare img { display: block; width: 100%; height: auto; }
 .mapa-scenare .start { position: absolute; width: var(--znacka); height: var(--znacka); box-sizing: border-box; border-radius: 50%; border: 2px solid var(--obrys); box-shadow: 0 0 0 1px var(--zlato-svetle), 0 1px 4px color-mix(in srgb, var(--obrys) 70%, transparent); transform: translate(-50%, -50%); }
 .mapa-scenare .start.barva-1 { background: var(--b1); }
 .mapa-scenare .start.barva-2 { background: var(--b2); }
@@ -1549,8 +1557,11 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
    kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,
    druhý Nájezdník) tučně, ať je hráč najde na první pohled. Zakryti centruje,
-   text karty se čte zleva. Znaky rolí (spec §8.3) přijdou na `.role-<role>`. */
+   text karty se čte zleva. Znak role (spec §8.3, `znaky.ts`) sedí nad názvem
+   jako klenot na hrací kartě, 104 px jako erby civilizací (obrázek je 208 px
+   pro 2×); stín ho zvedne z tmavé desky. */
 .karta-role .role { max-width: 34rem; margin: 0 auto; padding: 0.6rem 1rem 0.8rem; text-align: left; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
+.karta-role .role .znak-role { display: block; width: 104px; height: 104px; margin: 0.3rem auto 0; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--obrys) 75%, transparent)); }
 .karta-role .role h4 { margin: 0.2rem 0 0.5rem; font-size: 1.4rem; text-align: center; }
 .karta-role .role h5 { margin: 0.7rem 0 0.2rem; font-size: 0.95rem; color: var(--zlato); }
 .karta-role .role p { margin: 0.3rem 0; }
@@ -1586,6 +1597,10 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 .tabulka-roli { width: 100%; max-width: 34rem; margin: 0.6rem auto; border-collapse: collapse; text-align: left; }
 .tabulka-roli th, .tabulka-roli td { padding: 0.3rem 0.4rem; border-bottom: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); vertical-align: middle; }
 .tabulka-roli th { font-weight: 700; white-space: nowrap; }
+/* Znak role mezi jménem a roletkou (`td.znak`): GM přelétne sloupec znaků
+   rychleji než sloupec roletek. Buňka je jen na šířku znaku. */
+.tabulka-roli td.znak { width: 1px; padding-right: 0; }
+.tabulka-roli .znak-role { display: block; width: 1.6rem; height: 1.6rem; }
 /* Znak barvy před jménem (`.swatch` z `.barva-N` na th): GM si řádek spojí
    s dlaždicí a s „pN“ ze hry i u dvou AI se stejným jménem. Barvy tu musí
    být znovu a specifičtěji než obecné `.barva-N .swatch`: pult leží v panelu

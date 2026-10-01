@@ -43,11 +43,19 @@ def main() -> None:
     ap.add_argument("--vyska", type=int, default=0)
     ap.add_argument("--bezesve", action="store_true")
     ap.add_argument("--bezztratove", action="store_true")
+    ap.add_argument("--ctverec", action="store_true",
+                    help="usadit doprostřed průhledného čtverce (strana = delší rozměr); "
+                         "pak --sirka dává S×S — znaky rolí mají každý jiný poměr stran")
     args = ap.parse_args()
 
     im = Image.open(args.vstup)
     im = im.convert("RGBA" if "A" in im.getbands() else "RGB")
 
+    if args.ctverec:
+        strana = max(im.size)
+        platno = Image.new("RGBA", (strana, strana), (0, 0, 0, 0))
+        platno.paste(im.convert("RGBA"), ((strana - im.width) // 2, (strana - im.height) // 2))
+        im = platno
     if args.bezesve:
         im = bezesve(im)
     if args.sirka or args.vyska:

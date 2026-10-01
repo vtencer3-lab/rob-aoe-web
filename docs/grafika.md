@@ -256,6 +256,32 @@ ComfyUI a stažení vah).
 Všechno generováno **bez LoRA** (`lora: 0.0`), 24 kroků, guidance 4,0.
 Dohromady zabírají necelých 600 kB.
 
+### Mód Diplomacie (1. 10. 2026, větev `diplo`)
+
+Znaky rolí, rub tajné karty a rám minimapy — ComfyUI (Flux.2-dev, stejné
+parametry jako výš), zadání a motivy v `nastroje/grafika/zadani/diplomacie.md`,
+prompty v `zadani/diplomacie.json`. Všechno ve `web/src/assets/diplomacie/`,
+dohromady 180 kB. Alfa záplavou od rohů (`klic.py --prah 12` — pozadí je
+L ≤ 3, výš už záplava žrala samet koruny a dřevo pochodně), bez Scenaria.
+Znaky se usazují na čtverec `export.py --ctverec`, protože každý má jiný
+poměr stran a na kartě i v tabulce mají zabírat stejné místo. Codex (GPT
+Image) nebyl potřeba — vybrané varianty jsou čisté z první dávky.
+
+| Soubor | Předloha | Seed | Rozměr generování | Výstup |
+|---|---|---|---|---|
+| `role-nastupce.webp` | `role-nastupce` var. 01 | 422259639657672192 | 1024×1024 | 208×208 |
+| `role-garda.webp` | `role-garda` var. 01 | 1961912996385478678 | 1024×1024 | 208×208 |
+| `role-najezdnik.webp` | `role-najezdnik` var. 03 | 5711619230035920029 | 1024×1024 | 208×208 |
+| `role-sasek.webp` | `role-sasek` var. 00 | 3043748249855321627 | 1024×1024 | 208×208 |
+| `role-zoldak.webp` | `role-zoldak` var. 01 | 3616151696795561981 | 1024×1024 | 208×208 |
+| `role-kat.webp` | `role-kat` var. 01 | 6085078050798561359 | 1024×1024 | 208×208 |
+| `role-gm.webp` | `role-gm` var. 01 | 2580788674960196035 | 1024×1024 | 208×208 |
+| `rub-karty.webp` | `rub-karty` var. 03 | 7973333685969451956 | 1152×768 | 600×362 |
+| `ram-mapy.webp` | `ram-mapy` var. 00, `devitidil.py --roh 112 --pas 96 --prah 20` | 2975078811603106970 | 1024×1024 | 320×320 (řez 112) |
+
+Seedy vybraných variant jsou zapsané i v `diplomacie.json` (`seed`), takže
+nový běh dávky dá jako `_00` přesně to, co je na webu.
+
 ### Jak vygenerovat znovu
 
 ```bash

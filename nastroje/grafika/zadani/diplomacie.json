@@ -1,0 +1,83 @@
+{
+  "role-nastupce": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: a royal golden crown with a crimson velvet cap, five fleur-de-lis points and small red gems. Polished gold with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 422259639657672192,
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "role-garda": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: a heater shield with a crimson enamel field edged in polished gold, two crossed gold halberds behind it. Polished gold with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 1961912996385478678,
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "role-najezdnik": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: an upright burning torch, dark wooden handle with gold bands, bright orange flame. Polished gold with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 5711619230035920029,
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "role-sasek": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: a round gold jester's jingle bell with a slit, hanging from a crimson and gold ribbon bow. Polished gold with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 3043748249855321627,
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "role-zoldak": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: a straight steel sword with a gold hilt laid diagonally across a bulging brown leather money purse tied with a gold cord, a few gold coins spilling out. Polished gold with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 3616151696795561981,
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "role-kat": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: an upright heavy executioner's axe with a broad curved steel blade and a dark wooden handle with gold bands. Polished gold with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 6085078050798561359,
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "role-gm": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: an upright golden royal sceptre topped with an open all-seeing eye set in a gold sunburst, a crimson gem below the eye. Polished gold with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 2580788674960196035,
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "rub-karty": {
+    "prompt": "The back of a playing card for a medieval game interface, a horizontal rounded rectangle seen flat from the front with no perspective, filling the frame: dark crimson leather with a gold filigree border and a subtle damask pattern, a large red wax seal in the centre stamped with a heraldic eagle with spread wings. Painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 7973333685969451956,
+    "n": 4,
+    "width": 1152,
+    "height": 768,
+    "lora": 0.0,
+    "raw": true
+  },
+  "ram-mapy": {
+    "prompt": "A single square ornamental frame that fills the whole image edge to edge, seen flat from the front with no perspective: a thin band of polished gold with a beaded inner edge and a small gold corner boss with triangular acanthus leaves at each of the four corners, the four sides straight and identical, the whole centre of the image completely empty. Medieval game user interface frame in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "seed": 2975078811603106970,
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  }
+}
