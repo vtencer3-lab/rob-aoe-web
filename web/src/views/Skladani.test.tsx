@@ -43,18 +43,6 @@ function Panel({
   );
 }
 
-// Mód akce může slot podle barvy pojmenovat (Diplomacie: šedá = GM). Štítek
-// je jen u řádku, kde mód něco vrátí.
-it("štítek slotu podle barvy ukáže jen tam, kde ho mód dá", () => {
-  render(<Panel popisSlotu={(barva) => (barva === 2 ? "GM" : null)} />);
-  vyber("Pepa");
-  vyber("Marek");
-  const stitky = screen.getAllByText("GM");
-  expect(stitky).toHaveLength(1);
-  expect(stitky[0]).toHaveClass("popis-slotu");
-  expect(stitky[0]!.closest("li")).toHaveTextContent("Marek");
-});
-
 beforeEach(() => {
   localStorage.clear();
 });
@@ -71,6 +59,18 @@ const nevybraniJmena = () =>
     .slice(1)
     .filter((r) => !r.classList.contains("odchazi"))
     .map((r) => r.querySelectorAll("td")[1]!.textContent);
+
+// Mód akce může slot podle barvy pojmenovat (Diplomacie: šedá = GM). Štítek
+// je jen u řádku, kde mód něco vrátí.
+it("štítek slotu podle barvy ukáže jen tam, kde ho mód dá", () => {
+  render(<Panel popisSlotu={(barva) => (barva === 2 ? "GM" : null)} />);
+  vyber("Pepa");
+  vyber("Marek");
+  const stitky = screen.getAllByText("GM");
+  expect(stitky).toHaveLength(1);
+  expect(stitky[0]).toHaveClass("popis-slotu");
+  expect(stitky[0]!.closest("li")).toHaveTextContent("Marek");
+});
 
 it("tlačítko „+“ přesune hráče z tabulky do sestavy s barvou a týmem", () => {
   render(<Panel />);

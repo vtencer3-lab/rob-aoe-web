@@ -886,12 +886,18 @@ h2.nadpis-akce::after {
 }
 .skladani .radek .odebrat { grid-column: 8; }
 .skladani .radek:active { cursor: grabbing; }
-/* Štítek slotu od módu akce (Diplomacie: „GM“ na šedé) sedí v téže buňce
-   jako tlačítko barvy, přes jeho spodní hranu — vložený jako další položka
-   by posunul všechny sloupce o jeden. Klik jím prochází na tlačítko pod ním. */
-.skladani .radek .volba-barva { grid-column: 2; }
+/* Štítek slotu od módu akce (Diplomacie: „GM“ na šedé) leží přes spodní
+   hranu tlačítka barvy, ne vedle něj: vložený jako další položka mřížky by
+   posunul všechny sloupce o jeden. Proto dostane spolu s tlačítkem barvy
+   pevný řádek i sloupec (grid-area) — obě položky se umístí ještě před
+   automatickým rozmístěním a smějí se překrývat. Jen sloupec by nestačil:
+   auto-placement by štítek odsunul do nového řádku a stáhl tam i zbytek
+   řádku. Platí jen pro editovatelné řádky Skládání (.vybrany) — řádky jen ke
+   čtení (StranyZapasu, Rezie) mají barvu v prvním sloupci a nesmí se hnout.
+   Klik štítkem prochází na tlačítko pod ním. */
+.skladani .radek.vybrany > .volba-barva,
+.skladani .radek.vybrany > .popis-slotu { grid-area: 1 / 2; }
 .skladani .radek .popis-slotu {
-  grid-column: 2;
   justify-self: center;
   align-self: center;
   transform: translateY(0.95rem);
