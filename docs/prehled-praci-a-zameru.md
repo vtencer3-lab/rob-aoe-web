@@ -1953,6 +1953,29 @@ scénáře a host by musel před každým zápasem stahovat nový soubor (a hra 
 pak sama nelosovala sekundární cíle, na kterých dnes výběr Nástupce stojí).
 Vrátit se k tomu, až mód poběží a bude jasné, co GM nejvíc zdržuje.
 
+**Doplněno 1. 10. 2026 (mód Diplomacie, spojení se hrou — jen zapsáno).**
+Web by mohl dostávat stav probíhající hry Diplomacie sám, bez odklikávání GM.
+Samotné sledování (Spectate) nestačí — hra nemá rozhraní pro cizí programy
+a čtení paměti (styl CaptureAge) je křehké a na hraně anticheatu, zamítnuto.
+Dvě legální cesty, obě s malým programem „most“ na **počítači GM** (je ve hře
+vždy, má Spies), který čte soubor a posílá ho webu:
+
+- **XS skript ve scénáři zapisuje stav do souboru.** Ověřeno 1. 10. 2026
+  v `AoE2DE_s.exe`: hra má `xsCreateFile`, `xsWriteString`, `xsWriteInt`,
+  `xsCloseFile`, `xsPlayerAttribute` (relikvie), `xsGetPlayerInGame`,
+  `xsTriggerVariable` (scénář v proměnných už počítá zabití, ztráty, prodané
+  relikvie), `xsGetGameTime`, `xsGetPlayerName`. Web by se dozvěděl, kdo
+  dostal který sekundární cíl (= kdo je Nástupce), smrti a rezignace,
+  relikvie a průběh cílů. Vyžaduje přidat do Jinova scénáře skript a trigger
+  — uživatel to s Jinem probere. **Neověřeno:** zda zápis funguje ve hře pro
+  více hráčů, kam se soubor ukládá a zda se skript přenáší se scénářem.
+- **Průběžný záznam hry (`.aoe2record`, knihovna `mgz`)** — bez zásahu do
+  scénáře; jen příkazy hráčů: chat, rezignace, pauzy, herní čas, tributy
+  (platba 2k za sankci Nájezdníků). Stav hry (smrt krále, relikvie) ne.
+
+Rozhodnuto 1. 10. 2026: zatím ne, jen zapsat. Ruční ovládání GM zůstává
+v každém případě jako záloha.
+
 ## 6. Historie verzí (7.–17. 9. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
