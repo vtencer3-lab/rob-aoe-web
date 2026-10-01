@@ -280,9 +280,8 @@ zkontroluje, že SHA v `scenar.ts` sedí na soubor v `web/public/diplomacie/`.
   `<BASE_PATH>diplomacie/…`.
 - Návrh jména: `Diplomacie LLC.aoe2scenario`. Případná verze ze scénáře půjde
   do jména, aby kontrola lobby poznala starou kopii.
-- **Do veřejného repa až po souhlasu Jina** (repo je veřejné). Do té doby se
-  pracuje s lokální kopií mimo git (cesta v `.gitignore`) a web ukazuje „scénář
-  zatím není k dispozici“.
+- **Jin 1. 10. 2026 souhlasil se zveřejněním** (repo je veřejné), takže soubor
+  jde do repa normálně, bez šifrování.
 - Host v kroku „Zakládáš!“ dostane tlačítko **Stáhnout scénář** a návod:
   - kam soubor uložit: `%USERPROFILE%\Games\Age of Empires 2 DE\<ID>\resources\_common\scenario\`,
     kde `<ID>` je Steam ID nebo Xbox XUID (ověřeno na autorově stroji 1. 10. 2026:
@@ -471,7 +470,6 @@ Podle `docs/grafika.md`, žádné ruční kreslení ani úpravy:
 | víc zápasů Diplomacie za večer | každý zápas má vlastní `diplo_zapas` |
 | GM se odhlásí z akce / odejde | pult nikdo jiný nemá; admin vymění GM změnou sestavy, jde jen v `priprava` (jinak „Zpět na výběr Nástupce“) |
 | scénář nerozdal cíl všem (restart hry) | GM „Zpět na výběr Nástupce“ |
-| soubor scénáře v repu není | tlačítko stažení ukáže „scénář zatím není k dispozici“, kontrola lobby kontroluje jméno ze `scenar.ts` dál |
 | klasická akce | stav bez větve `rezim`, žádné diplo routy nedávají smysl (404 pro zápas mimo Diplomacii) |
 
 ## 10. Testy
@@ -481,7 +479,7 @@ Podle `docs/grafika.md`, žádné ruční kreslení ani úpravy:
     cíl sebe ani Nástupce, 1000 losů pokryje každou roli u každého hráče,
   - úpravy: převzaté chování `assignValidTarget`, varování složení,
   - mapování pN → barva → hráč,
-  - `scenar.ts`: SHA sedí na soubor (přeskočí se, když soubor v repu ještě není).
+  - `scenar.ts`: SHA sedí na soubor ve `web/public/diplomacie/`.
 - **Viditelnost, hlavní sada:** pro každou roli, GM, admina-ne-GM,
   nezúčastněného a nepřihlášeného ve všech třech stavech přesný tvar dat.
   Snímek celé zredigované větve, ne jen jednotlivé klíče, aby nové pole
