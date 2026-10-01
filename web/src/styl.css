@@ -1578,8 +1578,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    rolí se čte zleva, roletky vyplní buňku. Souhrn složení přebírá barvu
    z .varovani, ale ne jeho kurzor s otazníkem — není to nápověda. */
 .pult-gm .stav-diplo { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: var(--tlumene); font-family: "Cinzel", Georgia, serif; }
-/* Znak GM (žezlo) před nadpisem pultu, stejně velký jako znaky v tabulce;
-   záhlaví centruje, tak se mezera zmenší, ať znak a nadpis drží spolu. */
+/* Znak GM (žezlo) před nadpisem pultu, menší než znaky v tabulce (patří
+   k nadpisu, ne do řádku); záhlaví centruje, tak se mezera zmenší, ať znak
+   a nadpis drží spolu. */
 .pult-gm .zahlavi-sekce { gap: 0.4rem; }
 .pult-gm .zahlavi-sekce .znak-role { width: 1.6rem; height: 1.6rem; margin-bottom: 0.3rem; }
 .pult-gm .zakryti > p { max-width: 34rem; margin: 0.6rem auto; }
@@ -1599,13 +1600,25 @@ button.dlazdice.barva-8 { background: var(--b8); border-color: var(--b8); }
 /* Světlé barvy (žlutá, oranžová) mají tmavé písmo bez stínu — jako u výsledků. */
 button.dlazdice.barva-4, button.dlazdice.barva-8 { color: var(--obrys); text-shadow: none; }
 button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0 0 2px var(--zlato), 0 2px 6px color-mix(in srgb, var(--obrys) 70%, transparent); }
-.tabulka-roli { width: 100%; max-width: 34rem; margin: 0.6rem auto; border-collapse: collapse; text-align: left; }
-.tabulka-roli th, .tabulka-roli td { padding: 0.3rem 0.4rem; border-bottom: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); vertical-align: middle; }
+/* Znak role v tabulce má 36 px (`--znak`): při 26 px byly úzké znaky —
+   pochodeň Nájezdníka, sekera Kata, žezlo Nástupce — nečitelné (uživatel
+   1. 10. 2026). Řádek dostane výšku podle znaku a buňky o něco víc vzduchu. */
+.tabulka-roli { --znak: 2.25rem; width: 100%; max-width: 34rem; margin: 0.6rem auto; border-collapse: collapse; text-align: left; }
+.tabulka-roli th, .tabulka-roli td { padding: 0.35rem 0.4rem; border-bottom: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); vertical-align: middle; }
 .tabulka-roli th { font-weight: 700; white-space: nowrap; }
 /* Znak role mezi jménem a roletkou (`td.znak`): GM přelétne sloupec znaků
    rychleji než sloupec roletek. Buňka je jen na šířku znaku. */
 .tabulka-roli td.znak { width: 1px; padding-right: 0; }
-.tabulka-roli .znak-role { display: block; width: 1.6rem; height: 1.6rem; }
+.tabulka-roli .znak-role { display: block; width: var(--znak); height: var(--znak); }
+/* Telefon: jméno se smí zalomit (i dlouhé bez mezer) a sloupce si rozdělí
+   šířku karty pevně — automatické rozložení by tabulku natáhlo na šířku
+   nejdelšího jména a nejdelší položky roletky a karta by přetekla. */
+@media (max-width: 40rem) {
+  .tabulka-roli { table-layout: fixed; }
+  .tabulka-roli th, .tabulka-roli td { overflow-wrap: anywhere; }
+  .tabulka-roli th { white-space: normal; width: 30%; }
+  .tabulka-roli td.znak { width: var(--znak); }
+}
 /* Znak barvy před jménem (`.swatch` z `.barva-N` na th): GM si řádek spojí
    s dlaždicí a s „pN“ ze hry i u dvou AI se stejným jménem. Barvy tu musí
    být znovu a specifičtěji než obecné `.barva-N .swatch`: pult leží v panelu

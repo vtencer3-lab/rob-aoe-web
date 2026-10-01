@@ -106,7 +106,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                       {/* Znak ve vlastní buňce, ne v th: v hlavičce řádku by alt
                           přepsal přístupné jméno hráče, vedle roletky by ji zalomil. */}
                       <td className="znak">
-                        <img className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={26} height={26} />
+                        <img className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={36} height={36} />
                       </td>
                       <td>
                         {r.role === "nastupce" ? (
