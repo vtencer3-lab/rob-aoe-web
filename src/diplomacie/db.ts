@@ -13,10 +13,12 @@ interface VerzeDb {
   aktivni: boolean;
   rozbor: unknown;
   chyba_rozboru: string | null;
+  minimapa_otisk: string | null;
+  minimapa_vlastni: boolean;
 }
 
 const SLOUPCE_VERZE = `s.id, s.jmeno_souboru, s.nahrano_v, COALESCE(p.alias, p.platforma_jmeno, p.hrac_id) AS nahral_jmeno,
-  s.poznamka, s.aktivni, s.rozbor, s.chyba_rozboru`;
+  s.poznamka, s.aktivni, s.rozbor, s.chyba_rozboru, s.minimapa_otisk, s.minimapa_vlastni`;
 
 function mapujVerzi(r: VerzeDb): ScenarVerze {
   return {
@@ -30,6 +32,8 @@ function mapujVerzi(r: VerzeDb): ScenarVerze {
     // v databázi po změně typu spadne hned a srozumitelně.
     rozbor: r.rozbor === null ? null : prectiRozbor(r.rozbor),
     chybaRozboru: r.chyba_rozboru,
+    minimapaOtisk: r.minimapa_otisk,
+    minimapaVlastni: r.minimapa_vlastni,
   };
 }
 
@@ -47,9 +51,11 @@ export async function ulozVerziScenare(v: {
     const { rows: aktivni } = await c.query("SELECT 1 FROM diplo_scenar WHERE aktivni FOR UPDATE");
     // První čitelná verze se aktivuje sama — jinak by nebylo co hrát (spec §5.2 bod 5).
     const aktivovat = aktivni.length === 0 && v.rozbor !== null;
+    // Otisk minimapy počítá databáze z téhož obsahu, který ukládá — jde do
+    // adresy obrázku (viz migrace 032), bez minimapy zůstane null.
     const { rows } = await c.query<{ id: number }>(
-      `INSERT INTO diplo_scenar (jmeno_souboru, sha256, data, rozbor, chyba_rozboru, minimapa, nahral_hrac_id, poznamka, aktivni)
-       VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9) RETURNING id`,
+      `INSERT INTO diplo_scenar (jmeno_souboru, sha256, data, rozbor, chyba_rozboru, minimapa, minimapa_otisk, nahral_hrac_id, poznamka, aktivni)
+       VALUES ($1, $2, $3, $4::jsonb, $5, $6, left(encode(sha256($6::bytea), 'hex'), 16), $7, $8, $9) RETURNING id`,
       [v.jmenoSouboru, v.sha256, v.data, v.rozbor === null ? null : JSON.stringify(v.rozbor), v.chybaRozboru, v.minimapa, v.nahralHracId, v.poznamka, aktivovat],
     );
     return { id: rows[0]!.id, aktivovana: aktivovat };

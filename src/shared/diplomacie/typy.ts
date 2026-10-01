@@ -39,6 +39,17 @@ export interface ScenarVerze {
   aktivni: boolean;
   rozbor: RozborScenare | null;
   chybaRozboru: string | null;
+  /**
+   * Krátký otisk obsahu minimapy do adresy obrázku: route ji posílá s roční
+   * cache, takže po výměně obrázku u verze se musí změnit adresa. Bez
+   * minimapy null.
+   */
+  minimapaOtisk: string | null;
+  /**
+   * Minimapa je obrázek ze hry nahraný ručně, ne terénní render z rozboru:
+   * kosočtverce hráčů už v něm jsou, web ke startům kreslí jen jména.
+   */
+  minimapaVlastni: boolean;
 }
 
 /**

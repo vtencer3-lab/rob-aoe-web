@@ -39,5 +39,7 @@ export const diploApi = {
     }).then((r) => json<{ id: number; aktivni: boolean; chybaRozboru: string | null }>(r)),
   aktivovat: (id: number) => post(`/api/diplo/scenar/${id}/aktivni`),
   souborUrl: (id: number | "aktivni") => cesta(`/api/diplo/scenar/${id}/soubor`),
-  minimapaUrl: (id: number) => cesta(`/api/diplo/scenar/${id}/minimapa.webp`),
+  // Otisk obsahu v adrese: route posílá roční cache a po výměně obrázku u
+  // verze by prohlížeč jinak držel starý.
+  minimapaUrl: (id: number, otisk: string | null = null) => cesta(`/api/diplo/scenar/${id}/minimapa.webp${otisk ? `?v=${otisk}` : ""}`),
 };

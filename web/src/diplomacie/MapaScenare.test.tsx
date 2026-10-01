@@ -4,7 +4,7 @@ import { ROZBOR } from "../../../src/shared/diplomacie/fixtures.js";
 import type { Barva } from "../../../src/shared/types.js";
 import { kraj, MapaScenare } from "./MapaScenare.js";
 
-const verze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null };
+const verze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false };
 
 // Starty u levého a pravého kraje (na LLC p3 a p5) nesou třídu, podle které
 // CSS posune popisek dovnitř — jinak delší jméno vyčnívá z mapy. Spodní
@@ -37,6 +37,19 @@ it("hráč vidí jen svůj start", () => {
   render(<MapaScenare verze={verze} starty={3} />);
   expect(screen.getAllByTestId("start")).toHaveLength(1);
   expect(screen.getByText("Tady začínáš")).toBeTruthy();
+});
+// Route minimapy posílá roční cache; po výměně obrázku u verze (mapa ze hry
+// místo terénního renderu) by prohlížeč držel starý, proto otisk v adrese.
+it("adresa obrázku nese otisk minimapy, když ho verze má", () => {
+  render(<MapaScenare verze={{ ...verze, minimapaOtisk: "0123456789abcdef" }} starty="zadne" />);
+  expect(screen.getByRole("img", { name: "Mapa scénáře LLC.aoe2scenario" }).getAttribute("src")).toMatch(/\/api\/diplo\/scenar\/3\/minimapa\.webp\?v=0123456789abcdef$/);
+});
+// Obrázek ze hry už kosočtverce hráčů má: starty zůstávají (popisky se
+// jmény sedí na nich), kolečko schová CSS podle třídy na figure.
+it("vlastní mapa dostane třídu vlastni, starty zůstávají", () => {
+  const { container } = render(<MapaScenare verze={{ ...verze, minimapaVlastni: true }} starty="vsechny" />);
+  expect(container.querySelector("figure")).toHaveClass("vlastni");
+  expect(screen.getAllByTestId("start")).toHaveLength(7);
 });
 it("verze bez rozboru nic nevykreslí", () => {
   const { container } = render(<MapaScenare verze={{ ...verze, rozbor: null }} starty="zadne" />);

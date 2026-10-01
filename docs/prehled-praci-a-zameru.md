@@ -37,7 +37,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-21.16** (47 commitů od 1.13.10, 1. 10. 2026), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, závěrečná recenze, opravná vlna i re-recenze za sebou, migrace 030–031. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5), pak mód poběží pod přepínačem i na devu. Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-22.0** (49 commitů od 1.13.10, 1.–2. 10. 2026), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, závěrečná recenze, opravná vlna i re-recenze za sebou, migrace 030–032. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5), pak mód poběží pod přepínačem i na devu. Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
 | Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc `030_rezim_akce.sql` a `031_diplomacie.sql` (§3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
@@ -1779,7 +1779,7 @@ ne ranked pravidla, takže se to nepromítá. Neověřeno naživo: zda Worlds
 Edge seznam lobby vydává nové civ id 60–62 ve slotech stejně jako ostatní
 (očekává se, id je z téže řady).
 
-### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-21.16, 1. 10. 2026)
+### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-22.0, 1.–2. 10. 2026)
 
 **Záměr.** Jin (autor scénáře) připravil pro komunitní večery custom scénář
 *Diplomacie – Ať žije císař* (`LLC.aoe2scenario`, DE 1.59): 7 hráčů a
@@ -2033,6 +2033,22 @@ v kódu; nic z toho neblokuje hru):
   `/deploy`, ne `/restart`); ostrá zkouška s Jinem (jak host hlásí jméno
   staženého souboru, spec §2.5); při mergi do `dev`
   `npm run verze -- z-experimentu <verze diplo>`.
+
+**Vlastní minimapa ze hry (2. 10. 2026, 1.13.10-22.0).** Uživatel dodal
+obrázek minimapy LLC přímo ze hry (kosočtverec v čtverci, stejná geometrie
+jako terénní render z rozboru, kosočtverce hráčů už v něm jsou) a chce ho
+místo renderu, „dokud neřekne jinak“. Zatím **bez nahrávání v UI**: obrázek
+je u verze 1 na `/aoe/diplo` zapsaný ručně (`UPDATE diplo_scenar SET
+minimapa = …, minimapa_vlastni = true WHERE id = 1`; převod PNG → WebP
+1024 px přes Pillow). Co se kvůli tomu změnilo v kódu (migrace 032):
+`diplo_scenar.minimapa_otisk` (16 hex znaků SHA-256 obsahu, počítá
+databáze při vložení) jde jako `?v=<otisk>` do adresy obrázku, protože
+route posílá roční cache `immutable` — bez toho prohlížeče po výměně
+obrázku držely starý; `diplo_scenar.minimapa_vlastni` → `MapaScenare`
+dostane třídu `vlastni` a značky startů jsou jen jména bez kolečka
+(rozhodnutí uživatele). Další verze od Jina začne zase s vygenerovanou
+mapou — nahrání vlastního obrázku k verzi ve správě scénáře (a „vrátit
+vygenerovanou“ = znovu rozbor) je odložená funkce, až o ni uživatel řekne.
 
 **Ověřeno proti hře (1. 10. 2026):** orientace minimapy a pozice startů —
 uživatel porovnal minimapu webu s minimapou LLC ve hře: „minimapa i pozice

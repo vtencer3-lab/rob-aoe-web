@@ -44,6 +44,11 @@ it("první verze s rozborem se aktivuje sama, další ne; bez rozboru aktivovat 
   expect((await listVerzi()).map((v) => v.id)).toEqual([vadna.id, druha.id, prvni.id]);
   expect(await najdiVerziPodleSha("2")).toBe(druha.id);
   expect((await getSouborVerze(druha.id))?.data.toString()).toBe("y");
+  // Otisk minimapy jde do adresy obrázku (migrace 032); verze z rozboru
+  // není „vlastní“ a verze bez minimapy otisk nemá.
+  const verze = await listVerzi();
+  expect(verze.find((v) => v.id === prvni.id)).toMatchObject({ minimapaOtisk: expect.stringMatching(/^[0-9a-f]{16}$/), minimapaVlastni: false });
+  expect(verze.find((v) => v.id === vadna.id)?.minimapaOtisk).toBeNull();
 });
 
 it("zápas si otiskne aktivní verzi a role se ukládají i mažou", async () => {

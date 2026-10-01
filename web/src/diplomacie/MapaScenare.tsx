@@ -25,13 +25,15 @@ export function kraj(x: number): string {
  * Minimapa scénáře z rozboru (spec §5.4). Obrázek je jeden pro všechny,
  * starty jsou překryv — souřadnice 0–1 z rozboru, takže sedí při každé
  * velikosti. Barvy značek jsou třídy `barva-N` z palety, ne čísla napevno.
+ * Vlastní mapa (obrázek ze hry, `minimapaVlastni`) má kosočtverce hráčů už
+ * v sobě: značky zůstávají kvůli popiskům, kolečko schová CSS (`.vlastni`).
  */
 export function MapaScenare({ verze, starty, jmena = {}, velikost = "mala" }: Props) {
   if (!verze.rozbor) return null;
   const viditelne = verze.rozbor.starty.filter((s) => starty === "vsechny" || s.barva === starty);
   return (
-    <figure className={`mapa-scenare ${velikost}`}>
-      <img src={diploApi.minimapaUrl(verze.id)} alt={`Mapa scénáře ${verze.jmenoSouboru}`} width={verze.rozbor.minimapa.sirka} height={verze.rozbor.minimapa.vyska} />
+    <figure className={`mapa-scenare ${velikost}${verze.minimapaVlastni ? " vlastni" : ""}`}>
+      <img src={diploApi.minimapaUrl(verze.id, verze.minimapaOtisk)} alt={`Mapa scénáře ${verze.jmenoSouboru}`} width={verze.rozbor.minimapa.sirka} height={verze.rozbor.minimapa.vyska} />
       {starty === "zadne"
         ? null
         : viditelne.map((s) => (

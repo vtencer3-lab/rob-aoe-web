@@ -1542,6 +1542,11 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .start.barva-6 { background: var(--b6); }
 .mapa-scenare .start.barva-7 { background: var(--b7); }
 .mapa-scenare .start.barva-8 { background: var(--b8); }
+/* Vlastní mapa (obrázek ze hry, `minimapaVlastni` v MapaScenare.tsx):
+   kosočtverce hráčů už v obrázku jsou a kolečko by je jen překrylo. Značka
+   zůstává ve stejné velikosti, jen neviditelná, aby popisek se jménem seděl
+   pod kosočtvercem stejně jako dřív pod kolečkem. */
+.mapa-scenare.vlastni .start { background: transparent; border-color: transparent; box-shadow: none; }
 /* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ u hráče. Nepřijímá
    kliknutí, ať nepřekáží v tooltipu značky. Na LLC leží p3 a p5 12 % od
    levého a pravého kraje: krátké jméno se tam vejde, dvacetiznakové už na

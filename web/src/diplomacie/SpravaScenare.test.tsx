@@ -16,8 +16,8 @@ vi.mock("./api.js", () => ({
 import { diploApi } from "./api.js";
 
 /** Aktivní verze s rozborem a starší, kterou se nepodařilo přečíst. */
-const V2: ScenarVerze = { id: 3, jmenoSouboru: "LLC v2.aoe2scenario", nahrano: "2026-10-01T10:00:00.000Z", nahralJmeno: "Jin", poznamka: "nové cíle", aktivni: true, rozbor: ROZBOR, chybaRozboru: null };
-const V1: ScenarVerze = { id: 2, jmenoSouboru: "LLC v1.aoe2scenario", nahrano: "2026-09-30T10:00:00.000Z", nahralJmeno: "Jin", poznamka: null, aktivni: false, rozbor: null, chybaRozboru: "scénář nemá právě jednoho GM" };
+const V2: ScenarVerze = { id: 3, jmenoSouboru: "LLC v2.aoe2scenario", nahrano: "2026-10-01T10:00:00.000Z", nahralJmeno: "Jin", poznamka: "nové cíle", aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false };
+const V1: ScenarVerze = { id: 2, jmenoSouboru: "LLC v1.aoe2scenario", nahrano: "2026-09-30T10:00:00.000Z", nahralJmeno: "Jin", poznamka: null, aktivni: false, rozbor: null, chybaRozboru: "scénář nemá právě jednoho GM", minimapaOtisk: null, minimapaVlastni: false };
 
 const hlidej = async (fn: () => Promise<unknown>) => {
   await fn();

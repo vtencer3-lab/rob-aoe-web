@@ -68,4 +68,5 @@ it("adresy souboru a minimapy vedou na routy scénáře", () => {
   expect(diploApi.souborUrl("aktivni")).toBe("/api/diplo/scenar/aktivni/soubor");
   expect(diploApi.souborUrl(3)).toBe("/api/diplo/scenar/3/soubor");
   expect(diploApi.minimapaUrl(3)).toBe("/api/diplo/scenar/3/minimapa.webp");
+  expect(diploApi.minimapaUrl(3, "0123456789abcdef")).toBe("/api/diplo/scenar/3/minimapa.webp?v=0123456789abcdef");
 });
