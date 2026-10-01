@@ -76,10 +76,14 @@ export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, 
   // Co server naposledy dostal — ať se neposílá totéž dvakrát.
   const odeslano = useRef<Navrh>(pocatek.current);
 
-  const skladani = useSkladani(prihlaseni, {
-    hodnota: navrh.sestava,
-    odesli: async (s) => setNavrh((n) => ({ ...n, sestava: s })),
-  });
+  const skladani = useSkladani(
+    prihlaseni,
+    {
+      hodnota: navrh.sestava,
+      odesli: async (s) => setNavrh((n) => ({ ...n, sestava: s })),
+    },
+    rezim,
+  );
 
   const propis = (n: Navrh) => {
     if (!stejne(n.nastaveni, odeslano.current.nastaveni)) void onNastaveni(n.nastaveni);

@@ -262,6 +262,7 @@ export function App() {
           },
         }
       : undefined,
+    akce?.rezim ?? "klasicky",
   );
   // useSkladani se volá dřív, než jsou definované pomocné funkce níž — refy to překlenou.
   const jmenoPodleIdRef = useRef<(hracId: string) => string>((id) => id);

@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { PlayerView, SestavaVstup } from "../../src/shared/types.js";
-import { useSkladani } from "./skladani.js";
+import { useSkladani, vychoziVstup } from "./skladani.js";
 
 const hrac = (hracId: string): PlayerView => ({
   hracId,
@@ -93,6 +93,24 @@ it("odebraná AI nepadá mezi nevybrané — tam patří jen lidi", () => {
   act(() => result.current.pridejAi());
   act(() => result.current.odeber("ai:1"));
   expect(result.current.nevybrani.map((h) => h.hracId)).toEqual(["a", "b", "c"]);
+});
+
+// Bez módu se chová jako dřív (1v1/2v2 střídá týmy); v Diplomacii hraje
+// každý sám za sebe, takže nový hráč dostane „–“ — jinak by „Vytvořit zápas“
+// nesvítilo, dokud admin nepřepne tým všem osmi.
+it("vychoziVstup: bez módu střídá týmy 1 a 2, v Diplomacii dává 0", () => {
+  const prvni = vychoziVstup("a", []);
+  expect(prvni.tym).toBe(1);
+  expect(vychoziVstup("b", [prvni]).tym).toBe(2);
+  expect(vychoziVstup("a", [], "diplomacie").tym).toBe(0);
+  expect(vychoziVstup("b", [prvni], "diplomacie").tym).toBe(0);
+});
+
+it("v Diplomacii dostane vybraný hráč i AI tým „–“", () => {
+  const { result } = renderHook(() => useSkladani(prihlaseni, undefined, "diplomacie"));
+  act(() => result.current.vyber("a"));
+  act(() => result.current.pridejAi());
+  expect(result.current.vybrani.map((v) => v.vstup.tym)).toEqual([0, 0]);
 });
 
 // Osm slotů je strop lobby; devátý klik už nesmí nic přidat.

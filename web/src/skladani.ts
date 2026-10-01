@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AI_HRACI, jeAi } from "../../src/shared/aiHraci.js";
+import { vychoziTymRezimu } from "../../src/shared/rezimy.js";
 import { MAX_HRACU } from "../../src/shared/sestava.js";
-import { BARVY, type PlayerView, type SestavaVstup, type Tym } from "../../src/shared/types.js";
+import { BARVY, type PlayerView, type RezimId, type SestavaVstup } from "../../src/shared/types.js";
 
 export type Skupina = "vybrani" | "nevybrani";
 
@@ -61,14 +62,16 @@ function ulozPoradi(poradi: string[]): void {
 }
 
 /**
- * Výchozí tým nově vybraného: střídavě 1, 2, 1, 2 podle pořadí výběru. Pro
- * 1v1 to sedí rovnou, u 2v2 stačí prohodit jedno tlačítko. Barva je první
- * volná, takže první dva hráči jsou modrý a červený jako ve hře.
+ * Výchozí tým nově vybraného podle módu akce (shared/rezimy.ts): klasicky
+ * střídavě 1, 2, 1, 2 podle pořadí výběru — pro 1v1 to sedí rovnou, u 2v2
+ * stačí prohodit jedno tlačítko; v Diplomacii „–“, protože tam hraje každý
+ * sám za sebe a kontrola sestavy módu týmy nepustí. Barva je první volná,
+ * takže první dva hráči jsou modrý a červený jako ve hře.
  */
-export function vychoziVstup(hracId: string, vybrani: SestavaVstup[]): SestavaVstup {
+export function vychoziVstup(hracId: string, vybrani: SestavaVstup[], rezim: RezimId = "klasicky"): SestavaVstup {
   const obsazene = new Set(vybrani.map((v) => v.barva));
   const barva = BARVY.find((b) => !obsazene.has(b)) ?? 1;
-  const tym: Tym = vybrani.length % 2 === 0 ? 1 : 2;
+  const tym = vychoziTymRezimu(rezim, vybrani.length);
   return { hracId, tym, barva, civ: null };
 }
 
@@ -101,8 +104,10 @@ function stejnaSestava(a: SestavaVstup[], b: SestavaVstup[]): boolean {
  * (dorazí stejná přes SSE), nebo než doběhne odeslání. Druhý admin tak
  * nikdy nepřepíše rozkliknutou změnu v půlce, a naopak jeho změny se
  * ukážou hned, jakmile tady nic nečeká.
+ *
+ * `rezim` je mód akce — rozhoduje, jaký tým dostane nově vybraný hráč.
  */
-export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani): Skladani {
+export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani, rezim: RezimId = "klasicky"): Skladani {
   const [lokalni, setLokalni] = useState<SestavaVstup[] | null>(sdilene ? null : []);
   const [poradiNevybranych, setPoradiNevybranych] = useState<string[]>(nactiPoradi);
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -166,7 +171,7 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
     jeVybrany: (hracId) => vybraneId.has(hracId),
     vyber: (hracId) => {
       if (vybraneId.has(hracId) || !podleId.has(hracId) || platni.length >= MAX_HRACU) return;
-      nastav([...platni, vychoziVstup(hracId, platni)]);
+      nastav([...platni, vychoziVstup(hracId, platni, rezim)]);
     },
     pridejAi: () => {
       if (platni.length >= MAX_HRACU) return;
@@ -174,7 +179,7 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani)
       // se znovu, takže čísla nerostou do nesmyslu.
       const volna = AI_HRACI.find((a) => !vybraneId.has(a.hracId));
       if (!volna) return;
-      nastav([...platni, vychoziVstup(volna.hracId, platni)]);
+      nastav([...platni, vychoziVstup(volna.hracId, platni, rezim)]);
     },
     odeber: (hracId) => {
       nastav(platni.filter((v) => v.hracId !== hracId));
