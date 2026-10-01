@@ -2019,9 +2019,14 @@ v kódu; nic z toho neblokuje hru):
 - *Provoz:* první skutečné nahrání LLC přes správu na `/aoe/diplo`
   (routa → DB → `minimapa.webp` v prohlížeči; rozbor v kontejneru už
   ověřen); Jinovo `hrac_id` do `AUTORI_SCENARE` (Coolify: PATCH envs +
-  `/deploy`, ne `/restart`); orientaci minimapy potvrdit proti snímku ze
-  hry; ostrá zkouška s Jinem (jak host hlásí jméno staženého souboru, spec
-  §2.5); při mergi do `dev` `npm run verze -- z-experimentu 1.13.10-21.13`.
+  `/deploy`, ne `/restart`); ostrá zkouška s Jinem (jak host hlásí jméno
+  staženého souboru, spec §2.5); při mergi do `dev`
+  `npm run verze -- z-experimentu <verze diplo>`.
+
+**Ověřeno proti hře (1. 10. 2026):** orientace minimapy a pozice startů —
+uživatel porovnal minimapu webu s minimapou LLC ve hře: „minimapa i pozice
+hráčů sedí“ (otočení o 45° v `rozbor.py` a medián pozic jednotek jako start
+tedy odpovídají). Dřív to byl otevřený bod rulingu 4 z úkolu 12.
 
 **Pasti.**
 
