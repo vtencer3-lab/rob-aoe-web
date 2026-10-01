@@ -1057,6 +1057,9 @@ input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
 /* Panel akce jako herní lobby: název vlevo, Ukončit vpravo, pod tím vlevo
    hráči (sestava) a vpravo Game Settings. */
 .hlavicka-akce { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
+/* Štítek módu Diplomacie v záhlaví akce — malý rámeček ve zlaté, ne další
+   nadpis: akce je pořád „Nastavení Lobby“, jen s jiným pravidlem sestavy. */
+.stitek-rezimu { font-family: "Cinzel", Georgia, serif; font-size: 0.75rem; color: var(--zlato); border: 1px solid var(--zlato-tmave); border-radius: 3px; padding: 0.15rem 0.5rem; }
 
 .sprava-akce .ovladani.ladeni { margin: 0 0 0.6rem; }
 .lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: stretch; }

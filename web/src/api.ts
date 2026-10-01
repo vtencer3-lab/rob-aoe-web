@@ -1,5 +1,5 @@
 import type { KontrolaLobbyVysledek, NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
-import type { AkceStavPayload, HledaniLobbyVysledek, SestavaVstup, Vitez } from "../../src/shared/types.js";
+import type { AkceStavPayload, HledaniLobbyVysledek, RezimId, SestavaVstup, Vitez } from "../../src/shared/types.js";
 import { cesta } from "./cesty.js";
 
 export interface Me {
@@ -35,11 +35,11 @@ export const api = {
   odebratZkusebni: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/zkusebni-hraci`), { method: "DELETE" }).then((r) => json<{ odebrano: number }>(r)),
   akce: () => fetch(cesta("/api/akce")).then((r) => json<AkceStavPayload>(r)),
-  vytvoritAkce: (nazev: string) =>
+  vytvoritAkce: (nazev: string, rezim: RezimId = "klasicky") =>
     fetch(cesta("/api/akce"), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ nazev }),
+      body: JSON.stringify({ nazev, rezim }),
     }).then((r) => json<{ akce: { id: number } }>(r)),
   akceStav: (akceId: number, stav: string) =>
     fetch(cesta(`/api/akce/${akceId}/stav`), {

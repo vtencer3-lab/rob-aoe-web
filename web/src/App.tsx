@@ -648,7 +648,7 @@ export function App() {
       {admin ? (
         <SpravaAkce
           akce={akce}
-          onZalozit={(nazev) => void hlidej(() => api.vytvoritAkce(nazev))}
+          onZalozit={(nazev, rezim) => void hlidej(() => api.vytvoritAkce(nazev, rezim))}
           onNastaveniLobby={(n) => {
             if (!akce) return;
             const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);

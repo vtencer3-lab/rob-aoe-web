@@ -1,5 +1,9 @@
 import type { ZebricekRadek } from "./zebricky.js";
 
+/** Mód akce (migrace 030). Klasický večer, nebo scénář Diplomacie. */
+export type RezimId = "klasicky" | "diplomacie";
+export const REZIMY_AKCE: readonly RezimId[] = ["klasicky", "diplomacie"];
+
 /** Osm barev hráčů přesně v pořadí, v jakém je nabízí hra. */
 export type Barva = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export const BARVY: readonly Barva[] = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -118,6 +122,8 @@ export interface AkceView {
    * mimo adminy se zaslepuje (realtime/redakce.ts).
    */
   pristiHeslo?: string;
+  /** Mód akce; chybí ve starších snímcích = klasický. */
+  rezim?: RezimId;
 }
 
 /**

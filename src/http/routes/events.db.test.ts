@@ -253,3 +253,23 @@ it("prázdný název akce se odmítne", async () => {
   expect(res.statusCode).toBe(400);
   expect((await getAktivniAkce())?.nazev).toBe("Čtvrtek");
 });
+
+it("admin založí akci Diplomacie a mód se objeví ve stavu", async () => {
+  const { sid } = await prihlasenyKlient(ROB, true);
+  const app = buildServer();
+  const res = await app.inject({ method: "POST", url: "/api/akce", cookies: { sid }, payload: { nazev: "Diplo", rezim: "diplomacie" } });
+  expect(res.statusCode).toBe(200);
+  expect((await getAktivniAkce())?.rezim).toBe("diplomacie");
+  const stav = await app.inject({ method: "GET", url: "/api/akce", cookies: { sid } });
+  expect(stav.json().akce.rezim).toBe("diplomacie");
+  await app.close();
+});
+
+it("bez módu je akce klasická a neznámý mód je 400", async () => {
+  const { sid } = await prihlasenyKlient(ROB, true);
+  const app = buildServer();
+  expect((await app.inject({ method: "POST", url: "/api/akce", cookies: { sid }, payload: { nazev: "X", rezim: "turnaj" } })).statusCode).toBe(400);
+  await app.inject({ method: "POST", url: "/api/akce", cookies: { sid }, payload: { nazev: "Čtvrtek" } });
+  expect((await getAktivniAkce())?.rezim).toBe("klasicky");
+  await app.close();
+});

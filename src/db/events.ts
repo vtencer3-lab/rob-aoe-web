@@ -1,5 +1,5 @@
 import { AKTIVITA_MINUT, ODSTUP_PULSU_MINUT, PRODLOUZENI_MINUT, ZVONEK_PO_MINUTACH } from "../shared/aktivita.js";
-import type { SestavaVstup } from "../shared/types.js";
+import type { RezimId, SestavaVstup } from "../shared/types.js";
 import { generatePassword } from "../matches/composition.js";
 import { getPool, withTransaction } from "./pool.js";
 import { mapuj, PLAYER_SLOUPEC_NAZVY, type DbRow, type PlayerRow } from "./players.js";
@@ -19,6 +19,8 @@ export interface AkceRow {
   skladani: SestavaVstup[];
   /** Heslo večera — společné všem lobby akce; null jen u akcí z doby, kdy ho neměly. */
   pristiHeslo: string | null;
+  /** Mód akce (migrace 030): klasický večer, nebo scénář Diplomacie. */
+  rezim: RezimId;
 }
 
 interface AkceDbRow {
@@ -29,9 +31,10 @@ interface AkceDbRow {
   ulozene_nastaveni_lobby: Record<string, unknown> | null;
   skladani: SestavaVstup[] | null;
   pristi_heslo: string | null;
+  rezim: RezimId;
 }
 
-const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani, pristi_heslo";
+const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani, pristi_heslo, rezim";
 
 function mapujAkci(r: AkceDbRow): AkceRow {
   return {
@@ -42,6 +45,7 @@ function mapujAkci(r: AkceDbRow): AkceRow {
     ulozeneNastaveniLobby: r.ulozene_nastaveni_lobby,
     skladani: Array.isArray(r.skladani) ? r.skladani : [],
     pristiHeslo: r.pristi_heslo,
+    rezim: r.rezim,
   };
 }
 
@@ -112,12 +116,12 @@ export async function pripravPristiHeslo(akceId: number, nahod = false): Promise
   return beze[0] ? mapujAkci(beze[0]) : null;
 }
 
-export async function createAkce(nazev: string): Promise<AkceRow> {
+export async function createAkce(nazev: string, rezim: RezimId = "klasicky"): Promise<AkceRow> {
   // Heslo večera vzniká rovnou s akcí — okno Pre-Lobby ho ukazuje k opsání
   // do hry a nemá čekat, až si o něj někdo řekne.
   const { rows } = await getPool().query<AkceDbRow>(
-    `INSERT INTO akce (nazev, pristi_heslo) VALUES ($1, $2) RETURNING ${SLOUPCE_AKCE}`,
-    [nazev, generatePassword()],
+    `INSERT INTO akce (nazev, pristi_heslo, rezim) VALUES ($1, $2, $3) RETURNING ${SLOUPCE_AKCE}`,
+    [nazev, generatePassword(), rezim],
   );
   return mapujAkci(rows[0]!);
 }

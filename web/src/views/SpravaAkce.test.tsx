@@ -18,7 +18,29 @@ it("bez akce nabídne založení a pošle název", () => {
   fireEvent.change(screen.getByLabelText(/Název akce/), { target: { value: "  Čtvrtek  " } });
   fireEvent.click(screen.getByRole("button", { name: "Založit akci" }));
 
-  expect(onZalozit).toHaveBeenCalledWith("Čtvrtek");
+  expect(onZalozit).toHaveBeenCalledWith("Čtvrtek", "klasicky");
+});
+
+it("přepínač Diplomacie pošle mód s názvem", () => {
+  const onZalozit = vi.fn();
+  render(<SpravaAkce {...zaklad} akce={null} onZalozit={onZalozit} />);
+  fireEvent.change(screen.getByLabelText(/Název akce/), { target: { value: "Diplo večer" } });
+  fireEvent.click(screen.getByRole("switch", { name: "Diplomacie" }));
+  fireEvent.click(screen.getByRole("button", { name: "Založit akci" }));
+  expect(onZalozit).toHaveBeenCalledWith("Diplo večer", "diplomacie");
+});
+
+it("bez přepínače je akce klasická", () => {
+  const onZalozit = vi.fn();
+  render(<SpravaAkce {...zaklad} akce={null} onZalozit={onZalozit} />);
+  fireEvent.change(screen.getByLabelText(/Název akce/), { target: { value: "Čtvrtek" } });
+  fireEvent.click(screen.getByRole("button", { name: "Založit akci" }));
+  expect(onZalozit).toHaveBeenCalledWith("Čtvrtek", "klasicky");
+});
+
+it("běžící akce Diplomacie má v záhlaví štítek", () => {
+  render(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "D", stav: "bezi", rezim: "diplomacie" }} />);
+  expect(screen.getByText("Diplomacie", { selector: ".stitek-rezimu" })).toBeTruthy();
 });
 
 it("prázdný název neodešle", () => {

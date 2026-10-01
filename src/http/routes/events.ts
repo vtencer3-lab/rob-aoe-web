@@ -22,7 +22,7 @@ import {
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
-import { BARVY, TYMY, type Barva, type SestavaVstup, type Tym } from "../../shared/types.js";
+import { BARVY, REZIMY_AKCE, TYMY, type Barva, type RezimId, type SestavaVstup, type Tym } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 import { prectiNastaveniLobby } from "./kontrolaLobby.js";
 
@@ -56,12 +56,15 @@ export function registerEventRoutes(app: FastifyInstance): void {
 
   app.post("/api/akce", async (request) => {
     await requireAdmin(request);
-    const { nazev } = request.body as { nazev?: unknown };
+    const { nazev, rezim } = request.body as { nazev?: unknown; rezim?: unknown };
     if (typeof nazev !== "string" || nazev.trim() === "") {
       throw new HttpError(400, "Akce musí mít název.");
     }
+    if (rezim !== undefined && !REZIMY_AKCE.includes(rezim as RezimId)) {
+      throw new HttpError(400, "Neznámý mód akce.");
+    }
     try {
-      const akce = await createAkce(nazev.trim());
+      const akce = await createAkce(nazev.trim(), (rezim as RezimId | undefined) ?? "klasicky");
       await broadcastAkce();
       return { akce };
     } catch (err) {

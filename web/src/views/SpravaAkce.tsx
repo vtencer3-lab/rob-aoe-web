@@ -1,12 +1,13 @@
 import { useState, type ReactNode } from "react";
 import { doplnNastaveni, type NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
-import type { AkceView } from "../../../src/shared/types.js";
+import type { AkceView, RezimId } from "../../../src/shared/types.js";
 import { NastaveniLobby } from "./NastaveniLobby.js";
 import { PreLobby } from "./PreLobby.js";
+import { Prepinac } from "./Prepinac.js";
 
 interface Props {
   akce: AkceView | null;
-  onZalozit: (nazev: string) => void;
+  onZalozit: (nazev: string, rezim: RezimId) => void;
   /** Živá změna nastavení lobby (každé kliknutí). */
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
   /** „Uložit preset lobby“: snímek na serveru. */
@@ -36,6 +37,7 @@ export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaven
           ostatním a odehraje se v samostatném okně jako ve hře. */}
       <header className="hlavicka-akce">
         <h2>Nastavení Lobby</h2>
+        {akce.rezim === "diplomacie" ? <span className="stitek-rezimu">Diplomacie</span> : null}
         <button type="button" className="prelobby-tlacitko" onClick={() => setPreLobbyVidet(true)}>
           Pre-Lobby Nastavení
         </button>
@@ -60,6 +62,9 @@ export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaven
 
 function ZalozeniAkce({ onZalozit }: Pick<Props, "onZalozit">) {
   const [nazev, setNazev] = useState("");
+  // Mód se volí jen při založení: Diplomacie mění výchozí nastavení lobby
+  // a pravidla sestavy, přepínat ji uprostřed večera nedává smysl.
+  const [diplomacie, setDiplomacie] = useState(false);
 
   return (
     <form
@@ -67,10 +72,11 @@ function ZalozeniAkce({ onZalozit }: Pick<Props, "onZalozit">) {
       onSubmit={(e) => {
         e.preventDefault();
         if (nazev.trim() === "") return;
-        onZalozit(nazev.trim());
+        onZalozit(nazev.trim(), diplomacie ? "diplomacie" : "klasicky");
         setNazev("");
       }}
     >
+      <Prepinac popisek="Diplomacie" vlevo="" vpravo="Diplomacie" zapnuto={diplomacie} onZmena={setDiplomacie} testId="prepinac-diplomacie" />
       <label>
         Název akce{" "}
         <input
