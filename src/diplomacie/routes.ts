@@ -124,6 +124,8 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
 
 /** Scénář má přes 100 kB; 5 MB nechává rezervu, ale nepustí libovolný balast (spec §5.2). */
 const MAX_VELIKOST = 5 * 1024 * 1024;
+/** Poznámka k verzi je jedna věta do seznamu; hlavička bez stropu by šla do paměti i databáze celá. */
+const MAX_DELKA_POZNAMKY = 500;
 
 async function requireAutorScenare(request: FastifyRequest): Promise<string> {
   const hracId = await requireUser(request);
@@ -160,46 +162,65 @@ function posliSoubor(reply: FastifyReply, soubor: { jmenoSouboru: string; data: 
 
 /** Routy verzí scénáře (spec §5.3). Čtení a stažení jsou veřejné — scénář je se souhlasem autora. */
 function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
-  // Soubor chodí jako syrové tělo, ne multipart — žádná nová závislost (spec §5.2 bod 1).
-  app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_VELIKOST }, (_req, telo, hotovo) => hotovo(null, telo));
-
   app.get("/api/diplo/scenar", async () => ({ verze: await listVerzi() }));
 
-  app.post("/api/diplo/scenar", { bodyLimit: MAX_VELIKOST }, async (request) => {
-    const hracId = await requireAutorScenare(request);
-    const jmeno = hlavicka(request, "x-jmeno-souboru");
-    if (jmeno === null || !jePlatneJmenoScenare(jmeno)) throw new HttpError(400, "Soubor musí být .aoe2scenario a jméno bez cesty (nejvýš 100 znaků).");
-    const data = request.body;
-    if (!Buffer.isBuffer(data) || !jeHlavickaScenare(data)) throw new HttpError(400, "Tohle není scénář AoE2 DE.");
-    const sha256 = createHash("sha256").update(data).digest("hex");
-    const existujici = await najdiVerziPodleSha(sha256);
-    if (existujici !== null) throw duplicita(existujici);
-    const vysledek = await deps.rozeberScenar(data);
-    let ulozeno: { id: number; aktivovana: boolean };
-    try {
-      ulozeno = await ulozVerziScenare({
-        jmenoSouboru: jmeno,
-        sha256,
-        data,
-        rozbor: vysledek.ok ? vysledek.rozbor : null,
-        chybaRozboru: vysledek.ok ? null : vysledek.chyba,
-        minimapa: vysledek.ok ? vysledek.minimapa : null,
-        nahralHracId: hracId,
-        poznamka: hlavicka(request, "x-poznamka"),
-      });
-    } catch (e) {
-      if (!jeUnikatniKonflikt(e)) throw e;
-      // Rozbor trvá sekundy, takže se mezitím mohl stihnout jiný upload:
-      // buď týž soubor (unikátní sha256), nebo úplně první verze — obě
-      // transakce viděly prázdnou tabulku a obě se chtěly aktivovat
-      // (index diplo_scenar_jeden_aktivni). Ani jedno není chyba serveru.
-      const mezitim = await najdiVerziPodleSha(sha256);
-      if (mezitim !== null) throw duplicita(mezitim);
-      throw new HttpError(409, "Někdo právě nahrál první verzi — zkus to znovu.");
-    }
-    if (ulozeno.aktivovana) await promitniDoAkce();
-    await broadcastAkce();
-    return { id: ulozeno.id, aktivni: ulozeno.aktivovana, chybaRozboru: vysledek.ok ? null : vysledek.chyba };
+  // Soubor chodí jako syrové tělo, ne multipart — žádná nová závislost (spec
+  // §5.2 bod 1). Parser je zapouzdřený v tomhle kontextu: jinak by 5 MB
+  // binárního těla přijala od kohokoliv každá routa serveru. A `onRequest`
+  // běží před čtením těla, takže cizí člověk dostane 401/403 dřív, než se
+  // cokoliv načte do paměti.
+  app.register(async (sub) => {
+    sub.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_VELIKOST }, (_req, telo, hotovo) => hotovo(null, telo));
+
+    sub.post(
+      "/api/diplo/scenar",
+      {
+        bodyLimit: MAX_VELIKOST,
+        onRequest: async (request) => {
+          await requireAutorScenare(request);
+        },
+      },
+      async (request) => {
+        // Právo ověřil háček výš; tady stačí vědět, kdo nahrává.
+        const hracId = await requireUser(request);
+        const jmeno = hlavicka(request, "x-jmeno-souboru");
+        if (jmeno === null || !jePlatneJmenoScenare(jmeno)) throw new HttpError(400, "Soubor musí být .aoe2scenario a jméno bez cesty (nejvýš 100 znaků).");
+        // Poznámka se čte před rozborem: ať se nečeká sekundy na odmítnutí.
+        const poznamka = hlavicka(request, "x-poznamka");
+        if (poznamka !== null && poznamka.length > MAX_DELKA_POZNAMKY) throw new HttpError(400, `Poznámka má nejvýš ${MAX_DELKA_POZNAMKY} znaků.`);
+        const data = request.body;
+        if (!Buffer.isBuffer(data) || !jeHlavickaScenare(data)) throw new HttpError(400, "Tohle není scénář AoE2 DE.");
+        const sha256 = createHash("sha256").update(data).digest("hex");
+        const existujici = await najdiVerziPodleSha(sha256);
+        if (existujici !== null) throw duplicita(existujici);
+        const vysledek = await deps.rozeberScenar(data);
+        let ulozeno: { id: number; aktivovana: boolean };
+        try {
+          ulozeno = await ulozVerziScenare({
+            jmenoSouboru: jmeno,
+            sha256,
+            data,
+            rozbor: vysledek.ok ? vysledek.rozbor : null,
+            chybaRozboru: vysledek.ok ? null : vysledek.chyba,
+            minimapa: vysledek.ok ? vysledek.minimapa : null,
+            nahralHracId: hracId,
+            poznamka,
+          });
+        } catch (e) {
+          if (!jeUnikatniKonflikt(e)) throw e;
+          // Rozbor trvá sekundy, takže se mezitím mohl stihnout jiný upload:
+          // buď týž soubor (unikátní sha256), nebo úplně první verze — obě
+          // transakce viděly prázdnou tabulku a obě se chtěly aktivovat
+          // (index diplo_scenar_jeden_aktivni). Ani jedno není chyba serveru.
+          const mezitim = await najdiVerziPodleSha(sha256);
+          if (mezitim !== null) throw duplicita(mezitim);
+          throw new HttpError(409, "Někdo právě nahrál první verzi — zkus to znovu.");
+        }
+        if (ulozeno.aktivovana) await promitniDoAkce();
+        await broadcastAkce();
+        return { id: ulozeno.id, aktivni: ulozeno.aktivovana, chybaRozboru: vysledek.ok ? null : vysledek.chyba };
+      },
+    );
   });
 
   app.post("/api/diplo/scenar/:id/aktivni", async (request) => {
@@ -207,7 +228,14 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
     const verze = await getVerze(requireId(request));
     if (!verze) throw new HttpError(404, "Taková verze není.");
     if (verze.rozbor === null) throw new HttpError(409, "Verze bez rozboru se nedá aktivovat.");
-    await aktivujVerzi(verze.id);
+    try {
+      await aktivujVerzi(verze.id);
+    } catch (e) {
+      // Dva autoři klikli v téže vteřině na dvě různé verze: druhá transakce
+      // narazí na index jediné aktivní verze. Je to souběh, ne chyba serveru.
+      if (!jeUnikatniKonflikt(e)) throw e;
+      throw new HttpError(409, "Někdo právě aktivoval jinou verzi — načti seznam znovu.");
+    }
     await promitniDoAkce();
     await broadcastAkce();
     return { ok: true };

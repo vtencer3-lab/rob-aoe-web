@@ -71,6 +71,20 @@ it("cizí hráč 403, nepřihlášený 401, špatné jméno a hlavička 400, dup
   expect(dup.json().chyba).toMatch(/už je nahraná \(č\. \d+\)/);
 });
 
+// Parser `application/octet-stream` je zapouzdřený u routy nahrání: ostatní
+// routy binární tělo odmítnou (415) jako dřív, i od admina. A poznámka má
+// strop 500 znaků — hlavička bez stropu by šla celá do paměti i do databáze.
+it("octet-stream berou jen routy nahrání; poznámka přes 500 znaků je 400", async () => {
+  const rob = await klient(ROB, true);
+  const cizi = await app.inject({ method: "POST", url: "/api/akce", cookies: { sid: rob }, headers: { "content-type": "application/octet-stream" }, payload: Buffer.from("x") });
+  expect(cizi.statusCode).toBe(415);
+  const jin = await klient("jin", false);
+  const dlouha = await nahraj(jin, LLC, "LLC.aoe2scenario", "ř".repeat(501));
+  expect(dlouha.statusCode).toBe(400);
+  expect(dlouha.json().chyba).toBe("Poznámka má nejvýš 500 znaků.");
+  expect((await nahraj(jin, LLC, "LLC.aoe2scenario", "ř".repeat(500))).statusCode).toBe(200);
+});
+
 it("nečitelná verze se uloží s chybou a nejde aktivovat", async () => {
   const jin = await klient("jin", false);
   podvrhSelze = true;

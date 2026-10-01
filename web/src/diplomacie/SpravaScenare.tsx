@@ -67,7 +67,8 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
           Soubor scénáře <input type="file" accept=".aoe2scenario" onChange={(e) => setSoubor(e.target.files?.[0] ?? null)} />
         </label>
         <label>
-          Co je nového <input value={poznamka} onChange={(e) => setPoznamka(e.target.value)} />
+          {/* Stejný strop jako na serveru (routes.ts, 500 znaků). */}
+          Co je nového <input value={poznamka} maxLength={500} onChange={(e) => setPoznamka(e.target.value)} />
         </label>
         <button type="submit" className="tlacitko" disabled={!soubor || nahrava}>
           Nahrát
