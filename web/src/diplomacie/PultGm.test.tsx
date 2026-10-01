@@ -147,6 +147,16 @@ it("bez Nástupce nejde rozdat; GM mezi dlaždicemi není a vybraná je označen
   expect(vybrane[0]!.textContent).toContain("Hráč 3");
 });
 
+// Admin vyměnil v přípravě hráče, kterého GM už odklikl: server Nástupce
+// vynuluje, ale snímek se sestavou může dorazit dřív. Dokud Nástupce není
+// mezi hráči, není ani zvolený — žádná dlaždice a „Rozdat role“ zamčené.
+it("Nástupce mimo sestavu neplatí: bez označené dlaždice a bez losu", () => {
+  render(<PultGm zapas={zapas} data={gmData("priprava", [], "h9")} hlidej={spust} />);
+  odkryj();
+  expect(screen.getByRole("button", { name: "Rozdat role" })).toBeDisabled();
+  expect(screen.getAllByTestId("dlazdice").filter((d) => d.classList.contains("vybrana"))).toHaveLength(0);
+});
+
 it("Zpět na výběr Nástupce: po losu rovnou, po rozeslání jen s potvrzením", async () => {
   const { rerender } = render(<PultGm zapas={zapas} data={gmData("losovano", ROLE_LOS, "h1")} hlidej={spust} />);
   odkryj();

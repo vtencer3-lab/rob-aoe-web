@@ -4,7 +4,7 @@ import { diplomacie } from "../diplomacie/rezim.js";
 import type { AkceRow } from "../db/events.js";
 import type { NastaveniLobby } from "../shared/lobbyKontrola.js";
 import type { Divak } from "../realtime/redakce.js";
-import type { AkceStavPayload, RezimId, Seat } from "../shared/types.js";
+import type { AkceStavPayload, RezimId, Seat, SestavaVstup } from "../shared/types.js";
 
 /**
  * Mód akce (spec §4.2). Jádro volá jen tohle rozhraní; klasický večer je
@@ -17,6 +17,8 @@ export interface RezimAkce {
   vychoziNastaveniLobby(zaklad: NastaveniLobby): Promise<NastaveniLobby>;
   /** Před úpravou sestavy existujícího zápasu: věta (→ 409), nebo null. */
   predZmenouSestavy(zapasId: number): Promise<string | null>;
+  /** Po uložené úpravě sestavy: mód srovná, co se k odstraněným hráčům vázalo. */
+  poZmeneSestavy(zapasId: number, sestava: SestavaVstup[]): Promise<void>;
   /** V transakci založení zápasu, po vložení sedadel. */
   poVytvoreniZapasu(client: PoolClient, zapasId: number, sedadla: Seat[]): Promise<void>;
   /** Větev `rezim` stavu pro prohlížeče — plná, zaslepí ji `rediguj`. */
@@ -29,6 +31,7 @@ const klasicky: RezimAkce = {
   id: "klasicky",
   vychoziNastaveniLobby: async (zaklad) => zaklad,
   predZmenouSestavy: async () => null,
+  poZmeneSestavy: async () => {},
   poVytvoreniZapasu: async () => {},
   doplnStav: async () => undefined,
   rediguj: (rezim) => rezim,

@@ -53,6 +53,11 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   };
   const odchylky = d.role.length > 0 ? odchylkySlozeni(d.role) : [];
   const jmena = Object.fromEntries(zapas.ucastnici.map((u) => [u.barva, jmenoHrace(u)])) as Partial<Record<Barva, string>>;
+  // Server Nástupce po změně sestavy nuluje, ale stav se sestavou může přes
+  // SSE dorazit o chvíli dřív než ten s vynulovaným Nástupcem: za zvoleného
+  // platí jen ten, kdo je pořád mezi hráči — jinak by svítilo „Rozdat role“
+  // bez označené dlaždice.
+  const nastupce = hraci.some((u) => u.hracId === d.nastupceHracId) ? d.nastupceHracId : null;
 
   return (
     <section className="sekce-krok pult-gm" data-testid="pult-gm">
@@ -74,7 +79,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                   key={u.hracId}
                   type="button"
                   data-testid="dlazdice"
-                  className={`dlazdice barva-${u.barva}${d.nastupceHracId === u.hracId ? " vybrana" : ""}`}
+                  className={`dlazdice barva-${u.barva}${nastupce === u.hracId ? " vybrana" : ""}`}
                   disabled={pracuje}
                   onClick={() => akce(() => diploApi.nastupce(zapas.id, u.hracId))}
                 >
@@ -82,7 +87,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                 </button>
               ))}
             </div>
-            <button type="button" className="cta" disabled={pracuje || d.nastupceHracId === null} onClick={() => akce(() => diploApi.los(zapas.id))}>
+            <button type="button" className="cta" disabled={pracuje || nastupce === null} onClick={() => akce(() => diploApi.los(zapas.id))}>
               Rozdat role
             </button>
           </>

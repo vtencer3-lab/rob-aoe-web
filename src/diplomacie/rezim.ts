@@ -3,7 +3,7 @@ import { REZIM_SCENARIO, type NastaveniLobby } from "../shared/lobbyKontrola.js"
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploData, ScenarVerze } from "../shared/diplomacie/typy.js";
 import { redigujDiplo } from "../shared/diplomacie/viditelnost.js";
-import { getAktivniVerze, getDiploZapas, getVerze, listDiploZapasy, listVerzi, zalozDiploZapas } from "./db.js";
+import { getAktivniVerze, getDiploZapas, getVerze, listDiploZapasy, listVerzi, zalozDiploZapas, zrusNastupceMimoSestavu } from "./db.js";
 
 /**
  * Co z verzí scénáře patří do nastavení lobby akce (spec §5.5). Velikost
@@ -42,6 +42,13 @@ export const diplomacie: RezimAkce = {
     const d = await getDiploZapas(zapasId);
     if (d && d.stav !== "priprava") return "Role už jsou rozdané — nejdřív Zpět na výběr Nástupce.";
     return null;
+  },
+
+  async poZmeneSestavy(zapasId, sestava) {
+    // Admin v přípravě vyměnil hráče, kterého GM už odklikl jako Nástupce
+    // (nebo ho posadil na šedou): v pultu by nesvítila žádná dlaždice, ale
+    // „Rozdat role“ ano. Nástupcem může být jen hráč zápasu mimo GM.
+    await zrusNastupceMimoSestavu(zapasId, sestava.filter((s) => s.barva !== GM_BARVA).map((s) => s.hracId));
   },
 
   async poVytvoreniZapasu(client, zapasId, sedadla) {

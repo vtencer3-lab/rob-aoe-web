@@ -1,7 +1,9 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
+import { signUp } from "../db/events.js";
 import { closePool, getPool } from "../db/pool.js";
+import { upsertPlayer } from "../db/players.js";
 import { buildServer } from "../http/server.js";
-import { getDiploZapas } from "./db.js";
+import { getDiploZapas, setNastupce } from "./db.js";
 import { ROB, klient, zapasOsmi } from "./testPomocnici.js";
 
 const app = buildServer();
@@ -83,6 +85,39 @@ it("změna sestavy po losu je 409, v přípravě projde", async () => {
   const res = await put();
   expect(res.statusCode).toBe(409);
   expect(res.json().chyba).toBe("Role už jsou rozdané — nejdřív Zpět na výběr Nástupce.");
+});
+
+// Nástupce je hráč zápasu: když ho admin v přípravě vymění (nebo posadí na
+// šedou), volba zmizí a GM vybírá znovu; výměna kohokoliv jiného ji nechá.
+it("změna sestavy vynuluje Nástupce, který v ní už není; jiná výměna ho nechá", async () => {
+  const { akce, zapas, sestava } = await zapasOsmi("diplomacie");
+  const rob = await klient(ROB, true);
+  const gm = await klient("h7", false);
+  await upsertPlayer("h9", false);
+  await signUp(akce.id, "h9");
+  const put = (s: typeof sestava) => app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/sestava`, cookies: { sid: rob }, payload: { sestava: s } });
+  const u = `/api/diplo/zapas/${zapas.id}`;
+
+  await post(`${u}/nastupce`, gm, { hracId: "h1" });
+  expect((await put(sestava.map((s) => (s.hracId === "h3" ? { ...s, hracId: "h9" } : s)))).statusCode).toBe(200);
+  expect((await getDiploZapas(zapas.id))!.nastupceHracId).toBe("h1");
+  expect((await put(sestava.map((s) => (s.hracId === "h1" ? { ...s, hracId: "h9" } : s)))).statusCode).toBe(200);
+  expect((await getDiploZapas(zapas.id))!.nastupceHracId).toBeNull();
+  // Nástupce přesazený na šedou je GM, ne hráč.
+  await post(`${u}/nastupce`, gm, { hracId: "h2" });
+  expect((await put(sestava.map((s) => (s.hracId === "h2" ? { ...s, hracId: "h7" } : s.hracId === "h7" ? { ...s, hracId: "h2" } : s)))).statusCode).toBe(200);
+  expect((await getDiploZapas(zapas.id))!.nastupceHracId).toBeNull();
+});
+
+// Souběh: GM klikl na „Rozdat role“ dřív, než mu dorazil stav po změně sestavy.
+it("los s Nástupcem mimo zápas je 409 s pokynem vybrat znovu", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  const gm = await klient("h7", false);
+  await upsertPlayer("h9", false);
+  await setNastupce(zapas.id, "h9");
+  const res = await post(`/api/diplo/zapas/${zapas.id}/los`, gm);
+  expect(res.statusCode).toBe(409);
+  expect(res.json().chyba).toBe("Nástupce už v zápase není — vyber ho znovu.");
 });
 
 it("zápas mimo Diplomacii je 404", async () => {

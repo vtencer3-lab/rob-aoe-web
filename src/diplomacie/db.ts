@@ -163,6 +163,14 @@ export async function setNastupce(zapasId: number, hracId: string): Promise<void
   await getPool().query("UPDATE diplo_zapas SET nastupce_hrac_id = $2, upraveno_v = now() WHERE zapas_id = $1", [zapasId, hracId]);
 }
 
+/** Po změně sestavy: Nástupce, který mezi hráči zápasu už není, se vynuluje (jinak zůstane, jak je). */
+export async function zrusNastupceMimoSestavu(zapasId: number, hraci: string[]): Promise<void> {
+  await getPool().query(
+    "UPDATE diplo_zapas SET nastupce_hrac_id = NULL, upraveno_v = now() WHERE zapas_id = $1 AND nastupce_hrac_id IS NOT NULL AND nastupce_hrac_id <> ALL($2::text[])",
+    [zapasId, hraci],
+  );
+}
+
 export async function ulozRole(zapasId: number, role: RoleHrace[], stav: StavDiplo): Promise<void> {
   await withTransaction(async (c) => {
     await c.query("DELETE FROM diplo_role WHERE zapas_id = $1", [zapasId]);

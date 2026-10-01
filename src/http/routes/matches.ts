@@ -325,6 +325,7 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
       if (err instanceof SestavaChyba) throw new HttpError(400, err.message);
       throw err;
     }
+    await rezimAkce(rezim).poZmeneSestavy(zapasId, sestava);
     await broadcastAkce();
     return { ok: true };
   });

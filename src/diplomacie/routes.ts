@@ -72,8 +72,12 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
   app.post("/api/diplo/zapas/:id/los", async (request) => {
     const { diplo, hraci } = await requireGm(request);
     if (diplo.stav === "rozeslano") throw new HttpError(409, "Role už jsou rozeslané — přelosovat jde jen před rozesláním.");
-    if (diplo.nastupceHracId === null) throw new HttpError(409, "Nejdřív vyber Nástupce.");
-    const role = chybaPravidla(() => losujRole(hraci, diplo.nastupceHracId!, randomInt));
+    const nastupce = diplo.nastupceHracId;
+    if (nastupce === null) throw new HttpError(409, "Nejdřív vyber Nástupce.");
+    // Změna sestavy Nástupce mimo zápas nuluje (poZmeneSestavy); tohle chytá
+    // jen souběh, kdy GM klikl dřív, než mu dorazil nový stav.
+    if (!hraci.includes(nastupce)) throw new HttpError(409, "Nástupce už v zápase není — vyber ho znovu.");
+    const role = chybaPravidla(() => losujRole(hraci, nastupce, randomInt));
     await ulozRole(diplo.zapasId, role, "losovano");
     await broadcastAkce();
     return { ok: true };
