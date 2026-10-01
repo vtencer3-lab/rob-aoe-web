@@ -9,6 +9,8 @@ import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
 import { getPlayer, savePlayerStats, type PlayerStatsUpdate } from "../db/players.js";
+import { registerDiplomacieRoutes, type DiploDeps } from "../diplomacie/routes.js";
+import { rozeberScenar } from "../diplomacie/rozbor.js";
 import { vymenKodZaToken } from "../external/microsoftToken.js";
 import {
   nactiGamerpic,
@@ -32,7 +34,7 @@ import { registerHlasRoutes } from "./routes/hlas.js";
 import { registerEmotyRoutes } from "./routes/emoty.js";
 import { VERZE } from "../shared/verze.js";
 
-export type ServerDeps = AuthDeps & MatchDeps & MicrosoftDeps;
+export type ServerDeps = AuthDeps & MatchDeps & MicrosoftDeps & DiploDeps;
 
 export interface DoplnkyPoPrihlaseni {
   gamerpic: (identita: XboxIdentita) => Promise<string | null>;
@@ -118,6 +120,7 @@ function vychoziDeps(): ServerDeps {
       vlastnictvi: (identita) => nactiVlastnictvi(identita),
       zebricek: (gamertag) => fetchPersonalStatPodleAliasu(gamertag),
     }),
+    rozeberScenar: (soubor, volby) => rozeberScenar(soubor, volby),
   };
 }
 
@@ -151,6 +154,7 @@ export function buildServer(castDeps: Partial<ServerDeps> = {}): FastifyInstance
   registerKontrolaLobbyRoutes(app, deps);
   registerHlasRoutes(app);
   registerEmotyRoutes(app);
+  registerDiplomacieRoutes(app, deps);
   // Zkušební dveře se za produkčního nastavení vůbec nezaregistrují. Druhý
   // zámek (adresa na https) sedí uvnitř nich — jeden zámek na tohle nestačí.
   if (config.devPristup) registerDevRoutes(app);
