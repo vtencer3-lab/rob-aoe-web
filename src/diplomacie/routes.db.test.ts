@@ -21,12 +21,18 @@ afterAll(async () => {
   await closePool();
 });
 
-it("jen GM zápasu smí losovat — admin-ne-GM i hráč dostanou 403", async () => {
+// Všech pět rout GM, pro admina-ne-GM i pro hráče zápasu: admin výjimku nemá
+// (spec §6.3), hráč tím spíš. Odmítnutí přijde dřív než kontrola stavu.
+it("všech pět rout GM odmítne admina-ne-GM i hráče zápasu 403", async () => {
   const { zapas } = await zapasOsmi("diplomacie");
-  const rob = await klient(ROB, true);
-  const hrac = await klient("h1", false);
-  expect((await post(`/api/diplo/zapas/${zapas.id}/nastupce`, rob, { hracId: "h1" })).statusCode).toBe(403);
-  expect((await post(`/api/diplo/zapas/${zapas.id}/nastupce`, hrac, { hracId: "h1" })).statusCode).toBe(403);
+  const u = `/api/diplo/zapas/${zapas.id}`;
+  for (const sid of [await klient(ROB, true), await klient("h1", false)]) {
+    expect((await post(`${u}/nastupce`, sid, { hracId: "h1" })).statusCode).toBe(403);
+    expect((await post(`${u}/los`, sid)).statusCode).toBe(403);
+    expect((await app.inject({ method: "PUT", url: `${u}/role/h1`, cookies: { sid }, payload: { role: "kat" } })).statusCode).toBe(403);
+    expect((await post(`${u}/rozeslat`, sid)).statusCode).toBe(403);
+    expect((await post(`${u}/zpet`, sid)).statusCode).toBe(403);
+  }
 });
 
 it("celý průchod: Nástupce → los → úprava → rozeslání → úprava s potvrzením → zpět", async () => {
@@ -63,7 +69,7 @@ it("celý průchod: Nástupce → los → úprava → rozeslání → úprava s 
   expect(await getDiploZapas(zapas.id)).toMatchObject({ stav: "priprava", nastupceHracId: null, role: [] });
 });
 
-it("nepovolený cíl a neznámá role jsou 400", async () => {
+it("nepovolený cíl, neznámá role a změna role Nástupce jsou 400", async () => {
   const { zapas } = await zapasOsmi("diplomacie");
   const gm = await klient("h7", false);
   const u = `/api/diplo/zapas/${zapas.id}`;
@@ -72,6 +78,11 @@ it("nepovolený cíl a neznámá role jsou 400", async () => {
   const kat = (await getDiploZapas(zapas.id))!.role.find((r) => r.role === "kat")!.hracId;
   expect((await app.inject({ method: "PUT", url: `${u}/role/${kat}`, cookies: { sid: gm }, payload: { cilHracId: "h1" } })).statusCode).toBe(400);
   expect((await app.inject({ method: "PUT", url: `${u}/role/${kat}`, cookies: { sid: gm }, payload: { role: "cisar" } })).statusCode).toBe(400);
+  // Nástupce se mění dlaždicí v přípravě, ne roletkou (pravidlo z los.ts, na úrovni routy 400).
+  const nastupce = await app.inject({ method: "PUT", url: `${u}/role/h1`, cookies: { sid: gm }, payload: { role: "kat" } });
+  expect(nastupce.statusCode).toBe(400);
+  expect(nastupce.json().chyba).toBe("Nástupce se mění výběrem Nástupce, ne rolí.");
+  expect((await getDiploZapas(zapas.id))!.role.find((r) => r.hracId === "h1")?.role).toBe("nastupce");
 });
 
 it("změna sestavy po losu je 409, v přípravě projde", async () => {

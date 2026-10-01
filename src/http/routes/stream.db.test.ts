@@ -6,6 +6,9 @@ import { sestavaCoop, sestavaKazdyProtiKazdemu } from "../../matches/sestavyProT
 import { closePool, getPool } from "../../db/pool.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
 import { createSession } from "../../db/sessions.js";
+import { setNastupce, ulozRole } from "../../diplomacie/db.js";
+import { ROB, klient, zapasOsmi } from "../../diplomacie/testPomocnici.js";
+import { losujRole } from "../../shared/diplomacie/los.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import { hub, KANAL_AKCE } from "../../realtime/hub.js";
 import type { AkceStavPayload } from "../../shared/types.js";
@@ -407,6 +410,26 @@ it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu div�
   expect(robuv.spectatorUri).toBe("aoe2de://1/234230181");
   robCtrl.abort();
 
+  await app.close();
+});
+
+// Totéž, co pro GET /api/akce hlídá rezim.db.test.ts, ale na drátě SSE —
+// stream nese 100 % živého provozu a Rob při něm streamuje. Admin, který
+// není GM, dostane větev rezim.data bez rolí (spec §7), Nástupce po
+// rozeslání ano.
+it("admin, který není GM, nedostane cizí role Diplomacie ani ve streamu", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  await setNastupce(zapas.id, "h1");
+  await ulozRole(zapas.id, losujRole(["h1", "h2", "h3", "h4", "h5", "h6", "h8"], "h1", () => 0), "rozeslano");
+  const robSid = await klient(ROB, true);
+
+  const app = buildServer();
+  await app.ready();
+  const ctrl = new AbortController();
+  const res = await app.inject({ method: "GET", url: "/api/stream", payloadAsStream: true, signal: ctrl.signal, cookies: { sid: robSid } });
+  const payload = await prvniPayload(res.stream());
+  expect(payload.rezim?.data.zapasy[0]).toMatchObject({ zapasId: zapas.id, stav: "rozeslano", nastupceHracId: "h1", role: [] });
+  ctrl.abort();
   await app.close();
 });
 
