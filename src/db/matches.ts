@@ -1,13 +1,14 @@
 import type { Kontrola } from "../shared/lobbyKontrola.js";
 import type { PoolClient } from "pg";
 import { generatePassword, lobbyName, sestavSedadla } from "../matches/composition.js";
+import { rezimAkce } from "../rezimy/index.js";
 import { jeAi, JMENO_AI } from "../shared/aiHraci.js";
 import {
   assertTransition,
   PrechodChyba,
   type MatchState,
 } from "../matches/stateMachine.js";
-import type { Barva, Seat, SestavaVstup, Tym, Vitez } from "../shared/types.js";
+import type { Barva, RezimId, Seat, SestavaVstup, Tym, Vitez } from "../shared/types.js";
 import { getPool, withTransaction } from "./pool.js";
 import type { Platforma } from "./players.js";
 
@@ -175,6 +176,10 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
     );
     const zapas = mapujZapas(rows[0] as Record<string, unknown>);
     await vlozSedadla(client, zapas.id, seats, elo);
+    // Háček módu v téže transakci: Diplomacie si založí svůj záznam, a když
+    // selže, zápas nevznikne poloviční (spec §4.1 H6).
+    const { rows: rezimRows } = await client.query<{ rezim: RezimId }>("SELECT rezim FROM akce WHERE id = $1", [akceId]);
+    await rezimAkce(rezimRows[0]?.rezim ?? "klasicky").poVytvoreniZapasu(client, zapas.id, seats);
     return zapas;
   });
 }

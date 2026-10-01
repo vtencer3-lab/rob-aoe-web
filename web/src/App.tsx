@@ -677,6 +677,7 @@ export function App() {
                   setNovyZapas(zapas.id);
                 })
               }
+              rezim={akce.rezim ?? "klasicky"}
               sadaCivilizaci={doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
               zvyraznit={zvyrazneni?.druh === "skladani" ? zvyrazneni : null}
               onPrvniAi={() => {
@@ -700,6 +701,7 @@ export function App() {
             <EditaceZapasu
               zapas={zapasKUprave}
               prihlaseni={stav.prihlaseni}
+              rezim={akce.rezim ?? "klasicky"}
               onNastaveni={(n) => hlidej(() => api.nastaveniZapasu(zapasKUprave.id, n))}
               onNazev={(nazev) => hlidej(() => api.nazevLobbyZapasu(zapasKUprave.id, nazev))}
               onSestava={(sestava) => hlidej(() => api.sestavaZapasu(zapasKUprave.id, sestava))}

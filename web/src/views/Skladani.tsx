@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { blikni } from "../historie.js";
 import { jeAi } from "../../../src/shared/aiHraci.js";
-import { MAX_HRACU, zkontrolujSestavu } from "../../../src/shared/sestava.js";
+import { zkontrolujSestavuRezimu } from "../../../src/shared/rezimy.js";
+import { MAX_HRACU } from "../../../src/shared/sestava.js";
 import { popisFormatu } from "../../../src/shared/strany.js";
-import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
+import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type RezimId, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
 import type { VybranyHrac } from "../skladani.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
 import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani } from "../tahani.js";
@@ -13,6 +14,8 @@ import { VyberCivilizace } from "./VyberCivilizace.js";
 interface Props {
   skladani: StavSkladani;
   onVytvoritZapas: (sestava: SestavaVstup[]) => void;
+  /** Mód akce — rozhoduje, jaká pravidla sestavy navíc k jádru platí (shared/rezimy.ts). */
+  rezim: RezimId;
   /** Civilization Set z nastavení akce — omezuje nabídku civilizací. */
   sadaCivilizaci: number | null;
   /** Řádek (hracId) ke zvýraznění po změně / zpět / znovu; `cas` odliší opakování. */
@@ -58,7 +61,7 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
  * tabulce přihlášených nad tím, odkud se berou tlačítkem „+“. Pořadí tady je
  * pořadí slotů v lobby a dá se přetahovat. Formát se odvodí, nevybírá se.
  */
-export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit, onPrvniAi, bezTlacitka }: Props) {
+export function Skladani({ skladani, onVytvoritZapas, rezim, sadaCivilizaci, zvyraznit, onPrvniAi, bezTlacitka }: Props) {
   const tahani = useTahani(skladani.presun);
   const seznam = useRef<HTMLUListElement>(null);
   useEffect(() => {
@@ -76,7 +79,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
     return () => window.removeEventListener(KONEC_TAHU, srovnej);
   }, [skladani.vybrani]);
   const vstupy = skladani.vybrani.map((v) => v.vstup);
-  const chyba = zkontrolujSestavu(vstupy);
+  const chyba = zkontrolujSestavuRezimu(rezim, vstupy);
   const format = popisFormatu(vstupy.map((v, poradi) => ({ ...v, poradi })));
 
   return (

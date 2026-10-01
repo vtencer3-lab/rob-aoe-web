@@ -1,8 +1,8 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { doplnNastaveni, type NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
-import { zkontrolujSestavu } from "../../../src/shared/sestava.js";
-import type { PlayerView, SestavaVstup, ZapasView } from "../../../src/shared/types.js";
+import { zkontrolujSestavuRezimu } from "../../../src/shared/rezimy.js";
+import type { PlayerView, RezimId, SestavaVstup, ZapasView } from "../../../src/shared/types.js";
 import { useSkladani } from "../skladani.js";
 import { useZamekScrollu } from "../zamekScrollu.js";
 import { NastaveniLobby } from "./NastaveniLobby.js";
@@ -14,6 +14,8 @@ interface Props {
   zapas: ZapasView;
   /** Přihlášení do akce — z nich se skládá nová sestava. */
   prihlaseni: PlayerView[];
+  /** Mód akce — stejný jako při založení zápasu (shared/rezimy.ts). */
+  rezim: RezimId;
   onNastaveni: (nastaveni: Nastaveni) => Promise<unknown> | void;
   onNazev: (nazevLobby: string) => Promise<unknown> | void;
   onSestava: (sestava: SestavaVstup[]) => Promise<unknown> | void;
@@ -30,12 +32,13 @@ interface Navrh {
 
 /**
  * Co v návrhu nesedí. Hlídá se jen sestava (sdílená kontrola: počty, barvy,
- * týmy) — nastavení lobby si Rob nastaví, jak chce (Players v Pre-Lobby je
- * jen počet otevřených slotů, AI Difficulty není povinná). `hraci` jsou ti,
- * kdo mají stejnou barvu a jiný tým: ti se v sestavě zvýrazní.
+ * týmy, a pravidla módu akce) — nastavení lobby si Rob nastaví, jak chce
+ * (Players v Pre-Lobby je jen počet otevřených slotů, AI Difficulty není
+ * povinná). `hraci` jsou ti, kdo mají stejnou barvu a jiný tým: ti se
+ * v sestavě zvýrazní.
  */
-export function chybyNavrhu(n: Navrh): { sestava: string | null; hraci: string[] } {
-  const sestava = zkontrolujSestavu(n.sestava);
+export function chybyNavrhu(n: Navrh, rezim: RezimId): { sestava: string | null; hraci: string[] } {
+  const sestava = zkontrolujSestavuRezimu(rezim, n.sestava);
   const podleBarvy = new Map<number, SestavaVstup[]>();
   for (const s of n.sestava) podleBarvy.set(s.barva, [...(podleBarvy.get(s.barva) ?? []), s]);
   const hraci: string[] = [];
@@ -57,7 +60,7 @@ function stejne(a: unknown, b: unknown): boolean {
  * návrh okno nepustí — chybné řádky zčervenají — a křížek se napřed zeptá,
  * jestli zahodit všechno z téhle seance: pak se vrátí stav z otevření okna.
  */
-export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSestava, onZavrit }: Props) {
+export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, onSestava, onZavrit }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   const [ptaSeNaZahozeni, setPtaSeNaZahozeni] = useState(false);
   const [chyby, setChyby] = useState<{ sestava: string | null; hraci: string[] } | null>(null);
@@ -86,7 +89,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
 
   // Odklad: platný návrh odejde 1,2 s po poslední změně, dokud je okno otevřené.
   useEffect(() => {
-    const ch = chybyNavrhu(navrh);
+    const ch = chybyNavrhu(navrh, rezim);
     if (ch.sestava !== null) return;
     const casovac = setTimeout(() => propis(navrh), ODKLAD_PROPISU_MS);
     return () => clearTimeout(casovac);
@@ -105,7 +108,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
 
   /** Uložit / klik vedle: platný návrh hned propsat a zavřít, neplatný zvýraznit a zůstat. */
   const ulozitAZavrit = () => {
-    const ch = chybyNavrhu(navrh);
+    const ch = chybyNavrhu(navrh, rezim);
     if (ch.sestava !== null) {
       setChyby(ch);
       return;
@@ -116,7 +119,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
 
   /** Křížek: platný návrh = totéž co Uložit; neplatný = dotaz na zahození. */
   const krizek = () => {
-    const ch = chybyNavrhu(navrh);
+    const ch = chybyNavrhu(navrh, rezim);
     if (ch.sestava === null) {
       ulozitAZavrit();
       return;
@@ -163,7 +166,7 @@ export function EditaceZapasu({ zapas, prihlaseni, onNastaveni, onNazev, onSesta
         ) : null}
         <div className="lobby-rozlozeni">
           <div className="leva">
-            <Skladani skladani={skladani} sadaCivilizaci={nastaveni.sadaCivilizaci} bezTlacitka onVytvoritZapas={() => {}} />
+            <Skladani skladani={skladani} rezim={rezim} sadaCivilizaci={nastaveni.sadaCivilizaci} bezTlacitka onVytvoritZapas={() => {}} />
             {/* Uložit sedí dole vlevo v rovině posledních zaškrtávátek vpravo,
                 ať okno kvůli němu neroste. Důvod chyby říká souhrn sestavy nad ním. */}
             <div className="ulozit-radek">

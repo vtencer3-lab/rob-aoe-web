@@ -1,3 +1,4 @@
+import type { DiploData } from "./diplomacie/typy.js";
 import type { ZebricekRadek } from "./zebricky.js";
 
 /** Mód akce (migrace 030). Klasický večer, nebo scénář Diplomacie. */
@@ -224,6 +225,11 @@ export interface AkceStavPayload {
   zapasy: ZapasView[];
   /** Lhůta aktivity v minutách (2–120), globální nastavení webu (migrace 024); chybí ve starších snímcích = 15. */
   lhutaAktivityMinut?: number;
+  /**
+   * Data módu akce (spec §4.2). Tajná — `redigujProDivaka` je pro každého
+   * diváka zaslepí přes `rezim.rediguj`, i pro admina.
+   */
+  rezim?: { id: "diplomacie"; data: DiploData };
 }
 
 /**

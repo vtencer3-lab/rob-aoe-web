@@ -4,6 +4,7 @@ import { joinUri, spectatorUri } from "../aoe/lobbyUri.js";
 import { getAktivniAkce, getLhutaAktivity, listSignups } from "../db/events.js";
 import { listZapasy } from "../db/matches.js";
 import type { PlayerRow } from "../db/players.js";
+import { rezimAkce } from "../rezimy/index.js";
 import type { AkceStavPayload, PlayerView, ZapasView } from "../shared/types.js";
 import { fazeLobbyPro } from "./fazeLobby.js";
 import { hub, KANAL_AKCE } from "./hub.js";
@@ -87,6 +88,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   const prihlaseni = await listSignups(akce.id);
   const zapasy = await listZapasy(akce.id);
   const zpravy = await listZpravy(akce.id);
+  const rezim = await rezimAkce(akce.rezim).doplnStav(akce);
   return {
     akce: {
       id: akce.id,
@@ -111,6 +113,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       svolalJmeno: hrac.svolalJmeno,
     })),
     zapasy: zapasy.map((z) => zapasView(z, zpravy.get(z.zapas.id) ?? [])),
+    ...(rezim ? { rezim } : {}),
   };
 }
 

@@ -2,9 +2,25 @@ import { createAkce, signUp } from "../db/events.js";
 import { createZapas } from "../db/matches.js";
 import { upsertPlayer } from "../db/players.js";
 import { createSession } from "../db/sessions.js";
+import { ROZBOR } from "../shared/diplomacie/fixtures.js";
 import type { Barva, RezimId, SestavaVstup } from "../shared/types.js";
 
 export const ROB = "76561198000000041";
+
+/**
+ * Základ pro `ulozVerziScenare` ve zkouškách — jen `jmenoSouboru` a `sha256`
+ * se mezi verzemi musí lišit. Používají ho úkoly 8–10.
+ */
+export const VERZE = {
+  jmenoSouboru: "LLC.aoe2scenario",
+  sha256: "0",
+  data: Buffer.from("x"),
+  rozbor: ROZBOR,
+  chybaRozboru: null,
+  minimapa: null,
+  nahralHracId: "autor",
+  poznamka: null,
+};
 
 /** Přihlášený klient: vrací sid do cookies. */
 export async function klient(hracId: string, jeAdmin: boolean): Promise<string> {

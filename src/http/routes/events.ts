@@ -22,6 +22,8 @@ import {
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
+import { rezimAkce } from "../../rezimy/index.js";
+import { VYCHOZI_NASTAVENI } from "../../shared/lobbyKontrola.js";
 import { BARVY, REZIMY_AKCE, TYMY, type Barva, type RezimId, type SestavaVstup, type Tym } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 import { prectiNastaveniLobby } from "./kontrolaLobby.js";
@@ -64,7 +66,12 @@ export function registerEventRoutes(app: FastifyInstance): void {
       throw new HttpError(400, "Neznámý mód akce.");
     }
     try {
-      const akce = await createAkce(nazev.trim(), (rezim as RezimId | undefined) ?? "klasicky");
+      const rezimId = (rezim as RezimId | undefined) ?? "klasicky";
+      const akce = await createAkce(nazev.trim(), rezimId);
+      // Klasická akce zůstává s prázdným JSON jako dosud, ať se dnešní
+      // chování nemění — mód s vlastním výchozím nastavením si ho rovnou uloží.
+      const vychozi = await rezimAkce(rezimId).vychoziNastaveniLobby(VYCHOZI_NASTAVENI);
+      if (rezimId !== "klasicky") await setNastaveniLobby(akce.id, vychozi as unknown as Record<string, unknown>);
       await broadcastAkce();
       return { akce };
     } catch (err) {

@@ -36,7 +36,7 @@ function Panel({
   return (
     <>
       <SeznamPrihlasenych prihlaseni={prihlaseni} skladani={skladani} />
-      <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} sadaCivilizaci={sadaCivilizaci} />
+      <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} rezim="klasicky" sadaCivilizaci={sadaCivilizaci} />
     </>
   );
 }

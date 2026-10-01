@@ -25,9 +25,10 @@ import { najdiLobby } from "../../matches/hledaniLobby.js";
 import { nastavFaziLobby } from "../../realtime/fazeLobby.js";
 import { MATCH_STATES, PrechodChyba, type MatchState } from "../../matches/stateMachine.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
-import { zkontrolujSestavu } from "../../shared/sestava.js";
+import { rezimAkce, rezimAkceId, rezimZapasu } from "../../rezimy/index.js";
+import { zkontrolujSestavuRezimu } from "../../shared/rezimy.js";
 import { stejnyVitez, strany } from "../../shared/strany.js";
-import { BARVY, TYMY, type Barva, type HledaniLobbyVysledek, type SestavaVstup, type Tym, type Vitez } from "../../shared/types.js";
+import { BARVY, TYMY, type Barva, type HledaniLobbyVysledek, type RezimId, type SestavaVstup, type Tym, type Vitez } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 import { prectiNastaveniLobby } from "./kontrolaLobby.js";
 
@@ -36,10 +37,10 @@ const MAX_DELKA_NAZVU_LOBBY = 40;
 
 /**
  * Tělo požadavku na zápas: pole řádků {hracId, tym, barva} v pořadí slotů.
- * Tvar se kontroluje tady, pravidla sestavy (počty, barvy, týmy) ve sdílené
- * zkontrolujSestavu, kterou používá i režie.
+ * Tvar se kontroluje tady, pravidla sestavy (počty, barvy, týmy, a podle
+ * módu akce) ve sdílené zkontrolujSestavuRezimu, kterou používá i režie.
  */
-function prectiSestavu(telo: unknown): SestavaVstup[] {
+function prectiSestavu(telo: unknown, rezim: RezimId): SestavaVstup[] {
   const sestava = (telo as { sestava?: unknown }).sestava;
   if (!Array.isArray(sestava)) throw new HttpError(400, "Chybí sestava zápasu.");
   const vysledek: SestavaVstup[] = [];
@@ -52,7 +53,7 @@ function prectiSestavu(telo: unknown): SestavaVstup[] {
     if (civ !== undefined && civ !== null && typeof civ !== "number") throw new HttpError(400, "Civilizace musí být číslo, nebo prázdná.");
     vysledek.push({ hracId, tym: tym as Tym, barva: barva as Barva, civ: typeof civ === "number" ? civ : null });
   }
-  const chyba = zkontrolujSestavu(vysledek);
+  const chyba = zkontrolujSestavuRezimu(rezim, vysledek);
   if (chyba) throw new HttpError(400, chyba);
   return vysledek;
 }
@@ -120,7 +121,7 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   app.post("/api/akce/:id/zapas", async (request) => {
     await requireAdmin(request);
     const akceId = requireId(request);
-    const sestava = prectiSestavu(request.body);
+    const sestava = prectiSestavu(request.body, await rezimAkceId(akceId));
     try {
       const zapas = await createZapas(akceId, sestava);
       // Rozpracovaná sestava je hotová — vyprázdnit ji všem adminům naráz.
@@ -298,7 +299,10 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     const zapasId = requireId(request);
     const { zapas } = await nactiNeboSelzi(zapasId);
     if (zapas.stav !== "bezi") throw new HttpError(409, `Zápas je ve stavu „${zapas.stav}“, sestava se už nemění.`);
-    const sestava = prectiSestavu(request.body);
+    const rezim = await rezimZapasu(zapasId);
+    const sestava = prectiSestavu(request.body, rezim);
+    const proc = await rezimAkce(rezim).predZmenouSestavy(zapasId);
+    if (proc) throw new HttpError(409, proc);
     try {
       await nahradSestavu(zapasId, sestava);
     } catch (err) {

@@ -1,6 +1,7 @@
 import type { FastifyRequest } from "fastify";
 import { currentUser } from "../auth/routes.js";
 import { getPlayer } from "../db/players.js";
+import { rezimAkce } from "../rezimy/index.js";
 import type { AkceStavPayload, ZapasView } from "../shared/types.js";
 
 export interface Divak {
@@ -35,6 +36,8 @@ export function redigujProDivaka(payload: AkceStavPayload, divak: Divak): AkceSt
     // zápasu; jméno lobby tajné není, z něj se nikam nedostane.
     akce: payload.akce && !divak.jeAdmin ? { ...payload.akce, pristiHeslo: "" } : payload.akce,
     zapasy: payload.zapasy.map((zapas) => redigujZapas(zapas, divak)),
+    // Tajemství módu zaslepuje mód sám — a vždycky, i adminovi (spec §7).
+    ...(payload.rezim ? { rezim: rezimAkce(payload.rezim.id).rediguj(payload.rezim, divak) } : {}),
   };
 }
 
