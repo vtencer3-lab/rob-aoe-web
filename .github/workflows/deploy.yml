@@ -2,18 +2,19 @@ name: Nasazení na jouki.cz
 
 # Commit do main = nová verze na https://jouki.cz/aoe,
 # commit do dev  = nová verze na https://jouki.cz/aoe/dev,
-# commit do experimental = https://jouki.cz/aoe/experimental.
+# commit do experimental = https://jouki.cz/aoe/experimental,
+# commit do diplo = https://jouki.cz/aoe/diplo.
 #
 # Tahle akce je rychlá cesta: řekne Coolify na serveru, ať znovu sestaví
 # a nasadí. Potřebuje k tomu secret COOLIFY_TOKEN (nastavuje vlastník repa
 # v Settings → Secrets → Actions). Když secret chybí, akce jen skončí s
 # poznámkou — nasazení pak stejně proběhne, protože server si větve
-# main, dev a experimental hlídá sám a nový commit nasadí do minuty
+# main, dev, experimental a diplo hlídá sám a nový commit nasadí do minuty
 # (viz docs/nasazeni-jouki-cz.md). Žádné přihlašovací údaje v repu nejsou.
 
 on:
   push:
-    branches: [main, dev, experimental]
+    branches: [main, dev, experimental, diplo]
   workflow_dispatch:
 
 concurrency:
@@ -30,11 +31,13 @@ jobs:
           UUID_MAIN: "qjaf9z9nfefm17tc6yr1xcsf"
           UUID_DEV: "wxju55zz9imrhn9lco0drrvc"
           UUID_EXPERIMENTAL: "on5tol2pydo75d64r6zqhml3"
+          UUID_DIPLO: "0kh5tb4uqgkyeuy77sy32mng"
         run: |
           case "${{ github.ref_name }}" in
             main) UUID="$UUID_MAIN" ;;
             dev)  UUID="$UUID_DEV" ;;
             experimental) UUID="$UUID_EXPERIMENTAL" ;;
+            diplo) UUID="$UUID_DIPLO" ;;
             *)    echo "Větev ${{ github.ref_name }} se nenasazuje."; exit 0 ;;
           esac
           if [ -z "$COOLIFY_TOKEN" ]; then

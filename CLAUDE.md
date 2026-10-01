@@ -21,9 +21,11 @@ oba odkazy se z něj odvozují. Nikdy neukládat sestavené URI.
 
 ## Větve, verze a nasazení (platí pro každého agenta v tomhle repu)
 
-Web běží na **jouki.cz** ve třech kopiích a nasazuje se samo z commitu:
+Web běží na **jouki.cz** ve čtyřech kopiích a nasazuje se samo z commitu:
 `dev` → <https://jouki.cz/aoe/dev>, `main` → <https://jouki.cz/aoe>,
-`experimental` → <https://jouki.cz/aoe/experimental>.
+`experimental` → <https://jouki.cz/aoe/experimental>,
+`diplo` → <https://jouki.cz/aoe/diplo> — mód Diplomacie, pravidla jako
+`experimental`.
 Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
 
 - **Pracuje se ve větvi `dev`.** Do `main` se přímo necommituje.
@@ -32,6 +34,10 @@ Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
   `main` nejde nikdy přímo — vždycky přes merge do `dev`. Smysl: `dev`
   zůstane kdykoliv vydatelná pro hotfix. Postup a řešení konfliktu verzí
   má [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md) §1.1.
+- **`diplo` je pokusná větev jako `experimental`**, ale dlouhodobá: mód
+  Diplomacie. Nasazuje se na `/aoe/diplo` nad vlastní databází
+  (`rob_aoe_diplo`), verzuje se stejně (`POKUSNE_VETVE` ve
+  `scripts/verze.ts`) a do `main` nejde nikdy přímo.
 - **Každý commit, který mění chování, zvedne verzi:** `npm run verze`
   (patch) v tomtéž commitu. Nová funkce nebo migrace = `npm run verze -- minor`.
   Verze je v `package.json` a `src/shared/verze.ts`, příkaz mění obojí.
