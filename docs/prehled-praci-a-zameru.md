@@ -37,11 +37,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-21.13** (42 commitů od 1.13.10, 1. 10. 2026), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, závěrečná recenze a opravná vlna za sebou, migrace 030–031. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5), pak mód poběží pod přepínačem i na devu. Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-21.16** (47 commitů od 1.13.10, 1. 10. 2026), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, závěrečná recenze, opravná vlna i re-recenze za sebou, migrace 030–031. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5), pak mód poběží pod přepínačem i na devu. Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
 | Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc `030_rezim_akce.sql` a `031_diplomacie.sql` (§3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
-| Testy | `diplo` 1. 10. 2026: backend hermetické 442 (44 souborů; 3 testy rozboru se bez Pythonu přeskočí, s `PYTHON=python` projdou všechny 4), frontend 425 (47 souborů), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | `diplo` 1. 10. 2026 (1.13.10-21.16): backend hermetické 442 (44 souborů; 3 testy rozboru se bez Pythonu přeskočí, s `PYTHON=python` projdou všechny 4), frontend 431 (47 souborů), databázové 219 (17 souborů), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Admini | `ADMIN_STEAM_ID` je **jediný zdroj pravdy**, ne sloupec `je_admin` — přihlášení ho přepisuje. 17. 9. 2026 srovnáno s databází a doplněno o `xbox:` položku; do té doby měly obě aplikace v proměnné jediné Steam ID, zatímco DB vedla tři adminy (Rob a Trokner by o práva přišli při svém dalším přihlášení). Rozbor v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2 |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -1779,7 +1779,7 @@ ne ranked pravidla, takže se to nepromítá. Neověřeno naživo: zda Worlds
 Edge seznam lobby vydává nové civ id 60–62 ve slotech stejně jako ostatní
 (očekává se, id je z téže řady).
 
-### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-21.13, 1. 10. 2026)
+### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-21.16, 1. 10. 2026)
 
 **Záměr.** Jin (autor scénáře) připravil pro komunitní večery custom scénář
 *Diplomacie – Ať žije císař* (`LLC.aoe2scenario`, DE 1.59): 7 hráčů a
@@ -1906,14 +1906,14 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   (`GET /api/diplo/scenar`, `…/:id/soubor`, `…/aktivni/soubor`,
   `…/:id/minimapa.webp`). Rozehraný zápas hraje dál svou otisknutou verzi.
 - **Jádro navíc umí scénářové lobby** (ne jen pro Diplomacii):
-  `options[38]` = soubor scénáře, řádek „Scénář“ v kontrole (shoda / starší
-  verze / jiný soubor / hra jméno neposlala), u Custom Scenario se mapa
+  `options[38]` = soubor scénáře, řádek „Scénář“ v kontrole (shoda / jiná
+  verze téhož scénáře / jiný soubor / hra jméno neposlala), u Custom Scenario se mapa
   nekontroluje, velikost se porovnává s velikostí ze scénáře a Victory je
   jen informativní; panel Nastavení lobby mapu, velikost a Victory schová a
   ukáže jeden řádek „Scénář“ (jméno, velikost, podmínky vítězství z
   rozboru).
 - **Verze a nasazení:** větev `diplo` z `dev` 1.13.10, verze `1.13.10-13.10`
-  → `1.13.10-21.13` (`POKUSNE_VETVE` ve `scripts/verze.ts`); Coolify
+  → `1.13.10-21.16` (`POKUSNE_VETVE` ve `scripts/verze.ts`); Coolify
   `aoe-web-diplo` (`0kh5tb4uqgkyeuy77sy32mng`), DB `rob_aoe_diplo`, hlídač
   větví i GitHub Action znají `diplo`; proměnné `AUTORI_SCENARE` a `PYTHON`
   — `docs/nasazeni-jouki-cz.md` §3.6.
@@ -1975,7 +1975,7 @@ snímků z `/aoe/diplo`; znění v plánu, oddíl „Úkoly přidané během pro
 **Závěrečná recenze a opravná vlna (1. 10. 2026).** Recenze celé větve
 (c3c9870..f557fa1) skončila „With fixes“: žádný Critical, 5 Important,
 10 Minor — tajná data drží jedinou hranici bez výjimky pro admina a
-klasický mód zůstal netknutý. Opravná vlna (1.13.10-21.9 → 21.13) vzala
+klasický mód zůstal netknutý. Opravná vlna (1.13.10-21.9 → 21.16) vzala
 všechny Important a většinu Minor: parser `application/octet-stream` jen
 u routy nahrání s autorizací před čtením těla a stropem poznámky 500 znaků,
 Nástupce po změně sestavy (`poZmeneSestavy`, 409 u losu, obrana v pultu),
@@ -1988,7 +1988,18 @@ podmínky módu v jádru nahrazené háčky (`vychoziNastaveniLobby` → `null`,
 testy SSE redakce pro admina-ne-GM, 403 ×5 a `PUT role` pro Nástupce.
 Rozbor v produkčním kontejneru ověřen 1. 10. 2026 (`docker exec …
 rozbor.py` < LLC: ok, 4 s, minimapa webp ~23 kB; Pillow 12.2.0,
-Python 3.14, AoE2ScenarioParser 0.9.2).
+Python 3.14, AoE2ScenarioParser 0.9.2). **Skutečné nahrání přes web**
+(kontrolor, 1. 10. 2026): `LLC.aoe2scenario` přes správu scénáře na
+`/aoe/diplo` → `POST /api/diplo/scenar` 200, verze 1 aktivní, rozbor 8 slotů /
+6 cílů / 7 startů / velikost 220 / vítězství „vlastní“, varování `[]`,
+`minimapa.webp` 200 `image/webp` 23 066 B, nastavení akce propsáno. Dodatky
+po re-recenzi (verdikt „S výhradou“, jen Minor): znaky v tabulce GM 36 px
+s pevným rozložením na telefonu (`55fff91`), Reset srovnává pole
+`scenarStarsi` po prvcích (`0e4e266`), minimapa ověřena proti hře, řádek
+v kartě režie jmenuje Nástupce až po rozeslání (admin bývá i GM a jemu
+server nezaslepuje), správa scénáře se v „pohledu uživatele“ schová jen
+adminovi. Odloženo do podprojektu 2: `scenarStarsi` v historii kroků (`!==`),
+Reset po nahrání neaktivované verze.
 
 **Co zůstává otevřené** (menší nálezy z revizí, každý v ledgeru s místem
 v kódu; nic z toho neblokuje hru):
@@ -2010,15 +2021,15 @@ v kódu; nic z toho neblokuje hru):
   verze než verze zápasu.
 - *UI:* dialog potvrzení se nezavře, když stav mezitím změní SSE; dvojitá
   otázka v režii při editaci výsledku; popisky startů u okrajů minimapy;
-  úzké znaky (pochodeň, sekera, žezlo) jsou v tabulce GM při 26 px tenké —
-  rozhodne uživatel; v jádru dvoustranný layout na telefonech na výšku
-  přetéká a dlouhá jména u 4v4 se zkracují.
+  historie kroků srovnává `scenarStarsi` přes `!==` (po resetu v Diplomacii
+  nesmyslný toast, undo funguje); po nahrání neaktivované verze se Reset
+  rozsvítí (`scenarStarsi` ve výchozích se změnilo, živé ne); v jádru
+  dvoustranný layout na telefonech na výšku přetéká a dlouhá jména u 4v4
+  se zkracují.
 - *Dokumentace a repo:* příklad v `docs/grafika.md` používá složku
   `vyber/`, kterou recept nezakládá; `nastroje/grafika/__pycache__` je
   trackované; `scenarStarsi` s neplatnou položkou se tiše zahodí místo 400.
-- *Provoz:* první skutečné nahrání LLC přes správu na `/aoe/diplo`
-  (routa → DB → `minimapa.webp` v prohlížeči; rozbor v kontejneru už
-  ověřen); Jinovo `hrac_id` do `AUTORI_SCENARE` (Coolify: PATCH envs +
+- *Provoz:* Jinovo `hrac_id` do `AUTORI_SCENARE` (Coolify: PATCH envs +
   `/deploy`, ne `/restart`); ostrá zkouška s Jinem (jak host hlásí jméno
   staženého souboru, spec §2.5); při mergi do `dev`
   `npm run verze -- z-experimentu <verze diplo>`.

@@ -380,7 +380,7 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   web ji ukáže přímo pro přihlášeného hosta. Starou kopii stejného jména je
   potřeba přepsat. V Create Lobby zvolí Game Mode Custom Scenario a tenhle
   scénář; ostatní hráči ho dostanou přenosem v lobby. Kontrola lobby má
-  řádek „Scénář“ (shoda, starší verze, jiný soubor).
+  řádek „Scénář“ (shoda, jiná verze téhož scénáře, jiný soubor).
 - **Co vidí hráči.** Před rozesláním jen „Role se rozdají po startu hry“.
   Po startu hry rozdá sekundární cíle hra sama; GM v pultu označí hráče,
   který cíl nedostal (**Nástupce císaře**), nechá web rozdat zbylé role

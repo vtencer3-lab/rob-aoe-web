@@ -727,8 +727,10 @@ export function App() {
       {/* Správa scénáře Diplomacie nepatří k jedné akci: Jin (autor, ne admin)
           nahrává novou verzi, když se mu to hodí, i když žádná akce neběží
           (spec §5.3). Proto stojí pod panelem akce samostatně, ne přes mód.
-          V pohledu uživatele se admin dívá jako hráč — správa je nástroj. */}
-      {me && smiNahratScenar && !pohledUzivatele ? <SpravaScenare hlidej={hlidej} /> : null}
+          V pohledu uživatele se admin dívá jako hráč — správa je nástroj;
+          autorovi bez režie ji ale uložený přepínač (localStorage je jeden
+          pro /aoe i /aoe/diplo) brát nesmí, přepnout zpět by ho neměl jak. */}
+      {me && smiNahratScenar && !(me.jeAdmin && pohledUzivatele) ? <SpravaScenare hlidej={hlidej} /> : null}
 
       {akce ? (
         <>

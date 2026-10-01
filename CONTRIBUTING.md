@@ -131,7 +131,7 @@ Backend, `src/`:
 | `shared/lobbyKontrola.ts` | očekávané nastavení lobby, číselníky hodnot a `zkontrolujLobby()` — řádky ve čtyřech stavech (ok / spatne / varovani / jedno) |
 | `shared/mapy.ts`, `shared/civilizace.ts` | tabulky id → název vygenerované z jazykového souboru hry (viz „Data ze hry“) |
 | `shared/zebricky.ts` | seznam žebříčků hry (id, název, pořadí jako v lobby) a procento výher; data se plní při obnově statistik (`players/refresh.ts`, sloupec `player.zebricky`) |
-| `rezimy/index.ts` | registr módů akce (`akce.rezim`: `klasicky`, `diplomacie`) a rozhraní `RezimAkce` — jediné, co jádro o módu ví: výchozí nastavení lobby, kontrola před změnou sestavy, založení dat zápasu v téže transakci, větev `rezim` stavu a její zaslepení per divák (volá se i pro admina). Klasický večer je prázdná implementace |
+| `rezimy/index.ts` | registr módů akce (`akce.rezim`: `klasicky`, `diplomacie`) a rozhraní `RezimAkce` — jediné, co jádro o módu ví: výchozí nastavení lobby (`vychoziNastaveniLobby`, `null` = mód žádné nemá; `vychoziNastaveniAkce()` z toho dělá hodnoty pro „Reset nastavení“ `POST /api/akce/:id/nastaveni-lobby/vychozi` a pro snímek), kontrola před změnou sestavy (`predZmenouSestavy`) a úklid po ní (`poZmeneSestavy`), založení dat zápasu v téže transakci, větev `rezim` stavu a její zaslepení per divák (volá se i pro admina). Klasický večer je prázdná implementace |
 | `shared/rezimy.ts` | sdílená synchronní pravidla módu — `zkontrolujSestavuRezimu` (jádro, pak mód) a `vychoziTymRezimu`; volá je server i `Skladani.tsx` |
 | `diplomacie/` | mód Diplomacie (větev `diplo`): `rezim.ts` (implementace `RezimAkce`), `db.ts` (tabulky `diplo_*`), `routes.ts` (`/api/diplo/...` — pult GM a verze scénáře), `opravneni.ts` (kdo smí nahrávat scénář), `rozbor.ts` + `rozbor.py` (rozbor `.aoe2scenario` v podprocesu Pythonu, AoE2ScenarioParser podle `requirements.txt`, limit 60 s), `barvy_terenu.json` (viz „Data ze hry“), `fixtures/LLC.aoe2scenario` pro testy |
 | `shared/diplomacie/` | pravidla Diplomacie bez databáze: role a texty, los a úpravy rolí, pravidla sestavy (`GM_BARVA = 7`), tvar rozboru scénáře (`prectiRozbor`), **`viditelnost.ts` = bezpečnostní hranice módu** (kdo z `rezim.data` co vidí; admin výjimku nemá) |
@@ -159,7 +159,7 @@ Frontend, `web/src/`:
 | `views/VerejnyZapas.tsx` | zápas očima diváka, bez tajemství |
 | `zapas.ts` | kdo co vidí — `mojeZapasy`, `verejneZapasy`; `vyhralHrac` pro všechny tři tvary výsledku (tým, jeden hráč, víc hráčů) |
 | `views/StranyZapasu.tsx` | strany zápasu vedle sebe s „VS“; od tří stran (FFA, Diplomacie) mřížka `.mnoho-stran` bez VS |
-| `rezimy/index.tsx` | klientský registr módů (`RezimKlienta`): co mód vkládá do karty hráče, kroku hosta, veřejného zápasu, popisku slotu a řádku „Scénář“ v nastavení; `App.tsx` ho plní podle `akce.rezim`. Klasický večer nevkládá nic |
+| `rezimy/index.tsx` | klientský registr módů (`RezimKlienta`): štítek u názvu akce (`stitek`), co mód vkládá do karty hráče, kroku hosta (před oknem Create Lobby), veřejného zápasu (týž řádek i pod hlavičkou karty v režii a historii — `doplnek` v `Rezie.tsx`), popisku slotu a řádku „Scénář“ v nastavení; `App.tsx` ho plní podle `akce.rezim`. Klasický večer nevkládá nic |
 | `diplomacie/` | mód Diplomacie: `PultGm` (Nástupce → los → úpravy → rozeslání), `KartaRole` (tajná karta), `Zakryti` (zakrytá karta, stav jen v paměti komponenty), `MapaScenare` (minimapa se starty), `PravidlaHry`, `VerejnyRadek`, `SpravaScenare` (nahrání a aktivace verzí), `StazeniScenare` (krok hosta s cestou pro jeho ID), `index.tsx` (klient módu), `znaky.ts` (obrázky rolí z `assets/diplomacie/`), `api.ts` |
 | `cesty.ts` | prefix `/aoe` pro všechna volání na server (z Vite `base`) |
 
@@ -172,10 +172,12 @@ tím není.
 `docs/prehled-praci-a-zameru.md` §3.60); tajná data módu jsou jen ve větvi
 `rezim.data` stavu a zaslepuje je mód sám. Odebrat mód = smazat jeho tři
 složky, řádek v obou registrech a `registerDiplomacieRoutes` v `server.ts`;
-háčky v jádru jsou obecné a zůstávají (s módem odejdou jen jeho hodnoty
-v `RezimId`, větve v `src/shared/rezimy.ts`, `smiNahratScenar` v `/api/me`,
-`SpravaScenare` v `App.tsx` a CHECK migrace 030). Když přidáváš něco do
-Diplomacie, nepiš `if (rezim === "diplomacie")` do jádra — přidej háček.
+háčky v jádru jsou obecné a zůstávají (s módem odejdou jen jeho hodnoty:
+`"diplomacie"` v `RezimId` a CHECK migrace 030, větve v `src/shared/rezimy.ts`,
+`smiNahratScenar` v `/api/me` a `config.autoriScenare`/`config.python`,
+`SpravaScenare` v `App.tsx`, Python a `/opt/rozbor` v Dockerfile). Když
+přidáváš něco do Diplomacie, nepiš `if (rezim === "diplomacie")` do jádra —
+přidej háček.
 
 ## Pět pravidel, která se nesmí porušit
 

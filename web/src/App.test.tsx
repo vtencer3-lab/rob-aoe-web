@@ -129,6 +129,19 @@ it("autor scénáře vidí správu scénáře i bez akce", async () => {
   expect(screen.getByText("Právě neběží žádná akce.")).toBeInTheDocument();
 });
 
+// „Pohled uživatele“ schovává správu jen adminovi; localStorage je jeden pro
+// /aoe i /aoe/diplo, takže autor bez režie by s uloženou jedničkou správu
+// neviděl a neměl by ji jak vrátit (přepínač vidí jen admin).
+it("autor bez režie vidí správu i s uloženým pohledem uživatele", async () => {
+  localStorage.setItem("rezie.pohled-uzivatele", "1");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "jin", alias: "Jin", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: true });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByText("Scénář Diplomacie")).toBeInTheDocument();
+});
+
 it("kdo scénář nahrávat nesmí, správu nevidí", async () => {
   vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "h1", alias: "Hrac", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: false });
   nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
