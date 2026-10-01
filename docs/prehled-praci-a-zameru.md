@@ -2271,6 +2271,23 @@ vždy, má Spies), který čte soubor a posílá ho webu:
 Rozhodnuto 1. 10. 2026: zatím ne, jen zapsat. Ruční ovládání GM zůstává
 v každém případě jako záloha.
 
+**Doplněno 1. 10. 2026 večer (výzkum pro Židolištu).** Session projektu
+Židolišta (most Streamer.bot na PC GM, umí číst soubory ze zvolených složek
+a hlídat je) požádala o zjištění, co hra zapisuje za běhu. Výsledek je v
+[`analyza-most-ke-hre.md`](analyza-most-ke-hre.md) (zdroje značené
+D/O/I/?). Odpovědi na dřívější „Neověřeno“: XS soubor leží v
+`<id>\profile\<jméno scénáře>.xsdat` (pro LLC `profile\LLC.xsdat`, strop 1 MB),
+vzniká **u každého hráče** (zapisovat jen veřejné věci, nebo zápis podmínit
+lokálním hráčem 7 — neověřeno), a kód v efektu *Script Call* se přenáší se
+scénářem i divákům (samostatný `.xs` ne). `.aoe2record` se píše průběžně, ale
+rozepsaný neparsuje a nese jen příkazy hráčů; autosave jen v SP; logy
+nepoužitelné. Jediný živý zdroj stavu je tedy XS kód v LLC (musí přidat Jin).
+Návrh Židolišty: `xsWriteInt(seq) · xsWriteString(json) · xsWriteInt(seq)`,
+watcher s throttle 2 s, odeslání `POST …/hra` s `Bearer <MOST_TOKEN>`;
+identita hráče = číslo slotu/barva, GM určit přes `gm: "<steamid>"` v těle.
+**Endpoint na webu zatím není** — vznikne až se specem podprojektu 2
+(deník GM / vyhodnocení); do té doby Židolišta nic neodesílá.
+
 ## 6. Historie verzí (7. 9. – 1. 10. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`; větev `diplo`
