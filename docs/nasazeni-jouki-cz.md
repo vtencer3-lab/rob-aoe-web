@@ -323,8 +323,8 @@ jinde, a když jedna chybí, selže to jinak:
 
 **Registrace v Azure.** Jediná, sdílená všemi nasazeními, `AoE 2 komunitky`,
 ID aplikace `87a13d9c-6d99-4090-abbd-ad985c042691`, adresář *Default Directory*
-(`mjoukalgmail.onmicrosoft.com`). Má čtyři návratové adresy — ostrá, dev,
-pokusná a `http://localhost:3000` — všechny ve tvaru
+(`mjoukalgmail.onmicrosoft.com`). Má pět návratových adres — ostrá, dev,
+pokusná, `diplo` (od 1. 10. 2026) a `http://localhost:3000` — všechny ve tvaru
 `<base>/api/auth/microsoft/return`. Adresa **musí být zapsaná v té registraci,
 jejíž `client_id` server posílá**; jinak Microsoft vrátí chybovou stránku až po
 přesměrování, ne dřív.
