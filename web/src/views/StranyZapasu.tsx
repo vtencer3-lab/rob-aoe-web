@@ -11,8 +11,12 @@ import { VyberCivilizace } from "./VyberCivilizace.js";
  */
 export function StranyZapasu({ ucastnici, ja }: { ucastnici: UcastnikView[]; ja: string }) {
   const seznam = strany(ucastnici);
+  // FFA (každý sám za sebe, třeba 1v1v1v1v1v1v1v1) má víc stran než klasické
+  // dva týmy — do jednoho řádku se nevejdou, proto se při víc než dvou
+  // stranách přidá třída pro zalomení (CSS: .vs-rozlozeni.mnoho-stran).
+  const mnohoStran = seznam.length > 2;
   return (
-    <div className="vs-rozlozeni">
+    <div className={mnohoStran ? "vs-rozlozeni mnoho-stran" : "vs-rozlozeni"}>
       {seznam.map((strana, i) => (
         <Fragment key={i}>
           {i > 0 ? (
