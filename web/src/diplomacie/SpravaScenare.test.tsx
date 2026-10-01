@@ -69,15 +69,18 @@ it("sbalená nic nenačítá; bez souboru nejde nahrát", async () => {
   expect(screen.getByRole("button", { name: "Nahrát" })).toBeDisabled();
 });
 
-// Náhled aktivní verze: minimapa se všemi starty a přečtené cíle — autor hned
-// vidí, že web scénář pochopil. Starší čitelnou verzi jde nastavit jako
-// aktivní a seznam se pak načte znovu.
+// Náhled aktivní verze: minimapa se všemi starty a tatáž pravidla hry jako na
+// kartě hráče (cíle i limity z rozboru) — autor hned vidí, že web scénář
+// pochopil. Starší čitelnou verzi jde nastavit jako aktivní a seznam se pak
+// načte znovu.
 it("náhled aktivní verze a aktivace starší čitelné verze", async () => {
   vi.mocked(diploApi.verze).mockResolvedValue({ verze: [V2, { ...V1, rozbor: ROZBOR, chybaRozboru: null }] });
   await rozbal();
   expect(screen.getByRole("img", { name: "Mapa scénáře LLC v2.aoe2scenario" }).getAttribute("src")).toBe("/api/diplo/scenar/3/minimapa.webp");
   expect(screen.getAllByTestId("start")).toHaveLength(7);
+  fireEvent.click(screen.getByText("Pravidla hry"));
   expect(screen.getByText("zabij 650 nepratelskych jednotek")).toBeTruthy();
+  expect(screen.getByText("Nejvýš 30 vesničanů")).toBeTruthy();
   expect(screen.getByText("nové cíle", { exact: false })).toBeTruthy();
   expect(screen.getByRole("link", { name: "LLC v1.aoe2scenario" }).getAttribute("href")).toBe("/api/diplo/scenar/2/soubor");
   const tlacitka = screen.getAllByRole("button", { name: "Nastavit jako aktivní" });

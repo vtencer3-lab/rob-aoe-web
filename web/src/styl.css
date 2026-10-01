@@ -2034,6 +2034,8 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 .zapas .skladani.jen-ke-cteni .sestava.sestava-zapasu { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 1fr auto; margin: 0.4rem 0; }
 .zapas .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
 .zapas .titulek-zapasu small { font-size: 1rem; font-weight: 400; color: var(--tlumene); }
+/* Řádek módu pod hlavičkou karty (Diplomacie: stav zápasu). */
+.zapas .doplnek-modu { margin: -0.2rem 0 0.6rem; }
 .zapas .skladani.jen-ke-cteni .sestava-zapasu .radek { padding: 0.35rem 0.2rem; }
 .zapas .sestava-zapasu .stav-ucastnika { color: var(--tlumene); }
 .zapas .sestava-zapasu .radek > button, .zapas .sestava-zapasu .radek > .odznak-host { justify-self: end; margin: 0; white-space: nowrap; }

@@ -4,6 +4,7 @@ import type { Hlidej } from "../rezimy/index.js";
 import { Skladaci } from "../views/Skladaci.js";
 import { diploApi } from "./api.js";
 import { MapaScenare } from "./MapaScenare.js";
+import { PravidlaHry } from "./PravidlaHry.js";
 
 /**
  * Nahrávání verzí scénáře pro adminy a autory (spec §5.3). Rozbalovací, ať
@@ -79,13 +80,10 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
       {aktivni?.rozbor ? (
         <div className="nahled-scenare">
           <MapaScenare verze={aktivni} starty="vsechny" />
+          {/* Tatáž pravidla, jaká uvidí hráči na kartě (cíle, suroviny,
+              limity, vítězství) — autor hned vidí, co web ze souboru přečetl. */}
           <div className="cile">
-            <h4>Cíle v aktivní verzi</h4>
-            <ul>
-              {aktivni.rozbor.cile.map((c) => (
-                <li key={c.text}>{c.text}</li>
-              ))}
-            </ul>
+            <PravidlaHry verze={aktivni} />
             {aktivni.rozbor.varovani.map((v) => (
               <p key={v} className="varovani">
                 {v}

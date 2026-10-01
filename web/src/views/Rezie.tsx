@@ -41,6 +41,8 @@ interface Props {
   obsluha?: Obsluha;
   /** Steam ID admina, který se dívá — kvůli chatu (vlastní zprávy). */
   ja?: string;
+  /** Doplněk módu akce pod hlavičkou karty (Diplomacie: stav zápasu); dodává App přes `rezimKlienta`. */
+  doplnek?: (zapas: ZapasView) => ReactNode;
 }
 
 /**
@@ -52,8 +54,8 @@ function vRezii(stav: AkceStavPayload): ZapasView[] {
   return stav.zapasy.filter((z) => !z.zavreny);
 }
 
-function karty(zapasy: ZapasView[], obsluha: Obsluha | undefined, ja?: string) {
-  return zapasy.map((zapas) => <ZapasVRezii key={zapas.id} zapas={zapas} obsluha={obsluha} ja={ja} />);
+function karty(zapasy: ZapasView[], obsluha: Obsluha | undefined, ja?: string, doplnek?: Props["doplnek"]) {
+  return zapasy.map((zapas) => <ZapasVRezii key={zapas.id} zapas={zapas} obsluha={obsluha} ja={ja} doplnek={doplnek?.(zapas)} />);
 }
 
 /**
@@ -64,8 +66,8 @@ function karty(zapasy: ZapasView[], obsluha: Obsluha | undefined, ja?: string) {
  * zápas — tedy to jediné, co Rob právě řeší — pod okraj obrazovky. Mají vlastní
  * sekci `HistorieZapasu` až pod ním.
  */
-export function Rezie({ stav, obsluha, ja }: Props) {
-  return <section className="rezie">{karty(vRezii(stav).filter(jeVeHre), obsluha, ja)}</section>;
+export function Rezie({ stav, obsluha, ja, doplnek }: Props) {
+  return <section className="rezie">{karty(vRezii(stav).filter(jeVeHre), obsluha, ja, doplnek)}</section>;
 }
 
 /**
@@ -74,13 +76,13 @@ export function Rezie({ stav, obsluha, ja }: Props) {
  * křížkem, a hráči je bez obsluhy vidí jen ke čtení. Dokud se nic nedohrálo,
  * sekce se nevykreslí vůbec.
  */
-export function HistorieZapasu({ stav, obsluha, ja }: Props) {
+export function HistorieZapasu({ stav, obsluha, ja, doplnek }: Props) {
   const historie = vRezii(stav).filter((z) => !jeVeHre(z));
   if (historie.length === 0) return null;
   return (
     <section className="rezie historie-zapasu">
       <h3 className="nadpis-seznamu">Historie zápasů</h3>
-      {karty(historie, obsluha, ja)}
+      {karty(historie, obsluha, ja, doplnek)}
     </section>
   );
 }
@@ -102,9 +104,9 @@ function popisUcastnika(zapas: ZapasView, u: ZapasView["ucastnici"][number]): st
   return u.kliknulPripojit ? "klikl na připojení" : "zatím neklikl";
 }
 
-type ZapasProps = { zapas: ZapasView; obsluha?: Obsluha; ja?: string };
+type ZapasProps = { zapas: ZapasView; obsluha?: Obsluha; ja?: string; doplnek?: ReactNode };
 
-function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
+function ZapasVRezii({ zapas, obsluha, ja, doplnek }: ZapasProps) {
   // Přepsat zapsaný výsledek jde, ale ne jedním kliknutím do prázdna: tlačítka
   // stran se odemknou až po „Změnit výsledek“ a to druhé kliknutí je samo o sobě
   // to potvrzení. Potvrzovací okno navíc by se muselo odškrtávat v přenosu.
@@ -178,6 +180,10 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
       </div>
       {sbaleno ? null : (
         <>
+      {/* Co k zápasu říká mód akce (Diplomacie: stav a po rozeslání Nástupce) —
+          Rob při streamu vidí, jestli už jsou role rozeslané. Jen slot, bez
+          podmínky na mód; sbalená karta ho schová s ostatním. */}
+      {doplnek ? <p className="doplnek-modu">{doplnek}</p> : null}
       {/* Řádky jako ve skládání: čtvereček barvy a týmu, jméno, ELO, stav.
           Obal .skladani a seznam .sestava musí být dva prvky — mřížka je na
           seznamu, styly čtverečků na obalu. */}

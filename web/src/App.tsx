@@ -717,12 +717,13 @@ export function App() {
 
       {/* Správa scénáře Diplomacie nepatří k jedné akci: Jin (autor, ne admin)
           nahrává novou verzi, když se mu to hodí, i když žádná akce neběží
-          (spec §5.3). Proto stojí pod panelem akce samostatně, ne přes mód. */}
-      {me && smiNahratScenar ? <SpravaScenare hlidej={hlidej} /> : null}
+          (spec §5.3). Proto stojí pod panelem akce samostatně, ne přes mód.
+          V pohledu uživatele se admin dívá jako hráč — správa je nástroj. */}
+      {me && smiNahratScenar && !pohledUzivatele ? <SpravaScenare hlidej={hlidej} /> : null}
 
       {akce ? (
         <>
-          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.hracId} /> : null}
+          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.hracId} doplnek={(zapas) => doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} /> : null}
           {admin && stav && zapasKUprave ? (
             <EditaceZapasu
               zapas={zapasKUprave}
@@ -782,7 +783,7 @@ export function App() {
           {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
               má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
               karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}
-          {stav ? <HistorieZapasu stav={stav} obsluha={admin ? rezieObsluha : undefined} /> : null}
+          {stav ? <HistorieZapasu stav={stav} obsluha={admin ? rezieObsluha : undefined} doplnek={(zapas) => doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} /> : null}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>

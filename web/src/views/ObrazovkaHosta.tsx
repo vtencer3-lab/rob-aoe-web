@@ -19,7 +19,7 @@ interface Props {
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
   /** Doplněk módu akce (např. karta role Diplomacie), pod kontrolou lobby. */
   doplnek?: ReactNode;
-  /** Doplněk módu do kroku „Zakládáš!“ (Diplomacie: stažení scénáře), na jeho konci. */
+  /** Doplněk módu do kroku „Zakládáš!“ (Diplomacie: stažení scénáře), před oknem Create Lobby. */
   doplnekKroku?: ReactNode;
 }
 
@@ -86,6 +86,9 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           </a>
           <small className="rucne">(Lobby zakládáš ručně)</small>
         </div>
+        {/* Mód před oknem lobby: v Diplomacii host nejdřív stáhne scénář do
+            složky hry a teprve pak zakládá lobby, ve které ho vybírá. */}
+        {doplnekKroku}
         <OknoCreateLobby
           nazevLobby={zapas.nazevLobby}
           heslo={zapas.heslo}
@@ -103,7 +106,6 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           automaticky={zapas.lobbyId === null}
           intervalMs={hraSpustena ? 2_000 : 4_000}
         />
-        {doplnekKroku}
       </section>
 
       {zapas.lobbyId ? (

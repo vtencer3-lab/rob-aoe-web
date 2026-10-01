@@ -28,8 +28,9 @@ export function StazeniScenare({ verze, ja }: { verze: ScenarVerze | null; ja: s
         Ulož <strong>{verze.jmenoSouboru}</strong> do složky (starou kopii stejného jména přepiš):
       </p>
       <Kopirovatelne hodnota={cestaKeScenarum(ja)} popis="cestu ke scénářům" />
+      {/* Přesně tak, jak položku jmenuje hra — host hledá text, ne překlad. */}
       <p>
-        V Create Lobby zvol Game Mode <strong>Scenario</strong> a tenhle scénář. Ostatní hráči ho dostanou z lobby.
+        V Create Lobby zvol Game Mode <strong>Custom Scenario</strong> a tenhle scénář podle jména souboru. Ostatní hráči ho dostanou z lobby.
       </p>
     </div>
   );

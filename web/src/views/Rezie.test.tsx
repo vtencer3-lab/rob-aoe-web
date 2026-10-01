@@ -70,6 +70,21 @@ it("záložní řádek s názvem, heslem a číslem lobby v režii není", () =>
   expect(screen.queryByText("k7rm2xq9")).not.toBeInTheDocument();
 });
 
+// Mód akce (Diplomacie) ukáže adminovi stav zápasu pod hlavičkou karty —
+// v režii i v historii. Karta sama mód nezná: bez doplňku nekreslí nic navíc.
+it("doplněk módu se kreslí pod hlavičkou v režii i v historii, bez něj nic navíc", () => {
+  const doplnek = (z: ZapasView) => <span>MÓD #{z.poradi}</span>;
+  const rezie = render(<Rezie stav={stav} obsluha={props} doplnek={doplnek} />);
+  expect(screen.getByText("MÓD #7")).toBeInTheDocument();
+  expect(screen.getByText("MÓD #7").compareDocumentPosition(screen.getByTestId("zapas-hlavicka"))).toBe(Node.DOCUMENT_POSITION_PRECEDING);
+  rezie.unmount();
+  const historie = render(<HistorieZapasu stav={{ ...stav, zapasy: [{ ...zapas, stav: "dohrano" }] }} doplnek={doplnek} />);
+  expect(screen.getByText("MÓD #7")).toBeInTheDocument();
+  historie.unmount();
+  render(<Rezie stav={stav} obsluha={props} />);
+  expect(document.querySelector(".doplnek-modu")).toBeNull();
+});
+
 it("bez čísla lobby spectate vůbec nenabízí", () => {
   const bez = { ...stav, zapasy: [{ ...zapas, lobbyId: null, spectatorUri: null }] };
   render(<Rezie stav={bez} obsluha={props} />);

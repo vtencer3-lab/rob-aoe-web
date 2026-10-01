@@ -355,7 +355,7 @@ it("hráči po zapsání výsledku zápas nezmizí", async () => {
 // nevidí ani jeden přepínač.
 it("admin si přepne na pohled uživatele a adminské části zmizí", async () => {
   const { fireEvent } = await import("@testing-library/react");
-  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "rob", alias: "Rob", platformaJmeno: null, jeAdmin: true } });
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "rob", alias: "Rob", platformaJmeno: null, jeAdmin: true }, smiNahratScenar: true });
   nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
 
   render(<App />);
@@ -363,10 +363,13 @@ it("admin si přepne na pohled uživatele a adminské části zmizí", async () 
   expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Nastavení Lobby" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Přihlášení hráči" })).toBeInTheDocument();
+  expect(screen.getByText("Scénář Diplomacie")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("switch", { name: /pohled uživatele/i }));
   expect(screen.queryByRole("button", { name: /vytvořit zápas/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Nastavení Lobby" })).not.toBeInTheDocument();
+  // Správa scénáře je adminský nástroj; v pohledu uživatele se admin dívá jako hráč.
+  expect(screen.queryByText("Scénář Diplomacie")).not.toBeInTheDocument();
   // Název akce zůstává: patří celému večeru, ne režii. Přestane být tlačítkem.
   expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Akce 1");
   expect(screen.queryByRole("button", { name: "Akce 1" })).not.toBeInTheDocument();

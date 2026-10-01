@@ -33,13 +33,16 @@ const zaklad: ZapasView = {
   ],
 };
 
-// Dvě místa pro mód akce: doplněk kroku na konci „Zakládáš!“ (Diplomacie
-// tam dá stažení scénáře) a doplněk karty před stranami zápasu.
-it("doplňky módu se vykreslí v kroku zakládání a před stranami", () => {
+// Dvě místa pro mód akce: doplněk kroku „Zakládáš!“ před oknem Create Lobby
+// (Diplomacie tam dá stažení scénáře — host ho potřebuje dřív, než lobby
+// zakládá) a doplněk karty před stranami zápasu.
+it("doplňky módu se vykreslí v kroku zakládání před oknem lobby a před stranami", () => {
   render(
     <ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} doplnek={<p>KARTA ROLE</p>} doplnekKroku={<p>STÁHNOUT SCÉNÁŘ</p>} />,
   );
-  expect(screen.getByTestId("krok-lobby")).toContainElement(screen.getByText("STÁHNOUT SCÉNÁŘ"));
+  const krok = screen.getByText("STÁHNOUT SCÉNÁŘ");
+  expect(screen.getByTestId("krok-lobby")).toContainElement(krok);
+  expect(krok.compareDocumentPosition(screen.getByTestId("okno-create-lobby"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   const karta = screen.getByText("KARTA ROLE");
   expect(screen.getByTestId("krok-lobby")).not.toContainElement(karta);
   expect(karta.compareDocumentPosition(screen.getByTestId("strany-zapasu"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
