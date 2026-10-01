@@ -129,3 +129,12 @@ Spouštění a živé ověření dělá Claude, ne uživatel: přebuildovat, res
 ověřit curlem a teprve pak odpovídat. Zelená sada testů není důkaz, že UI
 funguje — několik vad viditelných na první pohled jí prošlo. Vizuální kontrola
 zůstává na uživateli.
+
+**Módy akce (Diplomacie) žijí vedle jádra, ne v něm.** Jádro mód zná jen
+přes háčky v registrech `src/rezimy/index.ts` a `web/src/rezimy/index.tsx`
+(a sdílené `src/shared/rezimy.ts`); modul módu je `src/diplomacie/`,
+`src/shared/diplomacie/`, `web/src/diplomacie/`. Žádné
+`if (rezim === "diplomacie")` v jádru — chybí-li háček, přidat háček.
+Tajná data módu nikdy neopustí větev `rezim.data` stavu a zaslepuje je mód
+sám (`rediguj`), i pro admina: admin, který není GM, role nevidí.
+Podrobně `docs/prehled-praci-a-zameru.md` §3.60.

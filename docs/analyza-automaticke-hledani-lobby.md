@@ -198,9 +198,10 @@ web proto stahuje všechny stránky.
 | Nastavení | Klíč v `options` | Hodnoty |
 |---|---|---|
 | Civilization Set | `101` | 0 All, 1 Age of Empires II, 2 Chronicles |
-| Game Mode | `5` | 0 Random Map, 1 Regicide, 2 Death Match, 3 Scenario, 5 King of the Hill, 6 Wonder Race, 7 Defend the Wonder, 8 Turbo Random Map, 10 Capture the Relic, 11 Sudden Death, 12 Battle Royale, 13 Empire Wars — podle herního `OptionsGameMode` (Control API hry), ověřeno 9. 9. 2026 dvěma nezávislými zdroji a živým seznamem lobby. **Do 9. 9. 2026 tu byla tabulka z aoe2.net, která od čtyřky výš seděla o jedna vedle** (4 byla „King of the Hill“ místo 5, „Capture the Relic“ posílalo 8 = Turbo Random Map) a režimy 1, 11, 12, 13 neznala vůbec |
-| Location (mapa) | `10` | id řetězce z jazykového souboru hry, viz `src/shared/mapy.ts` |
-| Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant, 480 Ludicrous (120 a 480 ověřené naživo 9. 9. 2026) |
+| Game Mode | `5` | 0 Random Map, 1 Regicide, 2 Death Match, 3 Custom Scenario (tak se položka ve hře jmenuje — snímek lobby 1. 10. 2026; do té doby tu i v `REZIMY` stálo „Scenario“), 5 King of the Hill, 6 Wonder Race, 7 Defend the Wonder, 8 Turbo Random Map, 10 Capture the Relic, 11 Sudden Death, 12 Battle Royale, 13 Empire Wars — podle herního `OptionsGameMode` (Control API hry), ověřeno 9. 9. 2026 dvěma nezávislými zdroji a živým seznamem lobby. **Do 9. 9. 2026 tu byla tabulka z aoe2.net, která od čtyřky výš seděla o jedna vedle** (4 byla „King of the Hill“ místo 5, „Capture the Relic“ posílalo 8 = Turbo Random Map) a režimy 1, 11, 12, 13 neznala vůbec |
+| Location (mapa) | `10` | id řetězce z jazykového souboru hry, viz `src/shared/mapy.ts`. U lobby v režimu Custom Scenario je to jen zbytek z nastavení před přepnutím na scénář (ověřeno 1. 10. 2026) — kontrola lobby tam mapu nekontroluje |
+| Scenario (soubor scénáře) | `38` | jméno souboru `X.aoe2scenario` bez cesty; jen u Game Mode Custom Scenario (`5` = 3). **Ověřeno naživo 1. 10. 2026** na 10 scénářových lobby z 55 (ráno) a znovu na 12 (večer) — všechny ho měly. Pole `mapname` je u všech lobby „my map“ a nic nenese. Kontrola lobby podle něj hlídá řádek „Scénář“ (`NastaveniLobby.scenar`, `scenarStarsi`); jak jméno hlásí host, který si soubor stáhl z webu, ověří první ostrá zkouška módu Diplomacie |
+| Map Size | `8` | dílce: 120 Tiny, 144 Small, 168 Medium, 200 Normal, 220 Large, 240 Giant, 480 Ludicrous (120 a 480 ověřené naživo 9. 9. 2026). **U scénářové lobby hra Map Size nenabízí a posílá skutečnou velikost ze scénáře** (ověřeno 1. 10. 2026 na 12 lobby: 120 / 200 / 220 / 240) — kontrola ji porovnává s velikostí z rozboru scénáře, ne s odhadem podle počtu hráčů |
 | AI Difficulty | `61` | 4 Easiest, 3 Standard, 2 Moderate, 1 Hard, 0 Hardest, **−1 Extreme** (ne 5, jak tu stálo do 9. 9. 2026 — ověřeno naživo 9. 9. 2026, kdy lobby s Extreme poslala `-1`; dřív ověřeno 3 a 1) |
 | Resources | `37` | 0 Standard, 1 Low, 2 Medium, 3 High, 4 Ultra High, 5 Infinite, 6 Random (ověřeno 0 a 3) |
 | Population | `28` | jen z herní nabídky: po 25 do 250, pak 300, 400, 500 (odečteno z herní nabídky 9. 9. 2026) |
@@ -209,7 +210,7 @@ web proto stahuje všechny stránky.
 | Starting Age | `0` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial, 6 Post-Imperial (ověřeno 0, 3, 6) |
 | Ending Age | `4` | 0 Standard, 2 Dark, 3 Feudal, 4 Castle, 5 Imperial (ověřeno 0 a 4) |
 | Treaty Length | `57` | minuty, ale jen z herní nabídky: 0 „[None]“, pak po pěti až 60, a rovnou 90 (odečteno z herní nabídky 9. 9. 2026) |
-| Victory | `81` | 1 Conquest, 7 Time Limit, 8 Score, 9 Standard, 11 Last Man Standing (ověřeno 1 a 9) |
+| Victory | `81` | 1 Conquest, 7 Time Limit, 8 Score, 9 Standard, 11 Last Man Standing (ověřeno 1 a 9); **0 u scénářových lobby** — Custom Scenario Victory v lobby nenabízí, určují ho podmínky scénáře (ověřeno 1. 10. 2026 na 12 lobby, všechny `0`; tabulka `VITEZSTVI` má `0: „Podle scénáře“` a kontrola u scénáře Victory jen vypíše). Zda `0` chodí i mimo scénářový režim, se neměřilo |
 | Lock Teams | `66` | y/n (ověřeno naživo 9. 9. 2026 přepnutím tam a zpět) |
 | Team Together | `78` | y/n |
 | Team Positions | `77` | y/n (jen s Team Together) |

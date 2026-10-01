@@ -85,6 +85,13 @@ Nebo produkčně, což servíruje i frontend z jednoho procesu:
 npm run build && npm start   # http://localhost:3000
 ```
 
+**Rozbor scénáře Diplomacie** (nahrání `.aoe2scenario` ve správě scénáře)
+běží v podprocesu Pythonu. Lokálně potřebuješ Python 3 s knihovnami
+`pip install -r src/diplomacie/requirements.txt` (AoE2ScenarioParser
+v zamčené verzi) a Pillow, a do `.env` `PYTHON=python` (výchozí hodnota
+`/opt/rozbor/bin/python` je cesta ve Docker obrazu). Bez toho web běží,
+jen se nahraná verze uloží s chybou rozboru a nejde aktivovat.
+
 **Steam API klíč nepotřebuješ.** Bez `STEAM_API_KEY` se prostě netahají odehrané
 hodiny a avataři; ELO a herní přezdívka chodí ze žebříčku Worlds Edge, který
 klíč nechce. Nic se nerozbije.
@@ -124,6 +131,10 @@ Backend, `src/`:
 | `shared/lobbyKontrola.ts` | očekávané nastavení lobby, číselníky hodnot a `zkontrolujLobby()` — řádky ve čtyřech stavech (ok / spatne / varovani / jedno) |
 | `shared/mapy.ts`, `shared/civilizace.ts` | tabulky id → název vygenerované z jazykového souboru hry (viz „Data ze hry“) |
 | `shared/zebricky.ts` | seznam žebříčků hry (id, název, pořadí jako v lobby) a procento výher; data se plní při obnově statistik (`players/refresh.ts`, sloupec `player.zebricky`) |
+| `rezimy/index.ts` | registr módů akce (`akce.rezim`: `klasicky`, `diplomacie`) a rozhraní `RezimAkce` — jediné, co jádro o módu ví: výchozí nastavení lobby, kontrola před změnou sestavy, založení dat zápasu v téže transakci, větev `rezim` stavu a její zaslepení per divák (volá se i pro admina). Klasický večer je prázdná implementace |
+| `shared/rezimy.ts` | sdílená synchronní pravidla módu — `zkontrolujSestavuRezimu` (jádro, pak mód) a `vychoziTymRezimu`; volá je server i `Skladani.tsx` |
+| `diplomacie/` | mód Diplomacie (větev `diplo`): `rezim.ts` (implementace `RezimAkce`), `db.ts` (tabulky `diplo_*`), `routes.ts` (`/api/diplo/...` — pult GM a verze scénáře), `opravneni.ts` (kdo smí nahrávat scénář), `rozbor.ts` + `rozbor.py` (rozbor `.aoe2scenario` v podprocesu Pythonu, AoE2ScenarioParser podle `requirements.txt`, limit 60 s), `barvy_terenu.json` (viz „Data ze hry“), `fixtures/LLC.aoe2scenario` pro testy |
+| `shared/diplomacie/` | pravidla Diplomacie bez databáze: role a texty, los a úpravy rolí, pravidla sestavy (`GM_BARVA = 7`), tvar rozboru scénáře (`prectiRozbor`), **`viditelnost.ts` = bezpečnostní hranice módu** (kdo z `rezim.data` co vidí; admin výjimku nemá) |
 
 Frontend, `web/src/`:
 
@@ -146,11 +157,21 @@ Frontend, `web/src/`:
 | `views/HledaniLobby.tsx` | tlačítko „Vyhledat lobby“ + automatické hledání (4 s, po „Spustit hru“ 2 s) |
 | `views/Kopirovatelne.tsx` | hodnota, která se zkopíruje kliknutím, s toastem |
 | `views/VerejnyZapas.tsx` | zápas očima diváka, bez tajemství |
-| `zapas.ts` | kdo co vidí — `mojeZapasy`, `verejneZapasy` |
+| `zapas.ts` | kdo co vidí — `mojeZapasy`, `verejneZapasy`; `vyhralHrac` pro všechny tři tvary výsledku (tým, jeden hráč, víc hráčů) |
+| `views/StranyZapasu.tsx` | strany zápasu vedle sebe s „VS“; od tří stran (FFA, Diplomacie) mřížka `.mnoho-stran` bez VS |
+| `rezimy/index.tsx` | klientský registr módů (`RezimKlienta`): co mód vkládá do karty hráče, kroku hosta, veřejného zápasu, popisku slotu a řádku „Scénář“ v nastavení; `App.tsx` ho plní podle `akce.rezim`. Klasický večer nevkládá nic |
+| `diplomacie/` | mód Diplomacie: `PultGm` (Nástupce → los → úpravy → rozeslání), `KartaRole` (tajná karta), `Zakryti` (zakrytá karta, stav jen v paměti komponenty), `MapaScenare` (minimapa se starty), `PravidlaHry`, `VerejnyRadek`, `SpravaScenare` (nahrání a aktivace verzí), `StazeniScenare` (krok hosta s cestou pro jeho ID), `index.tsx` (klient módu), `znaky.ts` (obrázky rolí z `assets/diplomacie/`), `api.ts` |
 | `cesty.ts` | prefix `/aoe` pro všechna volání na server (z Vite `base`) |
 
 Backend a frontend sdílejí typy přímo přes relativní import, žádný balíček mezi
 tím není.
+
+**Módy akce žijí vedle jádra, ne v něm.** Jádro mód zná jen přes háčky
+(`src/rezimy/index.ts`, `web/src/rezimy/index.tsx`, sdílené
+`src/shared/rezimy.ts`); tajná data módu jsou jen ve větvi `rezim.data`
+stavu a zaslepuje je mód sám. Odebrat mód = smazat jeho tři složky a řádek
+v obou registrech. Když přidáváš něco do Diplomacie, nepiš `if (rezim ===
+"diplomacie")` do jádra — přidej háček.
 
 ## Pět pravidel, která se nesmí porušit
 
@@ -238,7 +259,15 @@ spadne nebo tiše běží ten starý.
 npm test                # hermetické, bez sítě a databáze
 npm run test:db         # proti databázi — viz pravidlo 4
 npm --prefix web test   # frontend
+PYTHON=python npx vitest run src/diplomacie/rozbor.test.ts   # rozbor scénáře skutečným Pythonem
 ```
+
+Testy rozboru scénáře se v `npm test` bez interpretu s knihovnami
+**přeskočí s hláškou** (neselžou), proto je po zásahu do `rozbor.py`
+nebo `scenar.ts` pouštěj zvlášť. Databázové testy (`*.db.test.ts`, včetně
+`src/diplomacie/*.db.test.ts`) autor repa pouští jen na serveru proti
+testovací databázi (`/root/aoe-deploy/test-db.sh <větev>`), lokálně
+PostgreSQL neběží.
 
 Zelené testy jsou začátek, ne konec. U změn v UI nebo v realtime chování projdi
 celou cestu **na skutečně běžícím serveru** (`curl` na běžící proces, ne jen
@@ -278,6 +307,7 @@ Nic z toho se nestahuje za běhu; do repa se to jednou vygeneruje a commitne.
 | erby civilizací (kulaté ikony jako v lobby) | `resources/_common/wpfg/resources/civ_techtree/menu_techtree_<slug>.png` (104 px), zmenšené na 96 px webp; slugy se liší u Maya (`mayans`), Hindustanis (`indians`), Inca (`inca`), Berbers (`berber`); `random.png` je otazník pro „libovolná civ.“ | `web/src/assets/civ/*.webp`, mapování v `web/src/civErby.ts` |
 | snímek dialogu Create Lobby | screenshot ze hry, do kterého se vsazují název, počet hráčů a PIN | `web/src/assets/create-lobby.webp` |
 | významy klíčů nastavení lobby a slotů | zmapováno naživo přepínáním voleb ve hře a porovnáváním seznamu lobby; které hodnoty jsou ověřené a které doplněné podle pořadí v jazykovém souboru, je v tabulce | `docs/analyza-automaticke-hledani-lobby.md` §6, číselníky v `src/shared/lobbyKontrola.ts` |
+| barvy minimapy podle terénu (mód Diplomacie) | `resources/_common/dat/empires2_x2_p1.dat` (terény, čte `genieutils-py`) a paleta `resources/_common/palettes/original.pal`; první index barvy terénu = barva herní minimapy. Vytahuje `nastroje/diplomacie/barvy_terenu.py` na stroji s hrou — v kontejneru hra není, proto je výsledek v repu | `src/diplomacie/barvy_terenu.json`; `rozbor.py` z něj kreslí minimapu nahraného scénáře, neznámý terén dostane šedou a rozbor ho nahlásí ve varováních |
 
 Když hra přidá civilizaci nebo mapu: doplnit řádek do tabulky, u civilizace
 zkontrolovat i `era` (jestli nepatří do Chronicles) a doplnit erb (stejný postup: `menu_techtree_<slug>.png` → 96×96 webp), a
@@ -301,7 +331,9 @@ v seznamu, ale chybějící soubor se pozná jen tím, že erb u jména není.
 ## Databáze
 
 Tabulky: `akce`, `zapas`, `ucastnik`, `prihlaska`, `player`, `session`,
-`schema_migrations` a `udalost`.
+`schema_migrations` a `udalost`; ve větvi `diplo` navíc sloupec `akce.rezim`
+(migrace 030) a tabulky módu Diplomacie `diplo_scenar`, `diplo_zapas`,
+`diplo_role` (migrace 031; GM se neukládá, je to účastník na šedé).
 
 Migrace jsou očíslované soubory v `database/`, pouštějí se `npm run db:migrate`
 a pouštěj je vždycky, i když se zdá, že se nic nezměnilo — chybějící migrace se

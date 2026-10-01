@@ -3941,3 +3941,144 @@ until curl -s https://jouki.cz/aoe/diplo/api/health | grep -q "$(node -p "requir
 - [ ] **Step 3: Doplnit Jina jako autora**
 
 Až se Jin poprvé přihlásí na `/aoe/diplo`, vzít jeho `hrac_id` (`SELECT hrac_id, alias FROM player` v `rob_aoe_diplo`) a nastavit `AUTORI_SCENARE` v Coolify (PATCH envs + `/deploy`, ne `/restart`). Zapsat do `docs/nasazeni-jouki-cz.md` §3.6.
+
+---
+
+# Úkoly přidané během provádění (1. 10. 2026)
+
+Uživatel je zadal podle snímků z `/aoe/diplo` během provádění plánu; běžely v pořadí 18 a 19 po úkolu 8, 20 a 21 po 19, 22 po úkolu 11. Znění je doslovný opis pracovních briefů, aby byl plán úplný sám o sobě. Rozhodnutí při provádění shrnuje spec §12.
+
+## Úkol 18: Strany zápasu pro víc než dvě strany (FFA)
+
+Přidáno uživatelem 1. 10. 2026 během provádění plánu (snímek obrazovky hosta: zápas 1v1v1v1v1v1v1v1).
+
+**Chyba:** `web/src/views/StranyZapasu.tsx` kreslí strany vedle sebe s velkým „VS“ mezi nimi v jednom řádku: `.vs-rozlozeni { display: flex; … flex-wrap: nowrap; }` (`web/src/styl.css:1485`), sloupce `flex: 1 1 0; min-width: 0`. Při osmi stranách po jednom hráči (každý sám za sebe — Diplomacie, FFA) se osm sloupců a sedm „VS“ namačká do šířky karty, jména se zkrátí na „LIB…“ a řádek přeteče přes okraj karty.
+
+**Oprava (jádro, týká se i klasických večerů):**
+- Když má zápas víc než dvě strany, přidat kontejneru třídu `vs-rozlozeni mnoho-stran`.
+- V CSS pro `.vs-rozlozeni.mnoho-stran`: zalamovat (`flex-wrap: wrap`), strany se rozumnou minimální šířkou (aby se vešlo jméno hráče — kolem 12–14 rem, hodnotu vzít z existujících proměnných/rozměrů v `styl.css`, pokud tam podobná je), `justify-content: center`, menší „VS“ (zhruba poloviční velikost písma) a mezery z existujících hodnot. Dvě strany (1v1, 2v2, 4v4) zůstávají přesně jako dnes.
+- Barvy jen přes proměnné z `:root` (žádné napevno).
+- Komentář v kódu česky: proč (FFA s osmi stranami se do řádku nevejde).
+
+**Testy (`web/src/views/StranyZapasu.test.tsx` — vytvořit, pokud neexistuje, podle vzoru ostatních testů ve `web/src/views/`):**
+- 8 účastníků, barvy 1–8, všichni tým 0 → kontejner má třídu `mnoho-stran`, vykreslí se 8 řádků (`data-testid="radek-strany"`) a 7× „VS“.
+- 2v2 (týmy 1,1,2,2) → kontejner třídu `mnoho-stran` nemá, jedno „VS“.
+
+**Commit:** `npm run verze` (patch); zpráva „Wrap the match sides when there are more than two“; testy podle globálních pravidel (frontend test, `npm test`, `tsc`, `npm run build; echo EXIT=$?`).
+
+## Úkol 19: V Diplomacii dostane nový hráč v sestavě tým „–“
+
+Přidáno uživatelem 1. 10. 2026 během provádění plánu.
+
+**Chyba:** `vychoziVstup(hracId, vybrani)` ve `web/src/skladani.ts:68-73` dává nově vybranému hráči střídavě tým 1, 2, 1, 2 (rozumné pro 1v1/2v2). V Diplomacii hraje každý sám za sebe a kontrola sestavy módu (`zkontrolujSestavuDiplomacie`, `src/shared/diplomacie/sestava.ts`) týmy zakazuje — admin by musel všem osmi hráčům přepnout tým ručně, jinak „Vytvořit zápas“ nesvítí.
+
+**Oprava — stejným vzorem jako `zkontrolujSestavuRezimu` (úkol 8), mód se do jádra nedostane podmínkou:**
+- V `src/shared/rezimy.ts` přidat sdílenou čistou funkci `vychoziTymRezimu(rezim: RezimId, pocetVybranych: number): Tym`: klasicky → dnešní střídání (`pocetVybranych % 2 === 0 ? 1 : 2`), diplomacie → `0`.
+- `vychoziVstup` dostane třetí parametr `rezim: RezimId = "klasicky"` a tým bere z `vychoziTymRezimu`. Dosavadní volání bez módu se chovají jako dnes.
+- Kde `Skladani.tsx`/`useSkladani` volá `vychoziVstup`, předat mód akce (`Skladani` už po úkolu 8 dostává prop `rezim`; když je volání v hooku `useSkladani`, předat mu mód stejnou cestou z `App.tsx`).
+- Komentář u `vychoziVstup` doplnit o větu o Diplomacii.
+
+**Testy:**
+- `src/shared/rezimy.test.ts`: `vychoziTymRezimu("klasicky", 0) === 1`, `("klasicky", 1) === 2`, `("diplomacie", 0) === 0`, `("diplomacie", 5) === 0`.
+- Test `vychoziVstup` (existující soubor testů pro `skladani.ts`, jinak nový `web/src/skladani.test.ts`): bez módu 1, 2 jako dřív; s `"diplomacie"` tým 0.
+
+**Commit:** `npm run verze` (patch); zpráva „Give new Diplomacy lineup players no team“; testy podle globálních pravidel.
+
+## Úkol 20: Výsledek zápasu s víc vítězi (aliance vzniklé až ve hře)
+
+Přidáno uživatelem 1. 10. 2026 během provádění plánu: „hráči utváří týmy až ve hře, takže je potřeba … nějak udělat dynamicky, aby se dali označit, kteří hráči vyhráli.“
+
+**Proč:** Dnešní výsledek je jeden vítěz — tým (`{ tym }`) nebo jeden hráč bez týmu (`{ hracId }`), `src/shared/types.ts:157`. V Diplomacii hraje v lobby každý sám za sebe (tým „–“), aliance se tvoří až ve hře a vyhrát může víc hráčů naráz (Garda s Nástupcem, oba Nájezdníci, Žoldák se svým paktem). Totéž se hodí i pro klasický FFA večer. Automatické vyhodnocení podle rolí přijde v podprojektu 2 — tady jde jen o to, aby výsledek s víc vítězi šel **zapsat, uložit a ukázat**.
+
+**Model výsledku (jádro):**
+- `Vitez` rozšířit o třetí tvar `{ hraci: string[] }` — neprázdný seznam `hracId` účastníků zápasu bez duplicit, v pořadí slotů.
+- Uložení v `zapas.vitez` (TEXT): `hraci:` + JSON pole (`hraci:["7656…","xbox:2533…"]`) — JSON proto, že `hracId` může obsahovat dvojtečku (`xbox:<xuid>`). `vitezDoTextu`/`vitezZTextu` v `src/db/matches.ts:56-67` rozšířit; neplatný JSON → `null` jako dnes u nesmyslu.
+- `src/shared/strany.ts`:
+  - `stejnyVitez` umí nový tvar (shoda množin hráčů, nezáleží na pořadí).
+  - nová `vyhralHrac(ucastnici, vitez, hracId): boolean` — jediné místo, které říká, jestli konkrétní hráč vyhrál (tým: je v tom týmu; hracId: je to on; hraci: je v seznamu). Použít ji ve `VerejnyZapas.tsx` pro větu „Vyhrál jsi.“ / „Prohrál jsi.“ místo dnešního porovnání strany (a všude jinde, kde se dnes ptá „vyhrál tenhle hráč?“ — najít `stejnyVitez(moje…` / `stranaHrace` volání ve `web/src`).
+  - `vitezVeVete` pro nový tvar: jeden hráč „vyhrál X“, víc „vyhráli X, Y a Z“ (jména přes `jmenoClena`).
+- `prectiViteze` (`src/http/routes/matches.ts:61-73`): přijme `{ hraci: string[] }`; každý musí být účastník zápasu, bez duplicit, aspoň jeden → jinak 400 s českou větou („Vítězové musí být hráči zápasu.“). Dosavadní dva tvary beze změny.
+
+**Kdo smí zapsat:** jako dnes (`POST /api/zapas/:id/vysledek`, admin). Právo GM a předvyplnění podle rolí je podprojekt 2 — nepřidávat.
+
+**UI (kde se dnes zapisuje vítěz — najít ve `web/src/views/Rezie.tsx` / `HistorieZapasu.tsx` volání `api.vysledek` / `onVysledek`):**
+- Když má zápas **víc než dvě strany** (`strany(ucastnici).length > 2`, typicky FFA / Diplomacie), nabídnout vedle dnešních tlačítek po stranách volbu **„Víc vítězů…“**: zaškrtávátka u jmen účastníků a tlačítko „Uložit vítěze“ (aktivní, až je zaškrtnutý aspoň jeden). Pošle `{ hraci: [...] }` v pořadí slotů.
+- Uložený výsledek s víc vítězi se v kartě zápasu/historii zobrazí větou z `vitezVeVete` a vítězné řádky se zvýrazní stejně, jako se dnes zvýrazňuje vítězná strana (najít existující třídu/značku vítěze a použít `vyhralHrac`).
+- Texty česky, barvy jen z `:root`.
+
+**Testy:**
+- `src/shared/strany.test.ts`: `stejnyVitez` pro `hraci` (stejná množina v jiném pořadí → true, jiná → false, proti `tym`/`hracId` → false); `vyhralHrac` pro všechny tři tvary; `vitezVeVete` jeden/víc hráčů.
+- Test převodu text ↔ výsledek (kde jsou dnes testy `vitezDoTextu`/`vitezZTextu`, jinak v `src/db/matches.test.ts` hermeticky): kulatý převod s `xbox:` ID; nesmysl → `null`.
+- `src/http/routes/matches.db.test.ts`: zápis `{ hraci: [a, b] }` projde a uloží se; cizí hráč, duplicita, prázdný seznam → 400.
+- Frontend: u zápasu s 3+ stranami je volba „Víc vítězů…“, zaškrtnutí dvou a uložení zavolá `vysledek(zapasId, { hraci: [...] })`; u 2v2 volba není. `VerejnyZapas`: hráč v `hraci` vidí „Vyhrál jsi.“, ostatní „Prohrál jsi.“.
+
+**Commit:** `npm run verze -- minor`; zpráva „Record several winners for alliances formed in game“; testy podle globálních pravidel včetně DB testů na serveru (`ssh -o BatchMode=yes root@178.104.160.182 /root/aoe-deploy/test-db.sh diplo` po pushi).
+
+## Úkol 21: Diplomacie dovolí AI v sestavě (jen GM musí být člověk)
+
+Přidáno uživatelem 1. 10. 2026 během provádění plánu: „to omezení že se diplomacie hraje bez AI vím, ale nedělej to mandatory“.
+
+**Dnes:** `zkontrolujSestavuDiplomacie` v `src/shared/diplomacie/sestava.ts` začíná `if (sestava.some((s) => jeAi(s.hracId))) return "Diplomacie se hraje bez počítačů.";`. Admin tak nemůže doplnit AI, i kdyby chtěl (třeba na zkoušku nebo při nedostatku lidí).
+
+**Změna:**
+- Zákaz AI odstranit. Zůstává: přesně 8 v sestavě, 8 různých barev, šedá obsazená, všichni bez týmu, bez předepsaných civilizací (viz dosavadní funkce).
+- Nové pravidlo místo něj: **na šedé (GM, `GM_BARVA`) musí sedět člověk** — `jeAi` na hráči s barvou 7 → věta „Na šedé musí být GM, ne počítač.“ (pult GM obsluhuje živý člověk).
+- Věta pro špatný počet zůstává; pokud obsahuje slovo „lidí“, upravit na neutrální („v sestavě musí být přesně 8 hráčů“), protože už to mohou být i AI.
+- Komentář u funkce doplnit o jednu větu proč (uživatel výslovně nechce zákaz AI; AI dostane roli jako každý jiný, GM si ji přečte v pultu).
+
+**Testy (`src/shared/diplomacie/sestava.test.ts`):**
+- sestava 7 lidí + 1 AI na jiné než šedé barvě → `null` (projde),
+- AI na šedé → „Na šedé musí být GM, ne počítač.“,
+- dosavadní testy (8 lidí projde, 7 neprojde, duplicitní barva, tým, civilizace) zůstávají; upravit jen očekávaný text, pokud se věta o počtu změnila.
+- `src/shared/rezimy.test.ts`: existující test Diplomacie zůstává zelený.
+
+**Dopad jinde:** `losujRole`/pult GM s AI hráčem fungují beze změny (AI je hráč jako každý jiný; jméno AI dává `JMENO_AI` ze `src/shared/aiHraci.ts`). Nic dalšího neměnit.
+
+**Commit:** `npm run verze` (patch); zpráva „Allow AI players in a Diplomacy lineup, only the GM must be human“; testy podle globálních pravidel.
+
+## Úkol 22: Scénářová lobby — mapu, velikost a Victory určuje scénář
+
+Přidáno uživatelem 1. 10. 2026 během provádění plánu (snímek herní lobby v režimu **Custom Scenario**): v tomhle režimu hra v lobby **nenabízí Victory ani Map Size** a mapu určuje scénář. Web je ale dnes kontroluje a nabízí v panelu Nastavení lobby. Uživatel: „Victory zde není možné nastavit, takže by to chtělo nějak zakomponovat do naší stránky… nešlo by nějak udělat načtení toho scénáře?“ a „velikost mapy taky nejde nastavit“.
+
+**Ověřeno 1. 10. 2026 (živá sonda 12 scénářových lobby):** seznam lobby u scénářů posílá `options[8]` = **skutečná velikost mapy ze scénáře** (120/200/220/240) a `options[81]` (Victory) **vždy `0`**. Herní nabídka se jmenuje „Custom Scenario“ (web má v `REZIMY[3]` „Scenario“). Rozbor scénáře (úkol 5) už vrací `velikostMapy` (LLC: 220 = Large (8)). AoE2ScenarioParser má sekci `GlobalVictory` s polem `mode` (0 Standard, 1 Conquest, 2 Score, 3 Timed, 4 Custom — u LLC `4`, tedy vlastní podmínky přes triggery; k tomu `artifacts_required` 25, `required_score_for_score_victory` 14000, `time_for_timed_game_in_10ths_of_a_year` 3000).
+
+### A) Jádro: kontrola lobby a číselníky (`src/shared/lobbyKontrola.ts`, testy)
+
+- `REZIMY[3]` přejmenovat na `"Custom Scenario"` (text, který hra ukazuje); upravit test, který na „Scenario“ spoléhá.
+- `VITEZSTVI` doplnit `0: "Podle scénáře"` (u scénářových lobby hra posílá 0).
+- V `zkontrolujLobby`, když `ocekavane.rezim === REZIM_SCENARIO`:
+  - **Velikost:** nepoužívat `velikostProHrace` (odhad podle počtu barev). Když je `ocekavane.velikost` číslo (mód ho nastaví z rozboru), porovnat s `n.velikost` jako dnes (ok/spatne, text „Velikost: Large (8)“ / „…, má být …“). Když je `null`, řádek se stavem `jedno` a textem „Velikost: <hodnota> (určuje scénář)“.
+  - **Victory:** řádek se stavem `jedno`, text „Victory: určuje scénář“ (hodnotu `ocekavane.vitezstvi` ignorovat).
+  - Mapa se už přeskakuje (úkol 2) — beze změny.
+- Mimo scénářový režim se nic nemění (dnešní testy musí projít beze změny).
+- Testy v `lobbyKontrola.test.ts`: scénář + `velikost: 220` a lobby 220 → ok; lobby 200 → spatne s větou; `velikost: null` → `jedno`; Victory ve scénáři → `jedno` s textem; `VITEZSTVI[0]`; mimo scénář velikost dál z počtu hráčů.
+
+### B) Rozbor: podmínky vítězství ze scénáře (`src/diplomacie/rozbor.py`, `src/shared/diplomacie/scenar.ts`, fixtury, testy)
+
+- `RozborScenare` dostane volitelné pole `vitezstvi?: { rezim: "standard" | "dobyti" | "skore" | "cas" | "vlastni"; popis: string }`. Volitelné proto, že verze rozebrané před touhle změnou ho v databázi nemají; `prectiRozbor` ho přijme chybějící (→ `undefined`), jinak ověří tvar.
+- `rozbor.py` přečte `sc.sections["GlobalVictory"]` (atributy `mode`, `conquest_required`, `artifacts_required`, `required_score_for_score_victory`, `time_for_timed_game_in_10ths_of_a_year`) a sestaví popis česky: 0 „Standard“, 1 „Dobytí“, 2 „Skóre N“, 3 „Čas N let“ (desetiny roku / 10), 4 „Vlastní podmínky scénáře“ (+ u LLC nic dalšího; kdyby `artifacts_required` > 0 a mode ≠ 4, připojit „relikvie: N“). Neznámý `mode` → `rezim: "vlastni"`, popis „Vlastní (mód N)“ a varování.
+- `src/shared/diplomacie/fixtures.ts` (`ROZBOR`) doplnit `vitezstvi: { rezim: "vlastni", popis: "Vlastní podmínky scénáře" }`; test rozboru LLC (`src/diplomacie/rozbor.test.ts`) čeká `rezim: "vlastni"`.
+
+### C) Mód: velikost z rozboru do nastavení akce (`src/diplomacie/rezim.ts`)
+
+- `nastaveniScenare(aktivni, vsechny)` vrací navíc `velikost: aktivni?.rozbor?.velikostMapy ?? null` (typ `Pick<NastaveniLobby, "scenar" | "scenarStarsi" | "velikost">`). Tím se velikost propíše při založení akce i při aktivaci verze (`promitniDoAkce` z úkolu 10 už `nastaveniScenare` volá — ověřit, že výsledek obsahuje `velikost`). Testy `rezim.db.test.ts`: po založení akce Diplomacie s aktivní verzí je `nastaveniLobby.velikost` 220 (fixtura `ROZBOR` má `velikostMapy: 220`); bez verze `null`.
+
+### D) Panel Nastavení lobby (`web/src/views/NastaveniLobby.tsx`, `web/src/rezimy/index.tsx`, `web/src/diplomacie/index.tsx`, `App.tsx`, CSS)
+
+Uživatel 1. 10. 2026: „když je vybrané scenario, tak se nevybírá mapa … takže by neměla být ani v kontrole ani v nastavení“ — tedy **schovat, ne zašedit**.
+
+- Když je `zive.rezim === REZIM_SCENARIO`: výběr **mapy**, **velikosti** i **Victory** se v panelu **nevykreslí vůbec**. Na jejich místě je jeden informativní řádek **„Scénář“** (jen ke čtení) s:
+  - jménem scénáře (`zive.scenar` bez přípony `.aoe2scenario`), nebo „scénář zatím nikdo nenahrál“,
+  - velikostí: popis z `VELIKOSTI[zive.velikost]` (např. „Large (8)“), nebo „?“,
+  - podmínkami vítězství: text z nového volitelného propu `scenar?: { vitezstvi: string | null }` (popis z rozboru aktivní verze), jinak „podle scénáře“.
+  - Uložené hodnoty `mapaId`/`vitezstvi` v nastavení se nemění (jen se neukazují); historie změn (`web/src/historie.ts`) pro ně žádné věty nevyrábí, když je režim scénář.
+- Při přepnutí Game Mode zpět z Custom Scenario na jiný režim se tři prvky zase objeví (stav panelu je čistě odvozený z `zive.rezim`).
+- Prop `scenar` do `NastaveniLobby` dodá `App.tsx` přes nový háček klienta `RezimKlienta.nastaveniScenare?(stav: AkceStavPayload): { vitezstvi: string | null } | null` (Diplomacie: z `stav.rezim.data.aktivni?.rozbor?.vitezstvi?.popis`). Klasický mód háček nemá → prop `undefined` → panel beze změny.
+- Testy `NastaveniLobby.test.tsx`: ve scénářovém režimu nejsou v DOM prvky mapy/velikosti/Victory (podle jejich dosavadních `aria-label`/`data-testid`), je vidět řádek „Scénář“ s jménem, „Large (8)“ a textem Victory; v klasickém režimu beze změny (stávající testy).
+
+### Pořadí a závislosti
+
+Běží **po úkolu 11** (klientský seznam módů) a po úkolu 10 (`promitniDoAkce`). Části A a B jsou nezávislé na frontendu; D potřebuje `RezimKlienta`.
+
+**Commit:** `npm run verze -- minor`; zpráva „Let the scenario dictate map, size and victory in scenario lobbies“; testy podle globálních pravidel včetně `PYTHON=python npx vitest run src/diplomacie/rozbor.test.ts` a DB testů na serveru.
+

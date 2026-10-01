@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 17. 9. 2026, main 1.13.9, dev 1.13.9)
+# Přehled prací a záměrů (stav k 1. 10. 2026, main 1.13.10, dev 1.13.10, diplo 1.13.10-21.x)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -25,21 +25,23 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | Pracovní postup dev → main, verzování, Coolify, migrace | `docs/nasazeni-jouki-cz.md` |
 | Klíče seznamu lobby Worlds Edge, co je ověřené a co odhadnuté | `docs/analyza-automaticke-hledani-lobby.md` §6 |
 | Původní návrh a plán (3. 9.) a zjednodušení stavů (5. 9.) | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
+| Mód Diplomacie (větev `diplo`): návrh, plán, co se během provádění změnilo | §3.60; spec `docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`, plán `docs/superpowers/plans/2026-10-01-diplomacie-zaklad-a-role.md`, ledger `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/progress.md` (mimo git) |
 | Zvyky autora, lokální prostředí, pravidla pro agenty | `CLAUDE.md` |
 | **Záměry, rozhodnutí, rozdělané věci, historie verzí** | **tenhle dokument** |
 
 ---
 
-## 1. Stav k 17. 9. 2026
+## 1. Stav k 1. 10. 2026
 
 | | |
 |---|---|
-| `origin/main` | **1.13.9**, nasazeno na <https://jouki.cz/aoe> (PR #20, 17. 9. 2026 — velký release z 1.7.2, 63 commitů, migrace 027–029); stav před ním nese značku `v1.7.2`, starší `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.13.9, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
+| `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
+| `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
+| `origin/diplo` | **1.13.10-21.8** (31 commitů od 1.13.10, 1. 10. 2026), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–031. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5), pak mód poběží pod přepínačem i na devu. Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
-| Migrace | 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
-| Testy | backend hermetické 370, frontend 347 — zelené (17. 9. 2026, `npm --prefix web exec tsc -- -b --force` bez chyb, `npm run build` EXIT=0). Databázové 191 na devu přes `/root/aoe-deploy/test-db.sh` na VPS (lokálně Postgres neběží). Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc `030_rezim_akce.sql` a `031_diplomacie.sql` (§3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
+| Testy | `diplo` 1. 10. 2026: backend hermetické 442 (44 souborů; 3 testy rozboru se bez Pythonu přeskočí, s `PYTHON=python` projdou všechny 4), frontend 425 (47 souborů), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Admini | `ADMIN_STEAM_ID` je **jediný zdroj pravdy**, ne sloupec `je_admin` — přihlášení ho přepisuje. 17. 9. 2026 srovnáno s databází a doplněno o `xbox:` položku; do té doby měly obě aplikace v proměnné jediné Steam ID, zatímco DB vedla tři adminy (Rob a Trokner by o práva přišli při svém dalším přihlášení). Rozbor v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2 |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -565,8 +567,10 @@ Rohová tlačítka (sbalit, zavřít) jsou v jednom pruhu `.ovladani-karty`, aby
 se neumisťovala podle toho, jestli křížek zrovna je.
 
 **Vítěz** dohraného zápasu má zlatý odznak vedle jména a teplejší řádek.
-Rozhoduje `jeVitez()` ve `web/src/zapas.ts` — výsledek je buď tým, nebo jeden
-hráč, podle toho, jak ho Rob zapsal.
+Rozhoduje `vyhralHrac()` ve `src/shared/strany.ts` (frontend ji bere přes
+`web/src/zapas.ts`) — výsledek má od 1. 10. 2026 (§3.60, úkol 20) tři tvary:
+tým (`{ tym }`), jeden hráč (`{ hracId }`), nebo víc hráčů naráz
+(`{ hraci }`, aliance vzniklé až ve hře), podle toho, jak ho Rob zapsal.
 
 **Tlačítka nad tabulkou** jdou zleva od nejméně vážného: přetočení času (debug),
 vlastní přihláška, „Ukončit akci“. To poslední se sem přestěhovalo ze záhlaví
@@ -1775,6 +1779,244 @@ ne ranked pravidla, takže se to nepromítá. Neověřeno naživo: zda Worlds
 Edge seznam lobby vydává nové civ id 60–62 ve slotech stejně jako ostatní
 (očekává se, id je z téže řady).
 
+### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-21.8, 1. 10. 2026)
+
+**Záměr.** Jin (autor scénáře) připravil pro komunitní večery custom scénář
+*Diplomacie – Ať žije císař* (`LLC.aoe2scenario`, DE 1.59): 7 hráčů a
+1 GameMaster, skryté role, rada králů, relikvie. Do té doby si GM po startu
+hry role losoval v Jinově samostatném nástroji (Google Apps Script) a
+obcházel hráče ve voice roomkách. Cíl celého módu: **web je jediné místo,
+kde se Diplomacie připraví, odehraje a vyhodnotí.** Hotové jsou podprojekty
+0 a 1 — nasazení větve, základ módu, scénář jako součást webu, rozdání rolí,
+tajné karty, pult GM a grafika. Podprojekty 2 (deník GM, vyhodnocení a
+odhalení rolí), 3 (Rada králů) a 4 (hlas) dostanou vlastní spec.
+
+Spec: `docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`
+(§12 shrnuje, co se během provádění změnilo); plán:
+`docs/superpowers/plans/2026-10-01-diplomacie-zaklad-a-role.md` (na konci
+úkoly 18–22 přidané během provádění); ledger s každým úkolem, rozhodnutím a
+odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/progress.md`
+(mimo git, u autora).
+
+**Jak to je.**
+
+- **Mód akce.** `akce.rezim` (`klasicky` | `diplomacie`, migrace
+  `030_rezim_akce.sql`), přepínač „Diplomacie“ vedle názvu při zakládání
+  akce, `POST /api/akce` s `rezim` (neznámá hodnota 400). Registr módů
+  `src/rezimy/index.ts` (rozhraní `RezimAkce`: `vychoziNastaveniLobby`,
+  `predZmenouSestavy`, `poVytvoreniZapasu`, `doplnStav`, `rediguj`; klasický
+  večer je prázdná implementace), sdílená synchronní pravidla
+  `src/shared/rezimy.ts` (`zkontrolujSestavuRezimu`, `vychoziTymRezimu` —
+  volá je server i `Skladani.tsx`), na klientovi `web/src/rezimy/index.tsx`
+  (`RezimKlienta`: `kartaHrace`, `krokHosta`, `verejnyZapas`, `popisSlotu`,
+  `nastaveniScenare`). **Modul módu žije vedle jádra a jádro ho zná jen
+  přes háčky** — odebrat mód = smazat `src/diplomacie/`,
+  `src/shared/diplomacie/`, `web/src/diplomacie/`, řádek v obou registrech
+  a registraci rout.
+- **Háčky v jádru** (spec §4.1; jediné změny stávajícího kódu kvůli módu):
+
+  | # | kde | co |
+  |---|---|---|
+  | H1 | `database/030_rezim_akce.sql` | sloupec `akce.rezim` s CHECK |
+  | H2 | `src/db/events.ts`, `src/http/routes/events.ts` | `createAkce(nazev, rezim)`, `POST /api/akce` přijme `rezim` |
+  | H3 | `src/rezimy/index.ts` | registr módů a rozhraní `RezimAkce` |
+  | H4 | `src/http/routes/events.ts` | výchozí nastavení lobby nové akce z módu (`vychoziNastaveniLobby`) |
+  | H5 | `src/shared/rezimy.ts`; `prectiSestavu` a `PUT /api/zapas/:id/sestava` v `src/http/routes/matches.ts`; `Skladani.tsx`, `EditaceZapasu.tsx`, `skladani.ts` | po kontrole jádra ještě kontrola módu; před úpravou sestavy `predZmenouSestavy` (→ 409); výchozí tým nového hráče z módu |
+  | H6 | `createZapas` v `src/db/matches.ts` | v téže transakci `poVytvoreniZapasu` |
+  | H7 | `src/realtime/akceStav.ts`, `src/realtime/redakce.ts` | větev `rezim: { id, data }` ve stavu pro prohlížeče; `redigujProDivaka` volá `rezim.rediguj` **vždy, i pro admina** |
+  | H8 | `web/src/views/SpravaAkce.tsx` | přepínač „Diplomacie“ při zakládání akce |
+  | H9 | `KartaHrace.tsx`, `ObrazovkaHosta.tsx`, `VerejnyZapas.tsx`, `Skladani.tsx`, `NastaveniLobby.tsx`; plní je `App.tsx` přes `rezimKlienta(akce.rezim)` | místa pro vložené komponenty módu (karta role / pult GM, krok hosta, veřejný řádek, popisek slotu „GM“, řádek „Scénář“) |
+  | H10 | `src/http/server.ts` | `registerDiplomacieRoutes(app, deps)` |
+  | H11 | `src/auth/routes.ts` (`GET /api/me` → `smiNahratScenar`), `src/config.ts` (`autoriScenare`, `python`) | kdo smí nahrávat scénář; interpret pro rozbor |
+  | H12 | `Dockerfile` | `python3` a `py3-pillow` z apk, virtuální prostředí `/opt/rozbor` s AoE2ScenarioParser podle `src/diplomacie/requirements.txt` |
+
+- **Modul Diplomacie.** `src/diplomacie/` — `db.ts` (dotazy nad
+  `diplo_*`), `rezim.ts` (implementace `RezimAkce`), `routes.ts`
+  (`/api/diplo/...`), `opravneni.ts` (`smiNahratScenar` ve vlastním modulu,
+  aby nevznikl cyklus importů auth ↔ routes ↔ guards), `rozbor.ts` +
+  `rozbor.py` (rozbor scénáře v podprocesu Pythonu, limit 60 s) +
+  `barvy_terenu.json` (id terénu → barva minimapy, vytažené z dat hry
+  nástrojem `nastroje/diplomacie/barvy_terenu.py`) + `requirements.txt`
+  (AoE2ScenarioParser 0.9.2), `fixtures/LLC.aoe2scenario` (kopie scénáře
+  pro testy — Jin souhlasil se zveřejněním). `src/shared/diplomacie/` —
+  `typy.ts`, `role.ts` (texty rolí), `los.ts` (čistý los a úpravy),
+  `sestava.ts` (pravidla sestavy, `GM_BARVA = 7`), `scenar.ts`
+  (`RozborScenare` a `prectiRozbor`), `viditelnost.ts` (`redigujDiplo`),
+  `fixtures.ts`. `web/src/diplomacie/` — `Zakryti`, `MapaScenare`,
+  `KartaRole`, `PravidlaHry`, `VerejnyRadek`, `PultGm`, `SpravaScenare`,
+  `StazeniScenare`, `index.tsx` (klient módu), `znaky.ts`, `api.ts`,
+  `fixtury.ts`; obrázky `web/src/assets/diplomacie/` (znaky sedmi rolí, rub
+  karty, rám minimapy — `docs/grafika.md`, „Mód Diplomacie“).
+- **Data** (`031_diplomacie.sql`): `diplo_scenar` (verze scénáře — jméno
+  souboru, SHA-256 unikátní, soubor jako `bytea`, `rozbor` JSONB,
+  `chyba_rozboru`, minimapa webp, kdo a kdy nahrál, poznámka, `aktivni` —
+  nejvýš jedna a jen s rozborem), `diplo_zapas` (stav `priprava` →
+  `losovano` → `rozeslano`, Nástupce, otisknutá `scenar_id`), `diplo_role`
+  (role, cíl Kata / pakt Žoldáka, `upraveno_po_rozeslani`). **GM se
+  neukládá:** je to vždy účastník na šedé (barva 7), `db.ts` ho dopočítá ze
+  sestavy. Zrušení nebo smazání zápasu smaže diplo data kaskádou.
+- **Průběh večera.** Admin zapne přepínač Diplomacie a založí akci → mód
+  nastaví lobby: Game Mode Custom Scenario, scénář = jméno souboru aktivní
+  verze, velikost mapy z rozboru, populace 200, Lock Teams a Shared
+  Exploration vypnuto, cheaty vypnuto, diváci povoleni, 8 hráčů. Skládání:
+  přesně 8 hráčů, 8 různých barev, na šedé člověk (GM), všichni tým „–“
+  (nový hráč ho dostane sám), civilizace nepředepsané; AI dovolena mimo
+  šedou. Vytvořením zápasu vznikne `diplo_zapas` s otiskem aktivní verze.
+  Host má v kroku „Zakládáš!“ tlačítko **Stáhnout scénář** (verze zápasu,
+  ne nutně ta aktivní), cestu
+  `%USERPROFILE%\Games\Age of Empires 2 DE\<ID>\resources\_common\scenario\`
+  s jeho vlastním Steam ID nebo XUID a pokyn zvolit v Create Lobby Custom
+  Scenario; kontrola lobby hlídá řádek „Scénář“. Po startu hry rozdá
+  sekundární cíle hra sama; GM v pultu klikne na hráče, který cíl nedostal
+  (**Nástupce císaře**), **Rozdat role** (Šašek, Garda, 2× Nájezdník,
+  Žoldák, Kat; oběť Kata a pakt Žoldáka losem z `node:crypto`), případně
+  upraví roletkami (složení se hlídá, ale neblokuje), **Rozeslat role** —
+  hráčům zazvoní zvon a objeví se zakrytá karta (klik odkryje, další klik
+  zakryje, po obnovení stránky je zase zakrytá). Po rozeslání jde roli
+  upravit jen s potvrzením a dotčený hráč vidí „GM upravil tvou roli.“ Dál
+  v pultu: Přelosovat, Zpět na výběr Nástupce, Zkopírovat přehled (text pro
+  Discord), pravidla jako tahák. Pod kartou vidí všichni v zápase jméno
+  Nástupce a rozbalovací pravidla hry s čísly z rozboru verze, kterou zápas
+  hraje.
+- **Viditelnost** (`src/shared/diplomacie/viditelnost.ts`, volá
+  `rezim.rediguj`): GM zápasu vidí všechno; hráč po rozeslání svou roli a
+  své tajné údaje (Nájezdníci se vidí navzájem); **kdokoli jiný — včetně
+  admina, diváka a nepřihlášeného — jen stav a po rozeslání jméno
+  Nástupce.** Tajná data jsou jen ve větvi `rezim.data`, nikde jinde.
+- **Scénář jako součást webu.** Správa scénáře (`SpravaScenare`, pod
+  panelem akce, i bez běžící akce) pro adminy a autory (`AUTORI_SCENARE`):
+  nahrání (`POST /api/diplo/scenar`, tělo `application/octet-stream` do
+  5 MB, jméno v `X-Jmeno-Souboru`, poznámka v `X-Poznamka`; jméno musí
+  končit `.aoe2scenario`, soubor musí začínat hlavičkou scénáře, stejný
+  obsah podruhé → 409), rozbor Pythonem (sloty a kdo je GM, sekundární cíle
+  s čísly z triggerů, suroviny, limity jednotek, starty barev, velikost
+  mapy, podmínky vítězství z `GlobalVictory`, minimapa webp podle
+  `barvy_terenu.json`, varování); **při neúspěchu se verze uloží s chybou a
+  nejde aktivovat**; první úspěšná verze se aktivuje sama, další tlačítkem
+  „Nastavit jako aktivní“; aktivace přepíše `scenar`, `scenarStarsi` a
+  `velikost` v nastavení běžící akce Diplomacie. Čtení a stažení je veřejné
+  (`GET /api/diplo/scenar`, `…/:id/soubor`, `…/aktivni/soubor`,
+  `…/:id/minimapa.webp`). Rozehraný zápas hraje dál svou otisknutou verzi.
+- **Jádro navíc umí scénářové lobby** (ne jen pro Diplomacii):
+  `options[38]` = soubor scénáře, řádek „Scénář“ v kontrole (shoda / starší
+  verze / jiný soubor / hra jméno neposlala), u Custom Scenario se mapa
+  nekontroluje, velikost se porovnává s velikostí ze scénáře a Victory je
+  jen informativní; panel Nastavení lobby mapu, velikost a Victory schová a
+  ukáže jeden řádek „Scénář“ (jméno, velikost, podmínky vítězství z
+  rozboru).
+- **Verze a nasazení:** větev `diplo` z `dev` 1.13.10, verze `1.13.10-13.10`
+  → `1.13.10-21.8` (`POKUSNE_VETVE` ve `scripts/verze.ts`); Coolify
+  `aoe-web-diplo` (`0kh5tb4uqgkyeuy77sy32mng`), DB `rob_aoe_diplo`, hlídač
+  větví i GitHub Action znají `diplo`; proměnné `AUTORI_SCENARE` a `PYTHON`
+  — `docs/nasazeni-jouki-cz.md` §3.6.
+
+**Rozhodnutí.**
+
+- **Admin, který není GM, nevidí nic.** Rob streamuje; role by byly ve
+  vysílání. Vědomá výjimka z pravidla „admin vidí všechno“:
+  `redigujProDivaka` volá `rezim.rediguj` i pro admina a `redigujDiplo`
+  žádnou výjimku pro admina nemá. Admin-ne-GM dostane na
+  `/api/diplo/zapas/:id/*` 403.
+- **GM = kdo sedí na šedé.** Neukládá se; výměna GM je změna sestavy
+  v přípravě. Jakmile jsou role rozdané, změna sestavy vrátí 409 „Role už
+  jsou rozdané — nejdřív Zpět na výběr Nástupce.“ (háček
+  `predZmenouSestavy`, ne podmínka v routě).
+- **Verze scénáře v databázi, rozbor v Pythonu.** Jin scénář ještě mění,
+  proto nežije v repu, ale v DB s historií (záloha) a nahrává se přes web;
+  AoE2ScenarioParser existuje jen v Pythonu, proto `rozbor.py` v podprocesu
+  s limitem 60 s a výstup ověřený `prectiRozbor`. Kopie v repu jen jako
+  testovací fixtura. Nová verze se neaktivuje sama (kromě úplně první), ať
+  Jin může nahrát rozpracovanou verzi jako zálohu.
+- **Nástupce web nelosuje** — sekundární cíle rozdá hra (Chance 13 %
+  v triggerech) a GM ho odklikne podle chatu hry („pN ma: …“).
+- **AI v sestavě dovolena** (uživatel: „to omezení že se diplomacie hraje
+  bez AI vím, ale nedělej to mandatory“), jen na šedé musí být člověk —
+  pult GM nikdo jiný neobslouží. AI dostane roli jako každý jiný a GM si ji
+  přečte v pultu (úkol 21).
+- **Lock Teams a Shared Exploration vypnuto** (potvrzeno uživatelem
+  1. 10. 2026) — diplomacie se mění během hry.
+- **Výsledek s víc vítězi** `{ hraci: string[] }` (úkol 20): aliance
+  vznikají až ve hře, vyhrát může Garda s Nástupcem nebo oba Nájezdníci.
+  Je to jádro, ne mód — hodí se i pro klasický FFA. V režii u zápasu s víc
+  než dvěma stranami volba „Víc vítězů…“. Zápis zůstává adminovi; právo GM
+  a předvyplnění podle rolí je podprojekt 2.
+- **Mapu, velikost a Victory určuje scénář** (úkol 22): hra je v Custom
+  Scenario v lobby nenabízí. `REZIMY[3]` se jmenuje „Custom Scenario“ jako
+  ve hře, `VITEZSTVI[0]` „Podle scénáře“, panel tři prvky **schová** (ne
+  zašedí — rozhodl uživatel), rozbor čte `GlobalVictory.mode` (LLC: vlastní
+  podmínky přes triggery).
+- **Potvrzení v pultu GM přes `Potvrzeni.tsx`**, ne `window.confirm` —
+  spec říká „potvrdit dialogem“ a repo svůj dialog má.
+- **Více stran v kartě zápasu jako mřížka bez „VS“** (úkol 18): u FFA
+  s osmi stranami se VS mezi každou dvojicí nevešlo a nic neoddělovalo;
+  1v1, 2v2 a 4v4 beze změny.
+- Zamítnuto / odloženo (§5): scénář na míru zápasu, most ke hře (XS skript
+  nebo záznam hry).
+
+**Doplněno během provádění** (úkoly 18–22, zadal uživatel 1. 10. 2026 podle
+snímků z `/aoe/diplo`; znění v plánu, oddíl „Úkoly přidané během provádění“):
+
+| úkol | co |
+|---|---|
+| 18 | `StranyZapasu` pro víc než dvě strany: mřížka `.vs-rozlozeni.mnoho-stran` bez VS; jména mají přednost před sloupcem civilizace (jádro, i klasické večery) |
+| 19 | nový hráč v sestavě Diplomacie dostane tým „–“ (`vychoziTymRezimu`), klasicky dál střídavě 1, 2 |
+| 20 | výsledek zápasu s víc vítězi `{ hraci }`, `vyhralHrac()` jako jediné místo pro „vyhrál tenhle hráč?“, volba „Víc vítězů…“ v režii |
+| 21 | AI v sestavě Diplomacie dovolena, jen GM na šedé musí být člověk |
+| 22 | scénářová lobby: velikost ze scénáře, Victory informativně, panel schová mapu / velikost / Victory a ukáže řádek „Scénář“; rozbor čte podmínky vítězství; `REZIMY[3]` „Custom Scenario“, `VITEZSTVI[0]` „Podle scénáře“ |
+
+**Co zůstává otevřené** (menší nálezy z revizí jednotlivých úkolů, každý
+v ledgeru s místem v kódu; nic z toho neblokuje hru):
+
+- *Souběh a atomičnost:* přechody stavů v `routes.ts` i kontrola sestavy
+  po losu čtou stav mimo transakci (dvojklik Přelosovat / Rozeslat, úprava
+  sestavy během losu); dvě souběžné aktivace nebo dvě první nahrání skončí
+  500 z unikátního indexu místo 409.
+- *Nahrávání:* parser `application/octet-stream` je registrovaný pro celou
+  aplikaci a tělo se čte dřív, než se ověří autor; `X-Poznamka` bez stropu
+  délky.
+- *Úklid kódu:* `ROLE` v `routes.ts` duplikuje `ROLE_LOSOVANE`;
+  `chybaPravidla` chytá každou `Error` (chyby programátora končí jako 400);
+  `akce.rezim ?? "klasicky"` třikrát v `App.tsx`; `stranaHrace` už v
+  produkci nikdo nevolá; `URCUJE_SCENAR` čte jen `historie.ts`.
+- *Mezery v testech:* 403 na všech pěti routách GM, 404 pro neznámého
+  hráče, varianty `GlobalVictory.mode` 0–3, pozice značek v `MapaScenare`,
+  jiná aktivní verze než verze zápasu.
+- *UI:* `VerejnyRadek` ukáže „Nástupce: AI“ místo rozlišeného jména
+  počítače; dialog potvrzení se nezavře, když stav mezitím změní SSE;
+  dvojitá otázka v režii při editaci výsledku; popisky startů u okrajů
+  minimapy; úzké znaky (pochodeň, sekera, žezlo) jsou v tabulce GM při
+  26 px tenké — rozhodne uživatel; v jádru dvoustranný layout na telefonech
+  na výšku přetéká a dlouhá jména u 4v4 se zkracují.
+- *Dokumentace a repo:* příklad v `docs/grafika.md` používá složku
+  `vyber/`, kterou recept nezakládá; `nastroje/grafika/__pycache__` je
+  trackované; `scenarStarsi` s neplatnou položkou se tiše zahodí místo 400.
+- *Provoz:* Jinovo `hrac_id` do `AUTORI_SCENARE` (Coolify: PATCH envs +
+  `/deploy`, ne `/restart`); orientaci minimapy potvrdit proti snímku ze
+  hry; ostrá zkouška s Jinem (jak host hlásí jméno staženého souboru, spec
+  §2.5).
+
+**Pasti.**
+
+- **CSS pro `.skladani .radek` platí i pro řádky jen ke čtení**
+  (`StranyZapasu`, režie): `grid-column: 2` u výběru barvy rozhodil hosta a
+  civilizaci na nový řádek — uživatel to viděl živě na `/aoe/diplo`
+  (úkol 11). Nová pravidla pro editor sestavy omezit na
+  `.skladani:not(.jen-ke-cteni)`, nebo je zkontrolovat v obou.
+- **Rozbor lokálně potřebuje Python s knihovnami:**
+  `pip install -r src/diplomacie/requirements.txt` (a Pillow) a
+  `PYTHON=python` v `.env`; test `rozbor.test.ts` se bez nich **přeskočí
+  s hláškou**, neselže — `npm test` je zelený i bez Pythonu, takže rozbor
+  je potřeba pouštět zvlášť: `PYTHON=python npx vitest run src/diplomacie/rozbor.test.ts`.
+- **Hra posílá jen jméno scénáře, ne obsah.** Nová verze pod stejným jménem
+  = kontrola lobby nepozná, že host má starou kopii. Správa při shodě jména
+  s existující verzí upozorní („Doporučuju jiné jméno…“), ale neblokuje —
+  verze pojmenovávat s číslem.
+- **Zkušební dveře jsou na https zavřené**, karty očima jednotlivých hráčů
+  se ověřují jen lokálně (`DEV_PRISTUP=true`, `npm run dev`).
+- `npx tsc --noEmit` web nekontroluje (platí pořád); po zásahu do
+  `src/shared/types.ts` (tvar `Vitez`, `AkceStavPayload.rezim`) doběhnout
+  celý `npm run build`.
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -1844,13 +2086,22 @@ odhad:
 
 | Klíč | Chybějící hodnota | Jak často (ze vzorku 89 lobby) | Jak to zjistit |
 |---|---|---|---|
-| `vitezstvi` (`options[81]`, tabulka `VITEZSTVI`) | `0` | 16× — skoro pětina, není okrajový případ | Ve hře v Game Settings postupně vyzkoušet zbylé položky nabídky Victory (ne jen Conquest/Standard, které už tabulka zná) a podívat se, co která pošle v `options[81]`; kontrola lobby u neznámé hodnoty vypíše přímo číslo místo jména |
+| `vitezstvi` (`options[81]`, tabulka `VITEZSTVI`) | `0` | 16× — skoro pětina, není okrajový případ | **Vyřešeno 1. 10. 2026 (§3.60, úkol 22):** `0` posílají lobby v režimu Custom Scenario — hra tam Victory v lobby vůbec nenabízí, podmínky určuje scénář. Živá sonda 12 scénářových lobby: `options[81]` vždy `0`, `options[8]` skutečná velikost mapy ze scénáře. Tabulka má `0: "Podle scénáře"` a kontrola lobby u scénáře ukazuje Victory jen informativně. Zda `0` chodí i mimo scénářový režim, se neměřilo |
 | `rezim` (`options[5]`, tabulka `REZIMY`) | `15` | 2–3× | Ve hře postupně projet zbylé položky Game Mode (nabídka jich má víc, než kolik jich `REZIMY` zná) a sledovat `options[5]`; kontrola lobby zase u neznámé hodnoty vypíše číslo |
 | `preLobby.lobbyTyp` (`matchtype_id`, tabulka `LOBBY_TYPY`) | `61` | 2× | Založit lobby s jinou volbou Lobby Type, než jsou dnešní tři (Unranked, Ranked 1v1 DM, Ranked Team DM), a podívat se na `matchtype_id` v inzerátu |
 
 Postup na příště je stejný jako u Game Speed: přepnout ve hře, podívat se,
 co pošle živé `findAdvertisements` (nebo co kontrola lobby vypíše jako
 neznámé číslo), a teprve pak dopsat jméno do tabulky.
+
+**Doplněno 1. 10. 2026 (scénářové lobby, pro mód Diplomacie — §3.60).**
+
+| Co | Stav |
+|---|---|
+| `options[38]` = jméno souboru scénáře (`X.aoe2scenario`, bez cesty) u lobby v režimu Custom Scenario (`options[5] = 3`) | ověřeno naživo: 10 z 55 lobby (ráno) a 12 scénářových lobby (večer) ho měly všechny; `mapname` je u všech „my map“, `options[10]` u scénářů jen zbytek z nastavení před přepnutím |
+| `options[8]` u scénářové lobby = skutečná velikost mapy ze scénáře (120/200/220/240) | ověřeno na týchž 12 lobby — hra Map Size v lobby nenabízí, posílá tu ze souboru |
+| `options[81]` u scénářové lobby = `0` | ověřeno na týchž 12 lobby (Victory v lobby není, určuje ho scénář) |
+| jak jméno v `options[38]` hlásí host, který si scénář stáhl z webu | **neověřeno** — ověří první ostrá zkouška s Jinem (spec §2.5) |
 
 ---
 
@@ -1976,9 +2227,10 @@ vždy, má Spies), který čte soubor a posílá ho webu:
 Rozhodnuto 1. 10. 2026: zatím ne, jen zapsat. Ruční ovládání GM zůstává
 v každém případě jako záloha.
 
-## 6. Historie verzí (7.–17. 9. 2026)
+## 6. Historie verzí (7. 9. – 1. 10. 2026)
 
-Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
+Jedna řádka = jeden commit do `dev`; tučně releasy do `main`; větev `diplo`
+má jeden souhrnný řádek (verze `1.13.10-A.B`).
 
 | Verze | Kdy | Co (a proč) |
 |---|---|---|
@@ -2107,6 +2359,7 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.13.10-13.10 … 1.13.10-21.8 | 1. 10. (větev `diplo`) | **Mód Diplomacie, podprojekty 0 a 1 (§3.60)** — 31 commitů, nemergnuto do `dev`: nasazení `/aoe/diplo` a verzování (-13.10), kontrola souboru scénáře v lobby (-14.0), mód akce a migrace 030 (-15.0), pravidla rolí, rozbor Pythonem, viditelnost (-15.1 … -15.3), tabulky `diplo_*` migrace 031 (-16.0), háčky v jádru (-17.0), strany pro FFA a tým „–“ (-17.1 … -17.4), víc vítězů (-18.0), AI mimo šedou (-18.1), routy GM (-19.0), verze scénáře a `AUTORI_SCENARE` (-20.0), místa módu v obrazovkách a zakrytí (-20.1, -20.2), scénář určuje mapu / velikost / Victory (-21.0), minimapa (-21.1), karta role (-21.2, -21.3), pult GM (-21.4, -21.5), správa a stažení scénáře (-21.6), grafika rolí, rubu a rámu (-21.7, -21.8) |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |

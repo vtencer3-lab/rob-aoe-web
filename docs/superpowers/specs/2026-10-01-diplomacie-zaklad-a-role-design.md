@@ -453,11 +453,15 @@ Neblokuje.
    - Editor jádra beze změny. `SkladaniDiplo` přidá popisek slotu „GM“ u šedé
      a nápovědu.
    - Kontrola módu (H5):
-     - přesně 8 lidí, žádná AI,
+     - přesně 8 hráčů; **AI je dovolená** (úkol 21, uživatel 1. 10. 2026:
+       „nedělej to mandatory“ — AI dostane roli jako každý jiný a GM si ji
+       přečte v pultu), **jen na šedé musí sedět člověk**, protože pult GM
+       nikdo jiný neobslouží,
      - 8 různých barev, takže i šedá je obsazená,
-     - všichni tým „–“,
+     - všichni tým „–“ (nově vybraný hráč ho dostane sám, úkol 19),
      - civilizace nepředepsané.
-   - Chybová věta říká konkrétně, co chybí („Na šedé musí být GM“).
+   - Chybová věta říká konkrétně, co chybí („Na šedé musí být GM“, „Na šedé
+     musí být GM, ne počítač.“).
 3. **Zápas vznikne.**
    - `poVytvoreniZapasu` založí `diplo_zapas` s GM = hráč na šedé, stav
      `priprava`.
@@ -655,3 +659,56 @@ Podle `docs/grafika.md`, žádné ruční kreslení ani úpravy:
 - Most ke hře a scénář na míru (zapsané nápady).
 - Sledování sekundárních cílů hráčů na webu (hráč je vidí ve hře; pro
   vyhodnocení je zadá GM v podprojektu 2).
+
+## 12. Doplněno během provádění (1. 10. 2026)
+
+Co se oproti tomuhle návrhu změnilo při provádění plánu. Platí kód a
+`docs/prehled-praci-a-zameru.md` §3.60; tady jen výčet, aby spec nelhal.
+
+**Úkoly přidané uživatelem během provádění** (znění v plánu, oddíl „Úkoly
+přidané během provádění“):
+
+- **Úkol 18** — `StranyZapasu` pro víc než dvě strany (FFA, Diplomacie):
+  mřížka `.vs-rozlozeni.mnoho-stran` bez „VS“ (každá strana je jeden hráč,
+  VS by nic neoddělovalo); jádro, platí i pro klasické večery.
+- **Úkol 19** — nově vybraný hráč v sestavě Diplomacie dostane tým „–“
+  (`vychoziTymRezimu` v `src/shared/rezimy.ts`), klasicky dál střídavě 1, 2.
+- **Úkol 20** — výsledek zápasu s víc vítězi: třetí tvar `Vitez`
+  `{ hraci: string[] }` (uložení `hraci:` + JSON), `vyhralHrac()` jako jediné
+  místo pro „vyhrál tenhle hráč?“, v režii u zápasu s víc než dvěma stranami
+  volba „Víc vítězů…“. Zápis zůstává adminovi; právo GM a předvyplnění
+  podle rolí je podprojekt 2.
+- **Úkol 21** — AI v sestavě Diplomacie je dovolená, jen GM na šedé musí
+  být člověk (§6.1 krok 2 výš upraven).
+- **Úkol 22** — v Custom Scenario hra v lobby nenabízí Victory ani Map
+  Size: `REZIMY[3]` se jmenuje „Custom Scenario“, `VITEZSTVI[0]` „Podle
+  scénáře“, kontrola porovnává velikost s velikostí z rozboru (mód ji
+  propíše do `nastaveniLobby.velikost`) a Victory jen vypíše, panel
+  Nastavení lobby mapu, velikost a Victory **schová** a ukáže jeden řádek
+  „Scénář“; rozbor čte `GlobalVictory` (`RozborScenare.vitezstvi`,
+  volitelné — starší verze v DB ho nemají). Živě ověřeno: scénářové lobby
+  posílají `options[8]` = skutečná velikost mapy a `options[81] = 0`.
+
+**Rozhodnutí při provádění:**
+
+- Potvrzení úprav po rozeslání (§6.2) dělá stávající dialog repa
+  `Potvrzeni.tsx`, ne `window.confirm` — spec říká „potvrdit dialogem“,
+  repo svůj dialog má.
+- Lock Teams a Shared Exploration vypnuto potvrdil uživatel 1. 10. 2026
+  (odpovídá §6.1 krok 1).
+- `smiNahratScenar` žije ve vlastním modulu `src/diplomacie/opravneni.ts`
+  (ne v `routes.ts`), aby nevznikl cyklus importů
+  `auth/routes → diplomacie/routes → http/guards → auth/routes`.
+- GM se neukládá (§4.4): `requireGm` v §6.3 porovnává s GM odvozeným ze
+  šedé v sestavě (`db.ts`), žádný sloupec `gm_hrac_id` neexistuje.
+- `SkladaniDiplo.tsx` z §4.3 nevzniklo — popisek slotu „GM“ dodává háček
+  `popisSlotu` v `web/src/rezimy/index.tsx` (`RezimKlienta`), který má navíc
+  `nastaveniScenare` pro řádek „Scénář“ v panelu. Ve `web/src/diplomacie/`
+  přibyly `StazeniScenare.tsx` (krok hosta), `index.tsx` (klient módu),
+  `znaky.ts`, `api.ts` a `fixtury.ts`.
+- Když úprava role po rozeslání změní, kdo jsou Nájezdníci, karta partnera
+  se obnoví ze stavu, ale příznak „upraveno“ dostane jen upravený hráč
+  (§6.2 doslova); upozornění partnera přijde s deníkem v podprojektu 2.
+- Více hráčů AI v pultu GM se rozlišuje jménem v zápase, ne jen „AI“.
+- Grafika (§8.3): vybrané varianty jsou čisté z první dávky ComfyUI, Codex
+  nebyl potřeba; postup a seedy v `docs/grafika.md`, „Mód Diplomacie“.

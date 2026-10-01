@@ -117,6 +117,8 @@ protože je stejné ve všech třech nasazeních v Coolify a přejmenovat by ji
 | `STEAM_API_KEY` | bezplatný klíč z <https://steamcommunity.com/dev/apikey>, kterým se web ptá Steamu na odehrané hodiny v AoE2 a na profilovou přezdívku s avatarem | neukážou se odehrané hodiny ani avatary. ELO, herní přezdívka i počet odehraných her chodí ze žebříčku Worlds Edge, který žádný klíč nechce, takže zbytek funguje beze změny. Bez klíče se Steamu vůbec neptáme, takže se nikomu u jména neobjeví varování o chybě |
 | `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | Client ID a Client Secret z registrace aplikace na <https://entra.microsoft.com> (App registrations, „Personal Microsoft accounts only“), kterými web ověřuje Microsoft přihlášení | Microsoft routy se vůbec nezaregistrují a tlačítko „Přihlásit se Microsoft účtem“ se na přihlašovací obrazovce neukáže. Steam přihlášení funguje beze změny |
 | `LOG_LEVEL` | úroveň serverového logu (výchozí `info`) | loguje se od `info` výš |
+| `AUTORI_SCENARE` | mód Diplomacie: `hrac_id` autorů scénáře oddělená čárkou (stejný tvar jako `ADMIN_STEAM_ID`), kteří smí nahrávat a aktivovat verze scénáře i bez režie | nahrávat smí jen admini |
+| `PYTHON` | mód Diplomacie: interpret Pythonu s AoE2ScenarioParser a Pillow pro rozbor nahraného scénáře (`src/diplomacie/requirements.txt`); při vývoji na Windows `PYTHON=python` | použije se `/opt/rozbor/bin/python` z Docker obrazu; mimo kontejner pak rozbor selže a nahraná verze se uloží s chybou rozboru (nejde ji aktivovat) |
 
 ## Testy
 
@@ -128,6 +130,10 @@ protože je stejné ve všech třech nasazeních v Coolify a přejmenovat by ji
   jméno databáze v `DATABASE_URL` nekončí na `_test`, run se rovnou zastaví
   chybou dřív, než se stihne cokoliv smazat.
 - `npm run test:web` — testy frontendu (`web/`).
+- `PYTHON=python npx vitest run src/diplomacie/rozbor.test.ts` — rozbor
+  scénáře Diplomacie skutečným Pythonem (`pip install -r
+  src/diplomacie/requirements.txt` a Pillow). Bez interpretu s knihovnami se
+  tyhle testy v `npm test` jen přeskočí s hláškou, neselžou.
 
 ## Zkouška večera nasucho (bez čtyř Steam účtů)
 
@@ -337,6 +343,61 @@ lobby zanikne).
 Do 5. 9. 2026 byl mezi krokem 2 a 3 ještě mezikrok „Vyhlásit“ a akce měla pět
 stavů; obojí zmizelo, protože se na tom dalo v přímém přenosu jen zaseknout.
 Podrobnosti v [návrhu z 5. 9. 2026](docs/superpowers/specs/2026-09-05-zjednoduseni-stavu-design.md).
+
+## Diplomacie
+
+Druhý mód večera vedle klasického (zatím ve větvi `diplo` na
+<https://jouki.cz/aoe/diplo>): custom scénář *Diplomacie – Ať žije císař*
+(`LLC.aoe2scenario`, autor Jin) pro 7 hráčů a jednoho GameMastera se
+skrytými rolemi. Web nahrazuje losování rolí v samostatném nástroji a
+obcházení voice roomek — každý dostane svou roli na tajné kartě.
+
+- **Založení akce.** Rob při zakládání akce zapne přepínač **Diplomacie**
+  vedle názvu. Nastavení lobby se předvyplní z módu: Game Mode Custom
+  Scenario, scénář (aktivní verze), velikost mapy ze scénáře, populace 200,
+  Lock Teams a Shared Exploration vypnuto, diváci povoleni. Mapu, velikost
+  a Victory v panelu nenajdeš — v Custom Scenario je určuje scénář, panel
+  místo nich ukáže jeden řádek „Scénář“.
+- **Kdo je GM.** Ten, kdo v sestavě sedí **na šedé barvě (7)** — stejně
+  jako ve scénáři. Neukládá se nikam zvlášť: výměna GM je změna sestavy
+  (jde jen do té doby, než jsou role rozdané). GM nemusí být admin; práva
+  GM má jen pro ten zápas. Sestava: přesně 8 hráčů, každý jinou barvu,
+  všichni bez týmu („–“, nový hráč ho dostane sám), civilizace se
+  nepředepisují. Počítač v sestavě být smí, jen na šedé musí sedět člověk.
+- **Scénář nahrávají přes web** admini a autoři ze `AUTORI_SCENARE`
+  (sekce „Správa scénáře“ pod panelem akce, i když žádná akce neběží).
+  Web si každou verzi uloží, sám ji rozebere (čísla sekundárních cílů,
+  limity, starty, podmínky vítězství, minimapa) a archivuje; aktivní je
+  vždy nejvýš jedna, nová verze se neaktivuje sama (kromě úplně první) —
+  tlačítko „Nastavit jako aktivní“. Verze, kterou se nepodařilo přečíst,
+  jde stáhnout, ale ne aktivovat. Pojmenovávej verze s číslem: hra hlásí
+  jen jméno souboru, takže dvě verze stejného jména kontrola lobby
+  nerozliší — správa na shodné jméno upozorní, ale nebrání mu.
+- **Host** má v kroku „Zakládáš!“ navíc **Stáhnout scénář** (verzi, kterou
+  zápas hraje) a cestu, kam soubor uložit —
+  `%USERPROFILE%\Games\Age of Empires 2 DE\<Steam ID nebo XUID>\resources\_common\scenario\`,
+  web ji ukáže přímo pro přihlášeného hosta. Starou kopii stejného jména je
+  potřeba přepsat. V Create Lobby zvolí Game Mode Custom Scenario a tenhle
+  scénář; ostatní hráči ho dostanou přenosem v lobby. Kontrola lobby má
+  řádek „Scénář“ (shoda, starší verze, jiný soubor).
+- **Co vidí hráči.** Před rozesláním jen „Role se rozdají po startu hry“.
+  Po startu hry rozdá sekundární cíle hra sama; GM v pultu označí hráče,
+  který cíl nedostal (**Nástupce císaře**), nechá web rozdat zbylé role
+  (Šašek, Garda, 2× Nájezdník, Žoldák, Kat), případně je upraví a **rozešle**.
+  Hráčům zazvoní zvon a objeví se **zakrytá karta**: kliknutím odkryjí
+  znak a název role, cíl, výhody a nevýhody, tajné údaje (Kat svou oběť,
+  Žoldák svůj pakt, Nájezdník druhého Nájezdníka) a minimapu se svým
+  startem; další klik zakryje, po obnovení stránky je karta zase zakrytá.
+  Pod kartou vidí všichni v zápase jméno Nástupce a pravidla hry. **Admin,
+  který není GM, role nevidí** — Rob streamuje. Hráči mimo zápas vidí jen
+  „Diplomacie · Nástupce: X“.
+- **Výsledek.** Aliance vznikají až ve hře, takže vyhrát může víc hráčů
+  naráz: u zápasu s víc než dvěma stranami má režie vedle tlačítek po
+  stranách i „Víc vítězů…“ se zaškrtávátky u jmen. Vyhodnocení podle rolí
+  a odhalení rolí všem přijde v dalším kroku módu.
+
+Návrh a rozhodnutí: `docs/prehled-praci-a-zameru.md` §3.60, spec
+`docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`.
 
 ## Jak to funguje ve zkratce
 
