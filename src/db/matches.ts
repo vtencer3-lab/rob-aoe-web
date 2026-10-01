@@ -51,11 +51,14 @@ export interface UcastnikRow {
 }
 
 /**
- * Vítěz v databázi je text: „tym:2“ nebo „hrac:<hrac_id>“. Sloupec pro
- * číslo týmu nestačí od chvíle, kdy hráč bez týmu hraje sám za sebe.
+ * Vítěz v databázi je text: „tym:2“, „hrac:<hrac_id>“, nebo „hraci:“ + JSON
+ * pole ID. Sloupec pro číslo týmu nestačí od chvíle, kdy hráč bez týmu hraje
+ * sám za sebe; seznam je JSON, protože hracId může mít dvojtečku (xbox:<xuid>).
  */
 export function vitezDoTextu(vitez: Vitez): string {
-  return "tym" in vitez ? `tym:${vitez.tym}` : `hrac:${vitez.hracId}`;
+  if ("tym" in vitez) return `tym:${vitez.tym}`;
+  if ("hracId" in vitez) return `hrac:${vitez.hracId}`;
+  return `hraci:${JSON.stringify(vitez.hraci)}`;
 }
 
 export function vitezZTextu(text: string | null): Vitez | null {
@@ -64,7 +67,22 @@ export function vitezZTextu(text: string | null): Vitez | null {
   if (tym) return { tym: Number(tym[1]) as Tym };
   const hrac = /^hrac:(.+)$/.exec(text);
   if (hrac) return { hracId: hrac[1]! };
+  const hraci = /^hraci:(.+)$/.exec(text);
+  if (hraci) return hraciZJsonu(hraci[1]!);
   return null;
+}
+
+/** Nesmysl ve sloupci (rozbitý JSON, prázdné pole, ne-řetězce) je null jako u ostatních tvarů. */
+function hraciZJsonu(json: string): Vitez | null {
+  let hodnota: unknown;
+  try {
+    hodnota = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(hodnota) || hodnota.length === 0) return null;
+  if (!hodnota.every((h): h is string => typeof h === "string" && h !== "")) return null;
+  return { hraci: hodnota };
 }
 
 const SLOUPCE_ZAPASU = "id, akce_id, poradi, stav, nazev_lobby, heslo, lobby_id, vitez, zavreny_v, nastaveni";

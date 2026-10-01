@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Chat, UDALOST_SBALIT_CHAT } from "./Chat.js";
 import { jeAi } from "../../../src/shared/aiHraci.js";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type AkceStavPayload, type Vitez, type ZapasView } from "../../../src/shared/types.js";
 import { nazevCivilizace } from "../../../src/shared/civilizace.js";
-import { jeVeHre, jeVitez, jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete } from "../zapas.js";
+import { jeVeHre, jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete, vyhralHrac } from "../zapas.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 
 /**
@@ -133,7 +133,6 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
         `o odkaz do lobby (${zapas.lobbyId}). Nový host ho bude muset vložit znovu ` +
         `a všichni včetně Spectate se budou muset připojit nanovo.`,
     );
-  const stranyZapasu = strany(zapas.ucastnici);
 
   return (
     <article
@@ -184,8 +183,10 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
           seznamu, styly čtverečků na obalu. */}
       <div className="skladani jen-ke-cteni">
       <ul className="sestava sestava-zapasu">
-        {zapas.ucastnici.map((u) => (
-          <li key={u.hracId} className={[`radek barva-${u.barva}`, jeVitez(zapas, u) ? "vyhral" : ""].filter(Boolean).join(" ")}>
+        {zapas.ucastnici.map((u) => {
+          const vyhral = vyhralHrac(zapas.ucastnici, zapas.vitez, u.hracId);
+          return (
+          <li key={u.hracId} className={[`radek barva-${u.barva}`, vyhral ? "vyhral" : ""].filter(Boolean).join(" ")}>
             <span className={`volba volba-barva barva-${u.barva}`} aria-label={`Barva ${BARVA_NAZEV[u.barva]}`}>
               {u.barva}
             </span>
@@ -194,7 +195,7 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
             </span>
             <span className="jmeno">
               {jmenoHrace(u)}
-              {jeVitez(zapas, u) ? (
+              {vyhral ? (
                 <strong className="odznak-vitez" data-testid="odznak-vitez" title={jeAi(u.hracId) ? "Vyhrála" : "Vyhrál"}>
                   VÍTĚZ
                 </strong>
@@ -224,7 +225,8 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
               </button>
             ) : null}
           </li>
-        ))}
+          );
+        })}
       </ul>
       </div>
       {/* Spectate, nápověda pro zamrzlou lobby i tlačítka výsledku patří
@@ -266,10 +268,9 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
           ) : null}
           {obsluha ? (
             <div className="ovladani">
-              {stranyZapasu.map((strana) => (
-                <TlacitkoViteze key={klicStrany(strana)} zapas={zapas} strana={strana} onVysledek={obsluha.onVysledek} />
-              ))}
-              <button onClick={() => obsluha.onStav(zapas.id, "zruseny")}>Zrušit</button>
+              <VolbaVysledku zapas={zapas} onVysledek={obsluha.onVysledek}>
+                <button onClick={() => obsluha.onStav(zapas.id, "zruseny")}>Zrušit</button>
+              </VolbaVysledku>
             </div>
           ) : null}
         </>
@@ -279,18 +280,15 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
           {meniVysledek ? (
             <>
               <span className="zaloha">Kdo doopravdy vyhrál?</span>
-              {stranyZapasu.map((strana) => (
-                <TlacitkoViteze
-                  key={klicStrany(strana)}
-                  zapas={zapas}
-                  strana={strana}
-                  onVysledek={(id, vitez) => {
-                    obsluha.onVysledek(id, vitez);
-                    setMeniVysledek(false);
-                  }}
-                />
-              ))}
-              <button onClick={() => setMeniVysledek(false)}>Nechat být</button>
+              <VolbaVysledku
+                zapas={zapas}
+                onVysledek={(id, vitez) => {
+                  obsluha.onVysledek(id, vitez);
+                  setMeniVysledek(false);
+                }}
+              >
+                <button onClick={() => setMeniVysledek(false)}>Nechat být</button>
+              </VolbaVysledku>
             </>
           ) : (
             <button onClick={() => setMeniVysledek(true)}>Změnit výsledek</button>
@@ -329,7 +327,97 @@ function ZapasVRezii({ zapas, obsluha, ja }: ZapasProps) {
 }
 
 function klicStrany(strana: Strana): string {
-  return "tym" in strana.vitez ? `tym-${strana.vitez.tym}` : `hrac-${strana.vitez.hracId}`;
+  if ("tym" in strana.vitez) return `tym-${strana.vitez.tym}`;
+  return "hracId" in strana.vitez ? `hrac-${strana.vitez.hracId}` : `hraci-${strana.vitez.hraci.join("+")}`;
+}
+
+/**
+ * Tlačítka výsledku: jedno na stranu, a u zápasu s víc než dvěma stranami
+ * (FFA, Diplomacie) ještě „Víc vítězů…“ — aliance tam vznikají až ve hře, takže
+ * vyhrát může kdokoliv s kýmkoliv a strana ze sestavy to neumí pojmenovat.
+ * Výběr nahradí tlačítka zaškrtávátky u jmen; tlačítka navíc (Zrušit, Nechat
+ * být) jdou do výběru s nimi, po uložení nebo Zpět se všechno vrátí.
+ */
+function VolbaVysledku({
+  zapas,
+  onVysledek,
+  children,
+}: {
+  zapas: ZapasView;
+  onVysledek: (zapasId: number, vitez: Vitez) => void;
+  children?: ReactNode;
+}) {
+  const [vicVitezu, setVicVitezu] = useState(false);
+  const stranyZapasu = strany(zapas.ucastnici);
+  if (vicVitezu) {
+    return (
+      <VyberVitezu
+        zapas={zapas}
+        onUlozit={(vitez) => {
+          setVicVitezu(false);
+          onVysledek(zapas.id, vitez);
+        }}
+        onZpet={() => setVicVitezu(false)}
+      />
+    );
+  }
+  return (
+    <>
+      {stranyZapasu.map((strana) => (
+        <TlacitkoViteze key={klicStrany(strana)} zapas={zapas} strana={strana} onVysledek={onVysledek} />
+      ))}
+      {stranyZapasu.length > 2 ? (
+        <button type="button" onClick={() => setVicVitezu(true)}>
+          Víc vítězů…
+        </button>
+      ) : null}
+      {children}
+    </>
+  );
+}
+
+/** Zaškrtávátka u jmen v pořadí slotů; uložit jde, až je zaškrtnutý aspoň jeden. */
+function VyberVitezu({ zapas, onUlozit, onZpet }: { zapas: ZapasView; onUlozit: (vitez: Vitez) => void; onZpet: () => void }) {
+  // Už zapsaná aliance je předvyplněná, ať se při opravě nezačíná od nuly.
+  const [vybrani, setVybrani] = useState<ReadonlySet<string>>(
+    () => new Set(zapas.vitez !== null && "hraci" in zapas.vitez ? zapas.vitez.hraci : []),
+  );
+  const podleSlotu = [...zapas.ucastnici].sort((a, b) => a.poradi - b.poradi);
+  const prepni = (hracId: string, zaskrtnuto: boolean) =>
+    setVybrani((stare) => {
+      const nove = new Set(stare);
+      if (zaskrtnuto) nove.add(hracId);
+      else nove.delete(hracId);
+      return nove;
+    });
+  return (
+    <fieldset className="vic-vitezu">
+      <legend>Kdo všechno vyhrál?</legend>
+      <ul className="vitezove">
+        {podleSlotu.map((u) => (
+          <li key={u.hracId}>
+            <label className={`barva-${u.barva}`}>
+              <input type="checkbox" checked={vybrani.has(u.hracId)} onChange={(e) => prepni(u.hracId, e.target.checked)} />
+              <span className="swatch" aria-hidden="true" />
+              {jmenoHrace(u)}
+            </label>
+          </li>
+        ))}
+      </ul>
+      <div className="ovladani">
+        <button
+          type="button"
+          disabled={vybrani.size === 0}
+          onClick={() => onUlozit({ hraci: podleSlotu.filter((u) => vybrani.has(u.hracId)).map((u) => u.hracId) })}
+        >
+          Uložit vítěze
+        </button>
+        <button type="button" onClick={onZpet}>
+          Zpět
+        </button>
+      </div>
+    </fieldset>
+  );
 }
 
 /**

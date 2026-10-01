@@ -586,6 +586,20 @@ main > .prazdno::after {
 .stavovy-radek { color: var(--tlumene); font-size: 0.85rem; margin: 0.3rem 0; }
 .rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
 
+/* Víc vítězů (aliance vzniklé až ve hře): zaškrtávátka u jmen místo tlačítek
+   stran. Zabere celý řádek ovládání; rám i výplň jen z palety. */
+.rezie .vic-vitezu {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 0.8rem 0.7rem;
+  border: 1px solid var(--zlato-tmave);
+  background: color-mix(in srgb, var(--zlato) 6%, transparent);
+}
+.rezie .vic-vitezu legend { padding: 0 0.4rem; color: var(--zlato-svetle); font-size: 0.85rem; }
+.rezie .vic-vitezu .vitezove { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+.rezie .vic-vitezu label { display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; }
+
 /* Nadpisy, které stojí přímo na malovaném pozadí (název akce, historie
    zápasů), drží jednu velikost — stejnou jako titulek zápasu pod nimi. Uvnitř
    panelu zůstává nadpis menší: tam ho nese deska, ne scéna.

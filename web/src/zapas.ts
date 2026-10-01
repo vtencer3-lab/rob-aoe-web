@@ -1,6 +1,6 @@
 import type { UcastnikView, ZapasView } from "../../src/shared/types.js";
 
-export { sdiliCivilizaci, popisFormatu, strany, titulekViteze, vitezVeVete } from "../../src/shared/strany.js";
+export { sdiliCivilizaci, popisFormatu, strany, titulekViteze, vitezVeVete, vyhralHrac } from "../../src/shared/strany.js";
 
 /**
  * Jméno, které se hráči ukáže. Alias je herní přezdívka ze žebříčku Worlds
@@ -47,15 +47,6 @@ export function mojeZapasy(zapasy: ZapasView[], hracId: string): ZapasView[] {
 export function verejneZapasy(zapasy: ZapasView[], hracId: string | null): ZapasView[] {
   const naKarte = new Set(hracId === null ? [] : mojeZapasy(zapasy, hracId).map((z) => z.id));
   return zapasy.filter((z) => z.stav !== "zruseny" && !z.zavreny && !naKarte.has(z.id));
-}
-
-/**
- * Vyhrál tenhle hráč? U dohraného zápasu buď vyhrál celý tým, nebo jeden
- * konkrétní hráč — podle toho, jak Rob výsledek zapsal.
- */
-export function jeVitez(zapas: Pick<ZapasView, "vitez">, u: Pick<UcastnikView, "hracId" | "tym">): boolean {
-  if (!zapas.vitez) return false;
-  return "tym" in zapas.vitez ? u.tym === zapas.vitez.tym : u.hracId === zapas.vitez.hracId;
 }
 
 /** „tým 2“, nebo „bez týmu“ pro hráče, který hraje sám za sebe. */

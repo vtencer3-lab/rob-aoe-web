@@ -43,7 +43,24 @@ export function strany<T extends ClenStrany>(ucastnici: T[]): Array<{ vitez: Vit
 export function stejnyVitez(a: Vitez | null, b: Vitez | null): boolean {
   if (a === null || b === null) return a === b;
   if ("tym" in a) return "tym" in b && a.tym === b.tym;
-  return "hracId" in b && a.hracId === b.hracId;
+  if ("hracId" in a) return "hracId" in b && a.hracId === b.hracId;
+  // Seznam hráčů je množina: na pořadí zápisu nezáleží.
+  if (!("hraci" in b)) return false;
+  const mnozina = new Set(a.hraci);
+  return mnozina.size === new Set(b.hraci).size && b.hraci.every((h) => mnozina.has(h));
+}
+
+/**
+ * Jediné místo, které říká, jestli konkrétní hráč vyhrál: u týmu je v tom
+ * týmu, u jednoho hráče je to on, u seznamu je v seznamu. Bez výsledku
+ * nevyhrál nikdo.
+ */
+export function vyhralHrac(ucastnici: ClenStrany[], vitez: Vitez | null, hracId: string): boolean {
+  if (vitez === null) return false;
+  if ("hraci" in vitez) return vitez.hraci.includes(hracId);
+  if ("hracId" in vitez) return vitez.hracId === hracId;
+  const u = ucastnici.find((x) => x.hracId === hracId);
+  return u !== undefined && u.tym === vitez.tym;
 }
 
 /** Ke které straně hráč patří; null, když v zápase nehraje. */
@@ -90,12 +107,29 @@ export function titulekViteze(strana: Strana): string {
   return `${zena ? "Vyhrála" : "Vyhrál"} ${nazevStrany(strana)}`;
 }
 
-/** Totéž do věty: „dohráno — vyhrál modrý tým“. */
+/** Totéž do věty: „dohráno — vyhrál modrý tým“; u aliance „vyhráli X, Y a Z“. */
 export function vitezVeVete(ucastnici: ClenStrany[], vitez: Vitez): string {
+  if ("hraci" in vitez) return vitezoveVeVete(ucastnici, vitez.hraci);
   const strana = strany(ucastnici).find((s) => stejnyVitez(s.vitez, vitez));
   if (!strana) return "vyhrál " + ("tym" in vitez ? `tým ${vitez.tym}` : vitez.hracId);
   const titulek = titulekViteze(strana);
   return titulek.charAt(0).toLowerCase() + titulek.slice(1);
+}
+
+/**
+ * Jména v pořadí slotů, ne v pořadí zápisu. Kdo v sestavě není (nemělo by se
+ * stát), zůstane jako ID, ať věta nikoho nezamlčí. Jeden hráč „vyhrál“ (AI
+ * „vyhrála“ jako v titulekViteze), víc jich „vyhráli“.
+ */
+function vitezoveVeVete(ucastnici: ClenStrany[], hraci: string[]): string {
+  const podleSlotu = [...ucastnici].sort((a, b) => a.poradi - b.poradi).filter((u) => hraci.includes(u.hracId));
+  const neznami = hraci.filter((h) => !podleSlotu.some((u) => u.hracId === h));
+  const jmena = [...podleSlotu.map(jmenoClena), ...neznami];
+  if (jmena.length <= 1) {
+    const [jediny] = hraci;
+    return `${jediny !== undefined && jeAi(jediny) ? "vyhrála" : "vyhrál"} ${jmena[0] ?? "?"}`;
+  }
+  return `vyhráli ${jmena.slice(0, -1).join(", ")} a ${jmena[jmena.length - 1]}`;
 }
 
 /** Hráči, kteří mají stejnou barvu jako daný hráč — ve hře sdílejí civilizaci (Coop Kings). */

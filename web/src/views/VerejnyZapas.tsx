@@ -1,6 +1,5 @@
-import { stejnyVitez, stranaHrace } from "../../../src/shared/strany.js";
 import type { ZapasView } from "../../../src/shared/types.js";
-import { jmenoHrace, popisFormatu, strany, vitezVeVete } from "../zapas.js";
+import { jmenoHrace, popisFormatu, strany, vitezVeVete, vyhralHrac } from "../zapas.js";
 
 function popisStavu(zapas: ZapasView): string {
   if (zapas.stav !== "dohrano") return "běží";
@@ -26,11 +25,12 @@ export function VerejnyZapas({ zapas, ja = null }: Props) {
     .map((s) => s.clenove.map(jmenoHrace).join(" + "))
     .join(" vs ");
   // Hráč se svůj vlastní dohraný zápas dozvídá právě tímhle řádkem — karta pro
-  // něj po dohrání zaniká. Ať se aspoň nemusí domýšlet, která strana byla jeho.
-  const moje = ja === null ? null : stranaHrace(zapas.ucastnici, ja);
+  // něj po dohrání zaniká. Ať se aspoň nemusí domýšlet, jak dopadl; divákovi
+  // mimo zápas se nic osobního neříká.
+  const hraju = ja !== null && zapas.ucastnici.some((u) => u.hracId === ja);
   const verdikt =
-    zapas.stav === "dohrano" && zapas.vitez !== null && moje !== null
-      ? stejnyVitez(moje, zapas.vitez)
+    zapas.stav === "dohrano" && zapas.vitez !== null && ja !== null && hraju
+      ? vyhralHrac(zapas.ucastnici, zapas.vitez, ja)
         ? "Vyhrál jsi."
         : "Prohrál jsi."
       : null;

@@ -8,6 +8,7 @@ import {
   strany,
   titulekViteze,
   vitezVeVete,
+  vyhralHrac,
   type ClenStrany,
 } from "./strany.js";
 import type { Barva, Tym } from "./types.js";
@@ -64,6 +65,42 @@ describe("stejnyVitez a stranaHrace", () => {
     expect(stranaHrace(u, "a")).toEqual({ tym: 1 });
     expect(stranaHrace(u, "s")).toEqual({ hracId: "s" });
     expect(stranaHrace(u, "z")).toBeNull();
+  });
+});
+
+// Aliance v Diplomacii i ve FFA vznikají až ve hře: v lobby hraje každý sám
+// za sebe, ale vyhrát můžou dva nebo tři naráz. Třetí tvar vítěze je proto
+// seznam hráčů, ne strana ze sestavy.
+describe("vítěz s víc hráči", () => {
+  const ffa = [c("a", 0, 1, 0, "Garda"), c("b", 0, 2, 1, "Nastupce"), c("d", 0, 3, 2, "Zoldak"), c("ai:1", 0, 4, 3, "AI")];
+  const tymovy = [c("a", 1, 1, 0), c("b", 1, 1, 1), c("x", 2, 2, 2), c("s", 0, 3, 3)];
+
+  it("stejnyVitez porovnává množinu hráčů bez ohledu na pořadí", () => {
+    expect(stejnyVitez({ hraci: ["a", "b"] }, { hraci: ["b", "a"] })).toBe(true);
+    expect(stejnyVitez({ hraci: ["a", "b"] }, { hraci: ["a", "d"] })).toBe(false);
+    expect(stejnyVitez({ hraci: ["a", "b"] }, { hraci: ["a"] })).toBe(false);
+    expect(stejnyVitez({ hraci: ["a"] }, { hracId: "a" })).toBe(false);
+    expect(stejnyVitez({ hracId: "a" }, { hraci: ["a"] })).toBe(false);
+    expect(stejnyVitez({ tym: 1 }, { hraci: ["a"] })).toBe(false);
+  });
+
+  it("vyhralHrac zná všechny tři tvary a bez výsledku nevyhrál nikdo", () => {
+    expect(vyhralHrac(tymovy, { tym: 1 }, "b")).toBe(true);
+    expect(vyhralHrac(tymovy, { tym: 1 }, "x")).toBe(false);
+    expect(vyhralHrac(tymovy, { tym: 1 }, "cizi")).toBe(false);
+    expect(vyhralHrac(tymovy, { hracId: "s" }, "s")).toBe(true);
+    expect(vyhralHrac(tymovy, { hracId: "s" }, "a")).toBe(false);
+    expect(vyhralHrac(ffa, { hraci: ["a", "d"] }, "d")).toBe(true);
+    expect(vyhralHrac(ffa, { hraci: ["a", "d"] }, "b")).toBe(false);
+    expect(vyhralHrac(ffa, null, "a")).toBe(false);
+  });
+
+  it("věta: jeden vyhrál, víc vyhráli, jména v pořadí slotů", () => {
+    expect(vitezVeVete(ffa, { hraci: ["b"] })).toBe("vyhrál Nastupce");
+    expect(vitezVeVete(ffa, { hraci: ["ai:1"] })).toBe("vyhrála AI");
+    expect(vitezVeVete(ffa, { hraci: ["d", "a"] })).toBe("vyhráli Garda a Zoldak");
+    expect(vitezVeVete(ffa, { hraci: ["d", "b", "a"] })).toBe("vyhráli Garda, Nastupce a Zoldak");
+    expect(vitezVeVete(ffa, { hraci: ["zzz"] })).toBe("vyhrál zzz");
   });
 });
 

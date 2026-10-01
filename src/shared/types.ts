@@ -152,10 +152,12 @@ export interface UcastnikView {
 }
 
 /**
- * Kdo vyhrál: tým (1 až 4), nebo jeden hráč, když hrál sám za sebe („–“).
+ * Kdo vyhrál: tým (1 až 4), jeden hráč, když hrál sám za sebe („–“), nebo
+ * seznam hráčů, když aliance vznikla až ve hře (Diplomacie, FFA) a strana ze
+ * sestavy ji neumí pojmenovat — neprázdný, bez duplicit, v pořadí slotů.
  * Strany zápasu vznikají ze sestavy, viz strany.ts.
  */
-export type Vitez = { tym: Tym } | { hracId: string };
+export type Vitez = { tym: Tym } | { hracId: string } | { hraci: string[] };
 
 /** Lobby ještě stojí (sedí se v ní), nebo už hra běží. Null = nevíme. */
 export type FazeLobby = "lobby" | "hraje_se";

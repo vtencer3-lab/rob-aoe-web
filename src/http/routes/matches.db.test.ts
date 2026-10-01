@@ -417,6 +417,36 @@ it("Rob zapíše vítěze", async () => {
   await app.close();
 });
 
+// Aliance vzniklé až ve hře (Diplomacie, FFA): vítězů může být víc. Smí to být
+// jen hráči zápasu, každý jednou a aspoň jeden — jinak se nic nezapíše a zápas
+// zůstává běžet.
+it("Rob zapíše víc vítězů; cizí hráč, duplicita a prázdný seznam jsou 400", async () => {
+  const app = buildServer();
+  const zapas = await vytvorZapas(app);
+  const zapis = (hraci: unknown) =>
+    app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/vysledek`, cookies: { sid: robSid }, payload: { vitez: { hraci } } });
+
+  for (const spatne of [[HRACI[0], "76561198000000099"], [HRACI[0], HRACI[0]], []]) {
+    const res = await zapis(spatne);
+    expect(res.statusCode).toBe(400);
+    expect(res.json().chyba).toBe("Vítězové musí být hráči zápasu.");
+  }
+  let nacteny = (await getZapas(zapas.id))!;
+  expect(nacteny.zapas.vitez).toBeNull();
+  expect(nacteny.zapas.stav).toBe("bezi");
+
+  // Pořadí v těle nerozhoduje — uloží se v pořadí slotů.
+  const res = await zapis([HRACI[1], HRACI[0]]);
+  expect(res.statusCode).toBe(200);
+  nacteny = (await getZapas(zapas.id))!;
+  expect(nacteny.zapas.vitez).toEqual({ hraci: [HRACI[0], HRACI[1]] });
+  expect(nacteny.zapas.stav).toBe("dohrano");
+
+  const anonym = await app.inject({ method: "GET", url: "/api/akce" });
+  expect(anonym.json().zapasy[0].vitez).toEqual({ hraci: [HRACI[0], HRACI[1]] });
+  await app.close();
+});
+
 // Pozor na jméno: tenhle test kontroluje GET /api/akce, NE SSE stream — tam
 // vede vlastní test v stream.db.test.ts. Dřív se jmenoval "…ve streamu…" a
 // tvrdil tím pokrytí, které neměl.

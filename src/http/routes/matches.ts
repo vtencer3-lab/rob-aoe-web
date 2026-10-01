@@ -58,20 +58,35 @@ function prectiSestavu(telo: unknown, rezim: RezimId): SestavaVstup[] {
   return vysledek;
 }
 
-/** Vítěz z těla: {tym: 1..4} nebo {hracId}. Musí odpovídat některé straně zápasu. */
+/**
+ * Vítěz z těla: {tym: 1..4} nebo {hracId} musí odpovídat některé straně
+ * zápasu; {hraci: [...]} je aliance vzniklá až ve hře — každý musí být
+ * účastník, nikdo dvakrát, aspoň jeden.
+ */
 function prectiViteze(telo: unknown, ucastnici: Parameters<typeof strany>[0]): Vitez {
   const vitez = (telo as { vitez?: unknown }).vitez;
   let kandidat: Vitez | null = null;
   if (typeof vitez === "object" && vitez !== null) {
-    const v = vitez as { tym?: unknown; hracId?: unknown };
+    const v = vitez as { tym?: unknown; hracId?: unknown; hraci?: unknown };
     if (typeof v.tym === "number" && TYMY.includes(v.tym as Tym) && v.tym !== 0) kandidat = { tym: v.tym as Tym };
     else if (typeof v.hracId === "string" && v.hracId !== "") kandidat = { hracId: v.hracId };
+    else if (Array.isArray(v.hraci)) return prectiVitezneHrace(v.hraci, ucastnici);
   }
-  if (!kandidat) throw new HttpError(400, "Vítěz je tým (1 až 4), nebo hráč bez týmu.");
+  if (!kandidat) throw new HttpError(400, "Vítěz je tým (1 až 4), hráč bez týmu, nebo seznam hráčů.");
   if (!strany(ucastnici).some((s) => stejnyVitez(s.vitez, kandidat))) {
     throw new HttpError(400, "Takovou stranu zápas nemá.");
   }
   return kandidat;
+}
+
+/** Ukládá se v pořadí slotů, ať je zápis téže aliance vždycky stejný bez ohledu na pořadí v těle. */
+function prectiVitezneHrace(hraci: unknown[], ucastnici: Parameters<typeof strany>[0]): Vitez {
+  const platni = hraci.every((h): h is string => typeof h === "string" && ucastnici.some((u) => u.hracId === h));
+  if (hraci.length === 0 || !platni || new Set(hraci).size !== hraci.length) {
+    throw new HttpError(400, "Vítězové musí být hráči zápasu.");
+  }
+  const vybrani = new Set(hraci);
+  return { hraci: [...ucastnici].sort((a, b) => a.poradi - b.poradi).filter((u) => vybrani.has(u.hracId)).map((u) => u.hracId) };
 }
 
 const CHYBA_ODKAZU: Record<LobbyUriError, string> = {

@@ -93,6 +93,25 @@ it("divákovi mimo zápas nic osobního neříká", () => {
   expect(radek).not.toHaveTextContent(/prohrál jsi/i);
 });
 
+// Aliance vzniklé až ve hře: vítězů je víc a hráč se pozná podle seznamu,
+// ne podle strany ze sestavy (v lobby hrál každý sám za sebe).
+it("u výsledku s víc vítězi to řekne každému z nich i poraženým", () => {
+  const solo = (hracId: string, alias: string, barva: 1 | 2 | 3): UcastnikView => ({ ...u(hracId, alias, 1), tym: 0, barva });
+  const ffa: ZapasView = {
+    ...zaslepeny,
+    stav: "dohrano",
+    ucastnici: [solo("a", "Trokner", 1), solo("b", "TibbarZmr", 2), solo("c", "Pepa", 3)],
+    vitez: { hraci: ["a", "c"] },
+  };
+  const { rerender } = render(<VerejnyZapas zapas={ffa} ja="c" />);
+  expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("vyhráli Trokner a Pepa");
+  expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("Vyhrál jsi");
+  rerender(<VerejnyZapas zapas={ffa} ja="b" />);
+  expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("Prohrál jsi");
+  rerender(<VerejnyZapas zapas={ffa} ja="divak" />);
+  expect(screen.getByTestId("verejny-zapas")).not.toHaveTextContent(/hrál jsi/i);
+});
+
 it("u běžícího zápasu se nikomu nic nepředpovídá", () => {
   render(<VerejnyZapas zapas={zaslepeny} ja="a" />);
   const radek = screen.getByTestId("verejny-zapas");
