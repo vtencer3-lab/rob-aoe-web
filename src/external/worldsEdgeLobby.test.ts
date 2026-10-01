@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFile } from "node:fs/promises";
 import inzeraty from "./fixtures/worldsedge-advertisements.json" with { type: "json" };
 import robova from "./fixtures/worldsedge-lobby-robdiesalot.json" with { type: "json" };
 import { deflateSync } from "node:zlib";
@@ -147,8 +148,23 @@ describe("parseAdvertisements — sloty a nastavení", () => {
       regicide: false,
       antiquity: false,
       recordGame: true,
+      // Fixtura není scénářová lobby, options[38] chybí.
+      scenar: null,
     });
     expect(prelozena!).toMatchObject({ lobbyId: "504987862", maHeslo: false, povolujeDivaky: true, hostHracId: "76561198014710095" });
+  });
+});
+
+// Skutečná scénářová lobby stažená 1. 10. 2026 z findAdvertisements: Game
+// Mode Scenario (options[5] = 3) a jméno souboru v options[38] —
+// „FAST VILLAGER DEFENSE 2026 Club DE v853.aoe2scenario“ (autor Jin, souhlas
+// s uložením fixtury 1. 10. 2026, spec Diplomacie §2.2).
+describe("parseAdvertisements — scénářová lobby", () => {
+  it("u scénářové lobby přečte jméno souboru scénáře z options[38]", async () => {
+    const surove = JSON.parse(await readFile(new URL("./fixtures/worldsedge-scenar.json", import.meta.url), "utf8"));
+    const [inzerat] = parseAdvertisements(surove);
+    expect(inzerat?.nastaveni?.rezim).toBe(3);
+    expect(inzerat?.nastaveni?.scenar).toMatch(/\.aoe2scenario$/);
   });
 });
 

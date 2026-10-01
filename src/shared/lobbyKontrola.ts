@@ -35,6 +35,13 @@ export interface NastaveniLobby {
   sadaCivilizaci: number | null;
   /** Game Mode (options[5]): 0 Random Map, 2 Deathmatch, 3 Scenario. */
   rezim: number | null;
+  /**
+   * Soubor scénáře (options[38]) — kontroluje se jen při Game Mode Scenario.
+   * Null = je to jedno. Hra posílá jen jméno, ne obsah (spec Diplomacie §2.2).
+   */
+  scenar: string | null;
+  /** Jména starších verzí téhož scénáře; lobby s nimi dostane větu „starší verze“. */
+  scenarStarsi: string[] | null;
   /** AI Difficulty (options[61]): 3 Standard, 1 Hard. */
   aiObtiznost: number | null;
   /** Resources (options[37]): 0 Standard, 3 High. */
@@ -90,6 +97,8 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   cheaty: false,
   sadaCivilizaci: 1,
   rezim: 0,
+  scenar: null,
+  scenarStarsi: null,
   // Bez AI v lobby na obtížnosti nezáleží.
   aiObtiznost: null,
   suroviny: 0,
@@ -195,6 +204,14 @@ export const REZIMY: Record<number, string> = {
  * Settings. Hra obojí spojuje: v tomhle režimu je Empire Wars daný a
  * zaškrtávátko `empireWars` (options[89]) je odškrtnuté a nepřístupné.
  */
+/** Game Mode Scenario (options[5]); u něj mapa (options[10]) jen zbyla z předchozí volby. */
+export const REZIM_SCENARIO = 3;
+
+/** Jméno souboru scénáře, jak ho hra ukazuje: bez cesty, s příponou, rozumně dlouhé. */
+export function jePlatneJmenoScenare(jmeno: string): boolean {
+  return jmeno.length <= 100 && /\.aoe2scenario$/i.test(jmeno) && !/[\\/]/.test(jmeno) && jmeno.trim() === jmeno && jmeno.length > ".aoe2scenario".length;
+}
+
 export const REZIM_EMPIRE_WARS = 13;
 
 /** Regicide jako režim; zaškrtávátko `regicide` (options[91]) u něj platí totéž. */
@@ -390,6 +407,7 @@ export interface NastaveniZeHry {
   cheaty: boolean | null;
   sadaCivilizaci?: number | null;
   rezim?: number | null;
+  scenar?: string | null;
   aiObtiznost?: number | null;
   suroviny?: number | null;
   odkrytiMapy?: number | null;
@@ -598,9 +616,20 @@ export function zkontrolujLobby(
     hlavni("nastaveni", false, "Nastavení hry se nepodařilo přečíst");
     return k;
   }
-  if (ocekavane.mapaId !== null) {
+  const scenarovy = ocekavane.rezim === REZIM_SCENARIO;
+  if (ocekavane.mapaId !== null && !scenarovy) {
     const ok = n.mapaId === ocekavane.mapaId;
     hlavni("mapa", ok, ok ? `Mapa: ${nazevMapy(n.mapaId)}` : `Mapa: ${nazevMapy(n.mapaId)}, má být ${nazevMapy(ocekavane.mapaId)}`);
+  }
+  if (scenarovy && ocekavane.scenar !== null) {
+    const ma = ocekavane.scenar;
+    const ve = n.scenar ?? null;
+    let text: string;
+    if (ve === ma) text = `Scénář: ${ma}`;
+    else if (ve === null) text = `Scénář: hra neposlala jméno scénáře, má být ${ma}`;
+    else if (ocekavane.scenarStarsi?.includes(ve)) text = `Scénář: v lobby je starší verze ${ve}, má být ${ma}`;
+    else text = `Scénář: v lobby je ${ve}, má být ${ma}`;
+    hlavni("scenar", ve === ma, text);
   }
   const velikost = ocekavane.velikost ?? velikostProHrace(new Set(ucastnici.map((u) => u.barva)).size);
   const jmVelikost = (v: number | null) => (v === null ? "?" : (VELIKOSTI[v] ?? `${v} dílců`));

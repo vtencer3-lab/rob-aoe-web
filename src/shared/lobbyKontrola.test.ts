@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AI_OBTIZNOSTI, doplnNastaveni, type PoznatekLobby as _PL, type PreLobbyZeHry, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
+import { AI_OBTIZNOSTI, doplnNastaveni, type PoznatekLobby as _PL, type PreLobbyZeHry, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type NastaveniZeHry, type PoznatekLobby } from "./lobbyKontrola.js";
 import { nazevMapy } from "./mapy.js";
 import type { Barva, Tym } from "./types.js";
 
@@ -24,6 +24,11 @@ function lobby(cast: Partial<PoznatekLobby> = {}): PoznatekLobby {
     nastaveni: podleOcekavani,
     ...cast,
   };
+}
+
+/** Lobby se stejnou sestavou, jen s nastavením přepsaným o `n`. */
+function lobbySNastavenim(n: Partial<NastaveniZeHry>): PoznatekLobby {
+  return lobby({ nastaveni: { ...podleOcekavani, ...n } });
 }
 
 const sestava = [u(HOST, 1, 1, "Trokner"), u(JA, 0, 2, "Jouki")];
@@ -433,5 +438,35 @@ describe("závažnost pre-lobby", () => {
   it("Private lobby je chyba", () => {
     const k = zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ viditelnost: 0 }) }));
     expect(k.find((x) => x.klic === "viditelnost")).toMatchObject({ stav: "spatne" });
+  });
+});
+
+// Game Mode Scenario (options[5] = 3): mapa z lobby je jen zbytek po
+// předchozí volbě, takže se u scénáře nekontroluje — jméno souboru scénáře
+// (options[38]) nahradí roli mapy a starší verze dostane vlastní hlášku.
+describe("scénář", () => {
+  const ocekavane = { ...VYCHOZI_NASTAVENI, rezim: 3, mapaId: 10875, scenar: "Diplomacie LLC v2.aoe2scenario", scenarStarsi: ["Diplomacie LLC v1.aoe2scenario"] };
+  const radek = (scenar: string | null | undefined) =>
+    zkontrolujLobby(sestava, ocekavane, lobbySNastavenim({ rezim: 3, mapaId: 10901, scenar })).find((k) => k.klic === "scenar");
+
+  it("shoda je zelená", () => {
+    expect(radek("Diplomacie LLC v2.aoe2scenario")).toMatchObject({ stav: "ok", sekce: "hlavni", text: "Scénář: Diplomacie LLC v2.aoe2scenario" });
+  });
+  it("starší verze je červená a řekne to", () => {
+    expect(radek("Diplomacie LLC v1.aoe2scenario")).toMatchObject({ stav: "spatne", text: "Scénář: v lobby je starší verze Diplomacie LLC v1.aoe2scenario, má být Diplomacie LLC v2.aoe2scenario" });
+  });
+  it("jiný soubor je červený", () => {
+    expect(radek("Jiny.aoe2scenario")).toMatchObject({ stav: "spatne", text: "Scénář: v lobby je Jiny.aoe2scenario, má být Diplomacie LLC v2.aoe2scenario" });
+  });
+  it("chybějící jméno je červené", () => {
+    expect(radek(null)).toMatchObject({ stav: "spatne", text: "Scénář: hra neposlala jméno scénáře, má být Diplomacie LLC v2.aoe2scenario" });
+  });
+  it("u scénáře se mapa nekontroluje", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobbySNastavenim({ rezim: 3, mapaId: 10901, scenar: "Diplomacie LLC v2.aoe2scenario" }));
+    expect(k.find((r) => r.klic === "mapa")).toBeUndefined();
+  });
+  it("bez očekávaného scénáře řádek není", () => {
+    const k = zkontrolujLobby(sestava, { ...VYCHOZI_NASTAVENI }, lobbySNastavenim({ scenar: "X.aoe2scenario" }));
+    expect(k.find((r) => r.klic === "scenar")).toBeUndefined();
   });
 });

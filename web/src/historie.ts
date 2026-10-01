@@ -73,6 +73,10 @@ const POPISKY: Record<keyof NastaveniLobby, string> = {
   cheaty: "Allow Cheats",
   sadaCivilizaci: "Civilization Set",
   rezim: "Game Mode",
+  // Scénář (Game Mode Scenario) zatím v panelu Nastavení lobby nejde
+  // vybírat — řádek do historie přibude, až to půjde (mód Diplomacie).
+  scenar: "Scenario File",
+  scenarStarsi: "Scenario File (older versions)",
   aiObtiznost: "AI Difficulty",
   suroviny: "Resources",
   odkrytiMapy: "Reveal Map",

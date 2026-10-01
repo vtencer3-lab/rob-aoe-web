@@ -9,6 +9,7 @@ import { nastavFaziLobby } from "../../realtime/fazeLobby.js";
 import {
   AI_OBTIZNOSTI,
   doplnNastaveni,
+  jePlatneJmenoScenare,
   KONECNE_VEKY,
   ODKRYTI_MAPY,
   DATA_MODY,
@@ -97,6 +98,17 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   for (const { klic } of ZASKRTAVATKA) {
     if (typeof t[klic] === "boolean" || t[klic] === null) v[klic] = t[klic] as boolean | null;
   }
+
+  if (t["scenar"] === null) v.scenar = null;
+  else if (typeof t["scenar"] === "string") {
+    if (!jePlatneJmenoScenare(t["scenar"])) throw new HttpError(400, "Jméno scénáře musí být soubor .aoe2scenario bez cesty.");
+    v.scenar = t["scenar"];
+  }
+  if (t["scenarStarsi"] === null) v.scenarStarsi = null;
+  else if (Array.isArray(t["scenarStarsi"]) && t["scenarStarsi"].every((j) => typeof j === "string" && jePlatneJmenoScenare(j))) {
+    v.scenarStarsi = t["scenarStarsi"] as string[];
+  }
+
   if (Object.keys(v).length === 0) throw new HttpError(400, "Nastavení lobby neobsahuje nic, co by šlo uložit.");
   return v;
 }
