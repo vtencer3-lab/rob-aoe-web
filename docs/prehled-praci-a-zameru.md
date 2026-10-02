@@ -2086,6 +2086,49 @@ uživatel porovnal minimapu webu s minimapou LLC ve hře: „minimapa i pozice
 hráčů sedí“ (otočení o 45° v `rozbor.py` a medián pozic jednotek jako start
 tedy odpovídají). Dřív to byl otevřený bod rulingu 4 z úkolu 12.
 
+**Most ke hře — první kus: automatický Nástupce (2. 10. 2026, větev
+`most-ke-hre`, čeká na sloučení do `diplo`).** První kus podprojektu 2: data
+z běžící hry → web → pult GM. Uživatel: „jsme schopni zaintegrovat to
+přiřazování nástupce císaře, aby bylo automatický, tak to testovně
+naimplementuj na můj PC“. Podrobný popis formátů a rozhodnutí je
+v [`analyza-most-ke-hre.md`](analyza-most-ke-hre.md), oddíl „Implementováno
+2. 10. 2026“; tady jen mapa:
+
+- **Sonda** `src/diplomacie/sonda.xs` (formát 3: převod slot → hráč, 8 hráčů,
+  diplomacie, 256 proměnných triggerů) a přibalení `src/diplomacie/sonda.py`
+  + `sonda.ts`; společný spouštěč kroků Pythonu `krokPythonu.ts` (používá ho
+  i `rozbor.ts`). Web sondu přibalí při nahrání verze do kopie
+  (`diplo_scenar.data_sonda`, výpis cílů v `diplo_scenar.sonda`, migrace
+  033); **stažení vrací kopii se sondou pod stejným jménem**, originál jen
+  autorovi a adminovi přes `?original=1`; verzi nahrané dřív ji dopočítá
+  `POST /api/diplo/scenar/:id/sonda` („Přibalit sondu“ ve správě scénáře,
+  u verze „sonda: ano / ne“).
+- **Příjem** `POST /api/diplo/hra` (`src/diplomacie/hra.ts`, registruje se
+  jen s `MOST_TOKEN`), paměť posledního snímku `hraPamet.ts`, odvození
+  v `src/shared/diplomacie/hra.ts` (`vyhodnotHru`: Nástupce = jediný hráč
+  bez cíle; `popisCile`, `popisStari`).
+- **Nástupce automaticky:** v `priprava` ho server nastaví sám; ruční volbu
+  GM nepřepíše, dokud hra neurčí někoho jiného; po rozdání rolí už nic.
+  Paměť je jen v procesu — po restartu serveru hra Nástupce nastaví znovu
+  i přes ruční volbu GM (vědomé zjednodušení zkušební verze).
+- **Viditelnost:** `rezim.data.zapasy[i].hra` vidí jen GM zápasu,
+  `redigujDiplo` ji maže i adminovi (cíle prozrazují totéž co role).
+- **Pult GM:** `web/src/diplomacie/HraZive.tsx` — věta „Nástupce určila
+  hra: X“, řádek s cílem a postupem pod každým hráčem v tabulce rolí, stáří
+  dat. Bez dat ze hry se pult chová jako dřív.
+- **Most** `nastroje/diplomacie/most.py` na PC GM (token `MOST_TOKEN` /
+  `~/.aoe-most-token`).
+- **Háčky:** žádný nový — vše je v modulu módu; do H10 (registrace rout)
+  a H11 (`config.mostToken`) přibyly jen hodnoty módu, H12 (Dockerfile)
+  beze změny (`sonda.py` a `sonda.xs` kopíruje `scripts/copy-migrations.ts`
+  vedle `rozbor.py`).
+- **Co čeká:** ostrá zkouška ve hře (scénář stažený z webu, most spuštěný
+  u GM) a **zkouška kroku v produkčním kontejneru** — implementátor se na
+  server nedostal; po nasazení pustit
+  `docker exec -i <kontejner> /opt/rozbor/bin/python /app/dist/src/diplomacie/sonda.py < LLC.aoe2scenario`
+  a čekat `"ok": true, "oznaceno": 42`. `MOST_TOKEN` nastavuje kontrolor
+  v Coolify (`docs/nasazeni-jouki-cz.md` §3.6).
+
 **Pasti.**
 
 - **CSS pro `.skladani .radek` platí i pro řádky jen ke čtení**
@@ -2364,6 +2407,18 @@ formátu je v herní složce) a ověřit, že u čísel sedí jména a barvy; pa
 ověřit sondu ve hře pro víc hráčů (soubor vzniká u každého, Script Call se
 přenáší se scénářem); pak spec podprojektu 2 (web přibalí sondu při
 nahrání verze, endpoint `…/hra` pro Židolištu, deník GM a vyhodnocení).
+
+**Doplněno 2. 10. 2026 (první kus mostu implementován).** Na větvi
+`most-ke-hre` je hotová zkušební integrace: web přibaluje sondu formátu 3
+do stahované kopie scénáře, přijímá snímky hry na `POST /api/diplo/hra`
+(`Bearer MOST_TOKEN`), v přípravě sám nastaví Nástupce císaře a GM vidí
+postup sekundárních cílů; data posílá `nastroje/diplomacie/most.py` z PC
+GM. Mapa v §3.60 („Most ke hře — první kus“), formáty
+v [`analyza-most-ke-hre.md`](analyza-most-ke-hre.md). **Další krok:**
+propojení s WebSocket mostem v Židolišti (stejná routa a tělo — Židolišta
+jen nahradí `most.py`), pak deník GM a vyhodnocení. Zbývá ověřit ve hře:
+zápis přidělených cílů do proměnných 201–208 (označení cílů dosud ve hře
+neběželo) a hru pro víc hráčů.
 
 ## 6. Historie verzí (7. 9. – 1. 10. 2026)
 

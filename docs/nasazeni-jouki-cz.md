@@ -311,6 +311,7 @@ Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 | `ZKUSEBNI_HRACI` | `true` — na výslovné přání uživatele od 9. 9. 2026, ať jdou zkušební hráči a přetáčení času i na ostré | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` | `true` |
 | `AUTORI_SCENARE` | — | — | — | seznam `hrac_id` autorů scénáře Diplomacie oddělený čárkou, stejný tvar jako `ADMIN_STEAM_ID` (smí nahrávat a aktivovat verze scénáře i bez režie, spec §5.1); admini nahrávat smí vždy. Zatím nenastaveno — Jinovo `hrac_id` po jeho prvním přihlášení na `/aoe/diplo` |
 | `PYTHON` | — | — | — | nenastavovat: interpret pro rozbor scénáře (`src/diplomacie/rozbor.py`) má v kontejneru výchozí `/opt/rozbor/bin/python` z Dockerfile (`config.python`); ověřeno `docker exec` 1. 10. 2026. Lokálně na Windows `PYTHON=python` v `.env` |
+| `MOST_TOKEN` | — | — | — | sdílené tajemství mostu ke hře (Diplomacie): s ním posílá skript na PC GM (`nastroje/diplomacie/most.py`) data z běžící hry na `POST /api/diplo/hra` (`Authorization: Bearer …`). Bez proměnné se routa vůbec neregistruje. Dlouhý náhodný řetězec; nastavuje se jen v Coolify a u GM (proměnná `MOST_TOKEN` nebo soubor `~/.aoe-most-token`), do repa ani do dokumentace nepatří. Po nastavení `/deploy`, ne `/restart` |
 
 Zkušební dveře (`/api/dev/*`) se na `https` samy zavírají, takže na jouki.cz
 nejsou dostupné ani ve vývojové verzi. Zkouška večera nasucho se dělá lokálně.
