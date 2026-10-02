@@ -119,6 +119,7 @@ protože je stejné ve všech třech nasazeních v Coolify a přejmenovat by ji
 | `LOG_LEVEL` | úroveň serverového logu (výchozí `info`) | loguje se od `info` výš |
 | `AUTORI_SCENARE` | mód Diplomacie: `hrac_id` autorů scénáře oddělená čárkou (stejný tvar jako `ADMIN_STEAM_ID`), kteří smí nahrávat a aktivovat verze scénáře i bez režie | nahrávat smí jen admini |
 | `PYTHON` | mód Diplomacie: interpret Pythonu s AoE2ScenarioParser a Pillow pro rozbor nahraného scénáře (`src/diplomacie/requirements.txt`); při vývoji na Windows `PYTHON=python` | použije se `/opt/rozbor/bin/python` z Docker obrazu; mimo kontejner pak rozbor selže a nahraná verze se uloží s chybou rozboru (nejde ji aktivovat) |
+| `MOST_TOKEN` | mód Diplomacie: sdílené tajemství, se kterým most na PC Game Mastera (`nastroje/diplomacie/most.py`) posílá data z běžící hry na `POST /api/diplo/hra` | routa se neregistruje — web data ze hry nepřijímá a Nástupce vybírá GM ručně |
 
 ## Testy
 
@@ -134,6 +135,9 @@ protože je stejné ve všech třech nasazeních v Coolify a přejmenovat by ji
   scénáře Diplomacie skutečným Pythonem (`pip install -r
   src/diplomacie/requirements.txt` a Pillow). Bez interpretu s knihovnami se
   tyhle testy v `npm test` jen přeskočí s hláškou, neselžou.
+- `PYTHON=python npx vitest run src/diplomacie/sonda.test.ts src/diplomacie/most.test.ts`
+  — přibalení XS sondy do scénáře (včetně validace kódu sondy nástrojem
+  xs-check) a most ke hře; stejně jako rozbor se bez Pythonu přeskočí.
 
 ## Zkouška večera nasucho (bez čtyř Steam účtů)
 
@@ -396,6 +400,18 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   naráz: u zápasu s víc než dvěma stranami má režie vedle tlačítek po
   stranách i „Víc vítězů…“ se zaškrtávátky u jmen. Vyhodnocení podle rolí
   a odhalení rolí všem přijde v dalším kroku módu.
+- **Data ze hry (zkušebně).** Scénář, který host z webu stahuje, má
+  přibalenou **sondu**: web ji do kopie přidá sám při nahrání verze
+  (originál od autora zůstává a autor nebo admin ho stáhne odkazem
+  „originál“ ve správě scénáře; verzi nahrané dřív sondu doplní tlačítko
+  „Přibalit sondu“). Jméno souboru se nemění. Sonda za hry zapisuje stav
+  do souboru u každého hráče; Game Master si vedle hry pustí
+  `python nastroje/diplomacie/most.py` (token v proměnné `MOST_TOKEN` nebo
+  v souboru `~/.aoe-most-token`) a web pak **Nástupce císaře nastaví sám**
+  — je to hráč, kterému hra nedala sekundární cíl. GM ho v pultu vidí
+  („Nástupce určila hra: X“), může ho přepsat a u každého hráče vidí
+  postup jeho cíle, relikvie a jestli je ještě ve hře. Tahle data vidí jen
+  GM. Bez mostu všechno funguje jako dřív, Nástupce GM odklikne ručně.
 
 Návrh a rozhodnutí: `docs/prehled-praci-a-zameru.md` §3.60, spec
 `docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`.
