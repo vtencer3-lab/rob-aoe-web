@@ -24,7 +24,7 @@ interface Props {
   ladeni?: boolean;
   /** Admin: zpráva s vykřičníkem na začátku je důležitá (zvon všem, tučně); u hráče vykřičník nic nedělá. */
   jaAdmin?: boolean;
-  /** Admin: push-to-talk — kam odcházejí kousky nahrávky (App → api.hlas). */
+  /** Push-to-talk — kam odcházejí kousky nahrávky (App → api.hlas). Dostane ho jen ten, kdo do zápasu smí mluvit: admin v režii, nebo koho pustí mód (GM). */
   onHlas?: OdesliKousek;
 }
 
@@ -415,7 +415,7 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
         </span>
         <span className="chat-titulek">Chat</span>
         {sbaleny && zpravy.length > 0 ? <small>{zpravy.length}</small> : null}
-        {jaAdmin && onHlas ? (
+        {onHlas ? (
           // Vpravo v hlavičce, mimo klik na sbalení.
           <span
             className="chat-nastroje"
@@ -423,7 +423,7 @@ export function Chat({ zapas, ja, onOdeslat, onUpravit, onSmazat, ladeni, jaAdmi
             onKeyDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <PushToTalk onKousek={onHlas} />
+            <PushToTalk onKousek={onHlas} ztlumeniAdminu={jaAdmin} />
           </span>
         ) : null}
       </div>

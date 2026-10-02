@@ -32,6 +32,11 @@ export interface RezimAkce {
   doplnStav(akce: AkceRow): Promise<AkceStavPayload["rezim"]>;
   /** Zaslepení větve `rezim` pro jednoho diváka. Volá se i pro admina. */
   rediguj(rezim: NonNullable<AkceStavPayload["rezim"]>, divak: Divak): NonNullable<AkceStavPayload["rezim"]>;
+  /**
+   * Smí tenhle hráč mluvit (push-to-talk) do zápasu, i když není admin?
+   * Admina se jádro neptá — ten smí vždycky (routes/hlas.ts).
+   */
+  smiMluvitDoZapasu(zapasId: number, hracId: string): Promise<boolean>;
 }
 
 const klasicky: RezimAkce = {
@@ -42,6 +47,7 @@ const klasicky: RezimAkce = {
   poVytvoreniZapasu: async () => {},
   doplnStav: async () => undefined,
   rediguj: (rezim) => rezim,
+  smiMluvitDoZapasu: async () => false,
 };
 
 const REZIMY: Record<RezimId, RezimAkce> = { klasicky, diplomacie };

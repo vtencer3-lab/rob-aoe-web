@@ -27,7 +27,7 @@ import {
   vratNaPripravu,
 } from "./db.js";
 import { registerHraRoutes } from "./hra.js";
-import { smiNahratScenar } from "./opravneni.js";
+import { jeGm, smiNahratScenar } from "./opravneni.js";
 import { nastaveniZAktivniVerze } from "./rezim.js";
 import { jeHlavickaScenare, type rozeberScenar } from "./rozbor.js";
 import { sondaSChybou, type pribalSondu } from "./sonda.js";
@@ -43,7 +43,7 @@ async function requireGm(request: FastifyRequest): Promise<{ diplo: DiploZapas; 
   const zapasId = requireId(request);
   const diplo = await getDiploZapas(zapasId);
   if (!diplo) throw new HttpError(404, "Tohle není zápas Diplomacie.");
-  if (diplo.gmHracId !== hracId) throw new HttpError(403, "Tohle smí jen GM tohoto zápasu.");
+  if (!jeGm(diplo, hracId)) throw new HttpError(403, "Tohle smí jen GM tohoto zápasu.");
   const zaznam = await getZapas(zapasId);
   // Hráči v pořadí slotů, bez GM — mezi ně se rozdávají role.
   const hraci = (zaznam?.ucastnici ?? []).filter((u) => u.hracId !== diplo.gmHracId).map((u) => u.hracId);

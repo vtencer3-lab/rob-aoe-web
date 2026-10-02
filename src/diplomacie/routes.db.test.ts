@@ -3,6 +3,9 @@ import { signUp } from "../db/events.js";
 import { closePool, getPool } from "../db/pool.js";
 import { upsertPlayer } from "../db/players.js";
 import { buildServer } from "../http/server.js";
+import { hlasHub } from "../realtime/hlas.js";
+import { KANAL_AKCE } from "../realtime/hub.js";
+import type { HlasUdalost } from "../shared/types.js";
 import { getDiploZapas, setNastupce } from "./db.js";
 import { ROB, klient, zapasOsmi } from "./testPomocnici.js";
 
@@ -141,4 +144,29 @@ it("zápas mimo Diplomacii je 404", async () => {
   const { zapas } = await zapasOsmi("klasicky");
   const gm = await klient("h7", false);
   expect((await post(`/api/diplo/zapas/${zapas.id}/los`, gm)).statusCode).toBe(404);
+});
+
+// Push-to-talk (uživatel 2. 10. 2026): GM „svolává všechny“ — do svého zápasu
+// mluví jako admin z režie, i když admin není. Jádro se ptá háčku módu.
+it("kousek hlasu do zápasu Diplomacie smí poslat GM a admin, hráč-ne-GM 403", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  const kousek = { sezeni: "s1", poradi: 0, data: "AAAA", mime: "audio/webm;codecs=opus" };
+  const slysel: HlasUdalost[] = [];
+  const odhlas = hlasHub.subscribe(KANAL_AKCE, (u) => slysel.push(u));
+  try {
+    expect((await post(`/api/zapas/${zapas.id}/hlas`, await klient("h7", false), kousek)).statusCode).toBe(200);
+    expect((await post(`/api/zapas/${zapas.id}/hlas`, await klient("h1", false), kousek)).statusCode).toBe(403);
+    expect((await post(`/api/zapas/${zapas.id}/hlas`, await klient(ROB, true), kousek)).statusCode).toBe(200);
+  } finally {
+    odhlas();
+  }
+  // Slyší stejný okruh jako u admina: účastníci zápasu (a admini přes smiSlyset).
+  expect(slysel.map((u) => [u.kdo, u.jeAdmin])).toEqual([["h7", false], [ROB, true]]);
+  expect(slysel[0]!.prijemci).toEqual(["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8"]);
+});
+
+it("v klasickém zápase hráč na šedé mluvit nesmí", async () => {
+  const { zapas } = await zapasOsmi("klasicky");
+  const res = await post(`/api/zapas/${zapas.id}/hlas`, await klient("h7", false), { sezeni: "s1", poradi: 0, data: "AAAA" });
+  expect(res.statusCode).toBe(403);
 });

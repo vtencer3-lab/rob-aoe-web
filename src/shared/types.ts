@@ -209,7 +209,7 @@ export interface ZpravaView {
 }
 
 /**
- * Kousek hlasu admina (push-to-talk): jde streamem jako událost `hlas`,
+ * Kousek hlasu (push-to-talk admina, nebo koho pustí mód — GM Diplomacie): jde streamem jako událost `hlas`,
  * mimo stav. `sezeni` odděluje jednotlivá mluvení, `poradi` drží pořadí
  * kousků, `konec` uzavírá sezení. `prijemci` = účastníci zápasu (server podle
  * nich rozhoduje, komu kousek pošle; admini ho dostanou vždy).
@@ -218,6 +218,8 @@ export interface HlasUdalost {
   zapasId: number;
   kdo: string;
   jmeno: string;
+  /** Mluví admin? Chybí = ano (starší server). „Ztlumit ostatní adminy“ se týká jen jich. */
+  jeAdmin?: boolean;
   sezeni: string;
   poradi: number;
   konec: boolean;

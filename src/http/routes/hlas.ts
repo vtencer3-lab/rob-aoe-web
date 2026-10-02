@@ -2,10 +2,11 @@ import type { FastifyInstance } from "fastify";
 import { getPlayer } from "../../db/players.js";
 import { getZapas } from "../../db/matches.js";
 import { hlasHub } from "../../realtime/hlas.js";
+import { rezimAkce, rezimZapasu } from "../../rezimy/index.js";
 import { KANAL_AKCE } from "../../realtime/hub.js";
 import { orizniZesileni, ZESILENI_MIN } from "../../shared/hlas.js";
 import type { HlasUdalost } from "../../shared/types.js";
-import { HttpError, requireAdmin, requireId } from "../guards.js";
+import { HttpError, requireId, requireUser } from "../guards.js";
 
 /** Jeden kousek nahrávky (čtvrt vteřiny Opusu je pár kB); větší je podezřelý. */
 export const MAX_KOUSEK_B64 = 200_000;
@@ -29,22 +30,28 @@ export function rozeberKousek(telo: unknown): Pick<HlasUdalost, "sezeni" | "pora
 }
 
 /**
- * Push-to-talk admina: každý kousek nahrávky přijde sem a jde hned dál
- * posluchačům přes SSE (realtime/hlas.ts). Nic se neukládá.
+ * Push-to-talk: každý kousek nahrávky přijde sem a jde hned dál posluchačům
+ * přes SSE (realtime/hlas.ts). Nic se neukládá. Mluvit smí admin a ten,
+ * koho pustí mód akce (háček `smiMluvitDoZapasu` — GM Diplomacie).
  */
 export function registerHlasRoutes(app: FastifyInstance): void {
   app.post("/api/zapas/:id/hlas", async (request) => {
-    const kdo = await requireAdmin(request);
+    const kdo = await requireUser(request);
     const zapasId = requireId(request);
+    const mluvci = await getPlayer(kdo);
+    const jeAdmin = mluvci?.jeAdmin ?? false;
+    if (!jeAdmin && !(await rezimAkce(await rezimZapasu(zapasId)).smiMluvitDoZapasu(zapasId, kdo))) {
+      throw new HttpError(403, "Do tohohle zápasu mluvit nesmíš.");
+    }
     const kousek = rozeberKousek(request.body);
 
     const nacteny = await getZapas(zapasId);
     if (!nacteny) throw new HttpError(404, "Takový zápas neexistuje.");
-    const mluvci = await getPlayer(kdo);
     const udalost: HlasUdalost = {
       zapasId,
       kdo,
-      jmeno: mluvci?.alias ?? mluvci?.platformaJmeno ?? "Admin",
+      jmeno: mluvci?.alias ?? mluvci?.platformaJmeno ?? (jeAdmin ? "Admin" : "Hráč"),
+      jeAdmin,
       ...kousek,
       prijemci: nacteny.ucastnici.map((u) => u.hracId),
     };

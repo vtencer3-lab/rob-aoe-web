@@ -635,6 +635,9 @@ it("kousek hlasu přijme jen od admina a se sezením a pořadím", async () => {
   expect(spatne.statusCode).toBe(400);
   const hrac = await app.inject({ method: "POST", url: `/api/zapas/${zapas.id}/hlas`, cookies: { sid: hracSid }, payload: { sezeni: "s1", poradi: 0, data: "AAAA" } });
   expect(hrac.statusCode).toBe(403);
+  // Admin, který kousek pošle do zápasu, co není, dostane 404 — ne 403.
+  const neni = await app.inject({ method: "POST", url: "/api/zapas/999999/hlas", cookies: { sid: robSid }, payload: { sezeni: "s1", poradi: 0, data: "AAAA" } });
+  expect(neni.statusCode).toBe(404);
   await app.close();
 });
 

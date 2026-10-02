@@ -4,6 +4,7 @@ import {
   krivkaOmezeni,
   nastavHlasitostAdmina,
   nastavZesileniMikrofonu,
+  nastavZtlumitAdminy,
   PRESKOK_MS,
   spustPrehravacHlasu,
   TICHO_MS,
@@ -367,4 +368,22 @@ it("sezení, kterému se ztratila značka konce, se po tichu uzavře samo", () =
   } finally {
     vi.useRealTimers();
   }
+});
+
+// „Ztlumit ostatní adminy“ je o adminech z režie. GM mluví do zápasu jako
+// hráč, kterého pustil mód — admin, který v zápase nesedí, ho slyšet má.
+it("ztlumení ostatních adminů neztlumí mluvčího, kterého pustil mód", () => {
+  nastavZtlumitAdminy(true);
+  const prvek = vi.fn(() => ({ volume: 1, play: () => Promise.resolve(), addEventListener: () => {} }));
+  vi.stubGlobal("Audio", prvek);
+  const odhlasit = spustPrehravacHlasu("ja", true);
+  const posli = (navic: { sezeni: string; jeAdmin?: boolean }) =>
+    window.dispatchEvent(new CustomEvent(UDALOST_HLAS, { detail: { zapasId: 1, kdo: "x", jmeno: "X", poradi: 0, konec: false, data: "AAAA", prijemci: ["a"], ...navic } }));
+  // Starší server příznak neposílal — mluvit směl jen admin.
+  posli({ sezeni: "s1" });
+  posli({ sezeni: "s2", jeAdmin: true });
+  expect(prvek).not.toHaveBeenCalled();
+  posli({ sezeni: "s3", jeAdmin: false });
+  expect(prvek).toHaveBeenCalledTimes(1);
+  odhlasit();
 });
