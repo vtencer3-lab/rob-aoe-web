@@ -343,9 +343,13 @@ a.tlacitko, button.tlacitko, .cta, button.vytvorit, button.plus {
     0 2px 4px rgba(0, 0, 0, 0.55);
 }
 /* Specifičtější než `button:hover:enabled` níž — jinak by zlaté tlačítko při
-   najetí zhnědlo do barvy běžných tlačítek. */
+   najetí zhnědlo do barvy běžných tlačítek. Holé `.cta:hover` stačí odkazu,
+   tlačítku ne: `<button class="cta">` (pult GM, „Rozeslat role“) mělo proti
+   obecnému pravidlu o třídu míň, takže pod kurzorem dostalo hnědé pozadí
+   běžného tlačítka a k němu tmavý nápis zlatého — vypadalo jako zakázané
+   (uživatel 2. 10. 2026). Proto je tu i `button.cta:hover:enabled`. */
 a.tlacitko:hover, .cta:hover,
-button.tlacitko:hover:enabled,
+button.tlacitko:hover:enabled, button.cta:hover:enabled,
 button.vytvorit:hover:enabled, button.plus:hover:enabled {
   /* Barva textu musí být řečená i tady: obecné pravidlo pro odkazy pod
      kurzorem je zesvětluje, a zlaté tlačítko je odkaz — nápis pak zbělal. */
@@ -1665,6 +1669,10 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 .tabulka-roli td > span { color: var(--tlumene); font-size: 0.9rem; }
 .pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }
 .pult-gm .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 0.6rem; }
+/* „Rozeslat role“ je hlavní akce pultu: zřetelně větší než „Přelosovat“
+   a „Zpět na výběr Nástupce“ vedle něj, ať ji GM při streamu netrefuje
+   omylem a nehledá. */
+.pult-gm .ovladani .cta { font-size: 1.15rem; padding: 0.75rem 1.6rem; }
 /* Pravidla hry (PravidlaHry.tsx): sbalovací tahák jako sekce kontroly lobby
    (Skladaci), ale nadpis ve zlaté kapitálce — je to kapitola, ne detail. */
 .pravidla-hry { margin-top: 0.8rem; text-align: left; }
