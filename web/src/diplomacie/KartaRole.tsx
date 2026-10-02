@@ -64,7 +64,7 @@ export function KartaRole({ zapas, data, ja }: Props) {
           </p>
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
             <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
-            {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} /> : null}
+            {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" /> : null}
           </Zakryti>
         </>
       )}
