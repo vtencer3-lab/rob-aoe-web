@@ -1,6 +1,8 @@
 """Zkušební most ke hře: posílá na web data, která do souboru píše XS sonda.
 
-Běží na PC Game Mastera vedle hry. Hlídá
+Běží vedle hry na PC Game Mastera, nebo diváka zápasu (sonda píše soubor
+na každém počítači ve hře). Na streamu se dvěma počítači musí běžet na tom,
+kde běží hra. Hlídá
 `%USERPROFILE%\\Games\\Age of Empires 2 DE\\<id>\\profile\\*.xsdat`, bere
 nejnověji změněný soubor sondy formátu 3 (píše ho scénář stažený z webu),
 čte ho přes `xsdat.py` a platná čtení (čas na začátku = na konci) posílá na
@@ -12,10 +14,13 @@ jako tep, dokud hra soubor přepisuje. Když hra stojí nebo skončila, most
 mlčí a pult GM ukáže „hra mlčí“.
 
 Token: proměnná prostředí MOST_TOKEN, nebo první řádek souboru
-`~/.aoe-most-token`. GM je jméno složky `<id>` (Steam ID nebo XUID) — web
-podle něj hledá běžící zápas Diplomacie, kde tenhle hráč sedí na šedé.
+`~/.aoe-most-token`. Odesílatel je jméno složky `<id>` (Steam ID nebo XUID).
+Web podle něj hledá běžící zápas Diplomacie, kde tenhle hráč sedí na šedé
+(data od GM); jinak data vezme jako od diváka — jen když běží jediný zápas
+Diplomacie a hraje scénář, který hra hlásí. Když posílá GM i divák, platí
+data GM; divák má navíc data opožděná o zpoždění pro diváky.
 
-Použití: python most.py [--url https://jouki.cz/aoe/diplo] [--gm <id>]
+Použití: python most.py [--url https://jouki.cz/aoe/diplo] [--odesilatel <id>]
                         [--slozka <kořen hry>] [--jednou] [--nasucho]
   --jednou   pošle první platné čtení a skončí
   --nasucho  nic neposílá, zprávy vypisuje jako JSON (zkouška bez tokenu)
@@ -93,13 +98,13 @@ def najdi_soubor(koren: str, zname: dict):
     return None
 
 
-def zprava(cesta: str, v: dict, gm: str | None) -> dict:
+def zprava(cesta: str, v: dict, odesilatel: str | None) -> dict:
     """Tělo pro POST /api/diplo/hra (tvar hlídá src/shared/diplomacie/hra.ts, prectiSnimek)."""
-    # …/<id>/profile/<scénář>.xsdat — id složky je GM, jméno souboru scénář.
+    # …/<id>/profile/<scénář>.xsdat — id složky je odesílatel, jméno souboru scénář.
     slozka_id = os.path.basename(os.path.dirname(os.path.dirname(cesta)))
     return {
         "v": 1,
-        "gm": gm or slozka_id,
+        "odesilatel": odesilatel or slozka_id,
         "scenar": os.path.splitext(os.path.basename(cesta))[0] + ".aoe2scenario",
         "cas": v["cas"],
         "sloty": v["sloty"],
@@ -133,16 +138,22 @@ def cas_hry(s: int) -> str:
     return f"{s // 60}:{s % 60:02d}"
 
 
-def popis_odpovedi(stav: int, odpoved: dict, gm: str) -> str:
+ZDROJE = {"gm": "jako GM", "divak": "jako divák"}
+
+
+def popis_odpovedi(stav: int, odpoved: dict, odesilatel: str) -> str:
     chyba = odpoved.get("chyba") or ""
     if stav == 200:
         nastupce = odpoved.get("nastupce")
-        radek = f"zápas {odpoved.get('zapasId')}, Nástupce: {nastupce if nastupce else 'zatím neurčen'}"
+        zdroj = ZDROJE.get(odpoved.get("zdroj") or "", "zdroj neznámý")
+        radek = f"zápas {odpoved.get('zapasId')} ({zdroj}), Nástupce: {nastupce if nastupce else 'zatím neurčen'}"
+        if odpoved.get("pouzito") is False:
+            radek += " — nepoužito, data posílá GM"
         return radek + (f" — POZOR: {odpoved['varovani']}" if odpoved.get("varovani") else "")
     if stav == 401:
         return "web token odmítl (401) — zkontroluj MOST_TOKEN nebo soubor ~/.aoe-most-token"
     if stav == 404:
-        return f"web pro GM {gm} nenašel běžící zápas Diplomacie (404) — je zápas na webu založený a sedíš v něm na šedé? Jiné id nastaví --gm. {chyba}".rstrip()
+        return f"web data od {odesilatel} nepřiřadil k žádnému zápasu (404): {chyba or 'neběží žádný zápas Diplomacie.'} Jiné id nastaví --odesilatel."
     if stav == 0:
         return f"web neodpovídá: {chyba}"
     return f"web vrátil {stav}: {chyba}"
@@ -151,7 +162,7 @@ def popis_odpovedi(stav: int, odpoved: dict, gm: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Most ke hře: data XS sondy Diplomacie → web.")
     parser.add_argument("--url", default=VYCHOZI_URL, help=f"adresa webu (výchozí {VYCHOZI_URL})")
-    parser.add_argument("--gm", default=None, help="hracId GM, když se liší od jména složky profilu")
+    parser.add_argument("--odesilatel", "--gm", dest="odesilatel", default=None, help="Steam ID / XUID tohohle počítače, když se liší od jména složky profilu (--gm je starší jméno)")
     parser.add_argument("--slozka", default=koren_hry(), help="kořen dat hry (složka s podsložkami <id>)")
     parser.add_argument("--jednou", action="store_true", help="pošle první platné čtení a skončí")
     parser.add_argument("--nasucho", action="store_true", help="neposílá, zprávy vypisuje jako JSON")
@@ -181,7 +192,7 @@ def main() -> int:
             ted = time.time()
             if nalez and ted - nalez[1] <= CERSTVE_S and nalez[1] != posledni_mtime and ted - odeslano >= ROZESTUP_S:
                 cesta, mtime, v = nalez
-                telo = zprava(cesta, v, volby.gm)
+                telo = zprava(cesta, v, volby.odesilatel)
                 # Herní čas běží pořád; „změna“ je všechno ostatní.
                 obsah = {k: x for k, x in telo.items() if k != "cas"}
                 zmena = obsah != posledni_obsah
@@ -192,7 +203,7 @@ def main() -> int:
                         stav = 200
                     else:
                         stav, odpoved = posli(volby.url, token, telo)
-                        print(f"{time.strftime('%H:%M:%S')} odesláno ({'změna' if zmena else 'tep'}, čas hry {cas_hry(v['cas'])}) → {popis_odpovedi(stav, odpoved, telo['gm'])}", flush=True)
+                        print(f"{time.strftime('%H:%M:%S')} odesláno ({'změna' if zmena else 'tep'}, čas hry {cas_hry(v['cas'])}) → {popis_odpovedi(stav, odpoved, telo['odesilatel'])}", flush=True)
                     if volby.jednou:
                         return 0 if stav == 200 else 1
             time.sleep(KROK_S)

@@ -20,6 +20,11 @@ export interface PametHry {
   kandidat: KandidatNastupce | null;
   /** Kdy se stav s daty ze hry naposledy rozeslal prohlížečům. */
   rozeslanoMs: number;
+  /**
+   * Kdy (čas serveru) naposledy přišel snímek od GM zápasu; null = zatím
+   * jen od diváka. Dokud GM posílá, snímky diváka se nepoužijí.
+   */
+  posledniOdGmMs: number | null;
 }
 
 export const pametHer = new Map<number, PametHry>();

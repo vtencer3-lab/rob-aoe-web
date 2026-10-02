@@ -4,15 +4,28 @@ import { config } from "../config.js";
 import { getZapas } from "../db/matches.js";
 import { HttpError } from "../http/guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
-import { NOVA_HRA_POKLES_S, posunKandidata, prectiSnimek, vyhodnotHru, type HraZapasu, type SnimekHry } from "../shared/diplomacie/hra.js";
-import { getDiploZapas, getSonduVerze, najdiBeziciZapasGm, nastavNastupceZeHry, odvolejNastupceZeHry } from "./db.js";
+import {
+  divakUstupuje,
+  NOVA_HRA_POKLES_S,
+  posunKandidata,
+  prectiSnimek,
+  procBezZapasu,
+  stejnyScenar,
+  vyberZapasSnimku,
+  vyhodnotHru,
+  type HraZapasu,
+  type SnimekHry,
+  type ZdrojHry,
+} from "../shared/diplomacie/hra.js";
+import { beziciZapasyDiplo, getDiploZapas, getSonduVerze, nastavNastupceZeHry, odvolejNastupceZeHry } from "./db.js";
 import { pametHer } from "./hraPamet.js";
 
 /**
- * Příjem dat z běžící hry (most ke hře, první kus podprojektu 2). Skript na
- * PC GM čte soubor XS sondy a posílá snímky na `POST /api/diplo/hra`; web
- * z nich pozná Nástupce císaře (hráč, kterému hra nedala sekundární cíl)
- * a v přípravě ho nastaví sám.
+ * Příjem dat z běžící hry (most ke hře, první kus podprojektu 2). Sonda
+ * přibalená do scénáře píše soubor na každém počítači ve hře (hráči
+ * i diváci); most na PC GM nebo diváka ho čte a posílá snímky na
+ * `POST /api/diplo/hra`. Web z nich pozná Nástupce císaře (hráč, kterému
+ * hra nedala sekundární cíl) a v přípravě ho nastaví sám.
  *
  * Poslední snímek každého zápasu žije jen v paměti (hraPamet.ts). Do stavu
  * pro prohlížeče ho přidává `doplnStav` módu, ostatním než GM ho maže
@@ -31,33 +44,51 @@ export interface PrijetiSnimku {
   zapasId: number;
   /** Nástupce podle hry, potvrzený dvěma snímky; null = zatím neurčen. */
   nastupce: string | null;
+  /** Odkud web snímek vzal: od GM zápasu, nebo od diváka. */
+  zdroj: ZdrojHry;
+  /** False = snímek diváka se nepoužil, data posílá GM (odpověď nese poslední stav od něj). */
+  pouzito?: false;
   /** Česká věta pro obsluhu mostu, když něco nesedí, ale data se vzala. */
   varovani?: string;
 }
 
-/** Jméno scénáře bez přípony, malými: sonda ho hlásí podle jména svého souboru. */
-const zakladJmena = (jmeno: string) => jmeno.replace(/\.aoe2scenario$/i, "").toLowerCase();
-
-const odpovedMostu = (zapasId: number, hra: HraZapasu): PrijetiSnimku => ({ zapasId, nastupce: hra.nastupceHracId, ...(hra.varovani ? { varovani: hra.varovani } : {}) });
+const odpovedMostu = (zapasId: number, zdroj: ZdrojHry, hra: HraZapasu): PrijetiSnimku => ({
+  zapasId,
+  nastupce: hra.nastupceHracId,
+  zdroj,
+  ...(hra.varovani ? { varovani: hra.varovani } : {}),
+});
 
 /**
- * Zpracuje jeden snímek: najde zápas podle GM, odvodí stav hráčů a v přípravě
- * nastaví (nebo odvolá) Nástupce. Null = pro tohohle GM žádný zápas neběží.
+ * Zpracuje jeden snímek: najde zápas (podle GM, nebo jako snímek diváka —
+ * `vyberZapasSnimku`), odvodí stav hráčů a v přípravě nastaví (nebo odvolá)
+ * Nástupce. `{ nenalezeno }` = snímek nejde přiřadit, česká věta pro 404.
  */
-export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): Promise<PrijetiSnimku | null> {
+export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): Promise<PrijetiSnimku | { nenalezeno: string }> {
   // Složka profilu hry se jmenuje Steam ID nebo XUID; web vede hráče
   // z Microsoft účtu s předponou `xbox:`.
-  const zapasId = await najdiBeziciZapasGm([snimek.gm, `xbox:${snimek.gm}`]);
-  const diplo = zapasId === null ? null : await getDiploZapas(zapasId);
-  const zaznam = zapasId === null ? null : await getZapas(zapasId);
-  if (zapasId === null || !diplo || !zaznam) return null;
+  const bezici = await beziciZapasyDiplo();
+  const vyber = vyberZapasSnimku(bezici, [snimek.odesilatel, `xbox:${snimek.odesilatel}`], snimek.scenar);
+  if (!vyber) return { nenalezeno: procBezZapasu(bezici, snimek.odesilatel, snimek.scenar) };
+  const { zapasId, zdroj } = vyber;
+  const diplo = await getDiploZapas(zapasId);
+  const zaznam = await getZapas(zapasId);
+  if (!diplo || !zaznam) return { nenalezeno: procBezZapasu([], snimek.odesilatel, snimek.scenar) };
 
   const predchozi = pametHer.get(zapasId);
+  // GM vidí hru bez zpoždění pro diváky: dokud posílá on, divák jen čeká.
+  if (predchozi && divakUstupuje(zdroj, predchozi.posledniOdGmMs, ted.getTime())) return { ...odpovedMostu(zapasId, zdroj, predchozi.hra), pouzito: false };
+
   let kandidatDosud = predchozi?.kandidat ?? null;
-  if (predchozi && snimek.cas < predchozi.hra.cas) {
+  if (predchozi && (predchozi.hra.zdroj ?? "gm") !== zdroj) {
+    // GM a divák se liší o zpoždění pro diváky: herní časy dvou zdrojů nejdou
+    // porovnat (starší čas diváka není přeházené doručení ani nová hra)
+    // a odpověď hry se po přepnutí potvrzuje znovu.
+    kandidatDosud = null;
+  } else if (predchozi && snimek.cas < predchozi.hra.cas) {
     // Herní čas couvl. O málo = snímek dorazil přeházeně a novější už tu
     // je, tak se zahodí; o hodně = nová hra a kandidát se sbírá znovu.
-    if (predchozi.hra.cas - snimek.cas <= NOVA_HRA_POKLES_S) return odpovedMostu(zapasId, predchozi.hra);
+    if (predchozi.hra.cas - snimek.cas <= NOVA_HRA_POKLES_S) return odpovedMostu(zapasId, zdroj, predchozi.hra);
     kandidatDosud = null;
   }
 
@@ -69,13 +100,13 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
 
   // Data z jiného scénáře, než zápas hraje (starý soubor sondy, jiná hra
   // téhož GM), se v pultu ukážou s varováním, ale Nástupce podle nich ne.
-  const jinyScenar = verze !== null && zakladJmena(verze.jmenoSouboru) !== zakladJmena(snimek.scenar);
+  const jinyScenar = verze !== null && !stejnyScenar(verze.jmenoSouboru, snimek.scenar);
   const varovani = jinyScenar
     ? `Hra hlásí scénář „${snimek.scenar}“, zápas ale hraje „${verze.jmenoSouboru}“ — Nástupce se podle ní nenastavuje.`
     : verze && (verze.sonda === null || verze.sonda.chyba !== null)
       ? "Verze scénáře v zápase nemá u webu výpis cílů — postup cílů se neukáže."
       : undefined;
-  const hra: HraZapasu = { ...odpoved, nastupceHracId: potvrzeny, ...(varovani ? { varovani } : {}) };
+  const hra: HraZapasu = { ...odpoved, zdroj, nastupceHracId: potvrzeny, ...(varovani ? { varovani } : {}) };
 
   // Oba zápisy jsou podmíněné v jednom příkazu (stav `priprava`, poslední
   // odpověď hry) — souběžný los GM ani jeho ruční volbu nepřepíšou; tady
@@ -87,9 +118,14 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
   }
 
   const rozeslat = zmenaNastupce || !predchozi || ted.getTime() - predchozi.rozeslanoMs >= ROZESTUP_ROZESLANI_MS;
-  pametHer.set(zapasId, { hra, kandidat, rozeslanoMs: rozeslat || !predchozi ? ted.getTime() : predchozi.rozeslanoMs });
+  pametHer.set(zapasId, {
+    hra,
+    kandidat,
+    rozeslanoMs: rozeslat || !predchozi ? ted.getTime() : predchozi.rozeslanoMs,
+    posledniOdGmMs: zdroj === "gm" ? ted.getTime() : (predchozi?.posledniOdGmMs ?? null),
+  });
   if (rozeslat) await broadcastAkce();
-  return odpovedMostu(zapasId, hra);
+  return odpovedMostu(zapasId, zdroj, hra);
 }
 
 /** Těla od mostu mají kolem 3 kB; 64 kB je strop proti balastu. */
@@ -123,7 +159,7 @@ export function registerHraRoutes(app: FastifyInstance): void {
         throw new HttpError(400, e instanceof Error ? e.message : "Data ze hry nejdou přečíst.");
       }
       const prijeti = await prijmiSnimek(snimek);
-      if (!prijeti) throw new HttpError(404, `Pro GM ${snimek.gm} teď na webu neběží žádný zápas Diplomacie.`);
+      if ("nenalezeno" in prijeti) throw new HttpError(404, prijeti.nenalezeno);
       return { ok: true, ...prijeti };
     },
   );

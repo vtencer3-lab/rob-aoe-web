@@ -112,6 +112,16 @@ it("stáří dat tiká samo a po delším tichu hlásí, že hra mlčí", () => 
   expect(screen.getByTestId("stari-hry")).toHaveTextContent("hra mlčí 2 min");
 });
 
+// Data může posílat most na PC GM i na PC diváka; divákova jsou opožděná
+// o zpoždění pro diváky, tak GM musí vidět, odkud jsou.
+it("stáří dat říká, odkud jsou: od GM, nebo od diváka", () => {
+  const { rerender } = render(<PultGm zapas={zapas} data={gmData("priprava", [], "h4", { ...HRA, zdroj: "gm" })} hlidej={spust} />);
+  odkryj();
+  expect(screen.getByTestId("stari-hry")).toHaveTextContent("ze hry (GM) před 4 s · herní čas 1:02:03");
+  rerender(<PultGm zapas={zapas} data={gmData("priprava", [], "h4", { ...HRA, zdroj: "divak" })} hlidej={spust} />);
+  expect(screen.getByTestId("stari-hry")).toHaveTextContent("ze hry (divák) před 4 s · herní čas 1:02:03");
+});
+
 it("v tabulce rolí má každý hráč řádek s cílem a postupem, relikviemi a vyřazením", () => {
   render(<PultGm zapas={zapas} data={gmData("losovano", ROLE, "h4", HRA)} hlidej={spust} />);
   odkryj();

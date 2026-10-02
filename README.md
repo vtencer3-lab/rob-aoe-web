@@ -119,7 +119,7 @@ protože je stejné ve všech třech nasazeních v Coolify a přejmenovat by ji
 | `LOG_LEVEL` | úroveň serverového logu (výchozí `info`) | loguje se od `info` výš |
 | `AUTORI_SCENARE` | mód Diplomacie: `hrac_id` autorů scénáře oddělená čárkou (stejný tvar jako `ADMIN_STEAM_ID`), kteří smí nahrávat a aktivovat verze scénáře i bez režie | nahrávat smí jen admini |
 | `PYTHON` | mód Diplomacie: interpret Pythonu s AoE2ScenarioParser a Pillow pro rozbor nahraného scénáře (`src/diplomacie/requirements.txt`); při vývoji na Windows `PYTHON=python` | použije se `/opt/rozbor/bin/python` z Docker obrazu; mimo kontejner pak rozbor selže a nahraná verze se uloží s chybou rozboru (nejde ji aktivovat) |
-| `MOST_TOKEN` | mód Diplomacie: sdílené tajemství, se kterým most na PC Game Mastera (`nastroje/diplomacie/most.py`) posílá data z běžící hry na `POST /api/diplo/hra` | routa se neregistruje — web data ze hry nepřijímá a Nástupce vybírá GM ručně |
+| `MOST_TOKEN` | mód Diplomacie: sdílené tajemství, se kterým most na PC Game Mastera nebo diváka (`nastroje/diplomacie/most.py`) posílá data z běžící hry na `POST /api/diplo/hra` | routa se neregistruje — web data ze hry nepřijímá a Nástupce vybírá GM ručně |
 
 ## Testy
 
@@ -415,12 +415,19 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   (originál od autora zůstává a autor nebo admin ho stáhne odkazem
   „originál“ ve správě scénáře; verzi nahrané dřív sondu doplní tlačítko
   „Přibalit sondu“). Jméno souboru se nemění. Sonda za hry zapisuje stav
-  do souboru u každého hráče; Game Master si vedle hry pustí
-  `python nastroje/diplomacie/most.py` (token v proměnné `MOST_TOKEN` nebo
-  v souboru `~/.aoe-most-token`) a web pak **Nástupce císaře nastaví sám**
+  do souboru na každém počítači ve hře, u hráčů i diváků (bez šifrování —
+  kdo se podívá do své složky profilu, vidí tajné cíle všech; komunitní hra
+  s přáteli). Vedle hry se pustí `python nastroje/diplomacie/most.py`
+  (token v proměnné `MOST_TOKEN` nebo v souboru `~/.aoe-most-token`) —
+  **Rob ho může mít na herním PC jako Game Master (šedá) i jako pouhý
+  divák**; data od GM mají přednost, data od diváka jsou opožděná
+  o zpoždění pro diváky a jako divák se přiřadí, jen když běží jediný zápas
+  Diplomacie. **Na streamu se dvěma počítači musí most běžet na tom, kde
+  běží hra** (soubor sondy je v profilu hry tam). Web pak **Nástupce císaře nastaví sám**
   — je to hráč, kterému hra nedala sekundární cíl. GM ho v pultu vidí
   („Nástupce určila hra: X“), může ho přepsat a u každého hráče vidí
-  postup jeho cíle, relikvie a jestli je ještě ve hře. Tahle data vidí jen
+  postup jeho cíle, relikvie a jestli je ještě ve hře, a odkud data jsou
+  („ze hry (GM) před 3 s“ / „ze hry (divák) před 3 s“). Tahle data vidí jen
   GM. Bez mostu všechno funguje jako dřív, Nástupce GM odklikne ručně.
 
 Návrh a rozhodnutí: `docs/prehled-praci-a-zameru.md` §3.60, spec

@@ -99,8 +99,12 @@ export interface HracVeHre {
 
 /** Tělo `POST /api/diplo/hra` — jedno platné čtení souboru sondy (formát 3). */
 export interface SnimekHry {
-  /** `hracId` GM; most posílá jméno složky profilu hry (Steam ID nebo XUID). */
-  gm: string;
+  /**
+   * Kdo snímek posílá: most posílá jméno složky profilu hry (Steam ID nebo
+   * XUID) počítače, na kterém běží — GM, nebo divák. Starší most posílal
+   * totéž pod jménem `gm`.
+   */
+  odesilatel: string;
   /** Jméno scénáře podle jména souboru sondy. */
   scenar: string;
   /** Herní čas v sekundách. */
@@ -127,12 +131,13 @@ export function prectiSnimek(telo: unknown): SnimekHry {
     if (t.length > max) throw new Error(`Data ze hry: ${kde} je moc dlouhé.`);
     return t;
   };
-  const gm = kratky(o["gm"], "gm", 64);
-  if (gm === "") throw new Error("Data ze hry: chybí gm.");
+  // `gm` je jméno pole ze starších verzí mostu.
+  const odesilatel = kratky(o["odesilatel"] ?? o["gm"], "odesilatel", 64);
+  if (odesilatel === "") throw new Error("Data ze hry: chybí odesilatel.");
   const hraci = pole(o["hraci"], "hraci");
   if (hraci.length > 8) throw new Error("Data ze hry: hráčů je nejvýš 8.");
   return {
-    gm,
+    odesilatel,
     scenar: kratky(o["scenar"], "scenar", 200),
     cas: celeCislo(o["cas"], "cas"),
     sloty: delka(o["sloty"], "sloty", 8).map((x) => celeCislo(x, "slot")),
@@ -162,12 +167,80 @@ export interface HracHry {
   zije: boolean | null;
 }
 
+/**
+ * Odkud snímek přišel: z PC GM zápasu („gm“), nebo z PC diváka („divak“) —
+ * sonda píše soubor na každém počítači ve hře. Divák vidí hru se zpožděním
+ * pro diváky, jeho data jsou o to starší.
+ */
+export type ZdrojHry = "gm" | "divak";
+
+/** Snímek diváka se nepoužije, když od GM téhož zápasu přišel snímek před méně než tolika ms. */
+export const DIVAK_USTUPUJE_GM_MS = 20_000;
+
+/** Běžící zápas Diplomacie otevřené akce, jak ho vidí příjem snímků. */
+export interface BeziciZapasDiplo {
+  zapasId: number;
+  /** Kdo sedí na šedé (GM); null = šedou nikdo neobsadil. */
+  gmHracId: string | null;
+  /** Jméno souboru verze scénáře, kterou si zápas otiskl; null = bez scénáře. */
+  jmenoScenare: string | null;
+}
+
+/** Jméno scénáře bez přípony, malými: sonda ho hlásí podle jména svého souboru. */
+const zakladJmena = (jmeno: string) => jmeno.replace(/\.aoe2scenario$/i, "").toLowerCase();
+
+/** Jde o tentýž scénář? Velikost písmen a přípona `.aoe2scenario` se nepočítají. */
+export function stejnyScenar(a: string, b: string): boolean {
+  return zakladJmena(a) === zakladJmena(b);
+}
+
+/**
+ * Ke kterému zápasu snímek patří. `bezici` jsou běžící zápasy Diplomacie
+ * otevřené akce od nejnověji založeného, `odesilatel` možná id odesílatele
+ * (Steam ID a totéž s předponou `xbox:`).
+ *
+ * (a) Odesílatel je GM běžícího zápasu → ten (u víc nejnovější), zdroj „gm“.
+ * (b) Jinak je to divák: zápas se pozná jen tehdy, když běží **jediný**
+ *     a hraje scénář, který hra hlásí — zdroj „divak“. U víc běžících
+ *     zápasů by se data diváka nedala přiřadit bez hádání.
+ * Jinak null.
+ */
+export function vyberZapasSnimku(bezici: readonly BeziciZapasDiplo[], odesilatel: readonly string[], scenar: string): { zapasId: number; zdroj: ZdrojHry } | null {
+  const gmuv = bezici.find((z) => z.gmHracId !== null && odesilatel.includes(z.gmHracId));
+  if (gmuv) return { zapasId: gmuv.zapasId, zdroj: "gm" };
+  const jediny = bezici.length === 1 ? bezici[0]! : null;
+  if (jediny && jediny.jmenoScenare !== null && stejnyScenar(jediny.jmenoScenare, scenar)) return { zapasId: jediny.zapasId, zdroj: "divak" };
+  return null;
+}
+
+/** Česká věta pro 404, když `vyberZapasSnimku` zápas nenašel. */
+export function procBezZapasu(bezici: readonly BeziciZapasDiplo[], odesilatel: string, scenar: string): string {
+  if (bezici.length === 0) return "Na webu teď neběží žádný zápas Diplomacie.";
+  if (bezici.length > 1)
+    return `${odesilatel} není GM žádného běžícího zápasu Diplomacie a zápasů běží víc (${bezici.length}) — data diváka nejde přiřadit. Pusť most na PC GM.`;
+  const hraje = bezici[0]!.jmenoScenare;
+  return hraje === null
+    ? `${odesilatel} není GM běžícího zápasu Diplomacie a zápas nemá scénář — data diváka nejde přiřadit.`
+    : `${odesilatel} není GM běžícího zápasu Diplomacie a hra hlásí scénář „${scenar}“, zápas ale hraje „${hraje}“ — data diváka nejde přiřadit.`;
+}
+
+/**
+ * Přednost GM: snímek diváka se nepoužije, dokud od GM téhož zápasu chodí
+ * data (poslední před méně než `DIVAK_USTUPUJE_GM_MS`). GM vidí hru bez
+ * zpoždění pro diváky; divák je jen záloha, když GM most nepouští.
+ */
+export function divakUstupuje(zdroj: ZdrojHry, posledniOdGmMs: number | null, tedMs: number): boolean {
+  return zdroj === "divak" && posledniOdGmMs !== null && tedMs - posledniOdGmMs < DIVAK_USTUPUJE_GM_MS;
+}
+
 /** Co GM vidí ze hry u svého zápasu (`rezim.data.zapasy[i].hra`; ostatním redakce maže). */
 export interface HraZapasu {
   /** Herní čas v sekundách. */
   cas: number;
   /** Kdy server snímek přijal (ISO) — pult z toho počítá stáří dat. */
   prijato: string;
+  /** Odkud snímek přišel; chybí u dat přijatých před 2. 10. 2026 (jen z PC GM). */
+  zdroj?: ZdrojHry;
   /** Hra už cíle rozdává: aspoň jeden hráč nějaký má. */
   rozdano: boolean;
   /**
@@ -245,9 +318,10 @@ export function popisCile(cil: CilHrace): string {
 /** Po kolika sekundách bez snímku se o hře řekne, že mlčí (most posílá tep nejpozději po 15 s). */
 export const HRA_MLCI_PO_S = 45;
 
-/** Stáří dat ze hry: „ze hry před 4 s“, nebo „hra mlčí 2 min“. */
-export function popisStari(sekund: number): string {
+/** Stáří dat ze hry: „ze hry (GM) před 4 s“, „ze hry (divák) před 4 s“, nebo „hra mlčí 2 min“. */
+export function popisStari(sekund: number, zdroj?: ZdrojHry): string {
   const s = Math.max(0, Math.round(sekund));
-  if (s < HRA_MLCI_PO_S) return `ze hry před ${s} s`;
+  const odkud = zdroj === "gm" ? " (GM)" : zdroj === "divak" ? " (divák)" : "";
+  if (s < HRA_MLCI_PO_S) return `ze hry${odkud} před ${s} s`;
   return s < 120 ? `hra mlčí ${s} s` : `hra mlčí ${Math.floor(s / 60)} min`;
 }

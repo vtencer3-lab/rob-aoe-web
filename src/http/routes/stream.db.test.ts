@@ -440,7 +440,7 @@ it("admin, který není GM, nedostane cizí role Diplomacie ani ve streamu", asy
 it("data ze hry jdou streamem jen GM zápasu, adminovi-ne-GM ne", async () => {
   const { zapas } = await zapasOsmi("diplomacie");
   const hra = { cas: 95, prijato: new Date().toISOString(), rozdano: true, nastupceHracId: "h4", hraci: [{ hracId: "h4", cil: null, relikvie: 0, zije: true }] };
-  pametHer.set(zapas.id, { hra, kandidat: { hracId: "h4", odCasu: 91 }, rozeslanoMs: Date.now() });
+  pametHer.set(zapas.id, { hra, kandidat: { hracId: "h4", odCasu: 91 }, rozeslanoMs: Date.now(), posledniOdGmMs: Date.now() });
   const app = buildServer();
   await app.ready();
   try {

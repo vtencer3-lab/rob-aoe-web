@@ -77,13 +77,34 @@ describe.skipIf(!maPython())("most ke hře (vyžaduje Python)", () => {
   it("zpráva mostu ze souboru sondy je tělo, které server přijme, a dává Nástupce", async () => {
     const vystup = await sHrou(souborSondy(95), (koren) => execFileSync(config.python, [join(NASTROJE, "most.py"), "--slozka", koren, "--nasucho", "--jednou"], { encoding: "utf8", timeout: 30_000 }));
     const snimek = prectiSnimek(JSON.parse(vystup));
-    expect(snimek).toMatchObject({ gm: GM, scenar: "LLC.aoe2scenario", cas: 95, sloty: [7, 2, 3, 4, 5, 6, 1, 8] });
+    expect(snimek).toMatchObject({ odesilatel: GM, scenar: "LLC.aoe2scenario", cas: 95, sloty: [7, 2, 3, 4, 5, 6, 1, 8] });
     expect(snimek.hraci[0]).toEqual({ cislo: 1, jmeno: "Hráč 1", barva: "<BLUE>", relikvie: 0, zije: true });
     const hraci = ([1, 2, 3, 4, 5, 6, 8] as Barva[]).map((barva) => ({ hracId: `h${barva}`, barva }));
     const hra = vyhodnotHru(snimek, hraci, [{ promenna: 16, slot: 2, text: "zabito : {} /650 jednotek", limit: 650 }], "2026-10-02T20:00:00.000Z");
     expect(hra.nastupceHracId).toBe("h4");
     expect(hra.hraci.find((h) => h.hracId === "h2")!.cil).toEqual({ text: "zabito : {} /650 jednotek", limit: 650, hodnota: 120 });
     expect(hra.hraci.find((h) => h.hracId === "h1")).toMatchObject({ relikvie: 2, zije: true });
+  }, 60_000);
+
+  it("--odesilatel (i starší --gm) přepíše id ze jména složky; výpis říká, odkud web data vzal", async () => {
+    for (const prepinac of ["--odesilatel", "--gm"]) {
+      const vystup = await sHrou(souborSondy(95), (koren) =>
+        execFileSync(config.python, [join(NASTROJE, "most.py"), "--slozka", koren, "--nasucho", "--jednou", prepinac, "divak1"], { encoding: "utf8", timeout: 30_000 }),
+      );
+      expect(prectiSnimek(JSON.parse(vystup)).odesilatel).toBe("divak1");
+    }
+    const popis = (stav: number, odpoved: object) =>
+      execFileSync(config.python, ["-c", `import json,sys; from most import popis_odpovedi; print(popis_odpovedi(${stav}, json.loads(sys.argv[1]), "d1"))`, JSON.stringify(odpoved)], {
+        cwd: NASTROJE,
+        encoding: "utf8",
+        env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+      }).trim();
+    expect(popis(200, { zapasId: 5, zdroj: "gm", nastupce: "h4" })).toBe("zápas 5 (jako GM), Nástupce: h4");
+    expect(popis(200, { zapasId: 5, zdroj: "divak", nastupce: null })).toBe("zápas 5 (jako divák), Nástupce: zatím neurčen");
+    expect(popis(200, { zapasId: 5, zdroj: "divak", nastupce: "h4", pouzito: false })).toBe("zápas 5 (jako divák), Nástupce: h4 — nepoužito, data posílá GM");
+    expect(popis(404, { chyba: "Na webu teď neběží žádný zápas Diplomacie." })).toBe(
+      "web data od d1 nepřiřadil k žádnému zápasu (404): Na webu teď neběží žádný zápas Diplomacie. Jiné id nastaví --odesilatel.",
+    );
   }, 60_000);
 
   it("čtečka xsdat: formát 3 s převodem slotů a proměnnými; rozepsaný soubor neplatí", async () => {

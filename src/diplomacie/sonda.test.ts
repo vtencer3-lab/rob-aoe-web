@@ -79,22 +79,18 @@ describe.skipIf(!maPython())("sonda v LLC (vyžaduje Python s AoE2ScenarioParser
   }, 60_000);
 });
 
-// Soubor sondy nese tajné cíle všech hráčů a skript běží u každého z nich:
-// zapisovat se smí jen na počítači GM. Bez Pythonu — hlídá se text sondy.
-describe("sonda.xs píše jen u Game Mastera", () => {
-  it("celý zápis je uvnitř podmínky na místního hráče na slotu GM", async () => {
+// Sonda píše soubor na každém počítači ve hře, hráčům i divákům: XS diváka
+// od hráče nerozezná (u diváka vrací xsUnsyncGetLocalPlayerId sledovaného
+// hráče) a data se mají sbírat i z PC diváka. Rozhodnutí uživatele
+// 2. 10. 2026 — komunitní hra, bez šifrování. Bez Pythonu, hlídá se text sondy.
+describe("sonda.xs píše na každém počítači", () => {
+  it("zápis souboru není podmíněný místním hráčem", async () => {
     const xs = (await readFile(new URL("./sonda.xs", import.meta.url))).toString("ascii").replace(/\r\n/g, "\n");
-    const podminka = `if (xsUnsyncGetLocalPlayerId() == xsGetWorldPlayerId(${GM_BARVA})) {`;
-    expect(xs).toContain(podminka);
-    // Všechno, co sahá na soubor, je až za podmínkou a uvnitř jejího bloku.
-    const zaPodminkou = xs.slice(xs.indexOf(podminka));
-    const pred = xs.slice(0, xs.indexOf(podminka));
-    for (const volani of ["xsCreateFile", "xsWriteInt", "xsWriteString", "xsWriteFloat", "xsCloseFile"]) {
-      expect(pred).not.toContain(`${volani}(`);
-      expect(zaPodminkou).toContain(`${volani}(`);
-    }
-    // Blok podmínky se zavírá až za xsCloseFile, těsně před koncem funkce.
-    expect(zaPodminkou).toMatch(/xsCloseFile\(\);\n  \}\n\}\n/);
+    expect(xs).not.toMatch(/^\s*if \(xsUnsyncGetLocalPlayerId/m);
+    expect(xs).not.toContain(`xsGetWorldPlayerId(${GM_BARVA})`);
+    // Soubor se otevírá přímo ve funkci zápisu, ne v žádném bloku.
+    expect(xs).toMatch(/\n {2}xsCreateFile\(false\);\n/);
+    expect(xs).toMatch(/xsCloseFile\(\);\n\}\n/);
     // Rozložení se nezměnilo — formát zůstává 3.
     expect(xs).toContain("xsWriteInt(3);");
   });

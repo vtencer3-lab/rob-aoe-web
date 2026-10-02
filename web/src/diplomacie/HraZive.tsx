@@ -17,7 +17,7 @@ function herniCas(s: number): string {
   return h > 0 ? `${h}:${dve(m)}:${dve(s % 60)}` : `${m}:${dve(s % 60)}`;
 }
 
-/** Jak čerstvá data ze hry jsou: „ze hry před 4 s“, po delším tichu „hra mlčí 2 min“. */
+/** Jak čerstvá data ze hry jsou a odkud: „ze hry (GM) před 4 s“, „ze hry (divák) před 4 s“, po delším tichu „hra mlčí 2 min“. */
 export function StariHry({ hra }: { hra: HraZapasu | undefined }) {
   // Stáří roste samo — bez tikání by „před 4 s“ viselo do příští zprávy.
   const ted = useTed(1000);
@@ -25,7 +25,7 @@ export function StariHry({ hra }: { hra: HraZapasu | undefined }) {
   return (
     <>
       <p className="stari-hry" data-testid="stari-hry">
-        {popisStari((ted - Date.parse(hra.prijato)) / 1000)} · herní čas {herniCas(hra.cas)}
+        {popisStari((ted - Date.parse(hra.prijato)) / 1000, hra.zdroj)} · herní čas {herniCas(hra.cas)}
       </p>
       {/* Data nesedí k zápasu (jiný scénář, verze bez výpisu cílů): GM má vědět, proč se podle nich nic nenastavilo. */}
       {hra.varovani ? (

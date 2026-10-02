@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { Barva } from "../types.js";
-import { popisCile, popisStari, posunKandidata, prectiSnimek, prectiSondu, souhrnSondy, vyhodnotHru, type CilSondy, type SnimekHry } from "./hra.js";
+import {
+  DIVAK_USTUPUJE_GM_MS,
+  divakUstupuje,
+  popisCile,
+  popisStari,
+  posunKandidata,
+  prectiSnimek,
+  prectiSondu,
+  procBezZapasu,
+  souhrnSondy,
+  vyberZapasSnimku,
+  vyhodnotHru,
+  type BeziciZapasDiplo,
+  type CilSondy,
+  type SnimekHry,
+} from "./hra.js";
 
 /** Sedm hráčů h1…h8 bez h7: GM sedí na šedé (slot 7) a mezi hráče nepatří. */
 const HRACI = ([1, 2, 3, 4, 5, 6, 8] as Barva[]).map((barva) => ({ hracId: `h${barva}`, barva }));
@@ -22,7 +37,7 @@ function snimek(cile: Record<number, number>, hodnoty: Record<number, number> = 
   for (const [slot, pocitadlo] of Object.entries(cile)) promenne[200 + Number(slot)] = pocitadlo;
   for (const [promenna, hodnota] of Object.entries(hodnoty)) promenne[Number(promenna)] = hodnota;
   return {
-    gm: "h7",
+    odesilatel: "h7",
     scenar: "LLC.aoe2scenario",
     cas: 95,
     sloty: [7, 2, 3, 4, 5, 6, 1, 8],
@@ -132,6 +147,63 @@ describe("popisy pro pult", () => {
     expect(popisStari(50)).toBe("hra mlčí 50 s");
     expect(popisStari(150)).toBe("hra mlčí 2 min");
   });
+
+  it("stáří dat říká, odkud jsou: od GM, nebo od diváka", () => {
+    expect(popisStari(3, "gm")).toBe("ze hry (GM) před 3 s");
+    expect(popisStari(3, "divak")).toBe("ze hry (divák) před 3 s");
+    // Hra mlčí stejně, ať posílal kdokoli.
+    expect(popisStari(50, "divak")).toBe("hra mlčí 50 s");
+  });
+});
+
+describe("ke kterému zápasu snímek patří", () => {
+  const zapas = (zapasId: number, gmHracId: string | null, jmenoScenare: string | null = "LLC.aoe2scenario"): BeziciZapasDiplo => ({ zapasId, gmHracId, jmenoScenare });
+  const GM = ["h7", "xbox:h7"];
+  const DIVAK = ["d1", "xbox:d1"];
+
+  it("odesílatel je GM běžícího zápasu → zdroj gm; u víc jeho zápasů první (nejnovější)", () => {
+    expect(vyberZapasSnimku([zapas(12, "h7")], GM, "LLC.aoe2scenario")).toEqual({ zapasId: 12, zdroj: "gm" });
+    expect(vyberZapasSnimku([zapas(14, "x"), zapas(13, "h7"), zapas(12, "h7")], GM, "LLC.aoe2scenario")).toEqual({ zapasId: 13, zdroj: "gm" });
+    // GM z Microsoft účtu: most posílá XUID bez předpony.
+    expect(vyberZapasSnimku([zapas(12, "xbox:h7")], GM, "LLC.aoe2scenario")).toEqual({ zapasId: 12, zdroj: "gm" });
+    // GM podle id má přednost, i když scénář nesedí (varování řeší až příjem).
+    expect(vyberZapasSnimku([zapas(12, "h7")], GM, "Jiny.aoe2scenario")).toEqual({ zapasId: 12, zdroj: "gm" });
+  });
+
+  it("jiný odesílatel a jediný běžící zápas se stejným scénářem → zdroj divak", () => {
+    expect(vyberZapasSnimku([zapas(12, "h7")], DIVAK, "LLC.aoe2scenario")).toEqual({ zapasId: 12, zdroj: "divak" });
+    expect(vyberZapasSnimku([zapas(12, "h7", "LLC.aoe2scenario")], DIVAK, "llc")).toEqual({ zapasId: 12, zdroj: "divak" });
+    // Šedou nikdo neobsadil — divák se pořád přiřadí podle scénáře.
+    expect(vyberZapasSnimku([zapas(12, null)], DIVAK, "LLC.aoe2scenario")).toEqual({ zapasId: 12, zdroj: "divak" });
+  });
+
+  it("divák bez jistoty nic: víc běžících zápasů, jiný scénář, zápas bez scénáře, žádný zápas", () => {
+    expect(vyberZapasSnimku([zapas(13, "h7"), zapas(12, "h6")], DIVAK, "LLC.aoe2scenario")).toBeNull();
+    expect(vyberZapasSnimku([zapas(12, "h7")], DIVAK, "Jiny.aoe2scenario")).toBeNull();
+    expect(vyberZapasSnimku([zapas(12, "h7", null)], DIVAK, "LLC.aoe2scenario")).toBeNull();
+    expect(vyberZapasSnimku([], DIVAK, "LLC.aoe2scenario")).toBeNull();
+  });
+
+  it("každý důvod má vlastní českou větu pro 404", () => {
+    expect(procBezZapasu([], "d1", "LLC.aoe2scenario")).toBe("Na webu teď neběží žádný zápas Diplomacie.");
+    expect(procBezZapasu([zapas(13, "h7"), zapas(12, "h6")], "d1", "LLC.aoe2scenario")).toBe(
+      "d1 není GM žádného běžícího zápasu Diplomacie a zápasů běží víc (2) — data diváka nejde přiřadit. Pusť most na PC GM.",
+    );
+    expect(procBezZapasu([zapas(12, "h7")], "d1", "Jiny.aoe2scenario")).toBe(
+      "d1 není GM běžícího zápasu Diplomacie a hra hlásí scénář „Jiny.aoe2scenario“, zápas ale hraje „LLC.aoe2scenario“ — data diváka nejde přiřadit.",
+    );
+    expect(procBezZapasu([zapas(12, "h7", null)], "d1", "LLC.aoe2scenario")).toBe("d1 není GM běžícího zápasu Diplomacie a zápas nemá scénář — data diváka nejde přiřadit.");
+  });
+
+  it("divák ustupuje GM, dokud od něj přišel snímek před méně než 20 s", () => {
+    const ted = 1_000_000;
+    expect(DIVAK_USTUPUJE_GM_MS).toBe(20_000);
+    expect(divakUstupuje("divak", ted - 19_999, ted)).toBe(true);
+    expect(divakUstupuje("divak", ted - 20_000, ted)).toBe(false);
+    expect(divakUstupuje("divak", null, ted)).toBe(false);
+    // GM neustupuje nikomu.
+    expect(divakUstupuje("gm", ted - 1, ted)).toBe(false);
+  });
 });
 
 describe("tělo od mostu", () => {
@@ -141,9 +213,17 @@ describe("tělo od mostu", () => {
     expect(prectiSnimek(telo())).toEqual(snimek({ 1: 15 }));
   });
 
-  it("odmítne jinou verzi, chybějící GM a špatné délky polí", () => {
+  // Most do 1.14 posílal odesílatele pod jménem `gm`.
+  it("starší pole gm se bere jako odesílatel; odesilatel má přednost", () => {
+    const { odesilatel: _, ...bezOdesilatele } = telo();
+    expect(prectiSnimek({ ...bezOdesilatele, gm: "h7" })).toEqual(snimek({ 1: 15 }));
+    expect(prectiSnimek({ ...telo(), odesilatel: "divak", gm: "h7" }).odesilatel).toBe("divak");
+    expect(() => prectiSnimek(bezOdesilatele)).toThrow(/odesilatel není text/);
+  });
+
+  it("odmítne jinou verzi, chybějícího odesílatele a špatné délky polí", () => {
     expect(() => prectiSnimek({ ...telo(), v: 2 })).toThrow(/neznámá verze/);
-    expect(() => prectiSnimek({ ...telo(), gm: "" })).toThrow(/chybí gm/);
+    expect(() => prectiSnimek({ ...telo(), odesilatel: "" })).toThrow(/chybí odesilatel/);
     expect(() => prectiSnimek({ ...telo(), promenne: [1, 2, 3] })).toThrow(/promenne má mít 256/);
     expect(() => prectiSnimek({ ...telo(), sloty: [1, 2] })).toThrow(/sloty má mít 8/);
     expect(() => prectiSnimek({ ...telo(), cas: "95" })).toThrow(/cas není celé číslo/);

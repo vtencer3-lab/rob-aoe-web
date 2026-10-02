@@ -1,6 +1,6 @@
 import type { PoolClient } from "pg";
 import { getPool, withTransaction } from "../db/pool.js";
-import { prectiSondu, souhrnSondy, type SondaScenare } from "../shared/diplomacie/hra.js";
+import { prectiSondu, souhrnSondy, type BeziciZapasDiplo, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
 import { revizeSondy } from "./sonda.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
@@ -207,22 +207,22 @@ export async function getDiploZapas(zapasId: number): Promise<DiploZapas | null>
 }
 
 /**
- * Běžící zápas Diplomacie otevřené akce, kde na šedé (GM) sedí některý
- * z těchto hráčů; při víc takových nejnověji založený. Pro most ke hře,
- * který zná jen GM — ne číslo zápasu.
+ * Běžící zápasy Diplomacie otevřené akce od nejnověji založeného, s GM (kdo
+ * sedí na šedé) a jménem otištěné verze scénáře. Pro most ke hře, který zná
+ * jen odesílatele a scénář — ne číslo zápasu (výběr: `vyberZapasSnimku`).
  */
-export async function najdiBeziciZapasGm(hracIds: string[]): Promise<number | null> {
-  const { rows } = await getPool().query<{ zapas_id: number }>(
-    `SELECT d.zapas_id
+export async function beziciZapasyDiplo(): Promise<BeziciZapasDiplo[]> {
+  const { rows } = await getPool().query<{ zapas_id: number; gm: string | null; jmeno_souboru: string | null }>(
+    `SELECT d.zapas_id, u.hrac_id AS gm, s.jmeno_souboru
        FROM diplo_zapas d
        JOIN zapas z ON z.id = d.zapas_id
        JOIN akce a ON a.id = z.akce_id
-       JOIN ucastnik u ON u.zapas_id = z.id AND u.barva = ${GM_BARVA}
-      WHERE a.stav <> 'konec' AND z.stav = 'bezi' AND u.hrac_id = ANY($1::text[])
-      ORDER BY z.vytvoren DESC, z.id DESC LIMIT 1`,
-    [hracIds],
+       LEFT JOIN ucastnik u ON u.zapas_id = z.id AND u.barva = ${GM_BARVA}
+       LEFT JOIN diplo_scenar s ON s.id = d.scenar_id
+      WHERE a.stav <> 'konec' AND z.stav = 'bezi'
+      ORDER BY z.vytvoren DESC, z.id DESC`,
   );
-  return rows[0]?.zapas_id ?? null;
+  return rows.map((r) => ({ zapasId: r.zapas_id, gmHracId: r.gm, jmenoScenare: r.jmeno_souboru }));
 }
 
 /**
