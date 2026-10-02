@@ -1877,7 +1877,14 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   `%USERPROFILE%\Games\Age of Empires 2 DE\<ID>\resources\_common\scenario\`
   s jeho vlastním Steam ID nebo XUID (větu o volbě Custom Scenario krok od
   2. 10. 2026 nemá — ukazuje to okno Create Lobby hned pod ním); kontrola
-  lobby hlídá řádek „Scénář“. Po startu hry rozdá
+  lobby hlídá řádek „Scénář“. V Chromu a Edge je od 1.13.10-24.0 hlavní
+  tlačítko **Uložit scénář do hry** (File System Access API,
+  `web/src/diplomacie/slozkaHry.ts`): host jednou vybere složku scénářů, web
+  do ní soubor zapíše a úchyt složky si pamatuje v IndexedDB — prohlížeč
+  nedovolí otevřít Průzkumníka ani zvolit výchozí cestu, jen si pamatuje
+  naposledy vybranou složku, proto zůstává řádek s cestou ke zkopírování
+  a obyčejné stažení jako druhá možnost (a jediná ve Firefoxu, Safari a na
+  telefonu). Po startu hry rozdá
   sekundární cíle hra sama; GM v pultu klikne na hráče, který cíl nedostal
   (**Nástupce císaře**), **Rozdat role** (Šašek, Garda, 2× Nájezdník,
   Žoldák, Kat; oběť Kata a pakt Žoldáka losem z `node:crypto`), případně
@@ -2026,6 +2033,16 @@ mimo git). Co platí teď:
 Měřeno v headless Chrome na 1280 a 390 px (náhledová stránka mimo repo):
 bez přetečení stránky; na 390 px zůstává známá slabina jádra — tlačítko
 civilizace v řádku strany se smrskne na ~17 px (bylo tak i před dávkou).
+
+**Pohyb rozhraní (2. 10. 2026, 1.13.10-23.1 → 23.4).** Uživatel: „dodej
+úplně všude tomu UI animace, aby klikání na věci nemělo pouhé bliknutí.“
+Otočení tajné karty, plynulé sbalování, otevírání a zavírání oken, prolnutí
+najetí a stisk tlačítek, přepínače a vznik nového obsahu — v celém webu, ne
+jen v módu. Co se jak hýbe, časy v `:root`, pravidla pro další pohyb a co
+je vědomě bez něj, popisuje [`docs/grafika.md`](grafika.md) §3 „Pohyb“;
+skriptem řízený pohyb je v `web/src/pohyb.ts`, vzorník k měření
+`web/nahled/pohyb.html`. Past: `Zakryti` má nově obal `.zakryti-lic` —
+pravidla psaná na `.zakryti > …` se musí psát na `.zakryti-lic > …`.
 
 **Co zůstává otevřené** (menší nálezy z revizí, každý v ledgeru s místem
 v kódu; nic z toho neblokuje hru):

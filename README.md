@@ -382,7 +382,12 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   zápas hraje) a cestu, kam soubor uložit —
   `%USERPROFILE%\Games\Age of Empires 2 DE\<Steam ID nebo XUID>\resources\_common\scenario\`,
   web ji ukáže přímo pro přihlášeného hosta. Starou kopii stejného jména je
-  potřeba přepsat. V Create Lobby zvolí Game Mode Custom Scenario a tenhle
+  potřeba přepsat. V Chromu a Edge je hlavní tlačítko **Uložit scénář do
+  hry**: host jednou ukáže složku scénářů (cestu dostane do schránky a do
+  dialogu ji vloží), web do ní soubor zapíše sám a příště stačí jedno
+  kliknutí; prohlížeč nedovolí otevřít Průzkumníka ani předvolit cestu, jen
+  si pamatuje naposledy vybranou složku, a jinde (Firefox, Safari, telefon)
+  zůstává jen stažení. V Create Lobby zvolí Game Mode Custom Scenario a tenhle
   scénář; ostatní hráči ho dostanou přenosem v lobby. Kontrola lobby má
   řádek „Scénář“ (shoda, jiná verze téhož scénáře, jiný soubor).
 - **Co vidí hráči.** Před rozesláním jen „Role se rozdají po startu hry“.
