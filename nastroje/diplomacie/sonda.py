@@ -70,11 +70,45 @@ rule _sondaTik
 """
 
 
+# Proměnná 200 + slot scénáře nese číslo proměnné-počitadla cíle, který hráč dostal.
+PROMENNA_CILE = 200
+EFEKT_AKTIVUJ, PODMINKA_PROMENNA, OPERACE_NASTAV = 8, 22, 1
+
+
+def oznac_cile(scenar) -> int:
+    """Přidělení sekundárního cíle zapíše do proměnné, kterou sonda přečte.
+
+    XS stav triggerů nevidí a zpráva „pN ma: …“, kterou scénář posílá GM, se
+    do záznamu hry neukládá. Přidělení ale poznáme ve scénáři obecně: trigger,
+    který aktivuje jiný trigger zobrazený jako cíl (`display_as_objective`)
+    s podmínkou na proměnnou-počitadlo. Do takového triggeru přibude efekt
+    „proměnná 200 + slot := číslo počitadla“; slot je hráč z prvního efektu
+    cílového triggeru. Kdo má po rozdání nulu, cíl nedostal (= Nástupce).
+    Vrací počet označených triggerů.
+    """
+    spravce = scenar.trigger_manager
+    oznaceno = 0
+    for trigger in spravce.triggers:
+        for efekt in list(trigger.effects):
+            if efekt.effect_type != EFEKT_AKTIVUJ or not 0 <= efekt.trigger_id < len(spravce.triggers):
+                continue
+            cil = spravce.triggers[efekt.trigger_id]
+            pocitadla = [c.variable for c in cil.conditions if c.condition_type == PODMINKA_PROMENNA and c.variable >= 0]
+            sloty = [e.source_player for e in cil.effects if e.source_player is not None and e.source_player > 0]
+            if not cil.display_as_objective or not pocitadla or not sloty:
+                continue
+            trigger.new_effect.change_variable(quantity=pocitadla[0], operation=OPERACE_NASTAV, variable=PROMENNA_CILE + sloty[0])
+            oznaceno += 1
+            break
+    return oznaceno
+
+
 def pribal_sondu(vstup: str, vystup: str, xs: str = XS_SONDA) -> int:
     """Načte scénář, přidá trigger se sondou a zapíše kopii. Vrací počet triggerů po úpravě."""
     from AoE2ScenarioParser.scenarios.aoe2_de_scenario import AoE2DEScenario
 
     scenar = AoE2DEScenario.from_file(vstup)
+    print(f"označeno triggerů přidělení cíle: {oznac_cile(scenar)}")
     scenar.xs_manager.add_script(xs_string=xs)
     scenar.write_to_file(vystup)
     return len(scenar.trigger_manager.triggers)

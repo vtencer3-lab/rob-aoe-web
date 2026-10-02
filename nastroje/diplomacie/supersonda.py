@@ -391,6 +391,15 @@ def katalog(prubeh: dict) -> str:
         r.append(f"- **hráč {p}**: vyzkoumaných {hotove}, pohybů během hry {len(radky)}")
         r.extend(radky[:60])
 
+    # sonda.py do proměnné 200 + slot zapisuje číslo počitadla přiděleného cíle.
+    r.extend(["", "## Přidělené sekundární cíle", "", "Proměnná 200 + slot scénáře = číslo proměnné-počitadla cíle (0 = žádný cíl, tedy Nástupce; prázdné = scénář bez označení cílů).", "", "| slot | hráč ve hře | počitadlo cíle | stav počitadla |", "|---|---|---|---|"])
+    for slot, cislo in enumerate(prubeh["sloty"], 1):
+        stopa = prubeh["promenne"].get(str(200 + slot))
+        pocitadlo = stopa["posledni"] if stopa else 0
+        hodnota = prubeh["promenne"].get(str(pocitadlo), {}).get("posledni", 0) if pocitadlo else ""
+        jmeno = next((h["jmeno"] for h in prubeh["hraci"] if h["hrac"] == cislo), "?")
+        r.append(f"| {slot} | {cislo} {jmeno} | {pocitadlo or '—'} | {hodnota} |")
+
     r.extend(["", "## Proměnné triggerů (nenulové)", "", "| proměnná | první | poslední | změn |", "|---|---|---|---|"])
     for i, s in sorted(prubeh["promenne"].items(), key=lambda kv: int(kv[0])):
         r.append(f"| {i} | {s['prvni']} | {s['posledni']} | {s['zmen']} |")
