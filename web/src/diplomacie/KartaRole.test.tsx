@@ -104,6 +104,25 @@ it("bez rozboru scénáře karta funguje jen s texty rolí", () => {
   expect(screen.queryByRole("img", { name: /^Mapa scénáře/ })).toBeNull();
 });
 
+// Smazání verze (2. 10. 2026) vynuluje otisk dohraných a zrušených zápasů.
+// Karta takového zápasu se vykreslí bez mapy — ne s mapou aktivní verze,
+// která je jiná. Běžící zápas bez otisku dál hraje aktivní verzi.
+it("dohraný zápas, jehož verze byla smazána, se vykreslí bez mapy", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null }]);
+  const bezVerze = { ...data, verze: {}, zapasy: data.zapasy.map((z) => ({ ...z, scenarId: null })) };
+  const { unmount } = render(<KartaRole zapas={{ ...zapas, stav: "dohrano" }} data={bezVerze} ja="h2" />);
+  odkryj();
+  expect(screen.getByRole("heading", { name: "Královská Garda" })).toBeTruthy();
+  expect(screen.queryByRole("img", { name: /^Mapa scénáře/ })).toBeNull();
+  fireEvent.click(screen.getByText("Pravidla hry"));
+  expect(screen.getByTestId("pravidla-hry")).toBeTruthy();
+  unmount();
+
+  render(<KartaRole zapas={zapas} data={bezVerze} ja="h2" />);
+  odkryj();
+  expect(screen.getByRole("img", { name: "Mapa scénáře LLC.aoe2scenario" })).toBeTruthy();
+});
+
 // Mapa pod kartou (spec §8.2, rozšířeno 2. 10. 2026): vlastní start a hráči,
 // ke kterým má hráč podle role vztah; Nástupce císaře s korunou vidí každý.
 // Role bez tajného údaje (Garda, Šašek) tak vidí jen sebe a Nástupce. h2

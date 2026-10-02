@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeEach, expect, it, vi } from "vitest";
 import { getAktivniAkce } from "../db/events.js";
+import { createZapas, setZapasStav } from "../db/matches.js";
 import { closePool, getPool, withTransaction } from "../db/pool.js";
 import { buildServer } from "../http/server.js";
 import { ROZBOR } from "../shared/diplomacie/fixtures.js";
@@ -302,7 +303,10 @@ it("ruční převzetí vlastní minimapy: jen autor nebo admin, zdroj ji musí m
 const smaz = (sid: string | undefined, id: number) => app.inject({ method: "DELETE", url: `/api/diplo/scenar/${id}`, cookies: sid ? { sid } : {} });
 const jmenaVerzi = async () => ((await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze as { jmenoHry: string }[]).map((v) => v.jmenoHry);
 
-it("smazat jde jen neaktivní verzi, kterou nehraje žádný zápas; číslo smazané verze se znovu nepoužije", async () => {
+const scenarZapasu = async (zapasId: number) =>
+  (await getPool().query<{ scenar_id: number | null }>("SELECT scenar_id FROM diplo_zapas WHERE zapas_id = $1", [zapasId])).rows[0]!.scenar_id;
+
+it("smazat nejde aktivní verzi; číslo smazané verze se znovu nepoužije", async () => {
   const jin = await klient("jin", false);
   const rob = await klient(ROB, true);
   const v1 = (await nahraj(jin, LLC, "LLC.aoe2scenario")).json().id;
@@ -317,22 +321,58 @@ it("smazat jde jen neaktivní verzi, kterou nehraje žádný zápas; číslo sma
 
   const aktivni = await smaz(jin, v1);
   expect(aktivni.statusCode).toBe(409);
-  expect(aktivni.json().chyba).toBe("JIN_DIPLO_1.aoe2scenario je aktivní verze — smazat ji nejde. Nejdřív nastav jako aktivní jinou.");
+  expect(aktivni.json().chyba).toBe("Aktivní verzi nejde smazat — nejdřív nastav jinou jako aktivní.");
 
-  // Zápas si verzi otiskne (i dohraný ji drží kvůli pravidlům).
-  await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2}/aktivni`, cookies: { sid: jin } });
-  const { zapas } = await zapasOsmi("klasicky");
-  await withTransaction((c) => zalozDiploZapas(c, zapas.id));
-  await app.inject({ method: "POST", url: `/api/diplo/scenar/${v3}/aktivni`, cookies: { sid: jin } });
-  const hrana = await smaz(jin, v2);
-  expect(hrana.statusCode).toBe(409);
-  expect(hrana.json().chyba).toBe(`JIN_DIPLO_2.aoe2scenario hraje zápas č. ${zapas.id} — smazat ji nejde.`);
-
-  expect((await smaz(rob, v1)).json()).toEqual({ ok: true });
-  expect(await jmenaVerzi()).toEqual(["JIN_DIPLO_3.aoe2scenario", "JIN_DIPLO_2.aoe2scenario"]);
-  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${v1}/soubor` })).statusCode).toBe(404);
+  expect((await smaz(rob, v2)).json()).toEqual({ ok: true });
+  expect(await jmenaVerzi()).toEqual(["JIN_DIPLO_3.aoe2scenario", "JIN_DIPLO_1.aoe2scenario"]);
+  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${v2}/soubor` })).statusCode).toBe(404);
   const v4 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("4")]), "LLC.aoe2scenario")).json().id;
   expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${v4}/soubor` })).headers["content-disposition"]).toBe("attachment; filename*=UTF-8''JIN_DIPLO_4.aoe2scenario");
+});
+
+// Uživatel 2. 10. 2026: verze ze zkoušek drží staré dohrané zápasy a smazat
+// nešly. Blokuje jen běžící zápas otevřené akce; dohraným a zrušeným se
+// otisk v téže transakci vynuluje.
+it("verzi hranou jen dohranými a zrušenými zápasy jde smazat, běžící zápas ji drží", async () => {
+  const jin = await klient("jin", false);
+  await nahraj(jin, LLC, "LLC.aoe2scenario");
+  const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("2")]), "LLC.aoe2scenario")).json().id;
+  const v3 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("3")]), "LLC.aoe2scenario")).json().id;
+  await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2}/aktivni`, cookies: { sid: jin } });
+  const { akce, sestava, zapas: prvni } = await zapasOsmi("diplomacie");
+  const druhy = await createZapas(akce.id, sestava);
+  await withTransaction((c) => zalozDiploZapas(c, prvni.id));
+  await withTransaction((c) => zalozDiploZapas(c, druhy.id));
+  await app.inject({ method: "POST", url: `/api/diplo/scenar/${v3}/aktivni`, cookies: { sid: jin } });
+
+  const obaBezi = await smaz(jin, v2);
+  expect(obaBezi.statusCode).toBe(409);
+  expect(obaBezi.json().chyba).toBe(`JIN_DIPLO_2.aoe2scenario hraje běžící zápasy #${prvni.poradi}, #${druhy.poradi} — smazat ji půjde, až budou dohrané nebo zrušené.`);
+
+  await setZapasStav(prvni.id, "dohrano");
+  const jedenBezi = await smaz(jin, v2);
+  expect(jedenBezi.statusCode).toBe(409);
+  expect(jedenBezi.json().chyba).toBe(`JIN_DIPLO_2.aoe2scenario hraje běžící zápas #${druhy.poradi} — smazat ji půjde, až bude dohraný nebo zrušený.`);
+  // Odmítnutí nic nezměnilo.
+  expect(await scenarZapasu(prvni.id)).toBe(v2);
+
+  await setZapasStav(druhy.id, "zruseny");
+  expect((await smaz(jin, v2)).json()).toEqual({ ok: true });
+  expect(await scenarZapasu(prvni.id)).toBeNull();
+  expect(await scenarZapasu(druhy.id)).toBeNull();
+  expect(await jmenaVerzi()).toEqual(["JIN_DIPLO_3.aoe2scenario", "JIN_DIPLO_1.aoe2scenario"]);
+});
+
+it("verzi běžícího zápasu uzavřené akce jde smazat", async () => {
+  const jin = await klient("jin", false);
+  const v1 = (await nahraj(jin, LLC, "LLC.aoe2scenario")).json().id;
+  const { akce, zapas } = await zapasOsmi("diplomacie");
+  await withTransaction((c) => zalozDiploZapas(c, zapas.id));
+  await getPool().query("UPDATE akce SET stav = 'konec' WHERE id = $1", [akce.id]);
+  const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("2")]), "LLC.aoe2scenario")).json().id;
+  await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2}/aktivni`, cookies: { sid: jin } });
+  expect((await smaz(jin, v1)).statusCode).toBe(200);
+  expect(await scenarZapasu(zapas.id)).toBeNull();
 });
 
 it("smazání verze ji vyřadí ze starších jmen kontroly lobby běžící akce", async () => {

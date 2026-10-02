@@ -17,7 +17,7 @@ export const diplomacieKlient: RezimKlienta = {
   // host musí mít v lobby přesně tu, ke které web počítá pravidla.
   krokHosta: ({ zapas, stav, ja }) => {
     if (!stav.rezim || !ja) return null;
-    return <StazeniScenare verze={verzeZapasu(stav.rezim.data, diploZapasu(stav.rezim.data, zapas.id))} ja={ja} />;
+    return <StazeniScenare verze={verzeZapasu(stav.rezim.data, diploZapasu(stav.rezim.data, zapas.id), zapas)} ja={ja} />;
   },
   verejnyZapas: ({ zapas, stav }) => (stav.rezim ? <VerejnyRadek zapas={zapas} data={stav.rezim.data} /> : null),
   popisSlotu: (barva) => (barva === GM_BARVA ? "GM" : null),

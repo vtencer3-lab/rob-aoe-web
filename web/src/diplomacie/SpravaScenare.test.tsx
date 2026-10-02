@@ -41,17 +41,20 @@ const rozbal = async () => {
   await screen.findByText("LLC v2.aoe2scenario");
 };
 
-it("vypíše verze, nečitelnou nejde aktivovat, nahrání pošle soubor a poznámku", async () => {
+// Pole „Co je nového“ uživatel 2. 10. 2026 zrušil: formulář ho nemá a řádky
+// verzí poznámku (i starou z databáze) neukazují.
+it("vypíše verze, nečitelnou nejde aktivovat, nahrání pošle jen soubor (bez poznámky)", async () => {
   render(<SpravaScenare hlidej={hlidej} />);
   fireEvent.click(await screen.findByText("Scénář Diplomacie"));
   expect(await screen.findByText("LLC v2.aoe2scenario")).toBeTruthy();
   expect(screen.getByText(/nepodařilo se přečíst/)).toBeTruthy();
   expect(screen.queryAllByRole("button", { name: "Nastavit jako aktivní" })).toHaveLength(0);
+  expect(screen.queryByLabelText("Co je nového")).toBeNull();
+  expect(screen.queryByText(/nové cíle/)).toBeNull();
   const soubor = new File(["1.59"], "LLC v3.aoe2scenario");
-  fireEvent.change(screen.getByLabelText("Co je nového"), { target: { value: "opravy" } });
   fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [soubor] } });
   fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
-  expect(diploApi.nahrat).toHaveBeenCalledWith(soubor, "opravy");
+  expect(diploApi.nahrat).toHaveBeenCalledWith(soubor);
 });
 
 // Hostovi a do lobby jde verze pod jménem pro hru (JIN_DIPLO_<pořadí>),
@@ -90,7 +93,6 @@ it("náhled aktivní verze a aktivace starší čitelné verze", async () => {
   fireEvent.click(screen.getByText("Pravidla hry"));
   expect(screen.getByText("zabij 650 nepratelskych jednotek")).toBeTruthy();
   expect(screen.getByText("Nejvýš 30 vesničanů")).toBeTruthy();
-  expect(screen.getByText("nové cíle", { exact: false })).toBeTruthy();
   const tlacitka = screen.getAllByRole("button", { name: "Nastavit jako aktivní" });
   expect(tlacitka).toHaveLength(1);
   fireEvent.click(tlacitka[0]!);
@@ -103,11 +105,9 @@ it("náhled aktivní verze a aktivace starší čitelné verze", async () => {
 it("po nahrání ukáže výsledek, vyprázdní formulář a načte seznam znovu", async () => {
   vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 5, aktivni: true, chybaRozboru: null, chybaSondy: null, vlastniMinimapa: null });
   await rozbal();
-  fireEvent.change(screen.getByLabelText("Co je nového"), { target: { value: "opravy" } });
   fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v3.aoe2scenario")] } });
   fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
   expect(await screen.findByText("Nahráno a nastaveno jako aktivní.")).toBeTruthy();
-  expect(screen.getByLabelText("Co je nového")).toHaveValue("");
   expect(screen.getByRole("button", { name: "Nahrát" })).toBeDisabled();
   expect(diploApi.verze).toHaveBeenCalledTimes(2);
 
@@ -182,6 +182,40 @@ it("Smazat se potvrzuje a pak seznam načte znovu", async () => {
   fireEvent.click(within(screen.getByTestId("potvrzeni")).getByRole("button", { name: "Smazat" }));
   expect(diploApi.smazat).toHaveBeenCalledWith(2);
   await waitFor(() => expect(diploApi.verze).toHaveBeenCalledTimes(2));
+});
+
+// Odmítnutí smazání (409) bylo vidět jen v obecné chybě nahoře nad panelem
+// akce, daleko od správy — uživatel měl za to, že mazání nefunguje
+// (2. 10. 2026). Věta serveru je teď přímo pod řádkem verze a drží se do
+// další akce ve správě.
+it("odmítnuté smazání ukáže větu serveru pod řádkem verze až do další akce", async () => {
+  const VETA = "JIN_DIPLO_2.aoe2scenario hraje běžící zápas #3 — smazat ji půjde, až bude dohraný nebo zrušený.";
+  vi.mocked(diploApi.smazat).mockRejectedValueOnce(new Error(VETA));
+  // Skutečné chování hlidej z App: chybu spolkne a ukáže ji jinde.
+  const globalni: string[] = [];
+  const hlidejApp = async (fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+    } catch (e) {
+      globalni.push((e as Error).message);
+    }
+  };
+  render(<SpravaScenare hlidej={hlidejApp} />);
+  fireEvent.click(await screen.findByText("Scénář Diplomacie"));
+  await screen.findByText("LLC v1.aoe2scenario");
+  fireEvent.click(screen.getAllByRole("button", { name: "Smazat" })[1]!);
+  fireEvent.click(within(screen.getByTestId("potvrzeni")).getByRole("button", { name: "Smazat" }));
+  const radky = screen.getAllByTestId("verze-scenare");
+  expect(await within(radky[1]!).findByRole("alert")).toHaveTextContent(VETA);
+  expect(within(radky[1]!).getByRole("alert")).toHaveClass("chyba-smazani");
+  expect(within(radky[0]!).queryByRole("alert")).toBeNull();
+  expect(globalni).toEqual([]);
+  // Seznam se po odmítnutí nenačítá znovu; věta zůstává, dokud se nic nestane.
+  expect(diploApi.verze).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId("chyba-smazani")).toBeTruthy();
+  // Další akce (tady Přibalit automatizace) ji uklidí.
+  fireEvent.click(screen.getAllByRole("button", { name: "Přibalit automatizace" })[0]!);
+  expect(screen.queryByTestId("chyba-smazani")).toBeNull();
 });
 
 it("nahrání bez sondy to řekne", async () => {

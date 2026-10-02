@@ -26,15 +26,15 @@ export const diploApi = {
   verze: () => fetch(cesta("/api/diplo/scenar")).then((r) => json<{ verze: ScenarVerze[] }>(r)),
   /**
    * Soubor jde syrově v těle (žádný multipart — ani nová závislost); jméno
-   * a poznámka v hlavičkách, URL-kódované, protože hlavička diakritiku neunese.
+   * v hlavičce, URL-kódované, protože hlavička diakritiku neunese. Poznámku
+   * („Co je nového“) formulář od 2. 10. 2026 nemá a neposílá.
    */
-  nahrat: (soubor: File, poznamka: string) =>
+  nahrat: (soubor: File) =>
     fetch(cesta("/api/diplo/scenar"), {
       method: "POST",
       headers: {
         "content-type": "application/octet-stream",
         "x-jmeno-souboru": encodeURIComponent(soubor.name),
-        ...(poznamka ? { "x-poznamka": encodeURIComponent(poznamka) } : {}),
       },
       body: soubor,
     }).then((r) => json<{
@@ -46,7 +46,7 @@ export const diploApi = {
         vlastniMinimapa: { zdrojId: number; prevzata: boolean } | null;
       }>(r)),
   aktivovat: (id: number) => post(`/api/diplo/scenar/${id}/aktivni`),
-  /** Smaže verzi; aktivní nebo hranou server odmítne (409 s důvodem). */
+  /** Smaže verzi; aktivní nebo hranou běžícím zápasem server odmítne (409 s důvodem). */
   smazat: (id: number) => fetch(cesta(`/api/diplo/scenar/${id}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   /** Verze `id` převezme vlastní minimapu (obrázek ze hry) verze `zdrojId`; jiná mapa = 409. */
   prevzitMinimapu: (id: number, zdrojId: number) => post(`/api/diplo/scenar/${id}/minimapa-z/${zdrojId}`),

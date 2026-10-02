@@ -21,9 +21,15 @@ export function diploZapasu(data: DiploData, zapasId: number): DiploZapas | unde
   return data.zapasy.find((z) => z.zapasId === zapasId);
 }
 
-/** Verze scénáře, kterou zápas hraje (otisknutá při založení); bez otisku aktivní. */
-export function verzeZapasu(data: DiploData, d: DiploZapas | undefined) {
-  return d?.scenarId != null ? (data.verze[d.scenarId] ?? null) : data.aktivni;
+/**
+ * Verze scénáře, kterou zápas hraje (otisknutá při založení). Běžící zápas
+ * bez otisku (založený, když ještě žádná verze nebyla) hraje aktivní.
+ * Dohraný nebo zrušený bez otisku přišel o verzi smazáním (smazVerzi) —
+ * ten nedostane žádnou, ať karta neukáže cizí mapu: null = bez mapy a pravidel.
+ */
+export function verzeZapasu(data: DiploData, d: DiploZapas | undefined, zapas: Pick<ZapasView, "stav">) {
+  if (d?.scenarId != null) return data.verze[d.scenarId] ?? null;
+  return zapas.stav === "bezi" ? data.aktivni : null;
 }
 
 /**
@@ -48,7 +54,7 @@ export function KartaRole({ zapas, data, ja }: Props) {
   }, [d?.stav]);
 
   if (!d) return null;
-  const verze = verzeZapasu(data, d);
+  const verze = verzeZapasu(data, d, zapas);
   const moje = d.role.find((r) => r.hracId === ja);
 
   return (

@@ -48,8 +48,12 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
   const [otevreno, setOtevreno] = useState(false);
   const [verze, setVerze] = useState<ScenarVerze[]>([]);
   const [soubor, setSoubor] = useState<File | null>(null);
-  const [poznamka, setPoznamka] = useState("");
   const [vysledek, setVysledek] = useState<string | null>(null);
+  // Proč server smazání odmítl — přímo pod řádkem verze. Obecná chyba
+  // z `hlidej` sedí v App až nahoře nad panelem akce, správa scénáře je
+  // dole pod ním: uživatel ji neviděl a měl za to, že mazání nefunguje
+  // (2. 10. 2026). Drží se do další akce ve správě.
+  const [chybaSmazani, setChybaSmazani] = useState<{ id: number; text: string } | null>(null);
   // Nahrání trvá i vteřiny (rozbor na serveru) — druhé kliknutí by poslalo
   // soubor podruhé a vznikly by dvě verze stejného jména.
   const [nahrava, setNahrava] = useState(false);
@@ -65,9 +69,10 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
 
   const nahrat = (formular: HTMLFormElement) => {
     if (!soubor) return;
+    setChybaSmazani(null);
     setNahrava(true);
     void hlidej(async () => {
-      const r = await diploApi.nahrat(soubor, poznamka);
+      const r = await diploApi.nahrat(soubor);
       const nahrano = r.chybaRozboru
         ? `Soubor je uložený, ale nepodařilo se ho přečíst: ${r.chybaRozboru} — pravidla a mapa zůstávají z aktivní verze.`
         : r.aktivni
@@ -77,23 +82,30 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
       const sMinimapou = nahrano + vetaMinimapy(r.vlastniMinimapa);
       setVysledek(r.chybaSondy ? `${sMinimapou} Sondu se nepodařilo přibalit: ${r.chybaSondy}` : sMinimapou);
       setSoubor(null);
-      setPoznamka("");
       // Pole souboru si vybraný soubor drží samo; po nahrání má být prázdné
       // jako zbytek formuláře, jinak by vypadalo, že jde nahrát znovu.
       formular.reset();
       setVerze((await diploApi.verze()).verze);
     }).finally(() => setNahrava(false));
   };
-  const aktivovat = (id: number) =>
+  const aktivovat = (id: number) => {
+    setChybaSmazani(null);
     void hlidej(async () => {
       await diploApi.aktivovat(id);
       setVerze((await diploApi.verze()).verze);
     });
-  const prevzitMinimapu = (id: number, zdrojId: number) =>
+  };
+  const prevzitMinimapu = (id: number, zdrojId: number) => {
+    setChybaSmazani(null);
     void hlidej(async () => {
       await diploApi.prevzitMinimapu(id, zdrojId);
       setVerze((await diploApi.verze()).verze);
     });
+  };
+  const zeptejSe = (co: "original" | "smazat", v: ScenarVerze) => {
+    setChybaSmazani(null);
+    setPotvrdit({ co, verze: v });
+  };
   const potvrzeno = () => {
     if (!potvrdit) return;
     const { co, verze: v } = potvrdit;
@@ -101,13 +113,21 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
     if (co === "original") stahni(diploApi.souborUrl(v.id, true), v.jmenoSouboru);
     else
       void hlidej(async () => {
-        await diploApi.smazat(v.id);
+        // Odmítnutí (409 s českou větou) patří k řádku, ne do obecné chyby
+        // nahoře; síť a ostatní selhání dál hlásí hlidej.
+        try {
+          await diploApi.smazat(v.id);
+        } catch (err) {
+          setChybaSmazani({ id: v.id, text: err instanceof Error ? err.message : "Smazat se nepovedlo." });
+          return;
+        }
         setVerze((await diploApi.verze()).verze);
       });
   };
   // Přibalení trvá vteřiny (Python na serveru) — tlačítko je mezitím zamčené.
   const [pribaluje, setPribaluje] = useState<number | null>(null);
   const pribalSondu = (id: number) => {
+    setChybaSmazani(null);
     setPribaluje(id);
     void hlidej(async () => {
       await diploApi.pribalSondu(id);
@@ -125,10 +145,6 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
       >
         <label>
           Soubor scénáře <input type="file" accept=".aoe2scenario" onChange={(e) => setSoubor(e.target.files?.[0] ?? null)} />
-        </label>
-        <label>
-          {/* Stejný strop jako na serveru (routes.ts, 500 znaků). */}
-          Co je nového <input value={poznamka} maxLength={500} onChange={(e) => setPoznamka(e.target.value)} />
         </label>
         <button type="submit" className="tlacitko" disabled={!soubor || nahrava}>
           Nahrát
@@ -163,7 +179,6 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
                   {/* Originál pod jménem od autora; hostovi a do lobby jde pod jménem pro hru. */}
                   <span className="jmeno-verze">{v.jmenoSouboru}</span> <small className="jmeno-hry">({v.jmenoHry.replace(/\.aoe2scenario$/, "")})</small> · {v.nahralJmeno} ·{" "}
                   {new Date(v.nahrano).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  {v.poznamka ? <> · {v.poznamka}</> : null}
                   {v.aktivni ? <strong> · aktivní</strong> : null}
                   {!v.aktivni && v.rozbor ? (
                     <button type="button" onClick={() => aktivovat(v.id)}>
@@ -181,7 +196,7 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
                   ))}
                 </div>
                 <div className="ovladani">
-                  <button type="button" onClick={() => setPotvrdit({ co: "original", verze: v })}>
+                  <button type="button" onClick={() => zeptejSe("original", v)}>
                     Stáhnout originál
                   </button>
                   {/* Hlavní akce, dokud verze nemá dnešní sondu (chybí, nebo je zastaralá). */}
@@ -194,7 +209,15 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
                   >
                     Přibalit automatizace
                   </button>
-                  <button type="button" className="cta" disabled={!sonda} onClick={() => stahni(diploApi.souborUrl(v.id), v.jmenoHry)}>
+                  <button
+                    type="button"
+                    className="cta"
+                    disabled={!sonda}
+                    onClick={() => {
+                      setChybaSmazani(null);
+                      stahni(diploApi.souborUrl(v.id), v.jmenoHry);
+                    }}
+                  >
                     Stáhnout scénář
                   </button>
                   {zdroj ? (
@@ -202,10 +225,15 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
                       Převzít vlastní minimapu z verze {zdroj.id}
                     </button>
                   ) : null}
-                  <button type="button" onClick={() => setPotvrdit({ co: "smazat", verze: v })}>
+                  <button type="button" onClick={() => zeptejSe("smazat", v)}>
                     Smazat
                   </button>
                 </div>
+                {chybaSmazani?.id === v.id ? (
+                  <p className="chyba-smazani" role="alert" data-testid="chyba-smazani">
+                    {chybaSmazani.text}
+                  </p>
+                ) : null}
               </li>
             );
           })}

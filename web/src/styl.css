@@ -1938,6 +1938,11 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 .verze-scenare li .ovladani { display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; margin-top: 0.3rem; }
 .verze-scenare li .ovladani button { padding: 0.25rem 0.7rem; font-size: 0.85rem; }
 .verze-scenare .jmeno-hry { color: var(--tlumene); }
+/* Proč server smazání odmítl — přímo pod řádkem, ať je to vidět u tlačítka. */
+.verze-scenare .chyba-smazani {
+  margin: 0.35rem 0 0; padding: 0.3rem 0.6rem; color: var(--chyba); font-size: 0.9rem;
+  border-left: 3px solid var(--cervena-varovani); background: color-mix(in srgb, var(--cervena-varovani) 12%, transparent);
+}
 /* Bublina „Přibalit automatizace“ zalomená a od levého kraje tlačítka — na
    telefonu by jednořádková vyjela z obrazovky. */
 .verze-scenare .napoveda::after { left: 0; right: auto; white-space: normal; max-width: min(18rem, 80vw); }

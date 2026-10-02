@@ -275,3 +275,13 @@ it("dvě AI v sestavě rozliší barva: řádky, cíle, spojenec i přehled", ()
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining("AI (p3): Nájezdník"));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Žoldák (AI (p5)) -> Pakt s: Hráč 2"));
 });
+
+// Smazaná verze (2. 10. 2026): dohraný zápas přijde o otisk a pult se
+// vykreslí bez mapy, místo aby ukázal mapu aktivní verze.
+it("pult dohraného zápasu, jehož verze byla smazána, se vykreslí bez mapy", () => {
+  const data = gmData("rozeslano", ROLE_LOS, "h1");
+  render(<PultGm zapas={{ ...zapas, stav: "dohrano" }} data={{ ...data, verze: {}, zapasy: data.zapasy.map((z) => ({ ...z, scenarId: null })) }} hlidej={spust} />);
+  odkryj();
+  expect(screen.getAllByRole("img", { name: NAZEV_ROLE.kat }).length).toBeGreaterThan(0);
+  expect(screen.queryByRole("img", { name: /^Mapa scénáře/ })).toBeNull();
+});

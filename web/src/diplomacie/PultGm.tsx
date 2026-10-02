@@ -24,7 +24,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   const [ptaSeNaZpet, setPtaSeNaZpet] = useState(false);
   const d = diploZapasu(data, zapas.id);
   if (!d) return null;
-  const verze = verzeZapasu(data, d);
+  const verze = verzeZapasu(data, d, zapas);
   const hraci = zapas.ucastnici.filter((u) => u.hracId !== d.gmHracId).sort((a, b) => a.barva - b.barva);
   // Sdílené s kartou role: víc AI se jmenuje stejně, rozliší je barva. Holý
   // text je pro popisky roletek a přehled do schránky; na stránce jméno

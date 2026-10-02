@@ -37,10 +37,11 @@ it("los a rozeslání jdou bez těla, zpět a nástupce s tělem", async () => {
 
 // Multipart bez nové závislosti: soubor jde syrově v těle, jméno a poznámka
 // v hlavičkách (URL-kódované kvůli diakritice).
-it("nahrání posílá soubor jako octet-stream, jméno a poznámku v hlavičkách", async () => {
+// Poznámku („Co je nového“) formulář nemá — hlavička x-poznamka nejde.
+it("nahrání posílá soubor jako octet-stream a jméno v hlavičce, poznámku ne", async () => {
   const f = stubFetch({ id: 3, aktivni: true, chybaRozboru: null });
   const soubor = new File([new Uint8Array([1, 2, 3])], "Diplomacie v3.aoe2scenario");
-  await expect(diploApi.nahrat(soubor, "nová mapa")).resolves.toEqual({ id: 3, aktivni: true, chybaRozboru: null });
+  await expect(diploApi.nahrat(soubor)).resolves.toEqual({ id: 3, aktivni: true, chybaRozboru: null });
   const [url, init] = f.mock.calls[0] as [string, RequestInit];
   expect(url).toBe("/api/diplo/scenar");
   expect(init.method).toBe("POST");
@@ -48,15 +49,7 @@ it("nahrání posílá soubor jako octet-stream, jméno a poznámku v hlavičká
   expect(init.headers).toEqual({
     "content-type": "application/octet-stream",
     "x-jmeno-souboru": encodeURIComponent("Diplomacie v3.aoe2scenario"),
-    "x-poznamka": encodeURIComponent("nová mapa"),
   });
-});
-
-it("bez poznámky hlavičku poznámky neposílá", async () => {
-  const f = stubFetch({ id: 3, aktivni: true, chybaRozboru: null });
-  await diploApi.nahrat(new File([new Uint8Array([1])], "a.aoe2scenario"), "");
-  const [, init] = f.mock.calls[0] as [string, RequestInit];
-  expect(init.headers).not.toHaveProperty("x-poznamka");
 });
 
 it("chybu serveru přeloží na výjimku s jeho hláškou", async () => {

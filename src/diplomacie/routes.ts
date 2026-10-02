@@ -199,6 +199,8 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
         const jmeno = hlavicka(request, "x-jmeno-souboru");
         if (jmeno === null || !jePlatneJmenoScenare(jmeno)) throw new HttpError(400, "Soubor musí být .aoe2scenario a jméno bez cesty (nejvýš 100 znaků).");
         // Poznámka se čte před rozborem: ať se nečeká sekundy na odmítnutí.
+        // Formulář ji od 2. 10. 2026 neposílá (pole „Co je nového“ zmizelo);
+        // hlavička zůstává kvůli zpětné kompatibilitě a sloupec poznamka taky.
         const poznamka = hlavicka(request, "x-poznamka");
         if (poznamka !== null && poznamka.length > MAX_DELKA_POZNAMKY) throw new HttpError(400, `Poznámka má nejvýš ${MAX_DELKA_POZNAMKY} znaků.`);
         const data = request.body;
@@ -267,7 +269,7 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
     return { ok: true };
   });
 
-  // Smazání verze (správa scénáře): aktivní a hranou verzi db odmítne
+  // Smazání verze (správa scénáře): aktivní verzi a verzi běžícího zápasu db odmítne
   // s větou, která řekne proč. Nastavení lobby běžící akce se přepočítá —
   // smazaná verze zmizí ze starších jmen kontroly lobby.
   app.delete("/api/diplo/scenar/:id", async (request) => {

@@ -380,11 +380,14 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   se číslo znovu nepoužije) a podle něj porovnává všechno — kontrolu lobby,
   uložení do složky hry i data ze hry; jméno, pod kterým autor soubor
   nahrál, zůstává jen originálu. Řádek verze ve správě: jméno, kdo, kdy,
-  poznámka, „aktivní“ / „Nastavit jako aktivní“ a tlačítka **Stáhnout
+  „aktivní“ / „Nastavit jako aktivní“ a tlačítka **Stáhnout
   originál** (s upozorněním, že originál nepošle průběh hry na stránku),
   **Přibalit automatizace** (zlaté, dokud verze nemá dnešní sondu) a
   **Stáhnout scénář** (zlaté, zamčené, dokud sondu nemá). **Smazat** jde
-  verzi, která není aktivní a nehraje ji žádný zápas.
+  verzi, která není aktivní a nehraje ji běžící zápas otevřené akce;
+  dohrané a zrušené zápasy o ni přijdou (karta role a pult GM se pak
+  ukážou bez mapy). Proč smazání neprošlo, napíše web červeně přímo pod
+  řádek verze. Pole „Co je nového“ formulář nahrání nemá.
 - **Host** má v kroku „Zakládáš!“ navíc **Stáhnout scénář** (verzi, kterou
   zápas hraje) a cestu, kam soubor uložit —
   `%USERPROFILE%\Games\Age of Empires 2 DE\<Steam ID nebo XUID>\resources\_common\scenario\`,

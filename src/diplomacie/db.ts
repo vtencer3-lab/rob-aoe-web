@@ -206,22 +206,36 @@ export async function ulozSondu(id: number, sonda: SondaScenare, dataSonda: Buff
 }
 
 /**
- * Smaže verzi scénáře (správa scénáře). Aktivní verzi ani verzi, kterou
- * hraje nějaký zápas (i dohraný — zápas si ji otiskl kvůli pravidlům), smazat
- * nejde: null = smazáno, jinak kód a česká věta pro odpověď.
+ * Smaže verzi scénáře (správa scénáře): null = smazáno, jinak kód a česká
+ * věta pro odpověď. Nejde smazat aktivní verzi ani verzi, kterou hraje
+ * běžící zápas otevřené akce — host ji má v lobby a pravidla se počítají
+ * z ní. Dohrané a zrušené zápasy (a zápasy uzavřených akcí) ji neblokují:
+ * uživatel 2. 10. 2026 chtěl uklidit verze ze zkoušek. Jejich otisk se
+ * vynuluje a karta i pult pak mapu ani pravidla neukážou (`verzeZapasu`).
  */
 export async function smazVerzi(id: number): Promise<{ kod: 404 | 409; chyba: string } | null> {
   return withTransaction(async (c) => {
     const { rows } = await c.query<{ aktivni: boolean; poradi: number }>("SELECT aktivni, poradi FROM diplo_scenar WHERE id = $1 FOR UPDATE", [id]);
     const verze = rows[0];
     if (!verze) return { kod: 404, chyba: "Taková verze není." };
-    const jmeno = jmenoScenareProHru(verze.poradi);
-    if (verze.aktivni) return { kod: 409, chyba: `${jmeno} je aktivní verze — smazat ji nejde. Nejdřív nastav jako aktivní jinou.` };
-    const { rows: zapasy } = await c.query<{ zapas_id: number }>("SELECT zapas_id FROM diplo_zapas WHERE scenar_id = $1 ORDER BY zapas_id", [id]);
-    if (zapasy.length > 0) {
-      const cisla = zapasy.map((z) => z.zapas_id).join(", ");
-      return { kod: 409, chyba: `${jmeno} hraje ${zapasy.length === 1 ? "zápas" : "zápasy"} č. ${cisla} — smazat ji nejde.` };
+    if (verze.aktivni) return { kod: 409, chyba: "Aktivní verzi nejde smazat — nejdřív nastav jinou jako aktivní." };
+    // Stejná definice „běží“ jako beziciZapasyDiplo.
+    const { rows: bezici } = await c.query<{ poradi: number }>(
+      `SELECT z.poradi
+         FROM diplo_zapas d
+         JOIN zapas z ON z.id = d.zapas_id
+         JOIN akce a ON a.id = z.akce_id
+        WHERE d.scenar_id = $1 AND a.stav <> 'konec' AND z.stav = 'bezi'
+        ORDER BY z.poradi`,
+      [id],
+    );
+    if (bezici.length > 0) {
+      const cisla = bezici.map((z) => `#${z.poradi}`).join(", ");
+      const jmeno = jmenoScenareProHru(verze.poradi);
+      const [zapas, az] = bezici.length === 1 ? ["zápas", "bude dohraný nebo zrušený"] : ["zápasy", "budou dohrané nebo zrušené"];
+      return { kod: 409, chyba: `${jmeno} hraje běžící ${zapas} ${cisla} — smazat ji půjde, až ${az}.` };
     }
+    await c.query("UPDATE diplo_zapas SET scenar_id = NULL WHERE scenar_id = $1", [id]);
     await c.query("DELETE FROM diplo_scenar WHERE id = $1", [id]);
     return null;
   });
