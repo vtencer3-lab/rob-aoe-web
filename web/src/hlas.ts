@@ -196,8 +196,15 @@ function dekoduj(b64: string): Uint8Array {
  * rezervy na zpoždění sítě.
  */
 export const ZASOBA_MS = 450;
-/** Jak dlouho se čeká na kousek, který nedorazil, než se přeskočí. */
-export const PRESKOK_MS = 1_500;
+/** Pod kolik ms musí zásoba klesnout, aby `waiting` znamenalo, že opravdu došla. */
+const DOSLO_MS = 100;
+/**
+ * Jak dlouho se čeká na kousek, který nedorazil, než se přeskočí. Krátce:
+ * mluvčí posílá kousky jeden po druhém, takže když dorazil následující,
+ * ten před ním už nepřijde (odeslání selhalo i napodruhé) — čekání jen
+ * prodlužuje ticho.
+ */
+export const PRESKOK_MS = 500;
 /** Po jak dlouhém tichu ze sítě se sezení uzavře samo (ztracená značka konce). */
 export const TICHO_MS = 5_000;
 
@@ -252,8 +259,10 @@ class Prehravani {
       });
       // Zásoba došla uprostřed řeči: nenechat prohlížeč naskočit s prvním
       // dalším kouskem (hned by došla zas), ale nasbírat ji znovu celou.
+      // `waiting` ale Chrome občas ohlásí i hned po `play()`, když zásoba
+      // je a jen se rozbíhá — to zádrhel není a zastavení by hlas zdrželo.
       this.#audio.addEventListener("waiting", () => {
-        if (!this.#hraje || this.#konec) return;
+        if (!this.#hraje || this.#konec || this.#zasobaMs() >= DOSLO_MS) return;
         this.#hraje = false;
         this.#audio.pause();
       });

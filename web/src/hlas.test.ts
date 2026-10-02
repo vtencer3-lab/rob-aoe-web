@@ -387,3 +387,15 @@ it("ztlumení ostatních adminů neztlumí mluvčího, kterého pustil mód", ()
   expect(prvek).toHaveBeenCalledTimes(1);
   odhlasit();
 });
+
+// Chrome ohlásí `waiting` i hned po play(), když se přehrávání teprve
+// rozbíhá. Zásoba je — zastavit by znamenalo hlas zbytečně zdržet.
+it("waiting se zásobou v zádech přehrávání nezastaví", () => {
+  const p = falesnePrehravani([0.24, 0.3]);
+  p.kousek(0);
+  p.kousek(1);
+  expect(p.audio.play).toHaveBeenCalledTimes(1);
+  p.udalostAudia("waiting");
+  expect(p.audio.pause).not.toHaveBeenCalled();
+  p.odhlasit();
+});
