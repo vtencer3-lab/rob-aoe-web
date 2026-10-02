@@ -1,4 +1,4 @@
-import { Fragment, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { BARVA_NAZEV, type Barva } from "../../../src/shared/types.js";
 import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
 import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
@@ -26,8 +26,6 @@ interface Props {
   /** Které starty ukázat a co u nich stojí; bez popisků je mapa jen obrázek. */
   popisky?: PopiskyStartu;
   velikost?: "mala" | "velka";
-  /** Řádek pod mapou, který vysvětlí zvláštní druhy popisků — jen ty, které na mapě opravdu jsou. */
-  legenda?: boolean;
 }
 
 /**
@@ -38,10 +36,10 @@ export function popiskyStartu(verze: ScenarVerze, jmena: Partial<Record<Barva, s
   return Object.fromEntries((verze.rozbor?.starty ?? []).map((s) => [s.barva, { text: jmena[s.barva] ?? BARVA_NAZEV[s.barva] }]));
 }
 
-/** Pořadí druhů v legendě a v bublině — nejdřív to, co vidí každý. */
+/** Pořadí druhů v bublině a ve třídách značky — nejdřív to, co vidí každý. */
 const PORADI_DRUHU: readonly DruhPopisku[] = ["nastupce", "obet", "pouto", "spojenec", "ja"];
 
-/** Jak druh pojmenovat v bublině popisku a v legendě; vlastní start se popisuje sám („Tady začínáš“). */
+/** Jak druh pojmenovat v bublině popisku; vlastní start se popisuje sám („Tady začínáš“). */
 const NAZEV_DRUHU: Record<Exclude<DruhPopisku, "ja">, string> = {
   nastupce: NAZEV_ROLE.nastupce,
   obet: "tvá oběť",
@@ -49,19 +47,10 @@ const NAZEV_DRUHU: Record<Exclude<DruhPopisku, "ja">, string> = {
   spojenec: "druhý Nájezdník",
 };
 
-/** Čím je druh na mapě vidět — první půlka položky legendy. */
-const ZNAK_DRUHU: Record<Exclude<DruhPopisku, "ja">, string> = {
-  nastupce: "koruna",
-  obet: "červeně",
-  pouto: "zlatý rámeček",
-  spojenec: "zeleně",
-};
-
 const serazene = (druhy: readonly DruhPopisku[]) => PORADI_DRUHU.filter((d) => druhy.includes(d));
 
 /** Nájezdníci můžou být i tři (GM smí rozeslat nestandardní složení): pak je spojenec „další“, ne „druhý“. */
-const nazevDruhu = (d: Exclude<DruhPopisku, "ja">, spojencu: number, mnozne = false) =>
-  d === "spojenec" && spojencu > 1 ? (mnozne ? "další Nájezdníci" : "další Nájezdník") : NAZEV_DRUHU[d];
+const nazevDruhu = (d: Exclude<DruhPopisku, "ja">, spojencu: number) => (d === "spojenec" && spojencu > 1 ? "další Nájezdník" : NAZEV_DRUHU[d]);
 
 /** Bublina popisku: text a za pomlčkou, čím hráč pro diváka je. */
 function bublina(p: PopisekStartu, spojencu: number): string {
@@ -82,49 +71,31 @@ function bublina(p: PopisekStartu, spojencu: number): string {
  * Druh popisku je třída `druh-*` na značce — vzhled je v CSS; Nástupce
  * císaře má nad značkou korunu (znak role), u vlastní mapy nad kosočtvercem.
  */
-export function MapaScenare({ verze, popisky = {}, velikost = "mala", legenda = false }: Props) {
+export function MapaScenare({ verze, popisky = {}, velikost = "mala" }: Props) {
   if (!verze.rozbor) return null;
   const viditelne = verze.rozbor.starty.flatMap((s) => {
     const popisek = popisky[s.barva];
     return popisek ? [{ ...s, popisek, druhy: serazene(popisek.druhy ?? []) }] : [];
   });
-  // Legenda jmenuje jen to, co na mapě opravdu je — start bez pozice
-  // v rozboru se nekreslí, tak se o něm ani nemluví.
-  const vLegende = PORADI_DRUHU.flatMap((d) => (d !== "ja" && viditelne.some((s) => s.druhy.includes(d)) ? [d] : []));
   const spojencu = viditelne.filter((s) => s.druhy.includes("spojenec")).length;
   return (
-    <>
-      <figure className={`mapa-scenare ${velikost}${verze.minimapaVlastni ? " vlastni" : ""}`}>
-        <img src={diploApi.minimapaUrl(verze.id, verze.minimapaOtisk)} alt={`Mapa scénáře ${verze.jmenoSouboru}`} width={verze.rozbor.minimapa.sirka} height={verze.rozbor.minimapa.vyska} />
-        {viditelne.map((s) => (
-          <span
-            key={s.barva}
-            data-testid="start"
-            className={`start barva-${s.barva}${s.druhy.map((d) => ` druh-${d}`).join("")}`}
-            // `--x` čte CSS: popisek drží osu značky, dokud se vejde do mapy, jinak se posune dovnitř.
-            style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%`, "--x": s.x } as CSSProperties}
-            title={BARVA_NAZEV[s.barva]}
-          >
-            {s.druhy.includes("nastupce") ? <img className="koruna" src={ZNAK_ROLE.nastupce} alt={NAZEV_ROLE.nastupce} width={208} height={208} /> : null}
-            <span className="popisek" title={bublina(s.popisek, spojencu)}>
-              {s.popisek.text}
-            </span>
+    <figure className={`mapa-scenare ${velikost}${verze.minimapaVlastni ? " vlastni" : ""}`}>
+      <img src={diploApi.minimapaUrl(verze.id, verze.minimapaOtisk)} alt={`Mapa scénáře ${verze.jmenoSouboru}`} width={verze.rozbor.minimapa.sirka} height={verze.rozbor.minimapa.vyska} />
+      {viditelne.map((s) => (
+        <span
+          key={s.barva}
+          data-testid="start"
+          className={`start barva-${s.barva}${s.druhy.map((d) => ` druh-${d}`).join("")}`}
+          // `--x` čte CSS: popisek drží osu značky, dokud se vejde do mapy, jinak se posune dovnitř.
+          style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%`, "--x": s.x } as CSSProperties}
+          title={BARVA_NAZEV[s.barva]}
+        >
+          {s.druhy.includes("nastupce") ? <img className="koruna" src={ZNAK_ROLE.nastupce} alt={NAZEV_ROLE.nastupce} width={208} height={208} /> : null}
+          <span className="popisek" title={bublina(s.popisek, spojencu)}>
+            {s.popisek.text}
           </span>
-        ))}
-      </figure>
-      {legenda && vLegende.length > 0 ? (
-        <p className="legenda-mapy" data-testid="legenda-mapy">
-          {vLegende.map((d, i) => (
-            <Fragment key={d}>
-              {i > 0 ? " · " : null}
-              <span className={`polozka druh-${d}`}>
-                {d === "nastupce" ? <img className="koruna" src={ZNAK_ROLE.nastupce} alt="" width={208} height={208} /> : null}
-                <span className="znak">{ZNAK_DRUHU[d]}</span> — {nazevDruhu(d, spojencu, true)}
-              </span>
-            </Fragment>
-          ))}
-        </p>
-      ) : null}
-    </>
+        </span>
+      ))}
+    </figure>
   );
 }

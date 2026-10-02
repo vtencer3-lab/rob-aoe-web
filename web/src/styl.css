@@ -1738,16 +1738,6 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .druh-spojenec .popisek { color: var(--ok-svetle); border: 1px solid var(--ok); }
 .mapa-scenare .druh-pouto .popisek { color: var(--zlato-svetle); border: 3px double var(--zlato); }
 .mapa-scenare .druh-obet .popisek { color: var(--chyba); border: 1px solid var(--chyba); }
-/* Legenda pod mapou na kartě role: jen druhy, které na mapě jsou; slovo,
-   které říká „čím“, nese stejnou barvu jako popisek na mapě. */
-.legenda-mapy { max-width: calc(34rem + 2rem + 2px); margin: 0.3rem auto 0.6rem; color: var(--tlumene); font-size: 0.85rem; line-height: 1.5; text-align: center; }
-.legenda-mapy .polozka { white-space: nowrap; }
-.legenda-mapy .koruna { width: 1.25em; height: 1.25em; margin-right: 0.3em; vertical-align: -0.25em; }
-.legenda-mapy .druh-nastupce .znak { color: var(--zlato); }
-.legenda-mapy .druh-spojenec .znak { color: var(--ok-svetle); }
-.legenda-mapy .druh-pouto .znak { color: var(--zlato-svetle); }
-.legenda-mapy .druh-obet .znak { color: var(--chyba); }
-.legenda-mapy .znak { font-weight: 700; }
 /* Karta role (Diplomacie, KartaRole.tsx): sekce pod kontrolou lobby se
    záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
    kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,

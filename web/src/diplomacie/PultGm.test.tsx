@@ -226,9 +226,8 @@ it("odkrytý pult ukáže velkou minimapu se všemi starty a jmény", () => {
   const starty = screen.getAllByTestId("start");
   expect(starty).toHaveLength(7);
   expect(starty.find((s) => s.classList.contains("barva-1"))!.textContent).toBe("Hráč 1");
-  // Dokud Nástupce není zvolený, koruna na mapě není; legenda v pultu není nikdy.
+  // Dokud Nástupce není zvolený, koruna na mapě není.
   expect(document.querySelector(".mapa-scenare .koruna")).toBeNull();
-  expect(screen.queryByTestId("legenda-mapy")).toBeNull();
 });
 
 // Jakmile GM Nástupce zvolí, nese na velké mapě korunu jako na kartách

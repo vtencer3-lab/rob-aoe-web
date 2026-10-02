@@ -12,7 +12,6 @@ const naKarte = () => within(document.querySelector<HTMLElement>(".karta-role .r
 /** Značka startu na mapě podle barvy; undefined, když tam není. */
 const start = (barva: number) => screen.queryAllByTestId("start").find((s) => s.classList.contains(`barva-${barva}`));
 const odkryj = () => fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
-const legenda = () => screen.queryByTestId("legenda-mapy")?.textContent ?? null;
 
 it("před rozesláním čeká", () => {
   render(<KartaRole zapas={zapas} data={stavDiplo("losovano", [])} ja="h2" />);
@@ -120,7 +119,6 @@ it("obyčejná role vidí na mapě jen svůj start a Nástupce s korunou", () =>
   expect(start(1)!.textContent).toBe("Hráč 1");
   expect(within(start(1)!).getByRole("img", { name: "Nástupce císaře" })).toHaveClass("koruna");
   expect(start(2)!.querySelector(".koruna")).toBeNull();
-  expect(legenda()).toBe("koruna — Nástupce císaře");
 });
 
 it("Nájezdník vidí na mapě ostatní Nájezdníky jako spojence", () => {
@@ -131,12 +129,11 @@ it("Nájezdník vidí na mapě ostatní Nájezdníky jako spojence", () => {
   expect(start(5)!.className).toBe("start barva-5 druh-spojenec");
   expect(start(5)!.textContent).toBe("Hráč 5");
   expect(within(start(5)!).getByText("Hráč 5")).toHaveAttribute("title", "Hráč 5 — druhý Nájezdník");
-  expect(legenda()).toBe("koruna — Nástupce císaře · zeleně — druhý Nájezdník");
-  // Tři Nájezdníci (nestandardní složení): oba spojenci, legenda v množném čísle.
+  // Tři Nájezdníci (nestandardní složení): oba spojenci, v bublině „další“.
   rerender(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [najezdnik("h2"), najezdnik("h5"), najezdnik("h8")])} ja="h2" />);
   expect(screen.getAllByTestId("start")).toHaveLength(4);
   expect(start(8)).toHaveClass("druh-spojenec");
-  expect(legenda()).toBe("koruna — Nástupce císaře · zeleně — další Nájezdníci");
+  expect(within(start(8)!).getByText("Hráč 8")).toHaveAttribute("title", "Hráč 8 — další Nájezdník");
 });
 
 // Oběť je na mapě červeně (třída druhu → barva chyby z palety v CSS).
@@ -146,7 +143,6 @@ it("Kat vidí na mapě svou oběť v třídě nebezpečí", () => {
   expect(screen.getAllByTestId("start")).toHaveLength(3);
   expect(start(4)!.className).toBe("start barva-4 druh-obet");
   expect(within(start(4)!).getByText("Hráč 4")).toHaveAttribute("title", "Hráč 4 — tvá oběť");
-  expect(legenda()).toBe("koruna — Nástupce císaře · červeně — tvá oběť");
 });
 
 it("Žoldák vidí na mapě hráče, se kterým má pokrevní pouto", () => {
@@ -155,7 +151,6 @@ it("Žoldák vidí na mapě hráče, se kterým má pokrevní pouto", () => {
   expect(screen.getAllByTestId("start")).toHaveLength(3);
   expect(start(6)!.className).toBe("start barva-6 druh-pouto");
   expect(within(start(6)!).getByText("Hráč 6")).toHaveAttribute("title", "Hráč 6 — pokrevní pouto");
-  expect(legenda()).toBe("koruna — Nástupce císaře · zlatý rámeček — pokrevní pouto");
 });
 
 // Nástupce sám má korunu nad vlastním „Tady začínáš“; hráč se dvěma vztahy
@@ -172,5 +167,4 @@ it("Nástupce má korunu na vlastním startu; oběť, která je Nástupcem, koru
   expect(start(1)!.className).toBe("start barva-1 druh-nastupce druh-obet");
   expect(start(1)!.querySelector("img.koruna")).toBeTruthy();
   expect(within(start(1)!).getByText("Hráč 1")).toHaveAttribute("title", "Hráč 1 — Nástupce císaře, tvá oběť");
-  expect(legenda()).toBe("koruna — Nástupce císaře · červeně — tvá oběť");
 });

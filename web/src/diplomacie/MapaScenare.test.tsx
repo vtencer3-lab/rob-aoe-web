@@ -12,7 +12,6 @@ it("bez popisků jen obrázek", () => {
   render(<MapaScenare verze={verze} />);
   expect(screen.getByRole("img", { name: "Mapa scénáře LLC.aoe2scenario" }).getAttribute("src")).toMatch(/\/api\/diplo\/scenar\/3\/minimapa\.webp$/);
   expect(screen.queryAllByTestId("start")).toHaveLength(0);
-  expect(screen.queryByTestId("legenda-mapy")).toBeNull();
 });
 
 // Pult GM a správa scénáře: popisek u každého startu — jméno, kdo na barvě
@@ -26,7 +25,6 @@ it("všechny starty: jméno hráče, bez něj název barvy", () => {
   // Poloha jde do stylu i jako `--x`: podle ní CSS drží popisek uvnitř mapy.
   expect(start(2).style.left).toBe("50%");
   expect(start(2).style.getPropertyValue("--x")).toBe("0.5");
-  expect(screen.queryByTestId("legenda-mapy")).toBeNull();
 });
 
 // Kreslí se jen starty, ke kterým volající dal popisek — karta role dává
@@ -48,7 +46,7 @@ it("druhy popisků dávají třídy, bublinu a Nástupci korunu", () => {
     4: { text: "Karel", druhy: ["pouto"] },
     5: { text: "Jana", druhy: ["nastupce"] },
   };
-  render(<MapaScenare verze={verze} popisky={popisky} legenda />);
+  render(<MapaScenare verze={verze} popisky={popisky} />);
   expect(start(2).className).toBe("start barva-2 druh-spojenec");
   expect(start(3).className).toBe("start barva-3 druh-obet");
   expect(start(4).className).toBe("start barva-4 druh-pouto");
@@ -61,40 +59,29 @@ it("druhy popisků dávají třídy, bublinu a Nástupci korunu", () => {
   expect(koruny).toHaveLength(1);
   expect(koruny[0]).toHaveClass("koruna");
   expect(start(5)).toContainElement(koruny[0]!);
-  expect(screen.getByTestId("legenda-mapy").textContent).toBe("koruna — Nástupce císaře · červeně — tvá oběť · zlatý rámeček — pokrevní pouto · zeleně — druhý Nájezdník");
 });
 
 // Jeden hráč může být pro diváka víc věcí naráz: oběť, která je Nástupcem,
 // má korunu i červené jméno; vlastní start Nástupce korunu nad „Tady
 // začínáš“. Třídy jdou v pevném pořadí, ať se o ně CSS může opřít.
 it("jeden start nese víc druhů naráz", () => {
-  const { rerender } = render(<MapaScenare verze={verze} popisky={{ 3: { text: "Zdena", druhy: ["obet", "nastupce"] } }} legenda />);
+  const { rerender } = render(<MapaScenare verze={verze} popisky={{ 3: { text: "Zdena", druhy: ["obet", "nastupce"] } }} />);
   expect(start(3).className).toBe("start barva-3 druh-nastupce druh-obet");
   expect(start(3).querySelector("img.koruna")).toBeTruthy();
   expect(screen.getByText("Zdena")).toHaveAttribute("title", "Zdena — Nástupce císaře, tvá oběť");
-  expect(screen.getByTestId("legenda-mapy").textContent).toBe("koruna — Nástupce císaře · červeně — tvá oběť");
-  rerender(<MapaScenare verze={verze} popisky={{ 3: { text: "Tady začínáš", druhy: ["ja", "nastupce"] } }} legenda />);
+  rerender(<MapaScenare verze={verze} popisky={{ 3: { text: "Tady začínáš", druhy: ["ja", "nastupce"] } }} />);
   expect(start(3).className).toBe("start barva-3 druh-nastupce druh-ja");
   expect(start(3).querySelector("img.koruna")).toBeTruthy();
   expect(screen.getByText("Tady začínáš")).toHaveAttribute("title", "Tady začínáš — Nástupce císaře");
-  expect(screen.getByTestId("legenda-mapy").textContent).toBe("koruna — Nástupce císaře");
 });
 
-// Legenda jmenuje jen to, co na mapě opravdu je: vlastní start se vysvětluje
-// sám, bez zvláštních druhů legenda není, a kdo nemá v rozboru start (šedá),
-// do ní nepatří. Bez `legenda` se nekreslí vůbec (pult GM, správa scénáře).
-it("legenda jen pro druhy, které jsou na mapě vidět", () => {
-  const { rerender } = render(<MapaScenare verze={verze} popisky={{ 1: { text: "Tady začínáš", druhy: ["ja"] } }} legenda />);
-  expect(screen.queryByTestId("legenda-mapy")).toBeNull();
-  rerender(<MapaScenare verze={verze} popisky={{ 1: { text: "Tady začínáš", druhy: ["ja"] }, 7: { text: "GM", druhy: ["nastupce"] } }} legenda />);
+// Kdo nemá v rozboru start (šedá), se nekreslí; víc spojenců = „další Nájezdník“.
+it("start bez pozice v rozboru se nekreslí; víc spojenců je „další“", () => {
+  const { rerender } = render(<MapaScenare verze={verze} popisky={{ 1: { text: "Tady začínáš", druhy: ["ja"] }, 7: { text: "GM", druhy: ["nastupce"] } }} />);
   expect(screen.getAllByTestId("start")).toHaveLength(1);
-  expect(screen.queryByTestId("legenda-mapy")).toBeNull();
-  rerender(<MapaScenare verze={verze} popisky={{ 2: { text: "Tonda", druhy: ["spojenec"] }, 4: { text: "Karel", druhy: ["spojenec"] } }} legenda />);
-  expect(screen.getByTestId("legenda-mapy").textContent).toBe("zeleně — další Nájezdníci");
+  expect(screen.queryByRole("img", { name: "Nástupce císaře" })).toBeNull();
+  rerender(<MapaScenare verze={verze} popisky={{ 2: { text: "Tonda", druhy: ["spojenec"] }, 4: { text: "Karel", druhy: ["spojenec"] } }} />);
   expect(screen.getByText("Tonda")).toHaveAttribute("title", "Tonda — další Nájezdník");
-  rerender(<MapaScenare verze={verze} popisky={{ 2: { text: "Tonda", druhy: ["nastupce"] } }} />);
-  expect(screen.queryByTestId("legenda-mapy")).toBeNull();
-  expect(screen.getByRole("img", { name: "Nástupce císaře" })).toBeTruthy();
 });
 
 // Route minimapy posílá roční cache; po výměně obrázku u verze (mapa ze hry
@@ -112,6 +99,6 @@ it("vlastní mapa dostane třídu vlastni, starty zůstávají", () => {
   expect(screen.getAllByTestId("start")).toHaveLength(7);
 });
 it("verze bez rozboru nic nevykreslí", () => {
-  const { container } = render(<MapaScenare verze={{ ...verze, rozbor: null }} popisky={{ 1: { text: "x" } }} legenda />);
+  const { container } = render(<MapaScenare verze={{ ...verze, rozbor: null }} popisky={{ 1: { text: "x" } }} />);
   expect(container.innerHTML).toBe("");
 });
