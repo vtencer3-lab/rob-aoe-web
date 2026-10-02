@@ -2301,6 +2301,14 @@ a:hover { color: var(--zlato-svetle); }
 .push-to-talk .ztlumit.zapnuto { border-color: var(--akcent); color: var(--akcent); }
 .push-to-talk .chyba { font-size: 0.75rem; }
 @media (prefers-reduced-motion: reduce) { .push-to-talk .ptt .nahrava { animation: none; } }
+/* Štítek „kdo právě mluví“: hlas hraje celé stránce, tak je připnutý k oknu —
+   vlevo dole, mimo toasty a kartu statistik (ty jsou vpravo). Na klik nereaguje,
+   ať nepřekáží tomu, co je pod ním. */
+.mluvi-ted { position: fixed; left: 1rem; bottom: 1rem; z-index: 60; display: flex; flex-direction: column; gap: 0.4rem; max-width: calc(100vw - 2rem); pointer-events: none; }
+.mluvi-ted .mluvci { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.8rem 0.4rem 0.6rem; background: var(--drevo-tmave); border: 1px solid var(--zlato); border-radius: 2px; color: var(--text); box-shadow: 0 0 0 1px var(--obrys), 0 8px 20px var(--obrys); animation: toast-nahoru 0.2s ease-out; overflow-wrap: anywhere; }
+.mluvi-ted .ikona { width: 1.35rem; height: 1.35rem; flex: none; color: var(--zlato); }
+.mluvi-ted strong { color: var(--zlato-svetle); }
+@media (prefers-reduced-motion: reduce) { .mluvi-ted .mluvci { animation: none; } }
 /* Sbalení: mřížka 1fr → 0fr, rychlé a bez poskoku. */
 .chat .chat-telo { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease; opacity: 1; }
 .chat.sbaleny .chat-telo { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }

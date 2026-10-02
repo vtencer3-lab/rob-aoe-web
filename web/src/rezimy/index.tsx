@@ -25,6 +25,12 @@ export interface RezimKlienta {
    * vítězství z rozboru aktivní verze. Null = mód k tomu nemá co říct.
    */
   nastaveniScenare?(stav: AkceStavPayload): { vitezstvi: string | null } | null;
+  /**
+   * Smí divák mluvit (push-to-talk) do tohohle zápasu ze své karty, i když
+   * není admin? Jen nabídka tlačítka — právo hlídá server stejnojmenným
+   * háčkem (`RezimAkce.smiMluvitDoZapasu`).
+   */
+  smiMluvitDoZapasu?(p: KontextZapasu): boolean;
 }
 
 const KLIENTI: Record<RezimId, RezimKlienta> = { klasicky: {}, diplomacie: diplomacieKlient };

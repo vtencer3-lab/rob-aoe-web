@@ -13,7 +13,7 @@ function IkonaMikrofon() {
   );
 }
 
-function IkonaReproduktor({ ztlumeno }: { ztlumeno: boolean }) {
+export function IkonaReproduktor({ ztlumeno }: { ztlumeno: boolean }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" className="ikona">
       <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
@@ -32,14 +32,16 @@ function IkonaReproduktor({ ztlumeno }: { ztlumeno: boolean }) {
 interface Props {
   /** Kam kousky nahrávky odcházejí (App → api.hlas pro tenhle zápas). */
   onKousek: OdesliKousek;
+  /** Admin: vedle mikrofonu i ztlumení ostatních adminů. Mluvčí z módu (GM) ho nemá — nic by mu neztlumilo. */
+  ztlumeniAdminu?: boolean;
 }
 
 /**
- * Push-to-talk admina v hlavičce chatu (uživatel 13. 9. 2026): držet =
- * mluvit, účastníci zápasu slyší. Vedle je ztlumení ostatních adminů —
- * jen pro admina, hráčům se nic neztlumí.
+ * Push-to-talk v hlavičce chatu (uživatel 13. 9. 2026): držet = mluvit,
+ * účastníci zápasu slyší. Vedle je ztlumení ostatních adminů — jen pro
+ * admina, hráčům se nic neztlumí.
  */
-export function PushToTalk({ onKousek }: Props) {
+export function PushToTalk({ onKousek, ztlumeniAdminu = false }: Props) {
   const [mluvi, setMluvi] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
   const [ztlumeno, setZtlumeno] = useState(ztlumitAdminy);
@@ -95,20 +97,22 @@ export function PushToTalk({ onKousek }: Props) {
         {mluvi ? <span className="nahrava" aria-hidden="true" /> : null}
         <span className="sr-only">{mluvi ? "Mluvím" : "Mluvit"}</span>
       </button>
-      <button
-        type="button"
-        className={ztlumeno ? "ztlumit napoveda zapnuto" : "ztlumit napoveda"}
-        data-napoveda="Mute tlačítko pouze pro ostatní adminy, aby nemuseli poslouchat tvůj otravnej hlas"
-        aria-label={ztlumeno ? "Ostatní admini ztlumeni" : "Ztlumit ostatní adminy"}
-        aria-pressed={ztlumeno}
-        onClick={() => {
-          const nove = !ztlumeno;
-          setZtlumeno(nove);
-          nastavZtlumitAdminy(nove);
-        }}
-      >
-        <IkonaReproduktor ztlumeno={ztlumeno} />
-      </button>
+      {ztlumeniAdminu ? (
+        <button
+          type="button"
+          className={ztlumeno ? "ztlumit napoveda zapnuto" : "ztlumit napoveda"}
+          data-napoveda="Mute tlačítko pouze pro ostatní adminy, aby nemuseli poslouchat tvůj otravnej hlas"
+          aria-label={ztlumeno ? "Ostatní admini ztlumeni" : "Ztlumit ostatní adminy"}
+          aria-pressed={ztlumeno}
+          onClick={() => {
+            const nove = !ztlumeno;
+            setZtlumeno(nove);
+            nastavZtlumitAdminy(nove);
+          }}
+        >
+          <IkonaReproduktor ztlumeno={ztlumeno} />
+        </button>
+      ) : null}
       {chyba ? (
         <small className="chyba" role="alert">
           {chyba}

@@ -3,6 +3,7 @@ import { REZIM_SCENARIO, type NastaveniLobby } from "../shared/lobbyKontrola.js"
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploData, ScenarVerze } from "../shared/diplomacie/typy.js";
 import { redigujDiplo } from "../shared/diplomacie/viditelnost.js";
+import { jeGmZapasu } from "./opravneni.js";
 import { getAktivniVerze, getDiploZapas, getVerze, listDiploZapasy, listVerzi, zalozDiploZapas, zrusNastupceMimoSestavu } from "./db.js";
 
 /**
@@ -75,4 +76,8 @@ export const diplomacie: RezimAkce = {
   rediguj(rezim, divak) {
     return { ...rezim, data: redigujDiplo(rezim.data, divak.hracId) };
   },
+
+  // GM „svolává všechny“ (uživatel 2. 10. 2026): mluví do svého zápasu jako
+  // admin z režie, i když admin není.
+  smiMluvitDoZapasu: jeGmZapasu,
 };

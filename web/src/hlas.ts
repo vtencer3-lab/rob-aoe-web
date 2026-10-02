@@ -384,6 +384,37 @@ class Prehravani {
   }
 }
 
+/** Kdo je právě slyšet: jedna přehrávaná promluva. */
+export interface Mluvci {
+  /** Mluvčí a sezení — klíč pro seznam. */
+  klic: string;
+  kdo: string;
+  jmeno: string;
+  zapasId: number;
+}
+
+// Seznam se vyměňuje celý (ne mění na místě), ať ho React pozná jako nový
+// snímek (useSyncExternalStore ve views/MluviTed.tsx).
+let mluvici: readonly Mluvci[] = [];
+const odberateleMluvcich = new Set<() => void>();
+
+function nastavMluvici(nove: readonly Mluvci[]): void {
+  mluvici = nove;
+  for (const cb of odberateleMluvcich) cb();
+}
+
+/** Promluvy, které se právě přehrávají — ať je vidět, kdo mluví. */
+export function kdoMluvi(): readonly Mluvci[] {
+  return mluvici;
+}
+
+export function naZmenuMluvcich(cb: () => void): () => void {
+  odberateleMluvcich.add(cb);
+  return () => {
+    odberateleMluvcich.delete(cb);
+  };
+}
+
 /**
  * Přehrávač hlasu pro celou stránku: poslouchá kousky ze streamu a hraje je.
  * Vlastní hlas se nehraje (server ho ani neposílá), a admin si může ostatní
@@ -391,23 +422,36 @@ class Prehravani {
  */
 export function spustPrehravacHlasu(ja: string, jaAdmin: boolean): () => void {
   const sezeni = new Map<string, Prehravani>();
+  const moji = new Set<string>();
+  const umlkl = (klic: string) => {
+    if (moji.delete(klic)) nastavMluvici(mluvici.filter((m) => m.klic !== klic));
+  };
   const naHlas = (e: Event) => {
     const u = (e as CustomEvent<HlasUdalost>).detail;
     if (!u || u.kdo === ja) return;
-    // Ztlumení ostatních adminů: jen admin, jen cizí admini — hráči ho slyší vždy.
-    if (jaAdmin && ztlumitAdminy() && !u.prijemci.includes(ja)) return;
+    // Ztlumení ostatních adminů: jen admin, jen cizí admini — hráči ho slyší
+    // vždy, a mluvčího, kterého pustil mód (GM), neztlumí ani admin.
+    if (jaAdmin && ztlumitAdminy() && u.jeAdmin !== false && !u.prijemci.includes(ja)) return;
     const klic = `${u.kdo}/${u.sezeni}`;
     let p = sezeni.get(klic);
     if (!p) {
-      // Dohrané sezení zůstane ještě minutu v mapě, ať opožděný kousek
-      // nezaloží nové přehrávání téže promluvy.
-      p = new Prehravani(u.mime ?? MIME_HLASU, orizniZesileni(u.zesileni), () => setTimeout(() => sezeni.delete(klic), 60_000));
+      p = new Prehravani(u.mime ?? MIME_HLASU, orizniZesileni(u.zesileni), () => {
+        umlkl(klic);
+        // Dohrané sezení zůstane ještě minutu v mapě, ať opožděný kousek
+        // nezaloží nové přehrávání téže promluvy.
+        setTimeout(() => sezeni.delete(klic), 60_000);
+      });
       sezeni.set(klic, p);
+      moji.add(klic);
+      nastavMluvici([...mluvici, { klic, kdo: u.kdo, jmeno: u.jmeno, zapasId: u.zapasId }]);
     }
     p.prijmi(u);
   };
   window.addEventListener(UDALOST_HLAS, naHlas);
-  return () => window.removeEventListener(UDALOST_HLAS, naHlas);
+  return () => {
+    window.removeEventListener(UDALOST_HLAS, naHlas);
+    for (const klic of [...moji]) umlkl(klic);
+  };
 }
 
 /** Jak kousky odcházejí na server; vrací se jako slib, ať jde držet pořadí. */

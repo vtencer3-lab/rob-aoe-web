@@ -11,6 +11,7 @@ import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.
 import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
 import { rezimKlienta } from "./rezimy/index.js";
+import { MluviTed } from "./views/MluviTed.js";
 import { useSkladani } from "./skladani.js";
 import { useZmenaVysky } from "./vyska.js";
 import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
@@ -431,6 +432,11 @@ export function App() {
   const doplnekModu = (misto: "kartaHrace" | "krokHosta" | "verejnyZapas", zapas: ZapasView, ja: string | null) =>
     stav ? rk[misto]?.({ zapas, stav, ja, hlidej }) : null;
 
+  // Push-to-talk ve vlastní kartě zápasu: jen komu ho dá mód (GM Diplomacie).
+  // Admin mluví z režie (rezieObsluha.onHlas), karta hráče ho jinak nemá.
+  const hlasDoZapasu = (zapas: ZapasView) =>
+    stav && me && rk.smiMluvitDoZapasu?.({ zapas, stav, ja: me.hracId, hlidej }) ? (telo: Parameters<typeof api.hlas>[1]) => api.hlas(zapas.id, telo) : undefined;
+
   // Tytéž ovládací prvky obsluhují běžící zápasy i historii, proto se předává
   // jeden balík dvěma sekcím místo dvou opsaných seznamů.
   const rezieObsluha = {
@@ -444,7 +450,7 @@ export function App() {
     onSmazatZpravu: (zapasId: number, zpravaId: number) => hlidej(() => api.smazatZpravu(zapasId, zpravaId)),
     onUpravitZpravu: (zapasId: number, zpravaId: number, text: string) => hlidej(() => api.upravitZpravu(zapasId, zpravaId, text)),
     onUpravit: (zapasId: number) => setUpravovany(zapasId),
-    // Push-to-talk jen v režii (uživatel 13. 9. 2026), karta hráče ho nemá.
+    // Push-to-talk admina jen v režii (uživatel 13. 9. 2026); kartu hráče řeší hlasDoZapasu.
     onHlas: (zapasId: number, telo: Parameters<typeof api.hlas>[1]) => api.hlas(zapasId, telo),
     ladeni: admin && ladeni,
   };
@@ -759,7 +765,7 @@ export function App() {
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                     doplnek={doplnekModu("kartaHrace", zapas, me.hracId)}
                     doplnekKroku={doplnekModu("krokHosta", zapas, me.hracId)}
-                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
+                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} onHlas={hlasDoZapasu(zapas)} />}
                   />
                 ) : (
                   <KartaHrace
@@ -770,7 +776,7 @@ export function App() {
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
                     doplnek={doplnekModu("kartaHrace", zapas, me.hracId)}
-                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
+                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} onHlas={hlasDoZapasu(zapas)} />}
                   />
                 ),
               )
@@ -830,6 +836,7 @@ export function App() {
         />
       ) : null}
       {prihlaseniVidet ? <PrihlaseniOkno onZavrit={() => setPrihlaseniVidet(false)} /> : null}
+      <MluviTed zapasy={stav?.zapasy ?? []} popisSlotu={rk.popisSlotu} />
       <ZkusebniLista jaHracId={me?.hracId ?? null} />
       {admin ? <Toasty toasty={toasty} onZavrit={zavriToast} /> : null}
       {/* Verze v patičce: po nasazení se jedním pohledem pozná, jestli

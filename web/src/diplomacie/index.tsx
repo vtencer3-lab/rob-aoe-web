@@ -21,6 +21,8 @@ export const diplomacieKlient: RezimKlienta = {
   },
   verejnyZapas: ({ zapas, stav }) => (stav.rezim ? <VerejnyRadek zapas={zapas} data={stav.rezim.data} /> : null),
   popisSlotu: (barva) => (barva === GM_BARVA ? "GM" : null),
+  // GM „svolává všechny“ (uživatel 2. 10. 2026): push-to-talk v chatu své karty.
+  smiMluvitDoZapasu: ({ zapas, stav, ja }) => Boolean(stav.rezim && ja) && diploZapasu(stav.rezim!.data, zapas.id)?.gmHracId === ja,
   // Verze rozebrané před úkolem 22 podmínky vítězství nemají — pak null
   // a panel napíše „podle scénáře“.
   nastaveniScenare: (stav) => (stav.rezim?.id === "diplomacie" ? { vitezstvi: stav.rezim.data.aktivni?.rozbor?.vitezstvi?.popis ?? null } : null),
