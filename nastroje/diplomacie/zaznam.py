@@ -9,15 +9,21 @@ buildu 101.103.54800 zastaví na novém typu operace 5, který nezná. Tahle
 na dohraném i rozepsaném záznamu: záznam běžící hry stačí zkopírovat (hra
 ho nedrží výhradně) a přečte se po poslední celou operaci.
 
-Co z těla jde získat: herní čas (součet synchronizací; hra pro víc hráčů
-běží 1,7× proti reálnému času), chat (i zprávy z triggerů scénáře a AI),
-rezignace (`0b | hráč | 01 00 00`), tributy (akce 196) a příkazy GAME
-(diplomacie by měla být příkaz 0 — v DE zatím neověřeno, proto se vypisují
-syrově). Stav hry (smrt krále, relikvie, diplomacie z triggerů) v záznamu
-není — na to je XS, viz docs/analyza-most-ke-hre.md.
+Co z těla jde získat (vše ověřeno 2. 10. 2026 na živé hře): herní čas
+(součet synchronizací; hra pro víc hráčů běží 1,7× proti reálnému času),
+chat (i systémové zprávy o postupu do věku, zprávy triggerů scénáře a AI),
+rezignace (`0b | hráč | 01 00 00`), změna postoje v panelu Diplomacie
+(akce GAME, příkaz 0: `67 | hráč | 10 00 | 00 00 00 00 | hráč u16 | cíl u16
+| postoj float | postoj u32`; 0 spojenec, 1 neutrál, 3 nepřítel) a tribut
+(akce 196: `c4 | hráč | 29 00 00 00 | jídlo f | dřevo f | kámen f | zlato f
+| … | cíl`). Panel Diplomacie při zavření rozešle tribut 0 všem — bez
+`--vse` se nulové tributy vynechají. Stav hry (smrt krále, relikvie,
+diplomacie nastavená triggery) v záznamu není — na to je XS, viz
+docs/analyza-most-ke-hre.md.
 
 Použití: python zaznam.py <soubor.aoe2record> [--vse]
   bez --vse vynechá opakované zprávy AI a triggerů (stejný text ≥ 5×)
+  a nulové tributy
 Vyžaduje: pip install mgz
 """
 
@@ -31,6 +37,8 @@ from mgz import fast
 
 OP_AKCE, OP_SYNC, OP_POHLED, OP_CHAT, OP_NOVY5, OP_POSTGAME = 1, 2, 3, 4, 5, 6
 AKCE_REZIGNACE, AKCE_GAME, AKCE_TRIBUT_DE = 11, 103, 196
+PRIKAZ_DIPLOMACIE = 0
+POSTOJ = {0: "spojenec", 1: "neutral", 3: "nepritel"}
 
 
 def cti_zaznam(data: bytes) -> dict:
@@ -99,12 +107,24 @@ def akce(telo: bytes, cas_ms: int) -> dict | None:
         return {"cas": cas, "typ": "rezignace", "hrac": telo[1]}
     if typ == AKCE_TRIBUT_DE:
         d = fast.parse_action(fast.Action.DE_TRIBUTE, telo[1:])
-        return {"cas": cas, "typ": "tribut", **d}
+        return {
+            "cas": cas,
+            "typ": "tribut",
+            "hrac": d["player_id"],
+            # mgz vrací cíl jako jeden syrový bajt.
+            "cil": d["target_player_id"][0] if isinstance(d["target_player_id"], (bytes, bytearray)) else int(d["target_player_id"]),
+            "jidlo": d["food"],
+            "drevo": d["wood"],
+            "kamen": d["stone"],
+            "zlato": d["gold"],
+        }
     if typ == AKCE_GAME and len(telo) >= 20:
         # Rozložení v DE: 67 | hráč | 10 00 | příkaz u32 | hráč u16 | cíl u16 | 4 B | hodnota u32.
         (prikaz,) = struct.unpack("<I", telo[4:8])
         hrac2, cil = struct.unpack("<HH", telo[8:12])
         (hodnota,) = struct.unpack("<I", telo[16:20])
+        if prikaz == PRIKAZ_DIPLOMACIE:
+            return {"cas": cas, "typ": "diplomacie", "hrac": telo[1], "cil": cil, "postoj": POSTOJ.get(hodnota, hodnota)}
         return {"cas": cas, "typ": "game", "hrac": telo[1], "prikaz": prikaz, "cil": cil, "hodnota": hodnota, "syrove": telo.hex(" ")}
     return None
 
@@ -118,9 +138,17 @@ def chat(text: bytes, cas_ms: int) -> dict:
 
 
 def bez_spamu(udalosti: list[dict]) -> list[dict]:
-    """Zprávy AI a triggerů se opakují pro každého hráče — stejný text ≥ 5× jde pryč."""
+    """Zprávy AI a triggerů se opakují pro každého hráče — stejný text ≥ 5× jde
+    pryč; stejně tak tribut 0, který panel Diplomacie rozesílá všem při zavření."""
     texty = Counter(u.get("zprava") for u in udalosti if u["typ"] == "chat")
-    return [u for u in udalosti if u["typ"] != "chat" or texty[u.get("zprava")] < 5]
+    vysledek = []
+    for u in udalosti:
+        if u["typ"] == "chat" and texty[u.get("zprava")] >= 5:
+            continue
+        if u["typ"] == "tribut" and not any(u[k] for k in ("jidlo", "drevo", "kamen", "zlato")):
+            continue
+        vysledek.append(u)
+    return vysledek
 
 
 def main() -> None:
@@ -131,7 +159,8 @@ def main() -> None:
     v = cti_zaznam(data)
     if "--vse" not in sys.argv:
         v["udalosti"] = bez_spamu(v["udalosti"])
-    json.dump(v, sys.stdout, ensure_ascii=False, indent=1)
+    # mgz u některých akcí (tribut) vrací syrová pole bajtů — do JSON jako hex.
+    json.dump(v, sys.stdout, ensure_ascii=False, indent=1, default=lambda o: o.hex(" ") if isinstance(o, (bytes, bytearray)) else str(o))
 
 
 if __name__ == "__main__":
