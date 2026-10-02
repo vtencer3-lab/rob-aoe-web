@@ -113,7 +113,7 @@
   --prechod-rychly: 140ms;   /* najetí, stisk, zaškrtnutí */
   --prechod: 220ms;          /* vznik obsahu, okna, přepínače */
   --prechod-skladani: 280ms; /* rozbalení a sbalení sekce */
-  --prechod-karta: 460ms;    /* otočení tajné karty, obě půlky dohromady */
+  --prechod-karta: 700ms;    /* otočení tajné karty, obě půlky dohromady (2. 10. 2026 zpomaleno z 460 ms — uživateli bylo moc rychlé) */
   --krivka: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 /* Kdo si nepřeje pohyb, dostane všechno naráz: nulová délka vypne přechody
@@ -1664,29 +1664,23 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
   filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--obrys) 70%, transparent));
   transition: filter var(--prechod-rychly) ease;
 }
-/* Karta jako tlačítko (uživatel 2. 10. 2026): najetí ji nadzvedne, kolem
-   se rozlije zlatá záře a pečeť se rozsvítí, stisk ji zamáčkne. Posun
-   přes `translate`/`scale` jako u ostatních tlačítek — `transform` patří
-   otáčení líce. Rádius obrysu kopíruje zaoblené rohy obrázku. */
+/* Karta jako tlačítko (uživatel 2. 10. 2026): najetí ji nadzvedne a stín
+   pod ní se prohloubí, jako by se zvedla ze stolu; stisk ji zamáčkne. Bez
+   záře a světla přes pečeť — uživatel: „ten glow je hnusnej“. Pohyb je
+   pomalejší než u běžných tlačítek (`--prechod-skladani`), karta je velká
+   a rychlé cuknutí působilo lacině. Posun přes `translate`/`scale` jako
+   u ostatních tlačítek — `transform` patří otáčení líce. Rádius obrysu
+   kopíruje zaoblené rohy obrázku. */
 .zakryti .zakryti-karta {
   display: block; position: relative; box-sizing: border-box;
   width: min(100%, 22rem); margin: 0.6rem auto 0;
   border-radius: 4% / 6.6%; cursor: pointer;
-  transition: translate var(--prechod-rychly) var(--krivka), scale var(--prechod-rychly) var(--krivka);
+  transition: translate var(--prechod-skladani) var(--krivka), scale var(--prechod-skladani) var(--krivka);
 }
-/* Pečeť je uprostřed obrázku: měkké světlo přes ni (screen jen zesvětlí). */
-.zakryti .zakryti-karta::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 19% 32% at 50% 50%, color-mix(in srgb, var(--zlato-svetle) 30%, transparent), transparent);
-  mix-blend-mode: screen; opacity: 0;
-  transition: opacity var(--prechod-rychly) ease;
-}
-.zakryti .zakryti-karta:hover, .zakryti .zakryti-karta:focus-visible { translate: 0 -4px; scale: 1.02; }
-.zakryti .zakryti-karta:hover::after, .zakryti .zakryti-karta:focus-visible::after { opacity: 1; }
+.zakryti .zakryti-karta .rub-karty { transition: filter var(--prechod-skladani) ease; }
+.zakryti .zakryti-karta:hover, .zakryti .zakryti-karta:focus-visible { translate: 0 -5px; scale: 1.015; }
 .zakryti .zakryti-karta:hover .rub-karty, .zakryti .zakryti-karta:focus-visible .rub-karty {
-  filter:
-    drop-shadow(0 8px 10px color-mix(in srgb, var(--obrys) 75%, transparent))
-    drop-shadow(0 0 12px color-mix(in srgb, var(--zlato) 55%, transparent));
+  filter: drop-shadow(0 12px 14px color-mix(in srgb, var(--obrys) 80%, transparent));
 }
 .zakryti .zakryti-karta:active { translate: 0 1px; scale: 0.99; }
 .zakryti .zakryti-karta:focus-visible { outline: 2px solid var(--zlato); outline-offset: 3px; }

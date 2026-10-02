@@ -246,7 +246,7 @@ je odtamtud CSS i skript (`web/src/pohyb.ts`), takže se ladí na jednom místě
 | `--prechod-rychly` | 140 ms | najetí, stisk, zaškrtnutí, rozbalovací seznam |
 | `--prechod` | 220 ms | vznik obsahu, otevření a zavření okna, přepínač |
 | `--prechod-skladani` | 280 ms | rozbalení a sbalení sekce, karty zápasu a chatu, otočení šipky |
-| `--prechod-karta` | 460 ms | otočení tajné karty (obě půlky dohromady), rozdání karty role |
+| `--prechod-karta` | 700 ms | otočení tajné karty (obě půlky dohromady), rozdání karty role |
 | `--krivka` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | rychlý rozjezd, měkký dojezd |
 
 Schválně krátké: při streamu má být vidět, že se něco stalo, ne čekat, až to
@@ -260,9 +260,10 @@ Co se jak hýbe:
   až ve chvíli, kdy je karta hranou k divákovi, a při zakrývání zmizí z DOM
   v půlce pohybu. Karta role při rozeslání „dopadne na stůl“.
   Zakrytá karta je tlačítkem sama, nápis nad ní nemá: najetí a fokus ji
-  nadzvednou (`translate`/`scale`, `--prechod-rychly`), kolem se rozlije
-  zlatá záře (`drop-shadow` ze `--zlato`) a pečeť se rozsvítí; stisk ji
-  zamáčkne. Při `prefers-reduced-motion` zůstane jen záře.
+  nadzvednou (`translate`/`scale`, `--prechod-skladani`) a stín pod ní se
+  prohloubí; stisk ji zamáčkne. Záři ani světlo přes pečeť nemá — uživatel
+  je 2. 10. 2026 zamítl („hnusnej glow“) a zároveň chtěl pomalejší pohyb.
+  Při `prefers-reduced-motion` zůstane jen hlubší stín.
 - **Sbalovací sekce, karta zápasu, chat**: výška plynule oběma směry
   (`useSbalovani`, chat mřížkou `1fr → 0fr`), šipka se otáčí. Šipku
   `<details>` kreslí CSS ve stejné šířce jako značka prohlížeče (1,06 em).
