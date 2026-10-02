@@ -1,10 +1,12 @@
 """Čtečka souboru `profile\\<scénář>.xsdat`, který píše XS sonda Diplomacie.
 
-Rozložení (XS v `sonda.py`): int verze (1) | int čas | 8× (float relikvie,
-int žije) | 64× int diplomacie(a, b) | int čas. Čas je na začátku i na
-konci: hra soubor přepisuje a zápis nemusí být atomický, čtení se bere jen
-tehdy, když se obě hodnoty shodují. Soubor bez čísla verze (328 B, první
-zkouška 2. 10. 2026) se čte taky.
+Rozložení (XS v `sonda.py`), verze 2: int verze | int čas | 8× (string
+jméno, string barva, float relikvie, int žije) | 64× int diplomacie(a, b)
+| int čas; string = uint32 délka + bajty. Verze 1 je totéž bez jmen a
+barev, soubor bez čísla verze (328 B, první zkouška 2. 10. 2026) je verze 1.
+Čas je na začátku i na konci: hra soubor přepisuje a zápis nemusí být
+atomický, čtení se bere jen tehdy, když se obě hodnoty shodují. Čísla
+hráčů jsou pořadí v lobby — identitu dává jméno a barva.
 
 Použití: python xsdat.py [cesta]   (výchozí: profile\\LLC-sonda.xsdat
 aktuálního uživatele)
@@ -19,21 +21,38 @@ POSTOJ = {0: "spojenec", 1: "neutral", 3: "nepritel"}
 
 
 def cti_xsdat(data: bytes) -> dict:
-    telo = 4 + 8 * 8 + 64 * 4 + 4
-    if len(data) < telo:
-        return {"platne": False, "duvod": f"krátký soubor: {len(data)} B, čekáno {telo} nebo {telo + 4} B"}
+    try:
+        return _cti(data)
+    except struct.error as e:
+        return {"platne": False, "duvod": f"useknutý nebo cizí soubor ({len(data)} B): {e}"}
+
+
+def _retezec(data: bytes, pos: int) -> tuple[str, int]:
+    (delka,) = struct.unpack_from("<I", data, pos)
+    pos += 4
+    if delka > 1024:
+        raise struct.error(f"nesmyslná délka řetězce {delka}")
+    return data[pos : pos + delka].decode("utf-8", "replace"), pos + delka
+
+
+def _cti(data: bytes) -> dict:
+    bez_verze = 4 + 8 * 8 + 64 * 4 + 4
     pos = 0
-    verze = 0
-    if len(data) >= telo + 4:
+    verze = 1
+    if len(data) != bez_verze:
         (verze,) = struct.unpack_from("<i", data, pos)
         pos += 4
     (cas,) = struct.unpack_from("<i", data, pos)
     pos += 4
     hraci = []
     for p in range(1, 9):
+        jmeno = barva = None
+        if verze >= 2:
+            jmeno, pos = _retezec(data, pos)
+            barva, pos = _retezec(data, pos)
         relikvie, zije = struct.unpack_from("<fi", data, pos)
         pos += 8
-        hraci.append({"hrac": p, "relikvie": int(relikvie), "zije": bool(zije)})
+        hraci.append({"hrac": p, "jmeno": jmeno, "barva": barva, "relikvie": int(relikvie), "zije": bool(zije)})
     diplomacie = []
     for a in range(8):
         radek = list(struct.unpack_from("<8i", data, pos))

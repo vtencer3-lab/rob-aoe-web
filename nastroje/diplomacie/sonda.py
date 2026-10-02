@@ -5,14 +5,21 @@ Sonda je jeden trigger „XS SCRIPT“ s efektem Script Call (vkládá ho
 `resources/_common/xs/default0.xs` u každého hráče i diváka. Pravidlo v něm
 každé 2 herní sekundy přepíše `<id>\\profile\\<jméno scénáře>.xsdat`:
 
-    int verze (1) | int čas | 8× (float relikvie, int žije)
-    | 64× int diplomacie(a, b) | int čas
+    int verze (2) | int čas | 8× (string jméno, string barva, float relikvie,
+    int žije) | 64× int diplomacie(a, b) | int čas
+    (string = uint32 délka + bajty, jak píše xsWriteString)
 
 Čas na začátku i na konci: zápis nemusí být atomický, čtenář (xsdat.py,
 most Židolišty) bere jen čtení, kde se obě hodnoty shodují. Autorovy
 triggery zůstávají netknuté. Ověřeno 2. 10. 2026 na LLC (build 101.103.54800):
-soubor vzniká v `profile\\`, 332 B, obě značky sedí, čas běží po 2 s, relikvie
+soubor vzniká v `profile\\`, obě značky sedí, čas běží po 2 s, relikvie
 sebraná mnichem se v něm objeví hned (atribut 7 = `cAttributeRelics`).
+
+**Čísla hráčů v XS jsou pořadí v lobby, ne sloty scénáře** (zjištěno živě:
+uživatel hrál šedého = scénářový hráč 7, seděl v lobby první a XS ho vedl
+jako 1, modrého AI jako 7). Proto se ke každému číslu zapisuje jméno
+(`xsGetPlayerName`) a barva (`xsGetPlayerColorTag`) — web i most přiřazují
+hodnoty podle barvy/jména, nikdy podle čísla.
 
 Totéž má jednou dělat web sám při nahrání každé verze scénáře Diplomacie
 (podprojekt 2): kopie se sondou je to, co host stahuje; originál zůstává.
@@ -26,15 +33,19 @@ import sys
 
 XS_SONDA = r"""
 // Sonda Diplomacie (rob-aoe-web): kazde 2 herni sekundy prepise soubor
-// profile\<scenar>.xsdat. Rozlozeni: int verze (1) | int cas
-// | 8x (float relikvie, int zije) | 64x int diplomacie(a, b) | int cas.
-// Atribut 7 = relikvie (cAttributeRelics).
+// profile\<scenar>.xsdat. Rozlozeni: int verze (2) | int cas
+// | 8x (string jmeno, string barva, float relikvie, int zije)
+// | 64x int diplomacie(a, b) | int cas. Atribut 7 = relikvie (cAttributeRelics).
+// Cisla hracu v XS jsou poradi v lobby, ne sloty scenare - proto jmeno a barva.
+// (Kod sondy je schvalne ciste ASCII: validator xs-check cte soubor jako UTF-8.)
 void sondaZapis() {
   xsCreateFile(false);
   int t = xsGetGameTime();
-  xsWriteInt(1);
+  xsWriteInt(2);
   xsWriteInt(t);
   for (p = 1; < 9) {
+    xsWriteString(xsGetPlayerName(p));
+    xsWriteString(xsGetPlayerColorTag(p));
     xsWriteFloat(xsPlayerAttribute(p, 7));
     if (xsGetPlayerInGame(p)) xsWriteInt(1); else xsWriteInt(0);
   }
