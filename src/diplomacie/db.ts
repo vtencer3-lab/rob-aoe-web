@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import { getPool, withTransaction } from "../db/pool.js";
+import { prectiSondu, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo } from "../shared/diplomacie/typy.js";
@@ -15,10 +16,11 @@ interface VerzeDb {
   chyba_rozboru: string | null;
   minimapa_otisk: string | null;
   minimapa_vlastni: boolean;
+  sonda: unknown;
 }
 
 const SLOUPCE_VERZE = `s.id, s.jmeno_souboru, s.nahrano_v, COALESCE(p.alias, p.platforma_jmeno, p.hrac_id) AS nahral_jmeno,
-  s.poznamka, s.aktivni, s.rozbor, s.chyba_rozboru, s.minimapa_otisk, s.minimapa_vlastni`;
+  s.poznamka, s.aktivni, s.rozbor, s.chyba_rozboru, s.minimapa_otisk, s.minimapa_vlastni, s.sonda`;
 
 function mapujVerzi(r: VerzeDb): ScenarVerze {
   return {
@@ -34,6 +36,7 @@ function mapujVerzi(r: VerzeDb): ScenarVerze {
     chybaRozboru: r.chyba_rozboru,
     minimapaOtisk: r.minimapa_otisk,
     minimapaVlastni: r.minimapa_vlastni,
+    sonda: r.sonda === null ? null : prectiSondu(r.sonda),
   };
 }
 
@@ -46,6 +49,10 @@ export async function ulozVerziScenare(v: {
   minimapa: Buffer | null;
   nahralHracId: string;
   poznamka: string | null;
+  /** Výsledek přibalení sondy (migrace 033); bez něj verze zůstane jako nahraná dřív. */
+  sonda?: SondaScenare | null;
+  /** Kopie se sondou — tu host stahuje. */
+  dataSonda?: Buffer | null;
 }): Promise<{ id: number; aktivovana: boolean }> {
   return withTransaction(async (c) => {
     const { rows: aktivni } = await c.query("SELECT 1 FROM diplo_scenar WHERE aktivni FOR UPDATE");
@@ -54,9 +61,21 @@ export async function ulozVerziScenare(v: {
     // Otisk minimapy počítá databáze z téhož obsahu, který ukládá — jde do
     // adresy obrázku (viz migrace 032), bez minimapy zůstane null.
     const { rows } = await c.query<{ id: number }>(
-      `INSERT INTO diplo_scenar (jmeno_souboru, sha256, data, rozbor, chyba_rozboru, minimapa, minimapa_otisk, nahral_hrac_id, poznamka, aktivni)
-       VALUES ($1, $2, $3, $4::jsonb, $5, $6, left(encode(sha256($6::bytea), 'hex'), 16), $7, $8, $9) RETURNING id`,
-      [v.jmenoSouboru, v.sha256, v.data, v.rozbor === null ? null : JSON.stringify(v.rozbor), v.chybaRozboru, v.minimapa, v.nahralHracId, v.poznamka, aktivovat],
+      `INSERT INTO diplo_scenar (jmeno_souboru, sha256, data, rozbor, chyba_rozboru, minimapa, minimapa_otisk, nahral_hrac_id, poznamka, aktivni, sonda, data_sonda)
+       VALUES ($1, $2, $3, $4::jsonb, $5, $6, left(encode(sha256($6::bytea), 'hex'), 16), $7, $8, $9, $10::jsonb, $11) RETURNING id`,
+      [
+        v.jmenoSouboru,
+        v.sha256,
+        v.data,
+        v.rozbor === null ? null : JSON.stringify(v.rozbor),
+        v.chybaRozboru,
+        v.minimapa,
+        v.nahralHracId,
+        v.poznamka,
+        aktivovat,
+        v.sonda ? JSON.stringify(v.sonda) : null,
+        v.dataSonda ?? null,
+      ],
     );
     return { id: rows[0]!.id, aktivovana: aktivovat };
   });
@@ -94,9 +113,22 @@ export async function aktivujVerzi(id: number): Promise<void> {
   });
 }
 
-export async function getSouborVerze(id: number): Promise<{ jmenoSouboru: string; data: Buffer } | null> {
-  const { rows } = await getPool().query<{ jmeno_souboru: string; data: Buffer }>("SELECT jmeno_souboru, data FROM diplo_scenar WHERE id = $1", [id]);
+/**
+ * Soubor verze ke stažení: kopie se sondou, když ji verze má, jinak originál.
+ * `original` vrátí vždy soubor od autora. Jméno je u obou stejné — kontrola
+ * lobby porovnává jméno a soubor sondy se podle něj jmenuje.
+ */
+export async function getSouborVerze(id: number, original = false): Promise<{ jmenoSouboru: string; data: Buffer } | null> {
+  const { rows } = await getPool().query<{ jmeno_souboru: string; data: Buffer }>(
+    "SELECT jmeno_souboru, CASE WHEN $2::boolean THEN data ELSE COALESCE(data_sonda, data) END AS data FROM diplo_scenar WHERE id = $1",
+    [id, original],
+  );
   return rows[0] ? { jmenoSouboru: rows[0].jmeno_souboru, data: rows[0].data } : null;
+}
+
+/** Výsledek (i neúspěšný) přibalení sondy k verzi; `dataSonda` null = kopie se sondou není. */
+export async function ulozSondu(id: number, sonda: SondaScenare, dataSonda: Buffer | null): Promise<void> {
+  await getPool().query("UPDATE diplo_scenar SET sonda = $2::jsonb, data_sonda = $3 WHERE id = $1", [id, JSON.stringify(sonda), dataSonda]);
 }
 
 export async function getMinimapuVerze(id: number): Promise<Buffer | null> {
@@ -162,6 +194,25 @@ export async function listDiploZapasy(akceId: number): Promise<DiploZapas[]> {
 export async function getDiploZapas(zapasId: number): Promise<DiploZapas | null> {
   const { rows } = await getPool().query<ZapasDb>(`SELECT ${SLOUPCE_ZAPASU} FROM diplo_zapas d WHERE d.zapas_id = $1`, [zapasId]);
   return (await sestav(rows))[0] ?? null;
+}
+
+/**
+ * Běžící zápas Diplomacie otevřené akce, kde na šedé (GM) sedí některý
+ * z těchto hráčů; při víc takových nejnověji založený. Pro most ke hře,
+ * který zná jen GM — ne číslo zápasu.
+ */
+export async function najdiBeziciZapasGm(hracIds: string[]): Promise<number | null> {
+  const { rows } = await getPool().query<{ zapas_id: number }>(
+    `SELECT d.zapas_id
+       FROM diplo_zapas d
+       JOIN zapas z ON z.id = d.zapas_id
+       JOIN akce a ON a.id = z.akce_id
+       JOIN ucastnik u ON u.zapas_id = z.id AND u.barva = ${GM_BARVA}
+      WHERE a.stav <> 'konec' AND z.stav = 'bezi' AND u.hrac_id = ANY($1::text[])
+      ORDER BY z.vytvoren DESC, z.id DESC LIMIT 1`,
+    [hracIds],
+  );
+  return rows[0]?.zapas_id ?? null;
 }
 
 export async function setNastupce(zapasId: number, hracId: string): Promise<void> {

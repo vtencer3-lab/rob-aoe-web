@@ -4,7 +4,7 @@ import { ROZBOR } from "../../../src/shared/diplomacie/fixtures.js";
 import type { Barva } from "../../../src/shared/types.js";
 import { kraj, MapaScenare } from "./MapaScenare.js";
 
-const verze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false };
+const verze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
 
 // Starty u levého a pravého kraje (na LLC p3 a p5) nesou třídu, podle které
 // CSS posune popisek dovnitř — jinak delší jméno vyčnívá z mapy. Spodní

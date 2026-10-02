@@ -11,6 +11,7 @@ import { config } from "../config.js";
 import { getPlayer, savePlayerStats, type PlayerStatsUpdate } from "../db/players.js";
 import { registerDiplomacieRoutes, type DiploDeps } from "../diplomacie/routes.js";
 import { rozeberScenar } from "../diplomacie/rozbor.js";
+import { pribalSondu } from "../diplomacie/sonda.js";
 import { vymenKodZaToken } from "../external/microsoftToken.js";
 import {
   nactiGamerpic,
@@ -121,6 +122,7 @@ function vychoziDeps(): ServerDeps {
       zebricek: (gamertag) => fetchPersonalStatPodleAliasu(gamertag),
     }),
     rozeberScenar: (soubor, volby) => rozeberScenar(soubor, volby),
+    pribalSondu: (soubor, volby) => pribalSondu(soubor, volby),
   };
 }
 

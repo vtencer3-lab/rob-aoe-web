@@ -1,3 +1,4 @@
+import type { HraZapasu, SondaScenare } from "./hra.js";
 import type { RozborScenare } from "./scenar.js";
 
 /** Role hráče (spec §6.1). Nástupce se nelosuje — určí ho hra a odklikne GM. */
@@ -26,6 +27,11 @@ export interface DiploZapas {
   nastupceHracId: string | null;
   scenarId: number | null;
   role: RoleHrace[];
+  /**
+   * Poslední data z běžící hry (most ke hře); chybí, dokud hra nic
+   * neposlala. Jen pro GM — ostatním, i adminovi, je redakce maže.
+   */
+  hra?: HraZapasu;
 }
 
 /** Verze scénáře bez souboru a minimapy (ty jdou zvlášť adresou). */
@@ -49,6 +55,12 @@ export interface ScenarVerze {
    * kosočtverce hráčů už v něm jsou, web ke startům kreslí jen jména.
    */
   minimapaVlastni: boolean;
+  /**
+   * XS sonda přibalená webem do kopie, kterou host stahuje: výpis cílů a
+   * případná chyba přibalení. Null = verze nahraná dřív, sonda se u ní
+   * ještě nepočítala.
+   */
+  sonda: SondaScenare | null;
 }
 
 /**

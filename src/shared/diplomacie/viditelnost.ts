@@ -9,8 +9,12 @@ export function redigujDiplo(data: DiploData, divakHracId: string | null): Diplo
   return { ...data, zapasy: data.zapasy.map((z) => redigujZapas(z, divakHracId)) };
 }
 
-function redigujZapas(z: DiploZapas, divak: string | null): DiploZapas {
-  if (divak !== null && divak === z.gmHracId) return z;
+function redigujZapas(cely: DiploZapas, divak: string | null): DiploZapas {
+  if (divak !== null && divak === cely.gmHracId) return cely;
+  // Data ze hry (kdo má jaký cíl, kdo je podle hry Nástupce) prozrazují
+  // totéž co role — patří jen GM, v každém stavu.
+  const z = { ...cely };
+  delete z.hra;
   if (z.stav !== "rozeslano") return { ...z, nastupceHracId: null, role: [] };
   const moje = divak === null ? undefined : z.role.find((r) => r.hracId === divak);
   if (!moje) return { ...z, role: [] };

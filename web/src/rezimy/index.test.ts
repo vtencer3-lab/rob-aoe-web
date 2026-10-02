@@ -31,7 +31,7 @@ it("Diplomacie dodá panelu akce svůj štítek", () => {
 // rozboru aktivní verze; bez verze (nebo u starého rozboru bez nich) nic.
 it("Diplomacie dodá panelu nastavení popis vítězství z aktivní verze", () => {
   const rk = rezimKlienta("diplomacie");
-  const aktivni: ScenarVerze = { id: 1, jmenoSouboru: "LLC.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false };
+  const aktivni: ScenarVerze = { id: 1, jmenoSouboru: "LLC.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
   const stav = (a: ScenarVerze | null): AkceStavPayload => ({ akce: null, prihlaseni: [], zapasy: [], rezim: { id: "diplomacie", data: { aktivni: a, verze: {}, zapasy: [] } } });
   expect(rk.nastaveniScenare?.(stav(aktivni))).toEqual({ vitezstvi: "Vlastní podmínky scénáře" });
   expect(rk.nastaveniScenare?.(stav(null))).toEqual({ vitezstvi: null });

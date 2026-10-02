@@ -126,6 +126,14 @@ export const config = {
   get python(): string {
     return process.env["PYTHON"] ?? "/opt/rozbor/bin/python";
   },
+  /**
+   * Sdílené tajemství mostu ke hře (Diplomacie): skript na PC GM s ním
+   * posílá data z běžící hry na `POST /api/diplo/hra`. Prázdné = routa se
+   * vůbec neregistruje.
+   */
+  get mostToken(): string {
+    return process.env["MOST_TOKEN"] ?? "";
+  },
   get jeProdukce(): boolean {
     return this.baseUrl.startsWith("https://");
   },

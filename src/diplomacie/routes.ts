@@ -17,6 +17,7 @@ import {
   getVerze,
   listVerzi,
   najdiVerziPodleSha,
+  ulozSondu,
   setNastupce,
   setStavDiplo,
   ulozRole,
@@ -24,12 +25,15 @@ import {
   upravRoli,
   vratNaPripravu,
 } from "./db.js";
+import { registerHraRoutes } from "./hra.js";
 import { smiNahratScenar } from "./opravneni.js";
 import { nastaveniZAktivniVerze } from "./rezim.js";
 import { jeHlavickaScenare, type rozeberScenar } from "./rozbor.js";
+import { sondaSChybou, type pribalSondu } from "./sonda.js";
 
 export interface DiploDeps {
   rozeberScenar: typeof rozeberScenar;
+  pribalSondu: typeof pribalSondu;
 }
 
 /** Přihlášený musí být GM tohoto zápasu Diplomacie; admin výjimku nemá (spec §6.3). */
@@ -123,6 +127,7 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
   });
 
   registerScenarRoutes(app, deps);
+  registerHraRoutes(app);
 }
 
 /** Scénář má přes 100 kB; 5 MB nechává rezervu, ale nepustí libovolný balast (spec §5.2). */
@@ -159,6 +164,8 @@ const duplicita = (id: number) => new HttpError(409, `Tahle verze už je nahran�
 function posliSoubor(reply: FastifyReply, soubor: { jmenoSouboru: string; data: Buffer }): FastifyReply {
   return reply
     .header("content-type", "application/octet-stream")
+    // Pod touž adresou může být zítra jiný obsah (sonda přibalená dodatečně).
+    .header("cache-control", "no-store")
     .header("content-disposition", `attachment; filename*=UTF-8''${encodeURIComponent(soubor.jmenoSouboru)}`)
     .send(soubor.data);
 }
@@ -196,7 +203,9 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
         const sha256 = createHash("sha256").update(data).digest("hex");
         const existujici = await najdiVerziPodleSha(sha256);
         if (existujici !== null) throw duplicita(existujici);
-        const vysledek = await deps.rozeberScenar(data);
+        // Rozbor a přibalení sondy jsou dva nezávislé kroky Pythonu nad
+        // týmž souborem; souběžně, ať nahrání netrvá dvakrát déle.
+        const [vysledek, sonda] = await Promise.all([deps.rozeberScenar(data), deps.pribalSondu(data)]);
         let ulozeno: { id: number; aktivovana: boolean };
         try {
           ulozeno = await ulozVerziScenare({
@@ -208,6 +217,10 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
             minimapa: vysledek.ok ? vysledek.minimapa : null,
             nahralHracId: hracId,
             poznamka,
+            // Bez sondy se verze hraje jako dřív, jen bez dat ze hry — důvod
+            // se uloží a správa nabídne „Přibalit sondu“ znovu.
+            sonda: sonda.ok ? sonda.sonda : sondaSChybou(sonda.chyba),
+            dataSonda: sonda.ok ? sonda.soubor : null,
           });
         } catch (e) {
           if (!jeUnikatniKonflikt(e)) throw e;
@@ -221,7 +234,7 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
         }
         if (ulozeno.aktivovana) await promitniDoAkce();
         await broadcastAkce();
-        return { id: ulozeno.id, aktivni: ulozeno.aktivovana, chybaRozboru: vysledek.ok ? null : vysledek.chyba };
+        return { id: ulozeno.id, aktivni: ulozeno.aktivovana, chybaRozboru: vysledek.ok ? null : vysledek.chyba, chybaSondy: sonda.ok ? null : sonda.chyba };
       },
     );
   });
@@ -244,16 +257,39 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
     return { ok: true };
   });
 
+  // Sonda pro verzi nahranou dřív (nebo po neúspěchu znovu). Selhání není
+  // chyba serveru: uloží se s důvodem a správa ho ukáže.
+  app.post("/api/diplo/scenar/:id/sonda", async (request) => {
+    await requireAutorScenare(request);
+    const id = requireId(request);
+    const original = await getSouborVerze(id, true);
+    if (!original) throw new HttpError(404, "Taková verze není.");
+    const vysledek = await deps.pribalSondu(original.data);
+    const sonda = vysledek.ok ? vysledek.sonda : sondaSChybou(vysledek.chyba);
+    await ulozSondu(id, sonda, vysledek.ok ? vysledek.soubor : null);
+    await broadcastAkce();
+    return { ok: true, sonda };
+  });
+
+  // Ke stažení jde kopie se sondou (když ji verze má); originál od autora
+  // jen jemu a adminovi přes ?original=1 — je to záloha, ne soubor do hry.
+  const chceOriginal = async (request: FastifyRequest): Promise<boolean> => {
+    if ((request.query as { original?: unknown }).original !== "1") return false;
+    await requireAutorScenare(request);
+    return true;
+  };
+
   // Statický segment má u Fastify přednost před `:id`, takže „aktivni“ se nikdy nečte jako číslo.
-  app.get("/api/diplo/scenar/aktivni/soubor", async (_request, reply) => {
+  app.get("/api/diplo/scenar/aktivni/soubor", async (request, reply) => {
+    const original = await chceOriginal(request);
     const aktivni = await getAktivniVerze();
-    const soubor = aktivni ? await getSouborVerze(aktivni.id) : null;
+    const soubor = aktivni ? await getSouborVerze(aktivni.id, original) : null;
     if (!soubor) throw new HttpError(404, "Scénář zatím nikdo nenahrál.");
     return posliSoubor(reply, soubor);
   });
 
   app.get("/api/diplo/scenar/:id/soubor", async (request, reply) => {
-    const soubor = await getSouborVerze(requireId(request));
+    const soubor = await getSouborVerze(requireId(request), await chceOriginal(request));
     if (!soubor) throw new HttpError(404, "Taková verze není.");
     return posliSoubor(reply, soubor);
   });

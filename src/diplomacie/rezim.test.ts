@@ -14,6 +14,7 @@ const verze = (id: number, jmenoSouboru: string, cast: Partial<ScenarVerze> = {}
   chybaRozboru: null,
   minimapaOtisk: null,
   minimapaVlastni: false,
+  sonda: null,
   ...cast,
 });
 

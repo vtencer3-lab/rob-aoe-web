@@ -7,6 +7,38 @@ import { MapaScenare } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 
 /**
+ * Sonda u verze (most ke hře): odkaz nahoře stahuje kopii se sondou, pokud
+ * ji verze má; originál od autora zůstává k mání vedle. Verzi bez sondy
+ * (nahraná dřív, nebo se přibalení nepovedlo) ji dopočítá tlačítko.
+ */
+function StavSondy({ verze, pribaluje, onPribalit }: { verze: ScenarVerze; pribaluje: boolean; onPribalit: () => void }) {
+  const ma = verze.sonda !== null && verze.sonda.chyba === null;
+  return (
+    <span className="stav-sondy" data-testid="stav-sondy">
+      {" "}
+      · sonda: {ma ? "ano" : "ne"}
+      {ma ? (
+        <>
+          {" "}
+          (
+          <a href={diploApi.souborUrl(verze.id, true)} download={verze.jmenoSouboru}>
+            originál
+          </a>
+          )
+        </>
+      ) : (
+        <>
+          {verze.sonda?.chyba ? <span className="varovani"> ({verze.sonda.chyba})</span> : null}{" "}
+          <button type="button" disabled={pribaluje} onClick={onPribalit}>
+            Přibalit sondu
+          </button>
+        </>
+      )}
+    </span>
+  );
+}
+
+/**
  * Nahrávání verzí scénáře pro adminy a autory (spec §5.3). Rozbalovací, ať
  * nepřekáží v panelu akce — Jin nahrává, když se mu to hodí, i bez běžící
  * akce; seznam se načítá až po rozbalení. Sbalená je stejně jako ostatní
@@ -35,13 +67,13 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
     setNahrava(true);
     void hlidej(async () => {
       const r = await diploApi.nahrat(soubor, poznamka);
-      setVysledek(
-        r.chybaRozboru
-          ? `Soubor je uložený, ale nepodařilo se ho přečíst: ${r.chybaRozboru} — pravidla a mapa zůstávají z aktivní verze.`
-          : r.aktivni
-            ? "Nahráno a nastaveno jako aktivní."
-            : "Nahráno. Aktivní zůstává dosavadní verze.",
-      );
+      const nahrano = r.chybaRozboru
+        ? `Soubor je uložený, ale nepodařilo se ho přečíst: ${r.chybaRozboru} — pravidla a mapa zůstávají z aktivní verze.`
+        : r.aktivni
+          ? "Nahráno a nastaveno jako aktivní."
+          : "Nahráno. Aktivní zůstává dosavadní verze.";
+      // Bez sondy se scénář hraje normálně, jen web nedostane data ze hry.
+      setVysledek(r.chybaSondy ? `${nahrano} Sondu se nepodařilo přibalit: ${r.chybaSondy}` : nahrano);
       setSoubor(null);
       setPoznamka("");
       // Pole souboru si vybraný soubor drží samo; po nahrání má být prázdné
@@ -55,6 +87,15 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
       await diploApi.aktivovat(id);
       setVerze((await diploApi.verze()).verze);
     });
+  // Přibalení trvá vteřiny (Python na serveru) — tlačítko je mezitím zamčené.
+  const [pribaluje, setPribaluje] = useState<number | null>(null);
+  const pribalSondu = (id: number) => {
+    setPribaluje(id);
+    void hlidej(async () => {
+      await diploApi.pribalSondu(id);
+      setVerze((await diploApi.verze()).verze);
+    }).finally(() => setPribaluje(null));
+  };
 
   return (
     <Skladaci className="sprava-scenare" testId="sprava-scenare" hlava="Scénář Diplomacie" otevreno={otevreno} onPrepnout={setOtevreno}>
@@ -102,6 +143,7 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
             {v.poznamka ? <> · {v.poznamka}</> : null}
             {v.aktivni ? <strong> · aktivní</strong> : null}
             {v.chybaRozboru ? <span className="varovani"> · nepodařilo se přečíst: {v.chybaRozboru}</span> : null}
+            <StavSondy verze={v} pribaluje={pribaluje !== null} onPribalit={() => pribalSondu(v.id)} />
             {!v.aktivni && v.rozbor ? (
               <button type="button" onClick={() => aktivovat(v.id)}>
                 Nastavit jako aktivní

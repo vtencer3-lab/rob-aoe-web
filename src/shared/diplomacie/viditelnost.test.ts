@@ -61,3 +61,21 @@ it("verze scénáře se nezaslepují", () => {
   expect(v.verze).toBe(d.verze);
   expect(v.aktivni).toBe(d.aktivni);
 });
+
+// Data ze hry říkají, kdo má jaký sekundární cíl a koho hra nechala bez něj
+// (Nástupce) — tedy totéž, co role. Patří jen GM zápasu, v každém stavu.
+describe("data ze hry vidí jen GM", () => {
+  const hra = { cas: 95, prijato: "2026-10-02T20:00:00.000Z", rozdano: true, nastupceHracId: "n", hraci: [{ hracId: "n", cil: null, relikvie: 0, zije: true }] };
+  const sHrou = (stav: StavDiplo): DiploData => ({ ...data(stav), zapasy: data(stav).zapasy.map((z) => ({ ...z, hra })) });
+
+  for (const stav of ["priprava", "losovano", "rozeslano"] as const) {
+    it(`${stav}: GM je má, hráč, Nástupce, admin-ne-GM ani nepřihlášený ne`, () => {
+      expect(redigujDiplo(sHrou(stav), GM).zapasy[0]!.hra).toEqual(hra);
+      for (const kdo of ["n", "k", "admin", null]) {
+        const z = redigujDiplo(sHrou(stav), kdo).zapasy[0]!;
+        expect("hra" in z).toBe(false);
+        expect(JSON.stringify(z)).not.toContain("prijato");
+      }
+    });
+  }
+});
