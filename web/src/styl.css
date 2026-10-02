@@ -1712,18 +1712,21 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 @media (max-width: 40rem) { .vs-rozlozeni { flex-wrap: wrap; } }
 /* FFA s víc než dvěma stranami (např. 1v1v1v1v1v1v1v1 — každý hráč sám za
    sebe) se do jednoho řádku nevejde, i na širokém displeji — proto mřížka
-   místo flexu: `repeat(auto-fill, minmax(min(100%, 23rem), 1fr))` sama
-   spočítá, kolik stran se vejde do řádku (strana sama na posledním řádku se
-   na rozdíl od `flex-grow` nenatáhne přes celou kartu) a `min(100%, …)`
-   nenechá jedinou stopu přetéct na telefonu na výšku, kde je kontejner užší
-   než 23rem. Uvnitř strany musí vyhrát jméno nad civilizací, ne naopak:
-   `minmax(7rem, max-content)` u jména ho nechá vyrůst na celý text už v
-   kroku mřížky „Maximize Tracks“, civilizace (`minmax(0, 1fr)`) dostane až
-   to, co zbyde. „VS“ se u víc stran vůbec nekreslí (komponenta) — u FFA by
-   nic neoddělovalo. Dva týmy (1v1, 2v2, 4v4) tuhle třídu nedostanou a
-   zůstanou beze změny — všechna pravidla níž platí jen pod
-   `.mnoho-stran`. */
-.vs-rozlozeni.mnoho-stran { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 23rem), 1fr)); }
+   místo flexu. Vždy dva sloupce plněné shora dolů (uživatel 2. 10. 2026):
+   vlevo první polovina stran, vpravo druhá — u osmi hráčů 1–4 a 5–8, jako
+   sloty v lobby hry. Dřívější `auto-fill` dalo na širokém monitoru tři
+   sloupce (3+3+2) a civilizace se v nich krátily na „L…“. Počet řádků
+   (`--radku-stran` = ⌈stran / 2⌉) dodává StranyZapasu.tsx; `minmax(0, 1fr)`
+   nenechá dlouhé jméno roztáhnout sloupec přes půlku karty. Na telefonu
+   jeden sloupec v pořadí slotů. Uvnitř strany musí vyhrát jméno nad
+   civilizací, ne naopak: `minmax(7rem, max-content)` u jména ho nechá
+   vyrůst na celý text už v kroku mřížky „Maximize Tracks“, civilizace
+   (`minmax(0, 1fr)`) dostane až to, co zbyde. „VS“ se u víc stran vůbec
+   nekreslí (komponenta) — u FFA by nic neoddělovalo. Dva týmy (1v1, 2v2,
+   4v4) tuhle třídu nedostanou a zůstanou beze změny — všechna pravidla níž
+   platí jen pod `.mnoho-stran`. */
+.vs-rozlozeni.mnoho-stran { display: grid; grid-auto-flow: column; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--radku-stran, 4), auto); }
+@media (max-width: 40rem) { .vs-rozlozeni.mnoho-stran { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; } }
 .vs-rozlozeni.mnoho-stran .skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem minmax(7rem, max-content) auto minmax(0, 1fr); }
 .skladani.jen-ke-cteni { border: none; padding: 0; margin: 0; }
 .skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem minmax(0, 1fr) auto minmax(9rem, 17rem); column-gap: 0.5rem; }
