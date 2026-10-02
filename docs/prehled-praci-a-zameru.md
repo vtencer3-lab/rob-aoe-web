@@ -2309,6 +2309,21 @@ identita hráče = číslo slotu/barva, GM určit přes `gm: "<steamid>"` v těl
 **Endpoint na webu zatím není** — vznikne až se specem podprojektu 2
 (deník GM / vyhodnocení); do té doby Židolišta nic neodesílá.
 
+**Doplněno 2. 10. 2026 v noci (sonda na živé hře, rozhodnutí).** Na běžící
+hře uživatele se ověřilo obojí: (1) záznam `.aoe2record` jde číst za běhu
+vlastní čtečkou `nastroje/diplomacie/zaznam.py` — chat, rezignace, změny
+postoje v panelu Diplomacie i tributy s herním časem (uživatel je ve hře
+udělal a všechny jsou v záznamu); stav hry (relikvie) v něm není. (2) XS
+sonda přibalená do kopie scénáře (`nastroje/diplomacie/sonda.py`, jeden
+trigger Script Call, Jinovy triggery netknuté) ve hře píše každé 2 s
+`profile\<scénář>.xsdat` s relikviemi, kdo žije a maticí diplomacie —
+relikvie sebraná mnichem se objevila hned. **Rozhodnutí uživatele:** sondu
+nebude dodávat autor scénáře; **web ji při nahrání každé verze scénáře
+Diplomacie přibalí sám** do kopie, kterou host stahuje (originál autora
+zůstane), aby to fungovalo pro jakýkoli scénář. To je první úkol
+podprojektu 2 spolu s endpointem pro Židolištu; formát souboru a čtečku má
+`nastroje/diplomacie/xsdat.py`.
+
 ## 6. Historie verzí (7. 9. – 1. 10. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`; větev `diplo`

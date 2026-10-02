@@ -1,9 +1,10 @@
 """Čtečka souboru `profile\\<scénář>.xsdat`, který píše XS sonda Diplomacie.
 
-Rozložení (viz XS v `sonda.py` / zadání sondy): int čas | 8× (float
-relikvie, int žije) | 64× int diplomacie(a, b) | int čas. Čas je na začátku
-i na konci: hra soubor přepisuje a zápis nemusí být atomický, čtení se bere
-jen tehdy, když se obě hodnoty shodují.
+Rozložení (XS v `sonda.py`): int verze (1) | int čas | 8× (float relikvie,
+int žije) | 64× int diplomacie(a, b) | int čas. Čas je na začátku i na
+konci: hra soubor přepisuje a zápis nemusí být atomický, čtení se bere jen
+tehdy, když se obě hodnoty shodují. Soubor bez čísla verze (328 B, první
+zkouška 2. 10. 2026) se čte taky.
 
 Použití: python xsdat.py [cesta]   (výchozí: profile\\LLC-sonda.xsdat
 aktuálního uživatele)
@@ -18,10 +19,14 @@ POSTOJ = {0: "spojenec", 1: "neutral", 3: "nepritel"}
 
 
 def cti_xsdat(data: bytes) -> dict:
-    ocekavano = 4 + 8 * 8 + 64 * 4 + 4
-    if len(data) < ocekavano:
-        return {"platne": False, "duvod": f"krátký soubor: {len(data)} B, čekáno {ocekavano} B"}
+    telo = 4 + 8 * 8 + 64 * 4 + 4
+    if len(data) < telo:
+        return {"platne": False, "duvod": f"krátký soubor: {len(data)} B, čekáno {telo} nebo {telo + 4} B"}
     pos = 0
+    verze = 0
+    if len(data) >= telo + 4:
+        (verze,) = struct.unpack_from("<i", data, pos)
+        pos += 4
     (cas,) = struct.unpack_from("<i", data, pos)
     pos += 4
     hraci = []
@@ -35,7 +40,7 @@ def cti_xsdat(data: bytes) -> dict:
         pos += 32
         diplomacie.append([POSTOJ.get(x, x) for x in radek])
     (cas2,) = struct.unpack_from("<i", data, pos)
-    return {"platne": cas == cas2, "cas": cas, "cas2": cas2, "hraci": hraci, "diplomacie": diplomacie, "bajtu": len(data)}
+    return {"platne": cas == cas2, "verze": verze, "cas": cas, "cas2": cas2, "hraci": hraci, "diplomacie": diplomacie, "bajtu": len(data)}
 
 
 def main() -> None:
