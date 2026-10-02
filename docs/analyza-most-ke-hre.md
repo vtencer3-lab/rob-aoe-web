@@ -82,7 +82,7 @@ Kořen: `%USERPROFILE%\Games\Age of Empires 2 DE\<id>\`, kde `<id>` je Steam ID 
 - Kadence: při každé změně souboru (throttle 2 s), heartbeat řídí XS (minInterval 30–60 s).
 - Čeká se na spec podprojektu 2 (routa, env, odpovědi 200/409/404, JSON schéma); do té doby neimplementují odesílání, jen watcher + parser.
 
-## Implementováno 2. 10. 2026 — první kus mostu (větev `most-ke-hre`)
+## Implementováno 2. 10. 2026 — první kus mostu (`diplo` 1.13.10-23.0)
 
 Zkušební integrace na PC uživatele: data z běžící hry → web → pult GM, zatím jen pro **automatického Nástupce císaře** a postup sekundárních cílů. Deník GM, vyhodnocení a Židolišta jsou další kroky podprojektu 2.
 

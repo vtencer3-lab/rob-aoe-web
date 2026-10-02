@@ -1779,7 +1779,7 @@ ne ranked pravidla, takže se to nepromítá. Neověřeno naživo: zda Worlds
 Edge seznam lobby vydává nové civ id 60–62 ve slotech stejně jako ostatní
 (očekává se, id je z téže řady).
 
-### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-22.10, 1.–2. 10. 2026)
+### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-23.0, 1.–2. 10. 2026)
 
 **Záměr.** Jin (autor scénáře) připravil pro komunitní večery custom scénář
 *Diplomacie – Ať žije císař* (`LLC.aoe2scenario`, DE 1.59): 7 hráčů a
@@ -2086,8 +2086,8 @@ uživatel porovnal minimapu webu s minimapou LLC ve hře: „minimapa i pozice
 hráčů sedí“ (otočení o 45° v `rozbor.py` a medián pozic jednotek jako start
 tedy odpovídají). Dřív to byl otevřený bod rulingu 4 z úkolu 12.
 
-**Most ke hře — první kus: automatický Nástupce (2. 10. 2026, větev
-`most-ke-hre`, čeká na sloučení do `diplo`).** První kus podprojektu 2: data
+**Most ke hře — první kus: automatický Nástupce (2. 10. 2026,
+1.13.10-23.0).** První kus podprojektu 2: data
 z běžící hry → web → pult GM. Uživatel: „jsme schopni zaintegrovat to
 přiřazování nástupce císaře, aby bylo automatický, tak to testovně
 naimplementuj na můj PC“. Podrobný popis formátů a rozhodnutí je
@@ -2408,8 +2408,8 @@ ověřit sondu ve hře pro víc hráčů (soubor vzniká u každého, Script Cal
 přenáší se scénářem); pak spec podprojektu 2 (web přibalí sondu při
 nahrání verze, endpoint `…/hra` pro Židolištu, deník GM a vyhodnocení).
 
-**Doplněno 2. 10. 2026 (první kus mostu implementován).** Na větvi
-`most-ke-hre` je hotová zkušební integrace: web přibaluje sondu formátu 3
+**Doplněno 2. 10. 2026 (první kus mostu implementován).** Ve verzi
+1.13.10-23.0 je hotová zkušební integrace: web přibaluje sondu formátu 3
 do stahované kopie scénáře, přijímá snímky hry na `POST /api/diplo/hra`
 (`Bearer MOST_TOKEN`), v přípravě sám nastaví Nástupce císaře a GM vidí
 postup sekundárních cílů; data posílá `nastroje/diplomacie/most.py` z PC
@@ -2554,6 +2554,7 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
 | 1.13.10-13.10 … 1.13.10-21.8 | 1. 10. (větev `diplo`) | **Mód Diplomacie, podprojekty 0 a 1 (§3.60)** — 31 commitů, nemergnuto do `dev`: nasazení `/aoe/diplo` a verzování (-13.10), kontrola souboru scénáře v lobby (-14.0), mód akce a migrace 030 (-15.0), pravidla rolí, rozbor Pythonem, viditelnost (-15.1 … -15.3), tabulky `diplo_*` migrace 031 (-16.0), háčky v jádru (-17.0), strany pro FFA a tým „–“ (-17.1 … -17.4), víc vítězů (-18.0), AI mimo šedou (-18.1), routy GM (-19.0), verze scénáře a `AUTORI_SCENARE` (-20.0), místa módu v obrazovkách a zakrytí (-20.1, -20.2), scénář určuje mapu / velikost / Victory (-21.0), minimapa (-21.1), karta role (-21.2, -21.3), pult GM (-21.4, -21.5), správa a stažení scénáře (-21.6), grafika rolí, rubu a rámu (-21.7, -21.8) |
 | 1.13.10-22.2 … 1.13.10-22.10 | 2. 10. (větev `diplo`) | **Dávka úprav rozhraní po revizi uživatele (§3.60)** — strany FFA ve dvou sloupcích (-22.2), kratší krok hosta a popisek zakryté karty (-22.3), velká mapa na kartě role (-22.4), barva u každého jména účastníka — `JmenoSBarvou` (-22.5), Sabotáž Nájezdníků (-22.6), hover zlatého tlačítka a větší „Rozeslat role“ (-22.7), „Zamíchat barvy“ ve skládání (-22.8), po rozeslání se role nemění (-22.9), jednotný sloh pravidel rolí (-22.10) |
+| 1.13.10-23.0 | 2. 10. (větev `diplo`) | **Most ke hře — první kus (§3.60)** — web přibaluje XS sondu formátu 3 do stahované kopie scénáře (migrace 033, „Přibalit sondu“ ve správě scénáře, originál přes `?original=1`), přijímá data z běžící hry na `POST /api/diplo/hra` (`MOST_TOKEN`), v přípravě sám nastaví Nástupce císaře a GM vidí postup sekundárních cílů; zkušební most `nastroje/diplomacie/most.py` |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |
