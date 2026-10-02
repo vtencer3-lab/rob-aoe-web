@@ -1542,11 +1542,6 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .start.barva-6 { background: var(--b6); }
 .mapa-scenare .start.barva-7 { background: var(--b7); }
 .mapa-scenare .start.barva-8 { background: var(--b8); }
-/* Vlastní mapa (obrázek ze hry, `minimapaVlastni` v MapaScenare.tsx):
-   kosočtverce hráčů už v obrázku jsou a kolečko by je jen překrylo. Značka
-   zůstává ve stejné velikosti, jen neviditelná, aby popisek se jménem seděl
-   pod kosočtvercem stejně jako dřív pod kolečkem. */
-.mapa-scenare.vlastni .start { background: transparent; border-color: transparent; box-shadow: none; }
 /* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ u hráče. Nepřijímá
    kliknutí, ať nepřekáží v tooltipu značky. Na LLC leží p3 a p5 12 % od
    levého a pravého kraje: krátké jméno se tam vejde, dvacetiznakové už na
@@ -1558,6 +1553,18 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 .mapa-scenare .start.kraj-levy .popisek { left: 0; transform: none; }
 .mapa-scenare .start.kraj-pravy .popisek { left: auto; right: 0; transform: none; }
+/* Vlastní mapa (obrázek ze hry, `minimapaVlastni` v MapaScenare.tsx):
+   kosočtverce hráčů už v obrázku jsou, značka je proto neviditelná a má
+   velikost kosočtverce — v procentech mapy (v obrázku LLC je 40 px z 1254),
+   ať se popisek se jménem drží těsně pod jeho spodní špičkou při každé
+   šířce. Popisek je vždy na střed kosočtverce, i u krajních startů:
+   ukotvení ke straně (kraj-*) patří kolečku, pod kosočtvercem by jméno
+   stálo mimo jeho osu. */
+.mapa-scenare.vlastni { --kosoctverec: 3.2%; }
+.mapa-scenare.vlastni .start { width: var(--kosoctverec); height: var(--kosoctverec); background: transparent; border-color: transparent; box-shadow: none; }
+.mapa-scenare.vlastni .popisek { margin-top: 0.1rem; }
+.mapa-scenare.vlastni .start.kraj-levy .popisek,
+.mapa-scenare.vlastni .start.kraj-pravy .popisek { left: 50%; right: auto; transform: translateX(-50%); }
 /* Karta role (Diplomacie, KartaRole.tsx): sekce pod kontrolou lobby se
    záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
    kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,
