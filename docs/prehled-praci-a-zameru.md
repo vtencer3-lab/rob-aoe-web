@@ -1858,7 +1858,9 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   `chyba_rozboru`, minimapa webp, kdo a kdy nahrál, poznámka, `aktivni` —
   nejvýš jedna a jen s rozborem), `diplo_zapas` (stav `priprava` →
   `losovano` → `rozeslano`, Nástupce, otisknutá `scenar_id`), `diplo_role`
-  (role, cíl Kata / pakt Žoldáka, `upraveno_po_rozeslani`). **GM se
+  (role, cíl Kata / pakt Žoldáka; sloupec `upraveno_po_rozeslani` od
+  2. 10. 2026 nikdo nečte ani nezapisuje — viz „Dávka úprav 2. 10. 2026“
+  níž —, v tabulce zůstal bez migrace). **GM se
   neukládá:** je to vždy účastník na šedé (barva 7), `db.ts` ho dopočítá ze
   sestavy. Smazání zápasu („Odebrat úplně“, konec akce bez výsledku) smaže
   diplo data kaskádou; zrušený zápas si je nechá, dokud není odebrán —
@@ -1880,8 +1882,10 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   Žoldák, Kat; oběť Kata a pakt Žoldáka losem z `node:crypto`), případně
   upraví roletkami (složení se hlídá, ale neblokuje), **Rozeslat role** —
   hráčům zazvoní zvon a objeví se zakrytá karta (klik odkryje, další klik
-  zakryje, po obnovení stránky je zase zakrytá). Po rozeslání jde roli
-  upravit jen s potvrzením a dotčený hráč vidí „GM upravil tvou roli.“ Dál
+  zakryje, po obnovení stránky je zase zakrytá). Po rozeslání se role už
+  nemění: tabulka pultu je jen text a server úpravu odmítne (409) — změna
+  pravidla z 2. 10. 2026 proti spec §6.2, do té doby šla role upravit
+  s potvrzením a hráč viděl „GM upravil tvou roli.“ Dál
   v pultu: Přelosovat, Zpět na výběr Nástupce, Zkopírovat přehled (text pro
   Discord), pravidla jako tahák. Pod kartou vidí všichni v zápase jméno
   Nástupce a rozbalovací pravidla hry s čísly z rozboru verze, kterou zápas

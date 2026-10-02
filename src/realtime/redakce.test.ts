@@ -176,7 +176,7 @@ it("větev módu se zaslepuje i adminovi", () => {
             stav: "rozeslano" as const,
             nastupceHracId: "n",
             scenarId: null,
-            role: [{ hracId: "k", role: "kat" as const, cilHracId: "x", upravenoPoRozeslani: false }],
+            role: [{ hracId: "k", role: "kat" as const, cilHracId: "x" }],
           },
         ],
       },

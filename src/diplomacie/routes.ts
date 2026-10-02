@@ -84,7 +84,9 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
   app.put("/api/diplo/zapas/:id/role/:hracId", async (request) => {
     const { diplo } = await requireGm(request);
     if (diplo.stav === "priprava") throw new HttpError(409, "Role ještě nejsou vylosované.");
-    if (diplo.stav === "rozeslano" && !potvrzeno(request)) throw new HttpError(409, "Role už hráči vidí — změnu je potřeba potvrdit.");
+    // Rozeslanou roli hráč vidí a hraje podle ní: měnit ji jde jen celým
+    // návratem k výběru Nástupce (uživatel 2. 10. 2026, proti spec §6.2).
+    if (diplo.stav === "rozeslano") throw new HttpError(409, "Role jsou rozeslané — změnit je jde jen přes Zpět na výběr Nástupce.");
     const { hracId } = request.params as { hracId: string };
     const telo = (request.body ?? {}) as { role?: unknown; cilHracId?: unknown };
     let role = diplo.role;
@@ -98,8 +100,7 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
     }
     const nova = role.find((r) => r.hracId === hracId);
     if (!nova) throw new HttpError(404, "Takový hráč v zápase není.");
-    // Po rozeslání hráč na kartě uvidí „GM upravil tvou roli“ (spec §6.2); příznak se už nevrací.
-    await upravRoli(diplo.zapasId, { ...nova, upravenoPoRozeslani: diplo.stav === "rozeslano" || nova.upravenoPoRozeslani });
+    await upravRoli(diplo.zapasId, nova);
     await broadcastAkce();
     return { ok: true };
   });

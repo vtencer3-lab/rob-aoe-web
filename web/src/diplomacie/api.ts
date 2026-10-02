@@ -14,7 +14,7 @@ const post = (url: string, telo?: object) =>
 export const diploApi = {
   nastupce: (zapasId: number, hracId: string) => post(`/api/diplo/zapas/${zapasId}/nastupce`, { hracId }),
   los: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/los`),
-  role: (zapasId: number, hracId: string, zmena: { role?: Role; cilHracId?: string; potvrzeno?: boolean }) =>
+  role: (zapasId: number, hracId: string, zmena: { role?: Role; cilHracId?: string }) =>
     fetch(cesta(`/api/diplo/zapas/${zapasId}/role/${encodeURIComponent(hracId)}`), {
       method: "PUT",
       headers: { "content-type": "application/json" },

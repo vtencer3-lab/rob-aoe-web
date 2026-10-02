@@ -24,7 +24,7 @@ export function losujRole(hraci: string[], nastupce: string, nahoda: Nahoda = vy
   let i = 0;
   return hraci.map((hracId) => {
     const r: Role = hracId === nastupce ? "nastupce" : role[i++]!;
-    return { hracId, role: r, cilHracId: S_CILEM.has(r) ? nahodnyCil(hraci, hracId, nastupce, nahoda) : null, upravenoPoRozeslani: false };
+    return { hracId, role: r, cilHracId: S_CILEM.has(r) ? nahodnyCil(hraci, hracId, nastupce, nahoda) : null };
   });
 }
 

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { afterEach, expect, it, vi } from "vitest";
 import { aiId, JMENO_AI } from "../../../src/shared/aiHraci.js";
 import { losujRole } from "../../../src/shared/diplomacie/los.js";
+import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
 import type { DiploData, RoleHrace, StavDiplo } from "../../../src/shared/diplomacie/typy.js";
 import type { ZapasView } from "../../../src/shared/types.js";
 import { stavDiplo, ZAPAS as zapas } from "./fixtury.js";
@@ -94,36 +95,43 @@ it("po losu tabulka s roletkami, cíle jen povolené, souhrn složení a rozesl�
   expect(diploApi.rozeslat).toHaveBeenCalledWith(zapas.id);
 });
 
-// Po rozeslání hráč svou roli už vidí, tak se každá změna (role i cíle)
-// potvrzuje v okně webu (Potvrzeni), ne v `window.confirm`.
-it("po rozeslání se úprava role i cíle potvrzuje dialogem", async () => {
+// Po rozeslání hráči role vidí a hrají podle nich, tak už je GM nemění
+// (uživatel 2. 10. 2026): z roletek je prostý text — znak a název role jako
+// u Nástupce, cíl se jménem a barvou hráče. Zpátky vede jen „Zpět na výběr
+// Nástupce“.
+it("po rozeslání nejsou v tabulce žádné výběry: role i cíle jsou text", () => {
   render(<PultGm zapas={zapas} data={gmData("rozeslano", ROLE_LOS, "h1")} hlidej={spust} />);
   odkryj();
-  const sasek = ROLE_LOS.find((r) => r.role === "sasek")!;
-  fireEvent.change(screen.getByRole("combobox", { name: `Role: ${jmeno(sasek.hracId)}` }), { target: { value: "kat" } });
-  expect(diploApi.role).not.toHaveBeenCalled();
-  const dotaz = screen.getByRole("alertdialog", { name: `${jmeno(sasek.hracId)} už svou roli vidí. Opravdu ji změnit?` });
-  // I v otázce se hráč jmenuje s barvou.
-  expect(dotaz.querySelector(".swatch")).toHaveClass(`barva-${zapas.ucastnici.find((u) => u.hracId === sasek.hracId)!.barva}`);
-  fireEvent.click(screen.getByRole("button", { name: "Ano" }));
-  expect(dotaz).not.toBeInTheDocument();
-  expect(diploApi.role).toHaveBeenCalledWith(zapas.id, sasek.hracId, { role: "kat", potvrzeno: true });
-  await waitFor(() => expect(screen.getByRole("button", { name: "Zpět na výběr Nástupce" })).toBeEnabled());
+  expect(screen.queryAllByRole("combobox")).toHaveLength(0);
+  const barvaHrace = (id: string) => `barva-${zapas.ucastnici.find((u) => u.hracId === id)!.barva}`;
+  const radek = (id: string) => screen.getByRole("rowheader", { name: jmeno(id) }).closest("tr")!;
+  for (const r of ROLE_LOS) {
+    // Název role textem a její znak v každém řádku, i u Nástupce.
+    expect(within(radek(r.hracId)).getByText(NAZEV_ROLE[r.role]).tagName).toBe("STRONG");
+    expect(within(radek(r.hracId)).getByRole("img", { name: NAZEV_ROLE[r.role] })).toHaveClass("znak-role");
+  }
   const kat = ROLE_LOS.find((r) => r.role === "kat")!;
-  fireEvent.change(screen.getByRole("combobox", { name: `Cíl: ${jmeno(kat.hracId)}` }), { target: { value: "h4" } });
-  fireEvent.click(screen.getByRole("button", { name: "Ano" }));
-  expect(diploApi.role).toHaveBeenCalledWith(zapas.id, kat.hracId, { cilHracId: "h4", potvrzeno: true });
+  const obet = within(radek(kat.hracId)).getByText(/^oběť:/);
+  expect(obet).toHaveTextContent(`oběť: ${jmeno(kat.cilHracId!)}`);
+  expect(obet.querySelector(".swatch")).toHaveClass(barvaHrace(kat.cilHracId!));
+  const zoldak = ROLE_LOS.find((r) => r.role === "zoldak")!;
+  const pakt = within(radek(zoldak.hracId)).getByText(/^pakt s:/);
+  expect(pakt).toHaveTextContent(`pakt s: ${jmeno(zoldak.cilHracId!)}`);
+  expect(pakt.querySelector(".swatch")).toHaveClass(barvaHrace(zoldak.cilHracId!));
+  const [najezdnik, druhy] = ROLE_LOS.filter((r) => r.role === "najezdnik");
+  expect(within(radek(najezdnik!.hracId)).getByText(/^zná:/)).toHaveTextContent(`zná: ${jmeno(druhy!.hracId)}`);
+  expect(diploApi.role).not.toHaveBeenCalled();
 });
 
-it("zrušený dialog po rozeslání nic nepošle", () => {
-  render(<PultGm zapas={zapas} data={gmData("rozeslano", ROLE_LOS, "h1")} hlidej={spust} />);
+// Před rozesláním se úprava neptá — hráči ještě nic nevidí.
+it("po losu jde cíl změnit roletkou rovnou, bez dotazu", () => {
+  render(<PultGm zapas={zapas} data={gmData("losovano", ROLE_LOS, "h1")} hlidej={spust} />);
   odkryj();
-  const sasek = ROLE_LOS.find((r) => r.role === "sasek")!;
-  fireEvent.change(screen.getByRole("combobox", { name: `Role: ${jmeno(sasek.hracId)}` }), { target: { value: "kat" } });
-  const dotaz = screen.getByRole("alertdialog");
-  fireEvent.click(screen.getByRole("button", { name: "Ne" }));
-  expect(dotaz).not.toBeInTheDocument();
-  expect(diploApi.role).not.toHaveBeenCalled();
+  const kat = ROLE_LOS.find((r) => r.role === "kat")!;
+  const jiny = ["h2", "h3", "h4", "h5", "h6", "h8"].find((h) => h !== kat.hracId && h !== kat.cilHracId)!;
+  fireEvent.change(screen.getByRole("combobox", { name: `Cíl: ${jmeno(kat.hracId)}` }), { target: { value: jiny } });
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(diploApi.role).toHaveBeenCalledWith(zapas.id, kat.hracId, { cilHracId: jiny });
 });
 
 it("odchylka složení je vidět", () => {
@@ -187,7 +195,7 @@ it("Zpět na výběr Nástupce: po losu rovnou, po rozeslání jen s potvrzením
   expect(diploApi.zpet).toHaveBeenCalledWith(zapas.id, true);
 });
 
-// Po rozeslání už není co losovat — zůstává jen úprava, návrat a přehled.
+// Po rozeslání už není co losovat ani upravovat — zůstává návrat a přehled.
 it("po rozeslání zmizí Přelosovat a Rozeslat, přehled se dá zkopírovat", () => {
   render(<PultGm zapas={zapas} data={gmData("rozeslano", ROLE_LOS, "h1")} hlidej={spust} />);
   odkryj();

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { odchylkySlozeni, povoleneCile, textPrehledu } from "../../../src/shared/diplomacie/los.js";
 import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
 import { ROLE_VOLITELNE, type DiploData, type Role } from "../../../src/shared/diplomacie/typy.js";
@@ -17,16 +17,10 @@ import { ZNAK_ROLE } from "./znaky.js";
 
 const POPIS_STAVU = { priprava: "Příprava", losovano: "Losováno", rozeslano: "Rozesláno" } as const;
 
-/** Otázka před změnou, kterou hráč už vidí (spec §6.2), a co se stane po „Ano“. */
-interface Dotaz {
-  text: ReactNode;
-  potvrdit: () => void;
-}
-
 /** Pult GM (spec §8.1). Nic si nedrží lokálně — všechno je ve stavu ze serveru. */
 export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploData; hlidej: Hlidej }) {
   const [pracuje, setPracuje] = useState(false);
-  const [dotaz, setDotaz] = useState<Dotaz | null>(null);
+  const [ptaSeNaZpet, setPtaSeNaZpet] = useState(false);
   const d = diploZapasu(data, zapas.id);
   if (!d) return null;
   const verze = verzeZapasu(data, d);
@@ -41,18 +35,16 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
     setPracuje(true);
     void hlidej(fn).finally(() => setPracuje(false));
   };
-  // Po rozeslání hráč roli vidí: změna se nejdřív zeptá v okně webu
-  // (Potvrzeni, jako jinde na webu), teprve „Ano“ ji pošle s `potvrzeno`.
-  const potvrzeni = d.stav === "rozeslano";
-  const zmen = (hracId: string, zmena: { role?: Role; cilHracId?: string }) => {
-    const posli = () => akce(() => diploApi.role(zapas.id, hracId, potvrzeni ? { ...zmena, potvrzeno: true } : zmena));
-    if (potvrzeni) setDotaz({ text: <>{hrac(hracId)} už svou roli vidí. Opravdu ji změnit?</>, potvrdit: posli });
-    else posli();
-  };
+  // Po rozeslání hráči role vidí a hrají podle nich: tabulka je jen text
+  // a server úpravu odmítne (uživatel 2. 10. 2026). Jediná cesta zpátky je
+  // „Zpět na výběr Nástupce“ — ta se nejdřív zeptá v okně webu (Potvrzeni,
+  // jako jinde na webu) a teprve „Ano“ ji pošle s `potvrzeno`.
+  const rozeslano = d.stav === "rozeslano";
+  const zmen = (hracId: string, zmena: { role?: Role; cilHracId?: string }) => akce(() => diploApi.role(zapas.id, hracId, zmena));
+  const posliZpet = () => akce(() => diploApi.zpet(zapas.id, rozeslano));
   const zpet = () => {
-    const posli = () => akce(() => diploApi.zpet(zapas.id, potvrzeni));
-    if (potvrzeni) setDotaz({ text: "Role už hráči vidí. Opravdu je smazat a vybírat Nástupce znovu?", potvrdit: posli });
-    else posli();
+    if (rozeslano) setPtaSeNaZpet(true);
+    else posliZpet();
   };
   const odchylky = d.role.length > 0 ? odchylkySlozeni(d.role) : [];
   const jmena = Object.fromEntries(zapas.ucastnici.map((u) => [u.barva, jmenoHrace(u)])) as Partial<Record<Barva, string>>;
@@ -110,8 +102,8 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                         <img className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={36} height={36} />
                       </td>
                       <td>
-                        {r.role === "nastupce" ? (
-                          <strong>{NAZEV_ROLE.nastupce}</strong>
+                        {r.role === "nastupce" || rozeslano ? (
+                          <strong>{NAZEV_ROLE[r.role]}</strong>
                         ) : (
                           <select aria-label={`Role: ${jmeno(r.hracId)}`} value={r.role} disabled={pracuje} onChange={(e) => zmen(r.hracId, { role: e.target.value as Role })}>
                             {ROLE_VOLITELNE.map((v) => (
@@ -123,7 +115,12 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                         )}
                       </td>
                       <td>
-                        {r.role === "kat" || r.role === "zoldak" ? (
+                        {rozeslano && r.cilHracId && (r.role === "kat" || r.role === "zoldak") ? (
+                          <span>
+                            {r.role === "kat" ? "oběť: " : "pakt s: "}
+                            {hrac(r.cilHracId)}
+                          </span>
+                        ) : r.role === "kat" || r.role === "zoldak" ? (
                           <div className="cil-s-barvou">
                             {barvaCile === undefined ? null : <ZnakBarvy barva={barvaCile} />}
                             <select aria-label={`Cíl: ${jmeno(r.hracId)}`} value={r.cilHracId ?? ""} disabled={pracuje} onChange={(e) => zmen(r.hracId, { cilHracId: e.target.value })}>
@@ -170,14 +167,14 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         )}
         <PravidlaHry verze={verze} />
       </Zakryti>
-      {dotaz ? (
+      {ptaSeNaZpet ? (
         <Potvrzeni
-          text={dotaz.text}
+          text="Role už hráči vidí. Opravdu je smazat a vybírat Nástupce znovu?"
           onPotvrdit={() => {
-            setDotaz(null);
-            dotaz.potvrdit();
+            setPtaSeNaZpet(false);
+            posliZpet();
           }}
-          onZrusit={() => setDotaz(null)}
+          onZrusit={() => setPtaSeNaZpet(false)}
         />
       ) : null}
     </section>

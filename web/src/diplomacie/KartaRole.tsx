@@ -85,7 +85,6 @@ function ObsahRole({ moje, vse, ucastnici }: { moje: RoleHrace; vse: RoleHrace[]
   const ostatni = moje.role === "najezdnik" ? vse.filter((r) => r.role === "najezdnik" && r.hracId !== moje.hracId) : [];
   return (
     <div className={`role role-${moje.role}`}>
-      {moje.upravenoPoRozeslani ? <p className="upozorneni varovani">GM upravil tvou roli.</p> : null}
       {/* Znak mimo h4: uvnitř by alt zdvojil přístupný název nadpisu. */}
       <img className="znak-role" src={ZNAK_ROLE[moje.role]} alt={NAZEV_ROLE[moje.role]} width={104} height={104} />
       <h4>{NAZEV_ROLE[moje.role]}</h4>

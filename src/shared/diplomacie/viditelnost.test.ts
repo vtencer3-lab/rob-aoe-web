@@ -4,13 +4,13 @@ import { redigujDiplo } from "./viditelnost.js";
 
 const GM = "gm";
 const role: RoleHrace[] = [
-  { hracId: "n", role: "nastupce", cilHracId: null, upravenoPoRozeslani: false },
-  { hracId: "g", role: "garda", cilHracId: null, upravenoPoRozeslani: false },
-  { hracId: "j1", role: "najezdnik", cilHracId: null, upravenoPoRozeslani: false },
-  { hracId: "j2", role: "najezdnik", cilHracId: null, upravenoPoRozeslani: false },
-  { hracId: "s", role: "sasek", cilHracId: null, upravenoPoRozeslani: true },
-  { hracId: "z", role: "zoldak", cilHracId: "g", upravenoPoRozeslani: false },
-  { hracId: "k", role: "kat", cilHracId: "s", upravenoPoRozeslani: false },
+  { hracId: "n", role: "nastupce", cilHracId: null },
+  { hracId: "g", role: "garda", cilHracId: null },
+  { hracId: "j1", role: "najezdnik", cilHracId: null },
+  { hracId: "j2", role: "najezdnik", cilHracId: null },
+  { hracId: "s", role: "sasek", cilHracId: null },
+  { hracId: "z", role: "zoldak", cilHracId: "g" },
+  { hracId: "k", role: "kat", cilHracId: "s" },
 ];
 const data = (stav: StavDiplo): DiploData => ({
   aktivni: null,

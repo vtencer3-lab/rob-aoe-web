@@ -16,7 +16,6 @@ export interface RoleHrace {
   role: Role;
   /** Oběť Kata nebo pakt Žoldáka; jinak null. */
   cilHracId: string | null;
-  upravenoPoRozeslani: boolean;
 }
 
 /** Diplomacie jednoho zápasu, jak ji vidí GM (nic nezaslepeno). */

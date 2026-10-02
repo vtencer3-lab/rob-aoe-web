@@ -35,7 +35,7 @@ it("všech pět rout GM odmítne admina-ne-GM i hráče zápasu 403", async () =
   }
 });
 
-it("celý průchod: Nástupce → los → úprava → rozeslání → úprava s potvrzením → zpět", async () => {
+it("celý průchod: Nástupce → los → úprava → rozeslání → úprava odmítnuta → zpět", async () => {
   const { zapas } = await zapasOsmi("diplomacie");
   const gm = await klient("h7", false);
   const u = `/api/diplo/zapas/${zapas.id}`;
@@ -53,16 +53,22 @@ it("celý průchod: Nástupce → los → úprava → rozeslání → úprava s 
   const sasek = d.role.find((r) => r.role === "sasek")!.hracId;
   const zmena = await app.inject({ method: "PUT", url: `${u}/role/${sasek}`, cookies: { sid: gm }, payload: { role: "kat" } });
   expect(zmena.statusCode).toBe(200);
-  expect((await getDiploZapas(zapas.id))!.role.find((r) => r.hracId === sasek)).toMatchObject({ role: "kat", upravenoPoRozeslani: false });
+  expect((await getDiploZapas(zapas.id))!.role.find((r) => r.hracId === sasek)).toMatchObject({ role: "kat" });
 
   expect((await post(`${u}/rozeslat`, gm)).statusCode).toBe(200);
   expect((await getDiploZapas(zapas.id))!.stav).toBe("rozeslano");
 
-  const bez = await app.inject({ method: "PUT", url: `${u}/role/${sasek}`, cookies: { sid: gm }, payload: { role: "sasek" } });
-  expect(bez.statusCode).toBe(409);
-  const s = await app.inject({ method: "PUT", url: `${u}/role/${sasek}`, cookies: { sid: gm }, payload: { role: "sasek", potvrzeno: true } });
-  expect(s.statusCode).toBe(200);
-  expect((await getDiploZapas(zapas.id))!.role.find((r) => r.hracId === sasek)).toMatchObject({ role: "sasek", cilHracId: null, upravenoPoRozeslani: true });
+  // Po rozeslání se role nemění (pravidlo z 2. 10. 2026): úprava role
+  // i cíle je 409 s větou pro GM — ani `potvrzeno` ji nepustí — a role
+  // zůstanou přesně tak, jak byly rozeslány.
+  const rozeslane = (await getDiploZapas(zapas.id))!.role;
+  const kat = rozeslane.find((r) => r.hracId === sasek)!;
+  for (const payload of [{ role: "sasek" }, { role: "sasek", potvrzeno: true }, { cilHracId: kat.cilHracId === "h1" ? "h2" : "h1", potvrzeno: true }]) {
+    const pokus = await app.inject({ method: "PUT", url: `${u}/role/${sasek}`, cookies: { sid: gm }, payload });
+    expect(pokus.statusCode).toBe(409);
+    expect(pokus.json().chyba).toBe("Role jsou rozeslané — změnit je jde jen přes Zpět na výběr Nástupce.");
+  }
+  expect((await getDiploZapas(zapas.id))!.role).toEqual(rozeslane);
 
   expect((await post(`${u}/zpet`, gm)).statusCode).toBe(409);
   expect((await post(`${u}/zpet`, gm, { potvrzeno: true })).statusCode).toBe(200);

@@ -497,9 +497,10 @@ Neblokuje.
   - **Zpět na výběr Nástupce**: smaže role, stav `priprava`; pro restart hry,
     když scénář cíle nerozdal,
   - **Rozeslat role**: stav `rozeslano`, `rozeslano_v`.
-- **Po rozeslání** jde roli upravit dál, ale každou změnu musí GM potvrdit
-  dialogem. Dotčenému hráči se nastaví `upraveno_po_rozeslani` a na kartě
-  uvidí „GM upravil tvou roli“.
+- **Po rozeslání** se role už nemění — tabulka pultu je jen text a jediná
+  cesta zpět je „Zpět na výběr Nástupce“ (změna pravidla z 2. 10. 2026,
+  §12). Původní návrh: úprava s potvrzením dialogem, dotčený hráč dostal
+  `upraveno_po_rozeslani` a na kartě viděl „GM upravil tvou roli“.
 - **Zkopírovat přehled:** textový výpis ve formátu Jinova nástroje
   (`getFullText`), třeba pro Discord.
 
@@ -512,7 +513,7 @@ je `diplo_zapas.gm_hrac_id`. Admin, který není GM, dostane 403.
 |---|---|---|
 | `POST nastupce` `{hracId}` | `priprava` | uloží Nástupce |
 | `POST los` | `priprava`/`losovano` | los (nebo přelos), → `losovano` |
-| `PUT role/:hracId` `{role, cilHracId?}` | `losovano`/`rozeslano` | úprava; v `rozeslano` vyžaduje `{potvrzeno: true}` |
+| `PUT role/:hracId` `{role, cilHracId?}` | `losovano` | úprava; v `rozeslano` 409 „Role jsou rozeslané — změnit je jde jen přes Zpět na výběr Nástupce.“ (od 2. 10. 2026, §12) |
 | `POST rozeslat` | `losovano` | → `rozeslano` |
 | `POST zpet` | `losovano`/`rozeslano` | smaže role, → `priprava` (v `rozeslano` s potvrzením) |
 
@@ -532,7 +533,7 @@ v routě.
 |---|---|
 | GM zápasu | všechno: role, cíle, stav |
 | hráč zápasu, stav `priprava`/`losovano` | jen stav („čeká se“) |
-| hráč zápasu, `rozeslano` | svou roli; Kat svou oběť, Žoldák svůj pakt, Nájezdník druhého Nájezdníka; všichni jméno Nástupce; vlastní příznak „upraveno“ |
+| hráč zápasu, `rozeslano` | svou roli; Kat svou oběť, Žoldák svůj pakt, Nájezdník druhého Nájezdníka; všichni jméno Nástupce |
 | kdokoli jiný, včetně admina a diváka | stav a po rozeslání jméno Nástupce |
 
 Tajná data jsou **jen** ve větvi `rezim.data` a nikde jinde: žádné tajné
@@ -733,3 +734,18 @@ a snímek nese `akce.vychoziNastaveniLobby`; parser `application/octet-stream`
 je jen u routy nahrání, autor se ověří dřív, než se čte tělo, poznámka má
 nejvýš 500 znaků; krok hosta se stažením scénáře stojí před oknem Create
 Lobby; hláška kontroly lobby u jiné verze téhož scénáře říká „jiná verze“.
+
+**Změna pravidla 2. 10. 2026 (proti §6.2): po rozeslání se role nemění.**
+Uživatel po revizi `/aoe/diplo`: „po rozeslání rolí by už GMko nemělo mít
+možnost měnit ty dropdowny“. Ve stavu `rozeslano` ukazuje tabulka pultu GM
+roli (znak a název) i cíl (oběť Kata, pakt Žoldáka, „zná:“ u Nájezdníků)
+jako text se jménem a barvou hráče, bez roletek; `PUT role/:hracId` vrací
+409 „Role jsou rozeslané — změnit je jde jen přes Zpět na výběr Nástupce.“
+bez ohledu na `potvrzeno` (to zůstává jen u `POST zpet`). S tím zanikl
+potvrzovací dialog změny role, hláška „GM upravil tvou roli“ na kartě hráče
+a příznak `upravenoPoRozeslani` v typech, redakci a API. **Sloupec
+`diplo_role.upraveno_po_rozeslani` v databázi zůstává** (migrace 031,
+výchozí `false`) — žádná migrace, jen se přestal číst a zapisovat. Zvon při
+přechodu do `rozeslano` (§8.2) zůstává: ohlašuje rozeslání, ne úpravu.
+Poznámka výš o příznaku „upraveno“ u partnera Nájezdníka tím ztratila
+předmět.

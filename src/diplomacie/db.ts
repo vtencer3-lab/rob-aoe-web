@@ -123,13 +123,12 @@ interface RoleDb {
   hrac_id: string;
   role: Role;
   cil_hrac_id: string | null;
-  upraveno_po_rozeslani: boolean;
 }
 
 async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
   if (zapasy.length === 0) return [];
   const { rows: role } = await getPool().query<RoleDb>(
-    `SELECT r.zapas_id, r.hrac_id, r.role, r.cil_hrac_id, r.upraveno_po_rozeslani
+    `SELECT r.zapas_id, r.hrac_id, r.role, r.cil_hrac_id
        FROM diplo_role r JOIN ucastnik u ON u.zapas_id = r.zapas_id AND u.hrac_id = r.hrac_id
       WHERE r.zapas_id = ANY($1::int[]) ORDER BY r.zapas_id, u.poradi`,
     [zapasy.map((z) => z.zapas_id)],
@@ -144,7 +143,7 @@ async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
     scenarId: z.scenar_id,
     role: role
       .filter((r) => r.zapas_id === z.zapas_id)
-      .map((r) => ({ hracId: r.hrac_id, role: r.role, cilHracId: r.cil_hrac_id, upravenoPoRozeslani: r.upraveno_po_rozeslani })),
+      .map((r) => ({ hracId: r.hrac_id, role: r.role, cilHracId: r.cil_hrac_id })),
   }));
 }
 
@@ -177,13 +176,16 @@ export async function zrusNastupceMimoSestavu(zapasId: number, hraci: string[]):
   );
 }
 
+// Sloupec `diplo_role.upraveno_po_rozeslani` (migrace 031) se od 2. 10. 2026
+// nečte ani nezapisuje: po rozeslání se role nemění, takže příznak nemá kdy
+// vzniknout. V tabulce zůstává s výchozí hodnotou — bez migrace.
 export async function ulozRole(zapasId: number, role: RoleHrace[], stav: StavDiplo): Promise<void> {
   await withTransaction(async (c) => {
     await c.query("DELETE FROM diplo_role WHERE zapas_id = $1", [zapasId]);
     for (const r of role) {
       await c.query(
-        `INSERT INTO diplo_role (zapas_id, hrac_id, role, cil_hrac_id, upraveno_po_rozeslani) VALUES ($1, $2, $3, $4, $5)`,
-        [zapasId, r.hracId, r.role, r.cilHracId, r.upravenoPoRozeslani],
+        `INSERT INTO diplo_role (zapas_id, hrac_id, role, cil_hrac_id) VALUES ($1, $2, $3, $4)`,
+        [zapasId, r.hracId, r.role, r.cilHracId],
       );
     }
     await c.query("UPDATE diplo_zapas SET stav = $2, upraveno_v = now() WHERE zapas_id = $1", [zapasId, stav]);
@@ -193,8 +195,8 @@ export async function ulozRole(zapasId: number, role: RoleHrace[], stav: StavDip
 export async function upravRoli(zapasId: number, r: RoleHrace): Promise<void> {
   await withTransaction(async (c) => {
     await c.query(
-      `UPDATE diplo_role SET role = $3, cil_hrac_id = $4, upraveno_po_rozeslani = $5 WHERE zapas_id = $1 AND hrac_id = $2`,
-      [zapasId, r.hracId, r.role, r.cilHracId, r.upravenoPoRozeslani],
+      `UPDATE diplo_role SET role = $3, cil_hrac_id = $4 WHERE zapas_id = $1 AND hrac_id = $2`,
+      [zapasId, r.hracId, r.role, r.cilHracId],
     );
     await c.query("UPDATE diplo_zapas SET upraveno_v = now() WHERE zapas_id = $1", [zapasId]);
   });

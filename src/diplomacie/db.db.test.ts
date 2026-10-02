@@ -62,9 +62,13 @@ it("zápas si otiskne aktivní verzi a role se ukládají i mažou", async () =>
   const role = losujRole(["h1", "h2", "h3", "h4", "h5", "h6", "h8"], "h1", () => 0);
   await ulozRole(zapas.id, role, "losovano");
   expect((await getDiploZapas(zapas.id))?.role).toEqual(role);
+  // Úprava GM před rozesláním: přepíše roli i cíl jednoho hráče, ostatní nechá.
+  await upravRoli(zapas.id, { ...role[1]!, role: "zoldak", cilHracId: "h4" });
+  const poUprave = (await getDiploZapas(zapas.id))!.role;
+  expect(poUprave[1]).toEqual({ hracId: role[1]!.hracId, role: "zoldak", cilHracId: "h4" });
+  expect(poUprave.filter((_, i) => i !== 1)).toEqual(role.filter((_, i) => i !== 1));
   await setStavDiplo(zapas.id, "rozeslano");
-  await upravRoli(zapas.id, { ...role[1]!, upravenoPoRozeslani: true });
-  expect((await getDiploZapas(zapas.id))?.role[1]?.upravenoPoRozeslani).toBe(true);
+  expect((await getDiploZapas(zapas.id))?.stav).toBe("rozeslano");
 
   await vratNaPripravu(zapas.id);
   expect(await getDiploZapas(zapas.id)).toMatchObject({ stav: "priprava", nastupceHracId: null, role: [] });
