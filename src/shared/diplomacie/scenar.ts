@@ -1,4 +1,5 @@
 import { BARVY, type Barva } from "../types.js";
+import { overovace } from "./overeni.js";
 
 /** Co rozbor scénáře (src/diplomacie/rozbor.py) vrací; spec §5.2. */
 export interface RozborScenare {
@@ -22,26 +23,11 @@ export interface RozborScenare {
 export const REZIMY_VITEZSTVI = ["standard", "dobyti", "skore", "cas", "vlastni"] as const;
 export type RezimVitezstvi = (typeof REZIMY_VITEZSTVI)[number];
 
-const cislo = (v: unknown, kde: string): number => {
-  if (typeof v !== "number" || !Number.isFinite(v)) throw new Error(`Rozbor: ${kde} není číslo.`);
-  return v;
-};
+const { cislo, text, pole, objekt } = overovace("Rozbor");
 const cisloNeboNull = (v: unknown, kde: string): number | null => (v === null ? null : cislo(v, kde));
-const text = (v: unknown, kde: string): string => {
-  if (typeof v !== "string") throw new Error(`Rozbor: ${kde} není text.`);
-  return v;
-};
 const barva = (v: unknown, kde: string): Barva => {
   if (!BARVY.includes(v as Barva)) throw new Error(`Rozbor: ${kde} není barva 1–8.`);
   return v as Barva;
-};
-const pole = (v: unknown, kde: string): unknown[] => {
-  if (!Array.isArray(v)) throw new Error(`Rozbor: ${kde} není seznam.`);
-  return v;
-};
-const objekt = (v: unknown, kde: string): Record<string, unknown> => {
-  if (typeof v !== "object" || v === null || Array.isArray(v)) throw new Error(`Rozbor: ${kde} chybí.`);
-  return v as Record<string, unknown>;
 };
 
 /** Ověří tvar výstupu rozboru. Do databáze ani ke klientovi nesmí nic jiného. */
