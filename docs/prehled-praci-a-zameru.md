@@ -37,7 +37,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-22.0** (49 commitů od 1.13.10, 1.–2. 10. 2026), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, závěrečná recenze, opravná vlna i re-recenze za sebou, migrace 030–032. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5), pak mód poběží pod přepínačem i na devu. Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-22.10** (1.–2. 10. 2026; od 22.2 dávka úprav rozhraní po revizi uživatele — §3.60, „Dávka úprav rozhraní 2. 10. 2026“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, závěrečná recenze, opravná vlna i re-recenze za sebou, migrace 030–032. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5), pak mód poběží pod přepínačem i na devu. Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
 | Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc `030_rezim_akce.sql` a `031_diplomacie.sql` (§3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
@@ -1779,7 +1779,7 @@ ne ranked pravidla, takže se to nepromítá. Neověřeno naživo: zda Worlds
 Edge seznam lobby vydává nové civ id 60–62 ve slotech stejně jako ostatní
 (očekává se, id je z téže řady).
 
-### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-22.0, 1.–2. 10. 2026)
+### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-22.10, 1.–2. 10. 2026)
 
 **Záměr.** Jin (autor scénáře) připravil pro komunitní večery custom scénář
 *Diplomacie – Ať žije císař* (`LLC.aoe2scenario`, DE 1.59): 7 hráčů a
@@ -1875,8 +1875,9 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   Host má v kroku „Zakládáš!“ tlačítko **Stáhnout scénář** (verze zápasu,
   ne nutně ta aktivní), cestu
   `%USERPROFILE%\Games\Age of Empires 2 DE\<ID>\resources\_common\scenario\`
-  s jeho vlastním Steam ID nebo XUID a pokyn zvolit v Create Lobby Custom
-  Scenario; kontrola lobby hlídá řádek „Scénář“. Po startu hry rozdá
+  s jeho vlastním Steam ID nebo XUID (větu o volbě Custom Scenario krok od
+  2. 10. 2026 nemá — ukazuje to okno Create Lobby hned pod ním); kontrola
+  lobby hlídá řádek „Scénář“. Po startu hry rozdá
   sekundární cíle hra sama; GM v pultu klikne na hráče, který cíl nedostal
   (**Nástupce císaře**), **Rozdat role** (Šašek, Garda, 2× Nájezdník,
   Žoldák, Kat; oběť Kata a pakt Žoldáka losem z `node:crypto`), případně
@@ -1961,7 +1962,8 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   spec říká „potvrdit dialogem“ a repo svůj dialog má.
 - **Více stran v kartě zápasu jako mřížka bez „VS“** (úkol 18): u FFA
   s osmi stranami se VS mezi každou dvojicí nevešlo a nic neoddělovalo;
-  1v1, 2v2 a 4v4 beze změny.
+  1v1, 2v2 a 4v4 beze změny. Od 2. 10. 2026 vždy dva sloupce plněné shora
+  dolů (1–4 | 5–8), na telefonu jeden.
 - Zamítnuto / odloženo (§5): scénář na míru zápasu, most ke hře (XS skript
   nebo záznam hry).
 
@@ -2004,6 +2006,26 @@ v kartě režie jmenuje Nástupce až po rozeslání (admin bývá i GM a jemu
 server nezaslepuje), správa scénáře se v „pohledu uživatele“ schová jen
 adminovi. Odloženo do podprojektu 2: `scenarStarsi` v historii kroků (`!==`),
 Reset po nahrání neaktivované verze.
+
+**Dávka úprav rozhraní 2. 10. 2026** (1.13.10-22.2 → 22.10; připomínky
+uživatele po revizi `/aoe/diplo`, zadání `.superpowers/sdd/2026-10-02-davka-1/`
+mimo git). Co platí teď:
+
+| verze | co a proč |
+|---|---|
+| -22.2 | **Strany FFA ve dvou sloupcích po sloupcích** (`StranyZapasu`, `.vs-rozlozeni.mnoho-stran`): vlevo první polovina stran, vpravo druhá; počet řádků dává komponenta proměnnou `--radku-stran`. `auto-fill` dávalo na širokém monitoru 3+3+2 a civilizace se krátily na „L…“. |
+| -22.3 | Krok hosta bez věty o Create Lobby (totéž ukazuje okno pod ním); zakrytá karta má popisek jen „Tvá tajná role“, co kliknutí udělá, říká `title` (`Zakryti` má volitelnou `napoveda`; pult GM beze změny). |
+| -22.4 | **Mapa na kartě role stejně široká jako karta** (578 px místo 224; na telefonu šířka sekce) — pravidlo `.karta-role .mapa-scenare` přepisuje proměnné komponenty, vlastní minimapa (`.vlastni`) drží popisek pod kosočtvercem. |
+| -22.5 | **Barva u každého jména účastníka** — `web/src/views/JmenoSBarvou.tsx` (`ZnakBarvy`, `JmenoSBarvou`, `JmenoUcastnika`, `VycetUcastniku`, `VitezVeVete`). Čtvereček nese barvu sám (`.swatch.barva-N`), ne přes předka: karta hráče je `.karta.barva-N` a předek by čtverečky přebarvil. Stojí v levém odsazení jména (absolutně), takže se od jména nezalomí. Kde: karta role (Nástupce, oběť, pouto, další Nájezdníci), pult GM (jména řádků, „zná:“, čtvereček vybraného cíle vedle roletky), `VerejnyRadek`, věta o vítězi v hlavičce zápasu (režie, historie, veřejný řádek), strany ve `VerejnyZapas`, věta o sdílené civilizaci v `KartaHrace`, `VyberVitezu`. Věta o vítězi se skládá z částí `vetaOViteze` v `src/shared/strany.ts` (text i stránka z jednoho zdroje). `Potvrzeni` bere otázku jako uzel. Vědomě bez čtverečku: řádky sestavy (mají vlastní čtvereček s číslem), dlaždice Nástupce a tlačítka výsledku (celé v barvě), položky roletek, text do schránky, `window.confirm` u změny hosta, autor v chatu (barvu má jako barvu písma). |
+| -22.6 | **Sabotáž** místo „ekonomické sankce“ Nájezdníků: jedna za hru na Nájezdníka, na jednoho hráče nejvýš jedna, 2000 zlata GM. Sankce Rady králů u Nástupce je jiné pravidlo. |
+| -22.7 | Zlaté `<button class="cta">` pod kurzorem hnědlo s tmavým nápisem: pravidlo zlatého hoveru znalo `.cta` jen jako holou třídu (stačí odkazu) a obecné `button:hover:enabled` ho o prvek přebilo. Přidáno `button.cta:hover:enabled`; „Rozeslat role“ je větší než sousedé (207 × 47 px proti 30 px výšky). |
+| -22.8 | **„Zamíchat barvy“** ve skládání sestavy (i v úpravě zápasu), od dvou hráčů. Pravidla dává mód přes `zamichejBarvyRezimu` v `src/shared/rezimy.ts`: klasicky se permutují použité barvy (kdo barvu sdílí, sdílí ji dál), v Diplomacii zůstává GM na šedé a ostatní si rozdělí barvy bez šedé. Výsledek se vždy liší od dosavadního rozdání; Fisher–Yates je sdílený v `src/shared/michani.ts` (používá ho i los rolí). Toast kroku: „Barvy zamíchány“. |
+| -22.9 | **Po rozeslání se role nemění** (změna pravidla proti spec §6.2, spec §12): tabulka pultu je ve stavu `rozeslano` jen text (znak a název role; „oběť:“, „pokrevní pouto:“, „zná:“ se jménem a barvou), `PUT role` vrací 409 „Role jsou rozeslané — změnit je jde jen přes Zpět na výběr Nástupce.“ Zanikl potvrzovací dialog změny role, `potvrzeno` u role, hláška „GM upravil tvou roli“ a příznak `upravenoPoRozeslani`; sloupec `diplo_role.upraveno_po_rozeslani` v DB zůstal bez migrace, nečte se ani nezapisuje. Zvon při rozeslání zůstává. |
+| -22.10 | **Jednotný sloh pravidel rolí** (`POPIS_ROLE`): cíl začíná „Vyhrává, když …“, výhody a nevýhody krátké věty ve 3. osobě, znění od uživatele; pravidla se nemění. Stejně primární cíle v taháku a popisky na kartě („Oběť:“). Sloh hlídá test v `role.test.ts`. |
+
+Měřeno v headless Chrome na 1280 a 390 px (náhledová stránka mimo repo):
+bez přetečení stránky; na 390 px zůstává známá slabina jádra — tlačítko
+civilizace v řádku strany se smrskne na ~17 px (bylo tak i před dávkou).
 
 **Co zůstává otevřené** (menší nálezy z revizí, každý v ledgeru s místem
 v kódu; nic z toho neblokuje hru):
@@ -2476,6 +2498,7 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
 | 1.13.10-13.10 … 1.13.10-21.8 | 1. 10. (větev `diplo`) | **Mód Diplomacie, podprojekty 0 a 1 (§3.60)** — 31 commitů, nemergnuto do `dev`: nasazení `/aoe/diplo` a verzování (-13.10), kontrola souboru scénáře v lobby (-14.0), mód akce a migrace 030 (-15.0), pravidla rolí, rozbor Pythonem, viditelnost (-15.1 … -15.3), tabulky `diplo_*` migrace 031 (-16.0), háčky v jádru (-17.0), strany pro FFA a tým „–“ (-17.1 … -17.4), víc vítězů (-18.0), AI mimo šedou (-18.1), routy GM (-19.0), verze scénáře a `AUTORI_SCENARE` (-20.0), místa módu v obrazovkách a zakrytí (-20.1, -20.2), scénář určuje mapu / velikost / Victory (-21.0), minimapa (-21.1), karta role (-21.2, -21.3), pult GM (-21.4, -21.5), správa a stažení scénáře (-21.6), grafika rolí, rubu a rámu (-21.7, -21.8) |
+| 1.13.10-22.2 … 1.13.10-22.10 | 2. 10. (větev `diplo`) | **Dávka úprav rozhraní po revizi uživatele (§3.60)** — strany FFA ve dvou sloupcích (-22.2), kratší krok hosta a popisek zakryté karty (-22.3), velká mapa na kartě role (-22.4), barva u každého jména účastníka — `JmenoSBarvou` (-22.5), Sabotáž Nájezdníků (-22.6), hover zlatého tlačítka a větší „Rozeslat role“ (-22.7), „Zamíchat barvy“ ve skládání (-22.8), po rozeslání se role nemění (-22.9), jednotný sloh pravidel rolí (-22.10) |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |

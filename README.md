@@ -385,6 +385,8 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   Po startu hry rozdá sekundární cíle hra sama; GM v pultu označí hráče,
   který cíl nedostal (**Nástupce císaře**), nechá web rozdat zbylé role
   (Šašek, Garda, 2× Nájezdník, Žoldák, Kat), případně je upraví a **rozešle**.
+  Po rozeslání už role měnit nejde — tabulka v pultu je jen text a zpátky
+  vede jen „Zpět na výběr Nástupce“.
   Hráčům zazvoní zvon a objeví se **zakrytá karta**: kliknutím odkryjí
   znak a název role, cíl, výhody a nevýhody, tajné údaje (Kat svou oběť,
   Žoldák svůj pakt, Nájezdník druhého Nájezdníka) a minimapu se svým
