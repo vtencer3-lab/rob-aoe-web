@@ -106,7 +106,7 @@ export const api = {
   /** Sada 7TV emotů Robova kanálu (server ji hodinu drží). */
   emoty: () => fetch(cesta("/api/emoty")).then((r) => json<{ emoty: { jmeno: string; url: string; siroky: boolean; nulovaSirka: boolean }[] }>(r)),
   /** Push-to-talk admina: jeden kousek nahrávky (nebo značka konce) pro účastníky zápasu. */
-  hlas: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string }) =>
+  hlas: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string; zesileni?: number }) =>
     fetch(cesta(`/api/zapas/${zapasId}/hlas`), {
       method: "POST",
       headers: { "content-type": "application/json" },

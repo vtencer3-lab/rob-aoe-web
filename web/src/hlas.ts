@@ -1,3 +1,4 @@
+import { ZESILENI_MAX, ZESILENI_MIN, orizniZesileni } from "../../src/shared/hlas.js";
 import type { HlasUdalost } from "../../src/shared/types.js";
 import { hlasitost } from "./zvuk.js";
 
@@ -37,9 +38,8 @@ export function nastavHlasitostAdmina(procent: number): void {
     // Bez úložiště platí do obnovení stránky jen výchozí.
   }
 }
-/** Zesílení mikrofonu v procentech: 100 = bez zásahu, 400 = čtyřnásobek. */
-export const ZESILENI_MIN = 100;
-export const ZESILENI_MAX = 400;
+// Rozsah (100–400 %) je sdílený se serverem, viz src/shared/hlas.ts.
+export { ZESILENI_MAX, ZESILENI_MIN };
 export const VYCHOZI_ZESILENI = 100;
 
 export function zesileniMikrofonu(): number {
@@ -60,69 +60,91 @@ export function nastavZesileniMikrofonu(procent: number): void {
   }
 }
 
+/** Do téhle úrovně (z plného rozsahu 1) křivka omezení signál nemění vůbec. */
+const KOLENO = 0.6;
+/** Kolikanásobek plného rozsahu křivka pokrývá: nejvyšší zesílení. */
+const ROZSAH_KRIVKY = ZESILENI_MAX / 100;
+
 /**
- * Měkké omezení (tanh): nad prahem se křivka plynule ohýbá a nikdy nepřeteče
- * přes 1. Kompresor (`DynamicsCompressor`) tady dřív lupal — má náběh (attack),
- * takže první milisekundy hlasité slabiky projdou nezkrácené a useknou se
- * natvrdo (uživatel 16. 9. 2026: „po tom zesílení ten zvuk lupe“). Tvar
- * křivky nemá náběh, ohne každý vzorek hned.
+ * Měkké omezení zesíleného hlasu. Vstup křivky je vzorek po zesílení dělený
+ * `ROZSAH_KRIVKY` (WaveShaper bere jen −1…1, zesílený vzorek může být až 4).
+ * Do kolena je křivka přímka se sklonem 1 — „150 %“ je opravdu 1,5×; nad
+ * kolenem se plynule (tanh) ohýbá k 1 a nikdy ji nepřekročí.
+ *
+ * Původní křivka `tanh(1,6·x)` přímku neměla: už u tichého signálu násobila
+ * 1,74× (z „150 %“ dělala 2,6×, měřeno 2. 10. 2026) a vzorky nad 1 usekla
+ * natvrdo. Kompresor (`DynamicsCompressor`) tu ještě dřív lupal — má náběh
+ * (attack), první milisekundy hlasité slabiky projdou nezkrácené (uživatel
+ * 16. 9. 2026). Křivka náběh nemá, ohne každý vzorek hned.
  */
-function krivkaOmezeni(delka = 2048): Float32Array<ArrayBuffer> {
+export function krivkaOmezeni(delka = 4097): Float32Array<ArrayBuffer> {
   const k = new Float32Array(new ArrayBuffer(delka * Float32Array.BYTES_PER_ELEMENT));
   for (let i = 0; i < delka; i++) {
-    const x = (i / (delka - 1)) * 2 - 1;
-    // tanh se strmostí 1,6: do ±0,5 skoro rovné, dál plynule saturuje.
-    k[i] = Math.tanh(x * 1.6) / Math.tanh(1.6);
+    const x = ((i / (delka - 1)) * 2 - 1) * ROZSAH_KRIVKY;
+    const a = Math.abs(x);
+    k[i] = Math.sign(x) * (a <= KOLENO ? a : KOLENO + (1 - KOLENO) * Math.tanh((a - KOLENO) / (1 - KOLENO)));
   }
   return k;
 }
 
+/** Jeden kontext Web Audia pro zesílené přehrávání na celou stránku. */
+let kontextPrehravani: AudioContext | null = null;
+
 /**
- * Proud z mikrofonu zesílený podle nastavení (uživatel 15. 9. 2026: „možnost
- * boostnout svůj mikrofon“). Web Audio: zdroj → zisk → měkké omezení →
- * výstupní proud. Vrací i zavření kontextu; při 100 % nebo bez Web Audia se
- * vrací původní proud a zavírat není co.
+ * Zesílí přehrávání prvku podle nastavení mluvčího (uživatel 15. 9. 2026:
+ * „možnost boostnout svůj mikrofon“): prvek → zisk → měkké omezení → výstup.
+ * Při 100 % nebo bez Web Audia se nic nezapojuje a prvek hraje přímo.
  *
- * Kontext se zakládá se vzorkovací frekvencí mikrofonu: s jinou by prohlížeč
- * musel převzorkovávat a na hranicích bloků to cvakalo. Zároveň se hned
- * probouzí (`resume`) — uspaný kontext posílá do nahrávky ticho a mezery.
+ * Zesiluje se **u posluchače, ne při nahrávání** (od 2. 10. 2026). Nahrávka
+ * vedená přes Web Audio (`MediaStreamDestination`) dostávala od Chrome
+ * časové značky rámců střídavě po 59 a 61 ms místo 60 (rámec Opusu má 2880
+ * vzorků, blok Web Audia 128, takže hranice rámce nepadá na hranici bloku)
+ * a přehrávač v `MediaSource` pak každý druhý rámec o milisekundu ořízl —
+ * osm lupnutí za vteřinu po celou dobu řeči. Mikrofon nahraný napřímo má
+ * značky přesně po 60 ms. Měření: docs/know-how/push-to-talk.md.
+ *
+ * Kontext, kterému prohlížeč nedovolil běžet (stránka bez jediného kliknutí),
+ * by prvek umlčel úplně; proto se zapojuje, až když opravdu běží — do té
+ * doby hraje prvek přímo, jen nezesílený.
  */
-export function zesilProud(proud: MediaStream, procent: number): { proud: MediaStream; zavri: () => void } {
+export function zesilPrehravani(audio: HTMLMediaElement, procent: number): void {
   const Kontext = typeof window === "undefined" ? undefined : (window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
-  if (procent <= 100 || !Kontext) return { proud, zavri: () => {} };
-  const stopa = proud.getAudioTracks()[0];
-  const sampleRate = stopa?.getSettings?.().sampleRate;
-  const kontext = sampleRate ? new Kontext({ sampleRate, latencyHint: "interactive" }) : new Kontext({ latencyHint: "interactive" });
-  void kontext.resume?.().catch(() => {});
-  const zisk = kontext.createGain();
-  zisk.gain.value = procent / 100;
-  const omezeni = kontext.createWaveShaper();
-  omezeni.curve = krivkaOmezeni();
-  omezeni.oversample = "4x";
-  const cil = kontext.createMediaStreamDestination();
-  kontext.createMediaStreamSource(proud).connect(zisk).connect(omezeni).connect(cil);
-  return {
-    proud: cil.stream,
-    zavri: () => {
-      void kontext.close().catch(() => {});
-    },
+  if (procent <= ZESILENI_MIN || !Kontext) return;
+  try {
+    kontextPrehravani ??= new Kontext();
+  } catch {
+    return;
+  }
+  const kontext = kontextPrehravani;
+  const zapoj = () => {
+    if (kontext.state !== "running") return;
+    try {
+      const zisk = kontext.createGain();
+      zisk.gain.value = orizniZesileni(procent) / 100 / ROZSAH_KRIVKY;
+      const omezeni = kontext.createWaveShaper();
+      omezeni.curve = krivkaOmezeni();
+      omezeni.oversample = "4x";
+      kontext.createMediaElementSource(audio).connect(zisk).connect(omezeni).connect(kontext.destination);
+    } catch {
+      // Prvek už zapojený jinde nebo Web Audio selhalo — hraje nezesílený.
+    }
   };
+  if (kontext.state === "running") zapoj();
+  else void kontext.resume().then(zapoj, () => {});
 }
 
 /**
  * Zkouška mikrofonu (uživatel 16. 9. 2026, ať jde zesílení nastavit bez
- * druhého člověka): pár vteřin se nahraje přesně tím řetězcem, kterým jde
- * push-to-talk, a vrátí se adresa nahrávky k přehrání. Volající ji po
- * přehrání uvolní (`URL.revokeObjectURL`).
+ * druhého člověka): pár vteřin se nahraje stejně jako push-to-talk a vrátí
+ * se adresa nahrávky. Volající ji přehraje přes `zesilPrehravani` — tak
+ * jako posluchači — a pak uvolní (`URL.revokeObjectURL`).
  */
-export async function nahrajZkousku(procent: number, ms = 3_000): Promise<string> {
+export async function nahrajZkousku(ms = 3_000): Promise<string> {
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
     throw new Error("Tenhle prohlížeč nahrávání z mikrofonu neumí.");
   }
-  const proud = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false } });
-  const zesileni = zesilProud(proud, procent);
-  const mime = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(MIME_HLASU) ? MIME_HLASU : undefined;
-  const rekorder = mime ? new MediaRecorder(zesileni.proud, { mimeType: mime, audioBitsPerSecond: 64_000 }) : new MediaRecorder(zesileni.proud);
+  const proud = await navigator.mediaDevices.getUserMedia(MIKROFON);
+  const rekorder = novyRekorder(proud);
   const kusy: Blob[] = [];
   rekorder.ondataavailable = (e: BlobEvent) => {
     if (e.data.size > 0) kusy.push(e.data);
@@ -134,9 +156,8 @@ export async function nahrajZkousku(procent: number, ms = 3_000): Promise<string
   await new Promise((dal) => setTimeout(dal, ms));
   rekorder.stop();
   await konec;
-  zesileni.zavri();
   proud.getTracks().forEach((t) => t.stop());
-  return URL.createObjectURL(new Blob(kusy, { type: rekorder.mimeType || mime || MIME_HLASU }));
+  return URL.createObjectURL(new Blob(kusy, { type: rekorder.mimeType || MIME_HLASU }));
 }
 
 export function ztlumitAdminy(): boolean {
@@ -203,12 +224,13 @@ class Prehravani {
   readonly #zive: boolean;
   readonly #onZavreno: () => void;
 
-  constructor(mime: string, onZavreno: () => void) {
+  constructor(mime: string, zesileni: number, onZavreno: () => void) {
     this.#mime = mime;
     this.#onZavreno = onZavreno;
     // Naplno, nezávisle na Master Volume — viz hlasitostAdmina().
     this.#audio.volume = Math.min(1, Math.max(0, hlasitostAdmina() / 100));
     this.#audio.addEventListener("ended", () => this.#zavri());
+    zesilPrehravani(this.#audio, zesileni);
     this.#zive = typeof MediaSource !== "undefined" && typeof MediaSource.isTypeSupported === "function" && MediaSource.isTypeSupported(mime);
     if (this.#zive) {
       this.#zdroj = new MediaSource();
@@ -379,7 +401,7 @@ export function spustPrehravacHlasu(ja: string, jaAdmin: boolean): () => void {
     if (!p) {
       // Dohrané sezení zůstane ještě minutu v mapě, ať opožděný kousek
       // nezaloží nové přehrávání téže promluvy.
-      p = new Prehravani(u.mime ?? MIME_HLASU, () => setTimeout(() => sezeni.delete(klic), 60_000));
+      p = new Prehravani(u.mime ?? MIME_HLASU, orizniZesileni(u.zesileni), () => setTimeout(() => sezeni.delete(klic), 60_000));
       sezeni.set(klic, p);
     }
     p.prijmi(u);
@@ -389,7 +411,19 @@ export function spustPrehravacHlasu(ja: string, jaAdmin: boolean): () => void {
 }
 
 /** Jak kousky odcházejí na server; vrací se jako slib, ať jde držet pořadí. */
-export type OdesliKousek = (telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string }) => Promise<unknown>;
+export type OdesliKousek = (telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string; zesileni?: number }) => Promise<unknown>;
+
+/**
+ * Mikrofon bez automatického řízení hlasitosti: to by se pralo se zesílením
+ * mluvčího (zvedne šum, pak škubne dolů). Potlačení ozvěny a šumu zůstává.
+ */
+const MIKROFON: MediaStreamConstraints = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false } };
+
+/** Rekordér hlasu: Opus ve WebM, kde ho prohlížeč umí; 64 kb/s (32 chrastilo). */
+function novyRekorder(proud: MediaStream): MediaRecorder {
+  const umi = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(MIME_HLASU);
+  return umi ? new MediaRecorder(proud, { mimeType: MIME_HLASU, audioBitsPerSecond: 64_000 }) : new MediaRecorder(proud);
+}
 
 async function doB64(blob: Blob): Promise<string> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -398,22 +432,46 @@ async function doB64(blob: Blob): Promise<string> {
   return btoa(bin);
 }
 
+/** Za jak dlouho se kousek, který neprošel sítí, zkusí poslat podruhé. */
+const OPAKOVANI_MS = 150;
+
 /**
  * Nahrávání z mikrofonu po kouscích. `spust()` si řekne o mikrofon (napoprvé
  * se prohlížeč zeptá) a začne posílat; `zastav()` pošle poslední kousek
  * a značku konce a mikrofon zase pustí, ať v kartě nesvítí nahrávání.
  * Kousky se posílají za sebou (další čeká na předchozí), ať dorazí v pořadí.
+ *
+ * Nahrává se **přímo z mikrofonu**; zesílení mluvčího jde jen jako údaj
+ * u kousku a zesiluje se až při přehrávání (`zesilPrehravani` říká proč).
  */
 export function vytvorNahravani(odesli: OdesliKousek, onChyba?: (zprava: string) => void) {
   let rekorder: MediaRecorder | null = null;
   let proud: MediaStream | null = null;
-  let zavriZesileni: (() => void) | null = null;
   let fronta: Promise<unknown> = Promise.resolve();
   let sezeni = "";
   let poradi = 0;
+  let ohlaseno = false;
 
-  const posli = (telo: Parameters<OdesliKousek>[0]) => {
-    fronta = fronta.then(() => odesli(telo)).catch(() => {});
+  const posli = (telo: () => Promise<Parameters<OdesliKousek>[0]>) => {
+    fronta = fronta
+      .then(async () => {
+        const t = await telo();
+        try {
+          await odesli(t);
+        } catch (e) {
+          // Výpadek sítě (fetch hází TypeError) se zkusí ještě jednou — jinak
+          // by posluchačům v řeči zůstala díra. Odmítnutí serverem se neopakuje.
+          if (!(e instanceof TypeError)) throw e;
+          await new Promise((dal) => setTimeout(dal, OPAKOVANI_MS));
+          await odesli(t);
+        }
+      })
+      .catch((e: unknown) => {
+        // Jednou za promluvu: mluvčí má vědět, že ho neslyší.
+        if (ohlaseno) return;
+        ohlaseno = true;
+        onChyba?.(e instanceof Error && !(e instanceof TypeError) ? e.message : "Hlas se nepodařilo odeslat — zkontroluj připojení.");
+      });
   };
 
   return {
@@ -424,33 +482,28 @@ export function vytvorNahravani(odesli: OdesliKousek, onChyba?: (zprava: string)
         return;
       }
       try {
-        // Automatické řízení hlasitosti se při zesílení pere s naším ziskem
-        // (zvedne se šum, pak to škubne dolů), tak jen echo a šum.
-        proud = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false } });
+        proud = await navigator.mediaDevices.getUserMedia(MIKROFON);
       } catch {
         onChyba?.("Mikrofon se nepodařilo otevřít — povol ho stránce v prohlížeči.");
         return;
       }
-      // Zesílení se čte až tady, ať změna v nastavení platí od dalšího stisku.
-      const zesileni = zesilProud(proud, zesileniMikrofonu());
-      zavriZesileni = zesileni.zavri;
-      const nahravany = zesileni.proud;
-      const mime = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(MIME_HLASU) ? MIME_HLASU : undefined;
-      // 32 kb/s zesílenému hlasu nestačilo — hlasitější místa chrastila.
-      rekorder = mime ? new MediaRecorder(nahravany, { mimeType: mime, audioBitsPerSecond: 64_000 }) : new MediaRecorder(nahravany);
+      rekorder = novyRekorder(proud);
       sezeni = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
       poradi = 0;
-      const skutecnyMime = rekorder.mimeType || mime || MIME_HLASU;
+      ohlaseno = false;
+      const s = sezeni;
+      const mime = rekorder.mimeType || MIME_HLASU;
+      // Zesílení se čte až tady, ať změna v nastavení platí od dalšího stisku.
+      const procent = zesileniMikrofonu();
+      const zesileni = procent > ZESILENI_MIN ? { zesileni: procent } : {};
       rekorder.ondataavailable = (e: BlobEvent) => {
         if (e.data.size === 0) return;
         const moje = poradi++;
-        const s = sezeni;
-        fronta = fronta
-          .then(async () => odesli({ sezeni: s, poradi: moje, data: await doB64(e.data), mime: skutecnyMime }))
-          .catch(() => {});
+        posli(async () => ({ sezeni: s, poradi: moje, data: await doB64(e.data), mime, ...zesileni }));
       };
       rekorder.onstop = () => {
-        posli({ sezeni, poradi: poradi++, konec: true, mime: skutecnyMime });
+        const moje = poradi++;
+        posli(async () => ({ sezeni: s, poradi: moje, konec: true, mime }));
       };
       rekorder.start(KOUSEK_MS);
     },
@@ -458,8 +511,6 @@ export function vytvorNahravani(odesli: OdesliKousek, onChyba?: (zprava: string)
       const r = rekorder;
       rekorder = null;
       if (r && r.state !== "inactive") r.stop();
-      zavriZesileni?.();
-      zavriZesileni = null;
       proud?.getTracks().forEach((t) => t.stop());
       proud = null;
     },

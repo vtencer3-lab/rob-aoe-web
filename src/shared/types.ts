@@ -225,6 +225,11 @@ export interface HlasUdalost {
   data: string;
   /** MIME nahrávky, třeba `audio/webm;codecs=opus`. */
   mime?: string;
+  /**
+   * Zesílení mluvčího v procentech (100–400), chybí = 100. Nahrávka je
+   * nezesílená; zesiluje až přehrávač posluchače (web/src/hlas.ts).
+   */
+  zesileni?: number;
   prijemci: string[];
 }
 
