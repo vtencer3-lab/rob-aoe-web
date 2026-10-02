@@ -255,3 +255,27 @@ it("verze bez vlastní minimapy ji převezme tlačítkem z poslední dřívějš
   expect(diploApi.prevzitMinimapu).toHaveBeenCalledWith(3, 2);
   await waitFor(() => expect(diploApi.verze).toHaveBeenCalledTimes(2));
 });
+
+// Odmítnuté nahrání (409 „Tahle verze už je nahraná“) bylo stejně jako
+// smazání vidět jen nahoře nad panelem akce — uživatel měl za to, že
+// nahrávání nefunguje (3. 10. 2026). Věta serveru je teď u formuláře.
+it("odmítnuté nahrání ukáže větu serveru u formuláře, ne nahoře", async () => {
+  const VETA = "Tahle verze už je nahraná (č. 2).";
+  vi.mocked(diploApi.nahrat).mockRejectedValueOnce(new Error(VETA));
+  const globalni: string[] = [];
+  const hlidejApp = async (fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+    } catch (e) {
+      globalni.push((e as Error).message);
+    }
+  };
+  const { container } = render(<SpravaScenare hlidej={hlidejApp} />);
+  fireEvent.click(await screen.findByText("Scénář Diplomacie"));
+  await screen.findByText("LLC v1.aoe2scenario");
+  const vstup = container.querySelector('input[type="file"]') as HTMLInputElement;
+  fireEvent.change(vstup, { target: { files: [new File(["x"], "LLC.aoe2scenario")] } });
+  fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
+  expect(await screen.findByTestId("chyba-nahrani")).toHaveTextContent(VETA);
+  expect(globalni).toEqual([]);
+});

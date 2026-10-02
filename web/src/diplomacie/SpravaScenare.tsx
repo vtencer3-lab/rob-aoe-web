@@ -49,11 +49,23 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
   const [verze, setVerze] = useState<ScenarVerze[]>([]);
   const [soubor, setSoubor] = useState<File | null>(null);
   const [vysledek, setVysledek] = useState<string | null>(null);
-  // Proč server smazání odmítl — přímo pod řádkem verze. Obecná chyba
-  // z `hlidej` sedí v App až nahoře nad panelem akce, správa scénáře je
-  // dole pod ním: uživatel ji neviděl a měl za to, že mazání nefunguje
-  // (2. 10. 2026). Drží se do další akce ve správě.
-  const [chybaSmazani, setChybaSmazani] = useState<{ id: number; text: string } | null>(null);
+  // Proč server akci odmítl — přímo ve správě: u řádku verze (id), nebo
+  // u formuláře nahrání (id null). Obecná chyba z `hlidej` sedí v App až
+  // nahoře nad panelem akce, správa scénáře je dole pod ním: uživatel ji
+  // neviděl a měl za to, že mazání (2. 10.) a nahrání (3. 10. 2026)
+  // nefunguje. Drží se do další akce ve správě.
+  const [chyba, setChyba] = useState<{ id: number | null; text: string } | null>(null);
+  /** Spustí akci správy; odmítnutí ze serveru ukáže u daného místa, ne nahoře. */
+  const akce = (id: number | null, pokus: () => Promise<unknown>) => {
+    setChyba(null);
+    return hlidej(async () => {
+      try {
+        await pokus();
+      } catch (err) {
+        setChyba({ id, text: err instanceof Error ? err.message : "Nepovedlo se to." });
+      }
+    });
+  };
   // Nahrání trvá i vteřiny (rozbor na serveru) — druhé kliknutí by poslalo
   // soubor podruhé a vznikly by dvě verze stejného jména.
   const [nahrava, setNahrava] = useState(false);
@@ -69,9 +81,9 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
 
   const nahrat = (formular: HTMLFormElement) => {
     if (!soubor) return;
-    setChybaSmazani(null);
+    setVysledek(null);
     setNahrava(true);
-    void hlidej(async () => {
+    void akce(null, async () => {
       const r = await diploApi.nahrat(soubor);
       const nahrano = r.chybaRozboru
         ? `Soubor je uložený, ale nepodařilo se ho přečíst: ${r.chybaRozboru} — pravidla a mapa zůstávají z aktivní verze.`
@@ -89,21 +101,19 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
     }).finally(() => setNahrava(false));
   };
   const aktivovat = (id: number) => {
-    setChybaSmazani(null);
-    void hlidej(async () => {
+    void akce(id, async () => {
       await diploApi.aktivovat(id);
       setVerze((await diploApi.verze()).verze);
     });
   };
   const prevzitMinimapu = (id: number, zdrojId: number) => {
-    setChybaSmazani(null);
-    void hlidej(async () => {
+    void akce(id, async () => {
       await diploApi.prevzitMinimapu(id, zdrojId);
       setVerze((await diploApi.verze()).verze);
     });
   };
   const zeptejSe = (co: "original" | "smazat", v: ScenarVerze) => {
-    setChybaSmazani(null);
+    setChyba(null);
     setPotvrdit({ co, verze: v });
   };
   const potvrzeno = () => {
@@ -112,24 +122,16 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
     setPotvrdit(null);
     if (co === "original") stahni(diploApi.souborUrl(v.id, true), v.jmenoSouboru);
     else
-      void hlidej(async () => {
-        // Odmítnutí (409 s českou větou) patří k řádku, ne do obecné chyby
-        // nahoře; síť a ostatní selhání dál hlásí hlidej.
-        try {
-          await diploApi.smazat(v.id);
-        } catch (err) {
-          setChybaSmazani({ id: v.id, text: err instanceof Error ? err.message : "Smazat se nepovedlo." });
-          return;
-        }
+      void akce(v.id, async () => {
+        await diploApi.smazat(v.id);
         setVerze((await diploApi.verze()).verze);
       });
   };
   // Přibalení trvá vteřiny (Python na serveru) — tlačítko je mezitím zamčené.
   const [pribaluje, setPribaluje] = useState<number | null>(null);
   const pribalSondu = (id: number) => {
-    setChybaSmazani(null);
     setPribaluje(id);
-    void hlidej(async () => {
+    void akce(id, async () => {
       await diploApi.pribalSondu(id);
       setVerze((await diploApi.verze()).verze);
     }).finally(() => setPribaluje(null));
@@ -150,6 +152,11 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
           Nahrát
         </button>
         {vysledek ? <p className="vysledek">{vysledek}</p> : null}
+        {chyba?.id === null ? (
+          <p className="chyba-smazani" role="alert" data-testid="chyba-nahrani">
+            {chyba.text}
+          </p>
+        ) : null}
       </form>
       {aktivni?.rozbor ? (
         <div className="nahled-scenare">
@@ -214,7 +221,7 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
                     className="cta"
                     disabled={!sonda}
                     onClick={() => {
-                      setChybaSmazani(null);
+                      setChyba(null);
                       stahni(diploApi.souborUrl(v.id), v.jmenoHry);
                     }}
                   >
@@ -229,9 +236,9 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
                     Smazat
                   </button>
                 </div>
-                {chybaSmazani?.id === v.id ? (
+                {chyba?.id === v.id ? (
                   <p className="chyba-smazani" role="alert" data-testid="chyba-smazani">
-                    {chybaSmazani.text}
+                    {chyba.text}
                   </p>
                 ) : null}
               </li>
