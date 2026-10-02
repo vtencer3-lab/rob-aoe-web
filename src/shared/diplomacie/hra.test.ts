@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Barva } from "../types.js";
-import { popisCile, popisStari, prectiSnimek, prectiSondu, vyhodnotHru, type CilSondy, type SnimekHry } from "./hra.js";
+import { popisCile, popisStari, prectiSnimek, prectiSondu, souhrnSondy, vyhodnotHru, type CilSondy, type SnimekHry } from "./hra.js";
 
 /** Sedm hráčů h1…h8 bez h7: GM sedí na šedé (slot 7) a mezi hráče nepatří. */
 const HRACI = ([1, 2, 3, 4, 5, 6, 8] as Barva[]).map((barva) => ({ hracId: `h${barva}`, barva }));
@@ -136,6 +136,11 @@ describe("výpis sondy", () => {
     const cile = [{ promenna: 15, slot: 1, text: "zabito : {} /650 jednotek", limit: 650 }];
     expect(prectiSondu({ ok: true, soubor: "…", oznaceno: 42, cile })).toEqual({ cile, oznaceno: 42, chyba: null });
     expect(prectiSondu({ cile: [], oznaceno: 0, chyba: "ValueError: x" })).toEqual({ cile: [], oznaceno: 0, chyba: "ValueError: x" });
+  });
+
+  it("do stavu pro prohlížeče jde jen souhrn — počet cílů místo výpisu", () => {
+    expect(souhrnSondy({ cile: CILE, oznaceno: 42, chyba: null })).toEqual({ cilu: 8, oznaceno: 42, chyba: null });
+    expect(souhrnSondy({ cile: [], oznaceno: 0, chyba: "ValueError: x" })).toEqual({ cilu: 0, oznaceno: 0, chyba: "ValueError: x" });
   });
 
   it("nesmyslný tvar je chyba", () => {

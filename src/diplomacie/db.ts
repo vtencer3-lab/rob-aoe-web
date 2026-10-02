@@ -1,6 +1,6 @@
 import type { PoolClient } from "pg";
 import { getPool, withTransaction } from "../db/pool.js";
-import { prectiSondu, type SondaScenare } from "../shared/diplomacie/hra.js";
+import { prectiSondu, souhrnSondy, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo } from "../shared/diplomacie/typy.js";
@@ -36,7 +36,7 @@ function mapujVerzi(r: VerzeDb): ScenarVerze {
     chybaRozboru: r.chyba_rozboru,
     minimapaOtisk: r.minimapa_otisk,
     minimapaVlastni: r.minimapa_vlastni,
-    sonda: r.sonda === null ? null : prectiSondu(r.sonda),
+    sonda: r.sonda === null ? null : souhrnSondy(prectiSondu(r.sonda)),
   };
 }
 
@@ -124,6 +124,15 @@ export async function getSouborVerze(id: number, original = false): Promise<{ jm
     [id, original],
   );
   return rows[0] ? { jmenoSouboru: rows[0].jmeno_souboru, data: rows[0].data } : null;
+}
+
+/**
+ * Celá sonda verze i s výpisem cílů — pro vyhodnocení snímku hry. Stav pro
+ * prohlížeče nese jen souhrn (`ScenarVerze.sonda`).
+ */
+export async function getSonduVerze(id: number): Promise<{ jmenoSouboru: string; sonda: SondaScenare | null } | null> {
+  const { rows } = await getPool().query<{ jmeno_souboru: string; sonda: unknown }>("SELECT jmeno_souboru, sonda FROM diplo_scenar WHERE id = $1", [id]);
+  return rows[0] ? { jmenoSouboru: rows[0].jmeno_souboru, sonda: rows[0].sonda === null ? null : prectiSondu(rows[0].sonda) } : null;
 }
 
 /** Výsledek (i neúspěšný) přibalení sondy k verzi; `dataSonda` null = kopie se sondou není. */

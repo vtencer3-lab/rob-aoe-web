@@ -32,6 +32,23 @@ export interface SondaScenare {
   chyba: string | null;
 }
 
+/**
+ * Co o sondě verze jde do stavu pro prohlížeče: výpis cílů (u LLC 42
+ * položek) potřebuje jen server při vyhodnocení snímku, a stav se rozesílá
+ * celý každému při každé změně.
+ */
+export interface SouhrnSondy {
+  /** Kolik cílů sonda ve scénáři našla. */
+  cilu: number;
+  oznaceno: number;
+  /** Proč se sondu nepodařilo přibalit; null = kopie se sondou existuje. */
+  chyba: string | null;
+}
+
+export function souhrnSondy(sonda: SondaScenare): SouhrnSondy {
+  return { cilu: sonda.cile.length, oznaceno: sonda.oznaceno, chyba: sonda.chyba };
+}
+
 /** Ověří tvar výstupu sonda.py i JSON z databáze. */
 export function prectiSondu(json: unknown): SondaScenare {
   const { celeCislo, text, pole, objekt } = overovace("Sonda");

@@ -5,7 +5,7 @@ import { getZapas } from "../db/matches.js";
 import { HttpError } from "../http/guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { prectiSnimek, vyhodnotHru, type SnimekHry } from "../shared/diplomacie/hra.js";
-import { getDiploZapas, getVerze, najdiBeziciZapasGm, setNastupce } from "./db.js";
+import { getDiploZapas, getSonduVerze, najdiBeziciZapasGm, setNastupce } from "./db.js";
 import { pametHer } from "./hraPamet.js";
 
 /**
@@ -49,7 +49,7 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
   if (zapasId === null || !diplo || !zaznam) return null;
 
   const hraci = zaznam.ucastnici.filter((u) => u.hracId !== diplo.gmHracId).map((u) => ({ hracId: u.hracId, barva: u.barva }));
-  const verze = diplo.scenarId === null ? null : await getVerze(diplo.scenarId);
+  const verze = diplo.scenarId === null ? null : await getSonduVerze(diplo.scenarId);
   const hra = vyhodnotHru(snimek, hraci, verze?.sonda?.cile ?? [], ted.toISOString());
 
   const predchozi = pametHer.get(zapasId);

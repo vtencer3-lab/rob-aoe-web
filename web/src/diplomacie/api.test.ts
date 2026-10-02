@@ -74,7 +74,7 @@ it("adresy souboru a minimapy vedou na routy scénáře", () => {
 });
 
 it("přibalení sondy je POST bez těla na routu verze a vrací výsledek i s případnou chybou", async () => {
-  const sonda = { cile: [], oznaceno: 0, chyba: "ValueError: x" };
+  const sonda = { cilu: 0, oznaceno: 0, chyba: "ValueError: x" };
   const f = stubFetch({ ok: true, sonda });
   await expect(diploApi.pribalSondu(3)).resolves.toEqual({ ok: true, sonda });
   expect(f).toHaveBeenCalledWith("/api/diplo/scenar/3/sonda", { method: "POST" });

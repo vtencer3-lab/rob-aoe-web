@@ -5,6 +5,7 @@ import { getAktivniAkce, setNastaveniLobby } from "../db/events.js";
 import { getZapas } from "../db/matches.js";
 import { HttpError, requireId, requireUser } from "../http/guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
+import { souhrnSondy } from "../shared/diplomacie/hra.js";
 import { losujRole, zmenCil, zmenRoli } from "../shared/diplomacie/los.js";
 import { ROLE_VOLITELNE, type DiploZapas, type Role } from "../shared/diplomacie/typy.js";
 import { jePlatneJmenoScenare, type NastaveniLobby } from "../shared/lobbyKontrola.js";
@@ -268,7 +269,7 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
     const sonda = vysledek.ok ? vysledek.sonda : sondaSChybou(vysledek.chyba);
     await ulozSondu(id, sonda, vysledek.ok ? vysledek.soubor : null);
     await broadcastAkce();
-    return { ok: true, sonda };
+    return { ok: true, sonda: souhrnSondy(sonda) };
   });
 
   // Ke stažení jde kopie se sondou (když ji verze má); originál od autora

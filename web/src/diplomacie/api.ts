@@ -1,4 +1,4 @@
-import type { SondaScenare } from "../../../src/shared/diplomacie/hra.js";
+import type { SouhrnSondy } from "../../../src/shared/diplomacie/hra.js";
 import type { Role, ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { json } from "../api.js";
 import { cesta } from "../cesty.js";
@@ -40,7 +40,7 @@ export const diploApi = {
     }).then((r) => json<{ id: number; aktivni: boolean; chybaRozboru: string | null; chybaSondy: string | null }>(r)),
   aktivovat: (id: number) => post(`/api/diplo/scenar/${id}/aktivni`),
   /** Dopočítá sondu verzi nahrané dřív (nebo po neúspěchu znovu); výsledek nese i případnou chybu. */
-  pribalSondu: (id: number) => fetch(cesta(`/api/diplo/scenar/${id}/sonda`), { method: "POST" }).then((r) => json<{ ok: true; sonda: SondaScenare }>(r)),
+  pribalSondu: (id: number) => fetch(cesta(`/api/diplo/scenar/${id}/sonda`), { method: "POST" }).then((r) => json<{ ok: true; sonda: SouhrnSondy }>(r)),
   /** Ke stažení jde kopie se sondou; `original` (jen autor a admin) vrátí soubor, jak ho autor nahrál. */
   souborUrl: (id: number | "aktivni", original = false) => cesta(`/api/diplo/scenar/${id}/soubor${original ? "?original=1" : ""}`),
   // Otisk obsahu v adrese: route posílá roční cache a po výměně obrázku u

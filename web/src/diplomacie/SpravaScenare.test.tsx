@@ -9,7 +9,7 @@ vi.mock("./api.js", () => ({
     verze: vi.fn(),
     nahrat: vi.fn(async () => ({ id: 5, aktivni: false, chybaRozboru: null, chybaSondy: null })),
     aktivovat: vi.fn(async () => ({ ok: true })),
-    pribalSondu: vi.fn(async () => ({ ok: true, sonda: { cile: [], oznaceno: 42, chyba: null } })),
+    pribalSondu: vi.fn(async () => ({ ok: true, sonda: { cilu: 42, oznaceno: 42, chyba: null } })),
     souborUrl: (id: number | "aktivni", original = false) => `/api/diplo/scenar/${id}/soubor${original ? "?original=1" : ""}`,
     minimapaUrl: (id: number) => `/api/diplo/scenar/${id}/minimapa.webp`,
   },
@@ -114,8 +114,8 @@ it("po nahrání ukáže výsledek, vyprázdní formulář a načte seznam znovu
 // autora; verzi bez ní — nahranou dřív, nebo když se přibalení nepovedlo —
 // ji dopočítá tlačítko a seznam se načte znovu.
 it("u verze ukáže stav sondy; verzi bez sondy ji přibalí tlačítko", async () => {
-  const seSondou: ScenarVerze = { ...V2, sonda: { cile: [], oznaceno: 42, chyba: null } };
-  const sChybou: ScenarVerze = { ...V1, rozbor: ROZBOR, chybaRozboru: null, sonda: { cile: [], oznaceno: 0, chyba: "ValueError: bez sondy" } };
+  const seSondou: ScenarVerze = { ...V2, sonda: { cilu: 42, oznaceno: 42, chyba: null } };
+  const sChybou: ScenarVerze = { ...V1, rozbor: ROZBOR, chybaRozboru: null, sonda: { cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy" } };
   vi.mocked(diploApi.verze).mockResolvedValue({ verze: [seSondou, sChybou] });
   await rozbal();
   const [prvni, druha] = screen.getAllByTestId("stav-sondy");
