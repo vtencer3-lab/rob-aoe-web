@@ -43,6 +43,42 @@ it("zakrytá karta ukáže rub, odkrytá obsah", () => {
   expect(screen.getByText("KAT")).toBeInTheDocument();
 });
 
+// Karta je tlačítkem sama (uživatel 2. 10. 2026): rub leží uvnitř tlačítka,
+// popisek je jen jeho jméno a bublina — žádný nápis navíc.
+it("zakrytá karta s rubem je tlačítko, popisek není vidět jako text", () => {
+  render(
+    <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<p>RUB</p>}>
+      <p>KAT</p>
+    </Zakryti>,
+  );
+  const karta = screen.getByRole("button", { name: "Pult GM — klikni pro odkrytí" });
+  expect(karta).toHaveClass("zakryti-karta");
+  expect(karta).toContainElement(screen.getByText("RUB"));
+  expect(karta).toHaveAttribute("title", "Pult GM — klikni pro odkrytí");
+  expect(karta).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getAllByRole("button")).toHaveLength(1);
+  expect(screen.queryByText("Pult GM — klikni pro odkrytí")).toBeNull();
+  fireEvent.click(karta);
+  expect(screen.getByRole("button", { name: "Zakrýt" })).toHaveAttribute("aria-expanded", "true");
+});
+
+// Kliknuté tlačítko po výměně stran zmizí — fokus z klávesnice nesmí
+// spadnout na začátek stránky.
+it("fokus přejde z karty na Zakrýt a zpátky", () => {
+  render(
+    <Zakryti popisek="Odkrýt" rub={<p>RUB</p>}>
+      <p>KAT</p>
+    </Zakryti>,
+  );
+  const karta = screen.getByRole("button", { name: "Odkrýt" });
+  karta.focus();
+  fireEvent.click(karta);
+  const zakryt = screen.getByRole("button", { name: "Zakrýt" });
+  expect(zakryt).toHaveFocus();
+  fireEvent.click(zakryt);
+  expect(screen.getByRole("button", { name: "Odkrýt" })).toHaveFocus();
+});
+
 // Otočení karty (uživatel 2. 10. 2026). V prohlížeči má dvě půlky: rub se
 // natočí na hranu, teprve pak se vymění obsah a líc se dotočí. Tajný obsah
 // se tedy nesmí vykreslit dřív, než první půlka doběhne — a při zakrývání

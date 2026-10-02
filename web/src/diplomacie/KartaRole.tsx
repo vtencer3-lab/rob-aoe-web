@@ -28,7 +28,8 @@ export function verzeZapasu(data: DiploData, d: DiploZapas | undefined) {
 
 /**
  * Rub zakryté karty pro `Zakryti` — tady i v pultu GM. Bez `alt`: je to
- * jen obrázek „karta leží rubem nahoru“, co pod ní je, říká tlačítko nad ní.
+ * jen obrázek „karta leží rubem nahoru“, co pod ní je, říká tlačítko, které
+ * ho v `Zakryti` obaluje (karta je tlačítkem sama).
  */
 export function RubKarty() {
   return <img className="rub-karty" src={RUB_KARTY} alt="" width={600} height={362} />;

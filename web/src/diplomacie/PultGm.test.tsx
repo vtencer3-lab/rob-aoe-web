@@ -48,6 +48,10 @@ it("je zakrytý; v přípravě nabídne 7 dlaždic s pN a barvou", () => {
   expect(screen.queryByTestId("dlazdice")).toBeNull();
   // Znak GM je v záhlaví, tedy vidět i na zakrytém pultu.
   expect(screen.getByRole("img", { name: "GM" })).toHaveClass("znak-role");
+  // Tlačítkem je zakrytá karta sama — rub uvnitř, žádný nápis nad ní.
+  const karta = screen.getByRole("button", { name: "Pult GM — klikni pro odkrytí" });
+  expect(karta.querySelector("img.rub-karty")).toBeTruthy();
+  expect(screen.queryByText("Pult GM — klikni pro odkrytí")).toBeNull();
   odkryj();
   const dlazdice = screen.getAllByTestId("dlazdice");
   expect(dlazdice).toHaveLength(7);

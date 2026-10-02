@@ -259,6 +259,10 @@ Co se jak hýbe:
   strana se dotočí; výška jede s druhou půlkou. Tajný obsah se tak vykreslí
   až ve chvíli, kdy je karta hranou k divákovi, a při zakrývání zmizí z DOM
   v půlce pohybu. Karta role při rozeslání „dopadne na stůl“.
+  Zakrytá karta je tlačítkem sama, nápis nad ní nemá: najetí a fokus ji
+  nadzvednou (`translate`/`scale`, `--prechod-rychly`), kolem se rozlije
+  zlatá záře (`drop-shadow` ze `--zlato`) a pečeť se rozsvítí; stisk ji
+  zamáčkne. Při `prefers-reduced-motion` zůstane jen záře.
 - **Sbalovací sekce, karta zápasu, chat**: výška plynule oběma směry
   (`useSbalovani`, chat mřížkou `1fr → 0fr`), šipka se otáčí. Šipku
   `<details>` kreslí CSS ve stejné šířce jako značka prohlížeče (1,06 em).

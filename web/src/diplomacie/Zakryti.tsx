@@ -20,6 +20,12 @@ const natoceni = (vzdalenost: number, stupne: number) => `perspective(${vzdaleno
  * zakrytého tlačítka (`title`) pro popisek, který sám neříká, co kliknutí
  * udělá.
  *
+ * Zakrytá karta s rubem je tlačítkem sama (uživatel 2. 10. 2026): žádný
+ * nápis nad ní, `popisek` je jen přístupné jméno a bublina, najetí kartu
+ * nadzvedne a rozsvítí. Bez rubu zůstává obyčejné tlačítko s popiskem.
+ * „Zakrýt“ leží v líci nad obsahem, ať se otočí i s ním a výška ho
+ * započítá.
+ *
  * Odkrytí i zakrytí je otočení karty kolem svislé osy (uživatel 2. 10.
  * 2026): strana, která je vidět, se natočí na hranu, teprve pak se obsah
  * vymění a nová strana se dotočí — tajný obsah se tedy vykreslí až ve
@@ -35,9 +41,14 @@ export function Zakryti({ popisek, children, rub, napoveda }: { popisek: string;
   // z jaké výšky a kterým směrem jede.
   const otaceni = useRef<{ odjezd: Animation | null; zVysky: number; vzdalenost: number; smer: number; ms: number; prijezd: boolean } | null>(null);
 
+  // Kliknuté tlačítko po výměně stran zmizí; fokus z klávesnice přejde na
+  // tlačítko nové strany, ať se nezahodí na začátek stránky.
+  const presunFokus = useRef(false);
+
   const prepni = () => {
     if (otaceni.current) return;
     const el = lic.current;
+    presunFokus.current = !!el && el.contains(document.activeElement);
     const ms = trvani("--prechod-karta");
     if (!el || ms <= 0 || typeof el.animate !== "function") {
       setOdkryto(!odkryto);
@@ -50,7 +61,7 @@ export function Zakryti({ popisek, children, rub, napoveda }: { popisek: string;
       stav.prijezd = true;
       setOdkryto(!odkryto);
     };
-    // Zakrytá karta bez rubu nemá co otáčet — nová strana rovnou přijede.
+    // Líc bez výšky nemá co otáčet — nová strana rovnou přijede.
     if (stav.zVysky === 0) vymen();
     else {
       // Konec první půlky drží (karta zůstane na hraně), dokud React obsah
@@ -60,6 +71,10 @@ export function Zakryti({ popisek, children, rub, napoveda }: { popisek: string;
   };
 
   useLayoutEffect(() => {
+    if (presunFokus.current) {
+      presunFokus.current = false;
+      lic.current?.querySelector("button")?.focus({ preventScroll: true });
+    }
     const stav = otaceni.current;
     if (!stav?.prijezd) return;
     const el = lic.current;
@@ -88,11 +103,23 @@ export function Zakryti({ popisek, children, rub, napoveda }: { popisek: string;
 
   return (
     <div className={odkryto ? "zakryti odkryto" : "zakryti"} data-testid="zakryti">
-      <button type="button" className="zakryti-tlacitko" aria-expanded={odkryto} title={odkryto ? undefined : napoveda} onClick={prepni}>
-        {odkryto ? "Zakrýt" : popisek}
-      </button>
       <div className="zakryti-lic" ref={lic}>
-        {odkryto ? children : (rub ?? null)}
+        {odkryto ? (
+          <>
+            <button type="button" className="zakryti-tlacitko" aria-expanded onClick={prepni}>
+              Zakrýt
+            </button>
+            {children}
+          </>
+        ) : rub ? (
+          <button type="button" className="bez-vzhledu zakryti-karta" aria-expanded={false} aria-label={popisek} title={napoveda ?? popisek} onClick={prepni}>
+            {rub}
+          </button>
+        ) : (
+          <button type="button" className="zakryti-tlacitko" aria-expanded={false} title={napoveda} onClick={prepni}>
+            {popisek}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -23,9 +23,11 @@ it("po rozeslání je karta zakrytá a po odkrytí ukáže roli, cíl a oběť",
   expect(screen.queryByText("Kat")).toBeNull();
   // Zakrytá karta leží rubem nahoru (bez alt — není to informace, jen obrázek).
   expect(container.querySelector("img.rub-karty")).toBeTruthy();
-  // Viditelný text je jen „Tvá tajná role“; že se kliknutím odkrývá, říká title.
+  // Tlačítkem je karta sama: „Tvá tajná role“ je jen její jméno, nápis nemá;
+  // že se kliknutím odkrývá, říká title.
   const tlacitko = screen.getByRole("button", { name: "Tvá tajná role" });
-  expect(tlacitko.textContent).toBe("Tvá tajná role");
+  expect(tlacitko.querySelector("img.rub-karty")).toBeTruthy();
+  expect(tlacitko.textContent).toBe("");
   expect(tlacitko).toHaveAttribute("title", "Klikni pro odkrytí");
   fireEvent.click(tlacitko);
   expect(container.querySelector("img.rub-karty")).toBeNull();
