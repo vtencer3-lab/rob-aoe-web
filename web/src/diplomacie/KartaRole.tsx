@@ -4,7 +4,8 @@ import type { DiploData, DiploZapas, RoleHrace } from "../../../src/shared/diplo
 import type { ZapasView } from "../../../src/shared/types.js";
 import zvonUrl from "../assets/zvon.mp3";
 import { prehraj } from "../zvuk.js";
-import { jmenoVZapasu, mujUcastnik } from "../zapas.js";
+import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
+import { mujUcastnik } from "../zapas.js";
 import { MapaScenare } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
@@ -36,8 +37,6 @@ export function RubKarty() {
 /** Tajná karta role hráče (spec §8.2). Data jsou už zredigovaná serverem. */
 export function KartaRole({ zapas, data, ja }: Props) {
   const d = diploZapasu(data, zapas.id);
-  // Sdílené s pultem GM: víc AI se jmenuje stejně, rozliší je barva.
-  const jmeno = (hracId: string) => jmenoVZapasu(zapas.ucastnici, hracId);
   // Zvon jen při přechodu do „rozesláno“, ne při načtení stránky s už
   // rozeslanými rolemi — stejně jako ostatní zvonění v App.tsx.
   const driv = useRef<string | undefined>(undefined);
@@ -62,10 +61,10 @@ export function KartaRole({ zapas, data, ja }: Props) {
       ) : (
         <>
           <p className="stred">
-            Nástupcem císaře je <strong>{d.nastupceHracId ? jmeno(d.nastupceHracId) : "?"}</strong>.
+            Nástupcem císaře je <strong>{d.nastupceHracId ? <JmenoUcastnika ucastnici={zapas.ucastnici} hracId={d.nastupceHracId} /> : "?"}</strong>.
           </p>
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
-            <ObsahRole moje={moje} vse={d.role} jmeno={jmeno} />
+            <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
             {verze && barva !== undefined ? <MapaScenare verze={verze} starty={barva} /> : null}
           </Zakryti>
         </>
@@ -75,7 +74,11 @@ export function KartaRole({ zapas, data, ja }: Props) {
   );
 }
 
-function ObsahRole({ moje, vse, jmeno }: { moje: RoleHrace; vse: RoleHrace[]; jmeno: (id: string) => string }) {
+/**
+ * Jména na kartě jdou přes `JmenoUcastnika` — sdílené s pultem GM: čtvereček
+ * barvy a u stejně pojmenovaných AI přívěsek „(pN)“.
+ */
+function ObsahRole({ moje, vse, ucastnici }: { moje: RoleHrace; vse: RoleHrace[]; ucastnici: ZapasView["ucastnici"] }) {
   const popis = POPIS_ROLE[moje.role];
   // Všichni ostatní Nájezdníci, ne jen první: GM smí rozeslat i tři (spec
   // §6.2) a redakce je Nájezdníkovi posílá všechny.
@@ -89,17 +92,26 @@ function ObsahRole({ moje, vse, jmeno }: { moje: RoleHrace; vse: RoleHrace[]; jm
       <p className="cil">{popis.cil}</p>
       {moje.role === "kat" && moje.cilHracId ? (
         <p>
-          <span>Tvá oběť:</span> <strong>{jmeno(moje.cilHracId)}</strong>
+          <span>Tvá oběť:</span>{" "}
+          <strong>
+            <JmenoUcastnika ucastnici={ucastnici} hracId={moje.cilHracId} />
+          </strong>
         </p>
       ) : null}
       {moje.role === "zoldak" && moje.cilHracId ? (
         <p>
-          <span>Pokrevní pouto:</span> <strong>{jmeno(moje.cilHracId)}</strong>
+          <span>Pokrevní pouto:</span>{" "}
+          <strong>
+            <JmenoUcastnika ucastnici={ucastnici} hracId={moje.cilHracId} />
+          </strong>
         </p>
       ) : null}
       {ostatni.length > 0 ? (
         <p>
-          <span>{ostatni.length === 1 ? "Druhý Nájezdník:" : "Další Nájezdníci:"}</span> <strong>{ostatni.map((r) => jmeno(r.hracId)).join(", ")}</strong>
+          <span>{ostatni.length === 1 ? "Druhý Nájezdník:" : "Další Nájezdníci:"}</span>{" "}
+          <strong>
+            <VycetUcastniku ucastnici={ucastnici} hraci={ostatni.map((r) => r.hracId)} />
+          </strong>
         </p>
       ) : null}
       {popis.vyhody.length > 0 ? (

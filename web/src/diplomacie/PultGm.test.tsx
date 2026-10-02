@@ -77,6 +77,16 @@ it("po losu tabulka s roletkami, cíle jen povolené, souhrn složení a rozesl�
   fireEvent.change(screen.getByRole("combobox", { name: `Role: ${jmeno(kat.hracId)}` }), { target: { value: "garda" } });
   expect(diploApi.role).toHaveBeenCalledWith(zapas.id, kat.hracId, { role: "garda" });
   expect(screen.getByText("Složení odpovídá pravidlům.")).toBeTruthy();
+  // Jméno v řádku nese čtvereček barvy hráče; u roletky cíle stojí čtvereček
+  // právě vybraného cíle (položky roletky barvu nést neumějí) a Nájezdník
+  // má u „zná:“ barvu druhého Nájezdníka.
+  const barvaHrace = (id: string) => `barva-${zapas.ucastnici.find((u) => u.hracId === id)!.barva}`;
+  expect(screen.getByRole("rowheader", { name: jmeno(kat.hracId) }).querySelector(".swatch")).toHaveClass(barvaHrace(kat.hracId));
+  expect(cil.parentElement!.querySelector(".swatch")).toHaveClass(barvaHrace(kat.cilHracId!));
+  const [najezdnik, druhy] = ROLE_LOS.filter((r) => r.role === "najezdnik");
+  const zna = within(screen.getByRole("rowheader", { name: jmeno(najezdnik!.hracId) }).closest("tr")!).getByText(/^zná:/);
+  expect(zna).toHaveTextContent(`zná: ${jmeno(druhy!.hracId)}`);
+  expect(zna.querySelector(".swatch")).toHaveClass(barvaHrace(druhy!.hracId));
   // Znak role u každého řádku: dva Nájezdníci = dva stejné znaky.
   expect(screen.getAllByRole("img", { name: "Nájezdník" })).toHaveLength(2);
   await odemceno("Rozeslat role");
@@ -93,6 +103,8 @@ it("po rozeslání se úprava role i cíle potvrzuje dialogem", async () => {
   fireEvent.change(screen.getByRole("combobox", { name: `Role: ${jmeno(sasek.hracId)}` }), { target: { value: "kat" } });
   expect(diploApi.role).not.toHaveBeenCalled();
   const dotaz = screen.getByRole("alertdialog", { name: `${jmeno(sasek.hracId)} už svou roli vidí. Opravdu ji změnit?` });
+  // I v otázce se hráč jmenuje s barvou.
+  expect(dotaz.querySelector(".swatch")).toHaveClass(`barva-${zapas.ucastnici.find((u) => u.hracId === sasek.hracId)!.barva}`);
   fireEvent.click(screen.getByRole("button", { name: "Ano" }));
   expect(dotaz).not.toBeInTheDocument();
   expect(diploApi.role).toHaveBeenCalledWith(zapas.id, sasek.hracId, { role: "kat", potvrzeno: true });
@@ -214,7 +226,7 @@ it("dvě AI v sestavě rozliší barva: řádky, cíle, spojenec i přehled", ()
   const cile = within(screen.getByRole("combobox", { name: `Cíl: ${jmeno(kat.hracId)}` })).getAllByRole("option").map((o) => o.textContent);
   expect(cile).toContain("AI (p3)");
   expect(cile).toContain("AI (p5)");
-  expect(screen.getByText("zná: AI (p3)")).toBeTruthy();
+  expect(screen.getAllByText(/^zná:/).map((z) => z.textContent)).toContain("zná: AI (p3)");
   expect(screen.queryByText(/Hráč \d \(p\d\)/)).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Kopírovat přehled rolí" }));
   expect(writeText).toHaveBeenCalledWith(expect.stringContaining("AI (p3): Nájezdník"));

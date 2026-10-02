@@ -12,7 +12,9 @@ it("stav zápasu vždy, Nástupce až po rozeslání", () => {
   expect(screen.getByText("Diplomacie · role rozdány")).toBeTruthy();
   expect(screen.queryByText(/Nástupce/)).toBeNull();
   rerender(<VerejnyRadek zapas={zapas} data={stavDiplo("rozeslano", [])} />);
-  expect(screen.getByText("Diplomacie · role rozeslány · Nástupce: Hráč 1")).toBeTruthy();
+  expect(document.querySelector(".diplo-radek")).toHaveTextContent("Diplomacie · role rozeslány · Nástupce: Hráč 1");
+  // Nástupce se jmenuje i s barvou (h1 sedí na modré).
+  expect(screen.getByText("Hráč 1").querySelector(".swatch")).toHaveClass("barva-1");
 });
 
 // Admin v režii bývá i GM a tomu server Nástupce nezaslepuje (viditelnost.ts):

@@ -168,6 +168,8 @@ const zruseny: AkceStavPayload = {
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
   render(<HistorieZapasu stav={dohrany} obsluha={props} />);
   expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhrál modrý tým");
+  // Tým se sdílenou barvou ji ve větě nese jako čtvereček.
+  expect(screen.getByText("modrý tým").querySelector(".swatch")).toHaveClass("barva-1");
 });
 
 // Spectate, nápověda pro zamrzlou lobby i Zrušit patří běžícímu zápasu. Po
@@ -362,6 +364,8 @@ it("u zápasu se třemi stranami jde zaškrtat víc vítězů a uložit je v po�
 
   const ulozit = screen.getByRole("button", { name: /uložit vítěze/i });
   expect(ulozit).toBeDisabled();
+  // U každého jména je čtvereček barvy hráče (sdílená komponenta JmenoSBarvou).
+  expect(screen.getByRole("checkbox", { name: /marek/i }).closest("label")!.querySelector(".swatch")).toHaveClass("barva-3");
   fireEvent.click(screen.getByRole("checkbox", { name: /marek/i }));
   fireEvent.click(screen.getByRole("checkbox", { name: /tencer/i }));
   expect(ulozit).toBeEnabled();
@@ -405,6 +409,7 @@ it("uložený výsledek s víc vítězi má větu v hlavičce a odznak u každé
   const dohranyFfa: AkceStavPayload = { ...stav, zapasy: [{ ...ffa, stav: "dohrano", vitez: { hraci: ["a", "c"] } }] };
   render(<HistorieZapasu stav={dohranyFfa} obsluha={props} />);
   expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhráli TenceR a Marek");
+  expect([...screen.getByTestId("zapas-hlavicka").querySelectorAll(".swatch")].map((s) => s.className)).toEqual(["swatch barva-1", "swatch barva-3"]);
   const odznaky = screen.getAllByTestId("odznak-vitez");
   expect(odznaky.map((o) => o.closest("li")?.textContent)).toEqual([expect.stringContaining("TenceR"), expect.stringContaining("Marek")]);
   expect(odznaky.some((o) => o.closest("li")?.textContent?.includes("Pepa_CZ"))).toBe(false);

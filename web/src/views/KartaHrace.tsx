@@ -1,8 +1,9 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, type ReactNode } from "react";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik, popisTymu, sdiliCivilizaci } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
+import { JmenoSBarvou } from "./JmenoSBarvou.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 import { StranyZapasu } from "./StranyZapasu.js";
 
@@ -64,7 +65,16 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, onKontrolaLob
       </div>
       {parta.length > 0 ? (
         <p className="stred">
-          Civilizaci sdílíš s <strong>{parta.map(jmenoHrace).join(", ")}</strong> — musíte mít oba stejnou barvu.
+          Civilizaci sdílíš s{" "}
+          <strong>
+            {parta.map((u, i) => (
+              <Fragment key={u.hracId}>
+                {i > 0 ? ", " : null}
+                <JmenoSBarvou barva={u.barva}>{jmenoHrace(u)}</JmenoSBarvou>
+              </Fragment>
+            ))}
+          </strong>{" "}
+          — musíte mít oba stejnou barvu.
         </p>
       ) : null}
 

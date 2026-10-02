@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { odchylkySlozeni, povoleneCile, textPrehledu } from "../../../src/shared/diplomacie/los.js";
 import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
 import { ROLE_VOLITELNE, type DiploData, type Role } from "../../../src/shared/diplomacie/typy.js";
 import { BARVA_NAZEV, type Barva, type ZapasView } from "../../../src/shared/types.js";
 import type { Hlidej } from "../rezimy/index.js";
+import { JmenoUcastnika, VycetUcastniku, ZnakBarvy } from "../views/JmenoSBarvou.js";
 import { Kopirovatelne } from "../views/Kopirovatelne.js";
 import { Potvrzeni } from "../views/Potvrzeni.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
@@ -18,7 +19,7 @@ const POPIS_STAVU = { priprava: "Příprava", losovano: "Losováno", rozeslano: 
 
 /** Otázka před změnou, kterou hráč už vidí (spec §6.2), a co se stane po „Ano“. */
 interface Dotaz {
-  text: string;
+  text: ReactNode;
   potvrdit: () => void;
 }
 
@@ -30,8 +31,11 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   if (!d) return null;
   const verze = verzeZapasu(data, d);
   const hraci = zapas.ucastnici.filter((u) => u.hracId !== d.gmHracId).sort((a, b) => a.barva - b.barva);
-  // Sdílené s kartou role: víc AI se jmenuje stejně, rozliší je barva.
+  // Sdílené s kartou role: víc AI se jmenuje stejně, rozliší je barva. Holý
+  // text je pro popisky roletek a přehled do schránky; na stránce jméno
+  // kreslí `JmenoUcastnika` i se čtverečkem barvy.
   const jmeno = (id: string) => jmenoVZapasu(zapas.ucastnici, id);
+  const hrac = (id: string) => <JmenoUcastnika ucastnici={zapas.ucastnici} hracId={id} />;
   // Chybu ukáže hlidej z App; tlačítka jsou mezitím zamčená, ať GM neklikne dvakrát.
   const akce = (fn: () => Promise<unknown>) => {
     setPracuje(true);
@@ -42,7 +46,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   const potvrzeni = d.stav === "rozeslano";
   const zmen = (hracId: string, zmena: { role?: Role; cilHracId?: string }) => {
     const posli = () => akce(() => diploApi.role(zapas.id, hracId, potvrzeni ? { ...zmena, potvrzeno: true } : zmena));
-    if (potvrzeni) setDotaz({ text: `${jmeno(hracId)} už svou roli vidí. Opravdu ji změnit?`, potvrdit: posli });
+    if (potvrzeni) setDotaz({ text: <>{hrac(hracId)} už svou roli vidí. Opravdu ji změnit?</>, potvrdit: posli });
     else posli();
   };
   const zpet = () => {
@@ -95,14 +99,11 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
             <table className="tabulka-roli">
               <tbody>
                 {d.role.map((r) => {
-                  const barva = mujUcastnik(zapas, r.hracId)?.barva;
+                  const barvaCile = r.cilHracId ? mujUcastnik(zapas, r.cilHracId)?.barva : undefined;
                   return (
                     <tr key={r.hracId}>
-                      {/* Znak barvy jako na dlaždicích: řádky jdou v pořadí slotů, dlaždice podle barvy. */}
-                      <th scope="row" className={barva === undefined ? undefined : `barva-${barva}`}>
-                        {barva === undefined ? null : <span className="swatch" aria-hidden="true" />}
-                        {jmeno(r.hracId)}
-                      </th>
+                      {/* Čtvereček barvy jako na dlaždicích: řádky jdou v pořadí slotů, dlaždice podle barvy. */}
+                      <th scope="row">{hrac(r.hracId)}</th>
                       {/* Znak ve vlastní buňce, ne v th: v hlavičce řádku by alt
                           přepsal přístupné jméno hráče, vedle roletky by ji zalomil. */}
                       <td className="znak">
@@ -123,24 +124,23 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                       </td>
                       <td>
                         {r.role === "kat" || r.role === "zoldak" ? (
-                          <select aria-label={`Cíl: ${jmeno(r.hracId)}`} value={r.cilHracId ?? ""} disabled={pracuje} onChange={(e) => zmen(r.hracId, { cilHracId: e.target.value })}>
-                            {povoleneCile(
-                              d.role.map((x) => x.hracId),
-                              r.hracId,
-                              d.nastupceHracId!,
-                            ).map((c) => (
-                              <option key={c} value={c}>
-                                {jmeno(c)}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="cil-s-barvou">
+                            {barvaCile === undefined ? null : <ZnakBarvy barva={barvaCile} />}
+                            <select aria-label={`Cíl: ${jmeno(r.hracId)}`} value={r.cilHracId ?? ""} disabled={pracuje} onChange={(e) => zmen(r.hracId, { cilHracId: e.target.value })}>
+                              {povoleneCile(
+                                d.role.map((x) => x.hracId),
+                                r.hracId,
+                                d.nastupceHracId!,
+                              ).map((c) => (
+                                <option key={c} value={c}>
+                                  {jmeno(c)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         ) : r.role === "najezdnik" ? (
                           <span>
-                            zná:{" "}
-                            {d.role
-                              .filter((x) => x.role === "najezdnik" && x.hracId !== r.hracId)
-                              .map((x) => jmeno(x.hracId))
-                              .join(", ")}
+                            zná: <VycetUcastniku ucastnici={zapas.ucastnici} hraci={d.role.filter((x) => x.role === "najezdnik" && x.hracId !== r.hracId).map((x) => x.hracId)} />
                           </span>
                         ) : null}
                       </td>

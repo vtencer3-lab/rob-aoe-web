@@ -570,15 +570,28 @@ main > .prazdno::after {
 .karta.barva-7 .hero, .host.barva-7 .hero { background: var(--b7); }
 .karta.barva-8 .hero, .host.barva-8 .hero { background: var(--b8); }
 
-.swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; }
-.barva-1 .swatch { background: var(--b1); }
-.barva-2 .swatch { background: var(--b2); }
-.barva-3 .swatch { background: var(--b3); }
-.barva-4 .swatch { background: var(--b4); }
-.barva-5 .swatch { background: var(--b5); }
-.barva-6 .swatch { background: var(--b6); }
-.barva-7 .swatch { background: var(--b7); }
-.barva-8 .swatch { background: var(--b8); }
+/* Čtvereček barvy hráče (`ZnakBarvy` v JmenoSBarvou.tsx). Barvu nese sám
+   (`.swatch.barva-N`), ne předek: karta hráče je `.karta.barva-N` a selektor
+   `.barva-N .swatch` by v ní přebarvil všechny čtverečky na barvu karty
+   (GM sedí na šedé — tabulka rolí kvůli tomu měla vlastní, těžší pravidla).
+   Velikost v em, ať sedí k písmu věty i nadpisu; tmavý obrys a zlatá linka
+   ho drží čitelný na tmavém dřevě i u tmavých barev. */
+.swatch { display: inline-block; box-sizing: border-box; width: 0.8em; height: 0.8em; border-radius: 2px; border: 1px solid var(--obrys); box-shadow: 0 0 0 1px color-mix(in srgb, var(--zlato) 40%, transparent); vertical-align: -0.05em; }
+.swatch.barva-1 { background: var(--b1); }
+.swatch.barva-2 { background: var(--b2); }
+.swatch.barva-3 { background: var(--b3); }
+.swatch.barva-4 { background: var(--b4); }
+.swatch.barva-5 { background: var(--b5); }
+.swatch.barva-6 { background: var(--b6); }
+.swatch.barva-7 { background: var(--b7); }
+.swatch.barva-8 { background: var(--b8); }
+/* Jméno se čtverečkem barvy (`JmenoSBarvou`): čtvereček stojí v levém
+   odsazení jména, ne jako samostatný prvek řádku — mezi odsazením a prvním
+   písmenem se řádek zalomit nemůže, takže čtvereček nikdy nezůstane sám na
+   konci řádku, a dlouhé jméno se přitom dál smí zalomit. Svisle sedí na
+   střed verzálek (v em, drží se písma). */
+.jmeno-s-barvou { position: relative; padding-left: 1.15em; }
+.jmeno-s-barvou > .swatch { position: absolute; left: 0.05em; top: 0.22em; }
 
 .zrcadlo { list-style: none; padding: 0; }
 .zrcadlo li { padding: 0.4rem 0; border-bottom: 1px solid rgba(216, 168, 58, 0.14); }
@@ -1641,21 +1654,14 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
   .tabulka-roli th { white-space: normal; width: 30%; }
   .tabulka-roli td.znak { width: var(--znak); }
 }
-/* Znak barvy před jménem (`.swatch` z `.barva-N` na th): GM si řádek spojí
-   s dlaždicí a s „pN“ ze hry i u dvou AI se stejným jménem. Barvy tu musí
-   být znovu a specifičtěji než obecné `.barva-N .swatch`: pult leží v panelu
-   `.karta.barva-7` (GM sedí na šedé), takže by jinak `.barva-7 .swatch`
-   přebarvilo všechny znaky na šedo — má stejnou váhu a v souboru je později. */
-.tabulka-roli th .swatch { margin-right: 0.4rem; vertical-align: -0.1em; border: 1px solid var(--obrys); box-shadow: 0 0 0 1px color-mix(in srgb, var(--zlato) 40%, transparent); }
-.tabulka-roli th.barva-1 .swatch { background: var(--b1); }
-.tabulka-roli th.barva-2 .swatch { background: var(--b2); }
-.tabulka-roli th.barva-3 .swatch { background: var(--b3); }
-.tabulka-roli th.barva-4 .swatch { background: var(--b4); }
-.tabulka-roli th.barva-5 .swatch { background: var(--b5); }
-.tabulka-roli th.barva-6 .swatch { background: var(--b6); }
-.tabulka-roli th.barva-7 .swatch { background: var(--b7); }
-.tabulka-roli th.barva-8 .swatch { background: var(--b8); }
+/* Čtvereček barvy před jménem (`JmenoSBarvou`): GM si řádek spojí s dlaždicí
+   a s „pN“ ze hry i u dvou AI se stejným jménem. U výběru cíle stojí
+   čtvereček vybraného hráče vedle roletky — položky roletky barvu nést
+   neumějí. */
 .tabulka-roli td select { width: 100%; box-sizing: border-box; }
+.tabulka-roli .cil-s-barvou { display: flex; align-items: center; gap: 0.4rem; }
+.tabulka-roli .cil-s-barvou select { min-width: 0; }
+.tabulka-roli .cil-s-barvou .swatch { flex: none; }
 .tabulka-roli td > span { color: var(--tlumene); font-size: 0.9rem; }
 .pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }
 .pult-gm .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 0.6rem; }

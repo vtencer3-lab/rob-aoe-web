@@ -1,10 +1,16 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { ZapasView } from "../../../src/shared/types.js";
-import { jmenoHrace, popisFormatu, strany, vitezVeVete, vyhralHrac } from "../zapas.js";
+import { jmenoHrace, popisFormatu, strany, vyhralHrac } from "../zapas.js";
+import { JmenoSBarvou, VitezVeVete } from "./JmenoSBarvou.js";
 
-function popisStavu(zapas: ZapasView): string {
+function popisStavu(zapas: ZapasView): ReactNode {
   if (zapas.stav !== "dohrano") return "běží";
-  return zapas.vitez ? `dohráno — ${vitezVeVete(zapas.ucastnici, zapas.vitez)}` : "dohráno";
+  if (!zapas.vitez) return "dohráno";
+  return (
+    <>
+      dohráno — <VitezVeVete ucastnici={zapas.ucastnici} vitez={zapas.vitez} />
+    </>
+  );
 }
 
 interface Props {
@@ -17,16 +23,15 @@ interface Props {
 
 /**
  * Zápas očima člověka, který se na něj jen dívá — a to je na streamu většina
- * lidí. Schválně jen kdo proti komu: barvy a týmy jsou pokyny pro hráče,
- * divákovi nic neříkají.
+ * lidí. Schválně jen kdo proti komu; čísla týmů jsou pokyny pro hráče
+ * a divákovi nic neříkají. Barvu u jména ale má (uživatel 2. 10. 2026):
+ * ve vysílání se hráč pozná podle barvy dřív než podle jména.
  *
  * Sahá vědomě jen na jména, pořadí, formát a výsledek. Heslo ani číslo lobby
  * se sem nedostanou ani omylem, i kdyby je server jednou poslal nezaslepené.
  */
 export function VerejnyZapas({ zapas, ja = null, doplnek }: Props) {
-  const stranyText = strany(zapas.ucastnici)
-    .map((s) => s.clenove.map(jmenoHrace).join(" + "))
-    .join(" vs ");
+  const stranyZapasu = strany(zapas.ucastnici);
   // Hráč se svůj vlastní dohraný zápas dozvídá právě tímhle řádkem — karta pro
   // něj po dohrání zaniká. Ať se aspoň nemusí domýšlet, jak dopadl; divákovi
   // mimo zápas se nic osobního neříká.
@@ -42,7 +47,19 @@ export function VerejnyZapas({ zapas, ja = null, doplnek }: Props) {
     <p className="verejny-zapas" data-testid="verejny-zapas">
       <strong>Zápas #{zapas.poradi}</strong> · {popisFormatu(zapas.ucastnici)} · {popisStavu(zapas)}
       <br />
-      <span className="strany">{stranyText}</span>
+      <span className="strany">
+        {stranyZapasu.map((s, i) => (
+          <Fragment key={i}>
+            {i > 0 ? " vs " : null}
+            {s.clenove.map((u, j) => (
+              <Fragment key={u.hracId}>
+                {j > 0 ? " + " : null}
+                <JmenoSBarvou barva={u.barva}>{jmenoHrace(u)}</JmenoSBarvou>
+              </Fragment>
+            ))}
+          </Fragment>
+        ))}
+      </span>
       {/* Bez doplňku ani zalomení — prázdný řádek by řádek zápasu zbytečně natáhl. */}
       {doplnek ? (
         <>

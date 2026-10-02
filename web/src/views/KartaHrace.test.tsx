@@ -60,7 +60,9 @@ it("steam hráč žádnou značku platformy nemá", () => {
 
 it("řekne, s kým se sdílí civilizace", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
-  expect(screen.getByText(/sdílíš/)).toHaveTextContent("Pepa_CZ");
+  expect(screen.getByText(/sdílíš/)).toHaveTextContent("Civilizaci sdílíš s Pepa_CZ — musíte mít oba stejnou barvu.");
+  // Spoluhráč ve větě nese čtvereček společné barvy.
+  expect(screen.getByText(/sdílíš/).querySelector(".jmeno-s-barvou .swatch")).toHaveClass("barva-1");
 });
 
 it("v 1v1 o sdílení civilizace nemluví", () => {

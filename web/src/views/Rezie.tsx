@@ -5,7 +5,8 @@ import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js
 import type { Strana } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type AkceStavPayload, type Vitez, type ZapasView } from "../../../src/shared/types.js";
 import { nazevCivilizace } from "../../../src/shared/civilizace.js";
-import { jeVeHre, jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vitezVeVete, vyhralHrac } from "../zapas.js";
+import { jeVeHre, jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vyhralHrac } from "../zapas.js";
+import { JmenoSBarvou, VitezVeVete } from "./JmenoSBarvou.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 
 /**
@@ -87,10 +88,16 @@ export function HistorieZapasu({ stav, obsluha, ja, doplnek }: Props) {
   );
 }
 
-function popisStavu(zapas: ZapasView): string {
+function popisStavu(zapas: ZapasView): ReactNode {
   if (zapas.stav === "zruseny") return " · zrušeno";
   if (zapas.stav !== "dohrano") return "";
-  return zapas.vitez ? ` · dohráno — ${vitezVeVete(zapas.ucastnici, zapas.vitez)}` : " · dohráno";
+  if (!zapas.vitez) return " · dohráno";
+  return (
+    <>
+      {" · dohráno — "}
+      <VitezVeVete ucastnici={zapas.ucastnici} vitez={zapas.vitez} />
+    </>
+  );
 }
 
 /**
@@ -402,10 +409,9 @@ function VyberVitezu({ zapas, onUlozit, onZpet }: { zapas: ZapasView; onUlozit: 
       <ul className="vitezove">
         {podleSlotu.map((u) => (
           <li key={u.hracId}>
-            <label className={`barva-${u.barva}`}>
+            <label>
               <input type="checkbox" checked={vybrani.has(u.hracId)} onChange={(e) => prepni(u.hracId, e.target.checked)} />
-              <span className="swatch" aria-hidden="true" />
-              {jmenoHrace(u)}
+              <JmenoSBarvou barva={u.barva}>{jmenoHrace(u)}</JmenoSBarvou>
             </label>
           </li>
         ))}

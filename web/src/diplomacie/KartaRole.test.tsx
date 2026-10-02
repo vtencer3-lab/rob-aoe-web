@@ -26,16 +26,19 @@ it("po rozeslání je karta zakrytá a po odkrytí ukáže roli, cíl a oběť",
   expect(screen.getByRole("heading", { name: "Kat" })).toBeTruthy();
   expect(screen.getByRole("img", { name: "Kat" })).toHaveClass("znak-role");
   expect(screen.getByText("Tvá oběť:")).toBeTruthy();
-  expect(screen.getByText("Hráč 4")).toBeTruthy();
+  // Jméno oběti nese čtvereček její barvy (h4 sedí na žluté), Nástupce svůj.
+  expect(screen.getByText("Hráč 4").querySelector(".swatch")).toHaveClass("barva-4");
+  expect(screen.getByText("Hráč 1").querySelector(".swatch")).toHaveClass("barva-1");
 });
 
 it("Nájezdník vidí druhého Nájezdníka, Žoldák pakt", () => {
   const { rerender } = render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "najezdnik", cilHracId: null, upravenoPoRozeslani: false }, { hracId: "h5", role: "najezdnik", cilHracId: null, upravenoPoRozeslani: false }])} ja="h2" />);
   fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
   expect(screen.getByText("Druhý Nájezdník:")).toBeTruthy();
-  expect(screen.getByText("Hráč 5")).toBeTruthy();
+  expect(screen.getByText("Hráč 5").querySelector(".swatch")).toHaveClass("barva-5");
   rerender(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "zoldak", cilHracId: "h6", upravenoPoRozeslani: false }])} ja="h2" />);
   expect(screen.getByText("Pokrevní pouto:")).toBeTruthy();
+  expect(screen.getByText("Hráč 6").querySelector(".swatch")).toHaveClass("barva-6");
 });
 
 // Nestandardní složení (spec §6.2: třeba 3× Nájezdník) — redakce posílá
@@ -45,8 +48,9 @@ it("při třech Nájezdnících vidí Nájezdník oba spojence", () => {
   const najezdnik = (hracId: string) => ({ hracId, role: "najezdnik" as const, cilHracId: null, upravenoPoRozeslani: false });
   render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [najezdnik("h2"), najezdnik("h5"), najezdnik("h8")])} ja="h2" />);
   fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
-  expect(screen.getByText("Další Nájezdníci:")).toBeTruthy();
-  expect(screen.getByText("Hráč 5, Hráč 8")).toBeTruthy();
+  const radek = screen.getByText("Další Nájezdníci:").parentElement!;
+  expect(radek).toHaveTextContent("Další Nájezdníci: Hráč 5, Hráč 8");
+  expect([...radek.querySelectorAll(".swatch")].map((s) => s.className)).toEqual(["swatch barva-5", "swatch barva-8"]);
   expect(screen.queryByText("Druhý Nájezdník:")).toBeNull();
 });
 

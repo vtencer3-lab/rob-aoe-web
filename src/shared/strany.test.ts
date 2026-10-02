@@ -7,6 +7,7 @@ import {
   stranaHrace,
   strany,
   titulekViteze,
+  vetaOViteze,
   vitezVeVete,
   vyhralHrac,
   type ClenStrany,
@@ -101,6 +102,23 @@ describe("vítěz s víc hráči", () => {
     expect(vitezVeVete(ffa, { hraci: ["d", "a"] })).toBe("vyhráli Garda a Zoldak");
     expect(vitezVeVete(ffa, { hraci: ["d", "b", "a"] })).toBe("vyhráli Garda, Nastupce a Zoldak");
     expect(vitezVeVete(ffa, { hraci: ["zzz"] })).toBe("vyhrál zzz");
+  });
+
+  // Web ke jménům ve větě kreslí čtvereček barvy: části věty nesou barvu
+  // hráče, u týmu jen když ji sdílí celý; neznámé id a tým s víc barvami ne.
+  it("části věty nesou barvu jmenovaného", () => {
+    expect(vetaOViteze(ffa, { hraci: ["d", "a"] })).toEqual({
+      sloveso: "vyhráli",
+      jmenovani: [
+        { jmeno: "Garda", barva: 1 },
+        { jmeno: "Zoldak", barva: 3 },
+      ],
+    });
+    expect(vetaOViteze(ffa, { hraci: ["zzz"] })).toEqual({ sloveso: "vyhrál", jmenovani: [{ jmeno: "zzz", barva: null }] });
+    expect(vetaOViteze(ffa, { hracId: "b" })).toEqual({ sloveso: "vyhrál", jmenovani: [{ jmeno: "Nastupce", barva: 2 }] });
+    const tymy = [c("a", 1, 1, 0), c("b", 1, 1, 1), c("x", 2, 2, 2), c("y", 2, 3, 3)];
+    expect(vetaOViteze(tymy, { tym: 1 })).toEqual({ sloveso: "vyhrál", jmenovani: [{ jmeno: "modrý tým", barva: 1 }] });
+    expect(vetaOViteze(tymy, { tym: 2 })).toEqual({ sloveso: "vyhrál", jmenovani: [{ jmeno: "tým 2", barva: null }] });
   });
 });
 

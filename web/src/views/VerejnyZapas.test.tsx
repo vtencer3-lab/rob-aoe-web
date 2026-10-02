@@ -37,6 +37,9 @@ it("ukáže pořadí, formát a kdo proti komu", () => {
   expect(radek).toHaveTextContent("1v1");
   expect(radek).toHaveTextContent("běží");
   expect(radek).toHaveTextContent("Trokner vs TibbarZmr");
+  // Každé jméno nese čtvereček barvy hráče v zápase.
+  expect(screen.getByText("Trokner").querySelector(".swatch")).toHaveClass("barva-1");
+  expect(screen.getByText("TibbarZmr").querySelector(".swatch")).toHaveClass("barva-2");
 });
 
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
@@ -105,6 +108,8 @@ it("u výsledku s víc vítězi to řekne každému z nich i poraženým", () =>
   };
   const { rerender } = render(<VerejnyZapas zapas={ffa} ja="c" />);
   expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("vyhráli Trokner a Pepa");
+  // Vítěz je jmenován dvakrát — ve větě o výsledku a ve stranách — pokaždé s barvou.
+  expect(screen.getAllByText("Pepa").map((j) => j.querySelector(".swatch")!.className)).toEqual(["swatch barva-3", "swatch barva-3"]);
   expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("Vyhrál jsi");
   rerender(<VerejnyZapas zapas={ffa} ja="b" />);
   expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("Prohrál jsi");
