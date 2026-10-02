@@ -64,7 +64,7 @@ export function KartaRole({ zapas, data, ja }: Props) {
           <p className="stred">
             Nástupcem císaře je <strong>{d.nastupceHracId ? jmeno(d.nastupceHracId) : "?"}</strong>.
           </p>
-          <Zakryti popisek="Tvá tajná role — klikni pro odkrytí" rub={<RubKarty />}>
+          <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
             <ObsahRole moje={moje} vse={d.role} jmeno={jmeno} />
             {verze && barva !== undefined ? <MapaScenare verze={verze} starty={barva} /> : null}
           </Zakryti>

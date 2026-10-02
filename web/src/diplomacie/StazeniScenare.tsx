@@ -14,8 +14,10 @@ export function cestaKeScenarum(hracId: string): string {
 
 /**
  * Stažení scénáře pro hosta v kroku „Zakládáš!“ (spec §5.3): verze, kterou
- * zápas hraje, cesta přímo pro něj ke zkopírování a co s tím ve hře. Ostatní
- * hráči scénář dostanou přenosem v lobby, tak tohle vidí jen host.
+ * zápas hraje, a cesta přímo pro něj ke zkopírování. Co s tím ve hře, slovy
+ * neříká — hned pod tím je okno Create Lobby s Game Mode Custom Scenario,
+ * věta by ho jen opakovala (uživatel 2. 10. 2026). Ostatní hráči scénář
+ * dostanou přenosem v lobby, tak tohle vidí jen host.
  */
 export function StazeniScenare({ verze, ja }: { verze: ScenarVerze | null; ja: string }) {
   if (!verze) return <p className="ceka stred">Scénář zatím nikdo nenahrál.</p>;
@@ -28,10 +30,6 @@ export function StazeniScenare({ verze, ja }: { verze: ScenarVerze | null; ja: s
         Ulož <strong>{verze.jmenoSouboru}</strong> do složky (starou kopii stejného jména přepiš):
       </p>
       <Kopirovatelne hodnota={cestaKeScenarum(ja)} popis="cestu ke scénářům" />
-      {/* Přesně tak, jak položku jmenuje hra — host hledá text, ne překlad. */}
-      <p>
-        V Create Lobby zvol Game Mode <strong>Custom Scenario</strong> a tenhle scénář podle jména souboru. Ostatní hráči ho dostanou z lobby.
-      </p>
     </div>
   );
 }

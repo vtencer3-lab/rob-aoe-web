@@ -17,7 +17,11 @@ it("po rozeslání je karta zakrytá a po odkrytí ukáže roli, cíl a oběť",
   expect(screen.queryByText("Kat")).toBeNull();
   // Zakrytá karta leží rubem nahoru (bez alt — není to informace, jen obrázek).
   expect(container.querySelector("img.rub-karty")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role — klikni pro odkrytí" }));
+  // Viditelný text je jen „Tvá tajná role“; že se kliknutím odkrývá, říká title.
+  const tlacitko = screen.getByRole("button", { name: "Tvá tajná role" });
+  expect(tlacitko.textContent).toBe("Tvá tajná role");
+  expect(tlacitko).toHaveAttribute("title", "Klikni pro odkrytí");
+  fireEvent.click(tlacitko);
   expect(container.querySelector("img.rub-karty")).toBeNull();
   expect(screen.getByRole("heading", { name: "Kat" })).toBeTruthy();
   expect(screen.getByRole("img", { name: "Kat" })).toHaveClass("znak-role");
@@ -27,7 +31,7 @@ it("po rozeslání je karta zakrytá a po odkrytí ukáže roli, cíl a oběť",
 
 it("Nájezdník vidí druhého Nájezdníka, Žoldák pakt", () => {
   const { rerender } = render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "najezdnik", cilHracId: null, upravenoPoRozeslani: false }, { hracId: "h5", role: "najezdnik", cilHracId: null, upravenoPoRozeslani: false }])} ja="h2" />);
-  fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
   expect(screen.getByText("Druhý Nájezdník:")).toBeTruthy();
   expect(screen.getByText("Hráč 5")).toBeTruthy();
   rerender(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "zoldak", cilHracId: "h6", upravenoPoRozeslani: false }])} ja="h2" />);
@@ -40,7 +44,7 @@ it("Nájezdník vidí druhého Nájezdníka, Žoldák pakt", () => {
 it("při třech Nájezdnících vidí Nájezdník oba spojence", () => {
   const najezdnik = (hracId: string) => ({ hracId, role: "najezdnik" as const, cilHracId: null, upravenoPoRozeslani: false });
   render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [najezdnik("h2"), najezdnik("h5"), najezdnik("h8")])} ja="h2" />);
-  fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
   expect(screen.getByText("Další Nájezdníci:")).toBeTruthy();
   expect(screen.getByText("Hráč 5, Hráč 8")).toBeTruthy();
   expect(screen.queryByText("Druhý Nájezdník:")).toBeNull();
@@ -51,7 +55,7 @@ it("při třech Nájezdnících vidí Nájezdník oba spojence", () => {
 it("oběť, která je jednou ze dvou AI, se rozliší barvou", () => {
   const zapasAi = { ...zapas, ucastnici: zapas.ucastnici.map((u) => (u.barva === 3 || u.barva === 5 ? { ...u, hracId: aiId(u.barva), alias: JMENO_AI, platformaJmeno: JMENO_AI } : u)) };
   render(<KartaRole zapas={zapasAi} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "kat", cilHracId: aiId(5), upravenoPoRozeslani: false }])} ja="h2" />);
-  fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
   expect(screen.getByText("AI (p5)")).toBeTruthy();
   expect(screen.getByText("Hráč 1")).toBeTruthy();
 });
@@ -59,7 +63,7 @@ it("oběť, která je jednou ze dvou AI, se rozliší barvou", () => {
 it("všichni v zápase vidí Nástupce a úprava GM se ohlásí", () => {
   render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "sasek", cilHracId: null, upravenoPoRozeslani: true }])} ja="h2" />);
   expect(screen.getByText(/Nástupcem císaře je/)).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
   expect(screen.getByText("GM upravil tvou roli.")).toBeTruthy();
 });
 
@@ -74,7 +78,7 @@ it("přechod do rozesláno zazvoní, načtení s už rozeslanými rolemi ne", ()
 
 it("bez rozboru scénáře karta funguje jen s texty rolí", () => {
   render(<KartaRole zapas={zapas} data={{ ...stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null, upravenoPoRozeslani: false }]), aktivni: null, verze: {} }} ja="h2" />);
-  fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
   expect(screen.getByRole("heading", { name: "Královská Garda" })).toBeTruthy();
   // Znak role zůstává, mapa ne.
   expect(screen.getByRole("img", { name: "Královská Garda" })).toBeTruthy();
@@ -87,7 +91,7 @@ it("bez rozboru scénáře karta funguje jen s texty rolí", () => {
 it("odkrytá karta ukáže minimapu jen s vlastním startem", () => {
   render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null, upravenoPoRozeslani: false }])} ja="h2" />);
   expect(screen.queryByRole("img")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: /odkrytí/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
   expect(screen.getByRole("img", { name: "Mapa scénáře LLC.aoe2scenario" })).toBeTruthy();
   const starty = screen.getAllByTestId("start");
   expect(starty).toHaveLength(1);

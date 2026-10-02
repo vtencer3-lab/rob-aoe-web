@@ -14,8 +14,9 @@ it("host dostane odkaz na verzi zápasu, nebo větu, že scénář chybí", () =
   const { rerender } = render(<StazeniScenare verze={VERZE} ja="76561198014056480" />);
   expect(screen.getByRole("link", { name: "Stáhnout scénář" }).getAttribute("href")).toMatch(/\/api\/diplo\/scenar\/3\/soubor$/);
   expect(screen.getByText(/přepiš/)).toBeTruthy();
-  // Pokyn sedí na text ve hře: položka Game Mode se jmenuje „Custom Scenario“.
-  expect(screen.getByText("Custom Scenario")).toBeTruthy();
+  // Věta o Create Lobby tu není: totéž ukazuje okno Create Lobby hned pod tím.
+  expect(screen.queryByText(/Create Lobby/)).toBeNull();
+  expect(screen.queryByText("Custom Scenario")).toBeNull();
   rerender(<StazeniScenare verze={null} ja="x" />);
   expect(screen.getByText("Scénář zatím nikdo nenahrál.")).toBeTruthy();
 });
