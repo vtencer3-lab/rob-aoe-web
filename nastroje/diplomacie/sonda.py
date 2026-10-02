@@ -24,7 +24,10 @@ hodnoty podle barvy/jména, nikdy podle čísla.
 Totéž má jednou dělat web sám při nahrání každé verze scénáře Diplomacie
 (podprojekt 2): kopie se sondou je to, co host stahuje; originál zůstává.
 
-Použití: python sonda.py <scénář.aoe2scenario> [výstup.aoe2scenario]
+Použití: python sonda.py [--super] <scénář.aoe2scenario> [výstup.aoe2scenario]
+  --super přibalí místo provozní sondy `supersonda.xs` (úplný výpis: všechny
+  atributy hráčů s názvy, technologie, třídy jednotek, pozice králů a
+  relikvií, proměnné triggerů…) — na zjišťování, co jde ze hry získat
 Vyžaduje: pip install AoE2ScenarioParser==0.9.2
 """
 
@@ -67,24 +70,32 @@ rule _sondaTik
 """
 
 
-def pribal_sondu(vstup: str, vystup: str) -> int:
+def pribal_sondu(vstup: str, vystup: str, xs: str = XS_SONDA) -> int:
     """Načte scénář, přidá trigger se sondou a zapíše kopii. Vrací počet triggerů po úpravě."""
     from AoE2ScenarioParser.scenarios.aoe2_de_scenario import AoE2DEScenario
 
     scenar = AoE2DEScenario.from_file(vstup)
-    scenar.xs_manager.add_script(xs_string=XS_SONDA)
+    scenar.xs_manager.add_script(xs_string=xs)
     scenar.write_to_file(vystup)
     return len(scenar.trigger_manager.triggers)
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
+    argumenty = [a for a in sys.argv[1:] if a != "--super"]
+    if not argumenty:
         print(__doc__)
         sys.exit(2)
-    vstup = sys.argv[1]
+    # --super: místo provozní sondy přibalí supersonda.xs — úplný výpis všeho,
+    # co XS o hře ví (katalog dat, ~150 kB každých 5 s; čte xsdat.py, verze 100).
+    super_sonda = "--super" in sys.argv
+    xs = XS_SONDA
+    if super_sonda:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "supersonda.xs"), encoding="ascii") as f:
+            xs = f.read()
+    vstup = argumenty[0]
     koren, pripona = os.path.splitext(vstup)
-    vystup = sys.argv[2] if len(sys.argv) > 2 else f"{koren}-sonda{pripona}"
-    pocet = pribal_sondu(vstup, vystup)
+    vystup = argumenty[1] if len(argumenty) > 1 else f"{koren}-{'supersonda' if super_sonda else 'sonda'}{pripona}"
+    pocet = pribal_sondu(vstup, vystup, xs)
     print(f"{vystup}: {pocet} triggerů (poslední je XS SCRIPT), soubor sondy bude profile\\{os.path.splitext(os.path.basename(vystup))[0]}.xsdat")
 
 

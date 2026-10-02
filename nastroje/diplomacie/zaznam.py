@@ -24,6 +24,7 @@ docs/analyza-most-ke-hre.md.
 Použití: python zaznam.py <soubor.aoe2record> [--vse]
   bez --vse vynechá opakované zprávy AI a triggerů (stejný text ≥ 5×)
   a nulové tributy
+Statistiky po hráčích a hlavičku (hráči, barvy, scénář) čte zaznam_statistiky.py.
 Vyžaduje: pip install mgz
 """
 
@@ -41,15 +42,17 @@ PRIKAZ_DIPLOMACIE = 0
 POSTOJ = {0: "spojenec", 1: "neutral", 3: "nepritel"}
 
 
-def cti_zaznam(data: bytes) -> dict:
-    """Přečte tělo záznamu po poslední celou operaci; vrací souhrn a události."""
+def operace(data: bytes):
+    """Projde tělo záznamu po poslední celou operaci.
+
+    Dává trojice (druh, obsah, herní čas v ms): "akce" (syrové tělo akce),
+    "chat" (syrový text), "sync", "op5" a nakonec vždy "konec" s důvodem.
+    """
     delka_hlavicky = struct.unpack("<I", data[:4])[0]
     f = io.BytesIO(data)
     f.seek(delka_hlavicky)
     fast.meta(f)
     cas_ms = 0
-    pocty: Counter = Counter()
-    udalosti: list[dict] = []
     konec = "?"
     while True:
         pozice = f.tell()
@@ -66,22 +69,17 @@ def cti_zaznam(data: bytes) -> dict:
                 if len(telo) < delka:
                     konec = "konec souboru uprostřed akce"
                     break
-                pocty["akce"] += 1
-                udalost = akce(telo, cas_ms)
-                if udalost:
-                    udalosti.append(udalost)
+                yield "akce", telo, cas_ms
             elif op == OP_SYNC:
                 cas_ms += fast.sync(f)[0]
-                pocty["sync"] += 1
+                yield "sync", None, cas_ms
             elif op == OP_POHLED:
                 f.read(12)
             elif op == OP_CHAT:
-                text = fast.chat(f)
-                pocty["chat"] += 1
-                udalosti.append(chat(text, cas_ms))
+                yield "chat", fast.chat(f), cas_ms
             elif op == OP_NOVY5:
                 f.read(8)
-                pocty["op5"] += 1
+                yield "op5", None, cas_ms
             elif op == OP_POSTGAME:
                 fast.postgame(f)
                 konec = "konec hry (POSTGAME)"
@@ -92,6 +90,25 @@ def cti_zaznam(data: bytes) -> dict:
         except struct.error:
             konec = "konec souboru uprostřed operace"
             break
+    yield "konec", konec, cas_ms
+
+
+def cti_zaznam(data: bytes) -> dict:
+    """Přečte tělo záznamu po poslední celou operaci; vrací souhrn a události."""
+    pocty: Counter = Counter()
+    udalosti: list[dict] = []
+    konec, cas_ms = "?", 0
+    for druh, obsah, cas_ms in operace(data):
+        if druh == "konec":
+            konec = obsah
+            break
+        pocty[druh] += 1
+        if druh == "akce":
+            udalost = akce(obsah, cas_ms)
+            if udalost:
+                udalosti.append(udalost)
+        elif druh == "chat":
+            udalosti.append(chat(obsah, cas_ms))
     return {
         "herniCasS": round(cas_ms / 1000, 1),
         "konec": konec,
