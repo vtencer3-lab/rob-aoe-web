@@ -2324,6 +2324,21 @@ zůstane), aby to fungovalo pro jakýkoli scénář. To je první úkol
 podprojektu 2 spolu s endpointem pro Židolištu; formát souboru a čtečku má
 `nastroje/diplomacie/xsdat.py`.
 
+**Past objevená ve 3 ráno:** XS čísluje hráče **podle pořadí v lobby, ne
+podle slotů scénáře** — uživatel hrál šedého (scénářový hráč 7) z prvního
+místa v lobby a sonda ho vedla jako 1, modrého AI (scénářový 1) jako 7.
+Proto sonda ve formátu 2 zapisuje ke každému číslu jméno
+(`xsGetPlayerName`) a barvu (`xsGetPlayerColorTag`); web i most přiřazují
+hodnoty **podle barvy/jména, nikdy podle čísla**. Totéž platí pro čísla
+hráčů v záznamu `.aoe2record` (jsou to lobby sloty). Odchod hráče ze hry
+sonda zachytí (`xsGetPlayerInGame` → 0).
+
+*Čeká na zítřek (2. 10. 2026):* spustit novou hru s `LLC-sonda` (verze 2
+formátu je v herní složce) a ověřit, že u čísel sedí jména a barvy; pak
+ověřit sondu ve hře pro víc hráčů (soubor vzniká u každého, Script Call se
+přenáší se scénářem); pak spec podprojektu 2 (web přibalí sondu při
+nahrání verze, endpoint `…/hra` pro Židolištu, deník GM a vyhodnocení).
+
 ## 6. Historie verzí (7. 9. – 1. 10. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`; větev `diplo`
