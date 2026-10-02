@@ -1,24 +1,72 @@
+import { Fragment, type CSSProperties } from "react";
 import { BARVA_NAZEV, type Barva } from "../../../src/shared/types.js";
+import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
 import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { diploApi } from "./api.js";
+import { ZNAK_ROLE } from "./znaky.js";
+
+/**
+ * Čím je start pro toho, kdo se na mapu dívá: jeho vlastní, druhý Nájezdník,
+ * oběť Kata, pokrevní pouto Žoldáka, Nástupce císaře. Jeden start může nést
+ * víc druhů naráz (vlastní start Nástupce, oběť, která je Nástupcem).
+ */
+export type DruhPopisku = "ja" | "spojenec" | "obet" | "pouto" | "nastupce";
+
+/** Co u startu stojí a čím je; bez druhů je to obyčejný popisek (jméno u GM, název barvy ve správě scénáře). */
+export interface PopisekStartu {
+  text: string;
+  druhy?: readonly DruhPopisku[];
+}
+
+/** Popisky podle barvy startu; barva bez záznamu se na mapě nekreslí vůbec. */
+export type PopiskyStartu = Partial<Record<Barva, PopisekStartu>>;
 
 interface Props {
   verze: ScenarVerze;
-  /** Kterou pozici ukázat: žádnou (nastavení lobby), všechny (GM), nebo jen svou (hráč). */
-  starty: "zadne" | "vsechny" | Barva;
-  jmena?: Partial<Record<Barva, string>>;
+  /** Které starty ukázat a co u nich stojí; bez popisků je mapa jen obrázek. */
+  popisky?: PopiskyStartu;
   velikost?: "mala" | "velka";
+  /** Řádek pod mapou, který vysvětlí zvláštní druhy popisků — jen ty, které na mapě opravdu jsou. */
+  legenda?: boolean;
 }
 
 /**
- * Start u levého nebo pravého kraje mapy dostane třídu, podle které CSS
- * zakotví popisek k vnitřní straně značky: na LLC leží p3 a p5 12 % od
- * kraje, kde by delší jméno vyčnívalo z mapy přes rám panelu. Spodní kraj
- * (p8) třídu nemá — popisek pod značkou se vejde i na telefonu a nad
- * značkou by narazil do popisku p6.
+ * Popisek u každého startu scénáře: jméno, kdo na barvě sedí, jinak název
+ * barvy. Tak mapu kreslí pult GM (se jmény) i správa scénáře (bez nich).
  */
-export function kraj(x: number): string {
-  return x < 0.2 ? " kraj-levy" : x > 0.8 ? " kraj-pravy" : "";
+export function popiskyStartu(verze: ScenarVerze, jmena: Partial<Record<Barva, string>> = {}): PopiskyStartu {
+  return Object.fromEntries((verze.rozbor?.starty ?? []).map((s) => [s.barva, { text: jmena[s.barva] ?? BARVA_NAZEV[s.barva] }]));
+}
+
+/** Pořadí druhů v legendě a v bublině — nejdřív to, co vidí každý. */
+const PORADI_DRUHU: readonly DruhPopisku[] = ["nastupce", "obet", "pouto", "spojenec", "ja"];
+
+/** Jak druh pojmenovat v bublině popisku a v legendě; vlastní start se popisuje sám („Tady začínáš“). */
+const NAZEV_DRUHU: Record<Exclude<DruhPopisku, "ja">, string> = {
+  nastupce: NAZEV_ROLE.nastupce,
+  obet: "tvá oběť",
+  pouto: "pokrevní pouto",
+  spojenec: "druhý Nájezdník",
+};
+
+/** Čím je druh na mapě vidět — první půlka položky legendy. */
+const ZNAK_DRUHU: Record<Exclude<DruhPopisku, "ja">, string> = {
+  nastupce: "koruna",
+  obet: "červeně",
+  pouto: "zlatý rámeček",
+  spojenec: "zeleně",
+};
+
+const serazene = (druhy: readonly DruhPopisku[]) => PORADI_DRUHU.filter((d) => druhy.includes(d));
+
+/** Nájezdníci můžou být i tři (GM smí rozeslat nestandardní složení): pak je spojenec „další“, ne „druhý“. */
+const nazevDruhu = (d: Exclude<DruhPopisku, "ja">, spojencu: number, mnozne = false) =>
+  d === "spojenec" && spojencu > 1 ? (mnozne ? "další Nájezdníci" : "další Nájezdník") : NAZEV_DRUHU[d];
+
+/** Bublina popisku: text a za pomlčkou, čím hráč pro diváka je. */
+function bublina(p: PopisekStartu, spojencu: number): string {
+  const cim = serazene(p.druhy ?? []).flatMap((d) => (d === "ja" ? [] : [nazevDruhu(d, spojencu)]));
+  return cim.length > 0 ? `${p.text} — ${cim.join(", ")}` : p.text;
 }
 
 /**
@@ -27,20 +75,56 @@ export function kraj(x: number): string {
  * velikosti. Barvy značek jsou třídy `barva-N` z palety, ne čísla napevno.
  * Vlastní mapa (obrázek ze hry, `minimapaVlastni`) má kosočtverce hráčů už
  * v sobě: značky zůstávají kvůli popiskům, kolečko schová CSS (`.vlastni`).
+ *
+ * Co se u kterého startu ukáže, říká volající jedním způsobem pro všechna
+ * místa (`popisky`): karta role dává vlastní start a hráče, ke kterým má
+ * divák vztah, pult GM a správa scénáře všechny starty (`popiskyStartu`).
+ * Druh popisku je třída `druh-*` na značce — vzhled je v CSS; Nástupce
+ * císaře má nad značkou korunu (znak role), u vlastní mapy nad kosočtvercem.
  */
-export function MapaScenare({ verze, starty, jmena = {}, velikost = "mala" }: Props) {
+export function MapaScenare({ verze, popisky = {}, velikost = "mala", legenda = false }: Props) {
   if (!verze.rozbor) return null;
-  const viditelne = verze.rozbor.starty.filter((s) => starty === "vsechny" || s.barva === starty);
+  const viditelne = verze.rozbor.starty.flatMap((s) => {
+    const popisek = popisky[s.barva];
+    return popisek ? [{ ...s, popisek, druhy: serazene(popisek.druhy ?? []) }] : [];
+  });
+  // Legenda jmenuje jen to, co na mapě opravdu je — start bez pozice
+  // v rozboru se nekreslí, tak se o něm ani nemluví.
+  const vLegende = PORADI_DRUHU.flatMap((d) => (d !== "ja" && viditelne.some((s) => s.druhy.includes(d)) ? [d] : []));
+  const spojencu = viditelne.filter((s) => s.druhy.includes("spojenec")).length;
   return (
-    <figure className={`mapa-scenare ${velikost}${verze.minimapaVlastni ? " vlastni" : ""}`}>
-      <img src={diploApi.minimapaUrl(verze.id, verze.minimapaOtisk)} alt={`Mapa scénáře ${verze.jmenoSouboru}`} width={verze.rozbor.minimapa.sirka} height={verze.rozbor.minimapa.vyska} />
-      {starty === "zadne"
-        ? null
-        : viditelne.map((s) => (
-            <span key={s.barva} data-testid="start" className={`start barva-${s.barva}${kraj(s.x)}`} style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%` }} title={BARVA_NAZEV[s.barva]}>
-              <span className="popisek">{starty === "vsechny" ? (jmena[s.barva] ?? BARVA_NAZEV[s.barva]) : "Tady začínáš"}</span>
+    <>
+      <figure className={`mapa-scenare ${velikost}${verze.minimapaVlastni ? " vlastni" : ""}`}>
+        <img src={diploApi.minimapaUrl(verze.id, verze.minimapaOtisk)} alt={`Mapa scénáře ${verze.jmenoSouboru}`} width={verze.rozbor.minimapa.sirka} height={verze.rozbor.minimapa.vyska} />
+        {viditelne.map((s) => (
+          <span
+            key={s.barva}
+            data-testid="start"
+            className={`start barva-${s.barva}${s.druhy.map((d) => ` druh-${d}`).join("")}`}
+            // `--x` čte CSS: popisek drží osu značky, dokud se vejde do mapy, jinak se posune dovnitř.
+            style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%`, "--x": s.x } as CSSProperties}
+            title={BARVA_NAZEV[s.barva]}
+          >
+            {s.druhy.includes("nastupce") ? <img className="koruna" src={ZNAK_ROLE.nastupce} alt={NAZEV_ROLE.nastupce} width={208} height={208} /> : null}
+            <span className="popisek" title={bublina(s.popisek, spojencu)}>
+              {s.popisek.text}
             </span>
+          </span>
+        ))}
+      </figure>
+      {legenda && vLegende.length > 0 ? (
+        <p className="legenda-mapy" data-testid="legenda-mapy">
+          {vLegende.map((d, i) => (
+            <Fragment key={d}>
+              {i > 0 ? " · " : null}
+              <span className={`polozka druh-${d}`}>
+                {d === "nastupce" ? <img className="koruna" src={ZNAK_ROLE.nastupce} alt="" width={208} height={208} /> : null}
+                <span className="znak">{ZNAK_DRUHU[d]}</span> — {nazevDruhu(d, spojencu, true)}
+              </span>
+            </Fragment>
           ))}
-    </figure>
+        </p>
+      ) : null}
+    </>
   );
 }

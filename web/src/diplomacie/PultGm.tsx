@@ -11,7 +11,7 @@ import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
 import { NastupceZeHry, RadekHry, StariHry } from "./HraZive.js";
 import { diploZapasu, RubKarty, verzeZapasu } from "./KartaRole.js";
-import { MapaScenare } from "./MapaScenare.js";
+import { MapaScenare, popiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
 import { ZNAK_ROLE } from "./znaky.js";
@@ -54,6 +54,11 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   // platí jen ten, kdo je pořád mezi hráči — jinak by svítilo „Rozdat role“
   // bez označené dlaždice.
   const nastupce = hraci.some((u) => u.hracId === d.nastupceHracId) ? d.nastupceHracId : null;
+  // Velká mapa: u každého startu jméno hráče; jakmile je Nástupce zvolený,
+  // nese korunu stejně jako na kartách hráčů.
+  const popisky = verze ? popiskyStartu(verze, jmena) : {};
+  const barvaNastupce = nastupce === null ? undefined : mujUcastnik(zapas, nastupce)?.barva;
+  if (barvaNastupce !== undefined && popisky[barvaNastupce]) popisky[barvaNastupce] = { ...popisky[barvaNastupce], druhy: ["nastupce"] };
 
   return (
     <section className="sekce-krok pult-gm" data-testid="pult-gm">
@@ -64,7 +69,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         <span className="stav-diplo" key={d.stav}>{POPIS_STAVU[d.stav]}</span>
       </header>
       <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<RubKarty />}>
-        {verze ? <MapaScenare verze={verze} starty="vsechny" jmena={jmena} velikost="velka" /> : null}
+        {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" /> : null}
         <StariHry hra={d.hra} />
 
         {d.stav === "priprava" ? (

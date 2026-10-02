@@ -1678,9 +1678,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    řez 112 je v pixelech předlohy (320×320 z `devitidil.py --roh 112 --pas
    96`), na obrazovce `--ram` — malá mapa 14 rem unese 12 px, velká 16 px;
    víc by z rohových ozdob udělalo nárožníky těžší než mapa sama. */
-.mapa-scenare { --mapa-mala: 14rem; --mapa-velka: 28rem; --znacka: 0.9rem; --ram: 12px; position: relative; box-sizing: border-box; width: min(100%, var(--mapa-mala)); margin: 0.6rem auto; border: var(--ram) solid transparent; border-image: url(./assets/diplomacie/ram-mapy.webp) 112 / var(--ram) / 0 repeat; border-radius: 0; }
-.mapa-scenare.velka { --znacka: 1.15rem; --ram: 16px; width: min(100%, var(--mapa-velka)); }
-.mapa-scenare img { display: block; width: 100%; height: auto; }
+.mapa-scenare { --mapa-mala: 14rem; --mapa-velka: 28rem; --znacka: 0.9rem; --ram: 12px; --koruna: 1.5rem; container-type: inline-size; position: relative; box-sizing: border-box; width: min(100%, var(--mapa-mala)); margin: 0.6rem auto; border: var(--ram) solid transparent; border-image: url(./assets/diplomacie/ram-mapy.webp) 112 / var(--ram) / 0 repeat; border-radius: 0; }
+.mapa-scenare.velka { --znacka: 1.15rem; --ram: 16px; --koruna: 1.9rem; width: min(100%, var(--mapa-velka)); }
+.mapa-scenare > img { display: block; width: 100%; height: auto; }
 .mapa-scenare .start { position: absolute; width: var(--znacka); height: var(--znacka); box-sizing: border-box; border-radius: 50%; border: 2px solid var(--obrys); box-shadow: 0 0 0 1px var(--zlato-svetle), 0 1px 4px color-mix(in srgb, var(--obrys) 70%, transparent); transform: translate(-50%, -50%); }
 .mapa-scenare .start.barva-1 { background: var(--b1); }
 .mapa-scenare .start.barva-2 { background: var(--b2); }
@@ -1690,29 +1690,64 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .start.barva-6 { background: var(--b6); }
 .mapa-scenare .start.barva-7 { background: var(--b7); }
 .mapa-scenare .start.barva-8 { background: var(--b8); }
-/* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ u hráče. Nepřijímá
-   kliknutí, ať nepřekáží v tooltipu značky. Na LLC leží p3 a p5 12 % od
-   levého a pravého kraje: krátké jméno se tam vejde, dvacetiznakové už na
-   telefonu vyčnívalo z mapy přes rám panelu. Start u kraje (třídy `kraj-*`
-   z MapaScenare.tsx) má proto popisek zakotvený k vnitřní straně značky.
+/* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ a hráči podle role
+   u hráče. Má vlastní bublinu (`title`: celé jméno a čím hráč je), proto
+   myš přijímá. Stojí na ose značky; jen když by tak vyčníval z mapy (na
+   LLC leží p3 a p5 ~12–20 % od kraje a delší jméno tam na telefonu lezlo
+   přes rám panelu), posune se dovnitř přesně o tolik, kolik je potřeba:
+   posun je `clamp` mezi levým a pravým krajem mapy, `--x` (poloha startu
+   0–1) dává značce MapaScenare.tsx a `cqw` je procento šířky obrázku
+   (figure je kontejner). Do 2. 10. 2026 se krajní popisek kotvil celý
+   k vnitřní straně značky (třídy `kraj-*`) — to ho odsouvalo víc, než bylo
+   nutné, a dva krajní popisky se na telefonu potkávaly uprostřed mapy.
    Spodní p8 zůstává pod značkou (vejde se; nad ní by narazil do p6); strop
    šířky s výpustkou je pojistka pro extrémní jména — celá jsou na dlaždici
-   a v tabulce. */
-.mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; max-width: 9rem; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
-.mapa-scenare .start.kraj-levy .popisek { left: 0; transform: none; }
-.mapa-scenare .start.kraj-pravy .popisek { left: auto; right: 0; transform: none; }
+   a v tabulce, a nese je i bublina popisku. */
+.mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(clamp(calc(var(--x, 0.5) * -100cqw + 2px), -50%, calc((1 - var(--x, 0.5)) * 100cqw - 100% - 2px))); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; max-width: min(9rem, 100cqw - 4px); overflow: hidden; text-overflow: ellipsis; }
 /* Vlastní mapa (obrázek ze hry, `minimapaVlastni` v MapaScenare.tsx):
    kosočtverce hráčů už v obrázku jsou, značka je proto neviditelná a má
    velikost kosočtverce — v procentech mapy (v obrázku LLC je 40 px z 1254),
    ať se popisek se jménem drží těsně pod jeho spodní špičkou při každé
-   šířce. Popisek je vždy na střed kosočtverce, i u krajních startů:
-   ukotvení ke straně (kraj-*) patří kolečku, pod kosočtvercem by jméno
-   stálo mimo jeho osu. */
+   šířce. */
 .mapa-scenare.vlastni { --kosoctverec: 3.2%; }
 .mapa-scenare.vlastni .start { width: var(--kosoctverec); height: var(--kosoctverec); background: transparent; border-color: transparent; box-shadow: none; }
 .mapa-scenare.vlastni .popisek { margin-top: 0.1rem; }
-.mapa-scenare.vlastni .start.kraj-levy .popisek,
-.mapa-scenare.vlastni .start.kraj-pravy .popisek { left: 50%; right: auto; transform: translateX(-50%); }
+/* Druhy popisků (třídy `druh-*` na značce, MapaScenare.tsx): čím je hráč
+   pro toho, kdo se dívá. Barvy jen z palety. Pořadí pravidel je pořadí
+   přednosti, když jeden start nese víc druhů: vlastní start a Nástupce
+   ustoupí vztahu z role (oběť, pouto, spojenec) — koruna nad značkou
+   zůstává vždy, takže „oběť je Nástupce“ je koruna a červené jméno.
+   - Nástupce císaře: zlatý štítek kapitálkou s kosočtverci po stranách
+     (kapitálka je širší, proto vyšší strop šířky) a nad značkou koruna
+     (znak role); u vlastní mapy sedí koruna nad horní špičkou kosočtverce
+     a nezakrývá ho.
+   - spojenec (další Nájezdník): zeleně, barva „v pořádku“.
+   - pokrevní pouto Žoldáka: světlé zlato ve dvojitém zlatém rámečku.
+   - oběť Kata: červeně, barva chyby.
+   Značka s druhem leží nad obyčejnými, ať korunu a zvýrazněné jméno
+   nepřekryje popisek souseda. */
+.mapa-scenare .start[class*=" druh-"] { z-index: 1; }
+.mapa-scenare .koruna { position: absolute; bottom: 100%; left: 50%; width: var(--koruna); height: var(--koruna); margin-bottom: 3px; transform: translateX(-50%); filter: drop-shadow(0 1px 2px var(--obrys)) drop-shadow(0 0 4px color-mix(in srgb, var(--zlato) 55%, transparent)); pointer-events: none; }
+.mapa-scenare .druh-nastupce .popisek { background: linear-gradient(var(--kov-zlaty-1), var(--kov-zlaty-2) 55%, var(--kov-zlaty-3)); color: var(--obrys); border: 1px solid var(--zlato-stin); font-family: "Cinzel", Georgia, serif; font-weight: 800; letter-spacing: 0.03em; max-width: min(13rem, 100cqw - 4px); box-shadow: 0 0 0 1px var(--zlato-svetle), 0 0 8px color-mix(in srgb, var(--zlato) 60%, transparent); }
+.mapa-scenare .druh-nastupce .popisek::before, .mapa-scenare .druh-nastupce .popisek::after { content: ""; display: inline-block; width: 0.34em; height: 0.34em; margin: 0 0.4em 0 0; vertical-align: 0.18em; background: currentColor; rotate: 45deg; }
+.mapa-scenare .druh-nastupce .popisek::after { margin: 0 0 0 0.4em; }
+.mapa-scenare .druh-spojenec .popisek, .mapa-scenare .druh-pouto .popisek, .mapa-scenare .druh-obet .popisek { background: color-mix(in srgb, var(--obrys) 88%, transparent); font-family: inherit; font-weight: 700; letter-spacing: normal; max-width: min(9rem, 100cqw - 4px); box-shadow: none; }
+.mapa-scenare .druh-spojenec .popisek::before, .mapa-scenare .druh-spojenec .popisek::after,
+.mapa-scenare .druh-pouto .popisek::before, .mapa-scenare .druh-pouto .popisek::after,
+.mapa-scenare .druh-obet .popisek::before, .mapa-scenare .druh-obet .popisek::after { content: none; }
+.mapa-scenare .druh-spojenec .popisek { color: var(--ok-svetle); border: 1px solid var(--ok); }
+.mapa-scenare .druh-pouto .popisek { color: var(--zlato-svetle); border: 3px double var(--zlato); }
+.mapa-scenare .druh-obet .popisek { color: var(--chyba); border: 1px solid var(--chyba); }
+/* Legenda pod mapou na kartě role: jen druhy, které na mapě jsou; slovo,
+   které říká „čím“, nese stejnou barvu jako popisek na mapě. */
+.legenda-mapy { max-width: calc(34rem + 2rem + 2px); margin: 0.3rem auto 0.6rem; color: var(--tlumene); font-size: 0.85rem; line-height: 1.5; text-align: center; }
+.legenda-mapy .polozka { white-space: nowrap; }
+.legenda-mapy .koruna { width: 1.25em; height: 1.25em; margin-right: 0.3em; vertical-align: -0.25em; }
+.legenda-mapy .druh-nastupce .znak { color: var(--zlato); }
+.legenda-mapy .druh-spojenec .znak { color: var(--ok-svetle); }
+.legenda-mapy .druh-pouto .znak { color: var(--zlato-svetle); }
+.legenda-mapy .druh-obet .znak { color: var(--chyba); }
+.legenda-mapy .znak { font-weight: 700; }
 /* Karta role (Diplomacie, KartaRole.tsx): sekce pod kontrolou lobby se
    záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
    kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,
@@ -1735,9 +1770,19 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    a rám jako u velké mapy GM; popisek „Tady začínáš“ větší, jen na telefonu
    zůstává malý — u krajního startu vlastní mapy (popisek na ose kosočtverce)
    by jinak vyčníval z mapy. */
-.karta-role .mapa-scenare { --mapa-mala: calc(34rem + 2rem + 2px); --znacka: 1.15rem; --ram: 16px; }
+.karta-role .mapa-scenare { --mapa-mala: calc(34rem + 2rem + 2px); --znacka: 1.15rem; --ram: 16px; --koruna: 2.1rem; }
 .karta-role .mapa-scenare .popisek { font-size: 0.9rem; }
-@media (max-width: 40rem) { .karta-role .mapa-scenare .popisek { font-size: 0.72rem; } }
+/* Na telefonu má mapa necelou polovinu šířky a sousední starty (na LLC p6
+   a p8 dole) jsou od sebe 40 px: menší popisky, značka i koruna a zlatý
+   štítek Nástupce bez kapitálky a kosočtverců — jinak by koruna jednoho
+   seděla v popisku druhého. */
+@media (max-width: 40rem) {
+  .karta-role .mapa-scenare { --znacka: 0.9rem; }
+  .karta-role .mapa-scenare .popisek { font-size: 0.72rem; }
+  .mapa-scenare, .mapa-scenare.velka, .karta-role .mapa-scenare { --koruna: 1rem; }
+  .mapa-scenare .druh-nastupce .popisek { font-family: inherit; letter-spacing: normal; }
+  .mapa-scenare .druh-nastupce .popisek::before, .mapa-scenare .druh-nastupce .popisek::after { content: none; }
+}
 /* Pult GM (Diplomacie, PultGm.tsx): sekce jako karta role, stav zápasu
    vpravo v záhlaví na místě fajfky kroků. Dlaždice Nástupce mají celou
    plochu v barvě hráče jako tlačítka výsledku: GM čte ve hře „p3 ma: …“
@@ -2781,4 +2826,11 @@ main > .chyba, main > .spojeni, .chyba-pole, p.vysledek, .hledani-lobby .potvrze
    v tabulce GM. Znak má v PultGm.tsx `key` podle role, takže po přelosování
    nebo ruční změně dosedne jen u řádků, kde se role opravdu změnila. */
 .zahlavi-sekce .fajfka, .odznak-vitez, .odznak-host, .tabulka-roli .znak-role { animation: razitko var(--prechod) var(--krivka); }
+/* Mapa scénáře: značka s popiskem se prolne (jen průhlednost — polohu drží
+   `transform`, posun by ji rozhodil) a koruna Nástupce dosedne jako razítko,
+   když ho GM zvolí. Časy ze sdílených proměnných, takže při
+   `prefers-reduced-motion` je obojí hned. */
+.mapa-scenare .start { animation: prolnuti var(--prechod) ease; }
+.mapa-scenare .koruna { animation: razitko var(--prechod) var(--krivka); }
+@keyframes prolnuti { from { opacity: 0; } }
 @keyframes razitko { from { opacity: 0; scale: 1.5; } }

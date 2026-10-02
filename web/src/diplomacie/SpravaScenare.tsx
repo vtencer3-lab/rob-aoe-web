@@ -3,7 +3,7 @@ import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import type { Hlidej } from "../rezimy/index.js";
 import { Skladaci } from "../views/Skladaci.js";
 import { diploApi } from "./api.js";
-import { MapaScenare } from "./MapaScenare.js";
+import { MapaScenare, popiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 
 /**
@@ -120,7 +120,7 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
       </form>
       {aktivni?.rozbor ? (
         <div className="nahled-scenare">
-          <MapaScenare verze={aktivni} starty="vsechny" />
+          <MapaScenare verze={aktivni} popisky={popiskyStartu(aktivni)} />
           {/* Tatáž pravidla, jaká uvidí hráči na kartě (cíle, suroviny,
               limity, vítězství) — autor hned vidí, co web ze souboru přečetl. */}
           <div className="cile">

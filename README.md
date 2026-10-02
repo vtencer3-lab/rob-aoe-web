@@ -399,7 +399,10 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   Hráčům zazvoní zvon a objeví se **zakrytá karta**: kliknutím odkryjí
   znak a název role, cíl, výhody a nevýhody, tajné údaje (Kat svou oběť,
   Žoldák svůj pakt, Nájezdník druhého Nájezdníka) a minimapu se svým
-  startem; další klik zakryje, po obnovení stránky je karta zase zakrytá.
+  startem, na které jsou i hráči, ke kterým má podle role vztah (další
+  Nájezdník zeleně, oběť červeně, pokrevní pouto ve zlatém rámečku)
+  a Nástupce císaře s korunou; další klik zakryje, po obnovení stránky je
+  karta zase zakrytá.
   Pod kartou vidí všichni v zápase jméno Nástupce a pravidla hry. **Admin,
   který není GM, role nevidí** — Rob streamuje. Hráči mimo zápas vidí jen
   „Diplomacie · Nástupce: X“.

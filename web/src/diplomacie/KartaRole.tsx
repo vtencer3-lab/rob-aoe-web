@@ -5,8 +5,8 @@ import type { ZapasView } from "../../../src/shared/types.js";
 import zvonUrl from "../assets/zvon.mp3";
 import { prehraj } from "../zvuk.js";
 import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
-import { mujUcastnik } from "../zapas.js";
-import { MapaScenare } from "./MapaScenare.js";
+import { jmenoVZapasu } from "../zapas.js";
+import { MapaScenare, type DruhPopisku, type PopiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
 import { RUB_KARTY, ZNAK_ROLE } from "./znaky.js";
@@ -49,7 +49,6 @@ export function KartaRole({ zapas, data, ja }: Props) {
   if (!d) return null;
   const verze = verzeZapasu(data, d);
   const moje = d.role.find((r) => r.hracId === ja);
-  const barva = mujUcastnik(zapas, ja)?.barva;
 
   return (
     <section className="sekce-krok karta-role" data-testid="karta-role">
@@ -65,13 +64,40 @@ export function KartaRole({ zapas, data, ja }: Props) {
           </p>
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
             <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
-            {verze && barva !== undefined ? <MapaScenare verze={verze} starty={barva} /> : null}
+            {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} legenda /> : null}
           </Zakryti>
         </>
       )}
       <PravidlaHry verze={verze} />
     </section>
   );
+}
+
+/**
+ * Co hráč uvidí na mapě pod svou rolí: vlastní start a hráče, ke kterým má
+ * podle role vztah — další Nájezdníky, oběť Kata, pokrevní pouto Žoldáka —
+ * a u každého Nástupce císaře (uživatel 2. 10. 2026). Bere jen to, co už
+ * hráč ve svém zaslepeném stavu má (viditelnost.ts): na mapu se tím
+ * nedostane nic, co není slovy na kartě nad ní. Jeden hráč může nést víc
+ * druhů naráz (vlastní start Nástupce); jméno jako jinde na kartě.
+ */
+function popiskyRole(zapas: ZapasView, d: DiploZapas, moje: RoleHrace): PopiskyStartu {
+  const popisky: PopiskyStartu = {};
+  const pridej = (hracId: string, druh: DruhPopisku) => {
+    const u = zapas.ucastnici.find((x) => x.hracId === hracId);
+    if (!u) return;
+    const dosud = popisky[u.barva];
+    popisky[u.barva] = {
+      text: dosud?.text ?? (hracId === moje.hracId ? "Tady začínáš" : jmenoVZapasu(zapas.ucastnici, hracId)),
+      druhy: [...(dosud?.druhy ?? []), druh],
+    };
+  };
+  pridej(moje.hracId, "ja");
+  if (moje.role === "najezdnik") for (const r of d.role) if (r.role === "najezdnik" && r.hracId !== moje.hracId) pridej(r.hracId, "spojenec");
+  if (moje.role === "kat" && moje.cilHracId) pridej(moje.cilHracId, "obet");
+  if (moje.role === "zoldak" && moje.cilHracId) pridej(moje.cilHracId, "pouto");
+  if (d.nastupceHracId) pridej(d.nastupceHracId, "nastupce");
+  return popisky;
 }
 
 /**

@@ -216,6 +216,28 @@ it("odkrytý pult ukáže velkou minimapu se všemi starty a jmény", () => {
   const starty = screen.getAllByTestId("start");
   expect(starty).toHaveLength(7);
   expect(starty.find((s) => s.classList.contains("barva-1"))!.textContent).toBe("Hráč 1");
+  // Dokud Nástupce není zvolený, koruna na mapě není; legenda v pultu není nikdy.
+  expect(document.querySelector(".mapa-scenare .koruna")).toBeNull();
+  expect(screen.queryByTestId("legenda-mapy")).toBeNull();
+});
+
+// Jakmile GM Nástupce zvolí, nese na velké mapě korunu jako na kartách
+// hráčů — v přípravě hned po kliknutí na dlaždici i ve všech dalších stavech.
+// Nástupce mimo sestavu (souběh se změnou sestavy) korunu nedostane.
+it("zvolený Nástupce má na mapě pultu korunu", () => {
+  const { rerender } = render(<PultGm zapas={zapas} data={gmData("priprava", [], "h3")} hlidej={spust} />);
+  odkryj();
+  const start = (barva: number) => screen.getAllByTestId("start").find((s) => s.classList.contains(`barva-${barva}`))!;
+  expect(start(3).className).toBe("start barva-3 druh-nastupce");
+  expect(within(start(3)).getByRole("img", { name: "Nástupce císaře" })).toHaveClass("koruna");
+  expect(start(3).textContent).toBe("Hráč 3");
+  expect(document.querySelectorAll(".mapa-scenare .koruna")).toHaveLength(1);
+  rerender(<PultGm zapas={zapas} data={gmData("rozeslano", ROLE_LOS, "h1")} hlidej={spust} />);
+  expect(start(1)).toHaveClass("druh-nastupce");
+  expect(start(3)).not.toHaveClass("druh-nastupce");
+  expect(document.querySelectorAll(".mapa-scenare .koruna")).toHaveLength(1);
+  rerender(<PultGm zapas={zapas} data={gmData("priprava", [], "h9")} hlidej={spust} />);
+  expect(document.querySelector(".mapa-scenare .koruna")).toBeNull();
 });
 
 // Dvě AI se jmenují stejně („AI“ jako ve hře), takže je v tabulce, roletce
