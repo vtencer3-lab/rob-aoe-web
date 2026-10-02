@@ -4,6 +4,7 @@ import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploData, ScenarVerze } from "../shared/diplomacie/typy.js";
 import { redigujDiplo } from "../shared/diplomacie/viditelnost.js";
 import { getAktivniVerze, getDiploZapas, getVerze, listDiploZapasy, listVerzi, zalozDiploZapas, zrusNastupceMimoSestavu } from "./db.js";
+import { hraZapasu } from "./hraPamet.js";
 
 /**
  * Co z verzí scénáře patří do nastavení lobby akce (spec §5.5). Velikost
@@ -63,7 +64,12 @@ export const diplomacie: RezimAkce = {
   },
 
   async doplnStav(akce) {
-    const zapasy = await listDiploZapasy(akce.id);
+    // Data z běžící hry nejsou v databázi; plný stav je nese a redakce je
+    // nechá jen GM.
+    const zapasy = (await listDiploZapasy(akce.id)).map((z) => {
+      const hra = hraZapasu(z.zapasId);
+      return hra ? { ...z, hra } : z;
+    });
     const verze: DiploData["verze"] = {};
     for (const id of new Set(zapasy.map((z) => z.scenarId).filter((id): id is number => id !== null))) {
       const v = await getVerze(id);

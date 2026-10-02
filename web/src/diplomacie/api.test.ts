@@ -67,6 +67,15 @@ it("chybu serveru přeloží na výjimku s jeho hláškou", async () => {
 it("adresy souboru a minimapy vedou na routy scénáře", () => {
   expect(diploApi.souborUrl("aktivni")).toBe("/api/diplo/scenar/aktivni/soubor");
   expect(diploApi.souborUrl(3)).toBe("/api/diplo/scenar/3/soubor");
+  // Originál bez sondy (jen autor a admin) je táž adresa s ?original=1.
+  expect(diploApi.souborUrl(3, true)).toBe("/api/diplo/scenar/3/soubor?original=1");
   expect(diploApi.minimapaUrl(3)).toBe("/api/diplo/scenar/3/minimapa.webp");
   expect(diploApi.minimapaUrl(3, "0123456789abcdef")).toBe("/api/diplo/scenar/3/minimapa.webp?v=0123456789abcdef");
+});
+
+it("přibalení sondy je POST bez těla na routu verze a vrací výsledek i s případnou chybou", async () => {
+  const sonda = { cile: [], oznaceno: 0, chyba: "ValueError: x" };
+  const f = stubFetch({ ok: true, sonda });
+  await expect(diploApi.pribalSondu(3)).resolves.toEqual({ ok: true, sonda });
+  expect(f).toHaveBeenCalledWith("/api/diplo/scenar/3/sonda", { method: "POST" });
 });

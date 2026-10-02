@@ -7,17 +7,18 @@ import { SpravaScenare } from "./SpravaScenare.js";
 vi.mock("./api.js", () => ({
   diploApi: {
     verze: vi.fn(),
-    nahrat: vi.fn(async () => ({ id: 5, aktivni: false, chybaRozboru: null })),
+    nahrat: vi.fn(async () => ({ id: 5, aktivni: false, chybaRozboru: null, chybaSondy: null })),
     aktivovat: vi.fn(async () => ({ ok: true })),
-    souborUrl: (id: number | "aktivni") => `/api/diplo/scenar/${id}/soubor`,
+    pribalSondu: vi.fn(async () => ({ ok: true, sonda: { cile: [], oznaceno: 42, chyba: null } })),
+    souborUrl: (id: number | "aktivni", original = false) => `/api/diplo/scenar/${id}/soubor${original ? "?original=1" : ""}`,
     minimapaUrl: (id: number) => `/api/diplo/scenar/${id}/minimapa.webp`,
   },
 }));
 import { diploApi } from "./api.js";
 
 /** Aktivní verze s rozborem a starší, kterou se nepodařilo přečíst. */
-const V2: ScenarVerze = { id: 3, jmenoSouboru: "LLC v2.aoe2scenario", nahrano: "2026-10-01T10:00:00.000Z", nahralJmeno: "Jin", poznamka: "nové cíle", aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false };
-const V1: ScenarVerze = { id: 2, jmenoSouboru: "LLC v1.aoe2scenario", nahrano: "2026-09-30T10:00:00.000Z", nahralJmeno: "Jin", poznamka: null, aktivni: false, rozbor: null, chybaRozboru: "scénář nemá právě jednoho GM", minimapaOtisk: null, minimapaVlastni: false };
+const V2: ScenarVerze = { id: 3, jmenoSouboru: "LLC v2.aoe2scenario", nahrano: "2026-10-01T10:00:00.000Z", nahralJmeno: "Jin", poznamka: "nové cíle", aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
+const V1: ScenarVerze = { id: 2, jmenoSouboru: "LLC v1.aoe2scenario", nahrano: "2026-09-30T10:00:00.000Z", nahralJmeno: "Jin", poznamka: null, aktivni: false, rozbor: null, chybaRozboru: "scénář nemá právě jednoho GM", minimapaOtisk: null, minimapaVlastni: false, sonda: null };
 
 const hlidej = async (fn: () => Promise<unknown>) => {
   await fn();
@@ -93,7 +94,7 @@ it("náhled aktivní verze a aktivace starší čitelné verze", async () => {
 // Po nahrání se řekne, co se stalo (aktivní / zůstává dosavadní / nečitelný
 // soubor), formulář se vyprázdní a seznam se načte znovu.
 it("po nahrání ukáže výsledek, vyprázdní formulář a načte seznam znovu", async () => {
-  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 5, aktivni: true, chybaRozboru: null });
+  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 5, aktivni: true, chybaRozboru: null, chybaSondy: null });
   await rozbal();
   fireEvent.change(screen.getByLabelText("Co je nového"), { target: { value: "opravy" } });
   fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v3.aoe2scenario")] } });
@@ -103,8 +104,36 @@ it("po nahrání ukáže výsledek, vyprázdní formulář a načte seznam znovu
   expect(screen.getByRole("button", { name: "Nahrát" })).toBeDisabled();
   expect(diploApi.verze).toHaveBeenCalledTimes(2);
 
-  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 6, aktivni: false, chybaRozboru: "chybí hlavička" });
+  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 6, aktivni: false, chybaRozboru: "chybí hlavička", chybaSondy: null });
   fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v4.aoe2scenario")] } });
   fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
   expect(await screen.findByText(/Soubor je uložený, ale nepodařilo se ho přečíst: chybí hlavička/)).toBeTruthy();
+});
+
+// Sonda (most ke hře): verze s kopií se sondou nabízí vedle i originál od
+// autora; verzi bez ní — nahranou dřív, nebo když se přibalení nepovedlo —
+// ji dopočítá tlačítko a seznam se načte znovu.
+it("u verze ukáže stav sondy; verzi bez sondy ji přibalí tlačítko", async () => {
+  const seSondou: ScenarVerze = { ...V2, sonda: { cile: [], oznaceno: 42, chyba: null } };
+  const sChybou: ScenarVerze = { ...V1, rozbor: ROZBOR, chybaRozboru: null, sonda: { cile: [], oznaceno: 0, chyba: "ValueError: bez sondy" } };
+  vi.mocked(diploApi.verze).mockResolvedValue({ verze: [seSondou, sChybou] });
+  await rozbal();
+  const [prvni, druha] = screen.getAllByTestId("stav-sondy");
+  expect(prvni).toHaveTextContent("sonda: ano");
+  expect(screen.getByRole("link", { name: "originál" }).getAttribute("href")).toBe("/api/diplo/scenar/3/soubor?original=1");
+  expect(druha).toHaveTextContent("sonda: ne (ValueError: bez sondy)");
+  const tlacitka = screen.getAllByRole("button", { name: "Přibalit sondu" });
+  expect(tlacitka).toHaveLength(1);
+  fireEvent.click(tlacitka[0]!);
+  expect(diploApi.pribalSondu).toHaveBeenCalledWith(2);
+  await waitFor(() => expect(diploApi.verze).toHaveBeenCalledTimes(2));
+});
+
+it("verze nahraná před sondou má „sonda: ne“ bez důvodu; nahrání bez sondy to řekne", async () => {
+  await rozbal();
+  for (const stav of screen.getAllByTestId("stav-sondy")) expect(stav.textContent).toMatch(/sonda: ne\s+Přibalit sondu/);
+  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 7, aktivni: false, chybaRozboru: null, chybaSondy: "Krok sondy se nespustil: ENOENT" });
+  fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v5.aoe2scenario")] } });
+  fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
+  expect(await screen.findByText("Nahráno. Aktivní zůstává dosavadní verze. Sondu se nepodařilo přibalit: Krok sondy se nespustil: ENOENT")).toBeTruthy();
 });
