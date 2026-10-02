@@ -154,13 +154,23 @@ describe("tělo od mostu", () => {
 describe("výpis sondy", () => {
   it("přečte výstup kroku i JSON z databáze", () => {
     const cile = [{ promenna: 15, slot: 1, text: "zabito : {} /650 jednotek", limit: 650 }];
-    expect(prectiSondu({ ok: true, soubor: "…", oznaceno: 42, cile })).toEqual({ cile, oznaceno: 42, chyba: null });
-    expect(prectiSondu({ cile: [], oznaceno: 0, chyba: "ValueError: x" })).toEqual({ cile: [], oznaceno: 0, chyba: "ValueError: x" });
+    // Záznam z doby před revizí sondy: revize chybí, varování žádná.
+    expect(prectiSondu({ ok: true, soubor: "…", oznaceno: 42, cile })).toEqual({ cile, oznaceno: 42, chyba: null, revize: null, varovani: [] });
+    expect(prectiSondu({ cile: [], oznaceno: 0, chyba: "ValueError: x" })).toEqual({ cile: [], oznaceno: 0, chyba: "ValueError: x", revize: null, varovani: [] });
+    expect(prectiSondu({ cile, oznaceno: 41, revize: "abc123", varovani: ["nesedí"] })).toEqual({ cile, oznaceno: 41, chyba: null, revize: "abc123", varovani: ["nesedí"] });
   });
 
   it("do stavu pro prohlížeče jde jen souhrn — počet cílů místo výpisu", () => {
-    expect(souhrnSondy({ cile: CILE, oznaceno: 42, chyba: null })).toEqual({ cilu: 8, oznaceno: 42, chyba: null });
-    expect(souhrnSondy({ cile: [], oznaceno: 0, chyba: "ValueError: x" })).toEqual({ cilu: 0, oznaceno: 0, chyba: "ValueError: x" });
+    expect(souhrnSondy({ cile: CILE, oznaceno: 42, chyba: null, revize: "r2", varovani: ["nesedí"] }, "r2")).toEqual({ cilu: 8, oznaceno: 42, chyba: null, zastarala: false, varovani: ["nesedí"] });
+    expect(souhrnSondy({ cile: [], oznaceno: 0, chyba: "ValueError: x" }, "r2")).toEqual({ cilu: 0, oznaceno: 0, chyba: "ValueError: x", zastarala: false, varovani: [] });
+  });
+
+  // Kopie se starším kódem sondy (zapisuje soubor u každého hráče) chce přibalit znovu.
+  it("sonda s jinou revizí, než má web, je zastaralá; bez revize taky", () => {
+    expect(souhrnSondy({ cile: CILE, oznaceno: 42, chyba: null, revize: "r1" }, "r2").zastarala).toBe(true);
+    expect(souhrnSondy({ cile: CILE, oznaceno: 42, chyba: null }, "r2").zastarala).toBe(true);
+    // Web svou revizi nezná (soubor sondy chybí) — nic neoznačí.
+    expect(souhrnSondy({ cile: CILE, oznaceno: 42, chyba: null, revize: "r1" }, null).zastarala).toBe(false);
   });
 
   it("nesmyslný tvar je chyba", () => {

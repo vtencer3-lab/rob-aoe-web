@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { prectiSondu, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { spustKrokPythonu, type VolbyKroku } from "./krokPythonu.js";
 import { jeHlavickaScenare } from "./rozbor.js";
@@ -28,5 +31,25 @@ export async function pribalSondu(soubor: Buffer, volby: VolbyKroku = {}): Promi
 
 /** Co se uloží k verzi, když přibalení selhalo: žádné cíle a důvod. */
 export function sondaSChybou(chyba: string): SondaScenare {
-  return { cile: [], oznaceno: 0, chyba };
+  return { cile: [], oznaceno: 0, chyba, revize: null, varovani: [] };
+}
+
+let revize: string | null | undefined;
+
+/**
+ * Otisk dnešního kódu sondy — stejný, jaký sonda.py ukládá ke kopii
+ * (`revize_xs`: SHA-256 textu s konci řádků LF, prvních 12 znaků). Verze,
+ * jejíž kopie nese jiný, potřebuje „Přibalit sondu“ znovu. Null, když se
+ * soubor nepodaří přečíst — pak se za zastaralé neoznačí nic.
+ */
+export function revizeSondy(): string | null {
+  if (revize === undefined) {
+    try {
+      const xs = readFileSync(join(import.meta.dirname, "sonda.xs"), "latin1").replace(/\r\n/g, "\n");
+      revize = createHash("sha256").update(xs, "latin1").digest("hex").slice(0, 12);
+    } catch {
+      revize = null;
+    }
+  }
+  return revize;
 }

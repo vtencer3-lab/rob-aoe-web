@@ -6,7 +6,7 @@ import { closePool, getPool } from "../db/pool.js";
 import { buildServer } from "../http/server.js";
 import { ROZBOR } from "../shared/diplomacie/fixtures.js";
 import type { VysledekRozboru } from "./rozbor.js";
-import type { VysledekSondy } from "./sonda.js";
+import { revizeSondy, type VysledekSondy } from "./sonda.js";
 import { getSonduVerze, ulozVerziScenare } from "./db.js";
 import { ROB, VERZE, klient } from "./testPomocnici.js";
 
@@ -21,10 +21,13 @@ const podvrh = async (): Promise<VysledekRozboru> =>
 // Totéž přibalení sondy: kopie „se sondou“ je originál s přívěskem, ať jde
 // poznat, kterou z nich stažení vrátilo.
 let sondaSelze = false;
+// Kopie nese otisk kódu sondy; jiný, než má web, znamená zastaralou sondu.
+let revizePodvrhu: string | null = revizeSondy();
+let varovaniPodvrhu: string[] = [];
 const CILE = [{ promenna: 15, slot: 1, text: "zabito : {} /650 jednotek", limit: 650 }];
 const seSondou = (data: Buffer) => Buffer.concat([data, Buffer.from("+sonda")]);
 const podvrhSondy = async (data: Buffer): Promise<VysledekSondy> =>
-  sondaSelze ? { ok: false, chyba: "ValueError: bez sondy" } : { ok: true, soubor: seSondou(data), sonda: { cile: CILE, oznaceno: 1, chyba: null } };
+  sondaSelze ? { ok: false, chyba: "ValueError: bez sondy" } : { ok: true, soubor: seSondou(data), sonda: { cile: CILE, oznaceno: 1, chyba: null, revize: revizePodvrhu, varovani: varovaniPodvrhu } };
 
 // obnovStaty podstrčené: /api/me u čerstvého hráče čeká na jméno ze Steamu.
 const app = buildServer({ rozeberScenar: podvrh, pribalSondu: podvrhSondy, obnovStaty: async () => {} });
@@ -34,6 +37,8 @@ vi.stubEnv("AUTORI_SCENARE", "jin");
 beforeEach(async () => {
   podvrhSelze = false;
   sondaSelze = false;
+  revizePodvrhu = revizeSondy();
+  varovaniPodvrhu = [];
   await getPool().query("TRUNCATE player, akce CASCADE");
 });
 
@@ -67,7 +72,7 @@ it("autor nahraje, první verze se aktivuje, stažení vrátí kopii se sondou p
   expect(mapa.headers["content-type"]).toBe("image/webp");
   expect(mapa.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
   const seznam = await app.inject({ method: "GET", url: "/api/diplo/scenar" });
-  expect(seznam.json().verze).toMatchObject([{ id, jmenoSouboru: "Diplomacie LLC v1.aoe2scenario", poznamka: "první", aktivni: true, sonda: { cilu: 1, oznaceno: 1, chyba: null } }]);
+  expect(seznam.json().verze).toMatchObject([{ id, jmenoSouboru: "Diplomacie LLC v1.aoe2scenario", poznamka: "první", aktivni: true, sonda: { cilu: 1, oznaceno: 1, chyba: null, zastarala: false, varovani: [] } }]);
 });
 
 it("originál bez sondy dostane jen autor a admin přes ?original=1", async () => {
@@ -89,7 +94,7 @@ it("když se sonda nepřibalí, verze se uloží s důvodem a stahuje se origin�
   expect(res.json()).toMatchObject({ aktivni: true, chybaRozboru: null, chybaSondy: "ValueError: bez sondy" });
   const id = res.json().id;
   const verze = async () => (await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze[0];
-  expect((await verze()).sonda).toEqual({ cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy" });
+  expect((await verze()).sonda).toEqual({ cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy", zastarala: false, varovani: [] });
   expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor` })).rawPayload.equals(LLC)).toBe(true);
 
   // Dopočítat smí jen autor nebo admin; neznámá verze je 404.
@@ -99,15 +104,36 @@ it("když se sonda nepřibalí, verze se uloží s důvodem a stahuje se origin�
   expect((await sonda(jin, id + 1)).statusCode).toBe(404);
 
   // Pořád to nejde: 200 s důvodem, ne pád serveru.
-  expect((await sonda(jin)).json()).toEqual({ ok: true, sonda: { cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy" } });
+  expect((await sonda(jin)).json()).toEqual({ ok: true, sonda: { cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy", zastarala: false, varovani: [] } });
 
   sondaSelze = false;
   // Prohlížeč dostane jen souhrn; výpis cílů zůstává serveru pro vyhodnocení hry.
-  expect((await sonda(jin)).json()).toEqual({ ok: true, sonda: { cilu: 1, oznaceno: 1, chyba: null } });
-  expect((await verze()).sonda).toEqual({ cilu: 1, oznaceno: 1, chyba: null });
-  expect((await getSonduVerze(id))!.sonda).toEqual({ cile: CILE, oznaceno: 1, chyba: null });
+  expect((await sonda(jin)).json()).toEqual({ ok: true, sonda: { cilu: 1, oznaceno: 1, chyba: null, zastarala: false, varovani: [] } });
+  expect((await verze()).sonda).toEqual({ cilu: 1, oznaceno: 1, chyba: null, zastarala: false, varovani: [] });
+  expect((await getSonduVerze(id))!.sonda).toEqual({ cile: CILE, oznaceno: 1, chyba: null, revize: revizeSondy(), varovani: [] });
   expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor` })).rawPayload.equals(seSondou(LLC))).toBe(true);
   expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor?original=1`, cookies: { sid: jin } })).rawPayload.equals(LLC)).toBe(true);
+});
+
+// Kopie se sondou z doby, kdy se soubor zapisoval u každého hráče (nebo
+// s jakýmkoli jiným kódem sondy, než má web dnes), je ve správě vidět jako
+// zastaralá; „Přibalit sondu“ ji vymění za dnešní.
+it("sonda s jinou revizí je zastaralá, dokud se nepřibalí znovu; varování z přibalení se ukládá", async () => {
+  const jin = await klient("jin", false);
+  revizePodvrhu = "000000000000";
+  varovaniPodvrhu = ["počet označených triggerů (41) nesedí na 7 hráčů bez GM"];
+  const id = (await nahraj(jin, LLC)).json().id;
+  const verze = async () => (await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze[0];
+  expect((await verze()).sonda).toEqual({ cilu: 1, oznaceno: 1, chyba: null, zastarala: true, varovani: varovaniPodvrhu });
+
+  // Stejně tak sonda uložená úplně bez revize (přibalená před opravou).
+  await getPool().query("UPDATE diplo_scenar SET sonda = sonda - 'revize' - 'varovani' WHERE id = $1", [id]);
+  expect((await verze()).sonda).toEqual({ cilu: 1, oznaceno: 1, chyba: null, zastarala: true, varovani: [] });
+
+  revizePodvrhu = revizeSondy();
+  varovaniPodvrhu = [];
+  expect((await app.inject({ method: "POST", url: `/api/diplo/scenar/${id}/sonda`, cookies: { sid: jin } })).json().sonda).toMatchObject({ zastarala: false, varovani: [] });
+  expect((await verze()).sonda).toMatchObject({ zastarala: false });
 });
 
 it("verze uložená bez údajů o sondě (nahraná dřív) má sonda null a stahuje se originál", async () => {

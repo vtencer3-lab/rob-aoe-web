@@ -2,6 +2,7 @@ import type { PoolClient } from "pg";
 import { getPool, withTransaction } from "../db/pool.js";
 import { prectiSondu, souhrnSondy, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
+import { revizeSondy } from "./sonda.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo } from "../shared/diplomacie/typy.js";
 
@@ -36,7 +37,7 @@ function mapujVerzi(r: VerzeDb): ScenarVerze {
     chybaRozboru: r.chyba_rozboru,
     minimapaOtisk: r.minimapa_otisk,
     minimapaVlastni: r.minimapa_vlastni,
-    sonda: r.sonda === null ? null : souhrnSondy(prectiSondu(r.sonda)),
+    sonda: r.sonda === null ? null : souhrnSondy(prectiSondu(r.sonda), revizeSondy()),
   };
 }
 

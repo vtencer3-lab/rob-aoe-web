@@ -3,8 +3,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { config } from "../config.js";
+import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import { rozeberScenar } from "./rozbor.js";
-import { pribalSondu } from "./sonda.js";
+import { pribalSondu, revizeSondy } from "./sonda.js";
 
 const LLC = await readFile(new URL("./fixtures/LLC.aoe2scenario", import.meta.url));
 
@@ -39,6 +40,11 @@ describe.skipIf(!maPython())("sonda v LLC (vyžaduje Python s AoE2ScenarioParser
     expect(new Set(v.sonda.cile.map((c) => c.promenna)).size).toBe(42);
     expect(v.sonda.cile.find((c) => c.slot === 1 && c.limit === 650)).toEqual({ promenna: 15, slot: 1, text: "zabito : {} /650 jednotek", limit: 650 });
     expect(v.sonda.cile.find((c) => c.slot === 1 && c.limit === 5)).toEqual({ promenna: 13, slot: 1, text: "{} /5 prodanych reliku", limit: 5 });
+    // Úplné rozdání (6 cílů pro každého ze 7 hráčů) — bez varování.
+    expect(v.sonda.varovani).toEqual([]);
+    // Otisk kódu sondy počítá Python i server stejně; podle něj správa pozná zastaralou kopii.
+    expect(v.sonda.revize).toMatch(/^[0-9a-f]{12}$/);
+    expect(v.sonda.revize).toBe(revizeSondy());
   }, 120_000);
 
   it("kopie se sondou je zase čitelný scénář se stejnými pravidly a jiným obsahem", async () => {
@@ -71,4 +77,66 @@ describe.skipIf(!maPython())("sonda v LLC (vyžaduje Python s AoE2ScenarioParser
     expect([...xs].every((b) => b < 128)).toBe(true);
     expect(xs.toString("ascii")).toContain("xsWriteInt(3);");
   }, 60_000);
+});
+
+// Soubor sondy nese tajné cíle všech hráčů a skript běží u každého z nich:
+// zapisovat se smí jen na počítači GM. Bez Pythonu — hlídá se text sondy.
+describe("sonda.xs píše jen u Game Mastera", () => {
+  it("celý zápis je uvnitř podmínky na místního hráče na slotu GM", async () => {
+    const xs = (await readFile(new URL("./sonda.xs", import.meta.url))).toString("ascii").replace(/\r\n/g, "\n");
+    const podminka = `if (xsUnsyncGetLocalPlayerId() == xsGetWorldPlayerId(${GM_BARVA})) {`;
+    expect(xs).toContain(podminka);
+    // Všechno, co sahá na soubor, je až za podmínkou a uvnitř jejího bloku.
+    const zaPodminkou = xs.slice(xs.indexOf(podminka));
+    const pred = xs.slice(0, xs.indexOf(podminka));
+    for (const volani of ["xsCreateFile", "xsWriteInt", "xsWriteString", "xsWriteFloat", "xsCloseFile"]) {
+      expect(pred).not.toContain(`${volani}(`);
+      expect(zaPodminkou).toContain(`${volani}(`);
+    }
+    // Blok podmínky se zavírá až za xsCloseFile, těsně před koncem funkce.
+    expect(zaPodminkou).toMatch(/xsCloseFile\(\);\n  \}\n\}\n/);
+    // Rozložení se nezměnilo — formát zůstává 3.
+    expect(xs).toContain("xsWriteInt(3);");
+  });
+
+  it("revize sondy je otisk jejího textu", () => {
+    expect(revizeSondy()).toMatch(/^[0-9a-f]{12}$/);
+  });
+});
+
+/** Stačí holý interpret: `varovani_cilu` knihovnu scénářů nepotřebuje. */
+function maHolyPython(): boolean {
+  try {
+    execFileSync(config.python, ["-c", "import sys"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Nástupce se pozná jako jediný hráč bez cíle. Když sonda některý trigger
+// přidělení nenajde (autor ho postavil jinak), vyšel by Nástupce špatně —
+// správa scénáře na to má upozornit hned u nahrané verze.
+describe.skipIf(!maHolyPython())("varování, když nalezené cíle nevypadají jako úplné rozdání (vyžaduje Python)", () => {
+  // Podvržený scénář: osm aktivních hráčů, sedmý se jmenuje GM.
+  const SKRIPT = `
+import importlib.util, json, sys, types
+spec = importlib.util.spec_from_file_location("sonda_webu", sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+hrac = lambda jmeno: types.SimpleNamespace(tribe_name=jmeno, active=True)
+scenar = types.SimpleNamespace(player_manager=types.SimpleNamespace(players=[None] + [hrac("GM" if c == 7 else "") for c in range(1, 9)]))
+cile = lambda sloty: [(None, {"slot": s}) for s in sloty]
+uplne = [1, 2, 3, 4, 5, 6, 8] * 6
+print(json.dumps([m.varovani_cilu(scenar, cile(uplne)), m.varovani_cilu(scenar, cile(uplne[:-1])), m.varovani_cilu(scenar, []), m.varovani_cilu(scenar, cile(uplne + [7]))]))
+`;
+
+  it("úplné rozdání nevaruje; chybějící trigger, žádný trigger a cíl pro GM ano", () => {
+    const vystup = execFileSync(config.python, ["-c", SKRIPT, join(import.meta.dirname, "sonda.py")], { encoding: "utf8" });
+    const [uplne, chybi, zadny, proGm] = JSON.parse(vystup) as string[][];
+    expect(uplne).toEqual([]);
+    expect(chybi).toEqual(["počet označených triggerů (41) nesedí na 7 hráčů bez GM (p1: 6, p2: 6, p3: 6, p4: 6, p5: 6, p6: 6, p8: 5) — Nástupce ze hry může vyjít špatně"]);
+    expect(zadny).toEqual(["sonda nenašla žádný trigger přidělení sekundárního cíle — Nástupce se ze hry nepozná"]);
+    expect(proGm).toContain("cíl má dostat i slot GM (p7)");
+  });
 });

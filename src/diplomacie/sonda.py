@@ -9,8 +9,12 @@ AoE2ScenarioParseru), jehož kód hra při načtení zkompiluje do
 i rozložení souboru `profile\\<scénář>.xsdat`, který sonda píše.
 
 Výstup: {"ok": true, "soubor": "<base64>", "oznaceno": N, "cile": [{"promenna",
-"slot", "text", "limit"}]} nebo {"ok": false, "chyba": "…"}. Tvar hlídá
-src/shared/diplomacie/hra.ts (prectiSondu) — měnit oboje naráz.
+"slot", "text", "limit"}], "revize": "<otisk kódu sondy>", "varovani": ["…"]}
+nebo {"ok": false, "chyba": "…"}. Tvar hlídá src/shared/diplomacie/hra.ts
+(prectiSondu) — měnit oboje naráz.
+
+Soubor sonda píše **jen na počítači Game Mastera** (podmínka v sonda.xs):
+nese tajné cíle všech hráčů a skript běží u každého.
 
 Tentýž kód používá ruční nástroj `nastroje/diplomacie/sonda.py` (funkce
 `pribal`), ať je přibalení na jednom místě.
@@ -20,6 +24,7 @@ Tentýž kód používá ruční nástroj `nastroje/diplomacie/sonda.py` (funkce
 """
 import base64
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -41,6 +46,16 @@ ZNACKY_SONDY = ("_sondaTik", "_superSondaTik")
 # je v sondě schválně a ve hře ověřený.
 XS_IGNOROVAT = "InfLoopLim"
 ZASTUPKA = re.compile(r"<[^<>]*>")
+# Slot Game Mastera, když ho scénář nepojmenuje „GM“ (šedá, GM_BARVA módu).
+SLOT_GM = 7
+
+
+def revize_xs(xs: str) -> str:
+    """Krátký otisk kódu sondy: podle něj web pozná kopii se starou sondou.
+
+    Stejně ho počítá src/diplomacie/sonda.ts (konce řádků sjednocené na LF).
+    """
+    return hashlib.sha256(xs.replace("\r\n", "\n").encode("ascii")).hexdigest()[:12]
 
 
 def xs_sondy() -> str:
@@ -89,6 +104,28 @@ def najdi_cile(scenar) -> list:
     return nalezene
 
 
+def varovani_cilu(scenar, cile: list) -> list:
+    """Co na nalezených cílech nevypadá jako úplné rozdání — věty pro správu scénáře.
+
+    Nástupce se pozná jako jediný hráč bez cíle; když sonda některý trigger
+    přidělení nenajde, vyšel by z toho Nástupce špatně. Úplné rozdání má
+    stejně cílů pro každého hráče, tedy počet dělitelný počtem hráčů bez GM.
+    """
+    hraci = scenar.player_manager.players
+    gm = next((c for c in range(1, 9) if (hraci[c].tribe_name or "").strip().upper() == "GM"), SLOT_GM)
+    sloty = [c for c in range(1, 9) if c != gm and getattr(hraci[c], "active", True)]
+    pocty = {slot: sum(1 for _, cil in cile if cil["slot"] == slot) for slot in sloty}
+    varovani = []
+    if not cile:
+        varovani.append("sonda nenašla žádný trigger přidělení sekundárního cíle — Nástupce se ze hry nepozná")
+    elif len(cile) % len(sloty) != 0 or len(set(pocty.values())) != 1:
+        rozpis = ", ".join(f"p{slot}: {pocet}" for slot, pocet in pocty.items())
+        varovani.append(f"počet označených triggerů ({len(cile)}) nesedí na {len(sloty)} hráčů bez GM ({rozpis}) — Nástupce ze hry může vyjít špatně")
+    if any(cil["slot"] == gm for _, cil in cile):
+        varovani.append(f"cíl má dostat i slot GM (p{gm})")
+    return varovani
+
+
 def zkontroluj(scenar, cile: list) -> None:
     """Co by sondu rozbilo, je chyba hned — ne tichá vada až ve hře."""
     obsazene = set(range(PROMENNA_CILE + 1, PROMENNA_CILE + 9))
@@ -119,11 +156,13 @@ def pribal(scenar, xs: str | None = None) -> dict:
     """
     cile = najdi_cile(scenar)
     zkontroluj(scenar, cile)
+    varovani = varovani_cilu(scenar, cile)
     for trigger, cil in cile:
         trigger.new_effect.change_variable(quantity=cil["promenna"], operation=OPERACE_NASTAV, variable=PROMENNA_CILE + cil["slot"])
+    kod = xs if xs is not None else xs_sondy()
     scenar.xs_manager.xs_check.ignores.add(XS_IGNOROVAT)
-    scenar.xs_manager.add_script(xs_string=xs if xs is not None else xs_sondy())
-    return {"oznaceno": len(cile), "cile": [cil for _, cil in cile]}
+    scenar.xs_manager.add_script(xs_string=kod)
+    return {"oznaceno": len(cile), "cile": [cil for _, cil in cile], "revize": revize_xs(kod), "varovani": varovani}
 
 
 def over_xs() -> str | None:

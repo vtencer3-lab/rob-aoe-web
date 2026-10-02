@@ -9,7 +9,7 @@ vi.mock("./api.js", () => ({
     verze: vi.fn(),
     nahrat: vi.fn(async () => ({ id: 5, aktivni: false, chybaRozboru: null, chybaSondy: null })),
     aktivovat: vi.fn(async () => ({ ok: true })),
-    pribalSondu: vi.fn(async () => ({ ok: true, sonda: { cilu: 42, oznaceno: 42, chyba: null } })),
+    pribalSondu: vi.fn(async () => ({ ok: true, sonda: { cilu: 42, oznaceno: 42, chyba: null, zastarala: false, varovani: [] } })),
     souborUrl: (id: number | "aktivni", original = false) => `/api/diplo/scenar/${id}/soubor${original ? "?original=1" : ""}`,
     minimapaUrl: (id: number) => `/api/diplo/scenar/${id}/minimapa.webp`,
   },
@@ -114,8 +114,8 @@ it("po nahrání ukáže výsledek, vyprázdní formulář a načte seznam znovu
 // autora; verzi bez ní — nahranou dřív, nebo když se přibalení nepovedlo —
 // ji dopočítá tlačítko a seznam se načte znovu.
 it("u verze ukáže stav sondy; verzi bez sondy ji přibalí tlačítko", async () => {
-  const seSondou: ScenarVerze = { ...V2, sonda: { cilu: 42, oznaceno: 42, chyba: null } };
-  const sChybou: ScenarVerze = { ...V1, rozbor: ROZBOR, chybaRozboru: null, sonda: { cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy" } };
+  const seSondou: ScenarVerze = { ...V2, sonda: { cilu: 42, oznaceno: 42, chyba: null, zastarala: false, varovani: [] } };
+  const sChybou: ScenarVerze = { ...V1, rozbor: ROZBOR, chybaRozboru: null, sonda: { cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy", zastarala: false, varovani: [] } };
   vi.mocked(diploApi.verze).mockResolvedValue({ verze: [seSondou, sChybou] });
   await rozbal();
   const [prvni, druha] = screen.getAllByTestId("stav-sondy");
@@ -126,6 +126,27 @@ it("u verze ukáže stav sondy; verzi bez sondy ji přibalí tlačítko", async 
   expect(tlacitka).toHaveLength(1);
   fireEvent.click(tlacitka[0]!);
   expect(diploApi.pribalSondu).toHaveBeenCalledWith(2);
+  await waitFor(() => expect(diploApi.verze).toHaveBeenCalledTimes(2));
+});
+
+// Kopie se starším kódem sondy (zapisovala soubor u každého hráče) je vidět
+// jako zastaralá a jde přibalit znovu; varování z přibalení stojí vedle.
+it("zastaralá sonda má „sonda: ano (zastaralá)“ a tlačítko; varování z přibalení ukáže", async () => {
+  const zastarala: ScenarVerze = { ...V2, sonda: { cilu: 41, oznaceno: 41, chyba: null, zastarala: true, varovani: ["počet označených triggerů (41) nesedí na 7 hráčů bez GM"] } };
+  const cerstva: ScenarVerze = { ...V1, rozbor: ROZBOR, chybaRozboru: null, sonda: { cilu: 42, oznaceno: 42, chyba: null, zastarala: false, varovani: [] } };
+  vi.mocked(diploApi.verze).mockResolvedValue({ verze: [zastarala, cerstva] });
+  await rozbal();
+  const [prvni, druha] = screen.getAllByTestId("stav-sondy");
+  expect(prvni).toHaveTextContent("sonda: ano (zastaralá)");
+  expect(prvni).toHaveTextContent("počet označených triggerů (41) nesedí na 7 hráčů bez GM");
+  expect(druha).toHaveTextContent("sonda: ano");
+  expect(druha).not.toHaveTextContent("zastaralá");
+  // Originál jde stáhnout u obou, přibalit znovu jen zastaralou.
+  expect(screen.getAllByRole("link", { name: "originál" })).toHaveLength(2);
+  const tlacitka = screen.getAllByRole("button", { name: "Přibalit sondu" });
+  expect(tlacitka).toHaveLength(1);
+  fireEvent.click(tlacitka[0]!);
+  expect(diploApi.pribalSondu).toHaveBeenCalledWith(3);
   await waitFor(() => expect(diploApi.verze).toHaveBeenCalledTimes(2));
 });
 

@@ -13,10 +13,19 @@ import { PravidlaHry } from "./PravidlaHry.js";
  */
 function StavSondy({ verze, pribaluje, onPribalit }: { verze: ScenarVerze; pribaluje: boolean; onPribalit: () => void }) {
   const ma = verze.sonda !== null && verze.sonda.chyba === null;
+  // Kopie se starším kódem sondy (např. z doby, kdy se soubor zapisoval
+  // u každého hráče) se hraje dál, ale chce přibalit znovu.
+  const zastarala = ma && verze.sonda?.zastarala === true;
+  const tlacitko = (
+    <button type="button" disabled={pribaluje} onClick={onPribalit}>
+      Přibalit sondu
+    </button>
+  );
   return (
     <span className="stav-sondy" data-testid="stav-sondy">
       {" "}
       · sonda: {ma ? "ano" : "ne"}
+      {zastarala ? <span className="varovani"> (zastaralá)</span> : null}
       {ma ? (
         <>
           {" "}
@@ -24,14 +33,17 @@ function StavSondy({ verze, pribaluje, onPribalit }: { verze: ScenarVerze; priba
           <a href={diploApi.souborUrl(verze.id, true)} download={verze.jmenoSouboru}>
             originál
           </a>
-          )
+          ){verze.sonda?.varovani.map((v) => (
+            <span key={v} className="varovani">
+              {" "}
+              · {v}
+            </span>
+          ))}
+          {zastarala ? <> {tlacitko}</> : null}
         </>
       ) : (
         <>
-          {verze.sonda?.chyba ? <span className="varovani"> ({verze.sonda.chyba})</span> : null}{" "}
-          <button type="button" disabled={pribaluje} onClick={onPribalit}>
-            Přibalit sondu
-          </button>
+          {verze.sonda?.chyba ? <span className="varovani"> ({verze.sonda.chyba})</span> : null} {tlacitko}
         </>
       )}
     </span>

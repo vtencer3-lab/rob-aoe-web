@@ -30,6 +30,13 @@ export interface SondaScenare {
   oznaceno: number;
   /** Proč se sondu nepodařilo přibalit; null = kopie se sondou existuje. */
   chyba: string | null;
+  /**
+   * Otisk kódu sondy (sonda.xs), který kopie nese. Chybí u sond přibalených
+   * před 2. 10. 2026 — ty zapisují soubor u každého hráče a jsou zastaralé.
+   */
+  revize?: string | null;
+  /** Co na nalezených cílech nevypadá jako úplné rozdání (věty z sonda.py). */
+  varovani?: string[];
 }
 
 /**
@@ -43,10 +50,24 @@ export interface SouhrnSondy {
   oznaceno: number;
   /** Proč se sondu nepodařilo přibalit; null = kopie se sondou existuje. */
   chyba: string | null;
+  /**
+   * Kopie nese jiný kód sondy, než má web teď (např. sondu z doby, kdy se
+   * soubor zapisoval u každého hráče) — chce to „Přibalit sondu“ znovu.
+   */
+  zastarala: boolean;
+  /** Co na nalezených cílech nevypadá jako úplné rozdání. */
+  varovani: string[];
 }
 
-export function souhrnSondy(sonda: SondaScenare): SouhrnSondy {
-  return { cilu: sonda.cile.length, oznaceno: sonda.oznaceno, chyba: sonda.chyba };
+/** `aktualniRevize` je otisk dnešního sonda.xs; null = web ho neumí zjistit a nic za zastaralé neoznačí. */
+export function souhrnSondy(sonda: SondaScenare, aktualniRevize: string | null): SouhrnSondy {
+  return {
+    cilu: sonda.cile.length,
+    oznaceno: sonda.oznaceno,
+    chyba: sonda.chyba,
+    zastarala: sonda.chyba === null && aktualniRevize !== null && (sonda.revize ?? null) !== aktualniRevize,
+    varovani: sonda.varovani ?? [],
+  };
 }
 
 /** Ověří tvar výstupu sonda.py i JSON z databáze. */
@@ -60,6 +81,9 @@ export function prectiSondu(json: unknown): SondaScenare {
     }),
     oznaceno: celeCislo(o["oznaceno"], "oznaceno"),
     chyba: o["chyba"] === undefined || o["chyba"] === null ? null : text(o["chyba"], "chyba"),
+    // Starší záznamy v databázi revizi ani varování nemají.
+    revize: o["revize"] === undefined || o["revize"] === null ? null : text(o["revize"], "revize"),
+    varovani: o["varovani"] === undefined ? [] : pole(o["varovani"], "varovani").map((x) => text(x, "varování")),
   };
 }
 

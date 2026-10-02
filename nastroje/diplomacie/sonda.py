@@ -43,7 +43,7 @@ def modul_webu():
 
 
 def pribal_sondu(vstup: str, vystup: str, xs: str | None = None) -> dict:
-    """Načte scénář, přibalí sondu a zapíše kopii. Vrací {oznaceno, cile, triggeru}."""
+    """Načte scénář, přibalí sondu a zapíše kopii. Vrací {oznaceno, cile, revize, varovani, triggeru}."""
     from AoE2ScenarioParser.scenarios.aoe2_de_scenario import AoE2DEScenario
 
     scenar = AoE2DEScenario.from_file(vstup)
@@ -68,7 +68,9 @@ def main() -> None:
     koren, pripona = os.path.splitext(vstup)
     vystup = argumenty[1] if len(argumenty) > 1 else f"{koren}-{'supersonda' if super_sonda else 'sonda'}{pripona}"
     v = pribal_sondu(vstup, vystup, xs)
-    print(f"označeno triggerů přidělení cíle: {v['oznaceno']}")
+    print(f"označeno triggerů přidělení cíle: {v['oznaceno']} (revize sondy {v['revize']})")
+    for varovani in v["varovani"]:
+        print(f"POZOR: {varovani}")
     print(f"{vystup}: {v['triggeru']} triggerů (poslední je XS SCRIPT), soubor sondy bude profile\\{os.path.splitext(os.path.basename(vystup))[0]}.xsdat")
 
 

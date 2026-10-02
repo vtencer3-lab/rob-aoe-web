@@ -30,7 +30,7 @@ import { registerHraRoutes } from "./hra.js";
 import { jeGm, smiNahratScenar } from "./opravneni.js";
 import { nastaveniZAktivniVerze } from "./rezim.js";
 import { jeHlavickaScenare, type rozeberScenar } from "./rozbor.js";
-import { sondaSChybou, type pribalSondu } from "./sonda.js";
+import { revizeSondy, sondaSChybou, type pribalSondu } from "./sonda.js";
 
 export interface DiploDeps {
   rozeberScenar: typeof rozeberScenar;
@@ -269,7 +269,7 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
     const sonda = vysledek.ok ? vysledek.sonda : sondaSChybou(vysledek.chyba);
     await ulozSondu(id, sonda, vysledek.ok ? vysledek.soubor : null);
     await broadcastAkce();
-    return { ok: true, sonda: souhrnSondy(sonda) };
+    return { ok: true, sonda: souhrnSondy(sonda, revizeSondy()) };
   });
 
   // Ke stažení jde kopie se sondou (když ji verze má); originál od autora
