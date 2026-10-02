@@ -19,7 +19,10 @@ it("sbalený tahák nic nevypisuje; bez rozboru jen role a primární cíle", ()
   expect(screen.queryByText("Nástupce císaře")).toBeNull();
   fireEvent.click(screen.getByText("Pravidla hry"));
   expect(screen.getByText("Nástupce císaře")).toBeTruthy();
-  expect(screen.getByText(/Držet 7 relikvií/)).toBeTruthy();
+  expect(screen.getByText("Hráč vyhrává, když drží 7 relikvií 15 herních minut.")).toBeTruthy();
+  expect(screen.getByText("Hráč prohrává, když zemře jeho král.")).toBeTruthy();
+  // Cíl každé role ve stejném slohu jako na kartě role.
+  expect(screen.getAllByText(/^Vyhrává, když /)).toHaveLength(6);
   expect(screen.queryByText("Start")).toBeNull();
   expect(screen.queryByText(/Nejvýš/)).toBeNull();
   fireEvent.click(screen.getByText("Pravidla hry"));

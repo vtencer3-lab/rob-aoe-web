@@ -25,7 +25,10 @@ it("po rozeslání je karta zakrytá a po odkrytí ukáže roli, cíl a oběť",
   expect(container.querySelector("img.rub-karty")).toBeNull();
   expect(screen.getByRole("heading", { name: "Kat" })).toBeTruthy();
   expect(screen.getByRole("img", { name: "Kat" })).toHaveClass("znak-role");
-  expect(screen.getByText("Tvá oběť:")).toBeTruthy();
+  // Popisky tajných údajů jsou věcné a u všech rolí stejné: „Oběť:“,
+  // „Pokrevní pouto:“, „Druhý Nájezdník:“ — bez oslovení.
+  expect(screen.getByText("Oběť:")).toBeTruthy();
+  expect(screen.getByText("Vyhrává, když splní primární nebo sekundární cíl a jeho oběť je mrtvá. Oběť může zabít kdokoli.")).toHaveClass("cil");
   // Jméno oběti nese čtvereček její barvy (h4 sedí na žluté), Nástupce svůj.
   expect(screen.getByText("Hráč 4").querySelector(".swatch")).toHaveClass("barva-4");
   expect(screen.getByText("Hráč 1").querySelector(".swatch")).toHaveClass("barva-1");

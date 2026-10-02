@@ -91,7 +91,7 @@ function ObsahRole({ moje, vse, ucastnici }: { moje: RoleHrace; vse: RoleHrace[]
       <p className="cil">{popis.cil}</p>
       {moje.role === "kat" && moje.cilHracId ? (
         <p>
-          <span>Tvá oběť:</span>{" "}
+          <span>Oběť:</span>{" "}
           <strong>
             <JmenoUcastnika ucastnici={ucastnici} hracId={moje.cilHracId} />
           </strong>

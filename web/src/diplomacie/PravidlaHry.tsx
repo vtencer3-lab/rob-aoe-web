@@ -10,6 +10,8 @@ const PORADI: Role[] = ["nastupce", "garda", "najezdnik", "sasek", "zoldak", "ka
  * (spec §8.2). Sbaluje se stejně jako sekce kontroly lobby (Skladaci) a tělo
  * se vykreslí až po rozbalení: sbalený tahák tak v DOM nenese názvy rolí
  * a karta role vedle něj zůstává jediným místem, kde role hráče je.
+ * Věty pravidel drží sloh textů rolí (`POPIS_ROLE`): „vyhrává, když …“,
+ * krátce a věcně.
  */
 export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
   const [otevreno, setOtevreno] = useState(false);
@@ -39,8 +41,8 @@ export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
           ) : null}
           <h4>Primární cíle</h4>
           <ul>
-            <li>Držet 7 relikvií po dobu 15 herních minut.</li>
-            <li>Smrt vlastního krále znamená okamžitou prohru.</li>
+            <li>Hráč vyhrává, když drží 7 relikvií 15 herních minut.</li>
+            <li>Hráč prohrává, když zemře jeho král.</li>
           </ul>
           {r?.vitezstvi ? <p>Vítězství ve scénáři: {r.vitezstvi.popis}.</p> : null}
           <h4>Role</h4>

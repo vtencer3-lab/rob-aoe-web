@@ -115,8 +115,8 @@ it("po rozeslání nejsou v tabulce žádné výběry: role i cíle jsou text", 
   expect(obet).toHaveTextContent(`oběť: ${jmeno(kat.cilHracId!)}`);
   expect(obet.querySelector(".swatch")).toHaveClass(barvaHrace(kat.cilHracId!));
   const zoldak = ROLE_LOS.find((r) => r.role === "zoldak")!;
-  const pakt = within(radek(zoldak.hracId)).getByText(/^pakt s:/);
-  expect(pakt).toHaveTextContent(`pakt s: ${jmeno(zoldak.cilHracId!)}`);
+  const pakt = within(radek(zoldak.hracId)).getByText(/^pokrevní pouto:/);
+  expect(pakt).toHaveTextContent(`pokrevní pouto: ${jmeno(zoldak.cilHracId!)}`);
   expect(pakt.querySelector(".swatch")).toHaveClass(barvaHrace(zoldak.cilHracId!));
   const [najezdnik, druhy] = ROLE_LOS.filter((r) => r.role === "najezdnik");
   expect(within(radek(najezdnik!.hracId)).getByText(/^zná:/)).toHaveTextContent(`zná: ${jmeno(druhy!.hracId)}`);

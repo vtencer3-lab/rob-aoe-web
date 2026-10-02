@@ -18,44 +18,51 @@ export interface PopisRole {
 /**
  * Z pravidel hry (Jin, „Diplomacie – Ať žije císař"). Měnit jen spolu s pravidly.
  * 2. 10. 2026: „ekonomická sankce“ Nájezdníků se jmenuje Sabotáž a každý
- * Nájezdník ji má jen jednu za hru (dřív 1× na každého hráče). Sankce z Rady
+ * Nájezdník ji má jen jednu za hru (dřív 1× na každého hráče). Sankce Rady
  * králů u Nástupce je jiná věc a zůstává.
+ *
+ * Sloh je pro všechny role jeden (uživatel 2. 10. 2026): cíl začíná
+ * „Vyhrává, když …“, výhody a nevýhody jsou krátké věcné věty ve 3. osobě.
+ * Novou větu piš stejně — test v role.test.ts to hlídá.
  */
 export const POPIS_ROLE: Record<Role, PopisRole> = {
   nastupce: {
-    cil: "Získat 7 relikvií a ubránit je po dobu 15 minut.",
-    vyhody: ["Je veřejně znám od začátku hry.", "Začíná s +2 relikviemi.", "Nelze na něj uvalit sankci z Rady králů."],
+    cil: "Vyhrává, když získá 7 relikvií a udrží je 15 minut.",
+    vyhody: ["Je veřejně znám od začátku hry.", "Začíná se 2 relikviemi navíc.", "Nelze na něj uvalit sankci Rady králů."],
     nevyhody: [
       "Nemůže svolávat rady.",
-      "Může vyhrát pouze skrze relikvie.",
-      "Pokud zemře Šašek, musí prodat 1 relikvii (neplatí, pokud už běží 15minutový win timer se 7 relikviemi).",
+      "Může vyhrát jen relikviemi.",
+      "Když zemře Šašek, musí prodat 1 relikvii (neplatí, pokud už běží 15minutový odpočet se 7 relikviemi).",
     ],
   },
   garda: {
-    cil: "Vyhrává jen, když Nástupce císaře nezemře. Může vyhrát i splněním primárního či sekundárního cíle, pokud Nástupce stále žije. Když Nástupce vyhraje, vyhrává Garda také.",
-    vyhody: ["Jakmile jakýkoli hráč zemře nebo rezignuje, dozví se od GM jeho přesnou roli."],
-    nevyhody: ["Pokud Nástupce zemře, Garda automaticky prohrává a rezignuje."],
+    cil: "Vyhrává, když vyhraje Nástupce císaře, nebo když sama splní primární či sekundární cíl a Nástupce přitom žije.",
+    vyhody: ["Když kterýkoli hráč zemře nebo rezignuje, dozví se od GM jeho roli."],
+    nevyhody: ["Když Nástupce zemře, prohrává a rezignuje."],
   },
   najezdnik: {
-    cil: "Vyhrát lze jen tehdy, je-li Nástupce císaře poražen. Plní primární i sekundární cíle. Když vyhraje jeden Nájezdník, druhý vyhrává také (i když už byl vyřazen).",
-    vyhody: ["Nájezdníci se znají od začátku hry.", "Každý Nájezdník může jednou za hru provést Sabotáž proti kterémukoli hráči (na jednoho hráče nejvýš jedna; stojí 2000 zlata zaplacené GM)."],
+    cil: "Vyhrává, když je Nástupce císaře poražen a Nájezdník splní primární nebo sekundární cíl. Vyhrává i tehdy, když vyhraje druhý Nájezdník (i po vlastním vyřazení).",
+    vyhody: [
+      "Zná druhého Nájezdníka od začátku hry.",
+      "Jednou za hru může provést Sabotáž proti kterémukoli hráči (na jednoho hráče nejvýš jedna; stojí 2000 zlata zaplacených GM).",
+    ],
     nevyhody: [],
   },
   sasek: {
-    cil: "Splnit primární nebo sekundární cíl. Vyhrává sám za sebe bez ohledu na aliance.",
-    vyhody: ["Začíná s 1 relikvií přidělenou GM.", "Až 3× za hru může od GM vyžádat pravdivou tajnou informaci (např. roli konkrétního hráče nebo počet relikvií)."],
+    cil: "Vyhrává, když splní primární nebo sekundární cíl. Vyhrává sám za sebe, bez ohledu na aliance.",
+    vyhody: ["Začíná s 1 relikvií od GM.", "Až 3× za hru si může od GM vyžádat pravdivou tajnou informaci (např. roli hráče nebo počet relikvií)."],
     nevyhody: [
-      "Pokud zemře Nástupce, musí prodat všechny své relikvie (neplatí při běžícím win timeru).",
-      "Pokud zemře Královská Garda, tajně se stává novou Gardou (ztrácí výhody Šaška).",
+      "Když zemře Nástupce, musí prodat všechny své relikvie (neplatí při běžícím odpočtu vítězství).",
+      "Když zemře Královská Garda, tajně se stává novou Gardou a ztrácí výhody Šaška.",
     ],
   },
   zoldak: {
-    cil: "Splnit primární či sekundární cíl, nebo vyhrát skrze pokrevní pouto: když zvolený hráč vyhraje nebo prohraje, Žoldák vyhrává nebo prohrává s ním. Když sám splní cíl, vyhrává samostatně.",
-    vyhody: ["Při prodeji relikvie získá dvojnásobek zlata (8000; doplňuje GM)."],
+    cil: "Vyhrává, když splní primární nebo sekundární cíl (pak vyhrává samostatně), nebo když vyhraje hráč, se kterým má pokrevní pouto. Když tento hráč prohraje, prohrává i Žoldák.",
+    vyhody: ["Za prodej relikvie dostává dvojnásobek zlata (8000; rozdíl doplácí GM)."],
     nevyhody: [],
   },
   kat: {
-    cil: "Splnit primární či sekundární cíl a vykonat popravu: dokud určený hráč nezemře (kýmkoli), Kat nemůže vyhrát.",
+    cil: "Vyhrává, když splní primární nebo sekundární cíl a jeho oběť je mrtvá. Oběť může zabít kdokoli.",
     vyhody: ["Dostává 2000 zlata za každého hráče, který rezignuje nebo prohraje."],
     nevyhody: [],
   },

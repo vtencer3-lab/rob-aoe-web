@@ -117,7 +117,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                       <td>
                         {rozeslano && r.cilHracId && (r.role === "kat" || r.role === "zoldak") ? (
                           <span>
-                            {r.role === "kat" ? "oběť: " : "pakt s: "}
+                            {r.role === "kat" ? "oběť: " : "pokrevní pouto: "}
                             {hrac(r.cilHracId)}
                           </span>
                         ) : r.role === "kat" || r.role === "zoldak" ? (
