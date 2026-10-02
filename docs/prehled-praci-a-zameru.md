@@ -2046,9 +2046,14 @@ databáze při vložení) jde jako `?v=<otisk>` do adresy obrázku, protože
 route posílá roční cache `immutable` — bez toho prohlížeče po výměně
 obrázku držely starý; `diplo_scenar.minimapa_vlastni` → `MapaScenare`
 dostane třídu `vlastni` a značky startů jsou jen jména bez kolečka
-(rozhodnutí uživatele). Další verze od Jina začne zase s vygenerovanou
+(rozhodnutí uživatele). Jména mají sedět pod kosočtverci **z obrázku**, ne
+na mediánu jednotek z rozboru (ten je o 1–3 % vedle): u verze 1 jsou proto
+`rozbor.starty` nahrazené středy kosočtverců nalezenými v obrázku podle
+barev hráčů (Pillow, shluky syté barvy ~40 px; zelená je v obrázku
+(4, 172, 3), ne čistá). Další verze od Jina začne zase s vygenerovanou
 mapou — nahrání vlastního obrázku k verzi ve správě scénáře (a „vrátit
-vygenerovanou“ = znovu rozbor) je odložená funkce, až o ni uživatel řekne.
+vygenerovanou“ = znovu rozbor) je odložená funkce, až o ni uživatel řekne;
+při ní se starty z nahraného obrázku detekují stejně.
 
 **Ověřeno proti hře (1. 10. 2026):** orientace minimapy a pozice startů —
 uživatel porovnal minimapu webu s minimapou LLC ve hře: „minimapa i pozice
