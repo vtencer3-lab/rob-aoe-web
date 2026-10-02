@@ -1,7 +1,7 @@
 import { config } from "../config.js";
 import { getPlayer } from "../db/players.js";
 import type { DiploZapas } from "../shared/diplomacie/typy.js";
-import { getDiploZapas } from "./db.js";
+import { getDiploZapas, ktereZapasyBezi } from "./db.js";
 
 /**
  * Kdo smí nahrávat a aktivovat verze scénáře (spec §5.1): admin webu nebo
@@ -29,4 +29,13 @@ export function jeGm(diplo: Pick<DiploZapas, "gmHracId"> | null, hracId: string 
 /** Totéž z databáze; zápas mimo Diplomacii GM nemá. */
 export async function jeGmZapasu(zapasId: number, hracId: string): Promise<boolean> {
   return jeGm(await getDiploZapas(zapasId), hracId);
+}
+
+/**
+ * Háček hlasu (push-to-talk GM): mluvit do zápasu smí jeho GM, ale jen
+ * dokud zápas běží v otevřené akci — po dohrání, zrušení nebo v archivu
+ * akce by jinak hlas GM vyskočil hráčům ve staré kartě.
+ */
+export async function smiGmMluvit(zapasId: number, hracId: string): Promise<boolean> {
+  return (await jeGmZapasu(zapasId, hracId)) && (await ktereZapasyBezi([zapasId])).length > 0;
 }

@@ -65,7 +65,7 @@ describe.skipIf(!maPython())("sonda v LLC (vyžaduje Python s AoE2ScenarioParser
 
   it("rozbitý soubor a limit času jsou chyba, ne výjimka", async () => {
     expect((await pribalSondu(Buffer.concat([LLC.subarray(0, 4), Buffer.alloc(100)]))).ok).toBe(false);
-    expect(await pribalSondu(LLC, { limitMs: 1 })).toEqual({ ok: false, chyba: "Krok sondy trval déle než 0 s a byl ukončen." });
+    expect(await pribalSondu(LLC, { limitMs: 1 })).toEqual({ ok: false, chyba: "Krok sondy trval déle než 1 ms a byl ukončen." });
   }, 120_000);
 
   // Parser při zápisu scénáře XS nevaliduje (binárka xs-check je pro glibc a

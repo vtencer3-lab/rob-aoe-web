@@ -123,6 +123,16 @@ it("po rozeslání nejsou v tabulce žádné výběry: role i cíle jsou text", 
   expect(diploApi.role).not.toHaveBeenCalled();
 });
 
+it("po rozeslání Kat i Žoldák bez cíle ukážou „—“, ne roletku", () => {
+  const bezCile = ROLE_LOS.map((r) => (r.role === "kat" || r.role === "zoldak" ? { ...r, cilHracId: null } : r));
+  render(<PultGm zapas={zapas} data={gmData("rozeslano", bezCile, "h1")} hlidej={spust} />);
+  odkryj();
+  expect(screen.queryAllByRole("combobox")).toHaveLength(0);
+  const radek = (id: string) => screen.getByRole("rowheader", { name: jmeno(id) }).closest("tr")!;
+  expect(within(radek(bezCile.find((r) => r.role === "kat")!.hracId)).getByText(/^oběť:/)).toHaveTextContent("oběť: —");
+  expect(within(radek(bezCile.find((r) => r.role === "zoldak")!.hracId)).getByText(/^pokrevní pouto:/)).toHaveTextContent("pokrevní pouto: —");
+});
+
 // Před rozesláním se úprava neptá — hráči ještě nic nevidí.
 it("po losu jde cíl změnit roletkou rovnou, bez dotazu", () => {
   render(<PultGm zapas={zapas} data={gmData("losovano", ROLE_LOS, "h1")} hlidej={spust} />);

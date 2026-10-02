@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
 import { signUp } from "../db/events.js";
 import { closePool, getPool } from "../db/pool.js";
+import { setZapasStav } from "../db/matches.js";
 import { upsertPlayer } from "../db/players.js";
 import { buildServer } from "../http/server.js";
 import { hlasHub } from "../realtime/hlas.js";
@@ -163,6 +164,14 @@ it("kousek hlasu do zápasu Diplomacie smí poslat GM a admin, hráč-ne-GM 403"
   // Slyší stejný okruh jako u admina: účastníci zápasu (a admini přes smiSlyset).
   expect(slysel.map((u) => [u.kdo, u.jeAdmin])).toEqual([["h7", false], [ROB, true]]);
   expect(slysel[0]!.prijemci).toEqual(["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8"]);
+});
+
+it("do dohraného zápasu GM mluvit nesmí, admin ano", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  await setZapasStav(zapas.id, "dohrano");
+  const kousek = { sezeni: "s1", poradi: 0, data: "AAAA", mime: "audio/webm;codecs=opus" };
+  expect((await post(`/api/zapas/${zapas.id}/hlas`, await klient("h7", false), kousek)).statusCode).toBe(403);
+  expect((await post(`/api/zapas/${zapas.id}/hlas`, await klient(ROB, true), kousek)).statusCode).toBe(200);
 });
 
 it("v klasickém zápase hráč na šedé mluvit nesmí", async () => {

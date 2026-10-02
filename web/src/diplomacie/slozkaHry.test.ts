@@ -150,6 +150,17 @@ it("jiná chyba zápisu skončí hláškou s nabídkou obyčejného stažení, s
   expect(await ulozDoHry(JA, SOUBOR)).toEqual({ stav: "chyba", text: expect.stringMatching(/Zápis do složky se nepovedl.*stáhnout obyčejně/) });
 });
 
+// Rozepsaný proud se musí zahodit, jinak soubor zůstane zamčený (a Chrome
+// nechá ve složce hry dočasný `.crswap`).
+it("když selže zápis do rozepsaného souboru, proud zahodí a nic nezapíše", async () => {
+  const slozka = new PodvrzenaSlozka("scenario");
+  slozka.chybaProudu = "QuotaExceededError";
+  prohlizec.vyber.mockResolvedValueOnce(slozka);
+  expect(await ulozDoHry(JA, SOUBOR)).toEqual({ stav: "chyba", text: expect.stringMatching(/Zápis do složky se nepovedl/) });
+  expect(slozka.zahozeno).toBe(1);
+  expect(zapsano(slozka)).toBeUndefined();
+});
+
 // Anonymní okno nebo zakázaná data webu: IndexedDB není. Zápis má projít,
 // jen si web složku nezapamatuje.
 it("bez IndexedDB uloží, ale příště se ptá znovu", async () => {

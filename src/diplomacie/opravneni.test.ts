@@ -1,15 +1,18 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { rezimAkce } from "../rezimy/index.js";
 import type { DiploZapas } from "../shared/diplomacie/typy.js";
-import { getDiploZapas } from "./db.js";
+import { getDiploZapas, ktereZapasyBezi } from "./db.js";
 import { jeGm } from "./opravneni.js";
 
-// Háček se ptá databáze jen na jedno: kdo v zápase sedí na šedé.
-vi.mock("./db.js", async (puvodni) => ({ ...(await puvodni<typeof import("./db.js")>()), getDiploZapas: vi.fn() }));
+// Háček se ptá databáze na dvě věci: kdo v zápase sedí na šedé a jestli zápas běží.
+vi.mock("./db.js", async (puvodni) => ({ ...(await puvodni<typeof import("./db.js")>()), getDiploZapas: vi.fn(), ktereZapasyBezi: vi.fn() }));
 
 const diplo = (gmHracId: string): DiploZapas => ({ zapasId: 5, gmHracId, stav: "priprava", nastupceHracId: null, scenarId: null, role: [] });
 
-afterEach(() => vi.mocked(getDiploZapas).mockReset());
+afterEach(() => {
+  vi.mocked(getDiploZapas).mockReset();
+  vi.mocked(ktereZapasyBezi).mockReset();
+});
 
 it("GM je jen hráč na šedé; zápas bez šedé a zápas mimo Diplomacii GM nemá", () => {
   expect(jeGm(diplo("h7"), "h7")).toBe(true);
@@ -23,6 +26,7 @@ it("GM je jen hráč na šedé; zápas bez šedé a zápas mimo Diplomacii GM ne
 // Push-to-talk (uživatel 2. 10. 2026): GM svolává všechny, i když není admin.
 it("háček Diplomacie pustí do zápasu mluvit GM a nikoho jiného", async () => {
   vi.mocked(getDiploZapas).mockResolvedValue(diplo("h7"));
+  vi.mocked(ktereZapasyBezi).mockImplementation(async (ids) => ids);
   const rezim = rezimAkce("diplomacie");
   expect(await rezim.smiMluvitDoZapasu(5, "h7")).toBe(true);
   expect(await rezim.smiMluvitDoZapasu(5, "h1")).toBe(false);
@@ -30,6 +34,14 @@ it("háček Diplomacie pustí do zápasu mluvit GM a nikoho jiného", async () =
   // Zápas, který Diplomacie nezná.
   vi.mocked(getDiploZapas).mockResolvedValue(null);
   expect(await rezim.smiMluvitDoZapasu(6, "h7")).toBe(false);
+});
+
+it("GM mluví jen do zápasu, který běží v otevřené akci", async () => {
+  vi.mocked(getDiploZapas).mockResolvedValue(diplo("h7"));
+  // Dohraný, zrušený nebo v uzavřené akci: dotaz na běžící zápasy ho nevrátí.
+  vi.mocked(ktereZapasyBezi).mockResolvedValue([]);
+  expect(await rezimAkce("diplomacie").smiMluvitDoZapasu(5, "h7")).toBe(false);
+  expect(ktereZapasyBezi).toHaveBeenCalledWith([5]);
 });
 
 it("klasický večer hlas nikomu navíc nedává a na databázi nesahá", async () => {

@@ -124,10 +124,11 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                         )}
                       </td>
                       <td>
-                        {rozeslano && r.cilHracId && (r.role === "kat" || r.role === "zoldak") ? (
+                        {rozeslano && (r.role === "kat" || r.role === "zoldak") ? (
+                          // Po rozeslání se nic nemění — ani cíl, který chybí.
                           <span>
                             {r.role === "kat" ? "oběť: " : "pokrevní pouto: "}
-                            {hrac(r.cilHracId)}
+                            {r.cilHracId ? hrac(r.cilHracId) : "—"}
                           </span>
                         ) : r.role === "kat" || r.role === "zoldak" ? (
                           <div className="cil-s-barvou">

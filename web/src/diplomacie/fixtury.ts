@@ -10,7 +10,7 @@ export const VERZE: ScenarVerze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", nah
 export const ZAPAS: ZapasView = {
   id: 1,
   poradi: 1,
-  stav: "lobby_otevrena",
+  stav: "bezi",
   nazevLobby: "ROB-01",
   heslo: "",
   lobbyId: null,

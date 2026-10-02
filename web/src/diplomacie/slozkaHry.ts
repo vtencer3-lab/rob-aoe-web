@@ -175,12 +175,16 @@ export async function ulozDoHry(kdo: string, soubor: { url: string; jmeno: strin
     return chyba("Scénář se nepodařilo stáhnout ze serveru — zkontroluj připojení.");
   }
 
+  let zapis: FileSystemWritableFileStream | null = null;
   try {
     const cil = await slozka.getFileHandle(soubor.jmeno, { create: true });
-    const zapis = await cil.createWritable();
+    zapis = await cil.createWritable();
     await zapis.write(data);
     await zapis.close();
   } catch (e) {
+    // Rozepsaný proud zahodit: bez abort() zůstane soubor zamčený pro další
+    // pokus a v Chromu i dočasný soubor `.crswap` ve složce hry.
+    await zapis?.abort().catch(() => {});
     if (jmenoChyby(e) === "NotFoundError") {
       // Složka mezitím zmizela (přeinstalovaná hra, jiný disk) — úchyt je k ničemu.
       await zapomenSlozku(kdo);

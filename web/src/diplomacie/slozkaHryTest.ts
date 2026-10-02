@@ -17,6 +17,10 @@ export class PodvrzenaSlozka {
   odpovedHrace: Povoleni = "granted";
   /** Chyba, kterou zápis hodí (jméno `DOMException`): zmizelá složka, zamčený soubor. */
   chybaZapisu: string | null = null;
+  /** Chyba, kterou hodí až `write` rozepsaného proudu (plný disk, soubor zamčený hrou). */
+  chybaProudu: string | null = null;
+  /** Kolikrát se rozepsaný proud zahodil (`abort`). */
+  zahozeno = 0;
   constructor(readonly name: string) {}
   queryPermission = vi.fn(async () => this.povoleni);
   requestPermission = vi.fn(async () => (this.povoleni = this.odpovedHrace));
@@ -26,7 +30,12 @@ export class PodvrzenaSlozka {
     return {
       createWritable: async () => ({
         write: async (data: Blob) => {
+          if (this.chybaProudu) throw new DOMException("podvržená chyba", this.chybaProudu);
           rozepsano = data;
+        },
+        abort: async () => {
+          rozepsano = null;
+          this.zahozeno++;
         },
         // Jako v prohlížeči: soubor se objeví až po zavření zápisu.
         close: async () => {

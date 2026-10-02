@@ -31,7 +31,9 @@ export function spustKrokPythonu<T>(krok: { skript: string; jmeno: string; vstup
     };
     const casovac = setTimeout(() => {
       proces.kill("SIGKILL");
-      skonci({ ok: false, chyba: `${krok.jmeno} trval déle než ${Math.floor(limitMs / 1000)} s a byl ukončen.` });
+      // Limit pod vteřinu (zkoušky) by zaokrouhlený vyšel „déle než 0 s“.
+      const limit = limitMs < 1000 ? `${limitMs} ms` : `${Math.round(limitMs / 1000)} s`;
+      skonci({ ok: false, chyba: `${krok.jmeno} trval déle než ${limit} a byl ukončen.` });
     }, limitMs);
     proces.stdout.on("data", (d: Buffer) => vystup.push(d));
     proces.stderr.on("data", (d: Buffer) => chyby.push(d));

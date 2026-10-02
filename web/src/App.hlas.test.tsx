@@ -4,6 +4,7 @@ import type { AkceStavPayload, ZapasView } from "../../src/shared/types.js";
 import { App } from "./App.js";
 import { api } from "./api.js";
 import { stavDiplo, ZAPAS } from "./diplomacie/fixtury.js";
+import { rezimKlienta } from "./rezimy/index.js";
 import { useAkceStav } from "./useAkceStav.js";
 
 // Push-to-talk ve vlastní kartě zápasu (uživatel 2. 10. 2026): admin mluví
@@ -71,4 +72,13 @@ it("v klasickém večeru push-to-talk nemá ani hráč na šedé", async () => {
   render(<App />);
   expect(await screen.findByTestId("chat")).toBeInTheDocument();
   expect(screen.queryByTestId("push-to-talk")).not.toBeInTheDocument();
+});
+
+// Server GM do dohraného zápasu nepustí (háček smiMluvitDoZapasu), tak ani
+// tlačítko nenabízí.
+it("do dohraného zápasu GM push-to-talk nedostane", () => {
+  const stav: AkceStavPayload = { akce: { id: 1, nazev: "Diplo", stav: "bezi", rezim: "diplomacie" }, prihlaseni: [], zapasy: [], rezim: { id: "diplomacie", data: stavDiplo("priprava", []) } };
+  const kontext = (zapas: ZapasView) => ({ zapas, stav, ja: "h7", hlidej: async () => {} });
+  expect(rezimKlienta("diplomacie").smiMluvitDoZapasu?.(kontext(ZAPAS))).toBe(true);
+  expect(rezimKlienta("diplomacie").smiMluvitDoZapasu?.(kontext({ ...ZAPAS, stav: "dohrano" }))).toBe(false);
 });

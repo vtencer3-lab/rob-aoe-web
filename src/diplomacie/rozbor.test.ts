@@ -54,6 +54,6 @@ describe.skipIf(!maPython())("rozbor LLC (vyžaduje Python s AoE2ScenarioParser)
 
   it("limit času proces zabije", async () => {
     const v = await rozeberScenar(LLC, { limitMs: 1 });
-    expect(v).toEqual({ ok: false, chyba: "Rozbor trval déle než 0 s a byl ukončen." });
+    expect(v).toEqual({ ok: false, chyba: "Rozbor trval déle než 1 ms a byl ukončen." });
   });
 });
