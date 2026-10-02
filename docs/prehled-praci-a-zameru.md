@@ -31,17 +31,17 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 ---
 
-## 1. Stav k 1. 10. 2026
+## 1. Stav k 2. 10. 2026
 
 | | |
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-22.10** (1.–2. 10. 2026; od 22.2 dávka úprav rozhraní po revizi uživatele — §3.60, „Dávka úprav rozhraní 2. 10. 2026“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, závěrečná recenze, opravná vlna i re-recenze za sebou, migrace 030–032. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5), pak mód poběží pod přepínačem i na devu. Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-26.5** (1.–2. 10. 2026; 99 commitů nad `dev`; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1 a opravná vlna po kontrole dávky 26.0–26.5 — §3.60, „Kontrola dávky 2. 10. 2026 a opravná vlna“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
-| Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc `030_rezim_akce.sql` a `031_diplomacie.sql` (§3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
-| Testy | `diplo` 1. 10. 2026 (1.13.10-21.16): backend hermetické 442 (44 souborů; 3 testy rozboru se bez Pythonu přeskočí, s `PYTHON=python` projdou všechny 4), frontend 431 (47 souborů), databázové 219 (17 souborů), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–034 (`030_rezim_akce.sql` … `034_diplomacie_nastupce_ze_hry.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
+| Testy | `diplo` 2. 10. 2026 (1.13.10-26.5): backend hermetické 516 (51 souborů; 12 testů rozboru, sondy a mostu se bez Pythonu přeskočí, s `PYTHON=python` projdou), frontend 529 (54 souborů), databázové 242 (18 souborů, na VPS po nasazení 26.5), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Admini | `ADMIN_STEAM_ID` je **jediný zdroj pravdy**, ne sloupec `je_admin` — přihlášení ho přepisuje. 17. 9. 2026 srovnáno s databází a doplněno o `xbox:` položku; do té doby měly obě aplikace v proměnné jediné Steam ID, zatímco DB vedla tři adminy (Rob a Trokner by o práva přišli při svém dalším přihlášení). Rozbor v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2 |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -1566,8 +1566,8 @@ Navíc: kousek, který neprošel sítí, se pošle ještě jednou a odmítnutý
 **Hlas pro GM (2. 10. 2026, uživatel: GM potřebuje „svolávat všechny“).**
 Mluvit do zápasu smí admin a ten, koho pustí mód: serverový háček
 `RezimAkce.smiMluvitDoZapasu(zapasId, hracId)` (Diplomacie: hráč na šedé,
-`jeGmZapasu` v `src/diplomacie/opravneni.ts` — tatáž podmínka jako u rout
-GM) a klientský `RezimKlienta.smiMluvitDoZapasu(kontext)`, podle kterého
+`smiGmMluvit` v `src/diplomacie/opravneni.ts` — tatáž podmínka jako u rout
+GM a od 26.3 navíc jen do zápasu, který běží v otevřené akci) a klientský `RezimKlienta.smiMluvitDoZapasu(kontext)`, podle kterého
 `App` dá chatu vlastní karty (hráče i hosta) `onHlas`. Klientský háček je
 jen nabídka tlačítka, právo hlídá server. Slyší stejný okruh jako u admina
 (účastníci zápasu a admini); `HlasUdalost.jeAdmin` říká, jestli mluví
@@ -1827,7 +1827,7 @@ ne ranked pravidla, takže se to nepromítá. Neověřeno naživo: zda Worlds
 Edge seznam lobby vydává nové civ id 60–62 ve slotech stejně jako ostatní
 (očekává se, id je z téže řady).
 
-### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-23.0, 1.–2. 10. 2026)
+### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-26.5, 1.–2. 10. 2026)
 
 **Záměr.** Jin (autor scénáře) připravil pro komunitní večery custom scénář
 *Diplomacie – Ať žije císař* (`LLC.aoe2scenario`, DE 1.59): 7 hráčů a
@@ -2078,7 +2078,7 @@ mimo git). Co platí teď:
 | -22.8 | **„Zamíchat barvy“** ve skládání sestavy (i v úpravě zápasu), od dvou hráčů. Pravidla dává mód přes `zamichejBarvyRezimu` v `src/shared/rezimy.ts`: klasicky se permutují použité barvy (kdo barvu sdílí, sdílí ji dál), v Diplomacii zůstává GM na šedé a ostatní si rozdělí barvy bez šedé. Výsledek se vždy liší od dosavadního rozdání; Fisher–Yates je sdílený v `src/shared/michani.ts` (používá ho i los rolí). Toast kroku: „Barvy zamíchány“. |
 | -22.9 | **Po rozeslání se role nemění** (změna pravidla proti spec §6.2, spec §12): tabulka pultu je ve stavu `rozeslano` jen text (znak a název role; „oběť:“, „pokrevní pouto:“, „zná:“ se jménem a barvou), `PUT role` vrací 409 „Role jsou rozeslané — změnit je jde jen přes Zpět na výběr Nástupce.“ Zanikl potvrzovací dialog změny role, `potvrzeno` u role, hláška „GM upravil tvou roli“ a příznak `upravenoPoRozeslani`; sloupec `diplo_role.upraveno_po_rozeslani` v DB zůstal bez migrace, nečte se ani nezapisuje. Zvon při rozeslání zůstává. |
 | -22.10 | **Jednotný sloh pravidel rolí** (`POPIS_ROLE`): cíl začíná „Vyhrává, když …“, výhody a nevýhody krátké věty ve 3. osobě, znění od uživatele; pravidla se nemění. Stejně primární cíle v taháku a popisky na kartě („Oběť:“). Sloh hlídá test v `role.test.ts`. |
-| -25.1 | **Mapa na kartě role ukazuje i hráče, ke kterým má hráč vztah** (uživatel 2. 10. 2026): vedle „Tady začínáš“ další Nájezdníky (zeleně), oběť Kata (červeně), pokrevní pouto Žoldáka (zlatý dvojitý rámeček) a u všech Nástupce císaře — koruna (znak role) nad značkou a zlatý štítek; na vlastním startu Nástupce sedí koruna nad „Tady začínáš“, hráč se dvěma vztahy nese obojí. Jen z dat, která hráč po redakci už má — na server se nesahalo. `MapaScenare` bere jediný vstup `popisky` (barva → text + druhy `ja` / `spojenec` / `obet` / `pouto` / `nastupce`) místo dřívějších `starty` / `jmena`; pult GM a správa scénáře si je skládají přes `popiskyStartu`, karta role přes `popiskyRole`. Pult GM má korunu na zvoleném Nástupci. Pod mapou karty legenda jen s druhy, které na mapě jsou; popisky mají bublinu (`title`). Popisek drží osu značky a do mapy se posouvá jen o tolik, kolik je nutné (`clamp` s `cqw`, figure je kontejner) — nahradilo třídy `kraj-*`. Na telefonu menší značka a koruna a štítek Nástupce bez kapitálky. |
+| -25.1 | **Mapa na kartě role ukazuje i hráče, ke kterým má hráč vztah** (uživatel 2. 10. 2026): vedle „Tady začínáš“ další Nájezdníky (zeleně), oběť Kata (červeně), pokrevní pouto Žoldáka (zlatý dvojitý rámeček) a u všech Nástupce císaře — koruna (znak role) nad značkou a zlatý štítek; na vlastním startu Nástupce sedí koruna nad „Tady začínáš“, hráč se dvěma vztahy nese obojí. Jen z dat, která hráč po redakci už má — na server se nesahalo. `MapaScenare` bere jediný vstup `popisky` (barva → text + druhy `ja` / `spojenec` / `obet` / `pouto` / `nastupce`) místo dřívějších `starty` / `jmena`; pult GM a správa scénáře si je skládají přes `popiskyStartu`, karta role přes `popiskyRole`. Pult GM má korunu na zvoleném Nástupci. Pod mapou karty byla legenda (od 26.4 na přání uživatele pryč); popisky mají bublinu (`title`). Popisek drží osu značky a do mapy se posouvá jen o tolik, kolik je nutné (`clamp` s `cqw`, figure je kontejner) — nahradilo třídy `kraj-*`. Na telefonu menší značka a koruna a štítek Nástupce bez kapitálky. |
 
 Měřeno v headless Chrome na 1280 a 390 px (náhledová stránka mimo repo):
 bez přetečení stránky; na 390 px zůstává známá slabina jádra — tlačítko
@@ -2176,8 +2176,9 @@ v [`analyza-most-ke-hre.md`](analyza-most-ke-hre.md), oddíl „Implementováno
   bez cíle; `popisCile`, `popisStari`).
 - **Nástupce automaticky:** v `priprava` ho server nastaví sám; ruční volbu
   GM nepřepíše, dokud hra neurčí někoho jiného; po rozdání rolí už nic.
-  Paměť je jen v procesu — po restartu serveru hra Nástupce nastaví znovu
-  i přes ruční volbu GM (vědomé zjednodušení zkušební verze).
+  Od 26.0 drží poslední odpověď hry databáze (`diplo_zapas.nastupce_ze_hry`,
+  migrace 034), takže ruční volbu nepřepíše ani restart serveru; dál viz
+  „Kontrola dávky 2. 10. 2026 a opravná vlna“.
 - **Viditelnost:** `rezim.data.zapasy[i].hra` vidí jen GM zápasu,
   `redigujDiplo` ji maže i adminovi (cíle prozrazují totéž co role).
 - **Pult GM:** `web/src/diplomacie/HraZive.tsx` — věta „Nástupce určila
@@ -2190,11 +2191,62 @@ v [`analyza-most-ke-hre.md`](analyza-most-ke-hre.md), oddíl „Implementováno
   beze změny (`sonda.py` a `sonda.xs` kopíruje `scripts/copy-migrations.ts`
   vedle `rozbor.py`).
 - **Co čeká:** ostrá zkouška ve hře (scénář stažený z webu, most spuštěný
-  u GM) a **zkouška kroku v produkčním kontejneru** — implementátor se na
-  server nedostal; po nasazení pustit
-  `docker exec -i <kontejner> /opt/rozbor/bin/python /app/dist/src/diplomacie/sonda.py < LLC.aoe2scenario`
-  a čekat `"ok": true, "oznaceno": 42`. `MOST_TOKEN` nastavuje kontrolor
+  u GM). Krok sondy v produkčním kontejneru ověřil kontrolor 2. 10. 2026
+  (`docker exec -i <kontejner> /opt/rozbor/bin/python /app/dist/src/diplomacie/sonda.py < LLC.aoe2scenario`:
+  `"ok": true`, 42 označených triggerů, 5 s). `MOST_TOKEN` nastavuje kontrolor
   v Coolify (`docs/nasazeni-jouki-cz.md` §3.6).
+
+**Kontrola dávky 2. 10. 2026 a opravná vlna** (1.13.10-26.0 → 26.5).
+Nezávislá kontrola mostu ke hře, hlasu a mapy (`cc39cab`) našla F1–F7
+a šest drobností; opraveno:
+
+- **F1** Koho hra určila naposledy, je sloupec `diplo_zapas.nastupce_ze_hry`
+  (migrace 034), ne paměť procesu — první snímek po restartu serveru už
+  ruční volbu GM nepřepíše.
+- **F2** Hlásí-li most jiný scénář, než zápas hraje, data se v pultu ukážou
+  s varováním, ale Nástupce se podle nich nenastaví ani neodvolá.
+- **F3** Cíle se rozdávají postupně (při 6/7 vypadá sedmý jako Nástupce):
+  odpovědi hry se věří, až ji dva po sobě jdoucí snímky aspoň 4 herní
+  sekundy od sebe řeknou stejně (`posunKandidata`, `STALOST_NASTUPCE_S`).
+  Vezme-li ji hra zpět a Nástupce v přípravě je pořád ten od hry, vynuluje
+  se obojí; ruční volba GM zůstává.
+- **F4** Oba zápisy jsou jeden podmíněný `UPDATE … WHERE zapas_id = $1 AND
+  stav = 'priprava'` (souběžný los GM vyhraje) a stav se rozesílá, jen když
+  se řádek změnil.
+- **Paměť snímků** (`hraPamet.ts`): snímky zápasů, které už neběží, se
+  zahazují; snímek se starším herním časem se ignoruje, pokles o víc než
+  30 s je nová hra (kandidát se sbírá znovu).
+- **F6** Soubor sondy vzniká jen na počítači GM (`if (xsUnsyncGetLocalPlayerId()
+  == xsGetWorldPlayerId(7)) { … }` kolem zápisu; xs-check prošel) — do té
+  doby nesl tajné cíle všech u každého hráče. Ke kopii se ukládá otisk
+  `sonda.xs` (`diplo_scenar.sonda.revize`); starší kopie ukáže správa jako
+  „sonda: ano (zastaralá)“ s tlačítkem „Přibalit sondu“. Krok navíc varuje,
+  když počet označených triggerů není násobek počtu hráčů bez GM (věta ve
+  správě vedle „sonda: ano“). Podrobně `analyza-most-ke-hre.md`.
+- **F7** Konec promluvy uklidí přehrávač: `pause`, odpojení uzlů Web Audia,
+  `revokeObjectURL`, `removeAttribute("src")`; `#dotahni` ruší časovač
+  přeskoku. Totéž u zkoušky mikrofonu v nastavení.
+- **Drobnosti (26.3):** GM mluví (push-to-talk) jen do zápasu, který běží
+  v otevřené akci — háček na serveru i tlačítko; Kat/Žoldák bez cíle má po
+  rozeslání „—“ místo roletky; nepovedený zápis do složky hry volá `abort()`
+  na rozepsaný proud; limit kroku Pythonu pod vteřinu se hlásí v ms.
+- **Mapa (26.4–26.5, uživatel):** legenda pod mapou karty role je pryč
+  (bubliny `title` u popisků zůstaly); mapa pultu GM má stejnou velikost
+  jako mapa karty role — obě jsou `velka`, šířka z jedné proměnné
+  `--mapa-velka` (34 rem + odsazení + rám). Změřeno v headless Chrome:
+  578 / 546 px (figure / obrázek) u obou na 1280 px, 254,8 / 222,8 px na
+  390 px, žádný popisek ani koruna nevyčnívá ani s dlouhými jmény.
+- **Ověřeno v kontejneru:** krok sondy v produkčním obrazu (kontrolor,
+  2. 10. 2026: ok, 42 označených triggerů, 5 s).
+
+**Vědomě ponecháno:** most má jeden globální token (`MOST_TOKEN`) — kdo ho
+má, může v kterémkoli běžícím zápase Diplomacie nastavit Nástupce (jen
+v `priprava`), když uvede `hracId` jeho GM. Pro zkušební provoz na PC
+uživatele to stačí; **před mergem do `dev` přejít na token pro každého GM
+zvlášť**. Ve hře zbývá ověřit, že soubor sondy u ostatních hráčů nevzniká
+(`analyza-most-ke-hre.md`). Na 390 px přetéká stránka o ~17 px kvůli
+záhlaví jádra (jméno přihlášeného, „Přihlášení hráči“) — bylo tak i před
+vlnou, s mapou to nesouvisí.
 
 **Pasti.**
 
@@ -2624,6 +2676,7 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.13.10-23.0 | 2. 10. (větev `diplo`) | **Most ke hře — první kus (§3.60)** — web přibaluje XS sondu formátu 3 do stahované kopie scénáře (migrace 033, „Přibalit sondu“ ve správě scénáře, originál přes `?original=1`), přijímá data z běžící hry na `POST /api/diplo/hra` (`MOST_TOKEN`), v přípravě sám nastaví Nástupce císaře a GM vidí postup sekundárních cílů; zkušební most `nastroje/diplomacie/most.py` |
 | 1.13.10-25.0 | 2. 10. (větev `diplo`) | **Hlas: konec praskání a push-to-talk pro GM (§3.50)** — přehrávač čeká na 450 ms zásoby (dřív se skoro každá promluva na třetinu vteřiny zasekla), zesílení mikrofonu se přesunulo z nahrávky do přehrávání (nahrávka přes Web Audio měla časové značky rámců 59/61 ms a `MediaSource` ji ořezával osmkrát za vteřinu), ztracený kousek se přeskočí; GM Diplomacie mluví do svého zápasu (háček H13 `smiMluvitDoZapasu`), štítek „GM … mluví“ |
 | 1.13.10-25.1 | 2. 10. (větev `diplo`) | **Mapa na kartě role se vztahy (§3.60)** — další Nájezdníci, oběť Kata, pokrevní pouto Žoldáka a Nástupce císaře s korunou přímo na mapě, legenda pod ní, koruna i na mapě pultu GM; `MapaScenare` s jedním vstupem `popisky` |
+| 1.13.10-26.0 … 1.13.10-26.5 | 2. 10. (větev `diplo`) | **Opravná vlna po kontrole dávky (§3.60)** — automatický Nástupce přežije restart, souběh i postupné rozdávání cílů (migrace 034, -26.0), soubor sondy jen u GM a „sonda: ano (zastaralá)“ (-26.1), úklid přehrávače hlasu (-26.2), drobnosti (GM mluví jen do běžícího zápasu, „—“ u chybějícího cíle, `abort()` zápisu, -26.3), legenda pod mapou pryč (-26.4), mapa pultu GM stejně velká jako na kartě role (-26.5) |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |

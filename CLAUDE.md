@@ -132,7 +132,7 @@ zůstává na uživateli.
 
 **Módy akce (Diplomacie) žijí vedle jádra, ne v něm.** Jádro mód zná jen
 přes háčky: registry `src/rezimy/index.ts` a `web/src/rezimy/index.tsx`,
-sdílené `src/shared/rezimy.ts` a sloty v obrazovkách jádra (výčet H1–H12
+sdílené `src/shared/rezimy.ts` a sloty v obrazovkách jádra (výčet H1–H13
 v `docs/prehled-praci-a-zameru.md` §3.60); modul módu je `src/diplomacie/`,
 `src/shared/diplomacie/`, `web/src/diplomacie/`. Žádné
 `if (rezim === "diplomacie")` v jádru — chybí-li háček, přidat háček.
