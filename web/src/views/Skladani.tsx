@@ -7,6 +7,7 @@ import { popisFormatu } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, BARVY, TYMY, type Barva, type PlayerView, type RezimId, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
 import type { VybranyHrac } from "../skladani.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
+import { usePribyli } from "../pohyb.js";
 import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
 import { VyberCivilizace } from "./VyberCivilizace.js";
@@ -66,6 +67,13 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
 export function Skladani({ skladani, onVytvoritZapas, rezim, sadaCivilizaci, zvyraznit, onPrvniAi, bezTlacitka, popisSlotu }: Props) {
   const tahani = useTahani(skladani.presun);
   const seznam = useRef<HTMLUListElement>(null);
+  // Hráč přidaný do sestavy se v ní objeví prolnutím (řádky se přetahují,
+  // proto nové značí skript, ne animace při vzniku prvku).
+  usePribyli(
+    seznam,
+    skladani.vybrani.map(({ vstup }) => vstup.hracId),
+    "data-tah-id",
+  );
   useEffect(() => {
     if (zvyraznit?.cil) blikni(seznam.current?.querySelector(`[data-tah-id="${zvyraznit.cil}"]`));
   }, [zvyraznit]);

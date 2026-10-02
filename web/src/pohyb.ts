@@ -193,3 +193,28 @@ export function sledujZaviraniOken(): () => void {
     document.removeEventListener("scroll", zapisOdrolovani, true);
   };
 }
+
+/**
+ * Potomkům kontejneru, kteří od minulého vykreslení přibyli, dá na dobu
+ * přechodu třídu `pribyl` (styl.css jim přehraje vznik). Pro seznamy, které
+ * React přeskládává — animace navázaná jen na vznik prvku by se tam pustila
+ * i řádkům přesunutým tažením. Prvky se poznají podle klíče v datovém
+ * atributu; při prvním vykreslení se neznačí nic, jinak by blikl celý seznam.
+ */
+export function usePribyli(kontejner: RefObject<HTMLElement | null>, klice: readonly string[], atribut: string): void {
+  const zname = useRef<Set<string> | null>(null);
+  const podpis = klice.join("\n");
+  useLayoutEffect(() => {
+    const drive = zname.current;
+    zname.current = new Set(klice);
+    const ms = trvani("--prechod");
+    if (!drive || ms <= 0) return;
+    for (const prvek of kontejner.current?.querySelectorAll<HTMLElement>(`[${atribut}]`) ?? []) {
+      const klic = prvek.getAttribute(atribut);
+      if (klic === null || drive.has(klic)) continue;
+      prvek.classList.add("pribyl");
+      setTimeout(() => prvek.classList.remove("pribyl"), ms + REZERVA_MS);
+    }
+    // Závislost je podpis klíčů: pole `klice` má při každém vykreslení novou identitu.
+  }, [podpis]);
+}

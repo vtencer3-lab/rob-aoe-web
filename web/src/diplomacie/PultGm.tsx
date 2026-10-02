@@ -61,7 +61,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         {/* Žezlo s okem: GM roli nemá, znak ano — patří k pultu, ne do tabulky rolí. */}
         <img className="znak-role" src={ZNAK_ROLE.gm} alt="GM" width={26} height={26} />
         <h3>Pult GM</h3>
-        <span className="stav-diplo">{POPIS_STAVU[d.stav]}</span>
+        <span className="stav-diplo" key={d.stav}>{POPIS_STAVU[d.stav]}</span>
       </header>
       <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<RubKarty />}>
         {verze ? <MapaScenare verze={verze} starty="vsechny" jmena={jmena} velikost="velka" /> : null}
@@ -103,7 +103,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                       {/* Znak ve vlastní buňce, ne v th: v hlavičce řádku by alt
                           přepsal přístupné jméno hráče, vedle roletky by ji zalomil. */}
                       <td className="znak">
-                        <img className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={36} height={36} />
+                        <img key={r.role} className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={36} height={36} />
                       </td>
                       <td>
                         {r.role === "nastupce" || rozeslano ? (

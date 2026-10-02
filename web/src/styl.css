@@ -2559,7 +2559,10 @@ body.bez-scrollu { overflow: hidden; }
 .chat .odpoved-na:hover { opacity: 1; color: var(--text); }
 .chat .odpoved-na b { color: var(--zlato); font-weight: 700; margin-right: 0.3rem; }
 .chat .odpoved-na:hover { background: none; box-shadow: none; }
-.chat .zpravy li.blika { animation: zprava-blik 2s ease-out; }
+/* `vznik` zůstává v seznamu animací na prvním místě (viz „Vznik obsahu“
+   na konci souboru): kdyby tu chyběl, prohlížeč by ho po sundání třídy
+   `blika` bral jako novou animaci a zpráva by se objevila podruhé. */
+.chat .zpravy li.zprava.blika { animation: vznik var(--prechod) var(--krivka), zprava-blik 2s ease-out; }
 @keyframes zprava-blik { 0% { background: rgba(216, 168, 58, 0.35); box-shadow: inset 0 0 0 1px rgba(216, 168, 58, 0.5); } 100% { background: transparent; box-shadow: none; } }
 /* Pruh „Odpověď pro …“ nad polem a našeptávač nad ním; obal drží pozici. */
 .chat .psani-obal { position: relative; }
@@ -2709,3 +2712,49 @@ body.bez-scrollu { overflow: hidden; }
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ------------------------------------------------------------------ *
+ * Vznik obsahu (docs/grafika.md „Pohyb“): co na stránku přibude —
+ * karta zápasu, sekce karty, hláška, zpráva v chatu, stav pultu GM —
+ * nenaskočí, ale prolne se a o kousek dojede. Je to animace při vzniku
+ * prvku, takže ji CSS zvládne samo a komponenty o ní nevědí. Klíčový
+ * snímek má jen začátek: končí se v tom, co prvku patří (zašedlá karta
+ * dohraného zápasu zůstane zašedlá). Hýbe se jen `translate` a
+ * průhlednost, nikdy rozměr — rolování chatu ani stránky se nezmění.
+ *
+ * Kde React prvky přeskládává (řádky sestavy při tažení), by se animace
+ * při vzniku pouštěla i přesunutým; tam nové prvky značí skript třídou
+ * `pribyl` (`usePribyli` v pohyb.ts).
+ * ------------------------------------------------------------------ */
+@keyframes vznik { from { opacity: 0; translate: 0 0.4rem; } }
+/* Desky: karta zápasu a hráče, obrazovka hosta, veřejný řádek, panely režie. */
+.zapas, .karta, .host, .verejny-zapas, .sprava-akce, .zalozeni-akce, .sprava-scenare,
+/* Části karty, které přibývají s postupem zápasu: kroky, kontrola lobby,
+   tlačítko na připojení, heslo, verdikt kontroly. */
+.sekce-krok, .sekce-kontrola, .sekce-krok .hostovi, .karta .heslo, .verdikt-lobby,
+/* Hlášky: chyba nahoře na stránce a u pole, ztráta spojení, výsledek nahrání scénáře. */
+main > .chyba, main > .spojeni, .chyba-pole, p.vysledek, .hledani-lobby .potvrzeno, .hledani-lobby .chyba,
+/* Chat, karta statistik pod kurzorem, správa scénáře. */
+.chat .zpravy li.zprava, .chat .odpoved-lista, .staty-hrace, .nahled-scenare, .verze-scenare li,
+/* Diplomacie: věta o Nástupci a čekání na kartě role, stavy pultu GM
+   (příprava → losováno → rozesláno) a to, co se v tabulce po rozeslání
+   promění z roletky v text. Popisek stavu v záhlaví pultu má v PultGm.tsx
+   `key` podle stavu — nový stav je tím nový prvek a prolne se. */
+.karta-role > .stred, .dlazdice-nastupce, .tabulka-roli, .pult-gm .souhrn, .pult-gm .ovladani, .pult-gm .stav-diplo,
+.tabulka-roli td > strong, .tabulka-roli td > span, .stazeni-scenare {
+  animation: vznik var(--prechod) var(--krivka);
+}
+/* Nový řádek sestavy (třídu dává `usePribyli`); když ho zároveň rozsvítí
+   historie kroků (`.zmena`), poběží obojí. */
+.skladani .radek.pribyl { animation: vznik var(--prechod) var(--krivka); }
+.skladani .radek.pribyl.zmena { animation: vznik var(--prechod) var(--krivka), zmena-blik 1.6s ease-out; }
+/* Rozdání karty role: karta rubem nahoru dopadne na stůl — přiletí shora,
+   lehce natočená, a srovná se. Jen na kartě hráče; pult GM kartu drží od
+   začátku. */
+.karta-role .zakryti { animation: karta-rozdana var(--prechod-karta) var(--krivka); }
+@keyframes karta-rozdana { from { opacity: 0; translate: 0 -1.2rem; rotate: -3deg; scale: 0.92; } }
+/* Razítko: fajfka hotového kroku, odznaky vítěze a hosta a znak role
+   v tabulce GM. Znak má v PultGm.tsx `key` podle role, takže po přelosování
+   nebo ruční změně dosedne jen u řádků, kde se role opravdu změnila. */
+.zahlavi-sekce .fajfka, .odznak-vitez, .odznak-host, .tabulka-roli .znak-role { animation: razitko var(--prechod) var(--krivka); }
+@keyframes razitko { from { opacity: 0; scale: 1.5; } }

@@ -124,6 +124,8 @@ Paleta je v `web/src/styl.css` v bloku `:root`. Vytažená z loga:
 | `--pergamen` | `#f2e0b0` | světlé plochy |
 | `--drevo` / `--drevo-tmave` | `#241610` / `#160d08` | výplň panelů |
 | `--chyba` / `--varovani` / `--ok` | `#e2695c` / `#e0c46a` / `#a8c47c` | významové barvy, ztlumené do teplé palety |
+| `--kov-tmavy-1…3` / `--kov-tmavy-najeti-1…3` | `#4a2a1c` `#2c1710` `#200f0a` / `#5e3724` `#3a1e14` `#2a1410` | ražený kov běžných tlačítek shora dolů, v klidu a pod kurzorem |
+| `--kov-zlaty-1…3` / `--kov-zlaty-najeti-1…3` | `#e2c47c` `#c99a35` `#9d7420` / `#e8cd88` `#d2a53e` `#a67c22` | totéž pro zlatá tlačítka hlavní akce |
 
 Osm barev hráčů (`--b1`…`--b8`) zůstalo beze změny **schválně**: musí sedět
 s barvami ve hře, jinak hráč nepozná, že je „modrý“. Jsou to jediné syté
@@ -232,6 +234,77 @@ koruny) přepracovat v GPT Image; výsledek je `_grafika/final/namesti_2560.png`
 („take the plain background“, 8. 9. 2026 večer). Poučení, které od té doby platí obecně:
 **editace hotového obrázku se dělá modelem na cílenou editaci (GPT Image přes
 Codex), ne skládáním kusů ručně**; lokální generování slouží na nové obrázky.
+
+### Pohyb (2. 10. 2026)
+
+Kliknutí nemá jen „bliknout“: co se na stránce změní, to se prolne, dojede
+nebo otočí. Časy a křivka jsou proměnné v `:root` (`web/src/styl.css`) a bere
+je odtamtud CSS i skript (`web/src/pohyb.ts`), takže se ladí na jednom místě:
+
+| Proměnná | Hodnota | Na co |
+|---|---|---|
+| `--prechod-rychly` | 140 ms | najetí, stisk, zaškrtnutí, rozbalovací seznam |
+| `--prechod` | 220 ms | vznik obsahu, otevření a zavření okna, přepínač |
+| `--prechod-skladani` | 280 ms | rozbalení a sbalení sekce, karty zápasu a chatu, otočení šipky |
+| `--prechod-karta` | 460 ms | otočení tajné karty (obě půlky dohromady), rozdání karty role |
+| `--krivka` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | rychlý rozjezd, měkký dojezd |
+
+Schválně krátké: při streamu má být vidět, že se něco stalo, ne čekat, až to
+dojede. Běžný pohyb se drží v 120–300 ms, jen karta smí do půl vteřiny.
+
+Co se jak hýbe:
+
+- **Tajná karta** (`Zakryti.tsx`): otočení kolem svislé osy ve dvou půlkách —
+  viditelná strana se natočí na hranu, teprve pak React vymění obsah a nová
+  strana se dotočí; výška jede s druhou půlkou. Tajný obsah se tak vykreslí
+  až ve chvíli, kdy je karta hranou k divákovi, a při zakrývání zmizí z DOM
+  v půlce pohybu. Karta role při rozeslání „dopadne na stůl“.
+- **Sbalovací sekce, karta zápasu, chat**: výška plynule oběma směry
+  (`useSbalovani`, chat mřížkou `1fr → 0fr`), šipka se otáčí. Šipku
+  `<details>` kreslí CSS ve stejné šířce jako značka prohlížeče (1,06 em).
+- **Okna** (všechna stojí na `.prelobby-stin`): stín se prolne, okno lehce
+  doroste. Zavření CSS samo neumí — React okno odebere z DOM naráz — tak ho
+  `sledujZaviraniOken` vrátí jako neživou kulisu, CSS přehraje zavření
+  a časovač ji odklidí. Jednotlivá okna o tom nevědí.
+- **Tlačítka**: přechod (gradient) se prolínat neumí, proto kov tlačítek
+  jede přes tři registrované barvy `--kov-1` až `--kov-3` (`@property`);
+  klidové i najeté barvy jsou v paletě `--kov-…`. Stisk tlačítko zamáčkne
+  o pixel. Přepínač má zlatou drážku jako vlastní vrstvu s průhledností.
+- **Vznik obsahu**: karta zápasu, sekce karty, hláška, zpráva v chatu, stavy
+  pultu GM — animace při vzniku prvku (`@keyframes vznik`, jen začátek, končí
+  se v tom, co prvku patří). Fajfka kroku, odznaky a znak role dosednou jako
+  razítko.
+
+Pravidla pro další pohyb:
+
+- **Čas vždycky z proměnné**, nikdy číslem. `prefers-reduced-motion: reduce`
+  proměnné nuluje — tím se vypne CSS i skript najednou.
+- **Co umí CSS, dělá CSS.** Skript jen tam, kde to nejde: výška na `auto`,
+  dvoufázové otočení, dojezd prvku, který React už odebral, a nové řádky
+  v seznamu, který React přeskládává (`usePribyli` — animace při vzniku by se
+  tam pustila i přesunutým řádkům).
+- **Hýbe se `translate`, `scale`, `rotate` a průhlednost**, ne `transform`
+  (ten bývá obsazený usazením prvku) ani rozměry — kromě sbalování se
+  rozvržení pohybem nemění.
+- **Žádná logika nečeká jen na událost animace.** Konec jistí časovač
+  (`animuj` v `pohyb.ts`): záložka na pozadí `finish` nepošle a testovací DOM
+  animace vůbec neprovádí — tam se všechno přepíná naráz.
+- Prvek s vlastní animací, která se zapíná třídou (`.blika` u zprávy), musí
+  mít `vznik` v seznamu animací na prvním místě v obou stavech; jinak ho
+  prohlížeč po sundání třídy pustí znovu.
+
+Vědomě bez pohybu: rozbalený `<select>` a `window.confirm` (kreslí prohlížeč),
+tažení řádků (má vlastní FLIP), zmizení řádku, zprávy nebo karty (dojezd by
+znamenal držet odebraný prvek v každém seznamu zvlášť — dostala ho jen okna
+a sbalování), okno Create Lobby (obraz ze hry) a stávající informační animace
+(toast, záblesk změny, tečky čekání), které běží i při omezeném pohybu,
+protože nesou zprávu, ne ozdobu.
+
+**Vzorník pohybu** je `web/nahled/pohyb.html` (mimo build, `npm --prefix web
+run dev`): karta role, pult GM se všemi stavy, sbalovací sekce, okno,
+tlačítka, přepínače, chat, karta zápasu a stažení scénáře bez serveru. Na
+něm se přechody měří v headless Chrome (vypočtené `transition-duration`,
+`getAnimations()`, emulace `prefers-reduced-motion`).
 
 ---
 
@@ -551,3 +624,5 @@ Ověřené šířky: 1280, 1440, 1600 a 1920 px bez vodorovného přetečení.
   reliéf ražené destičky.
 - Nová barva → nejdřív se koukni, jestli ji nemá paleta. Napevno zapsaná
   barva v pravidle je chyba, ne zkratka.
+- Nový pohyb → čas z proměnných `--prechod…`, viz „Pohyb“ v §3. Napevno
+  zapsaná délka přechodu obejde `prefers-reduced-motion`.

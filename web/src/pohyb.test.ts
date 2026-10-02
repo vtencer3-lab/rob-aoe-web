@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { animuj, krivka, sledujZaviraniOken, trvani } from "./pohyb.js";
+import { renderHook } from "@testing-library/react";
+import { animuj, krivka, sledujZaviraniOken, trvani, usePribyli } from "./pohyb.js";
 import { podvrhniPohyb, type PodvrzenyPohyb } from "./pohybTest.js";
 
 let pohyb: PodvrzenyPohyb;
@@ -132,5 +133,39 @@ describe("sledujZaviraniOken", () => {
     stin.remove();
     await poHlidaci();
     expect(stin.isConnected).toBe(false);
+  });
+});
+
+// Nové řádky seznamu, který React přeskládává (sestava): značí je skript.
+describe("usePribyli", () => {
+  const seznam = (klice: string[]) => {
+    const ul = document.createElement("ul");
+    ul.innerHTML = klice.map((k) => `<li data-klic="${k}"></li>`).join("");
+    return ul;
+  };
+  const tridy = (ul: HTMLElement) => [...ul.children].map((li) => li.className);
+
+  it("označí jen prvky, které přibyly, a třídu po přechodu sundá", () => {
+    const ul = seznam(["a", "b"]);
+    const { rerender } = renderHook(({ klice }) => usePribyli({ current: ul }, klice, "data-klic"), { initialProps: { klice: ["a", "b"] } });
+    // První vykreslení neznačí nic — jinak by blikl celý seznam.
+    expect(tridy(ul)).toEqual(["", ""]);
+    ul.insertAdjacentHTML("beforeend", '<li data-klic="c"></li>');
+    rerender({ klice: ["a", "b", "c"] });
+    expect(tridy(ul)).toEqual(["", "", "pribyl"]);
+    // Přeskládání nic neoznačí.
+    ul.prepend(ul.lastElementChild!);
+    rerender({ klice: ["c", "a", "b"] });
+    vi.advanceTimersByTime(1000);
+    expect(tridy(ul)).toEqual(["", "", ""]);
+  });
+
+  it("bez pohybu neznačí nic", () => {
+    pohyb.uklid();
+    const ul = seznam(["a"]);
+    const { rerender } = renderHook(({ klice }) => usePribyli({ current: ul }, klice, "data-klic"), { initialProps: { klice: ["a"] } });
+    ul.insertAdjacentHTML("beforeend", '<li data-klic="b"></li>');
+    rerender({ klice: ["a", "b"] });
+    expect(tridy(ul)).toEqual(["", ""]);
   });
 });
