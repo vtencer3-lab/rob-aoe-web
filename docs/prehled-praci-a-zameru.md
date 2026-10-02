@@ -1521,7 +1521,7 @@ nahraje tři vteřiny týmž řetězcem jako push-to-talk a hned je přehraje
 (`nahrajZkousku`), ať jde zesílení nastavit bez druhého člověka.
 
 **Prohlížeč:** `hlas.ts` (přehrávač `spustPrehravacHlasu`, nahrávání
-`vytvorNahravani`, zesílení `zesilProud`), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
+`vytvorNahravani`, zesílení `zesilPrehravani` — od 2. 10. 2026 až při přehrávání, viz níž), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
 puštění kdekoli / ztráta fokusu okna nahrávání zastaví, mikrofon se po
 puštění uvolní, ať v kartě nesvítí), `Chat` prop `onHlas`, `App` přehrávač
 zapíná po přihlášení. Od 1.4.1 je tlačítko **jen v režii** (`Obsluha.onHlas`,
@@ -1531,6 +1531,53 @@ obou tlačítek jsou od 1.4.2 vlastní bublina `.napoveda` bez prodlevy
 (0,9 rem), ne `title`. `useAkceStav` událost `hlas` jen přeposílá na okno
 (`aoe:hlas`). Testy: `realtime/hlas.test.ts`, route v `matches.db.test.ts`.
 Neověřeno živě se dvěma lidmi — první ostrá zkouška bude na akci.
+
+**Praskání (2. 10. 2026, uživatel: „naše komunikace přes mikrofon momentálně
+praská“).** Změřeno v headless Chrome sinusovkou z falešného mikrofonu přes
+skutečný kód nahrávání i přehrávání (postup a čísla:
+`docs/know-how/push-to-talk.md`). Dvě příčiny, obě u posluchače:
+
+1. **Hrálo se hned s prvním kouskem.** Ten nese ~240 ms zvuku, další dorazí
+   až za 300 ms (Chrome kóduje Opus po 60 ms, „250ms“ kousek má ve
+   skutečnosti 300 ms). Zásoba došla, prohlížeč přehrávání na ~0,35 s
+   zastavil: useknutí, ticho, naskočení v prvním slově skoro každé promluvy,
+   i na dokonalé síti (5 ze 6 promluv; po opravě 0). Teď se čeká na 450 ms
+   zásoby (`ZASOBA_MS`) nebo značku konce, po zádrhelu se zásoba sbírá
+   znovu celá, ztracený kousek se po půl vteřině přeskočí (`SourceBuffer`
+   v režimu `sequence`, dřív zbytek promluvy mlčel) a sezení bez značky
+   konce se po 5 s uzavře samo. Zpoždění ústa → ucho ~0,6 s (dřív 0,3 s
+   před zádrhelem a 0,67 s po něm).
+2. **Zesílení mikrofonu se dělalo v nahrávce.** Nahrávka vedená přes Web
+   Audio (`MediaStreamDestination`) dostává od Chrome časové značky rámců
+   střídavě po 59 a 61 ms místo 60 (rámec 2880 vzorků, blok Web Audia 128)
+   a `MediaSource` každý druhý rámec o milisekundu ořízne — asi osm lupnutí
+   za vteřinu po celou dobu řeči (336 skoků za 50 s sinusovky při 200 %,
+   při 100 % žádný). Zkouška mikrofonu v nastavení to neukázala, protože
+   hraje obyčejný blob, ne `MediaSource`. Teď se nahrává vždy přímo
+   z mikrofonu, zesílení jde jako údaj `zesileni` u kousku
+   (`HlasUdalost`, server jen hlídá strop 400 %) a zesiluje **přehrávač
+   posluchače** (`zesilPrehravani`: prvek → zisk → měkké omezení → výstup).
+   Omezení je do kolena přímka, takže „150 %“ je opravdu 1,5× (stará křivka
+   `tanh` násobila už tichý signál 1,74× a nad plný rozsah řezala natvrdo).
+
+Navíc: kousek, který neprošel sítí, se pošle ještě jednou a odmítnutý
+(403, 413) se mluvčímu ohlásí u tlačítka, místo aby tiše zmizel.
+
+**Hlas pro GM (2. 10. 2026, uživatel: GM potřebuje „svolávat všechny“).**
+Mluvit do zápasu smí admin a ten, koho pustí mód: serverový háček
+`RezimAkce.smiMluvitDoZapasu(zapasId, hracId)` (Diplomacie: hráč na šedé,
+`jeGmZapasu` v `src/diplomacie/opravneni.ts` — tatáž podmínka jako u rout
+GM) a klientský `RezimKlienta.smiMluvitDoZapasu(kontext)`, podle kterého
+`App` dá chatu vlastní karty (hráče i hosta) `onHlas`. Klientský háček je
+jen nabídka tlačítka, právo hlídá server. Slyší stejný okruh jako u admina
+(účastníci zápasu a admini); `HlasUdalost.jeAdmin` říká, jestli mluví
+admin, ať „ztlumit ostatní adminy“ neumlčí GM. GM má jen mikrofon, bez
+tlačítka ztlumení adminů (`PushToTalk` prop `ztlumeniAdminu`).
+
+**Kdo mluví.** Dokud se promluva přehrává, visí vlevo dole štítek
+`views/MluviTed.tsx` (připnutý k oknu — hlas hraje celé stránce): jméno
+mluvčího, před ním titul slotu z háčku `popisSlotu` — „GM Pepa“. Seznam
+drží `hlas.ts` (`kdoMluvi`, `naZmenuMluvcich`).
 
 ### 3.51 Chat se posouvá jen na obrazovce (1.4.0, 13. 9. 2026)
 
@@ -1811,7 +1858,7 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   `src/shared/rezimy.ts` (`zkontrolujSestavuRezimu`, `vychoziTymRezimu` —
   volá je server i `Skladani.tsx`), na klientovi `web/src/rezimy/index.tsx`
   (`RezimKlienta`: `stitek`, `kartaHrace`, `krokHosta`, `verejnyZapas`,
-  `popisSlotu`, `nastaveniScenare`). **Modul módu žije vedle jádra a jádro
+  `popisSlotu`, `nastaveniScenare`, `smiMluvitDoZapasu`). **Modul módu žije vedle jádra a jádro
   ho zná jen přes háčky** — odebrat mód = smazat `src/diplomacie/`,
   `src/shared/diplomacie/`, `web/src/diplomacie/`, řádek v obou registrech
   a `registerDiplomacieRoutes` v `server.ts`; háčky H1–H12 níž jsou obecné
@@ -1835,6 +1882,7 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   | H10 | `src/http/server.ts` | `registerDiplomacieRoutes(app, deps)` |
   | H11 | `src/auth/routes.ts` (`GET /api/me` → `smiNahratScenar`), `src/config.ts` (`autoriScenare`, `python`) | kdo smí nahrávat scénář; interpret pro rozbor |
   | H12 | `Dockerfile` | `python3` a `py3-pillow` z apk, virtuální prostředí `/opt/rozbor` s AoE2ScenarioParser podle `src/diplomacie/requirements.txt` |
+  | H13 | `src/http/routes/hlas.ts`; `App.tsx` (chat vlastní karty zápasu) | kdo kromě admina smí mluvit do zápasu: `RezimAkce.smiMluvitDoZapasu` na serveru, `RezimKlienta.smiMluvitDoZapasu` pro nabídku tlačítka (Diplomacie: GM); viz §3.50 |
 
 - **Modul Diplomacie.** `src/diplomacie/` — `db.ts` (dotazy nad
   `diplo_*`), `rezim.ts` (implementace `RezimAkce`), `routes.ts`
