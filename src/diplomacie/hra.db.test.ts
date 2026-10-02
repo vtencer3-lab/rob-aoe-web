@@ -350,7 +350,8 @@ describe("snímky od diváka", () => {
     // Divák je pozadu o zpoždění pro diváky a hlásí jiný stav.
     const divak = await posli(telo([4, 6], 40, { odesilatel: "76561198000000099" }));
     expect(divak.statusCode).toBe(200);
-    expect(divak.json()).toEqual({ ok: true, zapasId: zapas.id, zdroj: "divak", nastupce: "h4", pouzito: false });
+    // Odpověď nese poslední stav od GM (verze VERZE nemá výpis cílů — odtud varování).
+    expect(divak.json()).toMatchObject({ ok: true, zapasId: zapas.id, zdroj: "divak", nastupce: "h4", pouzito: false });
     expect((await pohled(await klient("h7", false))).hra).toMatchObject({ zdroj: "gm", cas: 104, nastupceHracId: "h4" });
     expect((await getDiploZapas(zapas.id))!.nastupceHracId).toBe("h4");
   });
