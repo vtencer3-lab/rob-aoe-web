@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Chat, UDALOST_SBALIT_CHAT } from "./Chat.js";
+import type { OdesliKousek } from "../hlas.js";
 import { jeAi } from "../../../src/shared/aiHraci.js";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import type { Strana } from "../../../src/shared/strany.js";
@@ -32,7 +33,7 @@ export interface Obsluha {
   /** Vlastní zprávu jde přepsat (šipka nahoru). */
   onUpravitZpravu?: (zapasId: number, zpravaId: number, text: string) => Promise<unknown> | void;
   /** Push-to-talk admina: kam odcházejí kousky nahrávky (jen režie). */
-  onHlas?: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string }) => Promise<unknown>;
+  onHlas?: (zapasId: number, telo: Parameters<OdesliKousek>[0]) => Promise<unknown>;
   /** Debug mód pro chat (přepínání autora). */
   ladeni?: boolean;
 }
