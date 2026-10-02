@@ -1,6 +1,17 @@
 import { BARVY, type Barva } from "../types.js";
 import { overovace } from "./overeni.js";
 
+/**
+ * Jméno, pod kterým web verzi scénáře servíruje (kopie se sondou) a podle
+ * kterého ji pozná všude, kde se jména porovnávají: kontrola lobby, uložení
+ * do složky hry, most ke hře (soubor .xsdat se jmenuje podle scénáře).
+ * `poradi` je pořadí nahrání (migrace 035), po smazání se nepoužije znovu.
+ * Originál od autora si nechává jméno, pod kterým ho nahrál.
+ */
+export function jmenoScenareProHru(poradi: number): string {
+  return `JIN_DIPLO_${poradi}.aoe2scenario`;
+}
+
 /** Co rozbor scénáře (src/diplomacie/rozbor.py) vrací; spec §5.2. */
 export interface RozborScenare {
   velikostMapy: number;

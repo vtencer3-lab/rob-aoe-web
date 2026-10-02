@@ -394,8 +394,11 @@ a.tlacitko, button.tlacitko, .cta, button.vytvorit, button.plus {
    tlačítku ne: `<button class="cta">` (pult GM, „Rozeslat role“) mělo proti
    obecnému pravidlu o třídu míň, takže pod kurzorem dostalo hnědé pozadí
    běžného tlačítka a k němu tmavý nápis zlatého — vypadalo jako zakázané
-   (uživatel 2. 10. 2026). Proto je tu i `button.cta:hover:enabled`. */
-a.tlacitko:hover, .cta:hover,
+   (uživatel 2. 10. 2026). Proto je tu i `button.cta:hover:enabled`. A holé
+   `.cta:hover` se nesmí chytit zamčeného tlačítka ani odkazu
+   s `aria-disabled` — šedé zamčené pod kurzorem zezlátlo („Stáhnout
+   scénář“ ve správě scénáře, „Losovat“ v pultu GM). */
+a.tlacitko:hover, .cta:hover:not(:disabled):not([aria-disabled="true"]),
 button.tlacitko:hover:enabled, button.cta:hover:enabled,
 button.vytvorit:hover:enabled, button.plus:hover:enabled {
   /* Barva textu musí být řečená i tady: obecné pravidlo pro odkazy pod
@@ -412,7 +415,10 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
     0 2px 4px rgba(0, 0, 0, 0.55);
   filter: none;
 }
-.cta[aria-disabled="true"] {
+.cta[aria-disabled="true"], button.cta:disabled {
+  /* Zamčené zlaté tlačítko je šedé, ne jen průhlednější zlaté: to vypadalo
+     pořád jako hlavní akce. */
+  opacity: 1;
   background: linear-gradient(#3a2f22, #241c14);
   color: #7a6b52;
   border-color: #4a3a24;
@@ -1926,7 +1932,15 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 .verze-scenare li { padding: 0.3rem 0; border-top: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); color: var(--tlumene); }
 .verze-scenare li.aktivni { color: var(--text); }
 .verze-scenare li strong { color: var(--zlato-svetle); }
-.verze-scenare li button { margin-left: 0.5rem; padding: 0.2rem 0.6rem; font-size: 0.85rem; }
+.verze-scenare li .popis button { margin-left: 0.5rem; padding: 0.2rem 0.6rem; font-size: 0.85rem; }
+/* Tlačítka verze pod popisem: originál, automatizace, scénář (zlaté, dokud
+   není sonda, zamčené), převzetí minimapy, smazání. */
+.verze-scenare li .ovladani { display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; margin-top: 0.3rem; }
+.verze-scenare li .ovladani button { padding: 0.25rem 0.7rem; font-size: 0.85rem; }
+.verze-scenare .jmeno-hry { color: var(--tlumene); }
+/* Bublina „Přibalit automatizace“ zalomená a od levého kraje tlačítka — na
+   telefonu by jednořádková vyjela z obrazovky. */
+.verze-scenare .napoveda::after { left: 0; right: auto; white-space: normal; max-width: min(18rem, 80vw); }
 .karta .ceka { margin: 0.4rem 0; }
 .karta .heslo { margin-top: 0.8rem; font-size: 1.05rem; }
 .karta .hledani-lobby .ovladani { justify-content: center; }

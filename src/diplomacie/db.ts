@@ -2,7 +2,7 @@ import type { PoolClient } from "pg";
 import { getPool, withTransaction } from "../db/pool.js";
 import { prectiSondu, souhrnSondy, type BeziciZapasDiplo, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { procNelzePrevzitMinimapu } from "../shared/diplomacie/minimapa.js";
-import { prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
+import { jmenoScenareProHru, prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
 import { revizeSondy } from "./sonda.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo } from "../shared/diplomacie/typy.js";
@@ -10,6 +10,7 @@ import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo } from "../sha
 interface VerzeDb {
   id: number;
   jmeno_souboru: string;
+  poradi: number;
   nahrano_v: Date;
   nahral_jmeno: string;
   poznamka: string | null;
@@ -21,13 +22,14 @@ interface VerzeDb {
   sonda: unknown;
 }
 
-const SLOUPCE_VERZE = `s.id, s.jmeno_souboru, s.nahrano_v, COALESCE(p.alias, p.platforma_jmeno, p.hrac_id) AS nahral_jmeno,
+const SLOUPCE_VERZE = `s.id, s.jmeno_souboru, s.poradi, s.nahrano_v, COALESCE(p.alias, p.platforma_jmeno, p.hrac_id) AS nahral_jmeno,
   s.poznamka, s.aktivni, s.rozbor, s.chyba_rozboru, s.minimapa_otisk, s.minimapa_vlastni, s.sonda`;
 
 function mapujVerzi(r: VerzeDb): ScenarVerze {
   return {
     id: r.id,
     jmenoSouboru: r.jmeno_souboru,
+    jmenoHry: jmenoScenareProHru(r.poradi),
     nahrano: r.nahrano_v.toISOString(),
     nahralJmeno: r.nahral_jmeno,
     poznamka: r.poznamka,
@@ -176,29 +178,53 @@ export async function aktivujVerzi(id: number): Promise<void> {
 
 /**
  * Soubor verze ke stažení: kopie se sondou, když ji verze má, jinak originál.
- * `original` vrátí vždy soubor od autora. Jméno je u obou stejné — kontrola
- * lobby porovnává jméno a soubor sondy se podle něj jmenuje.
+ * Pro hru jde vždy pod jménem `jmenoScenareProHru` (i bez sondy) — kontrola
+ * lobby porovnává jméno a soubor sondy se podle něj jmenuje. `original`
+ * vrátí soubor od autora pod jménem, pod kterým ho nahrál.
  */
 export async function getSouborVerze(id: number, original = false): Promise<{ jmenoSouboru: string; data: Buffer } | null> {
-  const { rows } = await getPool().query<{ jmeno_souboru: string; data: Buffer }>(
-    "SELECT jmeno_souboru, CASE WHEN $2::boolean THEN data ELSE COALESCE(data_sonda, data) END AS data FROM diplo_scenar WHERE id = $1",
+  const { rows } = await getPool().query<{ jmeno_souboru: string; poradi: number; data: Buffer }>(
+    "SELECT jmeno_souboru, poradi, CASE WHEN $2::boolean THEN data ELSE COALESCE(data_sonda, data) END AS data FROM diplo_scenar WHERE id = $1",
     [id, original],
   );
-  return rows[0] ? { jmenoSouboru: rows[0].jmeno_souboru, data: rows[0].data } : null;
+  const r = rows[0];
+  return r ? { jmenoSouboru: original ? r.jmeno_souboru : jmenoScenareProHru(r.poradi), data: r.data } : null;
 }
 
 /**
  * Celá sonda verze i s výpisem cílů — pro vyhodnocení snímku hry. Stav pro
  * prohlížeče nese jen souhrn (`ScenarVerze.sonda`).
  */
-export async function getSonduVerze(id: number): Promise<{ jmenoSouboru: string; sonda: SondaScenare | null } | null> {
-  const { rows } = await getPool().query<{ jmeno_souboru: string; sonda: unknown }>("SELECT jmeno_souboru, sonda FROM diplo_scenar WHERE id = $1", [id]);
-  return rows[0] ? { jmenoSouboru: rows[0].jmeno_souboru, sonda: rows[0].sonda === null ? null : prectiSondu(rows[0].sonda) } : null;
+export async function getSonduVerze(id: number): Promise<{ jmenoHry: string; sonda: SondaScenare | null } | null> {
+  const { rows } = await getPool().query<{ poradi: number; sonda: unknown }>("SELECT poradi, sonda FROM diplo_scenar WHERE id = $1", [id]);
+  return rows[0] ? { jmenoHry: jmenoScenareProHru(rows[0].poradi), sonda: rows[0].sonda === null ? null : prectiSondu(rows[0].sonda) } : null;
 }
 
 /** Výsledek (i neúspěšný) přibalení sondy k verzi; `dataSonda` null = kopie se sondou není. */
 export async function ulozSondu(id: number, sonda: SondaScenare, dataSonda: Buffer | null): Promise<void> {
   await getPool().query("UPDATE diplo_scenar SET sonda = $2::jsonb, data_sonda = $3 WHERE id = $1", [id, JSON.stringify(sonda), dataSonda]);
+}
+
+/**
+ * Smaže verzi scénáře (správa scénáře). Aktivní verzi ani verzi, kterou
+ * hraje nějaký zápas (i dohraný — zápas si ji otiskl kvůli pravidlům), smazat
+ * nejde: null = smazáno, jinak kód a česká věta pro odpověď.
+ */
+export async function smazVerzi(id: number): Promise<{ kod: 404 | 409; chyba: string } | null> {
+  return withTransaction(async (c) => {
+    const { rows } = await c.query<{ aktivni: boolean; poradi: number }>("SELECT aktivni, poradi FROM diplo_scenar WHERE id = $1 FOR UPDATE", [id]);
+    const verze = rows[0];
+    if (!verze) return { kod: 404, chyba: "Taková verze není." };
+    const jmeno = jmenoScenareProHru(verze.poradi);
+    if (verze.aktivni) return { kod: 409, chyba: `${jmeno} je aktivní verze — smazat ji nejde. Nejdřív nastav jako aktivní jinou.` };
+    const { rows: zapasy } = await c.query<{ zapas_id: number }>("SELECT zapas_id FROM diplo_zapas WHERE scenar_id = $1 ORDER BY zapas_id", [id]);
+    if (zapasy.length > 0) {
+      const cisla = zapasy.map((z) => z.zapas_id).join(", ");
+      return { kod: 409, chyba: `${jmeno} hraje ${zapasy.length === 1 ? "zápas" : "zápasy"} č. ${cisla} — smazat ji nejde.` };
+    }
+    await c.query("DELETE FROM diplo_scenar WHERE id = $1", [id]);
+    return null;
+  });
 }
 
 export async function getMinimapuVerze(id: number): Promise<Buffer | null> {
@@ -272,8 +298,8 @@ export async function getDiploZapas(zapasId: number): Promise<DiploZapas | null>
  * jen odesílatele a scénář — ne číslo zápasu (výběr: `vyberZapasSnimku`).
  */
 export async function beziciZapasyDiplo(): Promise<BeziciZapasDiplo[]> {
-  const { rows } = await getPool().query<{ zapas_id: number; gm: string | null; jmeno_souboru: string | null }>(
-    `SELECT d.zapas_id, u.hrac_id AS gm, s.jmeno_souboru
+  const { rows } = await getPool().query<{ zapas_id: number; gm: string | null; poradi: number | null }>(
+    `SELECT d.zapas_id, u.hrac_id AS gm, s.poradi
        FROM diplo_zapas d
        JOIN zapas z ON z.id = d.zapas_id
        JOIN akce a ON a.id = z.akce_id
@@ -282,7 +308,7 @@ export async function beziciZapasyDiplo(): Promise<BeziciZapasDiplo[]> {
       WHERE a.stav <> 'konec' AND z.stav = 'bezi'
       ORDER BY z.vytvoren DESC, z.id DESC`,
   );
-  return rows.map((r) => ({ zapasId: r.zapas_id, gmHracId: r.gm, jmenoScenare: r.jmeno_souboru }));
+  return rows.map((r) => ({ zapasId: r.zapas_id, gmHracId: r.gm, jmenoScenare: r.poradi === null ? null : jmenoScenareProHru(r.poradi) }));
 }
 
 /**

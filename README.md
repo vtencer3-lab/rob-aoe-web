@@ -375,9 +375,16 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   limity, starty, podmínky vítězství, minimapa) a archivuje; aktivní je
   vždy nejvýš jedna, nová verze se neaktivuje sama (kromě úplně první
   úspěšně přečtené) — tlačítko „Nastavit jako aktivní“. Verze, kterou se nepodařilo přečíst,
-  jde stáhnout, ale ne aktivovat. Pojmenovávej verze s číslem: hra hlásí
-  jen jméno souboru, takže dvě verze stejného jména kontrola lobby
-  nerozliší — správa na shodné jméno upozorní, ale nebrání mu.
+  jde stáhnout, ale ne aktivovat. Hostovi web verzi posílá pod jménem
+  **`JIN_DIPLO_<N>.aoe2scenario`** (N = pořadí nahrání 1, 2, 3…, po smazání
+  se číslo znovu nepoužije) a podle něj porovnává všechno — kontrolu lobby,
+  uložení do složky hry i data ze hry; jméno, pod kterým autor soubor
+  nahrál, zůstává jen originálu. Řádek verze ve správě: jméno, kdo, kdy,
+  poznámka, „aktivní“ / „Nastavit jako aktivní“ a tlačítka **Stáhnout
+  originál** (s upozorněním, že originál nepošle průběh hry na stránku),
+  **Přibalit automatizace** (zlaté, dokud verze nemá dnešní sondu) a
+  **Stáhnout scénář** (zlaté, zamčené, dokud sondu nemá). **Smazat** jde
+  verzi, která není aktivní a nehraje ji žádný zápas.
 - **Host** má v kroku „Zakládáš!“ navíc **Stáhnout scénář** (verzi, kterou
   zápas hraje) a cestu, kam soubor uložit —
   `%USERPROFILE%\Games\Age of Empires 2 DE\<Steam ID nebo XUID>\resources\_common\scenario\`,
@@ -412,9 +419,10 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   a odhalení rolí všem přijde v dalším kroku módu.
 - **Data ze hry (zkušebně).** Scénář, který host z webu stahuje, má
   přibalenou **sondu**: web ji do kopie přidá sám při nahrání verze
-  (originál od autora zůstává a autor nebo admin ho stáhne odkazem
-  „originál“ ve správě scénáře; verzi nahrané dřív sondu doplní tlačítko
-  „Přibalit sondu“). Jméno souboru se nemění. Sonda za hry zapisuje stav
+  (originál od autora zůstává a autor nebo admin ho stáhne tlačítkem
+  „Stáhnout originál“ ve správě scénáře; verzi nahrané dřív sondu doplní
+  tlačítko „Přibalit automatizace“). Kopie se jmenuje
+  `JIN_DIPLO_<N>.aoe2scenario`, soubor sondy ve hře tedy `JIN_DIPLO_<N>.xsdat`. Sonda za hry zapisuje stav
   do souboru na každém počítači ve hře, u hráčů i diváků (bez šifrování —
   kdo se podívá do své složky profilu, vidí tajné cíle všech; komunitní hra
   s přáteli). Vedle hry se pustí `python nastroje/diplomacie/most.py`

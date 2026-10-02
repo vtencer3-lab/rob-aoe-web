@@ -26,9 +26,9 @@ it("host dostane odkaz na verzi zápasu, nebo větu, že scénář chybí", () =
 // zkopírování jedním kliknutím, i s jménem souboru v instrukci.
 it("odkaz stahuje pod jménem verze a cesta je kopírovatelná", () => {
   render(<StazeniScenare verze={VERZE} ja="xbox:2533274952064423" />);
-  expect(screen.getByRole("link", { name: "Stáhnout scénář" }).getAttribute("download")).toBe("LLC.aoe2scenario");
+  expect(screen.getByRole("link", { name: "Stáhnout scénář" }).getAttribute("download")).toBe("JIN_DIPLO_3.aoe2scenario");
   expect(screen.getByRole("button", { name: "Kopírovat cestu ke scénářům" }).textContent).toContain("\\2533274952064423\\resources\\_common\\scenario\\");
-  expect(screen.getAllByText("LLC.aoe2scenario").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("JIN_DIPLO_3.aoe2scenario").length).toBeGreaterThan(0);
 });
 
 // Bez File System Access API (Firefox, Safari, telefon — a testovací DOM)
@@ -64,7 +64,7 @@ describe("s podporou složek", () => {
     const odkaz = screen.getByRole("link", { name: "Stáhnout scénář" });
     expect(odkaz).not.toHaveClass("cta");
     expect(odkaz.getAttribute("href")).toMatch(/\/api\/diplo\/scenar\/3\/soubor$/);
-    expect(odkaz.getAttribute("download")).toBe("LLC.aoe2scenario");
+    expect(odkaz.getAttribute("download")).toBe("JIN_DIPLO_3.aoe2scenario");
     expect(screen.getByRole("button", { name: "Kopírovat cestu ke scénářům" })).toBeInTheDocument();
     // Dokud hráč složku nevybral, o žádné se nemluví.
     expect(screen.queryByRole("button", { name: "změnit složku" })).toBeNull();
@@ -84,7 +84,7 @@ describe("s podporou složek", () => {
     expect(screen.getByRole("button", { name: "Ukládám…" })).toBeDisabled();
     vyber(slozka);
     expect(await ulozeno()).toHaveTextContent("Uloženo do složky scenario.");
-    expect(slozka.soubory.get("LLC.aoe2scenario")).toBe(prohlizec.obsah);
+    expect(slozka.soubory.get("JIN_DIPLO_3.aoe2scenario")).toBe(prohlizec.obsah);
     expect(prohlizec.fetch.mock.calls[0]![0]).toMatch(/\/api\/diplo\/scenar\/3\/soubor$/);
     expect(screen.queryByText(/Vyber složku scénářů hry/)).toBeNull();
     expect(ulozit()).toBeEnabled();
@@ -108,7 +108,7 @@ describe("s podporou složek", () => {
     await ulozeno();
     expect(prohlizec.vyber).toHaveBeenCalledTimes(1);
     expect(schranka).not.toHaveBeenCalled();
-    expect(slozka.soubory.has("LLC.aoe2scenario")).toBe(true);
+    expect(slozka.soubory.has("JIN_DIPLO_3.aoe2scenario")).toBe(true);
   });
 
   // Pojistka: složka, která se nejmenuje `scenario`, se napřed ukáže hráči.
@@ -123,7 +123,7 @@ describe("s podporou složek", () => {
     expect(stazene.soubory.size).toBe(0);
     fireEvent.click(screen.getByRole("button", { name: "Vybrat znovu" }));
     expect(await ulozeno()).toHaveTextContent("scenario");
-    expect(spravna.soubory.has("LLC.aoe2scenario")).toBe(true);
+    expect(spravna.soubory.has("JIN_DIPLO_3.aoe2scenario")).toBe(true);
     expect(stazene.soubory.size).toBe(0);
     expect(screen.queryByText(/Tohle nevypadá/)).toBeNull();
   });
@@ -136,7 +136,7 @@ describe("s podporou složek", () => {
     await screen.findByText(/Tohle nevypadá/);
     fireEvent.click(screen.getByRole("button", { name: "Uložit sem" }));
     expect(await ulozeno()).toHaveTextContent("moje-scenare");
-    expect(jina.soubory.has("LLC.aoe2scenario")).toBe(true);
+    expect(jina.soubory.has("JIN_DIPLO_3.aoe2scenario")).toBe(true);
     expect(prohlizec.vyber).toHaveBeenCalledTimes(1);
   });
 
@@ -165,7 +165,7 @@ describe("s podporou složek", () => {
     fireEvent.click(ulozit());
     await ulozeno();
     fireEvent.click(screen.getByRole("button", { name: "změnit složku" }));
-    await vi.waitFor(() => expect(nova.soubory.has("LLC.aoe2scenario")).toBe(true));
+    await vi.waitFor(() => expect(nova.soubory.has("JIN_DIPLO_3.aoe2scenario")).toBe(true));
     expect(prohlizec.vyber).toHaveBeenCalledTimes(2);
     expect(await ulozeno()).toHaveTextContent("scenario");
   });

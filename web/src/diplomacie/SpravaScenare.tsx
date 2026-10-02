@@ -1,54 +1,25 @@
 import { useEffect, useState } from "react";
 import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import type { Hlidej } from "../rezimy/index.js";
+import { Potvrzeni } from "../views/Potvrzeni.js";
 import { Skladaci } from "../views/Skladaci.js";
 import { diploApi } from "./api.js";
 import { MapaScenare, popiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 
-/**
- * Sonda u verze (most ke hře): odkaz nahoře stahuje kopii se sondou, pokud
- * ji verze má; originál od autora zůstává k mání vedle. Verzi bez sondy
- * (nahraná dřív, nebo se přibalení nepovedlo) ji dopočítá tlačítko.
- */
-function StavSondy({ verze, pribaluje, onPribalit }: { verze: ScenarVerze; pribaluje: boolean; onPribalit: () => void }) {
-  const ma = verze.sonda !== null && verze.sonda.chyba === null;
-  // Kopie se starším kódem sondy (např. z doby, kdy se soubor zapisoval
-  // u každého hráče) se hraje dál, ale chce přibalit znovu.
-  const zastarala = ma && verze.sonda?.zastarala === true;
-  const tlacitko = (
-    <button type="button" disabled={pribaluje} onClick={onPribalit}>
-      Přibalit sondu
-    </button>
-  );
-  return (
-    <span className="stav-sondy" data-testid="stav-sondy">
-      {" "}
-      · sonda: {ma ? "ano" : "ne"}
-      {zastarala ? <span className="varovani"> (zastaralá)</span> : null}
-      {ma ? (
-        <>
-          {" "}
-          (
-          <a href={diploApi.souborUrl(verze.id, true)} download={verze.jmenoSouboru}>
-            originál
-          </a>
-          ){verze.sonda?.varovani.map((v) => (
-            <span key={v} className="varovani">
-              {" "}
-              · {v}
-            </span>
-          ))}
-          {zastarala ? <> {tlacitko}</> : null}
-        </>
-      ) : (
-        <>
-          {verze.sonda?.chyba ? <span className="varovani"> ({verze.sonda.chyba})</span> : null} {tlacitko}
-        </>
-      )}
-    </span>
-  );
+/** Verze má přibalenou dnešní sondu — kopii pro hru jde stáhnout. */
+const maSondu = (v: ScenarVerze) => v.sonda !== null && v.sonda.chyba === null && !v.sonda.zastarala;
+
+/** Stažení souboru tlačítkem (stažení až po potvrzení, nebo z tlačítka, které jde zamknout). */
+function stahni(url: string, jmeno: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = jmeno;
+  a.click();
 }
+
+const NAPOVEDA_AUTOMATIZACE = "Do scénáře se přibalí skripty na sledování statistik ze hry.";
+const VAROVANI_ORIGINALU = "Tahle verze nebude automaticky posílat průběh hry na stránku. Opravdu stáhnout?";
 
 /**
  * Odkud může verze bez vlastní minimapy převzít obrázek ze hry: poslední
@@ -89,7 +60,8 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
     if (otevreno) void nacti();
   }, [otevreno]);
   const aktivni = verze.find((v) => v.aktivni) ?? null;
-  const stejneJmeno = soubor !== null && verze.some((v) => v.jmenoSouboru === soubor.name);
+  // Co čeká na potvrzení v okně: stažení originálu, nebo smazání verze.
+  const [potvrdit, setPotvrdit] = useState<{ co: "original" | "smazat"; verze: ScenarVerze } | null>(null);
 
   const nahrat = (formular: HTMLFormElement) => {
     if (!soubor) return;
@@ -122,6 +94,17 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
       await diploApi.prevzitMinimapu(id, zdrojId);
       setVerze((await diploApi.verze()).verze);
     });
+  const potvrzeno = () => {
+    if (!potvrdit) return;
+    const { co, verze: v } = potvrdit;
+    setPotvrdit(null);
+    if (co === "original") stahni(diploApi.souborUrl(v.id, true), v.jmenoSouboru);
+    else
+      void hlidej(async () => {
+        await diploApi.smazat(v.id);
+        setVerze((await diploApi.verze()).verze);
+      });
+  };
   // Přibalení trvá vteřiny (Python na serveru) — tlačítko je mezitím zamčené.
   const [pribaluje, setPribaluje] = useState<number | null>(null);
   const pribalSondu = (id: number) => {
@@ -150,7 +133,6 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
         <button type="submit" className="tlacitko" disabled={!soubor || nahrava}>
           Nahrát
         </button>
-        {stejneJmeno ? <p className="varovani">Doporučuju jiné jméno (např. s číslem verze), jinak kontrola lobby nepozná, že host má starou kopii.</p> : null}
         {vysledek ? <p className="vysledek">{vysledek}</p> : null}
       </form>
       {aktivni?.rozbor ? (
@@ -169,32 +151,74 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
         </div>
       ) : null}
       <ul className="verze-scenare">
-        {verze.map((v) => {
-          const zdroj = zdrojMinimapy(verze, v);
-          return (
-            <li key={v.id} className={v.aktivni ? "aktivni" : ""}>
-              <a href={diploApi.souborUrl(v.id)} download={v.jmenoSouboru}>
-                {v.jmenoSouboru}
-              </a>{" "}
-              · {v.nahralJmeno} · {new Date(v.nahrano).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-              {v.poznamka ? <> · {v.poznamka}</> : null}
-              {v.aktivni ? <strong> · aktivní</strong> : null}
-              {v.chybaRozboru ? <span className="varovani"> · nepodařilo se přečíst: {v.chybaRozboru}</span> : null}
-              <StavSondy verze={v} pribaluje={pribaluje !== null} onPribalit={() => pribalSondu(v.id)} />
-              {!v.aktivni && v.rozbor ? (
-                <button type="button" onClick={() => aktivovat(v.id)}>
-                  Nastavit jako aktivní
-                </button>
-              ) : null}
-              {zdroj ? (
-                <button type="button" onClick={() => prevzitMinimapu(v.id, zdroj.id)}>
-                  Převzít vlastní minimapu z verze {zdroj.id}
-                </button>
-              ) : null}
-            </li>
-          );
-        })}
+        {/* Nejnovější nahoře i nezávisle na pořadí ze serveru. */}
+        {[...verze]
+          .sort((a, b) => b.id - a.id)
+          .map((v) => {
+            const zdroj = zdrojMinimapy(verze, v);
+            const sonda = maSondu(v);
+            return (
+              <li key={v.id} className={v.aktivni ? "aktivni" : ""} data-testid="verze-scenare">
+                <div className="popis">
+                  {/* Originál pod jménem od autora; hostovi a do lobby jde pod jménem pro hru. */}
+                  <span className="jmeno-verze">{v.jmenoSouboru}</span> <small className="jmeno-hry">({v.jmenoHry.replace(/\.aoe2scenario$/, "")})</small> · {v.nahralJmeno} ·{" "}
+                  {new Date(v.nahrano).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  {v.poznamka ? <> · {v.poznamka}</> : null}
+                  {v.aktivni ? <strong> · aktivní</strong> : null}
+                  {!v.aktivni && v.rozbor ? (
+                    <button type="button" onClick={() => aktivovat(v.id)}>
+                      Nastavit jako aktivní
+                    </button>
+                  ) : null}
+                  {v.chybaRozboru ? <span className="varovani"> · nepodařilo se přečíst: {v.chybaRozboru}</span> : null}
+                  {/* Proč automatizace chybí, nebo co hlásilo přibalení — stav sám říkají tlačítka. */}
+                  {v.sonda?.chyba ? <span className="varovani"> · {v.sonda.chyba}</span> : null}
+                  {v.sonda?.varovani.map((t) => (
+                    <span key={t} className="varovani">
+                      {" "}
+                      · {t}
+                    </span>
+                  ))}
+                </div>
+                <div className="ovladani">
+                  <button type="button" onClick={() => setPotvrdit({ co: "original", verze: v })}>
+                    Stáhnout originál
+                  </button>
+                  {/* Hlavní akce, dokud verze nemá dnešní sondu (chybí, nebo je zastaralá). */}
+                  <button
+                    type="button"
+                    className={sonda ? "napoveda" : "cta napoveda"}
+                    data-napoveda={NAPOVEDA_AUTOMATIZACE}
+                    disabled={pribaluje !== null}
+                    onClick={() => pribalSondu(v.id)}
+                  >
+                    Přibalit automatizace
+                  </button>
+                  <button type="button" className="cta" disabled={!sonda} onClick={() => stahni(diploApi.souborUrl(v.id), v.jmenoHry)}>
+                    Stáhnout scénář
+                  </button>
+                  {zdroj ? (
+                    <button type="button" onClick={() => prevzitMinimapu(v.id, zdroj.id)}>
+                      Převzít vlastní minimapu z verze {zdroj.id}
+                    </button>
+                  ) : null}
+                  <button type="button" onClick={() => setPotvrdit({ co: "smazat", verze: v })}>
+                    Smazat
+                  </button>
+                </div>
+              </li>
+            );
+          })}
       </ul>
+      {potvrdit ? (
+        <Potvrzeni
+          text={potvrdit.co === "original" ? VAROVANI_ORIGINALU : `Smazat verzi ${potvrdit.verze.jmenoSouboru}? Nejde vrátit.`}
+          potvrdit={potvrdit.co === "original" ? "Stáhnout" : "Smazat"}
+          zrusit="Zpět"
+          onPotvrdit={potvrzeno}
+          onZrusit={() => setPotvrdit(null)}
+        />
+      ) : null}
     </Skladaci>
   );
 }

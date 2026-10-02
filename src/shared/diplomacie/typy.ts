@@ -37,7 +37,10 @@ export interface DiploZapas {
 /** Verze scénáře bez souboru a minimapy (ty jdou zvlášť adresou). */
 export interface ScenarVerze {
   id: number;
+  /** Jméno originálu, jak ho autor nahrál. */
   jmenoSouboru: string;
+  /** Jméno pro hru (`jmenoScenareProHru`): pod ním se servíruje a porovnává. */
+  jmenoHry: string;
   nahrano: string;
   nahralJmeno: string;
   poznamka: string | null;

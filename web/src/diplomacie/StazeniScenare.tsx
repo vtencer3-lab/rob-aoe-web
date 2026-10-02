@@ -29,7 +29,7 @@ export function StazeniScenare({ verze, ja }: { verze: ScenarVerze | null; ja: s
   if (!verze) return <p className="ceka stred">Scénář zatím nikdo nenahrál.</p>;
   const doHry = umiSlozkuHry();
   const stazeni = (
-    <a className={doHry ? undefined : "cta"} href={diploApi.souborUrl(verze.id)} download={verze.jmenoSouboru}>
+    <a className={doHry ? undefined : "cta"} href={diploApi.souborUrl(verze.id)} download={verze.jmenoHry}>
       Stáhnout scénář
     </a>
   );
@@ -44,7 +44,7 @@ export function StazeniScenare({ verze, ja }: { verze: ScenarVerze | null; ja: s
         stazeni
       )}
       <p>
-        Ulož <strong>{verze.jmenoSouboru}</strong> do složky (starou kopii stejného jména přepiš):
+        Ulož <strong>{verze.jmenoHry}</strong> do složky (starou kopii stejného jména přepiš):
       </p>
       <Kopirovatelne hodnota={cestaKeScenarum(ja)} popis="cestu ke scénářům" />
     </div>
@@ -82,7 +82,7 @@ function UlozeniDoHry({ verze, ja }: { verze: ScenarVerze; ja: string }) {
       setHlaska({ druh: "vyzva" });
     } else setHlaska(null);
     setPracuje(true);
-    void ulozDoHry(ja, { url: diploApi.souborUrl(verze.id), jmeno: verze.jmenoSouboru }, volby)
+    void ulozDoHry(ja, { url: diploApi.souborUrl(verze.id), jmeno: verze.jmenoHry }, volby)
       .then(async (v) => {
         if (v.stav === "ulozeno") {
           setSlozka(v.slozka);

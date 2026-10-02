@@ -37,11 +37,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-28.0** (1.–2. 10. 2026; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — a **dědění vlastní minimapy 28.0**; §3.60, „Vlastní minimapa se dědí“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-29.0** (1.–2. 10. 2026; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — dědění vlastní minimapy 28.0 — §3.60, „Vlastní minimapa se dědí“ — a **správa scénáře 29.0**: jméno pro hru `JIN_DIPLO_<N>`, mazání verzí, tlačítka v řádku; §3.60, „Správa scénáře: jméno pro hru, mazání, tlačítka“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
-| Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–034 (`030_rezim_akce.sql` … `034_diplomacie_nastupce_ze_hry.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
-| Testy | `diplo` 2. 10. 2026 (1.13.10-28.0): backend hermetické 531 (52 souborů; 13 testů rozboru, sondy a mostu se bez Pythonu přeskočí, s `PYTHON=python` projdou), frontend 534 (54 souborů), databázové 248 (18 souborů, na VPS po nasazení 28.0), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–035 (`030_rezim_akce.sql` … `035_diplomacie_poradi.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
+| Testy | `diplo` 2. 10. 2026 (1.13.10-29.0): backend hermetické 532 (52 souborů; 13 testů rozboru, sondy a mostu se bez Pythonu přeskočí, s `PYTHON=python` projdou), frontend 535 (54 souborů), databázové 250 (18 souborů, na VPS po nasazení 29.0), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Admini | `ADMIN_STEAM_ID` je **jediný zdroj pravdy**, ne sloupec `je_admin` — přihlášení ho přepisuje. 17. 9. 2026 srovnáno s databází a doplněno o `xbox:` položku; do té doby měly obě aplikace v proměnné jediné Steam ID, zatímco DB vedla tři adminy (Rob a Trokner by o práva přišli při svém dalším přihlášení). Rozbor v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2 |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -2178,6 +2178,51 @@ rozbor = <rozbor s původními starty>` — render i starty dá znovu rozbor
 nedědilo, stačí, když žádná dřívější verze nemá `minimapa_vlastni = true`.
 Úplně jinou mapu kontrola pozná sama (velikost, barvy nebo posun startů).
 
+**Správa scénáře: jméno pro hru, mazání, tlačítka (2. 10. 2026,
+1.13.10-29.0).** Zadání uživatele (velikost (2)–(3)): verze jde smazat,
+nejnovější nahoře, zjednodušený řádek a jednotné jméno pro hru.
+- **Jméno pro hru `JIN_DIPLO_<N>.aoe2scenario`** — `jmenoScenareProHru`
+  (src/shared/diplomacie/scenar.ts), N = `diplo_scenar.poradi` (migrace
+  035: vlastní sekvence, přiřazuje se při vložení, po smazání se číslo
+  nepoužije znovu, dnešní verze 1 a 2 dostaly 1 a 2 podle id). Stav nese
+  `ScenarVerze.jmenoHry`. Podle něj se porovnává všechno: kontrola lobby
+  (`nastaveniScenare` → `scenar`, `scenarStarsi` = jména pro hru
+  ostatních verzí), stažení pro hosta a „Uložit scénář do hry“
+  (`StazeniScenare`, `slozkaHry.ts` dostává jméno od volajícího), hledání
+  zápasu pro most (`beziciZapasyDiplo`, `getSonduVerze` → `stejnyScenar`;
+  soubor `.xsdat` se jmenuje podle staženého scénáře). Stažení kopie pro hru
+  jde pod tímto jménem vždy, i bez sondy; originál (`?original=1`) pod
+  jménem od autora. Přibalení sondy jméno nepotřebuje (XS čte jméno
+  souboru až ve hře). Upozornění na stejné jméno při nahrání odpadlo —
+  jména pro hru jsou jedinečná. **Past:** host, který má uloženou kopii pod
+  jménem originálu z doby před 29.0, ji musí stáhnout znovu (kontrola lobby
+  hlásí jiný soubor).
+- **Mazání** `DELETE /api/diplo/scenar/:id` (autor nebo admin,
+  `smazVerzi`): aktivní verzi odmítne 409 „JIN_DIPLO_N.aoe2scenario je
+  aktivní verze — smazat ji nejde. Nejdřív nastav jako aktivní jinou.“,
+  verzi otištěnou v nějakém zápase (`diplo_zapas.scenar_id`, i dohraném)
+  409 „… hraje zápas č. X — smazat ji nejde.“; po smazání se přepočítá
+  nastavení lobby běžící akce (smazaná zmizí ze `scenarStarsi`). V UI přes
+  `Potvrzeni` „Smazat verzi …? Nejde vrátit.“.
+- **Řádek verze** (`SpravaScenare`): jméno originálu jako text (ne odkaz)
+  a vedle tlumeně jméno pro hru, kdo, kdy, poznámka, „aktivní“ / „Nastavit
+  jako aktivní“, chyba rozboru a sondy jako krátká věta; pod tím tlačítka
+  „Stáhnout originál“ (`Potvrzeni`: „Tahle verze nebude automaticky
+  posílat průběh hry na stránku. Opravdu stáhnout?“), „Přibalit
+  automatizace“ (dřív „Přibalit sondu“; vlastní bublina `.napoveda` „Do
+  scénáře se přibalí skripty na sledování statistik ze hry.“; zlaté `.cta`,
+  dokud verze nemá dnešní sondu — chybí, selhala, nebo je zastaralá),
+  „Stáhnout scénář“ (zlaté `.cta`, `disabled` bez dnešní sondy), případně
+  „Převzít vlastní minimapu z verze N“ a „Smazat“. Text „sonda: ano
+  (zastaralá)“ a odkaz „originál“ zmizely. Seznam je řazený nejnovější
+  nahoře (server `ORDER BY id DESC`, UI třídí ještě samo).
+- **Zamčené zlaté tlačítko:** holé `.cta:hover` se chytalo i zamčeného
+  `<button class="cta" disabled>` a pod kurzorem ho rozzářilo zlatě; teď
+  `.cta:hover:not(:disabled):not([aria-disabled="true"])` a zamčené
+  `button.cta:disabled` má šedý vzhled jako `.cta[aria-disabled="true"]`
+  (platí i pro „Losovat“ v pultu GM a „Uložit scénář do hry“ během
+  ukládání).
+
 **Ověřeno proti hře (1. 10. 2026):** orientace minimapy a pozice startů —
 uživatel porovnal minimapu webu s minimapou LLC ve hře: „minimapa i pozice
 hráčů sedí“ (otočení o 45° v `rozbor.py` a medián pozic jednotek jako start
@@ -2741,6 +2786,8 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.13.10-25.1 | 2. 10. (větev `diplo`) | **Mapa na kartě role se vztahy (§3.60)** — další Nájezdníci, oběť Kata, pokrevní pouto Žoldáka a Nástupce císaře s korunou přímo na mapě, legenda pod ní, koruna i na mapě pultu GM; `MapaScenare` s jedním vstupem `popisky` |
 | 1.13.10-26.0 … 1.13.10-26.5 | 2. 10. (větev `diplo`) | **Opravná vlna po kontrole dávky (§3.60)** — automatický Nástupce přežije restart, souběh i postupné rozdávání cílů (migrace 034, -26.0), soubor sondy jen u GM a „sonda: ano (zastaralá)“ (-26.1), úklid přehrávače hlasu (-26.2), drobnosti (GM mluví jen do běžícího zápasu, „—“ u chybějícího cíle, `abort()` zápisu, -26.3), legenda pod mapou pryč (-26.4), mapa pultu GM stejně velká jako na kartě role (-26.5) |
 | 1.13.10-27.0 | 2. 10. (větev `diplo`) | **Divák jako zdroj dat ze hry (§3.60)** — sonda píše soubor na každém počítači (hráči i diváci, bez šifrování, rozhodnutí uživatele), `POST /api/diplo/hra` bere `odesilatel` a snímek diváka přiřadí jedinému běžícímu zápasu se stejným scénářem, data GM mají přednost (20 s), pult píše „ze hry (GM/divák) před N s“, `most.py --odesilatel` |
+| 1.13.10-28.0 | 2. 10. (větev `diplo`) | **Vlastní minimapa se dědí (§3.60)** — nová verze téže mapy převezme obrázek ze hry od poslední verze, která ho má (kontrola velikosti, barev a startů do 0,05); jinak věta „Vlastní minimapa nepřevzata — mapa se změnila.“ a tlačítko „Převzít vlastní minimapu z verze N“ |
+| 1.13.10-29.0 | 2. 10. (větev `diplo`) | **Správa scénáře: jméno pro hru, mazání, tlačítka (§3.60)** — kopie pro hru jako `JIN_DIPLO_<N>.aoe2scenario` (migrace 035) a podle toho jména kontrola lobby, uložení do hry i most; mazání verze (ne aktivní, ne hrané); řádek s tlačítky Stáhnout originál / Přibalit automatizace / Stáhnout scénář; zamčené zlaté tlačítko už pod kurzorem nezezlátne |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |

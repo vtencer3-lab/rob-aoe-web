@@ -21,6 +21,7 @@ import {
   ulozSondu,
   setNastupce,
   setStavDiplo,
+  smazVerzi,
   ulozRole,
   ulozVerziScenare,
   prevezmiMinimapuZ,
@@ -261,6 +262,18 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
       if (!jeUnikatniKonflikt(e)) throw e;
       throw new HttpError(409, "Někdo právě aktivoval jinou verzi — načti seznam znovu.");
     }
+    await promitniDoAkce();
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Smazání verze (správa scénáře): aktivní a hranou verzi db odmítne
+  // s větou, která řekne proč. Nastavení lobby běžící akce se přepočítá —
+  // smazaná verze zmizí ze starších jmen kontroly lobby.
+  app.delete("/api/diplo/scenar/:id", async (request) => {
+    await requireAutorScenare(request);
+    const chyba = await smazVerzi(requireId(request));
+    if (chyba) throw new HttpError(chyba.kod, chyba.chyba);
     await promitniDoAkce();
     await broadcastAkce();
     return { ok: true };

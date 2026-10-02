@@ -46,6 +46,8 @@ export const diploApi = {
         vlastniMinimapa: { zdrojId: number; prevzata: boolean } | null;
       }>(r)),
   aktivovat: (id: number) => post(`/api/diplo/scenar/${id}/aktivni`),
+  /** Smaže verzi; aktivní nebo hranou server odmítne (409 s důvodem). */
+  smazat: (id: number) => fetch(cesta(`/api/diplo/scenar/${id}`), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   /** Verze `id` převezme vlastní minimapu (obrázek ze hry) verze `zdrojId`; jiná mapa = 409. */
   prevzitMinimapu: (id: number, zdrojId: number) => post(`/api/diplo/scenar/${id}/minimapa-z/${zdrojId}`),
   /** Dopočítá sondu verzi nahrané dřív (nebo po neúspěchu znovu); výsledek nese i případnou chybu. */

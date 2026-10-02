@@ -4,7 +4,7 @@ import { ROZBOR } from "../../../src/shared/diplomacie/fixtures.js";
 import type { Barva } from "../../../src/shared/types.js";
 import { MapaScenare, popiskyStartu, type PopiskyStartu } from "./MapaScenare.js";
 
-const verze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
+const verze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", jmenoHry: "JIN_DIPLO_3.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
 
 const start = (barva: Barva) => screen.getAllByTestId("start").find((s) => s.classList.contains(`barva-${barva}`))!;
 

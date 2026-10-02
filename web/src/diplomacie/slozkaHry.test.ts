@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { jeSlozkaScenaru, nactiSlozku, ulozDoHry, umiSlozkuHry } from "./slozkaHry.js";
 import { odpovedSeSouborem, PodvrzenaSlozka, podvrhniProhlizec, zavrenyDialog, type PodvrzenyProhlizec } from "./slozkaHryTest.js";
 
-const SOUBOR = { url: "/api/diplo/scenar/3/soubor", jmeno: "LLC.aoe2scenario" };
+const SOUBOR = { url: "/api/diplo/scenar/3/soubor", jmeno: "JIN_DIPLO_3.aoe2scenario" };
 const JA = "76561198014056480";
 
 let prohlizec: PodvrzenyProhlizec;
@@ -40,7 +40,7 @@ it("poprvé nechá vybrat složku, soubor stáhne, zapíše pod jeho jménem a s
   expect(await ulozDoHry(JA, SOUBOR)).toEqual({ stav: "ulozeno", slozka: "scenario" });
   expect(prohlizec.vyber).toHaveBeenCalledWith({ id: "aoe2-scenare", mode: "readwrite" });
   expect(prohlizec.fetch).toHaveBeenCalledWith(SOUBOR.url);
-  expect(slozka.getFileHandle).toHaveBeenCalledWith("LLC.aoe2scenario", { create: true });
+  expect(slozka.getFileHandle).toHaveBeenCalledWith("JIN_DIPLO_3.aoe2scenario", { create: true });
   expect(zapsano(slozka)).toBe(prohlizec.obsah);
   expect(await nactiSlozku(JA)).toBe(slozka);
 });

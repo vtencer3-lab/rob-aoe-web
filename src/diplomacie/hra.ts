@@ -100,9 +100,9 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
 
   // Data z jiného scénáře, než zápas hraje (starý soubor sondy, jiná hra
   // téhož GM), se v pultu ukážou s varováním, ale Nástupce podle nich ne.
-  const jinyScenar = verze !== null && !stejnyScenar(verze.jmenoSouboru, snimek.scenar);
+  const jinyScenar = verze !== null && !stejnyScenar(verze.jmenoHry, snimek.scenar);
   const varovani = jinyScenar
-    ? `Hra hlásí scénář „${snimek.scenar}“, zápas ale hraje „${verze.jmenoSouboru}“ — Nástupce se podle ní nenastavuje.`
+    ? `Hra hlásí scénář „${snimek.scenar}“, zápas ale hraje „${verze.jmenoHry}“ — Nástupce se podle ní nenastavuje.`
     : verze && (verze.sonda === null || verze.sonda.chyba !== null)
       ? "Verze scénáře v zápase nemá u webu výpis cílů — postup cílů se neukáže."
       : undefined;
