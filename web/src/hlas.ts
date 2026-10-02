@@ -163,7 +163,25 @@ function dekoduj(b64: string): Uint8Array {
 }
 
 /**
- * Jedno mluvení (sezení) jednoho admina. Kousky se lepí do MediaSource, ať
+ * Kolik zvuku musí být nachystáno, než se začne hrát — a po zádrhelu znovu.
+ *
+ * Dřív se hrálo hned s prvním kouskem. Ten nese ~240 ms zvuku a další dorazí
+ * až za 300 ms (Chrome kóduje Opus po 60 ms, takže „250ms“ kousek má ve
+ * skutečnosti 300 ms), takže zásoba došla ještě před druhým kouskem a
+ * prohlížeč přehrávání na ~0,35 s zastavil: useknutí, ticho, naskočení —
+ * dvě lupnutí a díra v prvním slově každé promluvy, i na dokonalé síti
+ * (měřeno 2. 10. 2026, docs/know-how/push-to-talk.md). S touhle zásobou se
+ * začíná až po druhém kousku a před příchodem každého dalšího zbývá ~240 ms
+ * rezervy na zpoždění sítě.
+ */
+export const ZASOBA_MS = 450;
+/** Jak dlouho se čeká na kousek, který nedorazil, než se přeskočí. */
+export const PRESKOK_MS = 1_500;
+/** Po jak dlouhém tichu ze sítě se sezení uzavře samo (ztracená značka konce). */
+export const TICHO_MS = 5_000;
+
+/**
+ * Jedno mluvení (sezení) jednoho mluvčího. Kousky se lepí do MediaSource, ať
  * hraje skoro živě; kde MediaSource s Opusem není (Safari), se kousky
  * posbírají a přehrají naráz po konci — jako vysílačka.
  */
@@ -173,15 +191,24 @@ class Prehravani {
   #zdroj: MediaSource | null = null;
   #buffer: SourceBuffer | null = null;
   #konec = false;
+  /** Hraje se (nebo se o to prohlížeč snaží); false = sbírá se zásoba. */
+  #hraje = false;
+  #zavreno = false;
   #cekaPoradi = 0;
   readonly #odlozene = new Map<number, HlasUdalost>();
+  #preskok: ReturnType<typeof setTimeout> | null = null;
+  #ticho: ReturnType<typeof setTimeout> | null = null;
+  #pojistka: ReturnType<typeof setTimeout> | null = null;
   readonly #mime: string;
   readonly #zive: boolean;
+  readonly #onZavreno: () => void;
 
-  constructor(mime: string) {
+  constructor(mime: string, onZavreno: () => void) {
     this.#mime = mime;
+    this.#onZavreno = onZavreno;
     // Naplno, nezávisle na Master Volume — viz hlasitostAdmina().
     this.#audio.volume = Math.min(1, Math.max(0, hlasitostAdmina() / 100));
+    this.#audio.addEventListener("ended", () => this.#zavri());
     this.#zive = typeof MediaSource !== "undefined" && typeof MediaSource.isTypeSupported === "function" && MediaSource.isTypeSupported(mime);
     if (this.#zive) {
       this.#zdroj = new MediaSource();
@@ -189,16 +216,54 @@ class Prehravani {
       this.#zdroj.addEventListener("sourceopen", () => {
         if (!this.#zdroj || this.#buffer) return;
         this.#buffer = this.#zdroj.addSourceBuffer(mime);
+        try {
+          // Kousky se řadí za sebe bez ohledu na časové značky uvnitř: po
+          // přeskočeném (ztraceném) kousku tak v zásobě nezůstane díra,
+          // na které by přehrávání zůstalo stát.
+          this.#buffer.mode = "sequence";
+        } catch {
+          // Prohlížeč, který to u tohohle formátu nedovolí, hraje podle značek.
+        }
         this.#buffer.addEventListener("updateend", () => this.#dalsi());
+        this.#buffer.addEventListener("error", () => this.#vzdej());
         this.#dalsi();
       });
-      void this.#audio.play()?.catch(() => {});
+      // Zásoba došla uprostřed řeči: nenechat prohlížeč naskočit s prvním
+      // dalším kouskem (hned by došla zas), ale nasbírat ji znovu celou.
+      this.#audio.addEventListener("waiting", () => {
+        if (!this.#hraje || this.#konec) return;
+        this.#hraje = false;
+        this.#audio.pause();
+      });
     }
   }
 
   /** Kousky můžou dorazit přeházené (každý je vlastní POST) — lepí se v pořadí. */
   prijmi(u: HlasUdalost): void {
+    // Opozdilec po přeskočení nebo dvojí doručení: už se k němu nevrací.
+    if (this.#zavreno || u.poradi < this.#cekaPoradi) return;
     this.#odlozene.set(u.poradi, u);
+    this.#vyber();
+    if (this.#ticho) clearTimeout(this.#ticho);
+    this.#ticho = this.#konec ? null : setTimeout(() => this.#dotahni(), TICHO_MS);
+    if (this.#odlozene.size === 0) {
+      if (this.#preskok) clearTimeout(this.#preskok);
+      this.#preskok = null;
+    } else if (!this.#preskok) {
+      // Kousek před těmihle chybí (POST se ztratil). Chvíli se na něj počká,
+      // pak se přeskočí — jinak by zbytek promluvy mlčel až do konce.
+      this.#preskok = setTimeout(() => {
+        this.#preskok = null;
+        this.#cekaPoradi = Math.min(...this.#odlozene.keys());
+        this.#vyber();
+        this.#zpracuj();
+      }, PRESKOK_MS);
+    }
+    this.#zpracuj();
+  }
+
+  /** Co je na řadě, jde z odložených do fronty k přilepení. */
+  #vyber(): void {
     for (;;) {
       const dalsi = this.#odlozene.get(this.#cekaPoradi);
       if (!dalsi) break;
@@ -207,20 +272,36 @@ class Prehravani {
       if (dalsi.data) this.#fronta.push(dekoduj(dalsi.data));
       if (dalsi.konec) this.#konec = true;
     }
+  }
+
+  #zpracuj(): void {
     if (this.#zive) this.#dalsi();
     else if (this.#konec) this.#prehrajNaraz();
   }
 
+  /** Mluvčí zmizel bez značky konce: dohrát, co je, a zavřít. */
+  #dotahni(): void {
+    this.#ticho = null;
+    if (this.#konec) return;
+    for (const poradi of [...this.#odlozene.keys()].sort((a, b) => a - b)) {
+      const u = this.#odlozene.get(poradi);
+      if (u?.data) this.#fronta.push(dekoduj(u.data));
+    }
+    this.#odlozene.clear();
+    this.#konec = true;
+    this.#zpracuj();
+  }
+
   #dalsi(): void {
     const b = this.#buffer;
-    if (!b || b.updating) return;
+    if (!b || b.updating || this.#zavreno) return;
     const kousek = this.#fronta.shift();
     if (kousek) {
       try {
         b.appendBuffer(kousek as BufferSource);
       } catch {
         // Rozbitý kousek — zbytek sezení se vzdá, ať to nekřičí do konzole.
-        this.#fronta.length = 0;
+        this.#vzdej();
       }
       return;
     }
@@ -230,18 +311,54 @@ class Prehravani {
       } catch {
         // Už zavřeno — nevadí.
       }
+      // Kdyby prohlížeč přehrání nepustil (autoplay) nebo neohlásil konec,
+      // zavře se sezení samo chvíli po tom, co mělo dohrát.
+      this.#pojistka ??= setTimeout(() => this.#zavri(), this.#zasobaMs() + 2_000);
+    }
+    this.#zkusHrat();
+  }
+
+  #zasobaMs(): number {
+    const b = this.#audio.buffered;
+    return b.length === 0 ? 0 : (b.end(b.length - 1) - this.#audio.currentTime) * 1000;
+  }
+
+  /** Hrát se začne až s dostatečnou zásobou — nebo když už víc nepřijde. */
+  #zkusHrat(): void {
+    if (this.#hraje || this.#zavreno) return;
+    const zasoba = this.#zasobaMs();
+    if (zasoba >= ZASOBA_MS || (this.#konec && zasoba > 0)) {
+      this.#hraje = true;
+      void this.#audio.play()?.catch(() => {});
+    } else if (this.#konec) {
+      // Prázdné sezení (stisk a hned puštění): není co hrát.
+      this.#zavri();
     }
   }
 
   #prehrajNaraz(): void {
-    if (this.#fronta.length === 0) return;
+    if (this.#fronta.length === 0) {
+      this.#zavri();
+      return;
+    }
     const blob = new Blob(this.#fronta.splice(0) as BlobPart[], { type: this.#mime });
     this.#audio.src = URL.createObjectURL(blob);
-    void this.#audio.play()?.catch(() => {});
+    void this.#audio.play()?.catch(() => this.#zavri());
   }
 
-  hotovo(): boolean {
-    return this.#konec && this.#fronta.length === 0 && this.#odlozene.size === 0;
+  /** Formát, který prohlížeč nepřehraje, nebo sezení bez začátku (hlavičky). */
+  #vzdej(): void {
+    this.#fronta.length = 0;
+    this.#odlozene.clear();
+    this.#konec = true;
+    this.#zavri();
+  }
+
+  #zavri(): void {
+    if (this.#zavreno) return;
+    this.#zavreno = true;
+    for (const c of [this.#preskok, this.#ticho, this.#pojistka]) if (c) clearTimeout(c);
+    this.#onZavreno();
   }
 }
 
@@ -260,11 +377,12 @@ export function spustPrehravacHlasu(ja: string, jaAdmin: boolean): () => void {
     const klic = `${u.kdo}/${u.sezeni}`;
     let p = sezeni.get(klic);
     if (!p) {
-      p = new Prehravani(u.mime ?? MIME_HLASU);
+      // Dohrané sezení zůstane ještě minutu v mapě, ať opožděný kousek
+      // nezaloží nové přehrávání téže promluvy.
+      p = new Prehravani(u.mime ?? MIME_HLASU, () => setTimeout(() => sezeni.delete(klic), 60_000));
       sezeni.set(klic, p);
     }
     p.prijmi(u);
-    if (p.hotovo()) setTimeout(() => sezeni.delete(klic), 60_000);
   };
   window.addEventListener(UDALOST_HLAS, naHlas);
   return () => window.removeEventListener(UDALOST_HLAS, naHlas);
