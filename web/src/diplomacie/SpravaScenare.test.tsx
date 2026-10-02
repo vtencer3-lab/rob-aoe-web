@@ -7,8 +7,9 @@ import { SpravaScenare } from "./SpravaScenare.js";
 vi.mock("./api.js", () => ({
   diploApi: {
     verze: vi.fn(),
-    nahrat: vi.fn(async () => ({ id: 5, aktivni: false, chybaRozboru: null, chybaSondy: null })),
+    nahrat: vi.fn(async () => ({ id: 5, aktivni: false, chybaRozboru: null, chybaSondy: null, vlastniMinimapa: null })),
     aktivovat: vi.fn(async () => ({ ok: true })),
+    prevzitMinimapu: vi.fn(async () => ({ ok: true })),
     pribalSondu: vi.fn(async () => ({ ok: true, sonda: { cilu: 42, oznaceno: 42, chyba: null, zastarala: false, varovani: [] } })),
     souborUrl: (id: number | "aktivni", original = false) => `/api/diplo/scenar/${id}/soubor${original ? "?original=1" : ""}`,
     minimapaUrl: (id: number) => `/api/diplo/scenar/${id}/minimapa.webp`,
@@ -94,7 +95,7 @@ it("náhled aktivní verze a aktivace starší čitelné verze", async () => {
 // Po nahrání se řekne, co se stalo (aktivní / zůstává dosavadní / nečitelný
 // soubor), formulář se vyprázdní a seznam se načte znovu.
 it("po nahrání ukáže výsledek, vyprázdní formulář a načte seznam znovu", async () => {
-  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 5, aktivni: true, chybaRozboru: null, chybaSondy: null });
+  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 5, aktivni: true, chybaRozboru: null, chybaSondy: null, vlastniMinimapa: null });
   await rozbal();
   fireEvent.change(screen.getByLabelText("Co je nového"), { target: { value: "opravy" } });
   fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v3.aoe2scenario")] } });
@@ -104,7 +105,7 @@ it("po nahrání ukáže výsledek, vyprázdní formulář a načte seznam znovu
   expect(screen.getByRole("button", { name: "Nahrát" })).toBeDisabled();
   expect(diploApi.verze).toHaveBeenCalledTimes(2);
 
-  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 6, aktivni: false, chybaRozboru: "chybí hlavička", chybaSondy: null });
+  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 6, aktivni: false, chybaRozboru: "chybí hlavička", chybaSondy: null, vlastniMinimapa: null });
   fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v4.aoe2scenario")] } });
   fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
   expect(await screen.findByText(/Soubor je uložený, ale nepodařilo se ho přečíst: chybí hlavička/)).toBeTruthy();
@@ -153,8 +154,38 @@ it("zastaralá sonda má „sonda: ano (zastaralá)“ a tlačítko; varování 
 it("verze nahraná před sondou má „sonda: ne“ bez důvodu; nahrání bez sondy to řekne", async () => {
   await rozbal();
   for (const stav of screen.getAllByTestId("stav-sondy")) expect(stav.textContent).toMatch(/sonda: ne\s+Přibalit sondu/);
-  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 7, aktivni: false, chybaRozboru: null, chybaSondy: "Krok sondy se nespustil: ENOENT" });
+  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 7, aktivni: false, chybaRozboru: null, chybaSondy: "Krok sondy se nespustil: ENOENT", vlastniMinimapa: null });
   fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v5.aoe2scenario")] } });
   fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
   expect(await screen.findByText("Nahráno. Aktivní zůstává dosavadní verze. Sondu se nepodařilo přibalit: Krok sondy se nespustil: ENOENT")).toBeTruthy();
+});
+
+// Vlastní minimapa (obrázek ze hry) platí, dokud uživatel neřekne jinak:
+// nahrání řekne, jestli ji nová verze převzala, a verzi bez ní ji jde
+// převzít tlačítkem od poslední dřívější verze, která ji má.
+it("nahrání řekne, jestli se vlastní minimapa převzala", async () => {
+  await rozbal();
+  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 8, aktivni: false, chybaRozboru: null, chybaSondy: null, vlastniMinimapa: { zdrojId: 3, prevzata: false } });
+  fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v6.aoe2scenario")] } });
+  fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
+  expect(await screen.findByText("Nahráno. Aktivní zůstává dosavadní verze. Vlastní minimapa nepřevzata — mapa se změnila.")).toBeTruthy();
+
+  vi.mocked(diploApi.nahrat).mockResolvedValueOnce({ id: 9, aktivni: false, chybaRozboru: null, chybaSondy: null, vlastniMinimapa: { zdrojId: 3, prevzata: true } });
+  fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v7.aoe2scenario")] } });
+  fireEvent.click(screen.getByRole("button", { name: "Nahrát" }));
+  expect(await screen.findByText("Nahráno. Aktivní zůstává dosavadní verze. Vlastní minimapa převzata z verze 3.")).toBeTruthy();
+});
+
+it("verze bez vlastní minimapy ji převezme tlačítkem z poslední dřívější verze, která ji má", async () => {
+  const sObrazkem: ScenarVerze = { ...V1, id: 1, jmenoSouboru: "LLC.aoe2scenario", rozbor: ROZBOR, chybaRozboru: null, minimapaVlastni: true };
+  const novejsiSObrazkem: ScenarVerze = { ...sObrazkem, id: 2, jmenoSouboru: "LLC_2.aoe2scenario" };
+  // Verze 3 (bez obrázku) a nečitelná verze 4 — ta mapu nemá, tlačítko nedostane.
+  const necitelna: ScenarVerze = { ...V1, id: 4, jmenoSouboru: "LLC_4.aoe2scenario" };
+  vi.mocked(diploApi.verze).mockResolvedValue({ verze: [necitelna, V2, novejsiSObrazkem, sObrazkem] });
+  await rozbal();
+  const tlacitka = screen.getAllByRole("button", { name: /Převzít vlastní minimapu/ });
+  expect(tlacitka.map((t) => t.textContent)).toEqual(["Převzít vlastní minimapu z verze 2"]);
+  fireEvent.click(tlacitka[0]!);
+  expect(diploApi.prevzitMinimapu).toHaveBeenCalledWith(3, 2);
+  await waitFor(() => expect(diploApi.verze).toHaveBeenCalledTimes(2));
 });

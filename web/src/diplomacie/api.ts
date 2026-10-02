@@ -37,8 +37,17 @@ export const diploApi = {
         ...(poznamka ? { "x-poznamka": encodeURIComponent(poznamka) } : {}),
       },
       body: soubor,
-    }).then((r) => json<{ id: number; aktivni: boolean; chybaRozboru: string | null; chybaSondy: string | null }>(r)),
+    }).then((r) => json<{
+        id: number;
+        aktivni: boolean;
+        chybaRozboru: string | null;
+        chybaSondy: string | null;
+        /** Převzetí vlastní minimapy z dřívější verze; null = žádná ji nemá. */
+        vlastniMinimapa: { zdrojId: number; prevzata: boolean } | null;
+      }>(r)),
   aktivovat: (id: number) => post(`/api/diplo/scenar/${id}/aktivni`),
+  /** Verze `id` převezme vlastní minimapu (obrázek ze hry) verze `zdrojId`; jiná mapa = 409. */
+  prevzitMinimapu: (id: number, zdrojId: number) => post(`/api/diplo/scenar/${id}/minimapa-z/${zdrojId}`),
   /** Dopočítá sondu verzi nahrané dřív (nebo po neúspěchu znovu); výsledek nese i případnou chybu. */
   pribalSondu: (id: number) => fetch(cesta(`/api/diplo/scenar/${id}/sonda`), { method: "POST" }).then((r) => json<{ ok: true; sonda: SouhrnSondy }>(r)),
   /** Ke stažení jde kopie se sondou; `original` (jen autor a admin) vrátí soubor, jak ho autor nahrál. */

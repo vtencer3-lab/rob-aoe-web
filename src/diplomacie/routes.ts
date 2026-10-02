@@ -23,6 +23,7 @@ import {
   setStavDiplo,
   ulozRole,
   ulozVerziScenare,
+  prevezmiMinimapuZ,
   upravRoli,
   vratNaPripravu,
 } from "./db.js";
@@ -207,7 +208,7 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
         // Rozbor a přibalení sondy jsou dva nezávislé kroky Pythonu nad
         // týmž souborem; souběžně, ať nahrání netrvá dvakrát déle.
         const [vysledek, sonda] = await Promise.all([deps.rozeberScenar(data), deps.pribalSondu(data)]);
-        let ulozeno: { id: number; aktivovana: boolean };
+        let ulozeno: Awaited<ReturnType<typeof ulozVerziScenare>>;
         try {
           ulozeno = await ulozVerziScenare({
             jmenoSouboru: jmeno,
@@ -235,7 +236,14 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
         }
         if (ulozeno.aktivovana) await promitniDoAkce();
         await broadcastAkce();
-        return { id: ulozeno.id, aktivni: ulozeno.aktivovana, chybaRozboru: vysledek.ok ? null : vysledek.chyba, chybaSondy: sonda.ok ? null : sonda.chyba };
+        return {
+          id: ulozeno.id,
+          aktivni: ulozeno.aktivovana,
+          chybaRozboru: vysledek.ok ? null : vysledek.chyba,
+          chybaSondy: sonda.ok ? null : sonda.chyba,
+          // Převzetí vlastní minimapy z dřívější verze (null = žádná ji nemá).
+          vlastniMinimapa: ulozeno.vlastniMinimapa && { zdrojId: ulozeno.vlastniMinimapa.zdrojId, prevzata: ulozeno.vlastniMinimapa.duvod === null },
+        };
       },
     );
   });
@@ -270,6 +278,18 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
     await ulozSondu(id, sonda, vysledek.ok ? vysledek.soubor : null);
     await broadcastAkce();
     return { ok: true, sonda: souhrnSondy(sonda, revizeSondy()) };
+  });
+
+  // Vlastní minimapa pro verzi, která ji při nahrání nepřevzala (mapa se
+  // podle kontroly změnila, nebo vlastní minimapa přibyla až potom).
+  app.post("/api/diplo/scenar/:id/minimapa-z/:zdrojId", async (request) => {
+    await requireAutorScenare(request);
+    const zdrojId = Number((request.params as { zdrojId: string }).zdrojId);
+    if (!Number.isInteger(zdrojId) || zdrojId <= 0 || zdrojId > 2147483647) throw new HttpError(400, "Neplatné číslo verze.");
+    const chyba = await prevezmiMinimapuZ(requireId(request), zdrojId);
+    if (chyba) throw new HttpError(chyba.kod, chyba.chyba);
+    await broadcastAkce();
+    return { ok: true };
   });
 
   // Ke stažení jde kopie se sondou (když ji verze má); originál od autora

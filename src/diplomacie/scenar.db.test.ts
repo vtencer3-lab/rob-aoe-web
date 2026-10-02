@@ -5,6 +5,7 @@ import { getAktivniAkce } from "../db/events.js";
 import { closePool, getPool } from "../db/pool.js";
 import { buildServer } from "../http/server.js";
 import { ROZBOR } from "../shared/diplomacie/fixtures.js";
+import type { RozborScenare } from "../shared/diplomacie/scenar.js";
 import type { VysledekRozboru } from "./rozbor.js";
 import { revizeSondy, type VysledekSondy } from "./sonda.js";
 import { getSonduVerze, ulozVerziScenare } from "./db.js";
@@ -15,8 +16,9 @@ const LLC = readFileSync(join(import.meta.dirname, "fixtures", "LLC.aoe2scenario
 
 // Rozbor běží přes Python a trvá sekundy; tady se zkouší routa, ne rozbor.
 let podvrhSelze = false;
-const podvrh = async (): Promise<VysledekRozboru> =>
-  podvrhSelze ? { ok: false, chyba: "ValueError: x" } : { ok: true, rozbor: ROZBOR, minimapa: Buffer.from("RIFF0000WEBP") };
+let rozborPodvrhu: RozborScenare = ROZBOR;
+const RENDER = Buffer.from("RIFF0000WEBP");
+const podvrh = async (): Promise<VysledekRozboru> => (podvrhSelze ? { ok: false, chyba: "ValueError: x" } : { ok: true, rozbor: rozborPodvrhu, minimapa: RENDER });
 
 // Totéž přibalení sondy: kopie „se sondou“ je originál s přívěskem, ať jde
 // poznat, kterou z nich stažení vrátilo.
@@ -36,6 +38,7 @@ vi.stubEnv("AUTORI_SCENARE", "jin");
 
 beforeEach(async () => {
   podvrhSelze = false;
+  rozborPodvrhu = ROZBOR;
   sondaSelze = false;
   revizePodvrhu = revizeSondy();
   varovaniPodvrhu = [];
@@ -208,4 +211,83 @@ it("/api/me řekne, kdo smí nahrávat", async () => {
   expect((await app.inject({ method: "GET", url: "/api/me", cookies: { sid: await klient("h1", false) } })).json().smiNahratScenar).toBe(false);
   expect((await app.inject({ method: "GET", url: "/api/me", cookies: { sid: await klient(ROB, true) } })).json().smiNahratScenar).toBe(true);
   expect((await app.inject({ method: "GET", url: "/api/me" })).json().smiNahratScenar).toBe(false);
+});
+
+// --- vlastní minimapa (obrázek ze hry) ---
+
+const OBRAZEK = Buffer.from("RIFF1111WEBP-ze-hry");
+// Středy kosočtverců z obrázku: o 0,03 na ose vedle startů z rozboru (ROZBOR má 0,5/0,5).
+const STARTY_OBRAZKU = ROZBOR.starty.map((s) => ({ ...s, x: 0.53, y: 0.47 }));
+/** Jako ruční zápis u verze 1 na /aoe/diplo (2. 10. 2026): obrázek, příznak a starty z obrázku. */
+const dejVlastniMinimapu = (id: number) =>
+  getPool().query("UPDATE diplo_scenar SET minimapa = $2, minimapa_otisk = left(encode(sha256($2), 'hex'), 16), minimapa_vlastni = true, rozbor = jsonb_set(rozbor, '{starty}', $3::jsonb) WHERE id = $1", [
+    id,
+    OBRAZEK,
+    JSON.stringify(STARTY_OBRAZKU),
+  ]);
+const verzeId = async (id: number) => ((await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze as { id: number }[]).find((v) => v.id === id) as Record<string, any>;
+const minimapa = async (id: number) => (await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/minimapa.webp` })).rawPayload;
+const prevzit = (sid: string | undefined, id: number, zdrojId: number) => app.inject({ method: "POST", url: `/api/diplo/scenar/${id}/minimapa-z/${zdrojId}`, cookies: sid ? { sid } : {} });
+
+it("nová verze téže mapy převezme vlastní minimapu poslední verze, která ji má; Přibalit sondu na ni nesáhne", async () => {
+  const jin = await klient("jin", false);
+  const v1 = (await nahraj(jin, LLC, "LLC.aoe2scenario")).json();
+  // Bez vlastní minimapy nikde není co převzít.
+  expect(v1.vlastniMinimapa).toBeNull();
+  await dejVlastniMinimapu(v1.id);
+  const otisk = (await verzeId(v1.id)).minimapaOtisk;
+
+  const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("2")]), "LLC_2.aoe2scenario")).json();
+  expect(v2.vlastniMinimapa).toEqual({ zdrojId: v1.id, prevzata: true });
+  expect(await verzeId(v2.id)).toMatchObject({ minimapaVlastni: true, minimapaOtisk: otisk, rozbor: { ...ROZBOR, starty: STARTY_OBRAZKU } });
+  expect((await minimapa(v2.id)).equals(OBRAZEK)).toBe(true);
+
+  // Znovu přibalená sonda mění jen sondu.
+  expect((await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2.id}/sonda`, cookies: { sid: jin } })).statusCode).toBe(200);
+  expect(await verzeId(v2.id)).toMatchObject({ minimapaVlastni: true, minimapaOtisk: otisk, rozbor: { starty: STARTY_OBRAZKU } });
+  expect((await minimapa(v2.id)).equals(OBRAZEK)).toBe(true);
+
+  // Další verze bere od nejnovější verze s obrázkem.
+  const v3 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("3")]), "LLC_3.aoe2scenario")).json();
+  expect(v3.vlastniMinimapa).toEqual({ zdrojId: v2.id, prevzata: true });
+});
+
+it("jiná mapa vlastní minimapu nepřevezme a ruční převzetí je 409; nečitelná verze se o to ani nepokusí", async () => {
+  const jin = await klient("jin", false);
+  const v1 = (await nahraj(jin, LLC, "LLC.aoe2scenario")).json();
+  await dejVlastniMinimapu(v1.id);
+
+  rozborPodvrhu = { ...ROZBOR, starty: ROZBOR.starty.map((s) => (s.barva === 2 ? { ...s, x: 0.6 } : s)) };
+  const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("2")]), "LLC_2.aoe2scenario")).json();
+  expect(v2.vlastniMinimapa).toEqual({ zdrojId: v1.id, prevzata: false });
+  expect(await verzeId(v2.id)).toMatchObject({ minimapaVlastni: false, rozbor: rozborPodvrhu });
+  expect((await minimapa(v2.id)).equals(RENDER)).toBe(true);
+  const odmitnuto = await prevzit(jin, v2.id, v1.id);
+  expect(odmitnuto.statusCode).toBe(409);
+  expect(odmitnuto.json().chyba).toBe(`Vlastní minimapu z verze ${v1.id} nejde převzít — mapa se změnila. Start barvy 2 je jinde než na vlastní minimapě.`);
+  expect((await verzeId(v2.id)).minimapaVlastni).toBe(false);
+
+  rozborPodvrhu = { ...ROZBOR, velikostMapy: 240 };
+  expect((await nahraj(jin, Buffer.concat([LLC, Buffer.from("3")]), "LLC_3.aoe2scenario")).json().vlastniMinimapa).toEqual({ zdrojId: v1.id, prevzata: false });
+
+  podvrhSelze = true;
+  expect((await nahraj(jin, Buffer.concat([LLC, Buffer.from("4")]), "LLC_4.aoe2scenario")).json().vlastniMinimapa).toBeNull();
+});
+
+it("ruční převzetí vlastní minimapy: jen autor nebo admin, zdroj ji musí mít", async () => {
+  const jin = await klient("jin", false);
+  // Obě verze nahrané dřív, než první dostala obrázek — druhá ho nepřevzala.
+  const v1 = (await nahraj(jin, LLC, "LLC.aoe2scenario")).json().id;
+  const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("2")]), "LLC_2.aoe2scenario")).json().id;
+  expect((await prevzit(jin, v2, v1)).json().chyba).toBe(`Verze ${v1} vlastní minimapu nemá.`);
+  await dejVlastniMinimapu(v1);
+
+  expect((await prevzit(undefined, v2, v1)).statusCode).toBe(401);
+  expect((await prevzit(await klient("h1", false), v2, v1)).statusCode).toBe(403);
+  expect((await prevzit(jin, v2 + 1, v1)).statusCode).toBe(404);
+  expect((await prevzit(jin, v1, v1)).statusCode).toBe(409);
+
+  expect((await prevzit(await klient(ROB, true), v2, v1)).json()).toEqual({ ok: true });
+  expect(await verzeId(v2)).toMatchObject({ minimapaVlastni: true, minimapaOtisk: (await verzeId(v1)).minimapaOtisk, rozbor: { starty: STARTY_OBRAZKU } });
+  expect((await minimapa(v2)).equals(OBRAZEK)).toBe(true);
 });

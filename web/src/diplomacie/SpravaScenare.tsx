@@ -51,6 +51,23 @@ function StavSondy({ verze, pribaluje, onPribalit }: { verze: ScenarVerze; priba
 }
 
 /**
+ * Odkud může verze bez vlastní minimapy převzít obrázek ze hry: poslední
+ * dřívější verze, která ho má (tak to dělá i nahrání), jinak nejnovější
+ * pozdější. Jestli jde o tutéž mapu, posoudí server.
+ */
+function zdrojMinimapy(verze: ScenarVerze[], v: ScenarVerze): ScenarVerze | null {
+  if (v.minimapaVlastni || !v.rozbor) return null;
+  const s = verze.filter((z) => z.minimapaVlastni && z.rozbor && z.id !== v.id).sort((a, b) => b.id - a.id);
+  return s.find((z) => z.id < v.id) ?? s[0] ?? null;
+}
+
+/** Krátká věta k nahrání: převzala nová verze vlastní minimapu? */
+function vetaMinimapy(m: { zdrojId: number; prevzata: boolean } | null): string {
+  if (!m) return "";
+  return m.prevzata ? ` Vlastní minimapa převzata z verze ${m.zdrojId}.` : " Vlastní minimapa nepřevzata — mapa se změnila.";
+}
+
+/**
  * Nahrávání verzí scénáře pro adminy a autory (spec §5.3). Rozbalovací, ať
  * nepřekáží v panelu akce — Jin nahrává, když se mu to hodí, i bez běžící
  * akce; seznam se načítá až po rozbalení. Sbalená je stejně jako ostatní
@@ -85,7 +102,8 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
           ? "Nahráno a nastaveno jako aktivní."
           : "Nahráno. Aktivní zůstává dosavadní verze.";
       // Bez sondy se scénář hraje normálně, jen web nedostane data ze hry.
-      setVysledek(r.chybaSondy ? `${nahrano} Sondu se nepodařilo přibalit: ${r.chybaSondy}` : nahrano);
+      const sMinimapou = nahrano + vetaMinimapy(r.vlastniMinimapa);
+      setVysledek(r.chybaSondy ? `${sMinimapou} Sondu se nepodařilo přibalit: ${r.chybaSondy}` : sMinimapou);
       setSoubor(null);
       setPoznamka("");
       // Pole souboru si vybraný soubor drží samo; po nahrání má být prázdné
@@ -97,6 +115,11 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
   const aktivovat = (id: number) =>
     void hlidej(async () => {
       await diploApi.aktivovat(id);
+      setVerze((await diploApi.verze()).verze);
+    });
+  const prevzitMinimapu = (id: number, zdrojId: number) =>
+    void hlidej(async () => {
+      await diploApi.prevzitMinimapu(id, zdrojId);
       setVerze((await diploApi.verze()).verze);
     });
   // Přibalení trvá vteřiny (Python na serveru) — tlačítko je mezitím zamčené.
@@ -146,23 +169,31 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
         </div>
       ) : null}
       <ul className="verze-scenare">
-        {verze.map((v) => (
-          <li key={v.id} className={v.aktivni ? "aktivni" : ""}>
-            <a href={diploApi.souborUrl(v.id)} download={v.jmenoSouboru}>
-              {v.jmenoSouboru}
-            </a>{" "}
-            · {v.nahralJmeno} · {new Date(v.nahrano).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-            {v.poznamka ? <> · {v.poznamka}</> : null}
-            {v.aktivni ? <strong> · aktivní</strong> : null}
-            {v.chybaRozboru ? <span className="varovani"> · nepodařilo se přečíst: {v.chybaRozboru}</span> : null}
-            <StavSondy verze={v} pribaluje={pribaluje !== null} onPribalit={() => pribalSondu(v.id)} />
-            {!v.aktivni && v.rozbor ? (
-              <button type="button" onClick={() => aktivovat(v.id)}>
-                Nastavit jako aktivní
-              </button>
-            ) : null}
-          </li>
-        ))}
+        {verze.map((v) => {
+          const zdroj = zdrojMinimapy(verze, v);
+          return (
+            <li key={v.id} className={v.aktivni ? "aktivni" : ""}>
+              <a href={diploApi.souborUrl(v.id)} download={v.jmenoSouboru}>
+                {v.jmenoSouboru}
+              </a>{" "}
+              · {v.nahralJmeno} · {new Date(v.nahrano).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              {v.poznamka ? <> · {v.poznamka}</> : null}
+              {v.aktivni ? <strong> · aktivní</strong> : null}
+              {v.chybaRozboru ? <span className="varovani"> · nepodařilo se přečíst: {v.chybaRozboru}</span> : null}
+              <StavSondy verze={v} pribaluje={pribaluje !== null} onPribalit={() => pribalSondu(v.id)} />
+              {!v.aktivni && v.rozbor ? (
+                <button type="button" onClick={() => aktivovat(v.id)}>
+                  Nastavit jako aktivní
+                </button>
+              ) : null}
+              {zdroj ? (
+                <button type="button" onClick={() => prevzitMinimapu(v.id, zdroj.id)}>
+                  Převzít vlastní minimapu z verze {zdroj.id}
+                </button>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </Skladaci>
   );

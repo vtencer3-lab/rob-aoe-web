@@ -37,11 +37,11 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-27.0** (1.–2. 10. 2026; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8 a **divák jako zdroj dat ze hry 27.0** — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-28.0** (1.–2. 10. 2026; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — a **dědění vlastní minimapy 28.0**; §3.60, „Vlastní minimapa se dědí“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
 | Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–034 (`030_rezim_akce.sql` … `034_diplomacie_nastupce_ze_hry.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
-| Testy | `diplo` 2. 10. 2026 (1.13.10-27.0): backend hermetické 526 (51 souborů; 13 testů rozboru, sondy a mostu se bez Pythonu přeskočí, s `PYTHON=python` projdou), frontend 532 (54 souborů), databázové 245 (18 souborů, na VPS po nasazení 27.0), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Testy | `diplo` 2. 10. 2026 (1.13.10-28.0): backend hermetické 531 (52 souborů; 13 testů rozboru, sondy a mostu se bez Pythonu přeskočí, s `PYTHON=python` projdou), frontend 534 (54 souborů), databázové 248 (18 souborů, na VPS po nasazení 28.0), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Admini | `ADMIN_STEAM_ID` je **jediný zdroj pravdy**, ne sloupec `je_admin` — přihlášení ho přepisuje. 17. 9. 2026 srovnáno s databází a doplněno o `xbox:` položku; do té doby měly obě aplikace v proměnné jediné Steam ID, zatímco DB vedla tři adminy (Rob a Trokner by o práva přišli při svém dalším přihlášení). Rozbor v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2 |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -2143,10 +2143,40 @@ dostane třídu `vlastni` a značky startů jsou jen jména bez kolečka
 na mediánu jednotek z rozboru (ten je o 1–3 % vedle): u verze 1 jsou proto
 `rozbor.starty` nahrazené středy kosočtverců nalezenými v obrázku podle
 barev hráčů (Pillow, shluky syté barvy ~40 px; zelená je v obrázku
-(4, 172, 3), ne čistá). Další verze od Jina začne zase s vygenerovanou
-mapou — nahrání vlastního obrázku k verzi ve správě scénáře (a „vrátit
-vygenerovanou“ = znovu rozbor) je odložená funkce, až o ni uživatel řekne;
-při ní se starty z nahraného obrázku detekují stejně.
+(4, 172, 3), ne čistá). Nahrání vlastního obrázku k verzi ve správě
+scénáře (a „vrátit vygenerovanou“ = znovu rozbor) je odložená funkce, až
+o ni uživatel řekne; při ní se starty z nahraného obrázku detekují stejně.
+
+**Vlastní minimapa se dědí (2. 10. 2026, 1.13.10-28.0).** Verze 2
+(LLC_2.aoe2scenario, táž mapa) dostala po nahrání zase vygenerovaný render
+a uživatel se ozval: „včera jsem říkal, že ta minimapa má být na tvrdo“.
+Obrázek, otisk, příznak a starty se jí zkopírovaly ručně v DB; od 28.0 to
+dělá nahrání samo. `ulozVerziScenare` (src/diplomacie/db.ts) v téže
+transakci jako INSERT najde poslední dřívější verzi s
+`minimapa_vlastni = true` a čistou funkcí `procNelzePrevzitMinimapu`
+(src/shared/diplomacie/minimapa.ts) porovná mapy: stejná `velikostMapy`,
+stejná množina barev startů a každý start nového rozboru nejvýš
+`TOLERANCE_STARTU` = 0,05 (vzdušnou čarou, souřadnice 0–1) od startu téže
+barvy ve zdroji. Zdroj má `rozbor.starty` už přepsané pozicemi z obrázku,
+porovnává se tedy s nimi — skutečný rozbor LLC je od nich nejdál ~0,036
+(modrá), proto 0,05. Když sedí, nová verze převezme `minimapa`,
+`minimapa_otisk`, `minimapa_vlastni = true` a `rozbor.starty` zdroje;
+jinak si nechá render a odpověď nahrání nese `vlastniMinimapa: { zdrojId,
+prevzata }`, ze které správa scénáře k výsledku připíše „Vlastní minimapa
+převzata z verze N.“ nebo „Vlastní minimapa nepřevzata — mapa se změnila.“
+Nečitelná verze (bez rozboru) se o převzetí nepokouší. „Přibalit sondu“
+mění jen sondu, minimapy se nedotkne (DB test). **Ruční převzetí:** ve
+správě scénáře má verze s rozborem bez vlastní minimapy tlačítko „Převzít
+vlastní minimapu z verze N“ (N = poslední dřívější verze s obrázkem, jinak
+nejnovější pozdější) → `POST /api/diplo/scenar/:id/minimapa-z/:zdrojId`
+(autor nebo admin, `prevezmiMinimapuZ`), stejná kontrola mapy, při jiné
+mapě 409 s větou „Vlastní minimapu z verze N nejde převzít — mapa se
+změnila. …“. **Jak to přebít:** vrátit verzi render jde zatím jen ručně v
+DB (`UPDATE diplo_scenar SET minimapa_vlastni = false, minimapa = <render>,
+rozbor = <rozbor s původními starty>` — render i starty dá znovu rozbor
+`src/diplomacie/rozbor.py` nad souborem verze); aby další nahrání
+nedědilo, stačí, když žádná dřívější verze nemá `minimapa_vlastni = true`.
+Úplně jinou mapu kontrola pozná sama (velikost, barvy nebo posun startů).
 
 **Ověřeno proti hře (1. 10. 2026):** orientace minimapy a pozice startů —
 uživatel porovnal minimapu webu s minimapou LLC ve hře: „minimapa i pozice

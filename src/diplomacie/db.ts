@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
 import { getPool, withTransaction } from "../db/pool.js";
 import { prectiSondu, souhrnSondy, type BeziciZapasDiplo, type SondaScenare } from "../shared/diplomacie/hra.js";
+import { procNelzePrevzitMinimapu } from "../shared/diplomacie/minimapa.js";
 import { prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
 import { revizeSondy } from "./sonda.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
@@ -54,7 +55,7 @@ export async function ulozVerziScenare(v: {
   sonda?: SondaScenare | null;
   /** Kopie se sondou — tu host stahuje. */
   dataSonda?: Buffer | null;
-}): Promise<{ id: number; aktivovana: boolean }> {
+}): Promise<{ id: number; aktivovana: boolean; vlastniMinimapa: PrevzetiMinimapy | null }> {
   return withTransaction(async (c) => {
     const { rows: aktivni } = await c.query("SELECT 1 FROM diplo_scenar WHERE aktivni FOR UPDATE");
     // První čitelná verze se aktivuje sama — jinak by nebylo co hrát (spec §5.2 bod 5).
@@ -78,7 +79,66 @@ export async function ulozVerziScenare(v: {
         v.dataSonda ?? null,
       ],
     );
-    return { id: rows[0]!.id, aktivovana: aktivovat };
+    const id = rows[0]!.id;
+    // Vlastní minimapa (obrázek ze hry) platí, „dokud uživatel neřekne
+    // jinak“ — nová verze téže mapy ji převezme od poslední verze, která ji
+    // má. Ve stejné transakci, ať verze nikdy není vidět s renderem.
+    let vlastniMinimapa: PrevzetiMinimapy | null = null;
+    if (v.rozbor !== null) {
+      const { rows: zdroj } = await c.query<{ id: number; rozbor: unknown }>(
+        "SELECT id, rozbor FROM diplo_scenar WHERE minimapa_vlastni AND rozbor IS NOT NULL AND id < $1 ORDER BY id DESC LIMIT 1",
+        [id],
+      );
+      if (zdroj[0]) vlastniMinimapa = await prevezmiMinimapu(c, id, v.rozbor, zdroj[0].id, prectiRozbor(zdroj[0].rozbor));
+    }
+    return { id, aktivovana: aktivovat, vlastniMinimapa };
+  });
+}
+
+/** Výsledek pokusu převzít vlastní minimapu: odkud a proč ne (null = převzata). */
+export interface PrevzetiMinimapy {
+  zdrojId: number;
+  duvod: string | null;
+}
+
+/**
+ * Jediné místo, kde verze přebírá vlastní minimapu jiné verze: obrázek,
+ * jeho otisk, příznak a `rozbor.starty` (středy kosočtverců z obrázku —
+ * jména mají sedět pod nimi, ne na mediánu jednotek). Jen když jde o tutéž
+ * mapu (`procNelzePrevzitMinimapu`), jinak verze zůstane beze změny.
+ */
+async function prevezmiMinimapu(c: PoolClient, cilId: number, cil: RozborScenare, zdrojId: number, zdroj: RozborScenare): Promise<PrevzetiMinimapy> {
+  const duvod = procNelzePrevzitMinimapu(zdroj, cil);
+  if (duvod === null) {
+    await c.query(
+      `UPDATE diplo_scenar n SET minimapa = z.minimapa, minimapa_otisk = z.minimapa_otisk, minimapa_vlastni = true,
+         rozbor = jsonb_set(n.rozbor, '{starty}', z.rozbor->'starty')
+       FROM diplo_scenar z WHERE n.id = $1 AND z.id = $2`,
+      [cilId, zdrojId],
+    );
+  }
+  return { zdrojId, duvod };
+}
+
+/**
+ * Ruční převzetí vlastní minimapy z verze `zdrojId` (správa scénáře) — pro
+ * verzi, která ji při nahrání nedostala. Stejná kontrola mapy jako při
+ * nahrání; null = převzato, jinak kód a česká věta pro odpověď.
+ */
+export async function prevezmiMinimapuZ(cilId: number, zdrojId: number): Promise<{ kod: 404 | 409; chyba: string } | null> {
+  return withTransaction(async (c) => {
+    const { rows } = await c.query<{ id: number; rozbor: unknown; minimapa_vlastni: boolean }>(
+      "SELECT id, rozbor, minimapa_vlastni FROM diplo_scenar WHERE id = ANY($1::int[]) FOR UPDATE",
+      [[cilId, zdrojId]],
+    );
+    const cil = rows.find((r) => r.id === cilId);
+    const zdroj = rows.find((r) => r.id === zdrojId);
+    if (!cil || !zdroj) return { kod: 404, chyba: "Taková verze není." };
+    if (cilId === zdrojId) return { kod: 409, chyba: "Verze nemůže převzít minimapu sama od sebe." };
+    if (!zdroj.minimapa_vlastni || zdroj.rozbor === null) return { kod: 409, chyba: `Verze ${zdrojId} vlastní minimapu nemá.` };
+    if (cil.rozbor === null) return { kod: 409, chyba: "Verze bez rozboru minimapu nepřevezme." };
+    const { duvod } = await prevezmiMinimapu(c, cilId, prectiRozbor(cil.rozbor), zdrojId, prectiRozbor(zdroj.rozbor));
+    return duvod === null ? null : { kod: 409, chyba: `Vlastní minimapu z verze ${zdrojId} nejde převzít — mapa se změnila. ${duvod}` };
   });
 }
 
