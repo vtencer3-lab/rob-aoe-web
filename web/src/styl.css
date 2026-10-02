@@ -82,6 +82,27 @@
   --b7: #8d8d8d;
   --b8: #e67e22;
   color-scheme: dark;
+
+  /* Pohyb (docs/grafika.md „Pohyb“). Všechny přechody a animace berou čas
+     i křivku odsud — a čte je i skript (`pohyb.ts`), takže se ladí na jednom
+     místě. Krátké schválně: při streamu má být vidět, že se něco stalo, ne
+     čekat, až to dojede. */
+  --prechod-rychly: 140ms;   /* najetí, stisk, zaškrtnutí */
+  --prechod: 220ms;          /* vznik obsahu, okna, přepínače */
+  --prechod-skladani: 280ms; /* rozbalení a sbalení sekce */
+  --prechod-karta: 460ms;    /* otočení tajné karty, obě půlky dohromady */
+  --krivka: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Kdo si nepřeje pohyb, dostane všechno naráz: nulová délka vypne přechody
+   i animace, které z proměnných berou čas, a `pohyb.ts` podle ní pohyb ze
+   skriptu vůbec nepustí. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --prechod-rychly: 0ms;
+    --prechod: 0ms;
+    --prechod-skladani: 0ms;
+    --prechod-karta: 0ms;
+  }
 }
 
 /* Malované pozadí je připnuté k oknu (fixed), takže při rolování stojí a
@@ -1538,6 +1559,14 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    nad ním, ať spolu tvoří jednu „kartu rubem nahoru“; stín jako u praporce
    přes drop-shadow, protože karta má průhledné rohy. */
 .zakryti .rub-karty { display: block; width: min(100%, 22rem); height: auto; margin: 0.6rem auto 0; filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--obrys) 70%, transparent)); }
+/* Líc karty: obal toho, co je zrovna vidět (rub, nebo tajný obsah). Otáčí
+   ho a jeho výšku přejíždí Zakryti.tsx (Web Animations, čas z
+   `--prechod-karta`). `flow-root` drží okraje obsahu uvnitř obalu — jinak by
+   se při ořezu během otáčení přestaly slévat s okolím a karta by na konci
+   poskočila. Poslední prvek proto spodní okraj nemá: dřív splýval se spodním
+   okrajem `.zakryti`, teď by se k němu přičetl. */
+.zakryti-lic { display: flow-root; }
+.zakryti-lic > :last-child { margin-bottom: 0; }
 /* Minimapa scénáře (Diplomacie, MapaScenare.tsx): obrázek ze serveru a nad
    ním starty z rozboru v procentech, takže sedí při každé šířce. Rám je na
    figure, ne na obrázku — absolutní značky se počítají od vnitřku rámu,
@@ -1619,7 +1648,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    a nadpis drží spolu. */
 .pult-gm .zahlavi-sekce { gap: 0.4rem; }
 .pult-gm .zahlavi-sekce .znak-role { width: 1.6rem; height: 1.6rem; margin-bottom: 0.3rem; }
-.pult-gm .zakryti > p { max-width: 34rem; margin: 0.6rem auto; }
+.pult-gm .zakryti-lic > p { max-width: 34rem; margin: 0.6rem auto; }
 .dlazdice-nastupce { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem; max-width: 34rem; margin: 0.6rem auto 0.8rem; }
 button.dlazdice { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.55rem 0.6rem; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; text-shadow: 0 1px 2px color-mix(in srgb, var(--obrys) 60%, transparent); }
 button.dlazdice .cislo { font-family: "Cinzel", Georgia, serif; font-weight: 800; font-size: 1.25rem; }
@@ -1667,7 +1696,7 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 /* Data z běžící hry (HraZive.tsx): stáří dat a věta o Nástupci jsou drobné
    poznámky pod mapou. Cíl hráče s postupem je vlastní řádek tabulky pod jeho
    řádkem — linka mezi hráči se proto přesouvá až pod něj. */
-.pult-gm .zakryti > p.stari-hry { margin: 0.3rem auto; font-size: 0.85rem; color: var(--tlumene); }
+.pult-gm .zakryti-lic > p.stari-hry { margin: 0.3rem auto; font-size: 0.85rem; color: var(--tlumene); }
 .pult-gm .nastupce-ze-hry strong { color: var(--zlato-svetle); }
 .tabulka-roli tr:has(+ tr.radek-hry) > * { border-bottom: 0; padding-bottom: 0.1rem; }
 .tabulka-roli tr.radek-hry td { padding-top: 0; color: var(--tlumene); font-size: 0.85rem; }
