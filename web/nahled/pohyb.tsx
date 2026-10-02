@@ -16,7 +16,10 @@ import { Potvrzeni } from "../src/views/Potvrzeni.js";
 import { Prepinac } from "../src/views/Prepinac.js";
 import { HistorieZapasu } from "../src/views/Rezie.js";
 import { Skladaci } from "../src/views/Skladaci.js";
+import { sledujZaviraniOken } from "../src/pohyb.js";
 import "../src/styl.css";
+
+sledujZaviraniOken();
 
 const ROLE: RoleHrace[] = [
   { hracId: "h1", role: "nastupce", cilHracId: null },

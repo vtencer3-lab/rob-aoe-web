@@ -736,6 +736,21 @@ h2.nadpis-akce::after {
     url(./assets/ui/drevo.webp) center / 380px repeat;
   background-origin: border-box;
 }
+/* Otevření a zavření okna: stín se prolne a okno přitom lehce doroste
+   (zavření obráceně). Otevření je animace při vzniku prvku. Zavření CSS samo
+   neumí — React okno z DOM odebere naráz — tak ho `sledujZaviraniOken`
+   (pohyb.ts) vrátí jako neživou kulisu s třídou `zavira`, nechá doběhnout
+   tuhle animaci a odklidí. Uvnitř kulisy se nic dalšího nehýbe: vrácením do
+   DOM by se animace vzniku jejích prvků pustily znovu. */
+.prelobby-stin { animation: stin-vznik var(--prechod) ease; }
+.prelobby-stin > * { animation: okno-vznik var(--prechod) var(--krivka); }
+@keyframes stin-vznik { from { opacity: 0; } }
+@keyframes okno-vznik { from { opacity: 0; scale: 0.96; translate: 0 0.4rem; } }
+.prelobby-stin.zavira { animation: stin-zanik var(--prechod) ease forwards; pointer-events: none; }
+.prelobby-stin.zavira > * { animation: okno-zanik var(--prechod) ease forwards; }
+.prelobby-stin.zavira > * * { animation: none !important; transition: none !important; }
+@keyframes stin-zanik { to { opacity: 0; } }
+@keyframes okno-zanik { to { opacity: 0; scale: 0.96; } }
 /* Nadpis nese pod sebou ozdobný oddělovač, takže je vyšší než sám text.
    Křížek se proto zarovnává k hornímu okraji — jinak by klesl pod nadpis. */
 .prelobby-okno .hlavicka-akce { margin-bottom: 0.8rem; align-items: flex-start; }
@@ -1440,11 +1455,30 @@ button.odebrat:hover { color: var(--chyba); }
    zarovnání vypadalo varování odsazené jinak než zbytek seznamu. */
 .kontroly .znak { display: inline-block; width: 1.2rem; text-align: center; }
 .varovani { color: var(--varovani); }
+/* Šipka sbalovací sekce (Skladaci.tsx). Vlastní místo značky prohlížeče:
+   ta mezi ▶ a ▼ přeskakuje, tahle se otáčí spolu s tělem sekce. Při
+   zavírání nese `<details>` ještě `open` (tělo napřed sjede), proto šipku
+   vrací už `data-zavira`. Šířka i s mezerou je 1,06 em — tolik zabírala
+   značka prohlížeče, text hlavičky se nehne. */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before {
+  content: "";
+  display: inline-block;
+  width: 0.56em;
+  height: 0.62em;
+  margin-right: 0.5em;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  vertical-align: 0.07em;
+  transition: rotate var(--prechod-skladani) var(--krivka);
+}
+details[open]:not([data-zavira]) > summary::before { rotate: 90deg; }
 .dalsi-nastaveni { margin-top: 0.6rem; }
 .dalsi-nastaveni summary { cursor: pointer; color: var(--tlumene); }
 .dalsi-nastaveni summary .zaloha { margin: 0; }
 .dalsi-nastaveni .kontroly { font-size: 0.9rem; }
-/* Tělo sbalovací sekce; výšku mu animuje Skladaci (Web Animations). Vnořené
+/* Tělo sbalovací sekce; výšku mu animuje Skladaci (`useSbalovani`). Vnořené
    sekce v „Nastavení hry“ se odsadí, ať je vidět, co patří pod co. */
 .dalsi-nastaveni .skladaci-telo > .dalsi-nastaveni { margin-left: 1rem; }
 .dalsi-nastaveni .mrizka { margin-top: 0.5rem; }
@@ -1470,6 +1504,11 @@ button.odebrat:hover { color: var(--chyba); }
   margin: 0; padding: 0.3rem; list-style: none;
   background: linear-gradient(rgba(34, 20, 14, 0.98), rgba(20, 12, 8, 0.99)); border: 1px solid var(--zlato-tmave); border-radius: 2px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
 }
+/* Rozbalovací seznamy (civilizace, našeptávač chatu) se rozvinou od svého
+   tlačítka, místo aby naskočily. */
+.vyber-civ-seznam { transform-origin: top; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
+.chat .naseptavac { transform-origin: bottom; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
+@keyframes seznam-vznik { from { opacity: 0; scale: 1 0.92; } }
 .vyber-civ-seznam li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 1.05rem; }
 .vyber-civ-seznam li:hover { background: rgba(216, 168, 58, 0.16); }
 .vyber-civ-seznam li.vybrana { background: linear-gradient(#e2c47c, #c99a35); color: #23150a; }
@@ -2152,7 +2191,8 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
    toho, jestli křížek zrovna je — pruh to řeší sám. */
 .zapas .ovladani-karty { position: absolute; top: 0.7rem; right: 0.7rem; display: flex; align-items: center; gap: 0.2rem; }
 .zapas button.zavrit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
-.zapas button.sbalit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 0.95rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.sbalit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 0; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.sbalit-zapas::before { font-size: 0.95rem; }
 .zapas button.sbalit-zapas:hover:enabled { color: var(--akcent); border-color: var(--zlato-tmave); background: none; }
 .zapas button.zavrit-zapas:hover { color: var(--chyba); border-color: var(--zlato-tmave); }
 
@@ -2339,7 +2379,18 @@ a:hover { color: var(--zlato-svetle); }
 .chat .chat-nadpis { display: flex; width: 100%; box-sizing: border-box; align-items: center; justify-content: center; gap: 0.4rem; margin: 0 0 0.4rem; padding: 0.2rem 0; cursor: pointer; user-select: none; font-family: "Cinzel", Georgia, "Times New Roman", serif; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; font-variant: small-caps; color: var(--zlato-svetle); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 14px rgba(216, 168, 58, 0.18); }
 .chat .chat-nadpis:hover .chat-titulek { color: var(--zlato); }
 .chat .chat-nadpis:focus-visible { outline: 1px solid var(--zlato-tmave); outline-offset: 2px; }
-.chat .chat-nadpis .sipka { font-size: 0.8rem; width: 0.9rem; }
+/* Šipka hlavičky chatu a rohového tlačítka karty zápasu: komponenta píše
+   ▾ nebo ▸ jako text, mezi nimi se přeskakuje. Text se proto schová
+   (nulové písmo, čtečky ho nečtou — je `aria-hidden`, resp. tlačítko má
+   `aria-label`) a kreslí se jedna šipka, která se podle stavu otáčí. */
+.chat .chat-nadpis .sipka { font-size: 0; width: 0.9rem; }
+.chat .chat-nadpis .sipka::before, .zapas button.sbalit-zapas::before {
+  content: "▾";
+  display: inline-block;
+  transition: rotate var(--prechod-skladani) var(--krivka);
+}
+.chat .chat-nadpis .sipka::before { font-size: 0.8rem; }
+.chat.sbaleny .chat-nadpis .sipka::before, .zapas button.sbalit-zapas[aria-expanded="false"]::before { rotate: -90deg; }
 .chat .chat-nadpis small { font-family: Georgia, serif; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--tlumene); }
 /* Push-to-talk admina vpravo v hlavičce chatu: hlavička je flex se středem,
    nástroje se přilepí doprava absolutně, ať nadpis zůstane na středu. */
@@ -2362,7 +2413,7 @@ a:hover { color: var(--zlato-svetle); }
 .push-to-talk .chyba { font-size: 0.75rem; }
 @media (prefers-reduced-motion: reduce) { .push-to-talk .ptt .nahrava { animation: none; } }
 /* Sbalení: mřížka 1fr → 0fr, rychlé a bez poskoku. */
-.chat .chat-telo { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease; opacity: 1; }
+.chat .chat-telo { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--prechod-skladani) var(--krivka), opacity var(--prechod) ease; opacity: 1; }
 .chat.sbaleny .chat-telo { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
 .chat .chat-vnitrek { min-height: 0; overflow: hidden; }
 body.bez-scrollu { overflow: hidden; }

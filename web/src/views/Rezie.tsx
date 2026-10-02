@@ -5,6 +5,7 @@ import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js
 import type { Strana } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type AkceStavPayload, type Vitez, type ZapasView } from "../../../src/shared/types.js";
 import { nazevCivilizace } from "../../../src/shared/civilizace.js";
+import { useSbalovani } from "../pohyb.js";
 import { jeVeHre, jmenoHrace, popisFormatu, popisTymu, strany, titulekViteze, vyhralHrac } from "../zapas.js";
 import { JmenoSBarvou, VitezVeVete } from "./JmenoSBarvou.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
@@ -121,6 +122,8 @@ function ZapasVRezii({ zapas, obsluha, ja, doplnek }: ZapasProps) {
   // Sbalený zápas nechá vidět jen hlavičku. Přes večer se karet nasčítá tolik,
   // že se v nich nedá rolovat; ke starším se člověk vrací výjimečně.
   const [sbaleno, setSbaleno] = useState(false);
+  // Tělo karty se sbaluje a rozbaluje plynule; sbalené se vůbec nekreslí.
+  const sbalovani = useSbalovani<HTMLDivElement>(!sbaleno, (otevreno) => setSbaleno(!otevreno));
   const dohrano = zapas.stav === "dohrano";
   const zruseno = zapas.stav === "zruseny";
   const bezi = !dohrano && !zruseno;
@@ -163,10 +166,10 @@ function ZapasVRezii({ zapas, obsluha, ja, doplnek }: ZapasProps) {
         <button
           type="button"
           className="sbalit-zapas"
-          aria-expanded={!sbaleno}
+          aria-expanded={!sbaleno && !sbalovani.zavira}
           aria-label={`${sbaleno ? "Rozbalit" : "Sbalit"} zápas #${zapas.poradi}`}
           title={sbaleno ? "Rozbalit" : "Sbalit — zůstane jen hlavička"}
-          onClick={() => setSbaleno((b) => !b)}
+          onClick={sbalovani.prepni}
         >
           {sbaleno ? "▸" : "▾"}
         </button>
@@ -186,7 +189,7 @@ function ZapasVRezii({ zapas, obsluha, ja, doplnek }: ZapasProps) {
       ) : null}
       </div>
       {sbaleno ? null : (
-        <>
+        <div className="telo-zapasu" ref={sbalovani.telo}>
       {/* Co k zápasu říká mód akce (Diplomacie: stav a po rozeslání Nástupce) —
           Rob při streamu vidí, jestli už jsou role rozeslané. Jen slot, bez
           podmínky na mód; sbalená karta ho schová s ostatním. */}
@@ -320,7 +323,7 @@ function ZapasVRezii({ zapas, obsluha, ja, doplnek }: ZapasProps) {
           </button>
         </div>
       ) : null}
-        </>
+        </div>
       )}
     {/* Chat zápasu: admin píše odsud, hráči ze své karty. */}
       {obsluha?.onZprava && ja ? (

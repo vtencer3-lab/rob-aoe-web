@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { animuj, krivka, trvani } from "./pohyb.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { animuj, krivka, sledujZaviraniOken, trvani } from "./pohyb.js";
 import { podvrhniPohyb, type PodvrzenyPohyb } from "./pohybTest.js";
 
 let pohyb: PodvrzenyPohyb;
@@ -69,4 +69,68 @@ it("zrušená animace pokračování taky pustí (nic nezůstane viset)", () => 
   const animace = animuj(el, [{ opacity: 0 }, { opacity: 1 }], { ms: 200 }, potom);
   animace!.cancel();
   expect(potom).toHaveBeenCalledTimes(1);
+});
+
+// Okna React při zavření odebere z DOM naráz; hlídač je vrátí jako neživou
+// kulisu, CSS přehraje zavření a časovač ji odklidí.
+describe("sledujZaviraniOken", () => {
+  let uklid: () => void;
+  beforeEach(() => {
+    uklid = sledujZaviraniOken();
+  });
+  afterEach(() => {
+    uklid();
+    document.body.replaceChildren();
+  });
+  const okno = () => {
+    const stin = document.createElement("div");
+    stin.className = "prelobby-stin";
+    stin.innerHTML = '<div class="prelobby-okno"><ul class="seznam-map"></ul></div>';
+    document.body.appendChild(stin);
+    return stin;
+  };
+  // MutationObserver volá až v mikroúloze.
+  const poHlidaci = () => Promise.resolve();
+
+  it("odebrané okno vrátí jako neživou kulisu a po přechodu ho odklidí", async () => {
+    const stin = okno();
+    stin.remove();
+    await poHlidaci();
+    expect(stin.isConnected).toBe(true);
+    expect(stin).toHaveClass("zavira");
+    expect(stin).toHaveAttribute("inert");
+    expect(stin).toHaveAttribute("aria-hidden", "true");
+    vi.advanceTimersByTime(219);
+    expect(stin.isConnected).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(stin.isConnected).toBe(false);
+    // Odklizení kulisy už další kulisu nevyrobí.
+    await poHlidaci();
+    expect(document.querySelector(".prelobby-stin")).toBeNull();
+  });
+
+  it("kulisa si drží odrolování, které měl seznam před zavřením", async () => {
+    const stin = okno();
+    const seznam = stin.querySelector(".seznam-map")!;
+    seznam.scrollTop = 340;
+    seznam.dispatchEvent(new Event("scroll"));
+    stin.remove();
+    seznam.scrollTop = 0;
+    await poHlidaci();
+    expect(seznam.scrollTop).toBe(340);
+  });
+
+  it("jiné prvky a okna bez pohybu nechá být", async () => {
+    const jiny = document.createElement("div");
+    document.body.appendChild(jiny);
+    jiny.remove();
+    await poHlidaci();
+    expect(jiny.isConnected).toBe(false);
+    pohyb.uklid();
+    pohyb = podvrhniPohyb({ "--prechod": "0ms" });
+    const stin = okno();
+    stin.remove();
+    await poHlidaci();
+    expect(stin.isConnected).toBe(false);
+  });
 });
