@@ -32,6 +32,8 @@ it("ukáže, kdo mluví: GM s titulem před jménem, admin z režie jen jménem"
 
   kousek("h7", "Hráč 7");
   expect(screen.getByTestId("mluvi-ted")).toHaveTextContent("GM Hráč 7 mluví");
+  // Kdo v zápase sedí, má u jména čtvereček své barvy (GM šedou).
+  expect(screen.getByTestId("mluvi-ted").querySelector(".swatch")).toHaveClass("barva-7");
 
   // Promluva dohrála — štítek zmizí.
   act(() => audio.dohralo());
@@ -41,6 +43,7 @@ it("ukáže, kdo mluví: GM s titulem před jménem, admin z režie jen jménem"
   kousek("rob", "Rob", "s2");
   expect(screen.getByTestId("mluvi-ted")).toHaveTextContent("Rob mluví");
   expect(screen.getByTestId("mluvi-ted")).not.toHaveTextContent("GM");
+  expect(screen.getByTestId("mluvi-ted").querySelector(".swatch")).toBeNull();
 
   // Odhlášení přehrávače (odhlášení uživatele) po sobě štítek uklidí.
   act(() => odhlasit());

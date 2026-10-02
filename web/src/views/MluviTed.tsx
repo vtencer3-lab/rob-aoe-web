@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { Barva, ZapasView } from "../../../src/shared/types.js";
 import { kdoMluvi, naZmenuMluvcich } from "../hlas.js";
+import { JmenoSBarvou } from "./JmenoSBarvou.js";
 import { IkonaReproduktor } from "./PushToTalk.js";
 
 interface Props {
@@ -13,7 +14,9 @@ interface Props {
 /**
  * Štítek „kdo právě mluví“ (uživatel 2. 10. 2026): hlas se přehrává celé
  * stránce, ať je zrovna vidět kterákoli karta, a bez štítku nebylo poznat,
- * čí je. Mluvčí s titulem od módu ho má před jménem — „GM Pepa“.
+ * čí je. Mluvčí s titulem od módu ho má před jménem — „GM Pepa“ — a kdo
+ * v zápase sedí, má u jména čtvereček své barvy jako všude jinde; admin
+ * z režie, který v zápase není, jen jméno.
  */
 export function MluviTed({ zapasy, popisSlotu }: Props) {
   const mluvici = useSyncExternalStore(naZmenuMluvcich, kdoMluvi);
@@ -27,7 +30,10 @@ export function MluviTed({ zapasy, popisSlotu }: Props) {
           <span key={m.klic} className="mluvci">
             <IkonaReproduktor ztlumeno={false} />
             <span>
-              <strong>{titul ? `${titul} ${m.jmeno}` : m.jmeno}</strong> mluví
+              <strong>
+                <JmenoSBarvou barva={barva}>{titul ? `${titul} ${m.jmeno}` : m.jmeno}</JmenoSBarvou>
+              </strong>{" "}
+              mluví
             </span>
           </span>
         );

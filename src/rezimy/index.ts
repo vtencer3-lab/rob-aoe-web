@@ -11,7 +11,7 @@ import type { AkceStavPayload, RezimId, Seat, SestavaVstup } from "../shared/typ
  * prázdná implementace, takže bez Diplomacie se web chová jako dřív.
  * Odebrat mód = smazat jeho modul, řádek v REZIMY (a v klientském registru)
  * a registraci rout v server.ts; háčky jádra jsou obecné a zůstávají
- * (výčet H1–H12: docs/prehled-praci-a-zameru.md §3.60).
+ * (výčet H1–H13: docs/prehled-praci-a-zameru.md §3.60).
  */
 export interface RezimAkce {
   id: RezimId;
