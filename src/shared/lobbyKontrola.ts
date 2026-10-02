@@ -650,15 +650,17 @@ export function zkontrolujLobby(
     else text = `Scénář: v lobby je ${ve}, má být ${ma}`;
     hlavni("scenar", ve === ma, text);
   }
-  // Scénářová lobby: Map Size hra nenabízí a v options[8] posílá skutečnou
-  // velikost ze scénáře, takže odhad podle počtu barev by jen lhal. Když mód
-  // velikost z rozboru zná, porovná se jako jiná; když ne, jen se vypíše.
+  // Scénářová lobby: Map Size hra nenabízí, velikost určuje scénář a hostitel
+  // ji nemá jak změnit — řádek je jen informace, nikdy chyba. Hodnota
+  // v options[8] navíc nemusí být skutečná velikost scénáře (2. 10. 2026
+  // hlásila lobby se scénářem LLC 220 dílců „Tiny (2)“), takže ji ani
+  // neporovnáváme s velikostí z rozboru.
   const jmVelikost = (v: number | null) => (v === null ? "?" : (VELIKOSTI[v] ?? `${v} dílců`));
   const urcujeScenar = (klic: string, text: string): void => {
     k.push({ klic, stav: "jedno", text, sekce: "hlavni" });
   };
-  if (scenarovy && ocekavane.velikost === null) {
-    urcujeScenar("velikost", `Velikost: ${jmVelikost(n.velikost)} (určuje scénář)`);
+  if (scenarovy) {
+    urcujeScenar("velikost", `Velikost: ${jmVelikost(ocekavane.velikost ?? n.velikost)} (určuje scénář)`);
   } else {
     const velikost = ocekavane.velikost ?? velikostProHrace(new Set(ucastnici.map((u) => u.barva)).size);
     hlavni("velikost", n.velikost === velikost, n.velikost === velikost ? `Velikost: ${jmVelikost(n.velikost)}` : `Velikost: ${jmVelikost(n.velikost)}, má být ${jmVelikost(velikost)}`);

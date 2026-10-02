@@ -479,15 +479,15 @@ describe("scénář", () => {
   });
 
   // V Custom Scenario hra v lobby Map Size nenabízí — options[8] nese
-  // skutečnou velikost ze scénáře (sonda 1. 10. 2026). Odhad podle počtu
-  // barev tu nemá co dělat: porovnává se s velikostí z rozboru, a když
-  // rozbor není, hodnota se jen vypíše.
-  it("velikost se porovná s velikostí ze scénáře, ne s počtem hráčů", () => {
+  // skutečnou velikost ze scénáře (sonda 1. 10. 2026) — ne vždy: 2. 10. 2026
+  // hlásila lobby s LLC (220 dílců) „Tiny (2)“. Velikost určuje scénář,
+  // hostitel ji nezmění, takže řádek je vždy jen informace: velikost
+  // z rozboru, a když rozbor není, to, co hlásí lobby.
+  it("velikost ve scénářové lobby je jen informace podle rozboru, nikdy křížek", () => {
     const seScenarem = { ...ocekavane, velikost: 220 };
-    const ok = zkontrolujLobby(sestava, seScenarem, lobbySNastavenim({ rezim: 3, velikost: 220, scenar: ocekavane.scenar }));
-    expect(ok.find((r) => r.klic === "velikost")).toMatchObject({ stav: "ok", sekce: "hlavni", text: "Velikost: Large (8)" });
-    const spatne = zkontrolujLobby(sestava, seScenarem, lobbySNastavenim({ rezim: 3, velikost: 200, scenar: ocekavane.scenar }));
-    expect(spatne.find((r) => r.klic === "velikost")).toMatchObject({ stav: "spatne", text: "Velikost: Normal (6), má být Large (8)" });
+    const k = zkontrolujLobby(sestava, seScenarem, lobbySNastavenim({ rezim: 3, velikost: 120, scenar: ocekavane.scenar }));
+    expect(k.find((r) => r.klic === "velikost")).toMatchObject({ stav: "jedno", sekce: "hlavni", text: "Velikost: Large (8) (určuje scénář)" });
+    expect(lobbyVPoradku(k)).toBe(true);
   });
   it("bez velikosti z rozboru se velikost jen vypíše", () => {
     const k = zkontrolujLobby(sestava, { ...ocekavane, velikost: null }, lobbySNastavenim({ rezim: 3, velikost: 240, scenar: ocekavane.scenar }));
