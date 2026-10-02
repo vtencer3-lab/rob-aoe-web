@@ -1576,8 +1576,9 @@ tlačítka ztlumení adminů (`PushToTalk` prop `ztlumeniAdminu`).
 
 **Kdo mluví.** Dokud se promluva přehrává, visí vlevo dole štítek
 `views/MluviTed.tsx` (připnutý k oknu — hlas hraje celé stránce): jméno
-mluvčího, před ním titul slotu z háčku `popisSlotu` — „GM Pepa“. Seznam
-drží `hlas.ts` (`kdoMluvi`, `naZmenuMluvcich`).
+mluvčího, před ním titul slotu z háčku `popisSlotu` — „GM Pepa“ — a u toho,
+kdo v zápase sedí, čtvereček jeho barvy (`JmenoSBarvou`). Seznam drží
+`hlas.ts` (`kdoMluvi`, `naZmenuMluvcich`). Nasazeno jako 1.13.10-25.0.
 
 ### 3.51 Chat se posouvá jen na obrazovce (1.4.0, 13. 9. 2026)
 
@@ -1861,7 +1862,7 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   `popisSlotu`, `nastaveniScenare`, `smiMluvitDoZapasu`). **Modul módu žije vedle jádra a jádro
   ho zná jen přes háčky** — odebrat mód = smazat `src/diplomacie/`,
   `src/shared/diplomacie/`, `web/src/diplomacie/`, řádek v obou registrech
-  a `registerDiplomacieRoutes` v `server.ts`; háčky H1–H12 níž jsou obecné
+  a `registerDiplomacieRoutes` v `server.ts`; háčky H1–H13 níž jsou obecné
   a zůstávají (s módem odejdou jen jeho hodnoty: `"diplomacie"` v `RezimId`
   a CHECK migrace 030, větve v `src/shared/rezimy.ts`, `smiNahratScenar`
   v `/api/me` a `config.autoriScenare`/`python`, `SpravaScenare` v `App.tsx`,
@@ -2620,6 +2621,7 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.13.10-13.10 … 1.13.10-21.8 | 1. 10. (větev `diplo`) | **Mód Diplomacie, podprojekty 0 a 1 (§3.60)** — 31 commitů, nemergnuto do `dev`: nasazení `/aoe/diplo` a verzování (-13.10), kontrola souboru scénáře v lobby (-14.0), mód akce a migrace 030 (-15.0), pravidla rolí, rozbor Pythonem, viditelnost (-15.1 … -15.3), tabulky `diplo_*` migrace 031 (-16.0), háčky v jádru (-17.0), strany pro FFA a tým „–“ (-17.1 … -17.4), víc vítězů (-18.0), AI mimo šedou (-18.1), routy GM (-19.0), verze scénáře a `AUTORI_SCENARE` (-20.0), místa módu v obrazovkách a zakrytí (-20.1, -20.2), scénář určuje mapu / velikost / Victory (-21.0), minimapa (-21.1), karta role (-21.2, -21.3), pult GM (-21.4, -21.5), správa a stažení scénáře (-21.6), grafika rolí, rubu a rámu (-21.7, -21.8) |
 | 1.13.10-22.2 … 1.13.10-22.10 | 2. 10. (větev `diplo`) | **Dávka úprav rozhraní po revizi uživatele (§3.60)** — strany FFA ve dvou sloupcích (-22.2), kratší krok hosta a popisek zakryté karty (-22.3), velká mapa na kartě role (-22.4), barva u každého jména účastníka — `JmenoSBarvou` (-22.5), Sabotáž Nájezdníků (-22.6), hover zlatého tlačítka a větší „Rozeslat role“ (-22.7), „Zamíchat barvy“ ve skládání (-22.8), po rozeslání se role nemění (-22.9), jednotný sloh pravidel rolí (-22.10) |
 | 1.13.10-23.0 | 2. 10. (větev `diplo`) | **Most ke hře — první kus (§3.60)** — web přibaluje XS sondu formátu 3 do stahované kopie scénáře (migrace 033, „Přibalit sondu“ ve správě scénáře, originál přes `?original=1`), přijímá data z běžící hry na `POST /api/diplo/hra` (`MOST_TOKEN`), v přípravě sám nastaví Nástupce císaře a GM vidí postup sekundárních cílů; zkušební most `nastroje/diplomacie/most.py` |
+| 1.13.10-25.0 | 2. 10. (větev `diplo`) | **Hlas: konec praskání a push-to-talk pro GM (§3.50)** — přehrávač čeká na 450 ms zásoby (dřív se skoro každá promluva na třetinu vteřiny zasekla), zesílení mikrofonu se přesunulo z nahrávky do přehrávání (nahrávka přes Web Audio měla časové značky rámců 59/61 ms a `MediaSource` ji ořezával osmkrát za vteřinu), ztracený kousek se přeskočí; GM Diplomacie mluví do svého zápasu (háček H13 `smiMluvitDoZapasu`), štítek „GM … mluví“ |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |

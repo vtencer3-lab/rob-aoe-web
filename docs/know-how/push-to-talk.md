@@ -119,7 +119,8 @@ poslouchá tam a drží `Map<kdo/sezeni, Prehravani>`:
   `hlas.hlasitost-admina`, mimo Master Volume.
 - **Kdo mluví.** `kdoMluvi()` / `naZmenuMluvcich()` drží seznam právě
   přehrávaných promluv; `views/MluviTed.tsx` z něj kreslí štítek vlevo dole
-  („GM Pepa mluví“ — titul dává háček módu `popisSlotu` podle barvy slotu).
+  („GM Pepa mluví“ — titul dává háček módu `popisSlotu` podle barvy slotu;
+  účastník zápasu má u jména čtvereček své barvy přes `JmenoSBarvou`).
 - Dohrané sezení se z mapy uklidí po minutě.
 
 ## Praskání (2. 10. 2026)
