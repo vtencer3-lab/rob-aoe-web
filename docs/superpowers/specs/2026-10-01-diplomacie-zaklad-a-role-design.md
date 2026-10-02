@@ -53,7 +53,7 @@ Podklady (mimo repo, u uživatele v `Downloads`):
 |---|---|---|
 | **0** | větev `diplo`, nasazení `/aoe/diplo` | **tento spec** |
 | **1** | základ módu, scénář, rozdání rolí, tajné karty, pult GM | **tento spec** |
-| 2 | deník GM: smrti a rezignace s důsledky podle pravidel, fronta žádostí na GM (Šaškovy 3 informace, sankce Nájezdníků, Žoldákův prodej relikvie), vyhodnocení vítězů a odhalení rolí | vlastní spec později |
+| 2 | deník GM: smrti a rezignace s důsledky podle pravidel, fronta žádostí na GM (Šaškovy 3 informace, Sabotáž Nájezdníků — do 2. 10. 2026 „ekonomická sankce“ —, Žoldákův prodej relikvie), vyhodnocení vítězů a odhalení rolí | vlastní spec později |
 | 3 | Rada králů: svolání, návrh sankce, hlasování, schválení GM, odpočty v herních minutách | vlastní spec později |
 | 4 | hlas: soukromé hovory 1:1, GM vidí kdo s kým mluví a může poslouchat (ikona „GM poslouchá“); předběžně LiveKit na VPS | vlastní spec později |
 

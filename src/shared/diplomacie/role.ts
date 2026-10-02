@@ -15,7 +15,12 @@ export interface PopisRole {
   nevyhody: string[];
 }
 
-/** Z pravidel hry (Jin, „Diplomacie – Ať žije císař"). Měnit jen spolu s pravidly. */
+/**
+ * Z pravidel hry (Jin, „Diplomacie – Ať žije císař"). Měnit jen spolu s pravidly.
+ * 2. 10. 2026: „ekonomická sankce“ Nájezdníků se jmenuje Sabotáž a každý
+ * Nájezdník ji má jen jednu za hru (dřív 1× na každého hráče). Sankce z Rady
+ * králů u Nástupce je jiná věc a zůstává.
+ */
 export const POPIS_ROLE: Record<Role, PopisRole> = {
   nastupce: {
     cil: "Získat 7 relikvií a ubránit je po dobu 15 minut.",
@@ -33,7 +38,7 @@ export const POPIS_ROLE: Record<Role, PopisRole> = {
   },
   najezdnik: {
     cil: "Vyhrát lze jen tehdy, je-li Nástupce císaře poražen. Plní primární i sekundární cíle. Když vyhraje jeden Nájezdník, druhý vyhrává také (i když už byl vyřazen).",
-    vyhody: ["Nájezdníci se znají od začátku hry.", "Mohou uvalit ekonomickou sankci na kteréhokoli hráče (1× za hru na každého, stojí 2000 zlata zaplacené GM)."],
+    vyhody: ["Nájezdníci se znají od začátku hry.", "Každý Nájezdník může jednou za hru provést Sabotáž proti kterémukoli hráči (na jednoho hráče nejvýš jedna; stojí 2000 zlata zaplacené GM)."],
     nevyhody: [],
   },
   sasek: {

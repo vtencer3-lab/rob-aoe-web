@@ -2287,7 +2287,7 @@ vždy, má Spies), který čte soubor a posílá ho webu:
   více hráčů, kam se soubor ukládá a zda se skript přenáší se scénářem.
 - **Průběžný záznam hry (`.aoe2record`, knihovna `mgz`)** — bez zásahu do
   scénáře; jen příkazy hráčů: chat, rezignace, pauzy, herní čas, tributy
-  (platba 2k za sankci Nájezdníků). Stav hry (smrt krále, relikvie) ne.
+  (platba 2k za Sabotáž Nájezdníků). Stav hry (smrt krále, relikvie) ne.
 
 Rozhodnuto 1. 10. 2026: zatím ne, jen zapsat. Ruční ovládání GM zůstává
 v každém případě jako záloha.
