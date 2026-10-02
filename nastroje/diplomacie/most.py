@@ -155,9 +155,11 @@ def main() -> int:
     parser.add_argument("--slozka", default=koren_hry(), help="kořen dat hry (složka s podsložkami <id>)")
     parser.add_argument("--jednou", action="store_true", help="pošle první platné čtení a skončí")
     parser.add_argument("--nasucho", action="store_true", help="neposílá, zprávy vypisuje jako JSON")
-    volby = parser.parse_args()
-    # Výstup do roury jde v kódování locale (cp1250): znak mimo něj nesmí most shodit.
+    # Výstup do roury jde v kódování locale (cp1250): znak mimo něj nesmí most
+    # shodit — ani nápovědu, kterou argparse tiskne už při čtení přepínačů.
     sys.stdout.reconfigure(errors="replace")
+    sys.stderr.reconfigure(errors="replace")
+    volby = parser.parse_args()
 
     token = "" if volby.nasucho else nacti_token()
     if not volby.nasucho and not token:
