@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AI_HRACI, jeAi } from "../../src/shared/aiHraci.js";
-import { vychoziTymRezimu } from "../../src/shared/rezimy.js";
+import { vychoziTymRezimu, zamichejBarvyRezimu } from "../../src/shared/rezimy.js";
 import { MAX_HRACU } from "../../src/shared/sestava.js";
 import { BARVY, type PlayerView, type RezimId, type SestavaVstup } from "../../src/shared/types.js";
 
@@ -22,6 +22,8 @@ export interface Skladani {
   odeber: (hracId: string) => void;
   uprav: (hracId: string, zmena: (v: SestavaVstup) => SestavaVstup) => void;
   presun: (skupina: Skupina, odId: string, naId: string) => void;
+  /** Náhodně přeskupí barvy mezi vybranými podle pravidel módu (shared/rezimy.ts); pod dva hráče nic. */
+  zamichejBarvy: () => void;
   vynuluj: () => void;
   /** Nasadí celou sestavu (zpět/znovu) — bez hlášení jako uživatelská změna. */
   nastavCelou: (sestava: SestavaVstup[]) => void;
@@ -105,7 +107,8 @@ function stejnaSestava(a: SestavaVstup[], b: SestavaVstup[]): boolean {
  * nikdy nepřepíše rozkliknutou změnu v půlce, a naopak jeho změny se
  * ukážou hned, jakmile tady nic nečeká.
  *
- * `rezim` je mód akce — rozhoduje, jaký tým dostane nově vybraný hráč.
+ * `rezim` je mód akce — rozhoduje, jaký tým dostane nově vybraný hráč
+ * a jak se míchají barvy.
  */
 export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani, rezim: RezimId = "klasicky"): Skladani {
   const [lokalni, setLokalni] = useState<SestavaVstup[] | null>(sdilene ? null : []);
@@ -195,6 +198,10 @@ export function useSkladani(prihlaseni: PlayerView[], sdilene?: SdileneSkladani,
     presun: (skupina, odId, naId) => {
       if (skupina === "vybrani") nastav(presunout(platni, (v) => v.hracId, odId, naId));
       else ulozNevybrane(presunout(nevybrani.map((h) => h.hracId), (id) => id, odId, naId));
+    },
+    zamichejBarvy: () => {
+      if (platni.length < 2) return;
+      nastav(zamichejBarvyRezimu(rezim, platni));
     },
     vynuluj: () => nastav([]),
     nastavCelou: (sestava) => nastav(sestava, false),

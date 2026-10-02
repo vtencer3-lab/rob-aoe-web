@@ -50,6 +50,11 @@ export function popisZmenySestavy(pred: SestavaVstup[], po: SestavaVstup[], jmen
   if (odebrani.length > 0 && po.length === 0) return { text: "Sestava vyprázdněna", cil: null };
   if (pridani.length > 0 || odebrani.length > 0) return { text: "Sestava změněna", cil: null };
 
+  // Víc barev naráz mění jen „Zamíchat barvy“ — kliknutí na čtvereček mění
+  // jednu. Věta o prvním hráči by z míchání udělala změnu jedné barvy.
+  const zmenenychBarev = pred.filter((a) => po.find((x) => x.hracId === a.hracId)!.barva !== a.barva).length;
+  if (zmenenychBarev > 1) return { text: "Barvy zamíchány", cil: null };
+
   for (const a of pred) {
     const b = po.find((x) => x.hracId === a.hracId)!;
     if (a.barva !== b.barva) return { text: `${jmeno(a.hracId)}: barva ${BARVA_NAZEV[a.barva]} → ${BARVA_NAZEV[b.barva]}`, cil: a.hracId };

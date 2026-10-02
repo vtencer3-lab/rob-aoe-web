@@ -308,3 +308,25 @@ it("AI nezasahuje do součtu ELO týmu ani do seznamu bez ELO", () => {
   expect(screen.getByTestId("elo-tymu").textContent).toContain("1136");
   expect(screen.getByTestId("elo-tymu").textContent).not.toContain("bez ELO");
 });
+
+const zamichat = () => screen.getByRole("button", { name: "Zamíchat barvy" });
+
+// Míchat je co až od dvou hráčů. Dva hráči mají dvě barvy, takže zamíchání
+// je vždy prohodí (sdílená funkce nikdy nevrátí totéž rozdání); pořadí
+// a týmy zůstávají, jak byly.
+it("„Zamíchat barvy“ je aktivní od dvou vybraných a mění jen barvy", () => {
+  render(<Panel />);
+  expect(zamichat()).toBeDisabled();
+  vyber("TenceR");
+  expect(zamichat()).toBeDisabled();
+  vyber("Pepa");
+  expect(zamichat()).toBeEnabled();
+  expect(screen.getByRole("button", { name: /barva tencer: modrá/i })).toBeTruthy();
+
+  fireEvent.click(zamichat());
+  expect(vybraniJmena()).toEqual(["TenceR", "Pepa"]);
+  expect(screen.getByRole("button", { name: /barva tencer: červená/i })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /barva pepa: modrá/i })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /tým tencer: 1/i })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /tým pepa: 2/i })).toBeTruthy();
+});

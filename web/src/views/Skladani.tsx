@@ -104,6 +104,18 @@ export function Skladani({ skladani, onVytvoritZapas, rezim, sadaCivilizaci, zvy
         >
           + AI
         </button>
+        {/* Pravidla míchání dává mód akce (hook → shared/rezimy.ts): klasicky
+            se prohodí použité barvy mezi stranami, v Diplomacii zůstane GM
+            na šedé. Pořadí, týmy ani civilizace se nemění. */}
+        <button
+          type="button"
+          className="zamichat-barvy"
+          disabled={vstupy.length < 2}
+          title={vstupy.length < 2 ? "Míchat je co až od dvou hráčů" : "Náhodně přeskupí barvy mezi vybranými hráči"}
+          onClick={() => skladani.zamichejBarvy()}
+        >
+          Zamíchat barvy
+        </button>
       </div>
 
       <ul className="sestava" data-testid="vybrani" ref={seznam}>

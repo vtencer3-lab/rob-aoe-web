@@ -1,5 +1,5 @@
-import { zkontrolujSestavuDiplomacie } from "./diplomacie/sestava.js";
-import { zkontrolujSestavu } from "./sestava.js";
+import { zamichejBarvyDiplomacie, zkontrolujSestavuDiplomacie } from "./diplomacie/sestava.js";
+import { zamichejBarvy, zkontrolujSestavu } from "./sestava.js";
 import type { RezimId, SestavaVstup, Tym } from "./types.js";
 
 /**
@@ -25,4 +25,17 @@ export function zkontrolujSestavuRezimu(rezim: RezimId, sestava: SestavaVstup[])
 export function vychoziTymRezimu(rezim: RezimId, pocetVybranych: number): Tym {
   if (rezim === "diplomacie") return 0;
   return pocetVybranych % 2 === 0 ? 1 : 2;
+}
+
+/**
+ * „Zamíchat barvy“ ve skládání sestavy podle módu akce: náhodně přeskupí
+ * barvy mezi vybranými hráči a nic jiného (pořadí, týmy, civilizace) nemění.
+ * Klasicky se míchají barvy, které sestava používá, a kdo barvu sdílel,
+ * sdílí ji dál; v Diplomacii zůstává GM na šedé a ostatní si rozdělí zbylých
+ * sedm barev. Sestava, která prošla `zkontrolujSestavuRezimu`, jím projde
+ * i po zamíchání. `nahoda` má tvar `Math.random` (testy ji dodávají pevnou).
+ */
+export function zamichejBarvyRezimu(rezim: RezimId, sestava: SestavaVstup[], nahoda: () => number = Math.random): SestavaVstup[] {
+  if (rezim === "diplomacie") return zamichejBarvyDiplomacie(sestava, nahoda);
+  return zamichejBarvy(sestava, nahoda);
 }

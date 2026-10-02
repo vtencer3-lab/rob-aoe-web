@@ -1,12 +1,9 @@
+import { zamichej, zJednotkove, type Nahoda } from "../michani.js";
 import { NAZEV_ROLE } from "./role.js";
 import { ROLE_LOSOVANE, type Role, type RoleHrace } from "./typy.js";
 
-/**
- * Náhoda 0 ≤ x < n. Ve sdíleném kódu bez `node:crypto` (běží i v prohlížeči);
- * server předává `randomInt` z `node:crypto`, testy deterministickou funkci.
- */
-export type Nahoda = (n: number) => number;
-const vychoziNahoda: Nahoda = (n) => Math.floor(Math.random() * n);
+export type { Nahoda };
+const vychoziNahoda: Nahoda = zJednotkove(Math.random);
 
 const POCET_HRACU = 7;
 const S_CILEM: ReadonlySet<Role> = new Set(["kat", "zoldak"]);
@@ -18,16 +15,6 @@ export function povoleneCile(hraci: string[], kdo: string, nastupce: string): st
 function nahodnyCil(hraci: string[], kdo: string, nastupce: string, nahoda: Nahoda): string {
   const moznosti = povoleneCile(hraci, kdo, nastupce);
   return moznosti[nahoda(moznosti.length)]!;
-}
-
-/** Fisher–Yates; jako v Jinově nástroji, jen s volitelnou náhodou. */
-function zamichej<T>(pole: readonly T[], nahoda: Nahoda): T[] {
-  const p = [...pole];
-  for (let i = p.length - 1; i > 0; i--) {
-    const j = nahoda(i + 1);
-    [p[i], p[j]] = [p[j]!, p[i]!];
-  }
-  return p;
 }
 
 export function losujRole(hraci: string[], nastupce: string, nahoda: Nahoda = vychoziNahoda): RoleHrace[] {

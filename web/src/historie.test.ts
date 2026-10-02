@@ -17,6 +17,12 @@ describe("popisZmenySestavy", () => {
     expect(popisZmenySestavy([h("a", 1, 1)], [], jmeno)).toEqual({ text: "Trokner vyřazen ze sestavy", cil: null });
     expect(popisZmenySestavy([h("a", 1, 1), h("b", 2, 2)], [], jmeno)).toEqual({ text: "Sestava vyprázdněna", cil: null });
   });
+
+  // „Zamíchat barvy“ mění víc barev jedním krokem: toast (a zpět/znovu) to
+  // pojmenuje jako míchání, ne jako změnu barvy prvního hráče v pořadí.
+  it("víc změněných barev naráz pojmenuje jako zamíchání", () => {
+    expect(popisZmenySestavy([h("a", 1, 1), h("b", 2, 2)], [h("a", 1, 2), h("b", 2, 1)], jmeno)).toEqual({ text: "Barvy zamíchány", cil: null });
+  });
 });
 
 describe("popisZmenyNastaveni", () => {

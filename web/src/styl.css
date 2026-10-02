@@ -697,7 +697,7 @@ h2.nadpis-akce::after {
 /* Odstavec má vlastní spodní okraj, takže by se s tlačítkem srovnal
    krabicí, ne textem — a tlačítko by sedělo níž. */
 .skladani .hlavicka-sestavy .zaloha { margin: 0; }
-.skladani .pridat-ai { padding: 0.15rem 0.7rem; font-size: 0.8rem; }
+.skladani .pridat-ai, .skladani .zamichat-barvy { padding: 0.15rem 0.7rem; font-size: 0.8rem; }
 /* Pre-Lobby: okno „Create Lobby“ jako ve hře. Zakládání lobby je krok mimo
    běžné nastavování, tak stojí v modálním okně — okolí ztmavne a kliknutí
    vedle (nebo Escape) ho zavře. */
