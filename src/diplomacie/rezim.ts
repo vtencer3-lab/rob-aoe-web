@@ -4,8 +4,8 @@ import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploData, ScenarVerze } from "../shared/diplomacie/typy.js";
 import { redigujDiplo } from "../shared/diplomacie/viditelnost.js";
 import { jeGmZapasu } from "./opravneni.js";
-import { getAktivniVerze, getDiploZapas, getVerze, listDiploZapasy, listVerzi, zalozDiploZapas, zrusNastupceMimoSestavu } from "./db.js";
-import { hraZapasu } from "./hraPamet.js";
+import { getAktivniVerze, getDiploZapas, getVerze, ktereZapasyBezi, listDiploZapasy, listVerzi, zalozDiploZapas, zrusNastupceMimoSestavu } from "./db.js";
+import { hraZapasu, pametHer, ponechHry } from "./hraPamet.js";
 
 /**
  * Co z verzí scénáře patří do nastavení lobby akce (spec §5.5). Velikost
@@ -66,7 +66,9 @@ export const diplomacie: RezimAkce = {
 
   async doplnStav(akce) {
     // Data z běžící hry nejsou v databázi; plný stav je nese a redakce je
-    // nechá jen GM.
+    // nechá jen GM. Snímky dohraných a zrušených zápasů se zahazují — pult
+    // by jinak donekonečna hlásil „hra mlčí“.
+    if (pametHer.size > 0) ponechHry(await ktereZapasyBezi([...pametHer.keys()]));
     const zapasy = (await listDiploZapasy(akce.id)).map((z) => {
       const hra = hraZapasu(z.zapasId);
       return hra ? { ...z, hra } : z;

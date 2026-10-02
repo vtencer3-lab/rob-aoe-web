@@ -1848,6 +1848,8 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
    řádkem — linka mezi hráči se proto přesouvá až pod něj. */
 .pult-gm .zakryti-lic > p.stari-hry { margin: 0.3rem auto; font-size: 0.85rem; color: var(--tlumene); }
 .pult-gm .nastupce-ze-hry strong { color: var(--zlato-svetle); }
+/* Varování k datům ze hry je věta pro GM, ne nápověda — bez kurzoru s otazníkem. */
+.pult-gm .zakryti > p.varovani { font-size: 0.9rem; cursor: auto; }
 .tabulka-roli tr:has(+ tr.radek-hry) > * { border-bottom: 0; padding-bottom: 0.1rem; }
 .tabulka-roli tr.radek-hry td { padding-top: 0; color: var(--tlumene); font-size: 0.85rem; }
 .pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }

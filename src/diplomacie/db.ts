@@ -224,6 +224,54 @@ export async function najdiBeziciZapasGm(hracIds: string[]): Promise<number | nu
   return rows[0]?.zapas_id ?? null;
 }
 
+/**
+ * Které z těchhle zápasů Diplomacie právě běží v otevřené akci — pro paměť
+ * snímků hry a pro právo GM mluvit do zápasu.
+ */
+export async function ktereZapasyBezi(zapasIds: number[]): Promise<number[]> {
+  if (zapasIds.length === 0) return [];
+  const { rows } = await getPool().query<{ zapas_id: number }>(
+    `SELECT d.zapas_id
+       FROM diplo_zapas d
+       JOIN zapas z ON z.id = d.zapas_id
+       JOIN akce a ON a.id = z.akce_id
+      WHERE a.stav <> 'konec' AND z.stav = 'bezi' AND d.zapas_id = ANY($1::int[])`,
+    [zapasIds],
+  );
+  return rows.map((r) => r.zapas_id);
+}
+
+/**
+ * Nástupce určený hrou (most ke hře). Jeden podmíněný příkaz, ne „přečti
+ * a zapiš“: GM může ve stejnou chvíli rozdat role a zápis po losu by mu
+ * Nástupce vyměnil pod rukama. Nastaví se jen v přípravě a jen když hra
+ * určila někoho jiného než posledně (`nastupce_ze_hry`, migrace 034) —
+ * ruční volbu GM tak nepřepíše ani po restartu serveru — nebo když zápas
+ * žádného Nástupce nemá. Vrací, jestli se něco změnilo.
+ */
+export async function nastavNastupceZeHry(zapasId: number, hracId: string): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    `UPDATE diplo_zapas SET nastupce_hrac_id = $2::text, nastupce_ze_hry = $2::text, upraveno_v = now()
+      WHERE zapas_id = $1 AND stav = 'priprava' AND (nastupce_ze_hry IS DISTINCT FROM $2::text OR nastupce_hrac_id IS NULL)`,
+    [zapasId, hracId],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+/**
+ * Hra svou odpověď vzala zpět (cíl dostali všichni, nebo je to znovu
+ * nejednoznačné): Nástupce, kterého určila ona a GM ho nepřepsal, se
+ * v přípravě vynuluje. Ruční volba GM zůstává.
+ */
+export async function odvolejNastupceZeHry(zapasId: number): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    `UPDATE diplo_zapas SET nastupce_hrac_id = NULL, nastupce_ze_hry = NULL, upraveno_v = now()
+      WHERE zapas_id = $1 AND stav = 'priprava' AND nastupce_ze_hry IS NOT NULL AND nastupce_hrac_id = nastupce_ze_hry`,
+    [zapasId],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
 export async function setNastupce(zapasId: number, hracId: string): Promise<void> {
   await getPool().query("UPDATE diplo_zapas SET nastupce_hrac_id = $2, upraveno_v = now() WHERE zapas_id = $1", [zapasId, hracId]);
 }

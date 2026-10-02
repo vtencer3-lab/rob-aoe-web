@@ -23,9 +23,17 @@ export function StariHry({ hra }: { hra: HraZapasu | undefined }) {
   const ted = useTed(1000);
   if (!hra) return null;
   return (
-    <p className="stari-hry" data-testid="stari-hry">
-      {popisStari((ted - Date.parse(hra.prijato)) / 1000)} · herní čas {herniCas(hra.cas)}
-    </p>
+    <>
+      <p className="stari-hry" data-testid="stari-hry">
+        {popisStari((ted - Date.parse(hra.prijato)) / 1000)} · herní čas {herniCas(hra.cas)}
+      </p>
+      {/* Data nesedí k zápasu (jiný scénář, verze bez výpisu cílů): GM má vědět, proč se podle nich nic nenastavilo. */}
+      {hra.varovani ? (
+        <p className="varovani" data-testid="varovani-hry">
+          {hra.varovani}
+        </p>
+      ) : null}
+    </>
   );
 }
 

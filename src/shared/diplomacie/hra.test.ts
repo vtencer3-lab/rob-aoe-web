@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Barva } from "../types.js";
-import { popisCile, popisStari, prectiSnimek, prectiSondu, souhrnSondy, vyhodnotHru, type CilSondy, type SnimekHry } from "./hra.js";
+import { popisCile, popisStari, posunKandidata, prectiSnimek, prectiSondu, souhrnSondy, vyhodnotHru, type CilSondy, type SnimekHry } from "./hra.js";
 
 /** Sedm hráčů h1…h8 bez h7: GM sedí na šedé (slot 7) a mezi hráče nepatří. */
 const HRACI = ([1, 2, 3, 4, 5, 6, 8] as Barva[]).map((barva) => ({ hracId: `h${barva}`, barva }));
@@ -65,6 +65,26 @@ describe("Nástupce ze slotů", () => {
     const hra = vyhodnot(snimek({ 1: 15, 2: 16, 3: 17, 5: 19, 6: 20, 7: 99, 8: 21 }));
     expect(hra.nastupceHracId).toBe("h4");
     expect(hra.hraci.map((h) => h.hracId)).toEqual(HRACI.map((h) => h.hracId));
+  });
+});
+
+// Cíle se rozdávají postupně; šest ze sedmi vypadá na chvíli jako hotový
+// výsledek. Odpovědi hry se proto věří až napodruhé.
+describe("potvrzení Nástupce dvěma snímky", () => {
+  it("stejný hráč ve dvou snímcích aspoň 4 herní sekundy po sobě je potvrzený", () => {
+    const prvni = posunKandidata(null, "h4", 100);
+    expect(prvni).toEqual({ kandidat: { hracId: "h4", odCasu: 100 }, potvrzeny: null });
+    expect(posunKandidata(prvni.kandidat, "h4", 102).potvrzeny).toBeNull();
+    expect(posunKandidata(prvni.kandidat, "h4", 104)).toEqual({ kandidat: { hracId: "h4", odCasu: 100 }, potvrzeny: "h4" });
+    expect(posunKandidata(prvni.kandidat, "h4", 600).potvrzeny).toBe("h4");
+  });
+
+  it("jiné jméno nebo žádné počítání ruší", () => {
+    const h4 = posunKandidata(null, "h4", 100).kandidat;
+    expect(posunKandidata(h4, "h5", 104)).toEqual({ kandidat: { hracId: "h5", odCasu: 104 }, potvrzeny: null });
+    expect(posunKandidata(h4, null, 104)).toEqual({ kandidat: null, potvrzeny: null });
+    // Po přerušení se čeká znovu celou dobu.
+    expect(posunKandidata(posunKandidata(h4, null, 104).kandidat, "h4", 106).potvrzeny).toBeNull();
   });
 });
 

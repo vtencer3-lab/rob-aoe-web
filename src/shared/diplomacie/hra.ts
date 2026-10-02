@@ -146,10 +146,43 @@ export interface HraZapasu {
   prijato: string;
   /** Hra už cíle rozdává: aspoň jeden hráč nějaký má. */
   rozdano: boolean;
-  /** Nástupce podle hry; null, dokud to není jednoznačné. */
+  /**
+   * Nástupce podle hry; null, dokud to není jednoznačné. `vyhodnotHru` sem
+   * dává odpověď jednoho snímku, server ji před uložením nahradí odpovědí
+   * potvrzenou dvěma snímky (`posunKandidata`).
+   */
   nastupceHracId: string | null;
   /** Hráči zápasu bez GM, v pořadí, v jakém je dostala `vyhodnotHru`. */
   hraci: HracHry[];
+  /** Česká věta, když data nesedí k zápasu (jiný scénář, verze bez výpisu cílů). */
+  varovani?: string;
+}
+
+/**
+ * Jak dlouho (v herních sekundách) musí hra jmenovat téhož Nástupce, než se
+ * mu věří. Cíle se rozdávají postupně: ve chvíli, kdy je má šest hráčů ze
+ * sedmi, vypadá sedmý jako Nástupce, i když svůj cíl dostane o pár sekund
+ * později.
+ */
+export const STALOST_NASTUPCE_S = 4;
+/** Herní čas klesl o víc než tolik sekund = nová hra, ne přeházené doručení. */
+export const NOVA_HRA_POKLES_S = 30;
+
+/** Koho hra právě jmenuje a od kterého herního času bez přerušení. */
+export interface KandidatNastupce {
+  hracId: string;
+  odCasu: number;
+}
+
+/**
+ * Posune kandidáta o jeden snímek. Potvrzený je ten, koho hra jmenovala ve
+ * dvou po sobě jdoucích snímcích aspoň `STALOST_NASTUPCE_S` herních sekund
+ * od sebe; jiné jméno nebo žádné počítání ruší a začíná znovu.
+ */
+export function posunKandidata(kandidat: KandidatNastupce | null, odpoved: string | null, cas: number): { kandidat: KandidatNastupce | null; potvrzeny: string | null } {
+  if (odpoved === null) return { kandidat: null, potvrzeny: null };
+  const dalsi = kandidat !== null && kandidat.hracId === odpoved ? kandidat : { hracId: odpoved, odCasu: cas };
+  return { kandidat: dalsi, potvrzeny: cas - dalsi.odCasu >= STALOST_NASTUPCE_S ? odpoved : null };
 }
 
 /**

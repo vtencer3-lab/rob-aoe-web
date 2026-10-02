@@ -86,6 +86,18 @@ it("dokud hra Nástupce neurčila, věta chybí; stáří dat je vidět i tak", 
   expect(screen.getByTestId("stari-hry")).toHaveTextContent("ze hry před 4 s · herní čas 1:02:03");
 });
 
+// Hra z jiného scénáře, než zápas hraje: server podle ní Nástupce nenastaví
+// a GM se v pultu dozví proč.
+it("varování k datům ze hry ukáže pod stářím dat; bez varování nic", () => {
+  const varovani = "Hra hlásí scénář „Jiny.aoe2scenario“, zápas ale hraje „LLC.aoe2scenario“ — Nástupce se podle ní nenastavuje.";
+  const { rerender } = render(<PultGm zapas={zapas} data={gmData("priprava", [], null, { ...HRA, varovani })} hlidej={spust} />);
+  odkryj();
+  expect(screen.getByTestId("varovani-hry")).toHaveTextContent(varovani);
+  expect(screen.getByTestId("varovani-hry")).toHaveClass("varovani");
+  rerender(<PultGm zapas={zapas} data={gmData("priprava", [], null, HRA)} hlidej={spust} />);
+  expect(screen.queryByTestId("varovani-hry")).toBeNull();
+});
+
 it("stáří dat tiká samo a po delším tichu hlásí, že hra mlčí", () => {
   render(<PultGm zapas={zapas} data={gmData("priprava", [], "h4", HRA)} hlidej={spust} />);
   odkryj();
