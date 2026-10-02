@@ -9,6 +9,7 @@ import { Kopirovatelne } from "../views/Kopirovatelne.js";
 import { Potvrzeni } from "../views/Potvrzeni.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
+import { NastupceZeHry, RadekHry, StariHry } from "./HraZive.js";
 import { diploZapasu, RubKarty, verzeZapasu } from "./KartaRole.js";
 import { MapaScenare } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
@@ -64,10 +65,12 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
       </header>
       <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<RubKarty />}>
         {verze ? <MapaScenare verze={verze} starty="vsechny" jmena={jmena} velikost="velka" /> : null}
+        <StariHry hra={d.hra} />
 
         {d.stav === "priprava" ? (
           <>
             <p>Komu hra nedala sekundární cíl? Hláška ve hře „pN ma: …“ — číslo hráče je jeho barva.</p>
+            <NastupceZeHry hra={d.hra} ucastnici={zapas.ucastnici} />
             <div className="dlazdice-nastupce">
               {hraci.map((u) => (
                 <button
@@ -90,9 +93,10 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
           <>
             <table className="tabulka-roli">
               <tbody>
-                {d.role.map((r) => {
+                {d.role.flatMap((r) => {
                   const barvaCile = r.cilHracId ? mujUcastnik(zapas, r.cilHracId)?.barva : undefined;
-                  return (
+                  // Pod řádkem hráče ještě řádek s daty ze hry (bez nich nic nekreslí).
+                  return [
                     <tr key={r.hracId}>
                       {/* Čtvereček barvy jako na dlaždicích: řádky jdou v pořadí slotů, dlaždice podle barvy. */}
                       <th scope="row">{hrac(r.hracId)}</th>
@@ -141,8 +145,9 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                           </span>
                         ) : null}
                       </td>
-                    </tr>
-                  );
+                    </tr>,
+                    <RadekHry key={`${r.hracId}-hra`} hra={d.hra} hracId={r.hracId} />,
+                  ];
                 })}
               </tbody>
             </table>

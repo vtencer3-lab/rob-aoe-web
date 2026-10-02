@@ -1664,6 +1664,13 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 .tabulka-roli .cil-s-barvou select { min-width: 0; }
 .tabulka-roli .cil-s-barvou .swatch { flex: none; }
 .tabulka-roli td > span { color: var(--tlumene); font-size: 0.9rem; }
+/* Data z běžící hry (HraZive.tsx): stáří dat a věta o Nástupci jsou drobné
+   poznámky pod mapou. Cíl hráče s postupem je vlastní řádek tabulky pod jeho
+   řádkem — linka mezi hráči se proto přesouvá až pod něj. */
+.pult-gm .zakryti > p.stari-hry { margin: 0.3rem auto; font-size: 0.85rem; color: var(--tlumene); }
+.pult-gm .nastupce-ze-hry strong { color: var(--zlato-svetle); }
+.tabulka-roli tr:has(+ tr.radek-hry) > * { border-bottom: 0; padding-bottom: 0.1rem; }
+.tabulka-roli tr.radek-hry td { padding-top: 0; color: var(--tlumene); font-size: 0.85rem; }
 .pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }
 .pult-gm .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 0.6rem; }
 /* „Rozeslat role“ je hlavní akce pultu: zřetelně větší než „Přelosovat“
