@@ -87,9 +87,9 @@ it("křivka omezení je do kolena přímka a nikdy nepřekročí plný rozsah", 
 
 /** Náhrada Web Audia; `stav` říká, jestli prohlížeč kontextu dovolil běžet. */
 function falesnyKontext(stav: "running" | "suspended") {
-  const zisk = { gain: { value: 1 }, connect: vi.fn((cil: unknown) => cil) };
-  const tvar = { curve: null as Float32Array | null, oversample: "none", connect: vi.fn((cil: unknown) => cil) };
-  const zdroj = { connect: vi.fn((cil: unknown) => cil) };
+  const zisk = { gain: { value: 1 }, connect: vi.fn((cil: unknown) => cil), disconnect: vi.fn() };
+  const tvar = { curve: null as Float32Array | null, oversample: "none", connect: vi.fn((cil: unknown) => cil), disconnect: vi.fn() };
+  const zdroj = { connect: vi.fn((cil: unknown) => cil), disconnect: vi.fn() };
   const kontext = {
     state: stav,
     destination: { id: "vystup" },
@@ -231,6 +231,7 @@ function falesnePrehravani(delkyKouskuS: number[], spust = spustPrehravacHlasu, 
     konecZasoby: 0,
     play: vi.fn(() => Promise.resolve()),
     pause: vi.fn(),
+    removeAttribute: vi.fn(),
     addEventListener: (typ: string, cb: () => void) => void posluchaciAudia.set(typ, cb),
     buffered: {
       get length() {
@@ -265,13 +266,15 @@ function falesnePrehravani(delkyKouskuS: number[], spust = spustPrehravacHlasu, 
   vi.stubGlobal("MediaSource", Object.assign(vi.fn(() => zdroj), { isTypeSupported: () => true }));
   // jsdom adresy objektů neumí; přehrávač ji jen předá prvku.
   URL.createObjectURL ??= () => "";
+  URL.revokeObjectURL ??= () => {};
   vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:hlas");
+  const uvolneno = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
   const odhlasit = spust("ja", false);
   const kousek = (poradi: number, konec = false) =>
     window.dispatchEvent(
       new CustomEvent(UDALOST_HLAS, { detail: { zapasId: 1, kdo: "rob", jmeno: "Rob", sezeni: "s1", poradi, konec, data: konec ? "" : btoa(String(poradi)), prijemci: ["ja"], mime: "audio/webm;codecs=opus", ...navic } }),
     );
-  return { audio, buffer, zdroj, prilepeno, kousek, odhlasit, udalostAudia: (typ: string) => posluchaciAudia.get(typ)?.() };
+  return { audio, buffer, zdroj, prilepeno, kousek, odhlasit, uvolneno, udalostAudia: (typ: string) => posluchaciAudia.get(typ)?.() };
 }
 
 // Příčina lupání z 2. 10. 2026: hrálo se hned s prvním kouskem (240 ms),
@@ -364,6 +367,100 @@ it("sezení, kterému se ztratila značka konce, se po tichu uzavře samo", () =
     vi.advanceTimersByTime(TICHO_MS);
     expect(p.zdroj.endOfStream).toHaveBeenCalledTimes(1);
     expect(p.audio.play).toHaveBeenCalledTimes(1);
+    p.odhlasit();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+// Každá zesílená promluva zapojí do kontextu Web Audia celé stránky tři uzly
+// a prvek dostane adresu objektu. Bez úklidu po dohrání by jich za večer
+// zůstaly viset stovky (uzly drží prvek, adresa drží MediaSource).
+it("po dohrání promluvy odpojí uzly zesílení, uvolní adresu a prvku sebere zdroj", async () => {
+  vi.resetModules();
+  const hlas = await import("./hlas.js");
+  // Zavřené sezení si nechává minutový časovač na vyřazení z mapy — ať nezůstane viset za testem.
+  vi.useFakeTimers();
+  const w = falesnyKontext("running");
+  const p = falesnePrehravani([0.24], hlas.spustPrehravacHlasu, { zesileni: 200 });
+  p.kousek(0);
+  p.kousek(1, true);
+  expect(w.kontext.createMediaElementSource).toHaveBeenCalledWith(p.audio);
+  // Dokud hraje, nic se neuklízí.
+  expect(w.zdroj.disconnect).not.toHaveBeenCalled();
+  expect(p.uvolneno).not.toHaveBeenCalled();
+
+  p.udalostAudia("ended");
+  for (const uzel of [w.zdroj, w.zisk, w.tvar]) expect(uzel.disconnect).toHaveBeenCalledTimes(1);
+  expect(p.uvolneno).toHaveBeenCalledWith("blob:hlas");
+  expect(p.audio.removeAttribute).toHaveBeenCalledWith("src");
+  expect(p.audio.pause).toHaveBeenCalled();
+  // Druhé „ended“ (nebo pojistka po něm) už nic neuklízí podruhé.
+  p.udalostAudia("ended");
+  expect(w.zdroj.disconnect).toHaveBeenCalledTimes(1);
+  expect(p.uvolneno).toHaveBeenCalledTimes(1);
+  p.odhlasit();
+  vi.useRealTimers();
+});
+
+it("nezesílená promluva po dohrání uvolní adresu, i když žádné uzly nemá; pojistka uklidí i bez ended", () => {
+  vi.useFakeTimers();
+  try {
+    const p = falesnePrehravani([0.24]);
+    p.kousek(0);
+    p.kousek(1, true);
+    expect(p.uvolneno).not.toHaveBeenCalled();
+    // Prohlížeč „ended“ neohlásil: sezení se zavře samo chvíli po tom, co mělo dohrát.
+    vi.advanceTimersByTime(0.24 * 1000 + 2_000);
+    expect(p.uvolneno).toHaveBeenCalledWith("blob:hlas");
+    expect(p.audio.removeAttribute).toHaveBeenCalledWith("src");
+    p.odhlasit();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+// Promluva skončila dřív, než prohlížeč kontext Web Audia pustil: uzly se
+// už nemají zapojovat k prvku, který je zavřený.
+it("zesilPrehravani po odpojení už nic nezapojí, ani když se kontext rozběhne později", async () => {
+  vi.resetModules();
+  const { zesilPrehravani } = await import("./hlas.js");
+  const w = falesnyKontext("suspended");
+  let pust: () => void = () => {};
+  w.kontext.resume.mockImplementation(() => new Promise<void>((hotovo) => (pust = hotovo)));
+  const odpoj = zesilPrehravani({} as HTMLMediaElement, 300);
+  odpoj();
+  w.kontext.state = "running";
+  pust();
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(w.kontext.createMediaElementSource).not.toHaveBeenCalled();
+  // A odpojení zapojeného prvku je bezpečné i podruhé.
+  const odpoj2 = zesilPrehravani({} as HTMLMediaElement, 300);
+  odpoj2();
+  odpoj2();
+  expect(w.zdroj.disconnect).toHaveBeenCalledTimes(1);
+});
+
+// Kousky s dírou čekají na přeskok; když mezitím sezení dotáhne ticho ze
+// sítě, časovač přeskoku už nesmí nic dělat.
+it("sezení dotažené po tichu zruší čekání na přeskok", () => {
+  vi.useFakeTimers();
+  try {
+    const p = falesnePrehravani([0.24, 0.3, 0.3]);
+    p.kousek(0);
+    // Kousky 1 a 3 chybí: po přeskoku na 2 zůstane 4 dál čekat za dírou.
+    p.kousek(2);
+    p.kousek(4);
+    vi.advanceTimersByTime(PRESKOK_MS);
+    expect(p.prilepeno).toEqual(["0", "2"]);
+    vi.advanceTimersByTime(TICHO_MS);
+    expect(p.prilepeno).toEqual(["0", "2", "4"]);
+    expect(p.zdroj.endOfStream).toHaveBeenCalledTimes(1);
+    // Opozdilec ani další časovače už sezení nerozhýbou.
+    p.kousek(3);
+    vi.advanceTimersByTime(PRESKOK_MS * 2);
+    expect(p.prilepeno).toEqual(["0", "2", "4"]);
     p.odhlasit();
   } finally {
     vi.useRealTimers();

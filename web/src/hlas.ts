@@ -106,31 +106,51 @@ let kontextPrehravani: AudioContext | null = null;
  * Kontext, kterému prohlížeč nedovolil běžet (stránka bez jediného kliknutí),
  * by prvek umlčel úplně; proto se zapojuje, až když opravdu běží — do té
  * doby hraje prvek přímo, jen nezesílený.
+ *
+ * Vrací **odpojení**: kontext je jeden na celou stránku a každá zesílená
+ * promluva do něj přidá tři uzly. Bez odpojení po dohrání by v něm zůstaly
+ * viset všechny promluvy večera i se svými prvky `<audio>`.
  */
-export function zesilPrehravani(audio: HTMLMediaElement, procent: number): void {
+export function zesilPrehravani(audio: HTMLMediaElement, procent: number): () => void {
+  const nic = () => {};
   const Kontext = typeof window === "undefined" ? undefined : (window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
-  if (procent <= ZESILENI_MIN || !Kontext) return;
+  if (procent <= ZESILENI_MIN || !Kontext) return nic;
   try {
     kontextPrehravani ??= new Kontext();
   } catch {
-    return;
+    return nic;
   }
   const kontext = kontextPrehravani;
+  const uzly: AudioNode[] = [];
+  let odpojeno = false;
   const zapoj = () => {
-    if (kontext.state !== "running") return;
+    // Promluva mohla skončit dřív, než prohlížeč kontext pustil.
+    if (odpojeno || kontext.state !== "running") return;
     try {
       const zisk = kontext.createGain();
       zisk.gain.value = orizniZesileni(procent) / 100 / ROZSAH_KRIVKY;
       const omezeni = kontext.createWaveShaper();
       omezeni.curve = krivkaOmezeni();
       omezeni.oversample = "4x";
-      kontext.createMediaElementSource(audio).connect(zisk).connect(omezeni).connect(kontext.destination);
+      const zdroj = kontext.createMediaElementSource(audio);
+      uzly.push(zdroj, zisk, omezeni);
+      zdroj.connect(zisk).connect(omezeni).connect(kontext.destination);
     } catch {
       // Prvek už zapojený jinde nebo Web Audio selhalo — hraje nezesílený.
     }
   };
   if (kontext.state === "running") zapoj();
   else void kontext.resume().then(zapoj, () => {});
+  return () => {
+    odpojeno = true;
+    for (const uzel of uzly.splice(0)) {
+      try {
+        uzel.disconnect();
+      } catch {
+        // Už odpojený — nevadí.
+      }
+    }
+  };
 }
 
 /**
@@ -227,6 +247,10 @@ class Prehravani {
   #preskok: ReturnType<typeof setTimeout> | null = null;
   #ticho: ReturnType<typeof setTimeout> | null = null;
   #pojistka: ReturnType<typeof setTimeout> | null = null;
+  /** Odpojení zesílení z kontextu Web Audia (viz `zesilPrehravani`). */
+  readonly #odpojZesileni: () => void;
+  /** Adresa objektu (MediaSource nebo Blob) v `src` prvku — po dohrání se uvolní. */
+  #adresa: string | null = null;
   readonly #mime: string;
   readonly #zive: boolean;
   readonly #onZavreno: () => void;
@@ -237,11 +261,12 @@ class Prehravani {
     // Naplno, nezávisle na Master Volume — viz hlasitostAdmina().
     this.#audio.volume = Math.min(1, Math.max(0, hlasitostAdmina() / 100));
     this.#audio.addEventListener("ended", () => this.#zavri());
-    zesilPrehravani(this.#audio, zesileni);
+    this.#odpojZesileni = zesilPrehravani(this.#audio, zesileni);
     this.#zive = typeof MediaSource !== "undefined" && typeof MediaSource.isTypeSupported === "function" && MediaSource.isTypeSupported(mime);
     if (this.#zive) {
       this.#zdroj = new MediaSource();
-      this.#audio.src = URL.createObjectURL(this.#zdroj);
+      this.#adresa = URL.createObjectURL(this.#zdroj);
+      this.#audio.src = this.#adresa;
       this.#zdroj.addEventListener("sourceopen", () => {
         if (!this.#zdroj || this.#buffer) return;
         this.#buffer = this.#zdroj.addSourceBuffer(mime);
@@ -272,7 +297,9 @@ class Prehravani {
   /** Kousky můžou dorazit přeházené (každý je vlastní POST) — lepí se v pořadí. */
   prijmi(u: HlasUdalost): void {
     // Opozdilec po přeskočení nebo dvojí doručení: už se k němu nevrací.
-    if (this.#zavreno || u.poradi < this.#cekaPoradi) return;
+    // Totéž po konci promluvy (značka konce, nebo dotažení po tichu) —
+    // kousek přilepený za uzavřený proud by přehrávání otevřel znovu.
+    if (this.#zavreno || this.#konec || u.poradi < this.#cekaPoradi) return;
     this.#odlozene.set(u.poradi, u);
     this.#vyber();
     if (this.#ticho) clearTimeout(this.#ticho);
@@ -285,6 +312,9 @@ class Prehravani {
       // pak se přeskočí — jinak by zbytek promluvy mlčel až do konce.
       this.#preskok = setTimeout(() => {
         this.#preskok = null;
+        // Mezitím dohráno jinudy (ticho ze sítě): není co přeskakovat a
+        // minimum z ničeho by pořadí rozbilo.
+        if (this.#odlozene.size === 0) return;
         this.#cekaPoradi = Math.min(...this.#odlozene.keys());
         this.#vyber();
         this.#zpracuj();
@@ -314,6 +344,10 @@ class Prehravani {
   #dotahni(): void {
     this.#ticho = null;
     if (this.#konec) return;
+    // Odložené kousky se dohrají teď všechny; časovač přeskoku by je za
+    // chvíli zkoušel zpracovat podruhé nad uzavřeným sezením.
+    if (this.#preskok) clearTimeout(this.#preskok);
+    this.#preskok = null;
     for (const poradi of [...this.#odlozene.keys()].sort((a, b) => a - b)) {
       const u = this.#odlozene.get(poradi);
       if (u?.data) this.#fronta.push(dekoduj(u.data));
@@ -373,7 +407,8 @@ class Prehravani {
       return;
     }
     const blob = new Blob(this.#fronta.splice(0) as BlobPart[], { type: this.#mime });
-    this.#audio.src = URL.createObjectURL(blob);
+    this.#adresa = URL.createObjectURL(blob);
+    this.#audio.src = this.#adresa;
     void this.#audio.play()?.catch(() => this.#zavri());
   }
 
@@ -389,7 +424,21 @@ class Prehravani {
     if (this.#zavreno) return;
     this.#zavreno = true;
     for (const c of [this.#preskok, this.#ticho, this.#pojistka]) if (c) clearTimeout(c);
-    this.#onZavreno();
+    // Úklid po promluvě: jinak by každá nechala v kontextu Web Audia své
+    // uzly, v paměti prvek se zdrojem a neuvolněnou adresu objektu — za
+    // večer jich jsou stovky.
+    try {
+      this.#audio.pause();
+      this.#odpojZesileni();
+      if (this.#adresa !== null) {
+        URL.revokeObjectURL(this.#adresa);
+        this.#adresa = null;
+      }
+      this.#audio.removeAttribute("src");
+    } finally {
+      // Štítek „mluví“ musí zmizet, i kdyby úklid selhal.
+      this.#onZavreno();
+    }
   }
 }
 

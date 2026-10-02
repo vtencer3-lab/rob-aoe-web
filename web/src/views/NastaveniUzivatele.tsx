@@ -52,8 +52,9 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
       const audio = new Audio(adresa);
       // Naplno jako u ostatních — takhle to uslyší i oni.
       audio.volume = 1;
-      zesilPrehravani(audio, mikrofon);
+      const odpojZesileni = zesilPrehravani(audio, mikrofon);
       audio.onended = () => {
+        odpojZesileni();
         URL.revokeObjectURL(adresa);
         setZkouska("klid");
       };

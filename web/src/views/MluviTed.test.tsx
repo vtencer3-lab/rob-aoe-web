@@ -12,7 +12,7 @@ function nemeAudio() {
   const posluchaci = new Map<string, () => void>();
   vi.stubGlobal(
     "Audio",
-    vi.fn(() => ({ volume: 1, play: () => Promise.resolve(), pause: () => {}, addEventListener: (typ: string, cb: () => void) => void posluchaci.set(typ, cb) })),
+    vi.fn(() => ({ volume: 1, play: () => Promise.resolve(), pause: () => {}, removeAttribute: () => {}, addEventListener: (typ: string, cb: () => void) => void posluchaci.set(typ, cb) })),
   );
   return { dohralo: () => posluchaci.get("ended")?.() };
 }
