@@ -3,13 +3,13 @@ import { join } from "node:path";
 import { afterAll, beforeEach, expect, it, vi } from "vitest";
 import { getAktivniAkce } from "../db/events.js";
 import { createZapas, setZapasStav } from "../db/matches.js";
-import { closePool, getPool, withTransaction } from "../db/pool.js";
+import { closePool, getPool } from "../db/pool.js";
 import { buildServer } from "../http/server.js";
 import { ROZBOR } from "../shared/diplomacie/fixtures.js";
 import type { RozborScenare } from "../shared/diplomacie/scenar.js";
 import type { VysledekRozboru } from "./rozbor.js";
 import { revizeSondy, type VysledekSondy } from "./sonda.js";
-import { getSonduVerze, ulozVerziScenare, zalozDiploZapas } from "./db.js";
+import { getSonduVerze, ulozVerziScenare } from "./db.js";
 import { ROB, VERZE, klient, zapasOsmi } from "./testPomocnici.js";
 
 /** Skutečný scénář (kopie v repu se souhlasem autora) — routa kontroluje jeho hlavičku. */
@@ -340,12 +340,12 @@ it("verzi hranou jen dohranými a zrušenými zápasy jde smazat, běžící zá
   const v3 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("3")]), "LLC.aoe2scenario")).json().id;
   await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2}/aktivni`, cookies: { sid: jin } });
   const { akce, sestava, zapas: prvni } = await zapasOsmi("diplomacie");
+  // Zápas Diplomacie si otisk aktivní verze založí sám (háček poVytvoreniZapasu).
   const druhy = await createZapas(akce.id, sestava);
-  await withTransaction((c) => zalozDiploZapas(c, prvni.id));
-  await withTransaction((c) => zalozDiploZapas(c, druhy.id));
   await app.inject({ method: "POST", url: `/api/diplo/scenar/${v3}/aktivni`, cookies: { sid: jin } });
 
   const obaBezi = await smaz(jin, v2);
+  expect(await scenarZapasu(prvni.id)).toBe(v2);
   expect(obaBezi.statusCode).toBe(409);
   expect(obaBezi.json().chyba).toBe(`JIN_DIPLO_2.aoe2scenario hraje běžící zápasy #${prvni.poradi}, #${druhy.poradi} — smazat ji půjde, až budou dohrané nebo zrušené.`);
 
@@ -367,7 +367,6 @@ it("verzi běžícího zápasu uzavřené akce jde smazat", async () => {
   const jin = await klient("jin", false);
   const v1 = (await nahraj(jin, LLC, "LLC.aoe2scenario")).json().id;
   const { akce, zapas } = await zapasOsmi("diplomacie");
-  await withTransaction((c) => zalozDiploZapas(c, zapas.id));
   await getPool().query("UPDATE akce SET stav = 'konec' WHERE id = $1", [akce.id]);
   const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("2")]), "LLC.aoe2scenario")).json().id;
   await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2}/aktivni`, cookies: { sid: jin } });
