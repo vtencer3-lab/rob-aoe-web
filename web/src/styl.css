@@ -36,6 +36,15 @@
   font-display: swap;
 }
 
+/* Zastávky přechodu, kterým se kreslí ražený kov tlačítek. Přechod
+   (`linear-gradient`) se sám prolínat neumí — mezi klidem a najetím
+   přeskakuje a tlačítko „blikne“. Barva ano, ale jen když prohlížeč ví, že
+   vlastnost barvou je; proto jsou zastávky registrované. Tlačítko si do nich
+   bere barvy z palety (`--kov-…` v `:root`) a přechází mezi nimi. */
+@property --kov-1 { syntax: "<color>"; inherits: false; initial-value: transparent; }
+@property --kov-2 { syntax: "<color>"; inherits: false; initial-value: transparent; }
+@property --kov-3 { syntax: "<color>"; inherits: false; initial-value: transparent; }
+
 /* Barvy jsou vytažené přímo z loga Brohemians (nástroj `nastroje/grafika/paleta.py`),
    ne odhadnuté. Proto do stránky logo zapadne, místo aby na ní leželo. */
 :root {
@@ -58,6 +67,20 @@
   /* Dřevo panelu: základ, na kterém drží zlaté linky rámu. */
   --drevo: #241610;
   --drevo-tmave: #160d08;
+  /* Ražený kov tlačítek shora dolů (světlá hrana, plocha, stín), v klidu
+     a pod kurzorem: tmavý pro běžná tlačítka, zlatý pro hlavní akci. */
+  --kov-tmavy-1: #4a2a1c;
+  --kov-tmavy-2: #2c1710;
+  --kov-tmavy-3: #200f0a;
+  --kov-tmavy-najeti-1: #5e3724;
+  --kov-tmavy-najeti-2: #3a1e14;
+  --kov-tmavy-najeti-3: #2a1410;
+  --kov-zlaty-1: #e2c47c;
+  --kov-zlaty-2: #c99a35;
+  --kov-zlaty-3: #9d7420;
+  --kov-zlaty-najeti-1: #e8cd88;
+  --kov-zlaty-najeti-2: #d2a53e;
+  --kov-zlaty-najeti-3: #a67c22;
 
   /* Významové barvy. Zelená a červená jsou ztlumené do teplé palety —
      signální odstíny z původního návrhu tu působily jako semafor. */
@@ -181,7 +204,7 @@ header .logo {
      má zůstat vidět, že látka někde začíná. */
   margin: -0.5rem -60px 0 0;
   filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 22px rgba(0, 0, 0, 0.45));
-  transition: filter 0.2s;
+  transition: filter var(--prechod) ease;
 }
 header .logo img { display: block; width: 100%; height: auto; }
 /* Pod kurzorem štít o kousek prosvětlí — jinak by na něm nešlo poznat, že
@@ -348,7 +371,10 @@ header h1 {
    ostatní. Obojí má nahoře světlou hranu a dole stín, jako ražený kov. */
 a.tlacitko, button.tlacitko, .cta, button.vytvorit, button.plus {
   display: inline-block;
-  background: linear-gradient(#e2c47c, #c99a35 45%, #9d7420);
+  --kov-1: var(--kov-zlaty-1);
+  --kov-2: var(--kov-zlaty-2);
+  --kov-3: var(--kov-zlaty-3);
+  background: linear-gradient(var(--kov-1), var(--kov-2) 45%, var(--kov-3));
   color: #23150a;
   font-family: "Cinzel", Georgia, serif;
   font-weight: 800;
@@ -375,7 +401,10 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
   /* Barva textu musí být řečená i tady: obecné pravidlo pro odkazy pod
      kurzorem je zesvětluje, a zlaté tlačítko je odkaz — nápis pak zbělal. */
   color: #23150a;
-  background: linear-gradient(#e8cd88, #d2a53e 45%, #a67c22);
+  --kov-1: var(--kov-zlaty-najeti-1);
+  --kov-2: var(--kov-zlaty-najeti-2);
+  --kov-3: var(--kov-zlaty-najeti-3);
+  background: linear-gradient(var(--kov-1), var(--kov-2) 45%, var(--kov-3));
   box-shadow:
     inset 0 1px 0 rgba(255, 245, 215, 0.8),
     inset 0 -2px 5px rgba(90, 50, 8, 0.5),
@@ -409,7 +438,10 @@ a.tlacitko, button.tlacitko, .cta:not(.spectate) {
 }
 
 button:not(:where(.bez-vzhledu)) {
-  background: linear-gradient(#4a2a1c, #2c1710 60%, #200f0a);
+  --kov-1: var(--kov-tmavy-1);
+  --kov-2: var(--kov-tmavy-2);
+  --kov-3: var(--kov-tmavy-3);
+  background: linear-gradient(var(--kov-1), var(--kov-2) 60%, var(--kov-3));
   color: var(--zlato-svetle);
   border: 1px solid var(--zlato-tmave);
   border-radius: 3px;
@@ -425,10 +457,30 @@ button:not(:where(.bez-vzhledu)) {
     0 1px 2px rgba(0, 0, 0, 0.5);
 }
 button:hover:enabled:not(:where(.bez-vzhledu)) {
-  background: linear-gradient(#5e3724, #3a1e14 60%, #2a1410);
+  --kov-1: var(--kov-tmavy-najeti-1);
+  --kov-2: var(--kov-tmavy-najeti-2);
+  --kov-3: var(--kov-tmavy-najeti-3);
+  background: linear-gradient(var(--kov-1), var(--kov-2) 60%, var(--kov-3));
   border-color: var(--zlato);
 }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Pohyb tlačítek: najetí se prolne (kov přes registrované zastávky výš,
+   rámeček, záře, barva nápisu), zamčení a odemčení taky (průhlednost) a
+   stisk tlačítko lehce zamáčkne. Stisk jde přes `translate`/`scale`, ne
+   `transform`: ten některá tlačítka používají k usazení (křížek lišty,
+   záložka) a stisk by jim ho přepsal. */
+button:not(:where(.bez-vzhledu)), a.tlacitko, .cta {
+  transition:
+    --kov-1 var(--prechod-rychly) ease, --kov-2 var(--prechod-rychly) ease, --kov-3 var(--prechod-rychly) ease,
+    background-color var(--prechod-rychly) ease, border-color var(--prechod-rychly) ease, color var(--prechod-rychly) ease,
+    box-shadow var(--prechod-rychly) ease, opacity var(--prechod-rychly) ease, filter var(--prechod-rychly) ease,
+    translate var(--prechod-rychly) var(--krivka), scale var(--prechod-rychly) var(--krivka);
+}
+button:active:enabled:not(:where(.bez-vzhledu)), a.tlacitko:active, .cta:active:not([aria-disabled="true"]) { translate: 0 1px; scale: 0.98; }
+/* Tlačítka, která vypadají jako text (kopírování, jméno, řazení, odpověď
+   v chatu, položka našeptávače), se nezmenšují — u dlouhé cesty by se pod
+   prstem posunul celý řádek; stačí jim sednutí o pixel. */
+button.kopirovatelne:active:enabled, button.jmeno:active:enabled, button.razeni:active:enabled, button.odpoved-na:active:enabled, button.polozka:active:enabled { scale: none; }
 button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
   outline: 2px solid var(--zlato);
   outline-offset: 2px;
@@ -723,7 +775,7 @@ h2.nadpis-akce::after {
    běžné nastavování, tak stojí v modálním okně — okolí ztmavne a kliknutí
    vedle (nebo Escape) ho zavře. */
 .hlavicka-akce .prelobby-tlacitko { margin-left: auto; }
-.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); transition: background 280ms ease; }
+.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); transition: background var(--prechod-skladani) ease; }
 .prelobby-okno {
   width: min(34rem, 100%);
   max-height: calc(100vh - 4rem);
@@ -858,7 +910,7 @@ h2.nadpis-akce::after {
    kuželu od pozadí desky — soft light by neměl s čím míchat a spadl by na
    obyčejnou bílou placku. */
 .prihlaseni-volby a img {
-  transition: filter 280ms ease, transform 120ms ease;
+  transition: filter var(--prechod-skladani) ease, transform var(--prechod-rychly) ease;
 }
 .prihlaseni-volby:hover a img, .prihlaseni-volby:focus-within a img {
   filter: brightness(0.34) saturate(0.5);
@@ -885,7 +937,7 @@ h2.nadpis-akce::after {
   background: radial-gradient(circle, rgba(255, 255, 255, 0.33), rgba(255, 255, 255, 0.12) 45%, transparent 72%);
   mix-blend-mode: soft-light;
   opacity: 0;
-  transition: opacity 280ms ease;
+  transition: opacity var(--prechod-skladani) ease;
   /* Záře nesmí brát kliknutí ani hover, jinak by si erb bral pozornost sám. */
   pointer-events: none;
 }
@@ -900,14 +952,14 @@ h2.nadpis-akce::after {
 /* Couvne i okolí, ne jen druhý erb — jinak reflektor svítí do rozsvícené
    místnosti. Nadpis se ztlumí, deska dostane stín od krajů dovnitř. */
 .prihlaseni-okno h1 {
-  transition: filter 280ms ease;
+  transition: filter var(--prechod-skladani) ease;
 }
 .prihlaseni-okno:has(.prihlaseni-volby a:hover) h1,
 .prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) h1 {
   filter: brightness(0.5);
 }
 .prihlaseni-okno {
-  transition: box-shadow 280ms ease;
+  transition: box-shadow var(--prechod-skladani) ease;
 }
 .prihlaseni-okno:has(.prihlaseni-volby a:hover),
 .prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) {
@@ -1033,6 +1085,7 @@ input, select {
   padding: 0.4rem 0.6rem;
   font-family: Georgia, "Times New Roman", serif;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(216, 168, 58, 0.12);
+  transition: border-color var(--prechod-rychly) ease, box-shadow var(--prechod-rychly) ease;
 }
 input:focus, select:focus { outline: none; border-color: var(--zlato); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 0 0 2px rgba(216, 168, 58, 0.35); }
 /* Rozbalený seznam vykresluje prohlížeč mimo stránku, takže dědí jen barvy
@@ -1059,6 +1112,7 @@ select { color-scheme: dark; accent-color: var(--zlato-tmave); }
   display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.45rem 0.3rem;
   background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 220, 150, 0.18); border-radius: 4px;
   color: var(--text); font: inherit; font-size: 0.85rem; cursor: pointer; text-shadow: none;
+  transition: background-color var(--prechod-rychly) ease, border-color var(--prechod-rychly) ease, box-shadow var(--prechod-rychly) ease, translate var(--prechod-rychly) var(--krivka), scale var(--prechod-rychly) var(--krivka);
 }
 .vyber-mapy .mapa:hover, .vyber-mapy .mapa:focus-visible { border-color: var(--zlato); background: rgba(80, 55, 20, 0.45); }
 .vyber-mapy .mapa.aktivni { border-color: var(--zlato); box-shadow: 0 0 0 2px var(--zlato-tmave) inset; background: rgba(120, 85, 30, 0.45); }
@@ -1107,14 +1161,16 @@ input[type="checkbox"], input[type="radio"] {
   border-radius: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
   cursor: pointer;
+  transition: border-color var(--prechod-rychly) ease, scale var(--prechod-rychly) var(--krivka);
 }
+input[type="checkbox"]:active:enabled, input[type="radio"]:active:enabled { scale: 0.9; }
 input[type="radio"] { border-radius: 50%; }
 input[type="checkbox"]::before {
   content: "";
   width: 0.62rem;
   height: 0.62rem;
   transform: scale(0);
-  transition: transform 0.08s ease-out;
+  transition: transform var(--prechod-rychly) var(--krivka);
   background: linear-gradient(#f6e3a6, var(--zlato));
   clip-path: polygon(14% 44%, 0 60%, 40% 100%, 100% 22%, 86% 8%, 38% 70%);
 }
@@ -1132,7 +1188,7 @@ input[type="radio"]::before {
   height: 0.5rem;
   border-radius: 50%;
   transform: scale(0);
-  transition: transform 0.08s ease-out;
+  transition: transform var(--prechod-rychly) var(--krivka);
   background: radial-gradient(circle at 35% 30%, #fdf0c4, var(--zlato));
 }
 input[type="radio"]:checked::before { transform: scale(1); }
@@ -1226,7 +1282,7 @@ button.kopirovatelne {
 }
 button.kopirovatelne:hover { background: rgba(216, 168, 58, 0.16); }
 button.kopirovatelne strong { color: var(--text); }
-.ikona-kopie { color: var(--tlumene); flex: none; }
+.ikona-kopie { color: var(--tlumene); flex: none; transition: color var(--prechod-rychly) ease; }
 button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 .toast {
   position: absolute;
@@ -1509,7 +1565,7 @@ details[open]:not([data-zavira]) > summary::before { rotate: 90deg; }
 .vyber-civ-seznam { transform-origin: top; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
 .chat .naseptavac { transform-origin: bottom; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
 @keyframes seznam-vznik { from { opacity: 0; scale: 1 0.92; } }
-.vyber-civ-seznam li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 1.05rem; }
+.vyber-civ-seznam li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 1.05rem; transition: background-color var(--prechod-rychly) ease; }
 .vyber-civ-seznam li:hover { background: rgba(216, 168, 58, 0.16); }
 .vyber-civ-seznam li.vybrana { background: linear-gradient(#e2c47c, #c99a35); color: #23150a; }
 
@@ -1574,11 +1630,18 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    klávesnici a čtečky, vidět je drážka s knoflíkem. */
 .prepinac { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.8rem; color: var(--tlumene); user-select: none; }
 .prepinac input { position: absolute; opacity: 0; width: 0; height: 0; }
-.prepinac .drazka { position: relative; box-sizing: border-box; width: 1.7rem; height: 0.95rem; border-radius: 1rem; background: linear-gradient(#150d08, #2a1a12); border: 1px solid var(--zlato-tmave); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8); transition: background 0.15s; flex: none; }
+.prepinac .drazka { position: relative; box-sizing: border-box; width: 1.7rem; height: 0.95rem; border-radius: 1rem; background: linear-gradient(#150d08, #2a1a12); border: 1px solid var(--zlato-tmave); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8); transition: border-color var(--prechod) ease; flex: none; }
+/* Zlatá drážka zapnutého přepínače leží nad tmavou jako vlastní vrstva a
+   prolíná se průhledností: přechod (gradient) pozadí by mezi tmavou a zlatou
+   přeskočil. Knoflík je v pořadí prvků až za ní, takže jede nad ní. */
+.prepinac .drazka::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(var(--kov-zlaty-1), var(--kov-zlaty-2)); opacity: 0; transition: opacity var(--prechod) ease; }
+.prepinac.zapnuto .drazka::before { opacity: 1; }
 /* Knoflík svisle přesně uprostřed drážky (výška drážky bez rámečku), ne o
    tloušťku rámečku výš. */
-.prepinac .knoflik { position: absolute; top: 50%; transform: translateY(-50%); left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
-.prepinac.zapnuto .drazka { background: linear-gradient(#e2c47c, #c99a35); border-color: var(--zlato); }
+.prepinac .knoflik { position: absolute; top: 50%; transform: translateY(-50%); left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left var(--prechod) var(--krivka), background-color var(--prechod) ease, scale var(--prechod-rychly) var(--krivka); }
+.prepinac:active .knoflik { scale: 0.85; }
+.prepinac.zapnuto .drazka { border-color: var(--zlato); }
+.prepinac > span { transition: color var(--prechod) ease; }
 .prepinac.zapnuto .knoflik { left: calc(100% - 0.95rem + 4px); background: #241d10; }
 /* Oba popisky stejně těžké — jen barva říká, která poloha platí; tučný text
    na jedné straně dělal přepínač opticky nakřivo. */
@@ -1703,6 +1766,9 @@ button.dlazdice.barva-7 { background: var(--b7); border-color: var(--b7); }
 button.dlazdice.barva-8 { background: var(--b8); border-color: var(--b8); }
 /* Světlé barvy (žlutá, oranžová) mají tmavé písmo bez stínu — jako u výsledků. */
 button.dlazdice.barva-4, button.dlazdice.barva-8 { color: var(--obrys); text-shadow: none; }
+/* Dlaždice si pod kurzorem drží barvu hráče (obecný hover tlačítek na ni
+   nedosáhne), tak se aspoň rozsvítí; zlatý rám výběru se prolne. */
+button.dlazdice:hover:enabled { filter: brightness(1.12); }
 button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0 0 2px var(--zlato), 0 2px 6px color-mix(in srgb, var(--obrys) 70%, transparent); }
 /* Znak role v tabulce má 36 px (`--znak`): při 26 px byly úzké znaky —
    pochodeň Nájezdníka, sekera Kata, žezlo Nástupce — nečitelné (uživatel
@@ -1846,7 +1912,8 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
    — je to informace „asi tu není“, ne škrtnutí. Ztmavnutí se prolne, přejezd
    na nové místo obstará FLIP v komponentě (jen `transform` se tu nepřechází,
    ať si ho animace řídí sama). */
-.seznam > tbody > tr { opacity: 1; transition: opacity 340ms ease; }
+.seznam > tbody > tr { opacity: 1; transition: opacity 340ms ease, background-color var(--prechod-rychly) ease; }
+.seznam > tbody > tr > td { transition: background-color var(--prechod-rychly) ease; }
 @media (prefers-reduced-motion: reduce) {
   .seznam > tbody > tr { transition: none; }
 }
@@ -1888,7 +1955,7 @@ h2 .nazev-akce-text {
   margin-left: -0.65rem;
   border: 1px solid transparent;
   border-radius: 2px;
-  transition: border-color 0.18s, color 0.18s;
+  transition: border-color var(--prechod-rychly), color var(--prechod-rychly);
 }
 h2 button.nazev-akce-tlacitko:hover .nazev-akce-text,
 h2 button.nazev-akce-tlacitko:focus-visible .nazev-akce-text {
@@ -1905,7 +1972,7 @@ h2 .tuzka-napovedy {
   vertical-align: 0.22em;
   color: var(--zlato);
   opacity: 0;
-  transition: opacity 0.18s;
+  transition: opacity var(--prechod-rychly);
   text-shadow: 0 0 12px rgba(216, 168, 58, 0.6);
 }
 h2 button.nazev-akce-tlacitko:hover .tuzka-napovedy,
@@ -2095,6 +2162,7 @@ h2 input.nazev-akce-pole {
 .staty-hrace th:not(:first-child), .staty-hrace td:not(:first-child) { text-align: center; }
 .staty-hrace td { padding: 0.15rem 0.5rem; font-size: 1rem; color: var(--text); border-bottom: 1px solid rgba(216, 168, 58, 0.16); }
 .staty-hrace tbody tr:nth-child(even) { background: rgba(216, 168, 58, 0.045); }
+.staty-hrace tbody tr { transition: background-color var(--prechod-rychly) ease; }
 .staty-hrace tbody tr:hover { background: rgba(216, 168, 58, 0.10); }
 .staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
 .staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
@@ -2127,7 +2195,7 @@ h2 input.nazev-akce-pole {
    hover ho jen lehce zezlátne. */
 /* Odsazení musí stát až za `all: unset` z `bez-vzhledu`, ten smaže i okraje.
    Mezi pomlčkou a jménem jinak nezbyla mezera — tlačítko se lepilo na ni. */
-h1 button.jmeno-roba { margin-left: 10px; transition: color 0.2s; }
+h1 button.jmeno-roba { margin-left: 10px; transition: color var(--prechod) ease, text-shadow var(--prechod) ease; }
 h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
   color: var(--zlato);
   background: none;
@@ -2139,7 +2207,10 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 /* Čtverečky barvy a týmu se neoznačují jako text (na kartě hráče jsou to
    jen span). Tlačítka ve skládání se při stisku zamáčknou: zkosení se
    obrátí a čtvereček trochu zmenší. */
-.skladani .volba { user-select: none; -webkit-user-select: none; transition: transform 0.08s ease, box-shadow 0.08s ease; }
+/* Vlastní stisk (níž) místo obecného sednutí tlačítek; barva se při změně
+   slotu nebo míchání barev přelije, místo aby přeskočila. */
+.skladani .volba { user-select: none; -webkit-user-select: none; transition: transform var(--prechod-rychly) ease, box-shadow var(--prechod-rychly) ease, background-color var(--prechod) ease, border-color var(--prechod-rychly) ease, color var(--prechod) ease; }
+.skladani button.volba:active:enabled, .skladani button.odebrat:active:enabled, button.plus:active:enabled, button.zvonek:active:enabled { translate: none; scale: none; }
 .skladani button.volba:active {
   transform: scale(0.92) translateY(1px);
   box-shadow:
@@ -2147,7 +2218,8 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
     inset 2px 2px 0 rgba(0, 0, 0, 0.5),
     inset 0 0 0 3px rgba(212, 175, 95, 0.55);
 }
-.skladani button.odebrat, button.plus { transition: transform 0.08s ease; }
+.skladani button.odebrat { transition: transform var(--prechod-rychly) ease, color var(--prechod-rychly) ease, border-color var(--prechod-rychly) ease, --kov-1 var(--prechod-rychly) ease, --kov-2 var(--prechod-rychly) ease, --kov-3 var(--prechod-rychly) ease; }
+button.plus { transition: transform var(--prechod-rychly) ease, box-shadow var(--prechod-rychly) ease, opacity var(--prechod-rychly) ease, filter var(--prechod-rychly) ease, --kov-1 var(--prechod-rychly) ease, --kov-2 var(--prechod-rychly) ease, --kov-3 var(--prechod-rychly) ease; }
 .skladani button.odebrat:active, button.plus:active { transform: scale(0.9); }
 
 /* Účastníci zápasu v režii: čtverečky, jméno, ELO, stav a vpravo odznak
@@ -2217,7 +2289,7 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 
 ::selection { background: rgba(216, 168, 58, 0.4); color: #fff6e0; }
 
-a { color: var(--zlato); }
+a { color: var(--zlato); transition: color var(--prechod-rychly) ease; }
 a:hover { color: var(--zlato-svetle); }
 
 /* Popisky nastavení a drobné texty patří ke kapitálce, ne k textu odstavce —
@@ -2377,6 +2449,7 @@ a:hover { color: var(--zlato-svetle); }
    v barvě jeho slotu, admin ve své barvě a se září, ať je v proudu vidět. */
 .chat { margin-top: 1rem; border-top: 1px solid rgba(255, 220, 150, 0.18); padding-top: 0.6rem; }
 .chat .chat-nadpis { display: flex; width: 100%; box-sizing: border-box; align-items: center; justify-content: center; gap: 0.4rem; margin: 0 0 0.4rem; padding: 0.2rem 0; cursor: pointer; user-select: none; font-family: "Cinzel", Georgia, "Times New Roman", serif; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; font-variant: small-caps; color: var(--zlato-svetle); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 14px rgba(216, 168, 58, 0.18); }
+.chat .chat-titulek { transition: color var(--prechod-rychly) ease; }
 .chat .chat-nadpis:hover .chat-titulek { color: var(--zlato); }
 .chat .chat-nadpis:focus-visible { outline: 1px solid var(--zlato-tmave); outline-offset: 2px; }
 /* Šipka hlavičky chatu a rohového tlačítka karty zápasu: komponenta píše
@@ -2479,7 +2552,7 @@ body.bez-scrollu { overflow: hidden; }
 .chat .zpravy li .akce { display: inline-flex; align-items: center; gap: 0.3rem; }
 .chat .smazat-zpravu, .chat .odpovedet { padding: 0 0.4rem; line-height: 1; font-size: 0.9rem; opacity: 0.55; }
 .chat .smazat-zpravu:hover, .chat .odpovedet:hover { opacity: 1; }
-.chat .odpovedet { opacity: 0; transition: opacity 0.12s; }
+.chat .odpovedet { opacity: 0; transition: opacity var(--prechod-rychly); }
 .chat .zpravy li:hover .odpovedet, .chat .odpovedet:focus-visible { opacity: 0.7; }
 /* Náhled původní zprávy nad odpovědí: jeden řádek, tlumený, klik skočí na původní. */
 .chat .odpoved-na { grid-column: 2 / -1; justify-self: start; display: block; max-width: 100%; margin: 0 0 0.05rem; padding: 0 0.3rem; background: none; border: 0; border-left: 2px solid rgba(216, 168, 58, 0.45); border-radius: 0; box-shadow: none; text-align: left; font: inherit; font-size: 0.78rem; color: var(--tlumene); opacity: 0.8; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -2522,11 +2595,11 @@ body.bez-scrollu { overflow: hidden; }
    th výš ji zarovnávalo doprava. */
 .seznam th.jsem-tu-bunka { text-align: center; }
 .super-zvonek { width: 2.1rem; }
-.zvonek { display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; padding: 0; margin: 0; line-height: 1; font-size: 1rem; vertical-align: middle; transition: transform 0.08s ease; }
+.zvonek { display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; padding: 0; margin: 0; line-height: 1; font-size: 1rem; vertical-align: middle; }
 .zvonek:active { transform: scale(0.86); }
 .zvonek:not(:disabled):active { animation: zvon-kyv 0.35s ease; }
-.zvonek { transition: transform 0.08s ease, opacity 0.6s ease, filter 0.6s ease; }
-.zvonek.chladne, .zvonek:disabled { opacity: 0.4; filter: grayscale(0.7); cursor: default; transition: transform 0.08s ease, opacity 0s, filter 0s; }
+.zvonek { transition: transform var(--prechod-rychly) ease, opacity 0.6s ease, filter 0.6s ease, --kov-1 var(--prechod-rychly) ease, --kov-2 var(--prechod-rychly) ease, --kov-3 var(--prechod-rychly) ease, border-color var(--prechod-rychly) ease; }
+.zvonek.chladne, .zvonek:disabled { opacity: 0.4; filter: grayscale(0.7); cursor: default; transition: transform var(--prechod-rychly) ease, opacity 0s, filter 0s; }
 /* Super zvonek v hlavičce tabulky: dva zvonky, větší vzadu, menší vpředu se
    stínem (uživatel 13. 9. 2026). Svolá všechny, u kterých je zvonek. */
 .super-zvonek .dva-zvonky { position: relative; display: inline-block; width: 1.5rem; height: 1.3rem; }
@@ -2575,7 +2648,7 @@ body.bez-scrollu { overflow: hidden; }
   background: linear-gradient(rgba(30, 17, 12, 0.99), rgba(12, 7, 4, 0.99));
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 220, 150, 0.14);
   color: var(--text); font-family: Georgia, serif; font-size: 0.78rem; font-weight: 400; letter-spacing: 0; line-height: 1.2;
-  white-space: nowrap; text-align: left; text-shadow: none; opacity: 0; pointer-events: none; transition: opacity 0.1s;
+  white-space: nowrap; text-align: left; text-shadow: none; opacity: 0; pointer-events: none; transition: opacity var(--prechod-rychly);
 }
 .napoveda-vlastni .bublina hr { border: 0; border-top: 1px solid rgba(255, 220, 150, 0.22); margin: 0.05rem 0; }
 .napoveda-vlastni:hover .bublina, .napoveda-vlastni:focus-visible .bublina { opacity: 1; }
