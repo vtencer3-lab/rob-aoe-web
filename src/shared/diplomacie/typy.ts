@@ -1,4 +1,4 @@
-import type { HraZapasu, SondaScenare } from "./hra.js";
+import type { HraZapasu, SouhrnSondy } from "./hra.js";
 import type { RozborScenare } from "./scenar.js";
 
 /** Role hráče (spec §6.1). Nástupce se nelosuje — určí ho hra a odklikne GM. */
@@ -56,11 +56,11 @@ export interface ScenarVerze {
    */
   minimapaVlastni: boolean;
   /**
-   * XS sonda přibalená webem do kopie, kterou host stahuje: výpis cílů a
-   * případná chyba přibalení. Null = verze nahraná dřív, sonda se u ní
-   * ještě nepočítala.
+   * XS sonda přibalená webem do kopie, kterou host stahuje: kolik cílů
+   * v ní je a případná chyba přibalení. Null = verze nahraná dřív, sonda
+   * se u ní ještě nepočítala.
    */
-  sonda: SondaScenare | null;
+  sonda: SouhrnSondy | null;
 }
 
 /**

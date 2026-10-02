@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DiploZapas, ScenarVerze, StavDiplo } from "../shared/diplomacie/typy.js";
-import type { SnimekHry } from "../shared/diplomacie/hra.js";
+import type { DiploZapas, StavDiplo } from "../shared/diplomacie/typy.js";
+import type { SnimekHry, SondaScenare } from "../shared/diplomacie/hra.js";
 import type { Barva } from "../shared/types.js";
 
 // Databáze a rozesílání stavu jsou podvržené: zkouší se rozhodování nad
@@ -10,15 +10,15 @@ const db = vi.hoisted(() => ({
   zapasId: 12 as number | null,
   stav: "priprava" as StavDiplo,
   nastupce: null as string | null,
-  verze: null as ScenarVerze | null,
+  verze: null as { jmenoSouboru: string; sonda: SondaScenare | null } | null,
   setNastupce: vi.fn(),
   broadcastAkce: vi.fn(async () => {}),
 }));
 
 vi.mock("./db.js", () => ({
   najdiBeziciZapasGm: async (ids: string[]) => (ids.includes("h7") ? db.zapasId : null),
-  getDiploZapas: async (zapasId: number): Promise<DiploZapas> => ({ zapasId, gmHracId: "h7", stav: db.stav, nastupceHracId: db.nastupce, scenarId: db.verze ? db.verze.id : null, role: [] }),
-  getVerze: async () => db.verze,
+  getDiploZapas: async (zapasId: number): Promise<DiploZapas> => ({ zapasId, gmHracId: "h7", stav: db.stav, nastupceHracId: db.nastupce, scenarId: db.verze ? 3 : null, role: [] }),
+  getSonduVerze: async () => db.verze,
   setNastupce: async (zapasId: number, hracId: string) => {
     db.setNastupce(zapasId, hracId);
     db.nastupce = hracId;
@@ -119,7 +119,7 @@ describe("rozesílání stavu a odpověď mostu", () => {
   });
 
   it("varuje, když hra hlásí jiný scénář nebo verze nemá výpis cílů", async () => {
-    const verze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", sonda: { cile: [], oznaceno: 42, chyba: null } } as unknown as ScenarVerze;
+    const verze = { jmenoSouboru: "LLC.aoe2scenario", sonda: { cile: [], oznaceno: 42, chyba: null } };
     db.verze = verze;
     expect(await prijmiSnimek(snimek([4]), v(0))).toEqual({ zapasId: 12, nastupce: "h4" });
     // Jméno souboru sondy nese jméno scénáře bez přípony a hra ho může psát jinou velikostí písmen.
