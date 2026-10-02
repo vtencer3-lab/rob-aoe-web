@@ -1580,6 +1580,16 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-role .role .cil { font-weight: 700; }
 .karta-role .role ul { margin: 0; padding-left: 1.2rem; }
 .karta-role .role li { margin: 0.15rem 0; }
+/* Mapa pod kartou role je stejně široká jako karta nad ní (uživatel 2. 10.
+   2026: „tu mapu bych pořádně zvětšil“; do té doby 14 rem): 34 rem obsahu
+   `.role` + 2× 1 rem odsazení + 2× 1 px rámu — figure je border-box, `.role`
+   content-box, proto ten součet. Na telefonu obě vyplní šířku sekce. Značka
+   a rám jako u velké mapy GM; popisek „Tady začínáš“ větší, jen na telefonu
+   zůstává malý — u krajního startu vlastní mapy (popisek na ose kosočtverce)
+   by jinak vyčníval z mapy. */
+.karta-role .mapa-scenare { --mapa-mala: calc(34rem + 2rem + 2px); --znacka: 1.15rem; --ram: 16px; }
+.karta-role .mapa-scenare .popisek { font-size: 0.9rem; }
+@media (max-width: 40rem) { .karta-role .mapa-scenare .popisek { font-size: 0.72rem; } }
 /* „GM upravil tvou roli“ nad názvem: barvu dává .varovani, tady jen důraz. */
 /* Je to věta, ne bublina s nápovědou — otazník kurzoru z .varovani sem nepatří (jako .pult-gm .souhrn). */
 .karta-role .upozorneni { font-weight: 700; text-align: center; cursor: auto; }
