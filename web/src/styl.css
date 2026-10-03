@@ -1877,6 +1877,15 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
    a „Zpět na výběr Nástupce“ vedle něj, ať ji GM při streamu netrefuje
    omylem a nehledá. */
 .pult-gm .ovladani .cta { font-size: 1.15rem; padding: 0.75rem 1.6rem; }
+/* Nástupce je zvolený → další krok GM je rozdat role: tlačítko jemně dýchá
+   zlatou. Přes filter, ne box-shadow — ten nese kov tlačítka a animace by ho
+   přepsala (uživatel 3. 10. 2026: „aby to tlačítko trochu glowovalo“). */
+.pult-gm button.rozdat-role:enabled { animation: zare-rozdat 2.4s ease-in-out infinite; }
+@keyframes zare-rozdat {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--zlato) 55%, transparent)); }
+}
+@media (prefers-reduced-motion: reduce) { .pult-gm button.rozdat-role:enabled { animation: none; } }
 /* Pravidla hry (PravidlaHry.tsx): sbalovací tahák jako sekce kontroly lobby
    (Skladaci), ale nadpis ve zlaté kapitálce — je to kapitola, ne detail. */
 .pravidla-hry { margin-top: 0.8rem; text-align: left; }

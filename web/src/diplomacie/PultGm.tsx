@@ -90,7 +90,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                 </button>
               ))}
             </div>
-            <button type="button" className="cta" disabled={pracuje || nastupce === null} onClick={() => akce(() => diploApi.los(zapas.id))}>
+            <button type="button" className="cta rozdat-role" disabled={pracuje || nastupce === null} onClick={() => akce(() => diploApi.los(zapas.id))}>
               Rozdat role
             </button>
           </>
