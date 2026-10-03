@@ -64,18 +64,3 @@ export function odchylkySlozeni(role: RoleHrace[]): string[] {
   // Nadbytečné se hlásí před chybějícími — GM hledá, koho přeřadit.
   return vety.sort((a, b) => Number(a.startsWith("chybí")) - Number(b.startsWith("chybí")));
 }
-
-/** Text pro schránku ve formátu Jinova nástroje (`getFullText`). */
-export function textPrehledu(role: RoleHrace[], jmeno: (hracId: string) => string): string {
-  let text = "Rozdělení rolí:\n----------------\n";
-  for (const r of role) text += `${jmeno(r.hracId)}: ${NAZEV_ROLE[r.role]}\n`;
-  const sCilem = role.filter((r) => r.cilHracId !== null);
-  if (sCilem.length > 0) {
-    text += "\nSkryté cíle pro GM:\n----------------\n";
-    for (const r of sCilem) {
-      if (r.role === "kat") text += `Kat (${jmeno(r.hracId)}) -> Popravit: ${jmeno(r.cilHracId!)}\n`;
-      if (r.role === "zoldak") text += `Žoldák (${jmeno(r.hracId)}) -> Pakt s: ${jmeno(r.cilHracId!)}\n`;
-    }
-  }
-  return text;
-}

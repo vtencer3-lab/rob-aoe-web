@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { odchylkySlozeni, povoleneCile, textPrehledu } from "../../../src/shared/diplomacie/los.js";
+import { odchylkySlozeni, povoleneCile } from "../../../src/shared/diplomacie/los.js";
 import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
 import { ROLE_VOLITELNE, type DiploData, type Role } from "../../../src/shared/diplomacie/typy.js";
 import { BARVA_NAZEV, type Barva, type ZapasView } from "../../../src/shared/types.js";
 import type { Hlidej } from "../rezimy/index.js";
 import { JmenoUcastnika, VycetUcastniku, ZnakBarvy } from "../views/JmenoSBarvou.js";
-import { Kopirovatelne } from "../views/Kopirovatelne.js";
 import { Potvrzeni } from "../views/Potvrzeni.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
@@ -172,21 +171,24 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                   </tbody>
                 </table>
                 <p className={odchylky.length > 0 ? "souhrn varovani" : "souhrn"}>{odchylky.length > 0 ? odchylky.join(", ") : "Složení odpovídá pravidlům."}</p>
+                {/* Dvě řady (uživatel 3. 10. 2026): nahoře uprostřed Přelosovat,
+                    pod ním vlevo Zpět na výběr Nástupce, vpravo Rozeslat role. */}
+                {d.stav === "losovano" ? (
+                  <div className="ovladani">
+                    <button type="button" disabled={pracuje} onClick={() => akce(() => diploApi.los(zapas.id))}>
+                      Přelosovat
+                    </button>
+                  </div>
+                ) : null}
                 <div className="ovladani">
-                  {d.stav === "losovano" ? (
-                    <>
-                      <button type="button" disabled={pracuje} onClick={() => akce(() => diploApi.los(zapas.id))}>
-                        Přelosovat
-                      </button>
-                      <button type="button" className="cta" disabled={pracuje} onClick={() => akce(() => diploApi.rozeslat(zapas.id))}>
-                        Rozeslat role
-                      </button>
-                    </>
-                  ) : null}
                   <button type="button" disabled={pracuje} onClick={zpet}>
                     Zpět na výběr Nástupce
                   </button>
-                  <Kopirovatelne hodnota={textPrehledu(d.role, jmeno)} popis="přehled rolí" jenIkona />
+                  {d.stav === "losovano" ? (
+                    <button type="button" className="cta" disabled={pracuje} onClick={() => akce(() => diploApi.rozeslat(zapas.id))}>
+                      Rozeslat role
+                    </button>
+                  ) : null}
                 </div>
               </>
             )}

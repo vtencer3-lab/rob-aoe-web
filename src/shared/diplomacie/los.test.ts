@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { losujRole, odchylkySlozeni, povoleneCile, textPrehledu, zmenCil, zmenRoli } from "./los.js";
+import { losujRole, odchylkySlozeni, povoleneCile, zmenCil, zmenRoli } from "./los.js";
 
 const HRACI = ["a", "b", "c", "d", "e", "f", "g"];
 
@@ -84,13 +84,5 @@ describe("úpravy GM (chování Jinova nástroje)", () => {
     expect(odchylkySlozeni(zaklad)).toEqual([]);
     const triNajezdnici = zmenRoli(zaklad, kdo("kat"), "najezdnik", "a", nula);
     expect(odchylkySlozeni(triNajezdnici)).toEqual(["3× Nájezdník (má být 2×)", "chybí Kat"]);
-  });
-
-  it("textový přehled jako Jinův nástroj", () => {
-    const text = textPrehledu(zaklad, (id) => id.toUpperCase());
-    expect(text).toMatch(/^Rozdělení rolí:\n----------------\nA: Nástupce císaře\n/);
-    expect(text).toMatch(/Skryté cíle pro GM:\n----------------\n/);
-    expect(text).toMatch(/Kat \(.\) -> Popravit: .\n/);
-    expect(text).toMatch(/Žoldák \(.\) -> Pakt s: .\n/);
   });
 });

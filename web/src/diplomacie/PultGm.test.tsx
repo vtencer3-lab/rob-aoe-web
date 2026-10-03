@@ -213,13 +213,15 @@ it("Zpět na výběr Nástupce: po losu rovnou, po rozeslání jen s potvrzením
   expect(diploApi.zpet).toHaveBeenCalledWith(zapas.id, true);
 });
 
-// Po rozeslání už není co losovat ani upravovat — zůstává návrat a přehled.
-it("po rozeslání zmizí Přelosovat a Rozeslat, přehled se dá zkopírovat", () => {
+// Po rozeslání už není co losovat ani upravovat — zůstává jen návrat.
+// Kopírování přehledu rolí uživatel 3. 10. 2026 zrušil.
+it("po rozeslání zmizí Přelosovat a Rozeslat, zůstane Zpět", () => {
   render(<PultGm zapas={zapas} data={gmData("rozeslano", ROLE_LOS, "h1")} hlidej={spust} />);
   odkryj();
   expect(screen.queryByRole("button", { name: "Přelosovat" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Rozeslat role" })).toBeNull();
-  expect(screen.getByRole("button", { name: "Kopírovat přehled rolí" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Kopírovat přehled rolí" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Zpět na výběr Nástupce" })).toBeTruthy();
   expect(screen.getByText("Rozesláno")).toBeTruthy();
 });
 
@@ -258,11 +260,9 @@ it("zvolený Nástupce má na mapě pultu korunu", () => {
 });
 
 // Dvě AI se jmenují stejně („AI“ jako ve hře), takže je v tabulce, roletce
-// cíle, u spojence i v přehledu pro Discord musí rozlišit barva. Člověk
-// s jedinečným jménem přívěsek nedostane.
-it("dvě AI v sestavě rozliší barva: řádky, cíle, spojenec i přehled", () => {
-  const writeText = vi.fn(async () => {});
-  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+// cíle i u spojence musí rozlišit barva. Člověk s jedinečným jménem
+// přívěsek nedostane.
+it("dvě AI v sestavě rozliší barva: řádky, cíle i spojenec", () => {
   render(<PultGm zapas={ZAPAS_AI} data={gmData("losovano", ROLE_AI, "h1")} hlidej={spust} />);
   odkryj();
   expect(screen.getByRole("rowheader", { name: "AI (p3)" })).toBeTruthy();
@@ -275,9 +275,6 @@ it("dvě AI v sestavě rozliší barva: řádky, cíle, spojenec i přehled", ()
   expect(cile).toContain("AI (p5)");
   expect(screen.getAllByText(/^zná:/).map((z) => z.textContent)).toContain("zná: AI (p3)");
   expect(screen.queryByText(/Hráč \d \(p\d\)/)).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Kopírovat přehled rolí" }));
-  expect(writeText).toHaveBeenCalledWith(expect.stringContaining("AI (p3): Nájezdník"));
-  expect(writeText).toHaveBeenCalledWith(expect.stringContaining("Žoldák (AI (p5)) -> Pakt s: Hráč 2"));
 });
 
 // Smazaná verze (2. 10. 2026): dohraný zápas přijde o otisk a pult se
