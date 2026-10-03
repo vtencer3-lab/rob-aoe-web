@@ -1,4 +1,4 @@
-// Sonda Diplomacie (rob-aoe-web), format 3: kazde 2 herni sekundy prepise
+// Sonda Diplomacie (rob-aoe-web), format 3: kazdou herni sekundu prepise
 // soubor profile\<scenar>.xsdat - NA KAZDEM POCITACI VE HRE (hraci i divaci).
 // Rozlozeni:
 //   int verze (3) | int cas (herni s)
@@ -53,8 +53,8 @@ void sondaZapis() {
 
 rule _sondaTik
   active
-  minInterval 2
-  maxInterval 2
+  minInterval 1
+  maxInterval 1
 {
   sondaZapis();
 }

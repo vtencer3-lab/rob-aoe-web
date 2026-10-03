@@ -35,12 +35,13 @@ import { pametHer } from "./hraPamet.js";
 
 /**
  * Stav všem prohlížečům se staví z databáze, tak se průběžné změny
- * rozesílají nejvýš takhle často (změna Nástupce hned). Most posílá snímek
- * nejvýš jednou za 2 s; původních 5 s pult zdržovalo — uživatel 3. 10. 2026
- * viděl „občas celkem delay“. 1,5 s propustí každý snímek mostu a jen
- * odfiltruje dvojí doručení (WS + HTTP záloha, GM + divák).
+ * rozesílají nejvýš takhle často (změna Nástupce hned). Sonda píše každou
+ * herní sekundu a most posílá nejvýš jednou za 1 s; původních 5 s pult
+ * zdržovalo — uživatel 3. 10. 2026 chtěl aktualizaci po 1 s. 0,8 s propustí
+ * každý snímek mostu a jen odfiltruje dvojí doručení (WS + HTTP záloha,
+ * GM + divák).
  */
-const ROZESTUP_ROZESLANI_MS = 1_500;
+const ROZESTUP_ROZESLANI_MS = 800;
 
 export interface PrijetiSnimku {
   zapasId: number;
