@@ -59,7 +59,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 | 4.4 | **Kat — 2000 zlata** za každého padlého (Kat žije a nepadl on sám): připomínka GM | S „za padlého připomínka Katovi …“, DB |
 | 4.5 | **Garda — role padlého:** web ukáže Gardě sám (bod 2.4), GM připomínku nedostává | S, W „Garda vidí role padlých“ |
 | 4.6 | **Šašek → Garda:** padla původní Garda a Šašek žije → role `garda`, `puvodni_role = sasek`, čekající informace propadnou; bez mostu tlačítko GM „Garda padla“ | S „pád Gardy promění …“, DB routes „schopnosti …“ |
-| 4.7 | Proměna na kartě: zvon, ztmavlá karta Šaška, tlačítko „Královská garda padla“ → karta shoří → karta Gardy; Šašek po proměně informace nežádá | W „Šaškovi padla Garda …“, S „Šašek proměněný v Gardu …“ |
+| 4.7 | Proměna na kartě: zvon, ztmavlá karta Šaška, tlačítko „Královská garda padla“ → karta shoří (video `plameny.webm` přes kartu, maska jde s čelem ohně, 1,8 s) → karta Gardy; Šašek po proměně informace nežádá | W „Šaškovi padla Garda …“, „hořící karta Šaška přehraje video plamenů“, S „Šašek proměněný v Gardu …“ |
 | 4.8 | **Šašek prodává všechny relikvie**, když padl Nástupce — ne, když jemu samotnému běží odpočet (cizí odpočet ho nechrání); splněno, když má 0 relikvií | S „Šašek po smrti Nástupce“, „splnění …“, W |
 | 4.9 | **Nástupce prodává 1 relikvii**, když padl Šašek — ne při vlastním běžícím odpočtu; splněno, když počitadlo prodejů vzroste nad stav při smrti Šaška | S „Nástupce po smrti Šaška“, W |
 | 4.10 | Připomínky ze hry vznikají každá jen jednou (unikátní indexy), i když snímek chodí každou sekundu | DB „doplatky … se nezdvojí“ |

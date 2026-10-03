@@ -7,6 +7,7 @@ import nastupce from "../assets/diplomacie/role-nastupce.webp";
 import sasek from "../assets/diplomacie/role-sasek.webp";
 import zoldak from "../assets/diplomacie/role-zoldak.webp";
 import relikvie from "../assets/diplomacie/relikvie.webp";
+import plameny from "../assets/diplomacie/plameny.webm";
 import prohra from "../assets/diplomacie/prohra.webp";
 import rubKarty from "../assets/diplomacie/rub-karty.webp";
 
@@ -22,6 +23,12 @@ export const RUB_KARTY: string = rubKarty;
 
 /** Prohra role (zlomený meč přes bílou vlajku) — obrazovka „rezignuj“ na kartě. */
 export const ZNAK_PROHRA: string = prohra;
+
+/**
+ * Plameny hořící karty (proměna Šaška v Gardu): VP9 s průhledností,
+ * 720×960, 1,8 s. Vygeneroval je Codex procedurálně, `nastroje/grafika/plameny.mjs`.
+ */
+export const PLAMENY: string = plameny;
 
 /** Relikvie ze hry (90×95 px, od uživatele 3. 10. 2026) — místo slova „relikvie“ u počtu. */
 export const ZNAK_RELIKVIE: string = relikvie;

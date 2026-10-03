@@ -14,7 +14,7 @@ import { MojeCile } from "./MojeCile.js";
 import { MojeSchopnosti, PovinnyProdej } from "./Schopnosti.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
-import { RUB_KARTY, ZNAK_PROHRA, ZNAK_ROLE } from "./znaky.js";
+import { PLAMENY, RUB_KARTY, ZNAK_PROHRA, ZNAK_ROLE } from "./znaky.js";
 
 interface Props {
   zapas: ZapasView;
@@ -194,8 +194,8 @@ function OdhaleneRole({ odhalene, ucastnici }: { odhalene: DiploZapas["odhaleneR
   );
 }
 
-/** Jak dlouho karta Šaška hoří, než se ukáže Garda (CSS `.karta-promena.hori`). */
-const HORENI_MS = 1600;
+/** Jak dlouho karta Šaška hoří, než se ukáže Garda — délka videa plamenů i CSS `.karta-promena.hori`. */
+const HORENI_MS = 1800;
 
 /**
  * Karta Šaška po pádu Gardy: ztmavlá, přes ni velké tlačítko. Po kliknutí
@@ -215,6 +215,8 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       <div className="karta-promena-obsah" aria-hidden="true">
         {children}
       </div>
+      {/* Plameny přes kartu (video s průhledností, uživatel 3. 10. 2026); pod nimi ji maska ukusuje zdola. */}
+      {hori ? <video className="plameny" src={PLAMENY} autoPlay muted playsInline preload="auto" aria-hidden="true" data-testid="plameny" /> : null}
       {hori ? null : (
         <button type="button" className="primarni promena-tlacitko" onClick={() => setHori(true)}>
           Královská garda padla

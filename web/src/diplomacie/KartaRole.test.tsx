@@ -351,3 +351,11 @@ it("obrazovka prohry jde zavřít", () => {
   fireEvent.click(within(screen.getByTestId("prohra")).getByRole("button", { name: "Zavřít" }));
   expect(screen.queryByTestId("prohra")).toBeNull();
 });
+
+it("hořící karta Šaška přehraje video plamenů", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null, puvodniRole: "sasek", promenaVidena: false }]);
+  render(<KartaRole zapas={zapas} data={data} ja="h2" hlidej={hlidej} />);
+  expect(screen.queryByTestId("plameny")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Královská garda padla" }));
+  expect(screen.getByTestId("plameny").tagName).toBe("VIDEO");
+});

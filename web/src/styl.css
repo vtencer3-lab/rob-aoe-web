@@ -1919,16 +1919,25 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-promena.hori .karta-promena-obsah {
   -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) - 12%), black calc(var(--hori) + 4%));
   mask-image: linear-gradient(to top, transparent calc(var(--hori) - 12%), black calc(var(--hori) + 4%));
-  animation: hori 1.6s ease-in forwards;
+  animation: hori 1.8s linear forwards;
 }
+/* Maska jde s čelem ohně ve videu (plameny.webm): to vyšlehne v 0,15 s
+   a nahoře je v 1,4 s; okraj masky drží těsně pod spáleným pásem. */
 @keyframes hori {
   0% { --hori: 0%; filter: brightness(0.35) grayscale(0.6); }
-  25% { filter: sepia(1) saturate(4) brightness(1.1) drop-shadow(0 0 6px var(--zlato)); }
-  100% { --hori: 125%; filter: sepia(1) saturate(3) brightness(0.5) drop-shadow(0 0 10px var(--zlato)); }
+  8% { --hori: 0%; }
+  25% { filter: sepia(1) saturate(4) brightness(1.1); }
+  78% { --hori: 105%; }
+  100% { --hori: 125%; filter: sepia(1) saturate(3) brightness(0.5); }
+}
+/* Video plamenů přes celou kartu: roztažené (fill), ať čelo ohně ve videu
+   sedí s maskou i u karty jiného poměru stran než 3 : 4. */
+.karta-promena .plameny { position: absolute; inset: -6% -3% -2%; width: auto; height: auto; object-fit: fill; pointer-events: none; z-index: 2; }
 }
 @media (prefers-reduced-motion: reduce) {
   .karta-promena .promena-tlacitko { animation: none; }
   .karta-promena.hori .karta-promena-obsah { animation: none; opacity: 0; }
+  .karta-promena .plameny { display: none; }
 }
 @media (min-width: 72rem) {
   .karta-role .karta-vedle { display: grid; grid-template-columns: minmax(0, calc(36rem + 2px)) minmax(0, 1fr); gap: 0 1.5rem; align-items: start; }
