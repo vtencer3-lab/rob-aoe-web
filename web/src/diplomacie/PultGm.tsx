@@ -184,7 +184,8 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                 </table>
                 <p className={odchylky.length > 0 ? "souhrn varovani" : "souhrn"}>{odchylky.length > 0 ? odchylky.join(", ") : "Složení odpovídá pravidlům."}</p>
                 {/* Dvě řady (uživatel 3. 10. 2026): nahoře uprostřed Přelosovat,
-                    pod ním vlevo Zpět na výběr Nástupce, vpravo Rozeslat role. */}
+                    pod ním Zpět na výběr Nástupce u levého a Rozeslat role
+                    u pravého kraje. */}
                 {d.stav === "losovano" ? (
                   <div className="ovladani">
                     <button type="button" disabled={pracuje} onClick={() => akce(() => diploApi.los(zapas.id))}>
@@ -192,7 +193,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                     </button>
                   </div>
                 ) : null}
-                <div className="ovladani">
+                <div className="ovladani krajni">
                   <button type="button" disabled={pracuje} onClick={zpet}>
                     Zpět na výběr Nástupce
                   </button>

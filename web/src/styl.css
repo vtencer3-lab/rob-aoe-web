@@ -1904,6 +1904,10 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
    a „Zpět na výběr Nástupce“ vedle něj, ať ji GM při streamu netrefuje
    omylem a nehledá. */
 .pult-gm .ovladani .cta { font-size: 1.15rem; padding: 0.75rem 1.6rem; }
+/* Druhá řada pultu: Zpět u levého kraje, Rozeslat role u pravého; po
+   rozeslání zbude jen Zpět a stojí uprostřed. */
+.pult-gm .ovladani.krajni { justify-content: space-between; }
+.pult-gm .ovladani.krajni:has(> :only-child) { justify-content: center; }
 /* Nástupce je zvolený → další krok GM je rozdat role: tlačítko jemně dýchá
    zlatou (uživatel 3. 10. 2026: „aby to tlačítko trochu glowovalo“, pak
    „mělo by pulsovat glowem, ne až když hoveruju“). */
