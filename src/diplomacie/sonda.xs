@@ -96,19 +96,22 @@ void sondaZapis() {
       sondaPocetZnamych = sondaPocetZnamych + 1;
     }
   }
-  // Zapisuji se zname relikvie, ktere porad existuji: volna na svem miste,
-  // nalozena na miste jednotky nebo budovy, ktera ji nese.
+  // Zapisuji se zname relikvie: nalozena na miste jednotky nebo budovy,
+  // ktera ji nese, volna na svem miste. Nejdriv nosic: nalozena relikvie
+  // neni na mape a xsDoesUnitExist u ni vraci false (overeno 3. 10. 2026),
+  // existence se proto kontroluje jen u volne.
   int pocetRelikvii = 0;
   for (e = 0; < sondaPocetZnamych) {
-    if (xsDoesUnitExist(xsArrayGetInt(sondaZnameRelikvie, e))) {
+    int idPocet = xsArrayGetInt(sondaZnameRelikvie, e);
+    if ((xsGetGarrisonedInUnitId(idPocet) >= 0) || xsDoesUnitExist(idPocet)) {
       pocetRelikvii = pocetRelikvii + 1;
     }
   }
   xsWriteInt(pocetRelikvii);
   for (q = 0; < sondaPocetZnamych) {
     int idRelikvie = xsArrayGetInt(sondaZnameRelikvie, q);
-    if (xsDoesUnitExist(idRelikvie)) {
-      int nosic = xsGetGarrisonedInUnitId(idRelikvie);
+    int nosic = xsGetGarrisonedInUnitId(idRelikvie);
+    if ((nosic >= 0) || xsDoesUnitExist(idRelikvie)) {
       if (nosic >= 0) {
         idRelikvie = nosic;
       }
