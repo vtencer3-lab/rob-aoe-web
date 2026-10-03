@@ -133,6 +133,8 @@ it("dohraný zápas, jehož verze byla smazána, se vykreslí bez mapy", () => {
   expect(screen.getByTestId("pravidla-hry")).toBeTruthy();
   unmount();
 
+  // Odkrytí si karta pamatuje v záložce (sessionStorage) — tady má začít zakrytá znovu.
+  sessionStorage.clear();
   render(<KartaRole zapas={zapas} data={bezVerze} ja="h2" hlidej={hlidej} />);
   odkryj();
   expect(screen.getByRole("img", { name: "Mapa scénáře LLC.aoe2scenario" })).toBeTruthy();
