@@ -21,6 +21,8 @@
 // relikvie, kterou jednou videla, a u nalozene zapise polohu toho, kdo ji
 // nese (xsGetGarrisonedInUnitId). Relikvie, ktera na mape nikdy nelezela
 // (trigger ji vlozi rovnou do klastera), se neukaze, dokud ji nikdo nepolozi.
+// Relikvie do 8 dilcu od trziste GM (slot 7, sedy) se nesleduje vubec - patri
+// k zazemi GM na kraji mapy, ne do hry (uzivatel 3. 10. 2026).
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
@@ -28,6 +30,7 @@ int sondaRelikvie = -1;
 // Id relikvii, ktere sonda uz videla na mape (nejvys 32), a kolik jich je.
 int sondaZnameRelikvie = -1;
 int sondaPocetZnamych = 0;
+int sondaTrhyGm = -1;
 
 void sondaZapis() {
   int t = xsGetGameTime();
@@ -71,11 +74,18 @@ void sondaZapis() {
   if (sondaZnameRelikvie < 0) {
     sondaZnameRelikvie = xsArrayCreateInt(32, -1, "sondaZnameRelikvie");
   }
-  // Nove relikvie volne na mape do pameti.
+  // Nove relikvie volne na mape do pameti (mimo zazemi GM).
   sondaRelikvie = xsGetPlayerUnitIds(0, 285, sondaRelikvie);
+  sondaTrhyGm = xsGetPlayerUnitIds(xsGetWorldPlayerId(7), 84, sondaTrhyGm);
   for (n = 0; < xsArrayGetSize(sondaRelikvie)) {
     int idNove = xsArrayGetInt(sondaRelikvie, n);
     bool znama = false;
+    vector mistoNove = xsGetUnitPosition(idNove);
+    for (g = 0; < xsArrayGetSize(sondaTrhyGm)) {
+      if (xsVectorLength(mistoNove - xsGetUnitPosition(xsArrayGetInt(sondaTrhyGm, g))) < 8.0) {
+        znama = true;
+      }
+    }
     for (z = 0; < sondaPocetZnamych) {
       if (xsArrayGetInt(sondaZnameRelikvie, z) == idNove) {
         znama = true;

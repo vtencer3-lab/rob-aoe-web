@@ -87,11 +87,13 @@ describe("sonda.xs píše na každém počítači", () => {
   it("zápis souboru není podmíněný místním hráčem", async () => {
     const xs = (await readFile(new URL("./sonda.xs", import.meta.url))).toString("ascii").replace(/\r\n/g, "\n");
     expect(xs).not.toMatch(/^\s*if \(xsUnsyncGetLocalPlayerId/m);
-    expect(xs).not.toContain(`xsGetWorldPlayerId(${GM_BARVA})`);
+    // GM se v sondě hledá jen kvůli tržišti (relikvie u něj se nesledují), nikdy v podmínce zápisu.
+    expect(xs).not.toMatch(new RegExp(String.raw`if \([^)]*xsGetWorldPlayerId\(${GM_BARVA}\)`));
+    expect(xs).not.toMatch(/xsUnsyncGetLocalPlayerId\(\)\s*==/);
     // Soubor se otevírá přímo ve funkci zápisu, ne v žádném bloku.
     expect(xs).toMatch(/\n {2}xsCreateFile\(false\);\n/);
     expect(xs).toMatch(/xsCloseFile\(\);\n\}\n/);
-    // Rozložení se nezměnilo — formát zůstává 3.
+    // Soubor začíná značkou „ROBD“.
     expect(xs).toContain("xsWriteInt(114519637 * 10);");
   });
 
