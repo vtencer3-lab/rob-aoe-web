@@ -41,7 +41,7 @@ export function MojeSchopnosti({ zapas, d, moje, hlidej }: { zapas: ZapasView; d
       <div className="moje-schopnosti" data-testid="schopnosti">
         <h5>Sabotáž</h5>
         {pouzita ? (
-          <p data-testid="stav-schopnosti">
+          <p key={s.stav} className="stav-zadosti" data-testid="stav-schopnosti">
             Na {hrac(s.cilHracId!)} — {STAV_ZADOSTI[s.stav]}.
           </p>
         ) : (
@@ -216,7 +216,7 @@ export function StavSchopnostiGm({ d, r }: { d: DiploZapas; r: RoleHrace }) {
   if (r.role === "najezdnik") {
     const pouzita = moje.some((s) => s.druh === "sabotaz" && s.stav === "potvrzeno");
     return (
-      <span className={pouzita ? "schopnost-gm pouzita" : "schopnost-gm"} data-testid="schopnost-gm">
+      <span key={String(pouzita)} className={pouzita ? "schopnost-gm pouzita" : "schopnost-gm"} data-testid="schopnost-gm">
         Sabotáž {pouzita ? "použita" : "nepoužita"}
       </span>
     );
@@ -224,7 +224,7 @@ export function StavSchopnostiGm({ d, r }: { d: DiploZapas; r: RoleHrace }) {
   if (r.role === "sasek") {
     const pouzito = moje.filter((s) => s.druh === "informace" && s.stav === "potvrzeno").length;
     return (
-      <span className="schopnost-gm" data-testid="schopnost-gm">
+      <span key={pouzito} className="schopnost-gm" data-testid="schopnost-gm">
         informace {pouzito}/{MAX_INFORMACI}
       </span>
     );
@@ -232,7 +232,7 @@ export function StavSchopnostiGm({ d, r }: { d: DiploZapas; r: RoleHrace }) {
   if (r.role === "zoldak") {
     const pocet = moje.filter((s) => s.druh === "doplatek" && s.stav === "potvrzeno").length;
     return pocet > 0 ? (
-      <span className="schopnost-gm" data-testid="schopnost-gm">
+      <span key={pocet} className="schopnost-gm" data-testid="schopnost-gm">
         doplatky {pocet}×
       </span>
     ) : null;

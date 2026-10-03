@@ -162,3 +162,18 @@ describe("s pohybem", () => {
     expect(pohyb.animace).toHaveLength(3);
   });
 });
+
+// Pult GM (uživatel 3. 10. 2026): odkrytý zůstane po obnovení stránky v téže záložce.
+it("s pamětí zůstane odkrytý po novém vykreslení; bez paměti ne", () => {
+  sessionStorage.clear();
+  const { unmount } = render(<Zakryti popisek="Odkrýt" pamet="diplo-pult-1"><p>KAT</p></Zakryti>);
+  fireEvent.click(screen.getByRole("button", { name: "Odkrýt" }));
+  unmount();
+  const druhy = render(<Zakryti popisek="Odkrýt" pamet="diplo-pult-1"><p>KAT</p></Zakryti>);
+  expect(screen.getByText("KAT")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Zakrýt" }));
+  druhy.unmount();
+  render(<Zakryti popisek="Odkrýt" pamet="diplo-pult-1"><p>KAT</p></Zakryti>);
+  expect(screen.queryByText("KAT")).toBeNull();
+  sessionStorage.clear();
+});

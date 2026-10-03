@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { animuj, trvani } from "../pohyb.js";
 
 /**
@@ -16,7 +16,10 @@ const natoceni = (vzdalenost: number, stupne: number) => `perspective(${vzdaleno
 /**
  * Tajný obsah, ve výchozím stavu zakrytý (spec §1.1 bod 8). Stav je jen
  * v paměti komponenty — po obnovení stránky je karta zase zakrytá, ať si ji
- * streamer neprozradí tím, že stránku znovu načte. `napoveda` je bublina
+ * streamer neprozradí tím, že stránku znovu načte. Výjimka je `pamet`
+ * (pult GM, uživatel 3. 10. 2026: „když byl pult rozbalený, refresh ho
+ * nechá rozbalený“): stav drží sessionStorage pod tímhle klíčem — jen
+ * v téže záložce, nová záložka nebo okno začíná zakryté. `napoveda` je bublina
  * zakrytého tlačítka (`title`) pro popisek, který sám neříká, co kliknutí
  * udělá.
  *
@@ -34,8 +37,24 @@ const natoceni = (vzdalenost: number, stupne: number) => `perspective(${vzdaleno
  * neposkočí. Bez pohybu (testovací DOM, `prefers-reduced-motion`) se strany
  * prohodí naráz jako dřív.
  */
-export function Zakryti({ popisek, children, rub, napoveda }: { popisek: string; children: ReactNode; rub?: ReactNode; napoveda?: string }) {
-  const [odkryto, setOdkryto] = useState(false);
+export function Zakryti({ popisek, children, rub, napoveda, pamet }: { popisek: string; children: ReactNode; rub?: ReactNode; napoveda?: string; pamet?: string }) {
+  const [odkryto, setOdkryto] = useState(() => {
+    if (!pamet) return false;
+    try {
+      return sessionStorage.getItem(pamet) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (!pamet) return;
+    try {
+      if (odkryto) sessionStorage.setItem(pamet, "1");
+      else sessionStorage.removeItem(pamet);
+    } catch {
+      // Bez úložiště se pult po obnovení zase zakryje.
+    }
+  }, [odkryto, pamet]);
   const lic = useRef<HTMLDivElement>(null);
   // Rozjeté otočení: další kliknutí počká na konec a příjezd nové strany ví,
   // z jaké výšky a kterým směrem jede.

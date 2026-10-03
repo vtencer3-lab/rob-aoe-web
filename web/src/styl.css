@@ -1881,6 +1881,16 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .odhalene-role li { display: flex; align-items: center; gap: 0.3rem; margin: 0.2rem 0; }
 .odhalene-role .znak-role { width: 1.6rem; height: 1.6rem; }
 .moje-schopnosti .schopnost-ovladani { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+/* Animace nových částí karty a pultu (uživatel 3. 10. 2026: „všude do
+   nových částí animace“). Délky jdou z tokenů, takže při omezení pohybu
+   (--prechod: 0ms) samy zmizí. Hodnoty s `key` podle obsahu (počet
+   relikvií, stav žádosti, „padl“) se při změně vymění a dosednou razítkem. */
+.moje-cile, .moje-schopnosti, .prodej-relikvii, .odhalene-role li, .moje-schopnosti .stav-zadosti { animation: vznik var(--prechod) var(--krivka); }
+.moje-cile .radek-cile { transition: opacity var(--prechod) ease; }
+.moje-cile .nova-hodnota, .tabulka-roli .schopnost-gm { display: inline-block; animation: razitko var(--prechod) var(--krivka); }
+.prodej-relikvii { animation: vznik var(--prechod) var(--krivka), zmena-blik 1.6s ease-out; }
+.oznameni-gm .oznameni button { transition: transform var(--prechod) var(--krivka); }
+.oznameni-gm .oznameni button:hover:enabled { transform: translateY(-1px); }
 /* Pult GM: čekající žádosti a připomínky nad tabulkou rolí; stav schopnosti v řádku. */
 .oznameni-gm { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.4rem; }
 .oznameni-gm .oznameni { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.8rem; padding: 0.45rem 0.7rem; border: 1px solid var(--zlato); border-radius: 3px; background: color-mix(in srgb, var(--zlato) 10%, transparent); animation: vznik var(--prechod) var(--krivka); }

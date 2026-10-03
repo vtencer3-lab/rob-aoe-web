@@ -27,7 +27,7 @@ export function MojeCile({ hra, role, ucastnici }: { hra: MojeHra | undefined; r
     <div className="moje-cile" data-testid="moje-cile">
       <h5>Primární cíl</h5>
       <p className="radek-cile">
-        <strong>
+        <strong key={relikvie} className="nova-hodnota">
           {relikvie}/{RELIKVII_K_VITEZSTVI}
         </strong>{" "}
         <img className="znak-relikvie" src={ZNAK_RELIKVIE} alt="" width={90} height={95} /> Relikvií
@@ -51,7 +51,7 @@ export function MojeCile({ hra, role, ucastnici }: { hra: MojeHra | undefined; r
           <strong>
             <JmenoUcastnika ucastnici={ucastnici} hracId={s.hracId} />
           </strong>
-          : {s.zije === null ? "?" : s.zije ? "žije" : <strong className="padl">padl</strong>}
+          : {s.zije === null ? "?" : s.zije ? "žije" : <strong key="padl" className="padl nova-hodnota">padl</strong>}
         </p>
       ))}
     </div>

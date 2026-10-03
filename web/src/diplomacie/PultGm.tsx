@@ -73,7 +73,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         <h3>Pult GM</h3>
         <span className="stav-diplo" key={d.stav}>{POPIS_STAVU[d.stav]}</span>
       </header>
-      <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<RubKarty />}>
+      <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<RubKarty />} pamet={`diplo-pult-${zapas.id}`}>
         {/* Na širokém displeji mapa vlevo a pult vpravo (uživatel 3. 10. 2026),
             ať GM vidí mapu i role bez posouvání; na úzkém pod sebou. */}
         <div className="pult-vedle">
