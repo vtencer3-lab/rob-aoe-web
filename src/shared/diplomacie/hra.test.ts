@@ -238,6 +238,9 @@ describe("tělo od mostu", () => {
     expect(() => prectiSnimek({ ...telo(), relikvieNaMape: [{ x: "a", y: 1 }] })).toThrow(/relikvie.x není číslo/);
     const hra = vyhodnotHru({ ...prectiSnimek(telo()), relikvieNaMape: [{ x: 5, y: 6 }] }, [], [], "2026-10-03T12:00:00.000Z");
     expect(hra.relikvie).toEqual([{ x: 5, y: 6 }]);
+    // Formát 8: kdo ji nese (číslo hráče ve hře) → barva podle převodu slotů; 0 = volná.
+    const s = prectiSnimek({ ...telo(), relikvieNaMape: [{ x: 1, y: 2, hrac: telo().sloty[2] }, { x: 3, y: 4, hrac: 0 }] });
+    expect(vyhodnotHru(s, [], [], "2026-10-03T12:00:00.000Z").relikvie).toEqual([{ x: 1, y: 2, barva: 3 }, { x: 3, y: 4 }]);
   });
 
   it("odmítne jinou verzi, chybějícího odesílatele a špatné délky polí", () => {

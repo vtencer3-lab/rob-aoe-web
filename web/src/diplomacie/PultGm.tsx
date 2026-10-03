@@ -177,7 +177,7 @@ export function mapaPultu(
   d: DiploZapas,
   verze: ScenarVerze | null,
   najetoHrac: string | null = null,
-): { popisky: PopiskyStartu; kralove: KralNaMape[]; relikvie: { x: number; y: number }[] } {
+): { popisky: PopiskyStartu; kralove: KralNaMape[]; relikvie: { x: number; y: number; barva?: Barva }[] } {
   if (!verze?.rozbor) return { popisky: verze ? popiskyStartu(verze, {}) : {}, kralove: [], relikvie: [] };
   const velikost = verze.rozbor.velikostMapy;
   const jmena = Object.fromEntries(zapas.ucastnici.map((u) => [u.barva, jmenoHrace(u)])) as Partial<Record<Barva, string>>;
@@ -195,7 +195,7 @@ export function mapaPultu(
   // Co ukázat, přepíná GM pod mapou (`d.mapa`); platí i pro overlaye.
   const kralove = d.mapa?.kralove === false ? [] : (d.hra?.hraci ?? []).flatMap((h) => kralNaMape(verze, mujUcastnik(zapas, h.hracId)?.barva, h.kral) ?? []);
   // Relikvie (uživatel 3. 10. 2026): kde leží, jen GM a overlay.
-  const relikvie = d.mapa?.relikvie === false ? [] : (d.hra?.relikvie ?? []).map((r) => naMinimapu(r.x, r.y, velikost));
+  const relikvie = d.mapa?.relikvie === false ? [] : (d.hra?.relikvie ?? []).map((r) => ({ ...naMinimapu(r.x, r.y, velikost), ...(r.barva ? { barva: r.barva } : {}) }));
   return { popisky, kralove, relikvie };
 }
 

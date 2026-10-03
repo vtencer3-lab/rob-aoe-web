@@ -37,7 +37,7 @@ const desetinne = (n: number) => {
  * je starší tvar bez značky. GM sedí v lobby první (slot 7 → hráč 1), cíl
  * dostali všichni kromě slotu 4.
  */
-function souborSondy(cas: number, casNaKonci = cas, format: 3 | 5 | 6 | 7 = 5): Buffer {
+function souborSondy(cas: number, casNaKonci = cas, format: 3 | 5 | 6 | 7 | 8 = 5): Buffer {
   const promenne = new Array<number>(256).fill(0);
   for (const [slot, pocitadlo] of [
     [1, 15],
@@ -59,6 +59,8 @@ function souborSondy(cas: number, casNaKonci = cas, format: 3 | 5 | 6 | 7 = 5): 
     ...(format >= 6 ? [1, 2, 3, 4, 5, 6, 7, 8].flatMap((p) => (p === 1 ? [desetinne(12.5), desetinne(40)] : [desetinne(-1), desetinne(-1)])) : []),
     // Formát 7: dvě relikvie na mapě.
     ...(format === 7 ? [cislo(2), desetinne(100), desetinne(110), desetinne(30.5), desetinne(7)] : []),
+    // Formát 8: k relikvii číslo hráče (první volná, druhou nese hráč 3).
+    ...(format === 8 ? [cislo(2), desetinne(100), desetinne(110), desetinne(0), desetinne(30.5), desetinne(7), desetinne(3)] : []),
     ...new Array<number>(64).fill(3).map(cislo),
     ...promenne.map(cislo),
     cislo(casNaKonci),
@@ -124,6 +126,7 @@ describe.skipIf(!maPython())("most ke hře (vyžaduje Python)", () => {
     expect("relikvie" in s6).toBe(false);
     const s7 = await cti(souborSondy(95, 95, 7));
     expect(s7).toMatchObject({ platne: true, verze: 7, cas: 95, relikvie: [{ x: 100, y: 110 }, { x: 30.5, y: 7 }] });
+    expect(await cti(souborSondy(95, 95, 8))).toMatchObject({ platne: true, verze: 8, relikvie: [{ x: 100, y: 110, hrac: 0 }, { x: 30.5, y: 7, hrac: 3 }] });
     expect((cele["promenne"] as number[])[204]).toBe(0);
     expect((cele["promenne"] as number[])[202]).toBe(16);
     // Čas na začátku a na konci se liší = hra soubor zrovna přepisovala.

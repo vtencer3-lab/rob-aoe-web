@@ -122,8 +122,12 @@ export interface SnimekHry {
   hraci: HracVeHre[];
   diplomacie: number[][];
   promenne: number[];
-  /** Polohy relikvií na mapě v dílcích (sonda od formátu 7); chybí = starší sonda. */
-  relikvieNaMape?: PolohaVeHre[];
+  /**
+   * Polohy relikvií na mapě v dílcích (sonda od formátu 7); chybí = starší
+   * sonda. `hrac` (od formátu 8) = číslo hráče ve hře, který ji nese nebo má
+   * v klášteře; 0 = volná.
+   */
+  relikvieNaMape?: (PolohaVeHre & { hrac?: number })[];
 }
 
 /** Sonda zapisuje nejvýš tolik relikvií. */
@@ -157,7 +161,11 @@ export function prectiSnimek(telo: unknown): SnimekHry {
   if ("relikvieNaMape" in o) {
     const r = pole(o["relikvieNaMape"], "relikvieNaMape");
     if (r.length > MAX_RELIKVII_NA_MAPE) throw new Error(`Data ze hry: relikvií je nejvýš ${MAX_RELIKVII_NA_MAPE}.`);
-    relikvieNaMape = r.map((x) => poloha(x, "relikvie"));
+    relikvieNaMape = r.map((x) => {
+      const p = poloha(x, "relikvie");
+      const hrac = (x as Record<string, unknown>)["hrac"];
+      return hrac === undefined ? p : { ...p, hrac: celeCislo(hrac, "relikvie.hrac") };
+    });
   }
   return {
     ...(relikvieNaMape ? { relikvieNaMape } : {}),
@@ -282,8 +290,11 @@ export interface HraZapasu {
   hraci: HracHry[];
   /** Česká věta, když data nesedí k zápasu (jiný scénář, verze bez výpisu cílů). */
   varovani?: string;
-  /** Kde leží relikvie (dílce); jen GM — prozradilo by to hráčům víc, než vidí ve hře. */
-  relikvie?: PolohaVeHre[];
+  /**
+   * Kde leží relikvie (dílce); jen GM — prozradilo by to hráčům víc, než vidí
+   * ve hře. `barva` = barva hráče, který ji nese nebo má v klášteře.
+   */
+  relikvie?: (PolohaVeHre & { barva?: Barva })[];
 }
 
 /**
@@ -342,7 +353,15 @@ export function vyhodnotHru(snimek: Pick<SnimekHry, "cas" | "sloty" | "hraci" | 
     rozdano,
     nastupceHracId: rozdano && bezCile.length === 1 ? bezCile[0]!.hracId : null,
     hraci: radky,
-    ...(snimek.relikvieNaMape ? { relikvie: snimek.relikvieNaMape } : {}),
+    ...(snimek.relikvieNaMape
+      ? {
+          relikvie: snimek.relikvieNaMape.map(({ x, y, hrac }) => {
+            // Číslo hráče ve hře → slot scénáře = barva v sestavě (jako u hráčů).
+            const slot = hrac ? snimek.sloty.indexOf(hrac) + 1 : 0;
+            return slot > 0 ? { x, y, barva: slot as Barva } : { x, y };
+          }),
+        }
+      : {}),
   };
 }
 

@@ -40,7 +40,7 @@ from xsdat import ZNACKA, cti_xsdat
 
 VYCHOZI_URL = "https://jouki.cz/aoe/diplo"
 # Formáty sondy, které web bere: 5 se značkou „ROBD“, 3 starší bez ní.
-FORMATY = (3, 5, 6, 7)
+FORMATY = (3, 5, 6, 7, 8)
 BEZ_VERZE = 328
 # Sonda přepisuje soubor každou herní sekundu; častěji posílat nemá smysl.
 ROZESTUP_S = 1.0

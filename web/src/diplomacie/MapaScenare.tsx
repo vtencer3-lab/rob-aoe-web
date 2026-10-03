@@ -50,8 +50,8 @@ interface Props {
   najeto?: Barva | null;
   /** Králové z běžící hry: GM vidí všechny, hráč jen svého (redakce). */
   kralove?: readonly KralNaMape[];
-  /** Relikvie z běžící hry, místa 0–1 na minimapě (jen GM a overlay). */
-  relikvie?: readonly { x: number; y: number }[];
+  /** Relikvie z běžící hry, místa 0–1 na minimapě (jen GM a overlay); `barva` = kdo ji nese / má v klášteře. */
+  relikvie?: readonly { x: number; y: number; barva?: Barva }[];
 }
 
 /**
@@ -125,7 +125,7 @@ export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, 
         </span>
       ))}
       {relikvie.map((r, i) => (
-        <img key={`relikvie-${i}`} data-testid="relikvie" className="relikvie-na-mape" src={ZNAK_RELIKVIE} alt="Relikvie" width={90} height={95} style={{ left: `${r.x * 100}%`, top: `${r.y * 100}%` }} />
+        <img key={`relikvie-${i}`} data-testid="relikvie" className={r.barva ? `relikvie-na-mape barva-${r.barva}` : "relikvie-na-mape"} title={r.barva ? `Relikvii má ${BARVA_NAZEV[r.barva]}` : "Volná relikvie"} src={ZNAK_RELIKVIE} alt="Relikvie" width={90} height={95} style={{ left: `${r.x * 100}%`, top: `${r.y * 100}%` }} />
       ))}
       {kralove.map((k) => (
         <span

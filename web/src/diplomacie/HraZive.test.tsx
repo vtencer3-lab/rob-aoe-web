@@ -166,10 +166,13 @@ it("pult GM ukáže krále všech hráčů, kteří ho ve hře mají", () => {
 
 // GM vidí na mapě pultu, kde leží relikvie (uživatel 3. 10. 2026).
 it("pult GM ukáže relikvie na mapě", () => {
-  render(<PultGm zapas={zapas} data={gmData("priprava", [], "h4", { ...HRA, relikvie: [{ x: 110, y: 110 }, { x: 0, y: 0 }] })} hlidej={spust} />);
+  render(<PultGm zapas={zapas} data={gmData("priprava", [], "h4", { ...HRA, relikvie: [{ x: 110, y: 110 }, { x: 0, y: 0, barva: 3 }] })} hlidej={spust} />);
   odkryj();
   const relikvie = screen.getAllByTestId("relikvie");
   expect(relikvie).toHaveLength(2);
   expect(relikvie[0]!.style.left).toBe("50%");
   expect(relikvie[1]!.style.top).toBe("50%");
+  // Relikvie s nosičem má jeho barvu, volná žádnou.
+  expect(relikvie[1]).toHaveClass("barva-3");
+  expect(relikvie[0]!.className).toBe("relikvie-na-mape");
 });

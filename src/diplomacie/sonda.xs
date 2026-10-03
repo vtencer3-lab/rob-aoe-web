@@ -1,13 +1,13 @@
-// Sonda Diplomacie (rob-aoe-web), format 7: kazdou herni sekundu prepise
+// Sonda Diplomacie (rob-aoe-web), format 8: kazdou herni sekundu prepise
 // soubor profile\<scenar>.xsdat - NA KAZDEM POCITACI VE HRE (hraci i divaci).
 // Rozlozeni:
 //   int znacka 0x44424F52 (bajty "ROBD" - nase soubory pozna kazda
-//   ctecka driv, nez cokoli dalsiho cte) | int verze (7) | int cas (herni s)
+//   ctecka driv, nez cokoli dalsiho cte) | int verze (8) | int cas (herni s)
 //   | 8x int slot scenare -> cislo hrace ve hre (xsGetWorldPlayerId(1..8))
 //   | 8x (string jmeno, string barva, float relikvie, int zije) podle cisla
 //     hrace ve hre | 8x (float x, float y) prvni kral hrace v dilcich, bez
 //     krale -1 -1 | int pocet relikvii (nejvys 32) | pocet x (float x,
-//     float y) | 64x int diplomacie(a, b) | 256x int promenne triggeru
+//     float y, float hrac - kdo ji nese nebo ma v klasteru, 0 = volna) | 64x int diplomacie(a, b) | 256x int promenne triggeru
 //   | int cas
 // Cas je na zacatku i na konci: zapis nemusi byt atomicky, ctenar bere jen
 // cteni, kde se obe hodnoty shoduji. Cisla hracu v XS jsou poradi v lobby,
@@ -48,7 +48,7 @@ void sondaZapis() {
   xsCreateFile(false);
   // Znacka 0x44424F52 = 1145196370; XS bere nejvys 9ciferny literal.
   xsWriteInt(114519637 * 10);
-  xsWriteInt(7);
+  xsWriteInt(8);
   xsWriteInt(t);
   for (s = 1; < 9) {
     xsWriteInt(xsGetWorldPlayerId(s));
@@ -91,7 +91,8 @@ void sondaZapis() {
       }
     }
     if ((uGm == false) && (pocetRelikvii < 32)) {
-      xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, volna);
+      // Treti slozka vektoru nese cislo hrace (0 = volna relikvie).
+      xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(volna), xsVectorGetY(volna), 0.0));
       pocetRelikvii = pocetRelikvii + 1;
     }
   }
@@ -104,7 +105,8 @@ void sondaZapis() {
         int trida = xsGetUnitClass(nosic);
         if ((trida != 904) && (trida != 919) && (trida != 902) && (trida != 921) && (pocetRelikvii < 32)) {
           if (xsGetUnitAttributeHeld(nosic, -1) > 0.0) {
-            xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsGetUnitPosition(nosic));
+            vector nesena = xsGetUnitPosition(nosic);
+            xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(nesena), xsVectorGetY(nesena), h));
             pocetRelikvii = pocetRelikvii + 1;
           }
         }
@@ -117,7 +119,7 @@ void sondaZapis() {
           vector klaster = xsGetUnitPosition(xsArrayGetInt(sondaKlastery, 0));
           for (u = 0; < 32) {
             if ((u < ulozenych) && (pocetRelikvii < 32)) {
-              xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, klaster);
+              xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(klaster), xsVectorGetY(klaster), h));
               pocetRelikvii = pocetRelikvii + 1;
             }
           }
@@ -130,6 +132,7 @@ void sondaZapis() {
     vector misto = xsArrayGetVector(sondaMistaRelikvii, q);
     xsWriteFloat(xsVectorGetX(misto));
     xsWriteFloat(xsVectorGetY(misto));
+    xsWriteFloat(xsVectorGetZ(misto));
   }
   for (a = 1; < 9) {
     for (b = 1; < 9) {
