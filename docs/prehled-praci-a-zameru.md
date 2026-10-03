@@ -31,13 +31,13 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 
 ---
 
-## 1. Stav k 2. 10. 2026
+## 1. Stav k 3. 10. 2026
 
 | | |
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-29.2** (1.–3. 10. 2026; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — dědění vlastní minimapy 28.0 — §3.60, „Vlastní minimapa se dědí“ — a **správa scénáře 29.0**: jméno pro hru `JIN_DIPLO_<N>`, mazání verzí, tlačítka v řádku, 29.1 jména pro hru v nastavení lobby otevřené akce, 29.2 mazání verzí hraných jen dohranými zápasy, důvod odmítnutí u řádku a bez pole „Co je nového“; §3.60, „Správa scénáře: jméno pro hru, mazání, tlačítka“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-29.3** (`c8ec8d3`, 1.–3. 10. 2026; 29.3 chyby nahrání ve správě scénáře; most přes Židolištu §3.60 „Most přes Židolištu a herní PC“; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — dědění vlastní minimapy 28.0 — §3.60, „Vlastní minimapa se dědí“ — a **správa scénáře 29.0**: jméno pro hru `JIN_DIPLO_<N>`, mazání verzí, tlačítka v řádku, 29.1 jména pro hru v nastavení lobby otevřené akce, 29.2 mazání verzí hraných jen dohranými zápasy, důvod odmítnutí u řádku a bez pole „Co je nového“; §3.60, „Správa scénáře: jméno pro hru, mazání, tlačítka“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
 | Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–036 (`030_rezim_akce.sql` … `036_diplomacie_jmena_v_lobby.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
@@ -2362,6 +2362,39 @@ podvádět“. **Důsledek:** kterýkoli hráč si může ze své složky
   běžet na tom, kde běží hra.
 - Neověřeno: odeslání z PC diváka proti živému webu.
 
+**Most přes Židolištu a herní PC (3. 10. 2026, stav k 1.13.10-29.3).**
+Rob streamuje ze dvou PC; hra a její `profile\*.xsdat` jsou jen na
+**herním PC**, proto tam běží druhý Streamer.bot. Řeší ho session
+projektu RobJewsALot (Židolišta), složka `RobJewsALot/Streamer.bot - GAME PC/`
+(README + `AoE_Diplomacie_Most.cs`; commity 4545dac, 7388d91, 6ec0399).
+
+- **Hotovo a ověřené server → web:** SB na herním PC každé 2 s pošle
+  změněný `.xsdat` (base64, ≤ 64 kB, ne starší 30 s) na
+  `POST https://api-zidolista.jouki.cz/sb-api/aoe/xsdat` (Bearer token
+  `GamePC` z nastavení workspace rob). Server Židolišty ho dekóduje
+  (`server/src/lib/aoeDiplo.ts`) a přepošle na `POST /api/diplo/hra`
+  (env `AOE_DIPLO_URL`, `AOE_MOST_TOKEN`; diagnostika `GET /sb-api/aoe/status`).
+  `AOE_MOST_TOKEN` v Coolify aplikace zidolista-server nastavil Claude
+  (hodnota = `MOST_TOKEN` diplo, nikdy nevypisovat). Zkouška skončila 404
+  jen proto, že běžely dva zápasy se stejným scénářem (divák nejde přiřadit).
+- **Zadáno Židolištině session (čeká na jejich hotovo):** místo HTTP
+  POSTů **trvalé WebSocket spojení herního PC jako obecný agent** — přání
+  uživatele „co nejobecnější, co nejuniverzálněji“: vlastní role `gamepc`
+  (žádné alerty ani chat jako stream PC), obálka `{typ, id, data}`, server
+  agentovi posílá konfiguraci (co hlídat — `watch`/`read`/`list`/`status`),
+  AoE je jen jedna konfigurace na serveru, agent smí číst jen povolené
+  kořeny, víc agentů najednou, HTTP zůstává jako záloha.
+- **Výhled: „naschvály“ pro Roba** (odměny diváků typu krátké vypnutí
+  periferie nebo monitoru — Rob to kdysi zmiňoval). Bezpečný model zadaný
+  Židolišti: agent provede jen **pojmenované akce povolené lokálně** na
+  herním PC (server nemůže poslat libovolný příkaz), meze délky a četnosti,
+  **samovrácení na agentovi** (i při výpadku spojení), panic klávesová
+  zkratka, volba „jen mimo hru“, log každé akce.
+- **Další krok:** až Židolišta dodá agenta, otestovat z PC uživatele
+  proti `/aoe/diplo` s `JIN_DIPLO_2.aoe2scenario` (případně znovu „Přibalit
+  automatizace“) a **jediným** běžícím zápasem — automatický Nástupce přes
+  celou cestu hra → SB → Židolišta → web.
+
 **Vědomě ponecháno:** most má jeden globální token (`MOST_TOKEN`) — kdo ho
 má, může v kterémkoli běžícím zápase Diplomacie nastavit Nástupce (jen
 v `priprava`), když uvede `hracId` jeho GM — a od 27.0 i bez něj jako
@@ -2663,6 +2696,13 @@ jen nahradí `most.py`), pak deník GM a vyhodnocení. Zbývá ověřit ve hře:
 zápis přidělených cílů do proměnných 201–208 (označení cílů dosud ve hře
 neběželo) a hru pro víc hráčů.
 
+**Doplněno 3. 10. 2026.** Zápis cílů i automatický Nástupce ověřené živě
+(zápas 8), divák jako zdroj dat hotový (27.0). Most přes Židolištu funguje
+po HTTP; čeká se na obecného WebSocket agenta herního PC a model
+„naschválů“ ze session Židolišty — §3.60, „Most přes Židolištu a herní PC“.
+Pak živý test celé cesty, deník GM a vyhodnocení (podprojekt 2), místnosti
+na volání 1:1 s odposlechem GM (bod 12 dávky, samostatný podprojekt).
+
 ## 6. Historie verzí (7. 9. – 1. 10. 2026)
 
 Jedna řádka = jeden commit do `dev`; tučně releasy do `main`; větev `diplo`
@@ -2806,6 +2846,7 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.13.10-29.0 | 2. 10. (větev `diplo`) | **Správa scénáře: jméno pro hru, mazání, tlačítka (§3.60)** — kopie pro hru jako `JIN_DIPLO_<N>.aoe2scenario` (migrace 035) a podle toho jména kontrola lobby, uložení do hry i most; mazání verze (ne aktivní, ne hrané); řádek s tlačítky Stáhnout originál / Přibalit automatizace / Stáhnout scénář; zamčené zlaté tlačítko už pod kurzorem nezezlátne |
 | 1.13.10-29.1 | 2. 10. (větev `diplo`) | **Jména pro hru v nastavení lobby otevřené akce (§3.60)** — migrace 036 přepíše `scenar`/`scenarStarsi` neskončených akcí Diplomacie (i uložené nastavení) na `JIN_DIPLO_<N>`; akce otevřená před 29.0 by jinak hostovi se staženou kopií hlásila jiný soubor |
 | 1.13.10-29.2 | 3. 10. (větev `diplo`) | **Mazání verzí scénáře povolenější a srozumitelnější (§3.60)** — verzi hranou jen dohranými, zrušenými nebo uzavřenými zápasy jde smazat (zápasy dostanou `scenar_id = NULL` a ukážou se bez mapy), běžící zápas otevřené akce ji drží; důvod odmítnutí přímo pod řádkem verze; pole „Co je nového“ pryč |
+| 1.13.10-29.3 | 3. 10. (větev `diplo`) | **Chyby nahrání a dalších akcí přímo ve správě scénáře (§3.60)** — odmítnutí (např. „Tahle verze už je nahraná“) se ukáže pod formulářem nebo řádkem verze, ne v obecné chybě nahoře nad panelem |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |
