@@ -1,4 +1,4 @@
-import type { HraZapasu, PolohaVeHre, SouhrnSondy } from "./hra.js";
+import type { CilHrace, HraZapasu, PolohaVeHre, SouhrnSondy } from "./hra.js";
 import type { RozborScenare } from "./scenar.js";
 
 /** Role hráče (spec §6.1). Nástupce se nelosuje — určí ho hra a odklikne GM. */
@@ -55,8 +55,27 @@ export interface DiploZapas {
    * 3. 10. 2026: „hráči uvidí pouze svého krále“).
    */
   mujKral?: PolohaVeHre;
+  /** Vlastní cíle hráče z běžící hry (panel vedle mapy na kartě); jen hráč zápasu, ne GM. */
+  mojeHra?: MojeHra;
   /** Pingy GM na mapě, které ještě svítí. GM vidí všechny, hráč jen pro všechny a pro sebe. */
   pingy?: PingNaMape[];
+}
+
+/**
+ * Co hráč (ne GM) dostane z běžící hry o sobě: primární cíl (relikvie
+ * a sekundy s 7+ relikviemi), sekundární cíl s postupem a stav hráčů, na
+ * kterých závisí jeho výhra (oběť Kata, pouto Žoldáka, Nástupce u Gardy
+ * a Nájezdníka) — to všechno vidí i ve hře, web to jen sčítá na jedno místo.
+ */
+export interface MojeHra {
+  cas: number;
+  prijato: string;
+  /** Hra už sekundární cíle rozdává (bez cíle po rozdání = Nástupce). */
+  rozdano: boolean;
+  cil: CilHrace | null;
+  relikvie: number | null;
+  drzeni: number | null;
+  sledovani: { hracId: string; zije: boolean | null }[];
 }
 
 /** Verze scénáře bez souboru a minimapy (ty jdou zvlášť adresou). */

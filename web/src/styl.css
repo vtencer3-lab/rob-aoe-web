@@ -1864,6 +1864,20 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-role .role p.informace-role { color: var(--tlumene); font-style: italic; }
 .karta-role .role .cil { font-weight: 700; }
 .karta-role .role ul { margin: 0; padding-left: 1.2rem; }
+/* Cíle hráče vedle mapy (MojeCile): primární cíl, odpočet držení 7 relikvií
+   (ztlumený, dokud neběží), sekundární cíl a stav sledovaných hráčů. */
+.moje-cile { max-width: 34rem; margin: 0.6rem auto; padding: 0.4rem 1rem 0.6rem; text-align: left; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
+.moje-cile h5 { margin: 0.6rem 0 0.2rem; font-size: 0.95rem; color: var(--zlato); }
+.moje-cile p { margin: 0.25rem 0; }
+.moje-cile .radek-cile { display: flex; align-items: center; flex-wrap: wrap; gap: 0 0.35rem; }
+.moje-cile .radek-cile.ztlumeny { opacity: 0.45; }
+.moje-cile .znak-relikvie { height: 28px; width: auto; }
+.moje-cile .padl { color: var(--chyba); }
+@media (min-width: 72rem) {
+  .karta-role .karta-vedle { display: grid; grid-template-columns: minmax(0, calc(36rem + 2px)) minmax(0, 1fr); gap: 0 1.5rem; align-items: start; }
+  .karta-role .karta-vedle .mapa-scenare { margin: 0.6rem 0; }
+  .karta-role .karta-vedle .moje-cile { margin: 0.6rem 0; max-width: none; }
+}
 .karta-role .role li { margin: 0.15rem 0; }
 /* Na telefonu má mapa necelou polovinu šířky a sousední starty (na LLC p6
    a p8 dole) jsou od sebe 40 px: menší popisky, značka i koruna a zlatý

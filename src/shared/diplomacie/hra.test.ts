@@ -125,7 +125,14 @@ describe("postup cílů a stav hráčů", () => {
   it("slot, o kterém hra nic neposlala, má relikvie i žije null", () => {
     const s = snimek({});
     const hra = vyhodnot({ ...s, hraci: s.hraci.filter((h) => h.cislo !== 2) });
-    expect(hra.hraci.find((h) => h.hracId === "h2")).toMatchObject({ relikvie: null, zije: null });
+    expect(hra.hraci.find((h) => h.hracId === "h2")).toMatchObject({ relikvie: null, zije: null, drzeni: null });
+  });
+
+  it("držení 7 relikvií je proměnná 239 + číslo hráče ve hře, ne slot", () => {
+    // Slot 1 je ve hře hráč 7 → proměnná 246.
+    const hra = vyhodnot(snimek({}, { 246: 125, 240: 9 }));
+    expect(hra.hraci.find((h) => h.hracId === "h1")!.drzeni).toBe(125);
+    expect(hra.hraci.find((h) => h.hracId === "h2")!.drzeni).toBe(0);
   });
 });
 

@@ -1,4 +1,4 @@
-import type { DiploData, DiploZapas } from "./typy.js";
+import type { DiploData, DiploZapas, RoleHrace } from "./typy.js";
 
 /**
  * Bezpečnostní hranice Diplomacie (spec §7). Jediné místo, kde se rozhoduje,
@@ -24,10 +24,25 @@ function redigujZapas(cely: DiploZapas, divak: string | null): DiploZapas {
   // Vlastního krále hráč vidí vždy — jeho poloha neprozradí nic tajného.
   const kral = divak === null ? null : (cely.hra?.hraci.find((h) => h.hracId === divak)?.kral ?? null);
   if (kral) z.mujKral = kral;
-  if (z.stav !== "rozeslano") return { ...z, nastupceHracId: null, role: [] };
-  const moje = divak === null ? undefined : z.role.find((r) => r.hracId === divak);
+  const rozeslano = z.stav === "rozeslano";
+  const moje = !rozeslano || divak === null ? undefined : z.role.find((r) => r.hracId === divak);
+  // Vlastní postup hráč vidí i ve hře; stav hráčů, na kterých závisí jeho
+  // výhra, jen podle role, kterou už zná.
+  const ja = divak === null ? undefined : cely.hra?.hraci.find((h) => h.hracId === divak);
+  if (cely.hra && ja) {
+    const sledovani = (moje ? koho(moje, cely.nastupceHracId) : []).map((hracId) => ({ hracId, zije: cely.hra!.hraci.find((h) => h.hracId === hracId)?.zije ?? null }));
+    z.mojeHra = { cas: cely.hra.cas, prijato: cely.hra.prijato, rozdano: cely.hra.rozdano, cil: ja.cil, relikvie: ja.relikvie, drzeni: ja.drzeni ?? null, sledovani };
+  }
+  if (!rozeslano) return { ...z, nastupceHracId: null, role: [] };
   if (!moje) return { ...z, role: [] };
   // Nájezdníci se znají od začátku hry; nikdo jiný o nikom nic neví.
   const vidi = moje.role === "najezdnik" ? z.role.filter((r) => r.role === "najezdnik") : [moje];
   return { ...z, role: vidi };
+}
+
+/** Na čím životě závisí výhra role: oběť Kata, pouto Žoldáka, Nástupce u Gardy a Nájezdníka. */
+function koho(r: RoleHrace, nastupce: string | null): string[] {
+  if ((r.role === "kat" || r.role === "zoldak") && r.cilHracId) return [r.cilHracId];
+  if ((r.role === "garda" || r.role === "najezdnik") && nastupce) return [nastupce];
+  return [];
 }

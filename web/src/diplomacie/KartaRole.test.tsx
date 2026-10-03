@@ -231,3 +231,24 @@ it("nový ping cinkne, ping známý při načtení ne", () => {
   rerender(<KartaRole zapas={zapas} data={sPingy([2])} ja="h2" />);
   expect(prehraj).toHaveBeenCalledTimes(1);
 });
+
+// Cíle vedle mapy (uživatel 3. 10. 2026): relikvie k vítězství, odpočet
+// držení (ztlumený, dokud hráč nemá 7), sekundární cíl a stav oběti Kata.
+it("vedle mapy ukáže cíle hráče ze hry", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "kat", cilHracId: "h4" }]);
+  const mojeHra = { cas: 300, prijato: "2026-10-03T20:00:00.000Z", rozdano: true, cil: { text: "zbourano : {} /150 budov", limit: 150, hodnota: 12 }, relikvie: 3, drzeni: 65, sledovani: [{ hracId: "h4", zije: false }] };
+  render(<KartaRole zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, mojeHra })) }} ja="h2" />);
+  odkryj();
+  const cile = within(screen.getByTestId("moje-cile"));
+  expect(cile.getByText("3/7").closest("p")).toHaveTextContent("3/7 Relikvií");
+  expect(screen.getByTestId("drzeni")).toHaveTextContent("01:05 / 15:00");
+  expect(screen.getByTestId("drzeni")).toHaveClass("ztlumeny");
+  expect(screen.getByTestId("sekundarni-cil")).toHaveTextContent("zbourano: 12/150 budov");
+  expect(screen.getByTestId("sledovany")).toHaveTextContent("Oběť Hráč 4: padl");
+});
+
+it("bez dat ze hry panel cílů čeká", () => {
+  render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "kat", cilHracId: "h4" }])} ja="h2" />);
+  odkryj();
+  expect(within(screen.getByTestId("moje-cile")).getByText(/Postup cílů se ukáže/)).toBeTruthy();
+});

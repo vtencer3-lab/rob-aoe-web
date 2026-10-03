@@ -8,6 +8,7 @@ import { hlasitostChatu, prehraj } from "../zvuk.js";
 import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
 import { jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { kralNaMape, MapaScenare, type DruhPopisku, type PopiskyStartu } from "./MapaScenare.js";
+import { MojeCile } from "./MojeCile.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
 import { RUB_KARTY, ZNAK_ROLE } from "./znaky.js";
@@ -89,7 +90,11 @@ export function KartaRole({ zapas, data, ja }: Props) {
           </p>
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
             <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
-            {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} pingy={(d.pingy ?? []).map((p) => ({ id: p.id, x: p.x, y: p.y }))} /> : null}
+            {/* Na širokém displeji mapa vlevo a cíle vpravo, jako mapa a tabulka v pultu GM (uživatel 3. 10. 2026). */}
+            <div className="karta-vedle">
+              {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} pingy={(d.pingy ?? []).map((p) => ({ id: p.id, x: p.x, y: p.y }))} /> : null}
+              <MojeCile hra={d.mojeHra} role={moje.role} ucastnici={zapas.ucastnici} />
+            </div>
           </Zakryti>
         </>
       )}

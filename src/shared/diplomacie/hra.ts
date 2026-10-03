@@ -11,6 +11,15 @@ import { overovace } from "./overeni.js";
 /** Proměnná 200 + slot scénáře nese číslo proměnné-počitadla přiděleného cíle (0 = bez cíle). */
 export const PROMENNA_CILE = 200;
 export const POCET_PROMENNYCH = 256;
+/**
+ * Proměnná 239 + číslo hráče ve hře (240–247) nenese proměnnou scénáře, ale
+ * počitadlo sondy: kolik herních sekund měl hráč aspoň 7 relikvií. Při
+ * ztrátě se jen zastaví (sonda.xs); starší sonda tu má 0.
+ */
+export const PROMENNA_DRZENI = 239;
+/** Primární cíl všech: tolik relikvií udržet tak dlouho (scénář, triggery „general relic win“). */
+export const RELIKVII_K_VITEZSTVI = 7;
+export const DRZENI_K_VITEZSTVI_S = 900;
 
 /** Jeden sekundární cíl jednoho slotu, jak ho při přibalení sondy vytáhl sonda.py z triggerů. */
 export interface CilSondy {
@@ -202,6 +211,8 @@ export interface HracHry {
   zije: boolean | null;
   /** Poloha krále v dílcích; null/chybí = neznámá (starší sonda, krále nemá, slot neobsazený). */
   kral?: PolohaVeHre | null;
+  /** Herní sekundy se 7+ relikviemi (`PROMENNA_DRZENI`); null = slot neobsazený, chybí u starších dat. */
+  drzeni?: number | null;
 }
 
 /**
@@ -343,6 +354,7 @@ export function vyhodnotHru(snimek: Pick<SnimekHry, "cas" | "sloty" | "hraci" | 
       relikvie: veHre ? veHre.relikvie : null,
       zije: veHre ? veHre.zije : null,
       kral: veHre?.kral ?? null,
+      drzeni: veHre ? (snimek.promenne[PROMENNA_DRZENI + veHre.cislo] ?? 0) : null,
     };
   });
   const bezCile = radky.filter((r) => r.cil === null);
@@ -371,6 +383,12 @@ export function popisCile(cil: CilHrace): string {
   const veta = cil.text?.includes("{}") ? cil.text.replace("{}", hodnota) : `${cil.text ?? "cíl"}: ${hodnota}${cil.limit === null ? "" : `/${cil.limit}`}`;
   // Autor píše „zabito : 3 /650“ — mezery před dvojtečkou a lomítkem pryč.
   return veta.replace(/\s+([:/])/g, "$1").replace(/\/\s+/g, "/");
+}
+
+/** Minuty a sekundy: „04:05“, přes hodinu „61:00“ (odpočet 15 minut). */
+export function minutySekundy(s: number): string {
+  const c = Math.max(0, Math.floor(s));
+  return `${String(Math.floor(c / 60)).padStart(2, "0")}:${String(c % 60).padStart(2, "0")}`;
 }
 
 /** Po kolika sekundách bez snímku se o hře řekne, že mlčí (most posílá tep nejpozději po 15 s). */

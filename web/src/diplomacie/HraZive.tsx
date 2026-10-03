@@ -1,4 +1,4 @@
-import { popisCile, popisStari, type HraZapasu } from "../../../src/shared/diplomacie/hra.js";
+import { DRZENI_K_VITEZSTVI_S, minutySekundy, popisCile, popisStari, type HraZapasu } from "../../../src/shared/diplomacie/hra.js";
 import type { ReactNode } from "react";
 import type { UcastnikView } from "../../../src/shared/types.js";
 import { useTed } from "../useTed.js";
@@ -75,6 +75,13 @@ export function RadekHry({ hra, hracId }: { hra: HraZapasu | undefined; hracId: 
               <img src={ZNAK_RELIKVIE} alt="" width={90} height={95} />
               <span className="sr-only"> · relikvie </span>
               <strong>{h.relikvie}</strong>
+              {/* Držení 7 relikvií (odpočet k vítězství), jakmile kdy začalo. */}
+              {h.drzeni ? (
+                <span className="drzeni-gm">
+                  {" "}
+                  · <strong>{minutySekundy(Math.min(h.drzeni, DRZENI_K_VITEZSTVI_S))}</strong>/{minutySekundy(DRZENI_K_VITEZSTVI_S)}
+                </span>
+              ) : null}
             </span>
           )}
         </div>
@@ -84,7 +91,7 @@ export function RadekHry({ hra, hracId }: { hra: HraZapasu | undefined; hracId: 
 }
 
 /** Text cíle s čísly tučně („zabito: **3/650** jednotek“), ať postup jde přečíst na první pohled. */
-function TucneHodnoty({ text }: { text: string }) {
+export function TucneHodnoty({ text }: { text: string }) {
   return (
     <>
       {text.split(/(\d+(?:\/\d+)?)/).map((kus, i) => (i % 2 === 1 ? <strong key={i}>{kus}</strong> : kus))}

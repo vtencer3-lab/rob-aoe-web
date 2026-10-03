@@ -27,6 +27,10 @@
 // "drzi neco" nepouziva (bralo i farmy, ovce a volne mnichy). Relikvie ulozena
 // v klasteru je dal objekt 285 gaii, jen garrisonovana v budove: dostane
 // barvu majitele budovy (xsGetGarrisonedInUnitId + xsGetUnitOwner).
+// Promenne 240-247 sonda nepise ze scenare, ale sama: kolik hernich sekund
+// mel hrac 1-8 (cislo ve hre, 240 = hrac 1) aspon 7 relikvii. Pri ztrate
+// se jen zastavi, nenuluje - odpocet hry se nuluje, web ukazuje tenhle
+// (uzivatel 3. 10. 2026). Scenar promenne 240+ nepouziva.
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
@@ -35,6 +39,9 @@ int sondaTrhyGm = -1;
 int sondaNosici = -1;
 // Polohy relikvii pro zapis (nejvys 32): nejdriv se sesbiraji, pak zapise pocet.
 int sondaMistaRelikvii = -1;
+// Sekundy se 7+ relikviemi podle cisla hrace (index 1-8) a cas minuleho zapisu.
+int sondaDrzeni = -1;
+int sondaMinulyCas = -1;
 
 void sondaZapis() {
   int t = xsGetGameTime();
@@ -46,6 +53,21 @@ void sondaZapis() {
   // 256 promennych v jedne smycce: vychozi strop smycek XS nezname, tenhle
   // prikaz bezel ve hre v super sonde.
   infiniteLoopLimit = 1000000;
+  if (sondaDrzeni < 0) {
+    sondaDrzeni = xsArrayCreateInt(9, 0, "sondaDrzeni");
+  }
+  // Pravidlo bezi po sekunde, ale muze sklouznout: pricita se skutecny
+  // rozdil herniho casu (nejvys 5 s - delsi mezera neni tik, ale napr. nacteni).
+  int dt = t - sondaMinulyCas;
+  if ((sondaMinulyCas < 0) || (dt < 0) || (dt > 5)) {
+    dt = 0;
+  }
+  sondaMinulyCas = t;
+  for (r = 1; < 9) {
+    if (xsPlayerAttribute(r, 7) >= 7.0) {
+      xsArraySetInt(sondaDrzeni, r, xsArrayGetInt(sondaDrzeni, r) + dt);
+    }
+  }
   xsCreateFile(false);
   // Znacka 0x44424F52 = 1145196370; XS bere nejvys 9ciferny literal.
   xsWriteInt(114519637 * 10);
@@ -127,7 +149,11 @@ void sondaZapis() {
     }
   }
   for (v = 0; < 256) {
-    xsWriteInt(xsTriggerVariable(v));
+    if ((v >= 240) && (v < 248)) {
+      xsWriteInt(xsArrayGetInt(sondaDrzeni, v - 239));
+    } else {
+      xsWriteInt(xsTriggerVariable(v));
+    }
   }
   xsWriteInt(t);
   xsCloseFile();
