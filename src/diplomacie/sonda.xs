@@ -20,8 +20,9 @@
 // kdyz ji jednotka zvedne, relikvie zanikne a z jednotky je 286 (mnich
 // s relikvii - s nim pocitaji i triggery prodeje); ulozena v klasteru je jen
 // v atributu 7 hrace. Sonda proto pise volne relikvie (mimo 8 dilcu od
-// trziste GM - zazemi GM na kraji mapy), jednotky 286 hracu krome GM a za
-// kazdou ulozenou relikvii polohu prvniho klastera (104) hrace.
+// trziste GM - zazemi GM na kraji mapy), jednotky 286 vsech hracu (i GM -
+// relikvie, se kterou GM pohne, je porad ve hre) a za kazdou ulozenou
+// relikvii polohu prvniho klastera (104) hrace.
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
@@ -93,7 +94,7 @@ void sondaZapis() {
     }
   }
   for (h = 1; < 9) {
-    if (h != gm) {
+    if (h > 0) {
       // Nesene: jednotky 286 (mnich s relikvii).
       sondaNosici = xsGetPlayerUnitIds(h, 286, sondaNosici);
       for (m = 0; < xsArrayGetSize(sondaNosici)) {
