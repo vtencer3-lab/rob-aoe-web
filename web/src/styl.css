@@ -1889,7 +1889,13 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .tabulka-roli .schopnost-gm.pouzita { color: var(--zlato); }
 .tabulka-roli .drive-role { font-size: 0.85rem; color: var(--tlumene); }
 /* Prohra role (Žoldák bez pouta, Garda bez Nástupce): velký blok nad kartou. */
-.prohra-role { max-width: 34rem; margin: 0.6rem auto 1rem; padding: 1rem 1rem 1.2rem; text-align: center; border: 2px solid var(--chyba); border-radius: 3px; background: color-mix(in srgb, var(--chyba) 14%, var(--drevo-tmave)); animation: karta-rozdana var(--prechod-karta) var(--krivka); }
+/* Přes celou sekci Diplomacie, okolí ztmavené; okno drží u horního okraje
+   obrazovky, i když je sekce vyšší než okno. */
+.karta-role { position: relative; }
+.prohra-zastena { position: absolute; inset: 0; z-index: 20; padding: 3rem 1rem 1rem; background: color-mix(in srgb, var(--obrys) 72%, transparent); animation: prolnuti var(--prechod) ease; }
+.prohra-zastena .prohra-role { position: sticky; top: 3rem; box-shadow: 0 10px 40px color-mix(in srgb, var(--obrys) 80%, transparent); }
+.prohra-role button { margin-top: 0.6rem; }
+.prohra-role { max-width: 34rem; margin: 0 auto; padding: 1rem 1rem 1.2rem; text-align: center; border: 2px solid var(--chyba); border-radius: 3px; background: color-mix(in srgb, var(--chyba) 14%, var(--drevo-tmave)); animation: karta-rozdana var(--prechod-karta) var(--krivka); }
 .prohra-role .znak-prohry { display: block; width: 140px; height: 140px; margin: 0 auto 0.3rem; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--obrys) 75%, transparent)); }
 .prohra-role h4 { margin: 0.2rem 0 0.4rem; font-size: 1.8rem; color: var(--chyba); }
 .prohra-role p { margin: 0.3rem 0; }

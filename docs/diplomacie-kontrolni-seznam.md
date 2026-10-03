@@ -47,7 +47,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 | 3.2 | Primární cíl `N/7` relikvií, pod ním `mm:ss / 15:00`, ztlumený, dokud hráč nemá 7 | `MojeCile.tsx` | W „vedle mapy ukáže cíle …“ |
 | 3.3 | Sekundární cíl s postupem (Nástupce ho nemá) | `MojeCile.tsx` | W |
 | 3.4 | Bez dat ze hry panel čeká s větou | `MojeCile.tsx` | W „bez dat ze hry panel cílů čeká“ |
-| 3.5 | Prohra Žoldáka (padlo pouto) a Gardy (padl Nástupce): blok „Prohráváš — rezignuj ve hře“ se znakem `prohra.webp`, zvon | `duvodProhry`, `Prohra` | W „Žoldákovi padlo pokrevní pouto …“ |
+| 3.5 | Prohra Žoldáka (padlo pouto) a Gardy (padl Nástupce): okno „Prohráváš — rezignuj ve hře“ se znakem `prohra.webp` **přes celou sekci, okolí ztmavené**, zvon, „Zavřít“ ho schová | `duvodProhry`, `Prohra` | W „Žoldákovi padlo pokrevní pouto …“, „obrazovka prohry jde zavřít“ |
 
 ## 4. Schopnosti a události (`schopnosti.ts`, migrace 039–041)
 

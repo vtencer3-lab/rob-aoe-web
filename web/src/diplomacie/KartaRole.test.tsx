@@ -340,3 +340,12 @@ it("Nástupce po smrti Šaška vidí úkol prodat 1 relikvii", () => {
   odkryj();
   expect(screen.getByTestId("prodej-relikvii")).toHaveTextContent("Šašek padl — musíš prodat 1 relikvii.");
 });
+
+it("obrazovka prohry jde zavřít", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null }]);
+  const mojeHra = { cas: 300, prijato: "2026-10-03T20:00:00.000Z", rozdano: true, cil: null, relikvie: 0, drzeni: 0, sledovani: [{ hracId: "h1", zije: false }] };
+  render(<KartaRole zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, nastupceHracId: "h1", mojeHra })) }} ja="h2" hlidej={hlidej} />);
+  expect(screen.getByTestId("prohra")).toHaveTextContent("Nástupce císaře padl: Hráč 1");
+  fireEvent.click(within(screen.getByTestId("prohra")).getByRole("button", { name: "Zavřít" }));
+  expect(screen.queryByTestId("prohra")).toBeNull();
+});

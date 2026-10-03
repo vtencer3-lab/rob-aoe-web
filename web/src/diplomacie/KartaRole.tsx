@@ -142,10 +142,17 @@ function duvodProhry(r: RoleHrace, d: DiploZapas): { text: string; hracId: strin
   return null;
 }
 
-/** Obrazovka prohry nad kartou (uživatel 3. 10. 2026): kdo padl a výzva k rezignaci. Zvon při objevení. */
+/**
+ * Obrazovka prohry přes celou sekci Diplomacie, okolí ztmavené (uživatel
+ * 3. 10. 2026): kdo padl a výzva k rezignaci. Zvon při objevení; „Zavřít“
+ * ji schová jen v tomhle okně, ať jde dál číst karta.
+ */
 function Prohra({ duvod, ucastnici }: { duvod: { text: string; hracId: string }; ucastnici: ZapasView["ucastnici"] }) {
+  const [zavreno, setZavreno] = useState(false);
   useEffect(() => prehraj(zvonUrl), []);
+  if (zavreno) return null;
   return (
+    <div className="prohra-zastena">
     <div className="prohra-role" role="alert" data-testid="prohra">
       <img className="znak-prohry" src={ZNAK_PROHRA} alt="" width={208} height={208} />
       <h4>Prohráváš</h4>
@@ -156,6 +163,10 @@ function Prohra({ duvod, ucastnici }: { duvod: { text: string; hracId: string };
         </strong>
       </p>
       <p className="vyzva">Rezignuj ve hře.</p>
+      <button type="button" onClick={() => setZavreno(true)}>
+        Zavřít
+      </button>
+    </div>
     </div>
   );
 }
