@@ -19,6 +19,7 @@ import {
   listVerzi,
   najdiVerziPodleSha,
   ulozSondu,
+  setMapaZapasu,
   setNastupce,
   setStavDiplo,
   smazVerzi,
@@ -71,6 +72,23 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
     const { hracId } = (request.body ?? {}) as { hracId?: unknown };
     if (typeof hracId !== "string" || !hraci.includes(hracId)) throw new HttpError(400, "Nástupcem může být jen hráč zápasu (ne GM).");
     await setNastupce(diplo.zapasId, hracId);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Přepínače pod mapou pultu: krále a relikvie z běžící hry ukázat, nebo ne
+  // (platí i pro overlaye do OBS). Smí jen GM zápasu, v každém stavu.
+  app.post("/api/diplo/zapas/:id/mapa", async (request) => {
+    const { diplo } = await requireGm(request);
+    const telo = (request.body ?? {}) as { kralove?: unknown; relikvie?: unknown };
+    const ano = (v: unknown, kde: string): boolean | undefined => {
+      if (v === undefined) return undefined;
+      if (typeof v !== "boolean") throw new HttpError(400, `${kde} musí být ano/ne.`);
+      return v;
+    };
+    const kralove = ano(telo.kralove, "kralove");
+    const relikvie = ano(telo.relikvie, "relikvie");
+    await setMapaZapasu(diplo.zapasId, { ...(kralove === undefined ? {} : { kralove }), ...(relikvie === undefined ? {} : { relikvie }) });
     await broadcastAkce();
     return { ok: true };
   });

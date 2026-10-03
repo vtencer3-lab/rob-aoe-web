@@ -5,7 +5,7 @@ import { procNelzePrevzitMinimapu } from "../shared/diplomacie/minimapa.js";
 import { jmenoScenareProHru, prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
 import { revizeSondy } from "./sonda.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
-import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo } from "../shared/diplomacie/typy.js";
+import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo, ZobrazeniMapy } from "../shared/diplomacie/typy.js";
 
 interface VerzeDb {
   id: number;
@@ -259,6 +259,8 @@ interface ZapasDb {
   stav: StavDiplo;
   nastupce_hrac_id: string | null;
   scenar_id: number | null;
+  mapa_kralove: boolean;
+  mapa_relikvie: boolean;
 }
 interface RoleDb {
   zapas_id: number;
@@ -283,6 +285,7 @@ async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
     stav: z.stav,
     nastupceHracId: z.nastupce_hrac_id,
     scenarId: z.scenar_id,
+    mapa: { kralove: z.mapa_kralove, relikvie: z.mapa_relikvie },
     role: role
       .filter((r) => r.zapas_id === z.zapas_id)
       .map((r) => ({ hracId: r.hrac_id, role: r.role, cilHracId: r.cil_hrac_id })),
@@ -290,7 +293,7 @@ async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
 }
 
 // GM = účastník na šedé (GM_BARVA); neukládá se, viz migrace 031.
-const SLOUPCE_ZAPASU = `d.zapas_id, d.stav, d.nastupce_hrac_id, d.scenar_id,
+const SLOUPCE_ZAPASU = `d.zapas_id, d.stav, d.nastupce_hrac_id, d.scenar_id, d.mapa_kralove, d.mapa_relikvie,
   (SELECT u.hrac_id FROM ucastnik u WHERE u.zapas_id = d.zapas_id AND u.barva = ${GM_BARVA} LIMIT 1) AS gm_hrac_id`;
 
 export async function listDiploZapasy(akceId: number): Promise<DiploZapas[]> {
@@ -371,6 +374,14 @@ export async function odvolejNastupceZeHry(zapasId: number): Promise<boolean> {
     [zapasId],
   );
   return (rowCount ?? 0) > 0;
+}
+
+/** Co GM ukazuje na mapě z běžící hry (migrace 038); co nepřijde, se nemění. */
+export async function setMapaZapasu(zapasId: number, mapa: Partial<ZobrazeniMapy>): Promise<void> {
+  await getPool().query(
+    "UPDATE diplo_zapas SET mapa_kralove = COALESCE($2, mapa_kralove), mapa_relikvie = COALESCE($3, mapa_relikvie), upraveno_v = now() WHERE zapas_id = $1",
+    [zapasId, mapa.kralove ?? null, mapa.relikvie ?? null],
+  );
 }
 
 export async function setNastupce(zapasId: number, hracId: string): Promise<void> {

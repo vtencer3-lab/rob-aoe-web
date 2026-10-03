@@ -179,3 +179,18 @@ it("v klasickém zápase hráč na šedé mluvit nesmí", async () => {
   const res = await post(`/api/zapas/${zapas.id}/hlas`, await klient("h7", false), { sezeni: "s1", poradi: 0, data: "AAAA" });
   expect(res.statusCode).toBe(403);
 });
+
+// Přepínače pod mapou pultu (migrace 038): výchozí obojí zapnuté, GM mění
+// každé zvlášť; hráč zápasu ani admin-ne-GM nesmí, nesmysl je 400.
+it("zobrazení mapy: výchozí zapnuté, mění jen GM, každé zvlášť", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  const gm = await klient("h7", false);
+  const hrac = await klient("h1", false);
+  expect((await getDiploZapas(zapas.id))!.mapa).toEqual({ kralove: true, relikvie: true });
+  expect((await post(`/api/diplo/zapas/${zapas.id}/mapa`, hrac, { kralove: false })).statusCode).toBe(403);
+  expect((await post(`/api/diplo/zapas/${zapas.id}/mapa`, gm, { kralove: "ne" })).statusCode).toBe(400);
+  expect((await post(`/api/diplo/zapas/${zapas.id}/mapa`, gm, { kralove: false })).statusCode).toBe(200);
+  expect((await getDiploZapas(zapas.id))!.mapa).toEqual({ kralove: false, relikvie: true });
+  expect((await post(`/api/diplo/zapas/${zapas.id}/mapa`, gm, { relikvie: false })).statusCode).toBe(200);
+  expect((await getDiploZapas(zapas.id))!.mapa).toEqual({ kralove: false, relikvie: false });
+});

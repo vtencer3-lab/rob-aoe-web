@@ -1,7 +1,8 @@
 interface Props {
   /** Popisek pro čtečky; vlevo a vpravo jsou viditelné texty u obou poloh. */
   popisek: string;
-  vlevo: string;
+  /** Text u vypnuté polohy; bez něj je přepínač jen „vypnuto/zapnuto“ s popiskem vpravo. */
+  vlevo?: string;
   vpravo: string;
   zapnuto: boolean;
   onZmena: (zapnuto: boolean) => void;
@@ -16,7 +17,7 @@ interface Props {
 export function Prepinac({ popisek, vlevo, vpravo, zapnuto, onZmena, testId }: Props) {
   return (
     <label className={zapnuto ? "prepinac zapnuto" : "prepinac"} data-testid={testId}>
-      <span className={zapnuto ? "" : "aktivni"}>{vlevo}</span>
+      {vlevo === undefined ? null : <span className={zapnuto ? "" : "aktivni"}>{vlevo}</span>}
       <input type="checkbox" role="switch" aria-label={popisek} checked={zapnuto} onChange={(e) => onZmena(e.target.checked)} />
       <span className="drazka" aria-hidden="true">
         <span className="knoflik" />

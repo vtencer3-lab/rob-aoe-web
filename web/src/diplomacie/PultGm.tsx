@@ -8,6 +8,7 @@ import type { Hlidej } from "../rezimy/index.js";
 import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
 import { Rozbalovaci } from "../views/Rozbalovaci.js";
 import { Potvrzeni } from "../views/Potvrzeni.js";
+import { Prepinac } from "../views/Prepinac.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
 import { NastupceZeHry, RadekHry, StariHry } from "./HraZive.js";
@@ -69,7 +70,16 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         {/* Na širokém displeji mapa vlevo a pult vpravo (uživatel 3. 10. 2026),
             ať GM vidí mapu i role bez posouvání; na úzkém pod sebou. */}
         <div className="pult-vedle">
-          {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" onNajeti={najetiNaMape} najeto={najetaBarva} kralove={kralove} relikvie={relikvie} /> : null}
+          {verze ? (
+            <div className="mapa-pultu">
+              <MapaScenare verze={verze} popisky={popisky} velikost="velka" onNajeti={najetiNaMape} najeto={najetaBarva} kralove={kralove} relikvie={relikvie} />
+              {/* Co z běžící hry ukázat na mapě — platí i pro overlaye do OBS (uživatel 3. 10. 2026). */}
+              <div className="nastaveni-mapy">
+                <Prepinac popisek="Zobrazit krále" vpravo="Zobrazit krále" zapnuto={d.mapa?.kralove !== false} onZmena={(v) => akce(() => diploApi.mapa(zapas.id, { kralove: v }))} testId="prepinac-kralove" />
+                <Prepinac popisek="Zobrazit relikvie" vpravo="Zobrazit relikvie" zapnuto={d.mapa?.relikvie !== false} onZmena={(v) => akce(() => diploApi.mapa(zapas.id, { relikvie: v }))} testId="prepinac-relikvie" />
+              </div>
+            </div>
+          ) : null}
           <div className="pult-strana">
             <StariHry hra={d.hra} />
 
@@ -182,9 +192,10 @@ export function mapaPultu(
     const p = b === undefined ? undefined : popisky[b];
     if (b !== undefined && p) popisky[b] = { ...p, druhy: [...(p.druhy ?? []), v.druh] };
   }
-  const kralove = (d.hra?.hraci ?? []).flatMap((h) => kralNaMape(verze, mujUcastnik(zapas, h.hracId)?.barva, h.kral) ?? []);
+  // Co ukázat, přepíná GM pod mapou (`d.mapa`); platí i pro overlaye.
+  const kralove = d.mapa?.kralove === false ? [] : (d.hra?.hraci ?? []).flatMap((h) => kralNaMape(verze, mujUcastnik(zapas, h.hracId)?.barva, h.kral) ?? []);
   // Relikvie (uživatel 3. 10. 2026): kde leží, jen GM a overlay.
-  const relikvie = (d.hra?.relikvie ?? []).map((r) => naMinimapu(r.x, r.y, velikost));
+  const relikvie = d.mapa?.relikvie === false ? [] : (d.hra?.relikvie ?? []).map((r) => naMinimapu(r.x, r.y, velikost));
   return { popisky, kralove, relikvie };
 }
 

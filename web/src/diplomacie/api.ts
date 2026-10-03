@@ -14,6 +14,7 @@ const post = (url: string, telo?: object) =>
 /** Routy Diplomacie (server: src/diplomacie/routes.ts), stranou od jádra v `api.ts`. */
 export const diploApi = {
   nastupce: (zapasId: number, hracId: string) => post(`/api/diplo/zapas/${zapasId}/nastupce`, { hracId }),
+  mapa: (zapasId: number, zmena: { kralove?: boolean; relikvie?: boolean }) => post(`/api/diplo/zapas/${zapasId}/mapa`, zmena),
   los: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/los`),
   role: (zapasId: number, hracId: string, zmena: { role?: Role; cilHracId?: string }) =>
     fetch(cesta(`/api/diplo/zapas/${zapasId}/role/${encodeURIComponent(hracId)}`), {

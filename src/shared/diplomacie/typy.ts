@@ -20,12 +20,20 @@ export interface RoleHrace {
 }
 
 /** Diplomacie jednoho zápasu, jak ji vidí GM (nic nezaslepeno). */
+/** Co GM ukazuje na mapě z běžící hry — pult i overlaye (uživatel 3. 10. 2026). */
+export interface ZobrazeniMapy {
+  kralove: boolean;
+  relikvie: boolean;
+}
+
 export interface DiploZapas {
   zapasId: number;
   gmHracId: string;
   stav: StavDiplo;
   nastupceHracId: string | null;
   scenarId: number | null;
+  /** Chybí u starších snímků stavu — pak se ukazuje všechno. */
+  mapa?: ZobrazeniMapy;
   role: RoleHrace[];
   /**
    * Poslední data z běžící hry (most ke hře); chybí, dokud hra nic

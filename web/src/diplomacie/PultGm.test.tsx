@@ -15,6 +15,7 @@ vi.mock("./api.js", () => ({
     role: vi.fn(async () => ({ ok: true })),
     rozeslat: vi.fn(async () => ({ ok: true })),
     zpet: vi.fn(async () => ({ ok: true })),
+    mapa: vi.fn(async () => ({ ok: true })),
     minimapaUrl: () => "/m.webp",
   },
 }));
@@ -316,4 +317,29 @@ it("najetí na hráče ukáže na mapě jeho vztahy jako na jeho kartě", () => 
   const zoldak = ROLE_LOS.find((r) => r.role === "zoldak")!;
   fireEvent.mouseEnter(radek(zoldak.hracId));
   expect(start(zoldak.cilHracId!)).toHaveClass("druh-pouto");
+});
+
+// Přepínače pod mapou (uživatel 3. 10. 2026): GM vypne krále nebo relikvie
+// na mapě pultu i v overlayích; nastavení drží server u zápasu.
+it("přepínače pod mapou posílají, co ukázat, a mapa je poslechne", () => {
+  const hra = { cas: 10, prijato: "2026-10-03T12:00:00.000Z", rozdano: false, nastupceHracId: null, hraci: [{ hracId: "h1", cil: null, relikvie: 0, zije: true, kral: { x: 50, y: 50 } }], relikvie: [{ x: 10, y: 10 }] };
+  const sHrou = (mapa?: { kralove: boolean; relikvie: boolean }) => {
+    const data = gmData("priprava", [], "h1");
+    return { ...data, zapasy: data.zapasy.map((z) => ({ ...z, hra, ...(mapa ? { mapa } : {}) })) };
+  };
+  const { rerender } = render(<PultGm zapas={zapas} data={sHrou()} hlidej={spust} />);
+  odkryj();
+  expect(screen.getAllByTestId("kral")).toHaveLength(1);
+  expect(screen.getAllByTestId("relikvie")).toHaveLength(1);
+  const kralove = screen.getByRole("switch", { name: "Zobrazit krále" });
+  expect(kralove).toBeChecked();
+  fireEvent.click(kralove);
+  expect(diploApi.mapa).toHaveBeenCalledWith(zapas.id, { kralove: false });
+  rerender(<PultGm zapas={zapas} data={sHrou({ kralove: false, relikvie: true })} hlidej={spust} />);
+  expect(screen.queryByTestId("kral")).toBeNull();
+  expect(screen.getAllByTestId("relikvie")).toHaveLength(1);
+  expect(screen.getByRole("switch", { name: "Zobrazit krále" })).not.toBeChecked();
+  rerender(<PultGm zapas={zapas} data={sHrou({ kralove: true, relikvie: false })} hlidej={spust} />);
+  expect(screen.getAllByTestId("kral")).toHaveLength(1);
+  expect(screen.queryByTestId("relikvie")).toBeNull();
 });
