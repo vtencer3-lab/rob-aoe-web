@@ -1800,9 +1800,11 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    značky startu, pod králi. */
 .mapa-scenare .relikvie-na-mape { position: absolute; transform: translate(-50%, -50%); height: calc(var(--znacka) * 1.4); width: auto; pointer-events: none; filter: drop-shadow(0 0 2px var(--obrys)) drop-shadow(0 1px 1px var(--obrys)); transition: left 0.9s linear, top 0.9s linear; z-index: 1; }
 /* Ping GM: pulzující kruh (zlatý pro všechny, v barvě hráče pro jednoho).
+   Střed vlastností `translate`, ne `transform`: pulz mění `scale` a ten by
+   s `transform` zvětšoval i posun — kruh rostl z rohu mimo místo kliknutí.
    Mapa pultu jde kliknutím pingnout — kurzor zaměřovač. */
 .mapa-scenare.klikaci { cursor: crosshair; }
-.mapa-scenare .ping { position: absolute; width: calc(var(--znacka) * 2.6); height: calc(var(--znacka) * 2.6); transform: translate(-50%, -50%); border-radius: 50%; border: 3px solid var(--zlato-svetle); box-shadow: 0 0 0 2px var(--obrys), 0 0 12px 3px color-mix(in srgb, var(--zlato) 70%, transparent); pointer-events: none; z-index: 3; animation: ping-pulz 1s ease-out infinite; }
+.mapa-scenare .ping { position: absolute; width: calc(var(--znacka) * 2.6); height: calc(var(--znacka) * 2.6); translate: -50% -50%; border-radius: 50%; border: 3px solid var(--zlato-svetle); box-shadow: 0 0 0 2px var(--obrys), 0 0 12px 3px color-mix(in srgb, var(--zlato) 70%, transparent); pointer-events: none; z-index: 3; animation: ping-pulz 1s ease-out infinite; }
 .mapa-scenare .ping.barva-1 { border-color: var(--b1); }
 .mapa-scenare .ping.barva-2 { border-color: var(--b2); }
 .mapa-scenare .ping.barva-3 { border-color: var(--b3); }
