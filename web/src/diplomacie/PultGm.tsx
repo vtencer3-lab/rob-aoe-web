@@ -243,11 +243,17 @@ export function TabulkaRoli({
                         d.role.map((x) => x.hracId),
                         r.hracId,
                         d.nastupceHracId!,
-                      ).map((c) => (
-                        <option key={c} value={c}>
-                          {jmeno(c)}
-                        </option>
-                      ))}
+                      ).map((c) => {
+                        // Položka seznamu nesmí obsahovat čtvereček, jen text: barvu
+                        // nese pozadí položky a číslo barvy stojí před jménem
+                        // (uživatel 3. 10. 2026); „(pN)“ tím odpadá.
+                        const u = mujUcastnik(zapas, c);
+                        return (
+                          <option key={c} value={c} className={u ? `barva-${u.barva}` : undefined}>
+                            {u ? `${u.barva} · ${jmenoHrace(u)}` : jmeno(c)}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 ) : r.role === "najezdnik" ? (

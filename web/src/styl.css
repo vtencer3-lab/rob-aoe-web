@@ -1910,6 +1910,16 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .tabulka-roli td select { width: 100%; box-sizing: border-box; }
 .tabulka-roli .cil-s-barvou { display: flex; align-items: center; gap: 0.4rem; }
 .tabulka-roli .cil-s-barvou select { min-width: 0; }
+/* Položky výběru cíle v barvě hráče (pozadí položky — čtvereček do <option>
+   vložit nejde). Světlé barvy s tmavým písmem jako na dlaždicích. */
+.tabulka-roli option.barva-1 { background: var(--b1); color: #fff; }
+.tabulka-roli option.barva-2 { background: var(--b2); color: #fff; }
+.tabulka-roli option.barva-3 { background: var(--b3); color: #fff; }
+.tabulka-roli option.barva-4 { background: var(--b4); color: var(--obrys); }
+.tabulka-roli option.barva-5 { background: var(--b5); color: #fff; }
+.tabulka-roli option.barva-6 { background: var(--b6); color: #fff; }
+.tabulka-roli option.barva-7 { background: var(--b7); color: #fff; }
+.tabulka-roli option.barva-8 { background: var(--b8); color: var(--obrys); }
 .tabulka-roli .cil-s-barvou .swatch { flex: none; }
 .tabulka-roli td > span { color: var(--tlumene); font-size: 0.9rem; }
 /* Data z běžící hry (HraZive.tsx): stáří dat a věta o Nástupci jsou drobné

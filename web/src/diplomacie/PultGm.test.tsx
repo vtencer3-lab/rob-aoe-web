@@ -271,8 +271,9 @@ it("dvě AI v sestavě rozliší barva: řádky, cíle i spojenec", () => {
   expect(screen.getByRole("combobox", { name: "Role: AI (p5)" })).toBeTruthy();
   const kat = ROLE_AI.find((r) => r.role === "kat")!;
   const cile = within(screen.getByRole("combobox", { name: `Cíl: ${jmeno(kat.hracId)}` })).getAllByRole("option").map((o) => o.textContent);
-  expect(cile).toContain("AI (p3)");
-  expect(cile).toContain("AI (p5)");
+  // Položky cíle nesou číslo barvy před jménem a barvu v pozadí položky.
+  expect(cile).toContain("3 · AI");
+  expect(cile).toContain("5 · AI");
   expect(screen.getAllByText(/^zná:/).map((z) => z.textContent)).toContain("zná: AI (p3)");
   expect(screen.queryByText(/Hráč \d \(p\d\)/)).toBeNull();
 });
