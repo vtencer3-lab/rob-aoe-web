@@ -1933,7 +1933,6 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Video plamenů přes celou kartu: roztažené (fill), ať čelo ohně ve videu
    sedí s maskou i u karty jiného poměru stran než 3 : 4. */
 .karta-promena .plameny { position: absolute; inset: -6% -3% -2%; width: auto; height: auto; object-fit: fill; pointer-events: none; z-index: 2; }
-}
 @media (prefers-reduced-motion: reduce) {
   .karta-promena .promena-tlacitko { animation: none; }
   .karta-promena.hori .karta-promena-obsah { animation: none; opacity: 0; }
