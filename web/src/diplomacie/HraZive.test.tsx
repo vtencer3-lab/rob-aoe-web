@@ -137,6 +137,10 @@ it("v tabulce rolí má každý hráč řádek s cílem a postupem, relikviemi a
   expect(radek("Hráč 1")).toHaveTextContent("zabito: 0/650 jednotek · relikvie 2");
   expect(radek("Hráč 3")).toHaveTextContent("zabito: 0/650 jednotek · relikvie 0 · vyřazen");
   expect(radek("Hráč 4")).toHaveTextContent("bez cíle · relikvie 0");
+  // Hodnoty tučně, relikvie obrázkem; slovo „relikvie“ zůstává jen čtečkám.
+  expect([...radek("Hráč 2").querySelectorAll("strong")].map((b) => b.textContent)).toEqual(["3/650", "0"]);
+  expect(radek("Hráč 2").querySelector(".relikvie img")).toBeTruthy();
+  expect(radek("Hráč 2").querySelector(".relikvie .sr-only")).toHaveTextContent("relikvie");
   expect(radek("Hráč 4")).toHaveClass("radek-hry");
   expect(radek("Hráč 4").querySelector("td")).toHaveAttribute("colspan", "4");
   expect(screen.getAllByTestId("radek-hry")).toHaveLength(7);

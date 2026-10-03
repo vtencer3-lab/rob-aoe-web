@@ -1919,6 +1919,11 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .pult-gm .zakryti > p.varovani, .pult-gm .pult-strana > p.varovani { font-size: 0.9rem; cursor: auto; }
 .tabulka-roli tr:has(+ tr.radek-hry) > * { border-bottom: 0; padding-bottom: 0.1rem; }
 .tabulka-roli tr.radek-hry td { padding-top: 0; color: var(--tlumene); font-size: 0.85rem; }
+/* Hodnoty (postup cíle, počet relikvií) tučně a světleji než popis. */
+.tabulka-roli tr.radek-hry strong { color: var(--text); }
+/* Relikvie: obrázek 28 px vysoký (poměr stran zdroje 90×95), číslo hned za ním. */
+.tabulka-roli tr.radek-hry .relikvie { display: inline-flex; align-items: center; gap: 0.2rem; vertical-align: middle; }
+.tabulka-roli tr.radek-hry .relikvie img { height: 28px; width: auto; }
 .pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }
 .pult-gm .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 0.6rem; }
 /* „Rozeslat role“ je hlavní akce pultu: zřetelně větší než „Přelosovat“

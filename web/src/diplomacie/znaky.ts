@@ -6,6 +6,7 @@ import najezdnik from "../assets/diplomacie/role-najezdnik.webp";
 import nastupce from "../assets/diplomacie/role-nastupce.webp";
 import sasek from "../assets/diplomacie/role-sasek.webp";
 import zoldak from "../assets/diplomacie/role-zoldak.webp";
+import relikvie from "../assets/diplomacie/relikvie.webp";
 import rubKarty from "../assets/diplomacie/rub-karty.webp";
 
 /**
@@ -17,3 +18,6 @@ export const ZNAK_ROLE: Record<Role | "gm", string> = { nastupce, garda, najezdn
 
 /** Rub zakryté karty (pečeť s orlicí) — co hráč vidí, dokud kartu neodkryje. */
 export const RUB_KARTY: string = rubKarty;
+
+/** Relikvie ze hry (90×95 px, od uživatele 3. 10. 2026) — místo slova „relikvie“ u počtu. */
+export const ZNAK_RELIKVIE: string = relikvie;

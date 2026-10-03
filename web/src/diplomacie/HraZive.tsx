@@ -1,7 +1,9 @@
 import { popisCile, popisStari, type HraZapasu } from "../../../src/shared/diplomacie/hra.js";
+import { Fragment, type ReactNode } from "react";
 import type { UcastnikView } from "../../../src/shared/types.js";
 import { useTed } from "../useTed.js";
 import { JmenoUcastnika } from "../views/JmenoSBarvou.js";
+import { ZNAK_RELIKVIE } from "./znaky.js";
 
 /**
  * Data z běžící hry v pultu GM (most ke hře): server je posílá jen GM
@@ -58,16 +60,39 @@ export function NastupceZeHry({ hra, ucastnici }: { hra: HraZapasu | undefined; 
 export function RadekHry({ hra, hracId }: { hra: HraZapasu | undefined; hracId: string }) {
   const h = hra?.hraci.find((x) => x.hracId === hracId);
   if (!hra || !h) return null;
-  const casti = [
+  const casti: ReactNode[] = [
     // Dokud hra cíle nerozdává, „bez cíle“ by platilo o všech a nic neříkalo.
-    h.cil ? popisCile(h.cil) : hra.rozdano ? "bez cíle" : null,
-    h.relikvie === null ? null : `relikvie ${h.relikvie}`,
+    h.cil ? <TucneHodnoty text={popisCile(h.cil)} /> : hra.rozdano ? "bez cíle" : null,
+    // Obrázek relikvie místo slova (uživatel 3. 10. 2026); slovo zůstává čtečkám.
+    h.relikvie === null ? null : (
+      <span className="relikvie">
+        <img src={ZNAK_RELIKVIE} alt="" width={90} height={95} />
+        <span className="sr-only">relikvie </span>
+        <strong>{h.relikvie}</strong>
+      </span>
+    ),
     h.zije === false ? "vyřazen" : null,
-  ].filter((c): c is string => c !== null);
+  ].filter((c) => c !== null);
   if (casti.length === 0) return null;
   return (
     <tr className="radek-hry" data-testid="radek-hry">
-      <td colSpan={4}>{casti.join(" · ")}</td>
+      <td colSpan={4}>
+        {casti.map((c, i) => (
+          <Fragment key={i}>
+            {i > 0 ? " · " : null}
+            {c}
+          </Fragment>
+        ))}
+      </td>
     </tr>
+  );
+}
+
+/** Text cíle s čísly tučně („zabito: **3/650** jednotek“), ať postup jde přečíst na první pohled. */
+function TucneHodnoty({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(\d+(?:\/\d+)?)/).map((kus, i) => (i % 2 === 1 ? <strong key={i}>{kus}</strong> : kus))}
+    </>
   );
 }
