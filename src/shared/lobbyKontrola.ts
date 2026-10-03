@@ -222,9 +222,11 @@ export const REZIM_SCENARIO = 3;
  * Co v Custom Scenario určuje scénář, ne lobby: hra v ní Location, Map Size
  * ani Victory nenabízí (snímek lobby 1. 10. 2026). Panel nastavení tyhle
  * volby schová a historie změn o nich mlčí; uložené hodnoty zůstávají, ať
- * se po přepnutí zpět na jiný režim vrátí, co bylo.
+ * se po přepnutí zpět na jiný režim vrátí, co bylo. Team Positions taky:
+ * rozmístění týmů dává scénář, v lobby se nastavit nedá (uživatel 3. 10.
+ * 2026 — kontrola na něj zbytečně „řvala“).
  */
-export const URCUJE_SCENAR: ReadonlyArray<keyof NastaveniLobby> = ["mapaId", "velikost", "vitezstvi"];
+export const URCUJE_SCENAR: ReadonlyArray<keyof NastaveniLobby> = ["mapaId", "velikost", "vitezstvi", "teamPositions"];
 
 /** Jméno souboru scénáře, jak ho hra ukazuje: bez cesty, s příponou, rozumně dlouhé. */
 export function jePlatneJmenoScenare(jmeno: string): boolean {
@@ -697,6 +699,10 @@ export function zkontrolujLobby(
     const ve = n[klic];
     const ma = ocekavane[klic];
     const zap = (v: boolean | null | undefined) => (v === null || v === undefined ? "?" : v ? "zapnuto" : "vypnuto");
+    if (scenarovy && URCUJE_SCENAR.includes(klic)) {
+      k.push({ klic, stav: "jedno", text: `${popis}: ${zap(ve)} (určuje scénář)`, sekce: "dalsi" });
+      continue;
+    }
     const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : "spatne";
     k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${zap(ve)}, má být ${zap(ma)}` : `${popis}: ${zap(ve)}`, sekce: "dalsi" });
   }

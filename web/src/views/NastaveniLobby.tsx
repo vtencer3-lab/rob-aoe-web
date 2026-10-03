@@ -10,6 +10,7 @@ import {
   REZIM_EMPIRE_WARS,
   REZIM_REGICIDE,
   REZIM_SCENARIO,
+  URCUJE_SCENAR,
   REZIM_SUDDEN_DEATH,
   REZIMY,
   ZASKRTAVATKO_REZIMU,
@@ -354,7 +355,8 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, onReset, vych
           <legend>Team Settings</legend>
           {/* Team Positions jde ve hře zaškrtnout jen s Team Together; bez něj
               je zašedlé a kontrola ho bere jako „je to jedno“. */}
-          {TEAM_SETTINGS.map(({ klic, popis }) => (
+          {/* Ve scénáři určuje Team Positions scénář (URCUJE_SCENAR) — schované. */}
+          {TEAM_SETTINGS.filter(({ klic }) => !(scenarovy && URCUJE_SCENAR.includes(klic))).map(({ klic, popis }) => (
             <Zaskrtavatko
               key={klic}
               klic={klic}

@@ -501,6 +501,14 @@ describe("scénář", () => {
     expect(k.find((r) => r.klic === "vitezstvi")).toMatchObject({ stav: "jedno", sekce: "hlavni", text: "Victory: určuje scénář" });
     expect(lobbyVPoradku(k)).toBe(true);
   });
+  // Team Positions dává scénář, v lobby se nastavit nedá (uživatel 3. 10. 2026).
+  it("Team Positions ve scénáři je jen informace, mimo scénář se porovnává", () => {
+    const k = zkontrolujLobby(sestava, { ...ocekavane, teamPositions: false }, lobbySNastavenim({ rezim: 3, teamPositions: true, scenar: ocekavane.scenar }));
+    expect(k.find((r) => r.klic === "teamPositions")).toMatchObject({ stav: "jedno", text: "Team Positions: zapnuto (určuje scénář)" });
+    expect(lobbyVPoradku(k)).toBe(true);
+    const mimo = zkontrolujLobby(sestava, { ...ocekavane, rezim: 0, teamPositions: false }, lobbySNastavenim({ rezim: 0, teamPositions: true }));
+    expect(mimo.find((r) => r.klic === "teamPositions")).toMatchObject({ stav: "spatne" });
+  });
   it("mimo scénář zůstává velikost podle počtu hráčů a Victory se porovnává", () => {
     const k = zkontrolujLobby(sestava, { ...VYCHOZI_NASTAVENI, velikost: null, vitezstvi: 1 }, lobbySNastavenim({ velikost: 220, vitezstvi: 0 }));
     expect(k.find((r) => r.klic === "velikost")).toMatchObject({ stav: "spatne", text: "Velikost: Large (8), má být Tiny (2)" });
