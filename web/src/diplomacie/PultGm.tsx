@@ -94,6 +94,8 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                       disabled={pracuje}
                       onClick={() => akce(() => diploApi.nastupce(zapas.id, u.hracId))}
                     >
+                      {/* Zvolený Nástupce: nakloněná koruna v rohu dlaždice (uživatel 3. 10. 2026). */}
+                      {nastupce === u.hracId ? <img className="koruna-roh" src={ZNAK_ROLE.nastupce} alt="" width={64} height={64} /> : null}
                       {/* Koho předvybrala hra (most ke hře): koruna a záře, ať GM vidí, jestli sedí. */}
                       {d.hra?.nastupceHracId === u.hracId ? <img className="znak-role" src={ZNAK_ROLE.nastupce} alt="Nástupce podle hry" width={64} height={64} /> : null}
                       <span className="cislo">p{u.barva}</span> <span className="barva">{BARVA_NAZEV[u.barva]}</span> <strong>{jmenoHrace(u)}</strong>

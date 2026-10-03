@@ -29,12 +29,15 @@ it("bez známé barvy zůstane holý text bez čtverečku", () => {
   expect(container.querySelector("p")!.innerHTML).toBe("tým 2");
 });
 
-// Stejně pojmenované AI rozliší přívěsek „(pN)“ jako v `jmenoVZapasu`;
-// neznámé id se vypíše tak, jak je, a čtvereček nemá.
+// Stejně pojmenované AI očima rozliší číslo ve čtverečku (`data-cislo`),
+// čtečkám přívěsek „(pN)“ jako v `jmenoVZapasu`; neznámé id se vypíše
+// tak, jak je, a čtvereček nemá.
 it("účastníka podle id pojmenuje a obarví, neznámého nechá být", () => {
   const { container, rerender } = render(<JmenoUcastnika ucastnici={UCASTNICI} hracId={aiId(5)} />);
-  expect(screen.getByText("AI (p5)")).toHaveClass("jmeno-s-barvou");
+  expect(container.querySelector(".jmeno-s-barvou")!.textContent).toBe("AI (p5)");
+  expect(screen.getByText("(p5)")).toHaveClass("sr-only");
   expect(container.querySelector(".swatch")).toHaveClass("barva-5");
+  expect(container.querySelector(".swatch")).toHaveAttribute("data-cislo", "5");
   rerender(<JmenoUcastnika ucastnici={UCASTNICI} hracId="cizi" />);
   expect(container.textContent).toBe("cizi");
   expect(container.querySelector(".swatch")).toBeNull();

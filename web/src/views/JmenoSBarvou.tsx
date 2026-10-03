@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import { spojkaVyctu, vetaOViteze, type ClenStrany } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type Barva, type UcastnikView, type Vitez } from "../../../src/shared/types.js";
-import { jmenoVZapasu } from "../zapas.js";
+import { jmenoHrace, jmenoVZapasu } from "../zapas.js";
 
 /** Co o účastníkovi stačí vědět, aby šel pojmenovat i s barvou. */
 type Pojmenovatelny = Pick<UcastnikView, "hracId" | "alias" | "platformaJmeno" | "barva">;
@@ -11,9 +11,11 @@ type Pojmenovatelny = Pick<UcastnikView, "hracId" | "alias" | "platformaJmeno" |
  * předek: karta hráče je `.karta.barva-N` a barva přes předka by v ní
  * přebarvila všechny čtverečky na barvu karty. Čtečkám nic neříká — jméno
  * hned vedle stačí; bublina s názvem barvy je pro ty, kdo barvy hůř rozlišují.
+ * Uvnitř je číslo barvy (uživatel 3. 10. 2026 — „pN“ ve hře), kreslí ho CSS
+ * z `data-cislo`: textu jména (a čtečkám) nic nepřidá.
  */
 export function ZnakBarvy({ barva }: { barva: Barva }) {
-  return <span className={`swatch barva-${barva}`} title={BARVA_NAZEV[barva]} aria-hidden="true" />;
+  return <span className={`swatch barva-${barva}`} data-cislo={barva} title={BARVA_NAZEV[barva]} aria-hidden="true" />;
 }
 
 /**
@@ -32,9 +34,22 @@ export function JmenoSBarvou({ barva, children }: { barva: Barva | null | undefi
   );
 }
 
-/** Účastník zápasu podle id: jméno jako `jmenoVZapasu` (stejně pojmenované AI rozliší „(pN)“) a jeho barva. */
+/**
+ * Účastník zápasu podle id se svou barvou. Stejně pojmenované AI očima
+ * rozliší číslo ve čtverečku, takže „(pN)“ z `jmenoVZapasu` vidět není;
+ * čtvereček je ale pro čtečky skrytý, proto jim „(pN)“ zůstává (`sr-only`).
+ */
 export function JmenoUcastnika({ ucastnici, hracId }: { ucastnici: readonly Pojmenovatelny[]; hracId: string }) {
-  return <JmenoSBarvou barva={ucastnici.find((u) => u.hracId === hracId)?.barva}>{jmenoVZapasu(ucastnici, hracId)}</JmenoSBarvou>;
+  const u = ucastnici.find((x) => x.hracId === hracId);
+  const cele = jmenoVZapasu(ucastnici, hracId);
+  if (!u) return <>{cele}</>;
+  const jmeno = jmenoHrace(u);
+  return (
+    <JmenoSBarvou barva={u.barva}>
+      {jmeno}
+      {cele !== jmeno ? <span className="sr-only">{cele.slice(jmeno.length)}</span> : null}
+    </JmenoSBarvou>
+  );
 }
 
 /** Víc účastníků za sebou, každý se svou barvou: „Tonda, Zdena“. */

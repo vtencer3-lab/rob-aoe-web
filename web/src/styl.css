@@ -659,7 +659,11 @@ main > .prazdno::after {
    (GM sedí na šedé — tabulka rolí kvůli tomu měla vlastní, těžší pravidla).
    Velikost v em, ať sedí k písmu věty i nadpisu; tmavý obrys a zlatá linka
    ho drží čitelný na tmavém dřevě i u tmavých barev. */
-.swatch { display: inline-block; box-sizing: border-box; width: 0.8em; height: 0.8em; border-radius: 2px; border: 1px solid var(--obrys); box-shadow: 0 0 0 1px color-mix(in srgb, var(--zlato) 40%, transparent); vertical-align: -0.05em; }
+.swatch { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 1.2em; height: 1.2em; border-radius: 2px; border: 1px solid var(--obrys); box-shadow: 0 0 0 1px color-mix(in srgb, var(--zlato) 40%, transparent); vertical-align: -0.25em; }
+/* Číslo barvy uvnitř (`data-cislo`, uživatel 3. 10. 2026): jako „pN“ ve hře.
+   Světlé barvy (žlutá, oranžová) tmavé číslo bez stínu, jako na dlaždicích. */
+.swatch[data-cislo]::before { content: attr(data-cislo); font: 700 0.78em/1 Georgia, "Times New Roman", serif; color: #fff; text-shadow: 0 1px 1px var(--obrys); }
+.swatch.barva-4[data-cislo]::before, .swatch.barva-8[data-cislo]::before { color: var(--obrys); text-shadow: none; }
 .swatch.barva-1 { background: var(--b1); }
 .swatch.barva-2 { background: var(--b2); }
 .swatch.barva-3 { background: var(--b3); }
@@ -673,8 +677,8 @@ main > .prazdno::after {
    písmenem se řádek zalomit nemůže, takže čtvereček nikdy nezůstane sám na
    konci řádku, a dlouhé jméno se přitom dál smí zalomit. Svisle sedí na
    střed verzálek (v em, drží se písma). */
-.jmeno-s-barvou { position: relative; padding-left: 1.15em; }
-.jmeno-s-barvou > .swatch { position: absolute; left: 0.05em; top: 0.22em; }
+.jmeno-s-barvou { position: relative; padding-left: 1.5em; }
+.jmeno-s-barvou > .swatch { position: absolute; left: 0.05em; top: 0.02em; }
 
 .zrcadlo { list-style: none; padding: 0; }
 .zrcadlo li { padding: 0.4rem 0; border-bottom: 1px solid rgba(216, 168, 58, 0.14); }
@@ -1824,7 +1828,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
   .pult-gm .pult-strana > p, .pult-gm .pult-strana > .tabulka-roli, .pult-gm .pult-strana > .dlazdice-nastupce, .pult-gm .pult-strana > .souhrn { max-width: none; }
 }
 .dlazdice-nastupce { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem; max-width: 34rem; margin: 0.6rem auto 0.8rem; }
-button.dlazdice { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.55rem 0.6rem; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; text-shadow: 0 1px 2px color-mix(in srgb, var(--obrys) 60%, transparent); }
+button.dlazdice { position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.55rem 0.6rem; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; text-shadow: 0 1px 2px color-mix(in srgb, var(--obrys) 60%, transparent); }
 button.dlazdice .cislo { font-family: "Cinzel", Georgia, serif; font-weight: 800; font-size: 1.25rem; }
 button.dlazdice .barva { font-size: 0.8rem; opacity: 0.9; }
 button.dlazdice strong { font-weight: 700; overflow-wrap: anywhere; }
@@ -1847,6 +1851,8 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 button.dlazdice.ze-hry { box-shadow: 0 0 12px 3px color-mix(in srgb, var(--zlato) 60%, transparent); }
 button.dlazdice.ze-hry.vybrana { box-shadow: 0 0 0 2px var(--zlato), 0 0 14px 4px color-mix(in srgb, var(--zlato) 60%, transparent); }
 button.dlazdice .znak-role { width: 2rem; height: 2rem; filter: drop-shadow(0 1px 2px var(--obrys)); }
+/* Zvolený Nástupce: koruna nakloněná přes pravý horní roh dlaždice. */
+button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem; width: 2rem; height: 2rem; rotate: 20deg; pointer-events: none; filter: drop-shadow(0 1px 2px var(--obrys)); animation: razitko var(--prechod) var(--krivka); }
 /* Otázka nad dlaždicemi: ikona 64 px zmenšená na 32 (ostrá i při zoomu). */
 .pult-gm .kdo-nastupce { display: flex; align-items: center; justify-content: center; gap: 0.35rem; flex-wrap: wrap; font-family: "Cinzel", Georgia, serif; font-weight: 700; font-size: 1.1rem; }
 .pult-gm .kdo-nastupce .znak-role { width: 2rem; height: 2rem; }
@@ -2595,7 +2601,8 @@ a:hover { color: var(--zlato-svetle); }
 @keyframes ptt-pulz { 50% { opacity: 0.35; box-shadow: 0 0 2px 0 rgba(229, 57, 53, 0.5); } }
 /* Popisky obou tlačítek jsou vlastní bublina bez prodlevy (ne title), o kus větším písmem (uživatel 13. 9. 2026). */
 .push-to-talk .napoveda::after { font-size: 0.9rem; white-space: normal; width: max-content; max-width: 18rem; text-align: center; }
-.push-to-talk .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Text jen pro čtečky (push-to-talk, „(pN)“ u stejně pojmenovaných hráčů). */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .push-to-talk .ztlumit { width: 2.1rem; height: 2.1rem; padding: 0; font-size: 0.95rem; line-height: 1; }
 .push-to-talk .ikona { width: 1.35rem; height: 1.35rem; color: var(--zlato); display: block; margin: auto; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7)); }
 .push-to-talk .ptt, .push-to-talk .ztlumit { display: inline-flex; align-items: center; justify-content: center; }

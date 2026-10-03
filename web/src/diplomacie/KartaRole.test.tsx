@@ -71,7 +71,9 @@ it("oběť, která je jednou ze dvou AI, se rozliší barvou", () => {
   const zapasAi = { ...zapas, ucastnici: zapas.ucastnici.map((u) => (u.barva === 3 || u.barva === 5 ? { ...u, hracId: aiId(u.barva), alias: JMENO_AI, platformaJmeno: JMENO_AI } : u)) };
   render(<KartaRole zapas={zapasAi} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "kat", cilHracId: aiId(5) }])} ja="h2" />);
   fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
-  expect(naKarte().getByText("AI (p5)")).toBeTruthy();
+  // Očima ji rozliší číslo ve čtverečku, čtečkám skryté „(p5)“.
+  expect(naKarte().getByText("(p5)")).toHaveClass("sr-only");
+  expect(naKarte().getByText("(p5)").closest(".jmeno-s-barvou")!.textContent).toBe("AI (p5)");
   // I na mapě nese oběť jméno s přívěskem barvy, ne holé „AI“.
   expect(start(5)!.textContent).toBe("AI (p5)");
   expect(within(screen.getByText(/Nástupcem císaře je/)).getByText("Hráč 1")).toBeTruthy();
