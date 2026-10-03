@@ -1877,6 +1877,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .moje-schopnosti { max-width: 34rem; margin: 0.6rem auto; padding: 0.4rem 1rem 0.7rem; text-align: left; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
 .moje-schopnosti h5 { margin: 0.5rem 0 0.3rem; font-size: 0.95rem; color: var(--zlato); }
 .moje-schopnosti p { margin: 0.25rem 0 0.5rem; }
+.odhalene-role ul { margin: 0; padding: 0; list-style: none; }
+.odhalene-role li { display: flex; align-items: center; gap: 0.3rem; margin: 0.2rem 0; }
+.odhalene-role .znak-role { width: 1.6rem; height: 1.6rem; }
 .moje-schopnosti .schopnost-ovladani { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 /* Pult GM: čekající žádosti a připomínky nad tabulkou rolí; stav schopnosti v řádku. */
 .oznameni-gm { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.4rem; }
@@ -1885,6 +1888,12 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .tabulka-roli .schopnost-gm { font-size: 0.8rem; color: var(--tlumene); white-space: nowrap; }
 .tabulka-roli .schopnost-gm.pouzita { color: var(--zlato); }
 .tabulka-roli .drive-role { font-size: 0.85rem; color: var(--tlumene); }
+/* Prohra role (Žoldák bez pouta, Garda bez Nástupce): velký blok nad kartou. */
+.prohra-role { max-width: 34rem; margin: 0.6rem auto 1rem; padding: 1rem 1rem 1.2rem; text-align: center; border: 2px solid var(--chyba); border-radius: 3px; background: color-mix(in srgb, var(--chyba) 14%, var(--drevo-tmave)); animation: karta-rozdana var(--prechod-karta) var(--krivka); }
+.prohra-role .znak-prohry { display: block; width: 140px; height: 140px; margin: 0 auto 0.3rem; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--obrys) 75%, transparent)); }
+.prohra-role h4 { margin: 0.2rem 0 0.4rem; font-size: 1.8rem; color: var(--chyba); }
+.prohra-role p { margin: 0.3rem 0; }
+.prohra-role .vyzva { font-weight: 700; font-size: 1.15rem; }
 /* Šašek po pádu Gardy: karta ztmavne, přes ni velké tlačítko; po kliknutí
    shoří zdola nahoru (maska posouvá `--hori`) a ukáže se karta Gardy. */
 @property --hori { syntax: "<percentage>"; inherits: false; initial-value: 0%; }

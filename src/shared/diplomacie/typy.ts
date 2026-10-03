@@ -60,6 +60,11 @@ export interface DiploZapas {
    * 3. 10. 2026: „hráči uvidí pouze svého krále“).
    */
   mujKral?: PolohaVeHre;
+  /**
+   * Role padlých hráčů pro Gardu (výhoda: „dozví se roli každého, kdo zemře
+   * nebo rezignuje“) — web je ukazuje sám podle dat hry. Jen role, bez cíle.
+   */
+  odhaleneRole?: { hracId: string; role: Role }[];
   /** Žádosti o schopnosti a připomínky ze hry; GM všechny, hráč jen své žádosti. */
   schopnosti?: Schopnost[];
   /** Vlastní cíle hráče z běžící hry (panel vedle mapy na kartě); jen hráč zápasu, ne GM. */

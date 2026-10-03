@@ -493,6 +493,21 @@ export async function pridejPripominky(zapasId: number, pripominky: readonly { d
 }
 
 /**
+ * Doplatky Žoldákovi za prodeje 1…`prodano` (počitadlo prodejů ze hry);
+ * každý prodej jen jednou (unikátní index z migrace 040). Vrací, jestli přibyl.
+ */
+export async function pridejDoplatky(zapasId: number, hracId: string, prodano: number): Promise<boolean> {
+  if (prodano <= 0) return false;
+  const { rowCount } = await getPool().query(
+    `INSERT INTO diplo_schopnost (zapas_id, hrac_id, druh, poradi)
+       SELECT $1, $2, 'doplatek', n FROM generate_series(1, $3::int) AS n
+     ON CONFLICT (zapas_id, hrac_id, poradi) WHERE druh = 'doplatek' AND poradi IS NOT NULL DO NOTHING`,
+    [zapasId, hracId, Math.min(prodano, 50)],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+/**
  * Šašek se stává Gardou (`udalostiHry`): role 'garda', původní 'sasek',
  * proměnu ještě neviděl. Čekající žádosti o informace propadnou — výhody
  * Šaška ztratil. Podmíněně (jen dokud je Šaškem), ať dvojí snímek nic nezdvojí.

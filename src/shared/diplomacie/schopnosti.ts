@@ -72,6 +72,16 @@ export function procNelze(d: Pick<DiploZapas, "stav" | "role">, schopnosti: read
   return null;
 }
 
+/**
+ * Proměnná, ve které scénář počítá prodané relikvie slotu: počitadlo cíle
+ * „prodej 5 relikvií“ ze sondy (text „… prodanych reliku“). Scénář ji
+ * zvyšuje při každém prodeji, i když hráč ten cíl nedostal. Null = verze
+ * takový cíl nemá.
+ */
+export function promennaProdeju(cile: readonly { promenna: number; slot: number; text: string }[], slot: number): number | null {
+  return cile.find((c) => c.slot === slot && /prodan/i.test(c.text))?.promenna ?? null;
+}
+
 /** Stav hráče ve hře, jak ho zná server (`HracHry.zije`). */
 export interface ZivotHrace {
   hracId: string;
@@ -85,9 +95,9 @@ export interface ZivotHrace {
  * - **Šašek se stává Gardou** (pravidla: „Když zemře Královská Garda, tajně
  *   se stává novou Gardou a ztrácí výhody Šaška“), když původní Garda padla,
  *   Šašek žije a ještě se neproměnil.
- * - **Připomínky GM** za každého padlého: Katovi 2000 zlata (pokud Kat žije
- *   a nepadl on sám), Gardě roli padlého (žijící Gardě; padlá Garda se
- *   nehlásí — její role je jasná).
+ * - **Připomínka GM** za každého padlého: Katovi 2000 zlata (pokud Kat žije
+ *   a nepadl on sám). Roli padlého Garda nedostává od GM, web jí ji ukáže
+ *   sám (redakce, `odhaleneRole`; uživatel 3. 10. 2026).
  * - **Šašek prodává relikvie**, když padl Nástupce — jen když Šaškovi
  *   samotnému neběží odpočet (nemá 7+ relikvií); odpočet jiného hráče ho
  *   nechrání (uživatel 3. 10. 2026).
@@ -101,10 +111,7 @@ export function udalostiHry(role: readonly RoleHrace[], hraci: readonly ZivotHra
   const povysit = garda && !zije(garda.hracId) && !uzPovysen && sasek && zije(sasek.hracId) ? sasek.hracId : null;
   const pripominky: { druh: DruhPripominky; hracId: string; cilHracId: string }[] = [];
   for (const padly of padli) {
-    const rolePadleho = role.find((r) => r.hracId === padly)?.role;
     for (const kat of role.filter((r) => r.role === "kat" && r.hracId !== padly && zije(r.hracId))) pripominky.push({ druh: "kat_odmena", hracId: kat.hracId, cilHracId: padly });
-    if (rolePadleho === "garda") continue;
-    for (const g of role.filter((r) => r.role === "garda" && r.hracId !== padly && zije(r.hracId))) pripominky.push({ druh: "garda_role", hracId: g.hracId, cilHracId: padly });
   }
   const nastupce = role.find((r) => r.role === "nastupce");
   if (nastupce && padli.includes(nastupce.hracId)) {

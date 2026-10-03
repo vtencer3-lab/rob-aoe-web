@@ -7,7 +7,7 @@ import { buildServer } from "../http/server.js";
 import { hlasHub } from "../realtime/hlas.js";
 import { KANAL_AKCE } from "../realtime/hub.js";
 import type { HlasUdalost } from "../shared/types.js";
-import { getDiploZapas, setNastupce } from "./db.js";
+import { getDiploZapas, pridejDoplatky, pridejPripominky, setNastupce } from "./db.js";
 import { ROB, klient, zapasOsmi } from "./testPomocnici.js";
 
 const app = buildServer();
@@ -246,4 +246,18 @@ it("schopnosti: Sabotáž Nájezdníka, potvrzení GM, proměna Šaška", async 
   expect((await post(`${u}/schopnost`, sasek, { druh: "informace" })).statusCode).toBe(409);
   expect((await post(`${u}/promena`, sasek)).statusCode).toBe(200);
   expect((await getDiploZapas(zapas.id))!.role.find((r) => r.hracId === kdo("sasek"))!.promenaVidena).toBe(true);
+});
+
+// Připomínky ze hry chodí každou sekundu znovu — v databázi každá jen jednou.
+it("doplatky Žoldákovi a připomínky ze hry se nezdvojí", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  expect(await pridejDoplatky(zapas.id, "h2", 2)).toBe(true);
+  expect(await pridejDoplatky(zapas.id, "h2", 2)).toBe(false);
+  expect(await pridejDoplatky(zapas.id, "h2", 3)).toBe(true);
+  const p = [{ druh: "kat_odmena" as const, hracId: "h3", cilHracId: "h4" }];
+  expect(await pridejPripominky(zapas.id, p)).toBe(true);
+  expect(await pridejPripominky(zapas.id, p)).toBe(false);
+  const s = (await getDiploZapas(zapas.id))!.schopnosti!;
+  expect(s.filter((x) => x.druh === "doplatek")).toHaveLength(3);
+  expect(s.filter((x) => x.druh === "kat_odmena")).toHaveLength(1);
 });

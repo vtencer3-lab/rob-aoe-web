@@ -17,8 +17,8 @@ import {
   type SnimekHry,
   type ZdrojHry,
 } from "../shared/diplomacie/hra.js";
-import { udalostiHry } from "../shared/diplomacie/schopnosti.js";
-import { beziciZapasyDiplo, getDiploZapas, getSonduVerze, nastavNastupceZeHry, odvolejNastupceZeHry, povysSaska, pridejPripominky } from "./db.js";
+import { promennaProdeju, udalostiHry } from "../shared/diplomacie/schopnosti.js";
+import { beziciZapasyDiplo, getDiploZapas, getSonduVerze, nastavNastupceZeHry, odvolejNastupceZeHry, povysSaska, pridejDoplatky, pridejPripominky } from "./db.js";
 import { pametHer } from "./hraPamet.js";
 
 /**
@@ -126,6 +126,14 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
     const { povysit, pripominky } = udalostiHry(diplo.role, odpoved.hraci);
     if (povysit !== null && (await povysSaska(zapasId, povysit))) zmenaStavu = true;
     if (await pridejPripominky(zapasId, pripominky)) zmenaStavu = true;
+  }
+  // Každý prodej relikvie Žoldákem = připomínka GM doplatit 4000 zlata.
+  if (diplo.stav === "rozeslano" && !jinyScenar) {
+    for (const z of diplo.role.filter((r) => r.role === "zoldak")) {
+      const barva = zaznam.ucastnici.find((u) => u.hracId === z.hracId)?.barva;
+      const promenna = barva === undefined ? null : promennaProdeju(verze?.sonda?.cile ?? [], barva);
+      if (promenna !== null && (await pridejDoplatky(zapasId, z.hracId, snimek.promenne[promenna] ?? 0))) zmenaStavu = true;
+    }
   }
 
   const rozeslat = zmenaStavu || !predchozi || ted.getTime() - predchozi.rozeslanoMs >= ROZESTUP_ROZESLANI_MS;

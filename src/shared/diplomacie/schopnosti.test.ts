@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { procNelze, udalostiHry, zbyva, type Schopnost } from "./schopnosti.js";
+import { procNelze, promennaProdeju, udalostiHry, zbyva, type Schopnost } from "./schopnosti.js";
 import type { RoleHrace } from "./typy.js";
 
 const ROLE: RoleHrace[] = [
@@ -55,11 +55,8 @@ describe("události hry", () => {
     expect(udalostiHry(ROLE, [{ hracId: "g", zije: true }]).povysit).toBeNull();
   });
 
-  it("za padlého připomínka Katovi a žijící Gardě; za padlou Gardu jen Katovi", () => {
-    expect(udalostiHry(ROLE, [{ hracId: "j1", zije: false }]).pripominky).toEqual([
-      { druh: "kat_odmena", hracId: "k", cilHracId: "j1" },
-      { druh: "garda_role", hracId: "g", cilHracId: "j1" },
-    ]);
+  it("za padlého připomínka Katovi (roli padlého ukáže Gardě web sám)", () => {
+    expect(udalostiHry(ROLE, [{ hracId: "j1", zije: false }]).pripominky).toEqual([{ druh: "kat_odmena", hracId: "k", cilHracId: "j1" }]);
     expect(udalostiHry(ROLE, [{ hracId: "g", zije: false }]).pripominky).toEqual([{ druh: "kat_odmena", hracId: "k", cilHracId: "g" }]);
     // Padlý Kat odměnu za sebe ani za další nedostane.
     expect(udalostiHry(ROLE, [{ hracId: "k", zije: false }, { hracId: "z", zije: false }]).pripominky.filter((p) => p.druh === "kat_odmena")).toEqual([]);
@@ -75,4 +72,15 @@ describe("Šašek po smrti Nástupce", () => {
     expect(prodej([{ hracId: "n", zije: false }, { hracId: "s", zije: false, relikvie: 0 }])).toEqual([]);
     expect(prodej([{ hracId: "n", zije: true }, { hracId: "s", zije: true, relikvie: 0 }])).toEqual([]);
   });
+});
+
+it("počitadlo prodejů slotu je proměnná jeho cíle „prodej relikvií“", () => {
+  const cile = [
+    { promenna: 15, slot: 1, text: "zabito : {} /650 jednotek" },
+    { promenna: 13, slot: 1, text: "{} /5 prodanych reliku" },
+    { promenna: 43, slot: 2, text: "{} /5 prodanych reliku" },
+  ];
+  expect(promennaProdeju(cile, 1)).toBe(13);
+  expect(promennaProdeju(cile, 2)).toBe(43);
+  expect(promennaProdeju(cile, 3)).toBeNull();
 });

@@ -37,7 +37,7 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-37.4** (1.–3. 10. 2026; 31.0–37.4 králové, relikvie, ping, overlaye OBS — §3.60 „Králové, relikvie, ping, overlaye“; 30.0 prefix `ROB_` a značka sondy, 29.4–29.7 rychlejší most a pult vedle mapy; 29.3 chyby nahrání ve správě scénáře; most přes Židolištu §3.60 „Most přes Židolištu a herní PC“; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — dědění vlastní minimapy 28.0 — §3.60, „Vlastní minimapa se dědí“ — a **správa scénáře 29.0**: jméno pro hru `JIN_DIPLO_<N>`, mazání verzí, tlačítka v řádku, 29.1 jména pro hru v nastavení lobby otevřené akce, 29.2 mazání verzí hraných jen dohranými zápasy, důvod odmítnutí u řádku a bez pole „Co je nového“; §3.60, „Správa scénáře: jméno pro hru, mazání, tlačítka“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-40.0** (1.–3. 10. 2026; 38.0–40.0 cíle hráče u mapy, schopnosti rolí, proměna Šaška, prohra — §3.60 „Cíle hráče, schopnosti rolí, události hry“; 31.0–37.4 králové, relikvie, ping, overlaye OBS — §3.60 „Králové, relikvie, ping, overlaye“; 30.0 prefix `ROB_` a značka sondy, 29.4–29.7 rychlejší most a pult vedle mapy; 29.3 chyby nahrání ve správě scénáře; most přes Židolištu §3.60 „Most přes Židolištu a herní PC“; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — dědění vlastní minimapy 28.0 — §3.60, „Vlastní minimapa se dědí“ — a **správa scénáře 29.0**: jméno pro hru `JIN_DIPLO_<N>`, mazání verzí, tlačítka v řádku, 29.1 jména pro hru v nastavení lobby otevřené akce, 29.2 mazání verzí hraných jen dohranými zápasy, důvod odmítnutí u řádku a bez pole „Co je nového“; §3.60, „Správa scénáře: jméno pro hru, mazání, tlačítka“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
 | Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–038 (`030_rezim_akce.sql` … `038_diplomacie_zobrazeni_mapy.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
@@ -2467,6 +2467,42 @@ projektu RobJewsALot (Židolišta), složka `RobJewsALot/Streamer.bot - GAME PC/
 - **Typy frontendu (opraveno i v CLAUDE.md/CONTRIBUTING):** `npm --prefix web exec tsc -- -b`
   kontroluje backend; frontend jen `cd web && npx tsc -b --force`.
 
+**Cíle hráče, schopnosti rolí, události hry (3. 10. 2026, 1.13.10-38.0 → 40.0).**
+- **Cíle vedle mapy na kartě** (`MojeCile.tsx`): primární cíl `N/7` relikvií
+  a odpočet `mm:ss / 15:00` (ztlumený, dokud hráč nemá 7), sekundární cíl
+  s postupem, stav hráčů, na kterých výhra role závisí (oběť Kata, pouto
+  Žoldáka, Nástupce u Gardy a Nájezdníka). Data: `DiploZapas.mojeHra`, redakce
+  je hráči vybere ze své `hra` (viditelnost.ts, `koho`). GM má odpočet
+  u relikvií v řádku tabulky.
+- **Odpočet 7 relikvií počítá sonda**, ne hra: scénář (triggery „general
+  relic win“ / „relic lost“) odpočet při ztrátě nuluje, uživatel chce jen
+  zastavit. Sonda (dál formát 8) píše do proměnných 240–247 (239 + číslo hráče
+  ve hře) sekundy se 7+ relikviemi — rozložení souboru se nezměnilo, dekodér
+  Židolišty nepotřeboval úpravu. Scénář proměnné 240+ nepoužívá.
+- **Schopnosti** (`schopnosti.ts`, migrace 039, tabulka `diplo_schopnost`):
+  Nájezdník Sabotáž 1× s cílem (na jednoho hráče nejvýš jedna), Šašek 3×
+  tajná informace (odpověď ústně), Žoldák doplatek 4000 za prodanou relikvii.
+  Hráč žádá z karty (`POST …/schopnost`), GM v pultu potvrdí/zamítne
+  (`POST …/schopnost/:sid`), nová žádost cinkne. Hráč vidí jen své řádky.
+- **Události z dat hry** (`udalostiHry`, po rozeslání v `prijmiSnimek`):
+  připomínky GM Katovi 2000 zlata za padlého, Šaškovi
+  prodej relikvií po smrti Nástupce (ne, když jemu samotnému běží odpočet);
+  doplatky Žoldákovi z počitadla prodejů scénáře (proměnná cíle „prodej 5
+  relikvií“ jeho slotu, migrace 040 `poradi`). Každá jen jednou (unikátní
+  indexy).
+- **Šašek → Garda:** pád původní Gardy (ze hry, nebo tlačítko GM „Garda
+  padla“) přepíše roli na `garda` s `puvodni_role = 'sasek'`, čekající
+  informace propadnou. Karta Šaška ztmavne, zazní zvon, po kliknutí na
+  „Královská garda padla“ shoří a ukáže se Garda (`promena_videna`).
+- **Garda vidí role padlých sama** (`odhaleneRole` v redakci, jen role bez
+  cíle) — výhoda „dozví se roli každého, kdo zemře“ bez GM.
+- **Prohra:** Žoldákovi po pádu pouta a Gardě po pádu Nástupce se nad kartou
+  ukáže „Prohráváš — rezignuj ve hře“ se znakem `prohra.webp` (Flux.2-dev,
+  zadání `prohra` v `diplomacie.json`).
+- **Známá mez:** připomínka prodeje Šaška se vyhodnocuje každým snímkem —
+  když Šaškovi při smrti Nástupce běžel odpočet a později ho ztratil,
+  připomínka vznikne až tehdy.
+
 **Vědomě ponecháno:** most má jeden globální token (`MOST_TOKEN`) — kdo ho
 má, může v kterémkoli běžícím zápase Diplomacie nastavit Nástupce (jen
 v `priprava`), když uvede `hracId` jeho GM — a od 27.0 i bez něj jako
@@ -2921,6 +2957,7 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.13.10-29.3 | 3. 10. (větev `diplo`) | **Chyby nahrání a dalších akcí přímo ve správě scénáře (§3.60)** — odmítnutí (např. „Tahle verze už je nahraná“) se ukáže pod formulářem nebo řádkem verze, ne v obecné chybě nahoře nad panelem |
 | 1.13.10-29.4 … 1.13.10-30.0 | 3. 10. (větev `diplo`) | **Most přes agenta herního PC doladěn (§3.60)** — glow „Rozdat role“ (-29.4), rozesílání po 1,5 s (-29.5), sonda každou herní sekundu (-29.6), pult GM vedle mapy (-29.7), prefix `ROB_` u jmen pro hru a značka „ROBD“ ve formátu 5 sondy, migrace 037 (-30.0) |
 | 1.13.10-30.1 … 1.13.10-31.0 | 3. 10. (větev `diplo`) | **Ladění pultu GM a králové na mapě (§3.60)** — GM automaticky hostem (-30.1), Team Positions ve scénáři jen informace (-30.2), otázka „Kdo je Nástupcem císaře?“ a předvýběr hry (-30.3), čísla v barevných čtverečcích a koruna zvoleného (-30.4), Nástupce smí svolávat rady (-30.5), veřejnost Nástupce jako informace (-30.6), stažení scénáře před Spustit hru, tlačítko „Uložit scénář do hry“ zrušeno (-30.7/-30.8), bez problikávání a s viditelným glow (-30.9), tlačítka pultu (-30.10/-30.12/-30.13), vztahy při najetí (-30.11), poloha králů ze hry — sonda formát 6 (-31.0) |
+| 1.13.10-38.0 … 1.13.10-40.0 | 3. 10. (větev `diplo`) | **Cíle hráče, schopnosti, události hry (§3.60)** — cíle a odpočet 7 relikvií vedle mapy, odpočet v sondě (-38.0), schopnosti s potvrzením GM, připomínky ze hry, proměna Šaška v Gardu, migrace 039 (-39.0), doplatky Žoldákovi ze hry, obrazovka prohry, migrace 040 (-40.0) |
 | 1.13.10-32.0 … 1.13.10-37.4 | 3. 10. (větev `diplo`) | **Overlaye, relikvie, ping (§3.60 „Králové, relikvie, ping, overlaye“)** — overlaye OBS `/obs/mapa` a `/obs/tabulka` s `OBS_KLIC` (-32.0), relikvie obrázkem a tučné hodnoty (-32.2…-32.5), vlastní rozbalovací výběr (-32.7), relikvie na mapě — sonda formát 7 (-33.0), přepínače mapy, migrace 038 (-34.0), cache `/assets/` (-34.1), sledování nesených relikvií a automatické přebalení sond (-34.2…-34.9), nosič relikvie — formát 8 (-35.0), ping GM (-36.0…-37.3: víc adresátů, vypínač, zvuk), nosič = třída 943 (-37.0), relikvie v jednom sloupci tabulky (-37.4) |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |

@@ -367,6 +367,7 @@ python nastroje/grafika/export.py vyber/ram-mapy.png -o web/src/assets/diplomaci
 | `role-zoldak.webp` | `role-zoldak` var. 01 | 3616151696795561981 | 1024×1024 | 208×208 |
 | `role-kat.webp` | `role-kat` var. 01 | 6085078050798561359 | 1024×1024 | 208×208 |
 | `role-gm.webp` | `role-gm` var. 01 | 2580788674960196035 | 1024×1024 | 208×208 |
+| `prohra.webp` | `prohra` var. 03 (3. 10. 2026, obrazovka prohry) | 680650941923940174 | 1024×1024 | 208×208 |
 | `rub-karty.webp` | `rub-karty` var. 03 | 7973333685969451956 | 1152×768 | 600×362 |
 | `ram-mapy.webp` | `ram-mapy` var. 00, `devitidil.py --roh 112 --pas 96 --prah 20` | 2975078811603106970 | 1024×1024 | 320×320 (řez 112) |
 

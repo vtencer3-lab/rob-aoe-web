@@ -41,6 +41,16 @@ function redigujZapas(cely: DiploZapas, divak: string | null): DiploZapas {
   }
   if (!rozeslano) return { ...z, nastupceHracId: null, role: [] };
   if (!moje) return { ...z, role: [] };
+  // Garda se dozví roli každého padlého (výhoda role) — bez cíle Kata či Žoldáka.
+  if (moje.role === "garda" && cely.hra) {
+    const odhalene = cely.hra.hraci
+      .filter((h) => h.zije === false && h.hracId !== moje.hracId)
+      .flatMap((h) => {
+        const r = z.role.find((x) => x.hracId === h.hracId);
+        return r ? [{ hracId: r.hracId, role: r.role }] : [];
+      });
+    if (odhalene.length > 0) z.odhaleneRole = odhalene;
+  }
   // Nájezdníci se znají od začátku hry; nikdo jiný o nikom nic neví.
   const vidi = moje.role === "najezdnik" ? z.role.filter((r) => r.role === "najezdnik") : [moje];
   return { ...z, role: vidi };

@@ -79,5 +79,14 @@
     "height": 1024,
     "lora": 0.0,
     "raw": true
+  },
+  "prohra": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: a sword snapped in two, the broken blade pieces crossed over a tattered white surrender banner on a dark wooden pole. Polished steel and gold hilt with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "n": 4,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true,
+    "seed": 680650941923940174
   }
 }

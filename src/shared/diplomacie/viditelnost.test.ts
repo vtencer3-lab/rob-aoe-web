@@ -143,3 +143,12 @@ describe("vlastní cíle ze hry", () => {
     for (const kdo of [GM, null, "cizi"]) expect("mojeHra" in redigujDiplo(sHrou("rozeslano"), kdo).zapasy[0]!).toBe(false);
   });
 });
+
+it("Garda vidí role padlých, bez cílů; jiná role ne", () => {
+  const hra = { cas: 300, prijato: "2026-10-03T20:00:00.000Z", rozdano: true, nastupceHracId: "n", hraci: [{ hracId: "k", cil: null, relikvie: 0, zije: false }, { hracId: "z", cil: null, relikvie: 0, zije: true }, { hracId: "g", cil: null, relikvie: 0, zije: true }] };
+  const d: DiploData = { ...data("rozeslano"), zapasy: data("rozeslano").zapasy.map((z) => ({ ...z, hra })) };
+  const garda = redigujDiplo(d, "g").zapasy[0]!;
+  expect(garda.odhaleneRole).toEqual([{ hracId: "k", role: "kat" }]);
+  expect(JSON.stringify(garda)).not.toContain('"cilHracId":"s"');
+  expect("odhaleneRole" in redigujDiplo(d, "z").zapasy[0]!).toBe(false);
+});

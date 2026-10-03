@@ -14,7 +14,7 @@ import { MojeCile } from "./MojeCile.js";
 import { MojeSchopnosti } from "./Schopnosti.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
-import { RUB_KARTY, ZNAK_ROLE } from "./znaky.js";
+import { RUB_KARTY, ZNAK_PROHRA, ZNAK_ROLE } from "./znaky.js";
 
 interface Props {
   zapas: ZapasView;
@@ -89,6 +89,7 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
 
   if (!d) return null;
   const verze = verzeZapasu(data, d, zapas);
+  const prohra = ja_ ? duvodProhry(ja_, d) : null;
   const moje = d.role.find((r) => r.hracId === ja);
 
   return (
@@ -100,6 +101,7 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
         <p className="ceka stred">Role se rozdají po startu hry, až GM potvrdí Nástupce.</p>
       ) : (
         <>
+          {prohra ? <Prohra duvod={prohra} ucastnici={zapas.ucastnici} /> : null}
           <p className="stred">
             Nástupcem císaře je <strong>{d.nastupceHracId ? <JmenoUcastnika ucastnici={zapas.ucastnici} hracId={d.nastupceHracId} /> : "?"}</strong>.
           </p>
@@ -116,6 +118,7 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
               <div className="karta-strana">
                 <MojeCile hra={d.mojeHra} role={moje.role} ucastnici={zapas.ucastnici} />
                 <MojeSchopnosti zapas={zapas} d={d} moje={moje} hlidej={hlidej} />
+                <OdhaleneRole odhalene={d.odhaleneRole} ucastnici={zapas.ucastnici} />
               </div>
             </div>
           </Zakryti>
@@ -124,6 +127,58 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
       )}
       <PravidlaHry verze={verze} />
     </section>
+  );
+}
+
+/**
+ * Role prohrává s pádem jiného hráče (pravidla): Žoldák se svým pokrevním
+ * poutem, Garda s Nástupcem. Pozná se z vlastních dat hry (`sledovani`).
+ */
+function duvodProhry(r: RoleHrace, d: DiploZapas): { text: string; hracId: string } | null {
+  const padl = (id: string | null) => id !== null && d.mojeHra?.sledovani.some((s) => s.hracId === id && s.zije === false);
+  if (r.role === "zoldak" && padl(r.cilHracId)) return { text: "Tvé pokrevní pouto padlo:", hracId: r.cilHracId! };
+  if (r.role === "garda" && padl(d.nastupceHracId)) return { text: "Nástupce císaře padl:", hracId: d.nastupceHracId! };
+  return null;
+}
+
+/** Obrazovka prohry nad kartou (uživatel 3. 10. 2026): kdo padl a výzva k rezignaci. Zvon při objevení. */
+function Prohra({ duvod, ucastnici }: { duvod: { text: string; hracId: string }; ucastnici: ZapasView["ucastnici"] }) {
+  useEffect(() => prehraj(zvonUrl), []);
+  return (
+    <div className="prohra-role" role="alert" data-testid="prohra">
+      <img className="znak-prohry" src={ZNAK_PROHRA} alt="" width={208} height={208} />
+      <h4>Prohráváš</h4>
+      <p>
+        {duvod.text}{" "}
+        <strong>
+          <JmenoUcastnika ucastnici={ucastnici} hracId={duvod.hracId} />
+        </strong>
+      </p>
+      <p className="vyzva">Rezignuj ve hře.</p>
+    </div>
+  );
+}
+
+/** Garda: role padlých hráčů, jak je web zjistí ze hry (výhoda role). Nová cinkne. */
+function OdhaleneRole({ odhalene, ucastnici }: { odhalene: DiploZapas["odhaleneRole"]; ucastnici: ZapasView["ucastnici"] }) {
+  const pocet = odhalene?.length ?? 0;
+  const driv = useRef<number | null>(null);
+  useEffect(() => {
+    if (driv.current !== null && pocet > driv.current) prehraj(chatUrl, hlasitostChatu());
+    driv.current = pocet;
+  }, [pocet]);
+  if (!odhalene || odhalene.length === 0) return null;
+  return (
+    <div className="moje-schopnosti odhalene-role" data-testid="odhalene-role">
+      <h5>Role padlých</h5>
+      <ul>
+        {odhalene.map((o) => (
+          <li key={o.hracId}>
+            <JmenoUcastnika ucastnici={ucastnici} hracId={o.hracId} />: <img className="znak-role" src={ZNAK_ROLE[o.role]} alt="" width={28} height={28} /> <strong>{NAZEV_ROLE[o.role]}</strong>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

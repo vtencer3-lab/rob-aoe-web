@@ -312,3 +312,23 @@ it("Šašek vidí povinnost prodat relikvie po smrti Nástupce", () => {
   odkryj();
   expect(screen.getByTestId("prodej-relikvii")).toHaveTextContent("Nástupce padl — musíš prodat všechny své relikvie.");
 });
+
+// Žoldák prohrává s pokrevním poutem, Garda s Nástupcem (uživatel 3. 10. 2026).
+it("Žoldákovi padlo pokrevní pouto: obrazovka prohry s výzvou k rezignaci", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "zoldak", cilHracId: "h6" }]);
+  const mojeHra = { cas: 300, prijato: "2026-10-03T20:00:00.000Z", rozdano: true, cil: null, relikvie: 0, drzeni: 0, sledovani: [{ hracId: "h6", zije: false }] };
+  render(<KartaRole zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, mojeHra })) }} ja="h2" hlidej={hlidej} />);
+  expect(screen.getByTestId("prohra")).toHaveTextContent("Prohráváš");
+  expect(screen.getByTestId("prohra")).toHaveTextContent("Tvé pokrevní pouto padlo: Hráč 6");
+  expect(screen.getByTestId("prohra")).toHaveTextContent("Rezignuj ve hře.");
+  // S daty ze hry se doplatek hlásí sám — tlačítko není.
+  odkryj();
+  expect(screen.queryByRole("button", { name: "Prodal jsem relikvii" })).toBeNull();
+});
+
+it("Garda vidí role padlých hráčů", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null }]);
+  render(<KartaRole zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, odhaleneRole: [{ hracId: "h4", role: "kat" as const }] })) }} ja="h2" hlidej={hlidej} />);
+  odkryj();
+  expect(screen.getByTestId("odhalene-role")).toHaveTextContent("Hráč 4: Kat");
+});

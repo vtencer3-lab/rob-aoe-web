@@ -94,11 +94,15 @@ export function MojeSchopnosti({ zapas, d, moje, hlidej }: { zapas: ZapasView; d
         <h5>Doplatek za relikvii</h5>
         <p data-testid="stav-schopnosti">
           Za každou prodanou relikvii doplatí GM {DOPLATEK_ZLATA} zlata. Vyplaceno: <strong>{vyplaceno}×</strong>
-          {ceka ? " · žádost čeká na GM" : ""}
+          {ceka ? " · doplatek čeká na GM" : ""}
         </p>
-        <button type="button" className="primarni" disabled={pracuje || ceka} onClick={() => akce(() => diploApi.schopnost(zapas.id, "doplatek"))}>
-          Prodal jsem relikvii
-        </button>
+        {/* S daty ze hry web prodej pozná sám a GM dostane připomínku;
+            tlačítko jen bez mostu. */}
+        {d.mojeHra ? null : (
+          <button type="button" className="primarni" disabled={pracuje || ceka} onClick={() => akce(() => diploApi.schopnost(zapas.id, "doplatek"))}>
+            Prodal jsem relikvii
+          </button>
+        )}
       </div>
     );
   }
