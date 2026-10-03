@@ -1928,20 +1928,6 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .stazeni-scenare p { margin: 0.5rem 0; }
 .stazeni-scenare button.kopirovatelne { max-width: 100%; }
 .stazeni-scenare button.kopirovatelne strong { overflow-wrap: anywhere; text-align: left; }
-/* Uložení rovnou do složky hry (Chrome, Edge — slozkaHry.ts): zlaté
-   tlačítko je „Uložit scénář do hry“, obyčejné stažení pod ním je jen
-   odkaz v řádku „Nebo ručně“. Zapamatovaná složka a „změnit složku“ drobně
-   pod tlačítkem; „změnit složku“ je tlačítko převlečené za odkaz. Pojistka
-   (vybraná složka se nejmenuje `scenario`) je rámeček jako karta role, text
-   v barvě varování — bez kurzoru s otazníkem z obecného `.varovani`. */
-.stazeni-scenare .slozka, .stazeni-scenare .rucne { font-size: 0.9rem; color: var(--tlumene); }
-.stazeni-scenare .slozka strong { color: var(--text); }
-.stazeni-scenare .vyzva { color: var(--zlato-svetle); }
-.stazeni-scenare button.zmenit-slozku { color: var(--zlato); text-decoration: underline; transition: color var(--prechod-rychly) ease; }
-.stazeni-scenare button.zmenit-slozku:hover:enabled, .stazeni-scenare button.zmenit-slozku:focus-visible { color: var(--zlato-svetle); }
-.stazeni-scenare .pojistka { max-width: 34rem; margin: 0.6rem auto; padding: 0.4rem 0.8rem 0.7rem; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
-.stazeni-scenare .pojistka p { color: var(--varovani); overflow-wrap: anywhere; }
-.stazeni-scenare .pojistka .ovladani { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
 /* Správa scénáře (SpravaScenare.tsx): panel s rámem jako panel akce (rám
    dává společné pravidlo výš), sbalený jen na zlatý nadpis; i bez běžící
    akce. Formulář v jednom řádku, upozornění a výsledek pod ním přes celou
@@ -2877,8 +2863,8 @@ main > .chyba, main > .spojeni, .chyba-pole, p.vysledek, .hledani-lobby .potvrze
    `key` podle stavu — nový stav je tím nový prvek a prolne se. */
 .karta-role > .stred, .dlazdice-nastupce, .tabulka-roli, .pult-gm .souhrn, .pult-gm .ovladani, .pult-gm .stav-diplo,
 .tabulka-roli td > strong, .tabulka-roli td > span, .stazeni-scenare,
-/* Hlášky uložení scénáře do hry. */
-.stazeni-scenare .vyzva, .stazeni-scenare .potvrzeno, .stazeni-scenare .chyba, .stazeni-scenare .pojistka, .stazeni-scenare .slozka {
+/* Cesta ke složce scénářů se po stažení prolne. */
+.stazeni-scenare button.kopirovatelne {
   animation: vznik var(--prechod) var(--krivka);
 }
 /* Nový řádek sestavy (třídu dává `usePribyli`); když ho zároveň rozsvítí

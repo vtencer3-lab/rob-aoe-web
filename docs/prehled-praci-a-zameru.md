@@ -1933,7 +1933,10 @@ odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/prog
   nedovolí otevřít Průzkumníka ani zvolit výchozí cestu, jen si pamatuje
   naposledy vybranou složku, proto zůstává řádek s cestou ke zkopírování
   a obyčejné stažení jako druhá možnost (a jediná ve Firefoxu, Safari a na
-  telefonu). Po startu hry rozdá
+  telefonu). **Od 1.13.10-30.8 (3. 10. 2026) zrušeno** — uživatel: „přijde
+  mi to neintuitivní“ (dialog se otevíral v Dokumentech). Krok hosta je
+  teď: „Stáhnout scénář“ → po kliknutí „Ulož scénář do:“ s cestou →
+  „Spustit hru“; `slozkaHry.ts` smazán. Po startu hry rozdá
   sekundární cíle hra sama; GM v pultu klikne na hráče, který cíl nedostal
   (**Nástupce císaře**), **Rozdat role** (Šašek, Garda, 2× Nájezdník,
   Žoldák, Kat; oběť Kata a pakt Žoldáka losem z `node:crypto`), případně
