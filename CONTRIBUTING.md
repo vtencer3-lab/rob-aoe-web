@@ -226,7 +226,7 @@ nezahrnuje. Frontend má vlastní kontrolu:
 
 ```bash
 npx tsc --noEmit                          # backend
-npm --prefix web exec tsc -- -b --force   # frontend
+(cd web && npx tsc -b --force)     # frontend (POZOR: `npm --prefix web exec tsc` běží v kořeni a kontroluje backend)
 ```
 
 **`npm run build` je řetěz přes `&&`.** Typová chyba kdekoliv ve frontendu —
@@ -286,7 +286,7 @@ v tomhle projektu nevyplatilo.
 
 ```bash
 npx tsc --noEmit                          # typy backendu
-npm --prefix web exec tsc -- -b --force   # typy frontendu (build je jinak tiše přeskočí)
+(cd web && npx tsc -b --force)   # typy frontendu (build je jinak tiše přeskočí)
 npm test                                  # hermetické
 npm --prefix web test                     # frontend
 npm run test:db                           # proti rob_aoe_test — potřebuje lokální PostgreSQL
@@ -315,8 +315,8 @@ Nic z toho se nestahuje za běhu; do repa se to jednou vygeneruje a commitne.
 | významy klíčů nastavení lobby a slotů | zmapováno naživo přepínáním voleb ve hře a porovnáváním seznamu lobby; které hodnoty jsou ověřené a které doplněné podle pořadí v jazykovém souboru, je v tabulce | `docs/analyza-automaticke-hledani-lobby.md` §6, číselníky v `src/shared/lobbyKontrola.ts` |
 | barvy minimapy podle terénu (mód Diplomacie) | `resources/_common/dat/empires2_x2_p1.dat` (terény, čte `genieutils-py`) a paleta `resources/_common/palettes/original.pal`; první index barvy terénu = barva herní minimapy. Vytahuje `nastroje/diplomacie/barvy_terenu.py` na stroji s hrou — v kontejneru hra není, proto je výsledek v repu | `src/diplomacie/barvy_terenu.json`; `rozbor.py` z něj kreslí minimapu nahraného scénáře, neznámý terén dostane šedou a rozbor ho nahlásí ve varováních |
 | záznam hry (`.aoe2record`, most ke hře) | `<id>/savegame/MP Replay … .aoe2record` — hra ho píše průběžně a za běhu jde zkopírovat. `mgz` z PyPI hlavičku z DE nepřečte a tělo říjnového buildu zastaví na novém typu operace 5; `nastroje/diplomacie/zaznam.py` hlavičku i typ 5 přeskočí a vypíše chat, rezignace, tributy a příkazy GAME (`pip install mgz`). Podrobně `docs/analyza-most-ke-hre.md` | nic v repu — čtečka je nástroj pro most na PC GM, web zatím záznam nepřijímá (podprojekt 2) |
-| XS sonda (živý stav hry: relikvie, kdo žije, diplomacie, proměnné triggerů) | trigger „XS SCRIPT“ přibalený do kopie scénáře (AoE2ScenarioParser `xs_manager`); hra pak každé 2 herní s přepisuje `<id>/profile/<scénář>.xsdat` (formát 3), čte ho `nastroje/diplomacie/xsdat.py`. Ověřeno 2. 10. 2026 ve formátu 2 (`docs/analyza-most-ke-hre.md`) | `src/diplomacie/sonda.xs` (kód sondy) a `src/diplomacie/sonda.py` (přibalení a výpis cílů) — web je volá při nahrání verze scénáře; `nastroje/diplomacie/sonda.py` je jen ruční příkaz nad týmž kódem (`--super` přibalí `supersonda.xs`, úplný výpis pro průzkum) |
-| most ke hře (zkušební, PC Game Mastera) | `python nastroje/diplomacie/most.py` hlídá `<id>/profile/*.xsdat`, posílá platná čtení na `POST /api/diplo/hra`; token `MOST_TOKEN` nebo `~/.aoe-most-token`, `--nasucho` jen vypisuje zprávy. Jen standardní knihovna Pythonu | `src/diplomacie/hra.ts` (příjem), `src/shared/diplomacie/hra.ts` (odvození Nástupce a postupu cílů), `web/src/diplomacie/HraZive.tsx` (pult GM) |
+| XS sonda (živý stav hry: relikvie, kdo žije, diplomacie, proměnné triggerů) | trigger „XS SCRIPT“ přibalený do kopie scénáře (AoE2ScenarioParser `xs_manager`); hra pak každou herní sekundu přepisuje `<id>/profile/ROB_<scénář>.xsdat` (formát 8 se značkou „ROBD“: hráči, králové, relikvie s nosičem, diplomacie, proměnné triggerů), čte ho `nastroje/diplomacie/xsdat.py` (formáty 1–3 a 5–8). Rozložení v hlavičce `sonda.xs`, ověřeno ve hře 3. 10. 2026 (`docs/prehled-praci-a-zameru.md` §3.60) | `src/diplomacie/sonda.xs` (kód sondy) a `src/diplomacie/sonda.py` (přibalení a výpis cílů) — web je volá při nahrání verze scénáře; `nastroje/diplomacie/sonda.py` je jen ruční příkaz nad týmž kódem (`--super` přibalí `supersonda.xs`, úplný výpis pro průzkum) |
+| most ke hře (zkušební most.py; na herním PC Roba agent Streamer.botu přes server Židolišty) | `python nastroje/diplomacie/most.py` hlídá `<id>/profile/*.xsdat`, posílá platná čtení na `POST /api/diplo/hra`; token `MOST_TOKEN` nebo `~/.aoe-most-token`, `--nasucho` jen vypisuje zprávy. Jen standardní knihovna Pythonu | `src/diplomacie/hra.ts` (příjem), `src/shared/diplomacie/hra.ts` (odvození Nástupce a postupu cílů), `web/src/diplomacie/HraZive.tsx` (pult GM) |
 
 Když hra přidá civilizaci nebo mapu: doplnit řádek do tabulky, u civilizace
 zkontrolovat i `era` (jestli nepatří do Chronicles) a doplnit erb (stejný postup: `menu_techtree_<slug>.png` → 96×96 webp), a

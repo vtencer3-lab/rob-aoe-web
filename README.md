@@ -381,25 +381,25 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   uložení do složky hry i data ze hry; jméno, pod kterým autor soubor
   nahrál, zůstává jen originálu. Řádek verze ve správě: jméno, kdo, kdy,
   „aktivní“ / „Nastavit jako aktivní“ a tlačítka **Stáhnout
-  originál** (s upozorněním, že originál nepošle průběh hry na stránku),
-  **Přibalit automatizace** (zlaté, dokud verze nemá dnešní sondu) a
-  **Stáhnout scénář** (zlaté, zamčené, dokud sondu nemá). **Smazat** jde
+  originál** (s upozorněním, že originál nepošle průběh hry na stránku) a
+  **Stáhnout scénář** (zlaté; zamčené, jen když přibalení sondy selhalo).
+  Sondu web přibaluje sám: při nahrání, po každém startu serveru do verzí
+  se zastaralou sondou a pro jistotu těsně před stažením — ve správě není
+  co přibalovat ručně. **Smazat** jde
   verzi, která není aktivní a nehraje ji běžící zápas otevřené akce;
   dohrané a zrušené zápasy o ni přijdou (karta role a pult GM se pak
   ukážou bez mapy). Proč smazání neprošlo, napíše web červeně přímo pod
   řádek verze. Pole „Co je nového“ formulář nahrání nemá.
-- **Host** má v kroku „Zakládáš!“ navíc **Stáhnout scénář** (verzi, kterou
-  zápas hraje) a cestu, kam soubor uložit —
-  `%USERPROFILE%\Games\Age of Empires 2 DE\<Steam ID nebo XUID>\resources\_common\scenario\`,
-  web ji ukáže přímo pro přihlášeného hosta. Starou kopii stejného jména je
-  potřeba přepsat. V Chromu a Edge je hlavní tlačítko **Uložit scénář do
-  hry**: host jednou ukáže složku scénářů (cestu dostane do schránky a do
-  dialogu ji vloží), web do ní soubor zapíše sám a příště stačí jedno
-  kliknutí; prohlížeč nedovolí otevřít Průzkumníka ani předvolit cestu, jen
-  si pamatuje naposledy vybranou složku, a jinde (Firefox, Safari, telefon)
-  zůstává jen stažení. V Create Lobby zvolí Game Mode Custom Scenario a tenhle
+- **Host** je v Diplomacii automaticky GM na šedé. V kroku „Zakládáš!“ má
+  nahoře **Stáhnout scénář** (verzi, kterou zápas hraje); po kliknutí se
+  ukáže, kam soubor uložit —
+  `%USERPROFILE%\Games\Age of Empires 2 DE\<Steam ID nebo XUID>\resources\_common\scenario\`
+  (přímo pro přihlášeného hosta, ke zkopírování); starou kopii stejného
+  jména je potřeba přepsat. Teprve pod tím je **Spustit hru**. V Create
+  Lobby zvolí Game Mode Custom Scenario a tenhle
   scénář; ostatní hráči ho dostanou přenosem v lobby. Kontrola lobby má
-  řádek „Scénář“ (shoda, jiná verze téhož scénáře, jiný soubor).
+  řádek „Scénář“ (shoda, jiná verze téhož scénáře, jiný soubor); velikost,
+  Victory a Team Positions určuje scénář a kontrola je jen vypíše.
 - **Co vidí hráči.** Před rozesláním jen „Role se rozdají po startu hry“.
   Po startu hry rozdá sekundární cíle hra sama; GM v pultu označí hráče,
   který cíl nedostal (**Nástupce císaře**), nechá web rozdat zbylé role
@@ -421,11 +421,12 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   stranách i „Víc vítězů…“ se zaškrtávátky u jmen. Vyhodnocení podle rolí
   a odhalení rolí všem přijde v dalším kroku módu.
 - **Data ze hry (zkušebně).** Scénář, který host z webu stahuje, má
-  přibalenou **sondu**: web ji do kopie přidá sám při nahrání verze
-  (originál od autora zůstává a autor nebo admin ho stáhne tlačítkem
-  „Stáhnout originál“ ve správě scénáře; verzi nahrané dřív sondu doplní
-  tlačítko „Přibalit automatizace“). Kopie se jmenuje
-  `ROB_DIPLO_<N>.aoe2scenario`, soubor sondy ve hře tedy `ROB_DIPLO_<N>.xsdat`. Sonda za hry zapisuje stav
+  přibalenou **sondu**: web ji do kopie přidá sám (originál od autora
+  zůstává a autor nebo admin ho stáhne tlačítkem „Stáhnout originál“ ve
+  správě scénáře). Kopie se jmenuje `ROB_DIPLO_<N>.aoe2scenario` (všechny
+  naše scénáře mají prefix `ROB_`), soubor sondy ve hře tedy
+  `ROB_DIPLO_<N>.xsdat` a začíná značkou „ROBD“ (formát 8). Sonda každou
+  herní sekundu zapisuje stav
   do souboru na každém počítači ve hře, u hráčů i diváků (bez šifrování —
   kdo se podívá do své složky profilu, vidí tajné cíle všech; komunitní hra
   s přáteli). Vedle hry se pustí `python nastroje/diplomacie/most.py`
@@ -440,6 +441,26 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   postup jeho cíle, relikvie a jestli je ještě ve hře, a odkud data jsou
   („ze hry (GM) před 3 s“ / „ze hry (divák) před 3 s“). Tahle data vidí jen
   GM. Bez mostu všechno funguje jako dřív, Nástupce GM odklikne ručně.
+  Na herním PC Roba most nahrazuje agent Streamer.botu napojený na server
+  Židolišty (`RobJewsALot/Streamer.bot - GAME PC/`), který soubory
+  `ROB_*.xsdat` posílá na web.
+- **Mapa v pultu GM** (na širokém displeji vedle tabulky rolí): jména u
+  startů, Nástupce s korunou, **králové** všech hráčů z běžící hry (♚ v
+  barvě hráče) a **relikvie** — volné bez obrysu, nesené (mnich/misionář
+  s relikvií) a uložené v klášteře s obrysem v barvě hráče. Přepínače
+  „Zobrazit krále“ a „Zobrazit relikvie“ pod mapou (platí i pro overlaye).
+  Najetí na hráče (řádek tabulky nebo start na mapě) ukáže jeho vztahy jako
+  na jeho kartě. **Ping:** tlačítko „Ping“ zapne kliknutí do mapy, adresáti
+  ve dvou sloupcích (víc najednou, nic vybraného = všem); hráčům se na mapě
+  karty na 10 s ukáže pulzující kruh a cinkne zvuk chatu. Hráč na své mapě
+  vidí jen svého krále. Pod každým hráčem v tabulce je sekundární cíl
+  s postupem (hodnoty tučně) a počet relikvií; vyřazený hráč má jméno
+  přeškrtnuté.
+- **Overlaye do OBS** (Browser Source): `…/aoe/diplo/obs/mapa?klic=…`
+  (mapa bez rámu) a `…/obs/tabulka?klic=…` (tabulka rolí), průhledné pozadí,
+  obnova každou sekundu, vždy nejnovější běžící zápas Diplomacie očima GM.
+  Klíč je env `OBS_KLIC` (bez něj routa neexistuje) — kdo ho má, vidí role
+  jako GM.
 
 Návrh a rozhodnutí: `docs/prehled-praci-a-zameru.md` §3.60, spec
 `docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`.

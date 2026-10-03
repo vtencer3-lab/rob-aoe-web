@@ -115,3 +115,38 @@ Zkušební integrace na PC uživatele: data z běžící hry → web → pult GM
 **Neověřeno ve hře** (první ostrá zkouška je na uživateli): že hra se scénářem ze stažené kopie zapisuje do proměnných 201–208 (označení cílů ve hře ještě neběželo); že `xsGetWorldPlayerId` v provozní sondě dává stejný převod jako v super sondě; most na PC diváka proti webu (zdroj „divak“, přednost GM) — divák soubor píše (ověřeno), odeslání z jeho PC ještě neběželo. **Ověřeno v kontejneru** (kontrolor, 2. 10. 2026): `sonda.py` v produkčním obrazu (Alpine) nad LLC — ok, 42 označených triggerů, 5 s.
 
 Proti návrhu z Q2/Q3 výš: žádné `seq` ani události — most posílá celé snímky a web z nich bere poslední (obnova po výpadku zdarma, jako u SSE); routa je bez `:id`, zápas se hledá podle odesílatele (GM, nebo divák jediného běžícího zápasu); žádná tabulka, data jsou pomíjivá.
+
+## Stav 3. 10. 2026 večer (`diplo` 1.13.10-37.4) — formát 8, agent, králové, relikvie
+
+- **Cesta dat:** hra (sonda v kopii `ROB_DIPLO_<N>.aoe2scenario`) →
+  `<id>\profile\ROB_DIPLO_<N>.xsdat` → **agent Streamer.botu na herním PC**
+  (trvalé WebSocket spojení se serverem Židolišty, sleduje jen
+  `*\profile\ROB_*.xsdat`, víc PC na jednom tokenu rozlišuje server) →
+  server Židolišty (dekodér formátů 1–4 bez značky a 5–8 se značkou) →
+  `POST /api/diplo/hra` (Bearer `MOST_TOKEN`). `most.py` zůstává jako
+  zkušební náhrada agenta.
+- **Formát 8** (sonda každou herní sekundu): `int32 0x44424F52` („ROBD“) |
+  `int32 8` | `int32 čas` | `8× int32 slot → hráč` | `8× (string jméno,
+  string barva, float relikvie v klášteře, int žije)` | `8× (float x, float
+  y)` první král (objekt 434; −1 = žádný) | `int32 počet` (0–32) +
+  `počet× (float x, float y, float hráč)` relikvie | `64× int32
+  diplomacie` | `256× int32 proměnné` | `int32 čas`. Formát 5 = bez králů
+  a relikvií, 6 = s králi, 7 = relikvie bez hráče. Tělo pro web navíc nese
+  `hraci[].kral: {x,y}|null` a `relikvieNaMape: [{x,y,hrac}]`.
+- **Relikvie — ověřeno diagnostikou ve hře:** volná = objekt 285 gaii
+  (třída 942). **Zvednutá relikvie zanikne** a nosič změní typ: mnich
+  s relikvií objekt 286, misionář s relikvií objekt 2557 — oba **třída
+  943**. Mnich/misionář bez relikvie je třída 918 a
+  `xsGetUnitAttributeHeld(u, -1)` u něj vrací 100 (víra) — proto „drží
+  něco“ relikvii nepozná (bralo i farmy a ovce). Relikvie v klášteře je dál
+  objekt 285, jen garrisonovaná v budově (`xsGetGarrisonedInUnitId` →
+  `xsGetUnitOwner`). Relikvie do 8 dílců od tržiště GM (slot 7) se
+  nesleduje (zázemí GM na kraji mapy).
+- **XS pasti:** literál nejvýš 9 číslic (`114519637 * 10` místo
+  1145196370); `xsGetPlayerUnitIds` vrací jen jednotky na mapě
+  (garrisonované ne); pole se nedají mazat — opakovaně volat jen funkce
+  s parametrem „znovu použít pole“; sonda musí být čisté ASCII (i komentáře).
+- **Diagnostika ve hře:** vlastní scénář, který místo sondy zapisuje do
+  `<scénář>.xsdat` vlastní výpis (skripty `diag4.py` + `cti_diag.py` ve
+  scratchpadu session 3. 10.), je rychlejší než výpis do chatu a screenshoty.
+

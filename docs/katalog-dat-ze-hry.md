@@ -30,6 +30,9 @@ telemetrii a nastavení profilu. Jiný zdroj dat o hře na disku není.
 - **Kdo žije** (`xsGetPlayerInGame`) a **diplomacie 8×8** (i ta nastavená
   triggery; změny z panelu navíc s časem ze záznamu).
 - **Poloha králů a relikvií** (jednotky s pozicí) — značky na minimapě.
+  **Od 1.13.10-31.0 na webu** (sonda formát 6–8): králové v pultu GM a v overlayi,
+  hráč vidí svého; relikvie s barvou nosiče (třída 943 = jednotka s relikvií,
+  zvednutá relikvie 285 zaniká) — podrobně `analyza-most-ke-hre.md`, „Stav 3. 10. 2026 večer“.
 
 **Veřejné statistiky zápasu (po hře, případně živě pro diváky):**
 - **Suroviny**: zásoby (0–3) a nasbíráno celkem (166–169).

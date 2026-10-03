@@ -88,7 +88,7 @@ npm test                    # hermetické
 npm run test:db             # databázové — POZOR níž
 npm --prefix web test       # frontend
 npx tsc --noEmit            # typová kontrola BACKENDU — na web/ nesahá
-npm --prefix web exec tsc -- -b --force   # typová kontrola frontendu
+(cd web && npx tsc -b --force)   # typová kontrola frontendu
 ```
 
 **`npx tsc --noEmit` frontend nekontroluje.** Kořenový `tsconfig.json` `web/`
@@ -98,6 +98,10 @@ testů) tiše zastaví `vite build` — `web/dist` zůstane starý, server dál
 servíruje předchozí bundle a v prohlížeči se změna neprojeví. Po zásahu do
 sdílených typů proto vždycky doběhnout celý `npm run build` a podívat se, že
 se změnil hash souboru ve `web/dist/assets`.
+
+**`npm --prefix web exec tsc` taky ne** — `npm exec` spustí `tsc` v kořeni repa,
+takže zkontroluje backend a hlásí zeleno i s chybou ve `web/` (zjištěno
+3. 10. 2026). Frontend jen `cd web && npx tsc -b --force`, výsledek z návratového kódu.
 
 `.env` čtou jen `dev`, `start` a `db:migrate` (`--env-file-if-exists`).
 Testy schválně ne.
