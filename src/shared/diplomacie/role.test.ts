@@ -19,6 +19,14 @@ it("Nájezdník má Sabotáž jednou za hru, o ekonomické sankci už nemluví",
   expect(POPIS_ROLE.nastupce.vyhody).toContain("Nelze na něj uvalit sankci Rady králů.");
 });
 
+// Veřejnost Nástupce je informace, ne výhoda (uživatel 3. 10. 2026);
+// rady už svolávat smí (nová verze pravidel téhož dne).
+it("Nástupce: veřejnost je informace, svolávání rad už není nevýhoda", () => {
+  expect(POPIS_ROLE.nastupce.informace).toEqual(["Je veřejně znám od začátku hry."]);
+  expect(POPIS_ROLE.nastupce.vyhody.join(" ")).not.toMatch(/veřejně/);
+  expect(POPIS_ROLE.nastupce.nevyhody.join(" ")).not.toMatch(/rady/);
+});
+
 // Jeden sloh pro všechny role (uživatel 2. 10. 2026): cíl začíná „Vyhrává,
 // když …“, každá věta končí tečkou a obraty „lze“, „je-li“ a „skrze“ se
 // nepoužívají — pravidla mají být věcná a u každé role napsaná stejně.
@@ -26,9 +34,9 @@ it("Nájezdník má Sabotáž jednou za hru, o ekonomické sankci už nemluví",
 // se samostatné slovo „lze“.)
 it("pravidla rolí drží jednotný sloh", () => {
   for (const role of Object.keys(POPIS_ROLE) as (keyof typeof POPIS_ROLE)[]) {
-    const { cil, vyhody, nevyhody } = POPIS_ROLE[role];
+    const { cil, informace = [], vyhody, nevyhody } = POPIS_ROLE[role];
     expect(cil, role).toMatch(/^Vyhrává, když /);
-    for (const veta of [cil, ...vyhody, ...nevyhody]) {
+    for (const veta of [cil, ...informace, ...vyhody, ...nevyhody]) {
       expect(veta, `${role}: ${veta}`).toMatch(/^\p{Lu}/u);
       expect(veta, `${role}: ${veta}`).toMatch(/\.$/);
       expect(veta, `${role}: ${veta}`).not.toMatch(/(^|[^\p{L}])(lze|je-li|skrze)([^\p{L}]|$)/iu);

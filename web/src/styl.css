@@ -1791,6 +1791,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-role .role h4 { margin: 0.2rem 0 0.5rem; font-size: 1.4rem; text-align: center; }
 .karta-role .role h5 { margin: 0.7rem 0 0.2rem; font-size: 0.95rem; color: var(--zlato); }
 .karta-role .role p { margin: 0.3rem 0; }
+/* Neutrální fakt o roli (Nástupce je veřejně znám) — tlumeně, kurzívou; není výhoda ani nevýhoda. */
+.karta-role .role p.informace-role { color: var(--tlumene); font-style: italic; }
 .karta-role .role .cil { font-weight: 700; }
 .karta-role .role ul { margin: 0; padding-left: 1.2rem; }
 .karta-role .role li { margin: 0.15rem 0; }

@@ -146,6 +146,11 @@ function ObsahRole({ moje, vse, ucastnici }: { moje: RoleHrace; vse: RoleHrace[]
           </strong>
         </p>
       ) : null}
+      {popis.informace?.map((v) => (
+        <p key={v} className="informace-role">
+          {v}
+        </p>
+      ))}
       {popis.vyhody.length > 0 ? (
         <>
           <h5>Výhody</h5>

@@ -11,6 +11,12 @@ export const NAZEV_ROLE: Record<Role, string> = {
 
 export interface PopisRole {
   cil: string;
+  /**
+   * Neutrální fakta o roli, ne výhoda ani nevýhoda — v pravidlech řádek
+   * „Informace“ (uživatel 3. 10. 2026 u Nástupce: „nevím jestli je vyloženě
+   * výhoda, že je znám od začátku“).
+   */
+  informace?: string[];
   vyhody: string[];
   nevyhody: string[];
 }
@@ -30,7 +36,8 @@ export interface PopisRole {
 export const POPIS_ROLE: Record<Role, PopisRole> = {
   nastupce: {
     cil: "Vyhrává, když získá 7 relikvií a udrží je 15 minut.",
-    vyhody: ["Je veřejně znám od začátku hry.", "Začíná se 2 relikviemi navíc.", "Nelze na něj uvalit sankci Rady králů."],
+    informace: ["Je veřejně znám od začátku hry."],
+    vyhody: ["Začíná se 2 relikviemi navíc.", "Nelze na něj uvalit sankci Rady králů."],
     nevyhody: [
       "Může vyhrát jen relikviemi.",
       "Když zemře Šašek, musí prodat 1 relikvii (neplatí, pokud už běží 15minutový odpočet se 7 relikviemi).",
