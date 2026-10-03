@@ -135,7 +135,11 @@ it("v tabulce rolí má každý hráč řádek s cílem a postupem, relikviemi a
   const radek = (jmeno: string) => screen.getByRole("rowheader", { name: jmeno }).closest("tr")!.nextElementSibling as HTMLElement;
   expect(radek("Hráč 2")).toHaveTextContent("zabito: 3/650 jednotek · relikvie 0");
   expect(radek("Hráč 1")).toHaveTextContent("zabito: 0/650 jednotek · relikvie 2");
-  expect(radek("Hráč 3")).toHaveTextContent("zabito: 0/650 jednotek · relikvie 0 · vyřazen");
+  expect(radek("Hráč 3")).toHaveTextContent("zabito: 0/650 jednotek · relikvie 0");
+  expect(radek("Hráč 3")).not.toHaveTextContent("vyřazen");
+  // Vyřazení nese řádek hráče: přeškrtnuté jméno a ztlumení (CSS `tr.vyrazen`).
+  expect(screen.getByRole("rowheader", { name: "Hráč 3" }).closest("tr")).toHaveClass("vyrazen");
+  expect(screen.getByRole("rowheader", { name: "Hráč 2" }).closest("tr")).not.toHaveClass("vyrazen");
   expect(radek("Hráč 4")).toHaveTextContent("bez cíle · relikvie 0");
   // Hodnoty tučně, relikvie obrázkem; slovo „relikvie“ zůstává jen čtečkám.
   expect([...radek("Hráč 2").querySelectorAll("strong")].map((b) => b.textContent)).toEqual(["3/650", "0"]);

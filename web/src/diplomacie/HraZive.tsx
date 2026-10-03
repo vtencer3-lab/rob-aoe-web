@@ -53,8 +53,8 @@ export function NastupceZeHry({ hra, ucastnici }: { hra: HraZapasu | undefined; 
 }
 
 /**
- * Drobný řádek pod hráčem v tabulce GM: sekundární cíl s postupem, relikvie,
- * vyřazení. Vlastní řádek tabulky přes celou šířku, ne text v buňce: na
+ * Drobný řádek pod hráčem v tabulce GM: sekundární cíl s postupem a relikvie.
+ * Vyřazení ukazuje tabulka přeškrtnutým jménem (`TabulkaRoli`). Vlastní řádek tabulky přes celou šířku, ne text v buňce: na
  * telefonu má poslední sloupec 88 px a věta by se v něm lámala do pěti řádků.
  */
 export function RadekHry({ hra, hracId }: { hra: HraZapasu | undefined; hracId: string }) {
@@ -71,7 +71,6 @@ export function RadekHry({ hra, hracId }: { hra: HraZapasu | undefined; hracId: 
         <strong>{h.relikvie}</strong>
       </span>
     ),
-    h.zije === false ? "vyřazen" : null,
   ].filter((c) => c !== null);
   if (casti.length === 0) return null;
   return (

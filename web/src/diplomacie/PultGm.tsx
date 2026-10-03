@@ -202,9 +202,11 @@ export function TabulkaRoli({
       <tbody>
         {d.role.flatMap((r) => {
           const barvaCile = r.cilHracId ? mujUcastnik(zapas, r.cilHracId)?.barva : undefined;
+          // Vyřazený hráč (hra hlásí, že už nehraje): jméno přeškrtnuté, řádek ztlumený (uživatel 3. 10. 2026).
+          const vyrazen = d.hra?.hraci.find((h) => h.hracId === r.hracId)?.zije === false;
           // Pod řádkem hráče ještě řádek s daty ze hry (bez nich nic nekreslí).
           return [
-            <tr key={r.hracId} className={najetoHrac === r.hracId ? "najeto" : undefined} onMouseEnter={onNajeti ? () => onNajeti(r.hracId) : undefined} onMouseLeave={onNajeti ? () => onNajeti(null) : undefined}>
+            <tr key={r.hracId} className={[najetoHrac === r.hracId ? "najeto" : "", vyrazen ? "vyrazen" : ""].filter(Boolean).join(" ") || undefined} onMouseEnter={onNajeti ? () => onNajeti(r.hracId) : undefined} onMouseLeave={onNajeti ? () => onNajeti(null) : undefined}>
               {/* Čtvereček barvy jako na dlaždicích: řádky jdou v pořadí slotů, dlaždice podle barvy. */}
               <th scope="row">{hrac(r.hracId)}</th>
               {/* Znak ve vlastní buňce, ne v th: v hlavičce řádku by alt
@@ -213,6 +215,7 @@ export function TabulkaRoli({
                 <img key={r.role} className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={36} height={36} />
               </td>
               <td>
+                {vyrazen ? <span className="sr-only">vyřazen, </span> : null}
                 {r.role === "nastupce" || !upravy ? (
                   <strong>{NAZEV_ROLE[r.role]}</strong>
                 ) : (
