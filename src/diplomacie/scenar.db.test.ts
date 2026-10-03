@@ -44,7 +44,7 @@ beforeEach(async () => {
   revizePodvrhu = revizeSondy();
   varovaniPodvrhu = [];
   await getPool().query("TRUNCATE player, akce CASCADE");
-  // Jméno pro hru je JIN_DIPLO_<pořadí>; od jedničky, ať ho testy znají předem.
+  // Jméno pro hru je ROB_DIPLO_<pořadí>; od jedničky, ať ho testy znají předem.
   await getPool().query("ALTER SEQUENCE diplo_scenar_poradi_seq RESTART");
 });
 
@@ -63,7 +63,7 @@ const nahraj = (sid: string | undefined, data: Buffer, jmeno = "LLC v1.aoe2scena
     payload: data,
   });
 
-it("autor nahraje, první verze se aktivuje, stažení vrátí kopii se sondou pod jménem JIN_DIPLO_1", async () => {
+it("autor nahraje, první verze se aktivuje, stažení vrátí kopii se sondou pod jménem ROB_DIPLO_1", async () => {
   const jin = await klient("jin", false);
   const res = await nahraj(jin, LLC, "Diplomacie LLC v1.aoe2scenario", "první");
   expect(res.statusCode).toBe(200);
@@ -72,7 +72,7 @@ it("autor nahraje, první verze se aktivuje, stažení vrátí kopii se sondou p
   const stazeni = await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor` });
   expect(stazeni.rawPayload.equals(seSondou(LLC))).toBe(true);
   // Jméno pro hru: kontrola lobby porovnává jméno a soubor sondy se jmenuje podle něj.
-  expect(stazeni.headers["content-disposition"]).toBe("attachment; filename*=UTF-8''JIN_DIPLO_1.aoe2scenario");
+  expect(stazeni.headers["content-disposition"]).toBe("attachment; filename*=UTF-8''ROB_DIPLO_1.aoe2scenario");
   // Originál si nechává jméno, pod kterým ho autor nahrál.
   const original = await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor?original=1`, cookies: { sid: jin } });
   expect(original.headers["content-disposition"]).toBe(`attachment; filename*=UTF-8''${encodeURIComponent("Diplomacie LLC v1.aoe2scenario")}`);
@@ -81,7 +81,7 @@ it("autor nahraje, první verze se aktivuje, stažení vrátí kopii se sondou p
   expect(mapa.headers["content-type"]).toBe("image/webp");
   expect(mapa.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
   const seznam = await app.inject({ method: "GET", url: "/api/diplo/scenar" });
-  expect(seznam.json().verze).toMatchObject([{ id, jmenoSouboru: "Diplomacie LLC v1.aoe2scenario", jmenoHry: "JIN_DIPLO_1.aoe2scenario", poznamka: "první", aktivni: true, sonda: { cilu: 1, oznaceno: 1, chyba: null, zastarala: false, varovani: [] } }]);
+  expect(seznam.json().verze).toMatchObject([{ id, jmenoSouboru: "Diplomacie LLC v1.aoe2scenario", jmenoHry: "ROB_DIPLO_1.aoe2scenario", poznamka: "první", aktivni: true, sonda: { cilu: 1, oznaceno: 1, chyba: null, zastarala: false, varovani: [] } }]);
 });
 
 it("originál bez sondy dostane jen autor a admin přes ?original=1", async () => {
@@ -197,10 +197,10 @@ it("aktivace přepíše scénář v nastavení běžící akce Diplomacie", asyn
   const v1 = (await nahraj(jin, LLC, "LLC v1.aoe2scenario")).json().id;
   await app.inject({ method: "POST", url: "/api/akce", cookies: { sid: rob }, payload: { nazev: "D", rezim: "diplomacie" } });
   const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("x")]), "LLC v2.aoe2scenario")).json().id;
-  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "JIN_DIPLO_1.aoe2scenario" });
+  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "ROB_DIPLO_1.aoe2scenario" });
   await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2}/aktivni`, cookies: { sid: jin } });
   // S jménem se propíše i velikost mapy z rozboru (podvrh vrací ROZBOR: 220).
-  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "JIN_DIPLO_2.aoe2scenario", scenarStarsi: ["JIN_DIPLO_1.aoe2scenario"], rezim: 3, velikost: 220 });
+  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "ROB_DIPLO_2.aoe2scenario", scenarStarsi: ["ROB_DIPLO_1.aoe2scenario"], rezim: 3, velikost: 220 });
   expect(v1).toBeLessThan(v2);
 });
 
@@ -313,7 +313,7 @@ it("smazat nejde aktivní verzi; číslo smazané verze se znovu nepoužije", as
   const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("2")]), "LLC.aoe2scenario")).json().id;
   const v3 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("3")]), "LLC.aoe2scenario")).json().id;
   // Nejnovější nahoře; stejné jméno originálu nevadí, pro hru se liší.
-  expect(await jmenaVerzi()).toEqual(["JIN_DIPLO_3.aoe2scenario", "JIN_DIPLO_2.aoe2scenario", "JIN_DIPLO_1.aoe2scenario"]);
+  expect(await jmenaVerzi()).toEqual(["ROB_DIPLO_3.aoe2scenario", "ROB_DIPLO_2.aoe2scenario", "ROB_DIPLO_1.aoe2scenario"]);
 
   expect((await smaz(undefined, v3)).statusCode).toBe(401);
   expect((await smaz(await klient("h1", false), v3)).statusCode).toBe(403);
@@ -324,10 +324,10 @@ it("smazat nejde aktivní verzi; číslo smazané verze se znovu nepoužije", as
   expect(aktivni.json().chyba).toBe("Aktivní verzi nejde smazat — nejdřív nastav jinou jako aktivní.");
 
   expect((await smaz(rob, v2)).json()).toEqual({ ok: true });
-  expect(await jmenaVerzi()).toEqual(["JIN_DIPLO_3.aoe2scenario", "JIN_DIPLO_1.aoe2scenario"]);
+  expect(await jmenaVerzi()).toEqual(["ROB_DIPLO_3.aoe2scenario", "ROB_DIPLO_1.aoe2scenario"]);
   expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${v2}/soubor` })).statusCode).toBe(404);
   const v4 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("4")]), "LLC.aoe2scenario")).json().id;
-  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${v4}/soubor` })).headers["content-disposition"]).toBe("attachment; filename*=UTF-8''JIN_DIPLO_4.aoe2scenario");
+  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${v4}/soubor` })).headers["content-disposition"]).toBe("attachment; filename*=UTF-8''ROB_DIPLO_4.aoe2scenario");
 });
 
 // Uživatel 2. 10. 2026: verze ze zkoušek drží staré dohrané zápasy a smazat
@@ -347,12 +347,12 @@ it("verzi hranou jen dohranými a zrušenými zápasy jde smazat, běžící zá
   const obaBezi = await smaz(jin, v2);
   expect(await scenarZapasu(prvni.id)).toBe(v2);
   expect(obaBezi.statusCode).toBe(409);
-  expect(obaBezi.json().chyba).toBe(`JIN_DIPLO_2.aoe2scenario hraje běžící zápasy #${prvni.poradi}, #${druhy.poradi} — smazat ji půjde, až budou dohrané nebo zrušené.`);
+  expect(obaBezi.json().chyba).toBe(`ROB_DIPLO_2.aoe2scenario hraje běžící zápasy #${prvni.poradi}, #${druhy.poradi} — smazat ji půjde, až budou dohrané nebo zrušené.`);
 
   await setZapasStav(prvni.id, "dohrano");
   const jedenBezi = await smaz(jin, v2);
   expect(jedenBezi.statusCode).toBe(409);
-  expect(jedenBezi.json().chyba).toBe(`JIN_DIPLO_2.aoe2scenario hraje běžící zápas #${druhy.poradi} — smazat ji půjde, až bude dohraný nebo zrušený.`);
+  expect(jedenBezi.json().chyba).toBe(`ROB_DIPLO_2.aoe2scenario hraje běžící zápas #${druhy.poradi} — smazat ji půjde, až bude dohraný nebo zrušený.`);
   // Odmítnutí nic nezměnilo.
   expect(await scenarZapasu(prvni.id)).toBe(v2);
 
@@ -360,7 +360,7 @@ it("verzi hranou jen dohranými a zrušenými zápasy jde smazat, běžící zá
   expect((await smaz(jin, v2)).json()).toEqual({ ok: true });
   expect(await scenarZapasu(prvni.id)).toBeNull();
   expect(await scenarZapasu(druhy.id)).toBeNull();
-  expect(await jmenaVerzi()).toEqual(["JIN_DIPLO_3.aoe2scenario", "JIN_DIPLO_1.aoe2scenario"]);
+  expect(await jmenaVerzi()).toEqual(["ROB_DIPLO_3.aoe2scenario", "ROB_DIPLO_1.aoe2scenario"]);
 });
 
 it("verzi běžícího zápasu uzavřené akce jde smazat", async () => {
@@ -381,7 +381,7 @@ it("smazání verze ji vyřadí ze starších jmen kontroly lobby běžící akc
   await app.inject({ method: "POST", url: "/api/akce", cookies: { sid: rob }, payload: { nazev: "D", rezim: "diplomacie" } });
   const v2 = (await nahraj(jin, Buffer.concat([LLC, Buffer.from("2")]), "LLC v2.aoe2scenario")).json().id;
   await app.inject({ method: "POST", url: `/api/diplo/scenar/${v2}/aktivni`, cookies: { sid: jin } });
-  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "JIN_DIPLO_2.aoe2scenario", scenarStarsi: ["JIN_DIPLO_1.aoe2scenario"] });
+  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "ROB_DIPLO_2.aoe2scenario", scenarStarsi: ["ROB_DIPLO_1.aoe2scenario"] });
   expect((await smaz(jin, v1)).statusCode).toBe(200);
-  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "JIN_DIPLO_2.aoe2scenario", scenarStarsi: [] });
+  expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "ROB_DIPLO_2.aoe2scenario", scenarStarsi: [] });
 });

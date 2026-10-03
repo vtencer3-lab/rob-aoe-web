@@ -14,7 +14,7 @@ import { hraZapasu, pametHer, ponechHry } from "./hraPamet.js";
  */
 export function nastaveniScenare(aktivni: ScenarVerze | null, vsechny: ScenarVerze[]): Pick<NastaveniLobby, "scenar" | "scenarStarsi" | "velikost"> {
   if (!aktivni) return { scenar: null, scenarStarsi: null, velikost: null };
-  // Porovnává se jméno pro hru (JIN_DIPLO_<pořadí>) — pod ním hostovi
+  // Porovnává se jméno pro hru (ROB_DIPLO_<pořadí>) — pod ním hostovi
   // soubor přijde a pod ním ho hra v lobby hlásí; jméno originálu nehraje roli.
   const starsi = vsechny.filter((v) => v.id !== aktivni.id).map((v) => v.jmenoHry);
   return { scenar: aktivni.jmenoHry, scenarStarsi: [...new Set(starsi)], velikost: aktivni.rozbor?.velikostMapy ?? null };

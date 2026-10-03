@@ -37,10 +37,10 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 |---|---|
 | `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
 | `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
-| `origin/diplo` | **1.13.10-29.3** (`c8ec8d3`, 1.–3. 10. 2026; 29.3 chyby nahrání ve správě scénáře; most přes Židolištu §3.60 „Most přes Židolištu a herní PC“; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — dědění vlastní minimapy 28.0 — §3.60, „Vlastní minimapa se dědí“ — a **správa scénáře 29.0**: jméno pro hru `JIN_DIPLO_<N>`, mazání verzí, tlačítka v řádku, 29.1 jména pro hru v nastavení lobby otevřené akce, 29.2 mazání verzí hraných jen dohranými zápasy, důvod odmítnutí u řádku a bez pole „Co je nového“; §3.60, „Správa scénáře: jméno pro hru, mazání, tlačítka“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
+| `origin/diplo` | **1.13.10-30.0** (1.–3. 10. 2026; 30.0 prefix `ROB_` a značka sondy, 29.4–29.7 rychlejší most a pult vedle mapy; 29.3 chyby nahrání ve správě scénáře; most přes Židolištu §3.60 „Most přes Židolištu a herní PC“; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — dědění vlastní minimapy 28.0 — §3.60, „Vlastní minimapa se dědí“ — a **správa scénáře 29.0**: jméno pro hru `JIN_DIPLO_<N>`, mazání verzí, tlačítka v řádku, 29.1 jména pro hru v nastavení lobby otevřené akce, 29.2 mazání verzí hraných jen dohranými zápasy, důvod odmítnutí u řádku a bez pole „Co je nového“; §3.60, „Správa scénáře: jméno pro hru, mazání, tlačítka“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
-| Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–036 (`030_rezim_akce.sql` … `036_diplomacie_jmena_v_lobby.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
+| Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–037 (`030_rezim_akce.sql` … `037_diplomacie_prefix_rob.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
 | Testy | `diplo` 3. 10. 2026 (1.13.10-29.2): backend hermetické 532 (52 souborů; 13 testů rozboru, sondy a mostu se bez Pythonu přeskočí, s `PYTHON=python` projdou), frontend 537 (54 souborů), databázové 252 (18 souborů, na VPS po nasazení 29.2), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Admini | `ADMIN_STEAM_ID` je **jediný zdroj pravdy**, ne sloupec `je_admin` — přihlášení ho přepisuje. 17. 9. 2026 srovnáno s databází a doplněno o `xbox:` položku; do té doby měly obě aplikace v proměnné jediné Steam ID, zatímco DB vedla tři adminy (Rob a Trokner by o práva přišli při svém dalším přihlášení). Rozbor v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2 |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
@@ -2408,6 +2408,24 @@ projektu RobJewsALot (Židolišta), složka `RobJewsALot/Streamer.bot - GAME PC/
   automatizace“) a **jediným** běžícím zápasem — automatický Nástupce přes
   celou cestu hra → SB → Židolišta → web.
 
+**Ověřeno a doladěno 3. 10. 2026 (1.13.10-29.4 → 30.0).**
+
+- Celá cesta hra → agent (WS) → Židolišta → web ověřená živě z PC
+  uživatele: odpověď 200 `zdroj: gm`, Nástupce nastaven ze hry (`ai:7`).
+- Zpoždění: sonda píše **každou herní sekundu** (dřív 2 s), web rozesílá
+  každý snímek (rozestup 0,8 s, dřív 5 s), Židolišta posílá každý platný
+  snímek i při změně jen času, mezera 1 s s dosláním (ne zahozením).
+- **Jména a poznávací značka (30.0):** všechny naše scénáře mají prefix
+  `ROB_` — kopie pro hru `ROB_DIPLO_<N>.aoe2scenario` (dřív `JIN_DIPLO_<N>`,
+  migrace 037 přepíše nastavení lobby otevřené akce). Agent hlídá jen
+  `*\profile\ROB_*.xsdat`. Soubor sondy má **formát 5**: první int32 je
+  značka `0x44424F52` (bajty „ROBD“), pak verze 5, pak totéž co formát 3.
+  XS bere nejvýš 9ciferný literál, proto `xsWriteInt(114519637 * 10)`.
+  `xsdat.py` a `most.py` čtou 5 i starší 3.
+- Pult GM: na širokém displeji (≥ 72rem) mapa vlevo, pult vpravo; „Rozdat
+  role“ jemně pulzuje, jakmile je Nástupce zvolený.
+- Stará aktivní verze (LLC_2) smazaná na přání uživatele, nahraje ji znovu.
+
 **Vědomě ponecháno:** most má jeden globální token (`MOST_TOKEN`) — kdo ho
 má, může v kterémkoli běžícím zápase Diplomacie nastavit Nástupce (jen
 v `priprava`), když uvede `hracId` jeho GM — a od 27.0 i bez něj jako
@@ -2860,6 +2878,7 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.13.10-29.1 | 2. 10. (větev `diplo`) | **Jména pro hru v nastavení lobby otevřené akce (§3.60)** — migrace 036 přepíše `scenar`/`scenarStarsi` neskončených akcí Diplomacie (i uložené nastavení) na `JIN_DIPLO_<N>`; akce otevřená před 29.0 by jinak hostovi se staženou kopií hlásila jiný soubor |
 | 1.13.10-29.2 | 3. 10. (větev `diplo`) | **Mazání verzí scénáře povolenější a srozumitelnější (§3.60)** — verzi hranou jen dohranými, zrušenými nebo uzavřenými zápasy jde smazat (zápasy dostanou `scenar_id = NULL` a ukážou se bez mapy), běžící zápas otevřené akce ji drží; důvod odmítnutí přímo pod řádkem verze; pole „Co je nového“ pryč |
 | 1.13.10-29.3 | 3. 10. (větev `diplo`) | **Chyby nahrání a dalších akcí přímo ve správě scénáře (§3.60)** — odmítnutí (např. „Tahle verze už je nahraná“) se ukáže pod formulářem nebo řádkem verze, ne v obecné chybě nahoře nad panelem |
+| 1.13.10-29.4 … 1.13.10-30.0 | 3. 10. (větev `diplo`) | **Most přes agenta herního PC doladěn (§3.60)** — glow „Rozdat role“ (-29.4), rozesílání po 1,5 s (-29.5), sonda každou herní sekundu (-29.6), pult GM vedle mapy (-29.7), prefix `ROB_` u jmen pro hru a značka „ROBD“ ve formátu 5 sondy, migrace 037 (-30.0) |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |

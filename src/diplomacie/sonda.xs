@@ -1,7 +1,8 @@
-// Sonda Diplomacie (rob-aoe-web), format 3: kazdou herni sekundu prepise
+// Sonda Diplomacie (rob-aoe-web), format 5: kazdou herni sekundu prepise
 // soubor profile\<scenar>.xsdat - NA KAZDEM POCITACI VE HRE (hraci i divaci).
 // Rozlozeni:
-//   int verze (3) | int cas (herni s)
+//   int znacka 0x44424F52 (bajty "ROBD" - nase soubory pozna kazda
+//   ctecka driv, nez cokoli dalsiho cte) | int verze (5) | int cas (herni s)
 //   | 8x int slot scenare -> cislo hrace ve hre (xsGetWorldPlayerId(1..8))
 //   | 8x (string jmeno, string barva, float relikvie, int zije) podle cisla
 //     hrace ve hre | 64x int diplomacie(a, b) | 256x int promenne triggeru
@@ -24,7 +25,9 @@ void sondaZapis() {
   // prikaz bezel ve hre v super sonde.
   infiniteLoopLimit = 1000000;
   xsCreateFile(false);
-  xsWriteInt(3);
+  // Znacka 0x44424F52 = 1145196370; XS bere nejvys 9ciferny literal.
+  xsWriteInt(114519637 * 10);
+  xsWriteInt(5);
   xsWriteInt(t);
   for (s = 1; < 9) {
     xsWriteInt(xsGetWorldPlayerId(s));

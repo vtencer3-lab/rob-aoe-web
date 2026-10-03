@@ -4,7 +4,7 @@ import type { Barva, ZapasView } from "../../../src/shared/types.js";
 
 /** Testovací data Diplomacie pro frontend; jedna sada pro kartu role, veřejný řádek i pult GM. */
 
-export const VERZE: ScenarVerze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", jmenoHry: "JIN_DIPLO_3.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
+export const VERZE: ScenarVerze = { id: 3, jmenoSouboru: "LLC.aoe2scenario", jmenoHry: "ROB_DIPLO_3.aoe2scenario", nahrano: "", nahralJmeno: "Jin", poznamka: null, aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
 
 /** Osm hráčů `h1`…`h8` se jmény „Hráč N“ na barvě N, každý sám za sebe; `h7` sedí na šedé jako GM a hostuje. */
 export const ZAPAS: ZapasView = {

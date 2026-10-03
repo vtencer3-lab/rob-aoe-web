@@ -19,8 +19,8 @@ vi.mock("./api.js", () => ({
 import { diploApi } from "./api.js";
 
 /** Aktivní verze s rozborem a starší, kterou se nepodařilo přečíst. */
-const V2: ScenarVerze = { id: 3, jmenoSouboru: "LLC v2.aoe2scenario", jmenoHry: "JIN_DIPLO_3.aoe2scenario", nahrano: "2026-10-01T10:00:00.000Z", nahralJmeno: "Jin", poznamka: "nové cíle", aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
-const V1: ScenarVerze = { id: 2, jmenoSouboru: "LLC v1.aoe2scenario", jmenoHry: "JIN_DIPLO_2.aoe2scenario", nahrano: "2026-09-30T10:00:00.000Z", nahralJmeno: "Jin", poznamka: null, aktivni: false, rozbor: null, chybaRozboru: "scénář nemá právě jednoho GM", minimapaOtisk: null, minimapaVlastni: false, sonda: null };
+const V2: ScenarVerze = { id: 3, jmenoSouboru: "LLC v2.aoe2scenario", jmenoHry: "ROB_DIPLO_3.aoe2scenario", nahrano: "2026-10-01T10:00:00.000Z", nahralJmeno: "Jin", poznamka: "nové cíle", aktivni: true, rozbor: ROZBOR, chybaRozboru: null, minimapaOtisk: null, minimapaVlastni: false, sonda: null };
+const V1: ScenarVerze = { id: 2, jmenoSouboru: "LLC v1.aoe2scenario", jmenoHry: "ROB_DIPLO_2.aoe2scenario", nahrano: "2026-09-30T10:00:00.000Z", nahralJmeno: "Jin", poznamka: null, aktivni: false, rozbor: null, chybaRozboru: "scénář nemá právě jednoho GM", minimapaOtisk: null, minimapaVlastni: false, sonda: null };
 
 const hlidej = async (fn: () => Promise<unknown>) => {
   await fn();
@@ -57,7 +57,7 @@ it("vypíše verze, nečitelnou nejde aktivovat, nahrání pošle jen soubor (be
   expect(diploApi.nahrat).toHaveBeenCalledWith(soubor);
 });
 
-// Hostovi a do lobby jde verze pod jménem pro hru (JIN_DIPLO_<pořadí>),
+// Hostovi a do lobby jde verze pod jménem pro hru (ROB_DIPLO_<pořadí>),
 // takže jméno originálu nemusí být jiné a upozornění na stejné jméno odpadlo.
 // Řádek má jméno jako text, ne odkaz — stahuje se tlačítky. Nejnovější nahoře.
 it("verze nejnovější nahoře, jméno originálu jako text a vedle jméno pro hru", async () => {
@@ -65,7 +65,7 @@ it("verze nejnovější nahoře, jméno originálu jako text a vedle jméno pro 
   await rozbal();
   expect(screen.getAllByTestId("verze-scenare").map((r) => r.querySelector(".jmeno-verze")?.textContent)).toEqual(["LLC v2.aoe2scenario", "LLC v1.aoe2scenario"]);
   expect(screen.queryByRole("link", { name: "LLC v2.aoe2scenario" })).toBeNull();
-  expect(screen.getByText("(JIN_DIPLO_3)")).toBeTruthy();
+  expect(screen.getByText("(ROB_DIPLO_3)")).toBeTruthy();
   fireEvent.change(screen.getByLabelText("Soubor scénáře"), { target: { files: [new File(["1.59"], "LLC v2.aoe2scenario")] } });
   expect(screen.queryByText(/Doporučuju jiné jméno/)).toBeNull();
 });
@@ -133,7 +133,7 @@ it("Stáhnout scénář jde až s dnešní sondou; jinak je hlavní akcí Přiba
   const kliky = stazeni();
   const sDnesni: ScenarVerze = { ...V2, sonda: SONDA };
   const zastarala: ScenarVerze = { ...V1, rozbor: ROZBOR, chybaRozboru: null, sonda: { ...SONDA, zastarala: true, varovani: ["počet označených triggerů (41) nesedí na 7 hráčů bez GM"] } };
-  const sChybou: ScenarVerze = { ...V1, id: 1, jmenoSouboru: "LLC v0.aoe2scenario", jmenoHry: "JIN_DIPLO_1.aoe2scenario", sonda: { ...SONDA, cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy" } };
+  const sChybou: ScenarVerze = { ...V1, id: 1, jmenoSouboru: "LLC v0.aoe2scenario", jmenoHry: "ROB_DIPLO_1.aoe2scenario", sonda: { ...SONDA, cilu: 0, oznaceno: 0, chyba: "ValueError: bez sondy" } };
   vi.mocked(diploApi.verze).mockResolvedValue({ verze: [sDnesni, zastarala, sChybou] });
   await rozbal();
   expect(screen.queryByText(/sonda:/)).toBeNull();
@@ -152,7 +152,7 @@ it("Stáhnout scénář jde až s dnešní sondou; jinak je hlavní akcí Přiba
   expect(screen.getByText(/nesedí na 7 hráčů bez GM/)).toBeTruthy();
 
   fireEvent.click(stahnout[0]!);
-  expect(kliky).toEqual([{ href: "/api/diplo/scenar/3/soubor", download: "JIN_DIPLO_3.aoe2scenario" }]);
+  expect(kliky).toEqual([{ href: "/api/diplo/scenar/3/soubor", download: "ROB_DIPLO_3.aoe2scenario" }]);
   fireEvent.click(pribalit[1]!);
   expect(diploApi.pribalSondu).toHaveBeenCalledWith(2);
   await waitFor(() => expect(diploApi.verze).toHaveBeenCalledTimes(2));
@@ -189,7 +189,7 @@ it("Smazat se potvrzuje a pak seznam načte znovu", async () => {
 // (2. 10. 2026). Věta serveru je teď přímo pod řádkem verze a drží se do
 // další akce ve správě.
 it("odmítnuté smazání ukáže větu serveru pod řádkem verze až do další akce", async () => {
-  const VETA = "JIN_DIPLO_2.aoe2scenario hraje běžící zápas #3 — smazat ji půjde, až bude dohraný nebo zrušený.";
+  const VETA = "ROB_DIPLO_2.aoe2scenario hraje běžící zápas #3 — smazat ji půjde, až bude dohraný nebo zrušený.";
   vi.mocked(diploApi.smazat).mockRejectedValueOnce(new Error(VETA));
   // Skutečné chování hlidej z App: chybu spolkne a ukáže ji jinde.
   const globalni: string[] = [];

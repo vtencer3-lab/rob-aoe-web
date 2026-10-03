@@ -33,10 +33,11 @@ const desetinne = (n: number) => {
 };
 
 /**
- * Soubor sondy formátu 3, jak ho píše sonda.xs: GM sedí v lobby první
- * (slot 7 → hráč 1), cíl dostali všichni kromě slotu 4.
+ * Soubor sondy formátu 5 (značka „ROBD“), jak ho píše sonda.xs; `format: 3`
+ * je starší tvar bez značky. GM sedí v lobby první (slot 7 → hráč 1), cíl
+ * dostali všichni kromě slotu 4.
  */
-function souborSondy(cas: number, casNaKonci = cas): Buffer {
+function souborSondy(cas: number, casNaKonci = cas, format: 3 | 5 = 5): Buffer {
   const promenne = new Array<number>(256).fill(0);
   for (const [slot, pocitadlo] of [
     [1, 15],
@@ -50,7 +51,7 @@ function souborSondy(cas: number, casNaKonci = cas): Buffer {
   }
   promenne[16] = 120;
   return Buffer.concat([
-    cislo(3),
+    ...(format === 5 ? [cislo(0x44424f52), cislo(5)] : [cislo(3)]),
     cislo(cas),
     ...[7, 2, 3, 4, 5, 6, 1, 8].map(cislo),
     ...[1, 2, 3, 4, 5, 6, 7, 8].flatMap((p) => [retezec(`Hráč ${p}`), retezec("<BLUE>"), desetinne(p === 7 ? 2 : 0), cislo(p === 3 ? 0 : 1)]),
@@ -107,10 +108,12 @@ describe.skipIf(!maPython())("most ke hře (vyžaduje Python)", () => {
     );
   }, 60_000);
 
-  it("čtečka xsdat: formát 3 s převodem slotů a proměnnými; rozepsaný soubor neplatí", async () => {
+  it("čtečka xsdat: formát 5 se značkou i starší 3, převod slotů a proměnné; rozepsaný soubor neplatí", async () => {
     const cti = (soubor: Buffer) => sHrou(soubor, (_koren, cesta) => JSON.parse(execFileSync(config.python, [join(NASTROJE, "xsdat.py"), cesta], { encoding: "utf8" })) as Record<string, unknown>);
     const cele = await cti(souborSondy(95));
-    expect(cele).toMatchObject({ platne: true, verze: 3, cas: 95, sloty: [7, 2, 3, 4, 5, 6, 1, 8] });
+    expect(cele).toMatchObject({ platne: true, verze: 5, cas: 95, sloty: [7, 2, 3, 4, 5, 6, 1, 8] });
+    expect(Buffer.from(souborSondy(95).subarray(0, 4)).toString("ascii")).toBe("ROBD");
+    expect(await cti(souborSondy(95, 95, 3))).toMatchObject({ platne: true, verze: 3, cas: 95 });
     expect((cele["promenne"] as number[])[204]).toBe(0);
     expect((cele["promenne"] as number[])[202]).toBe(16);
     // Čas na začátku a na konci se liší = hra soubor zrovna přepisovala.

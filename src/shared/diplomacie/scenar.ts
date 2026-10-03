@@ -7,9 +7,14 @@ import { overovace } from "./overeni.js";
  * do složky hry, most ke hře (soubor .xsdat se jmenuje podle scénáře).
  * `poradi` je pořadí nahrání (migrace 035), po smazání se nepoužije znovu.
  * Originál od autora si nechává jméno, pod kterým ho nahrál.
+ *
+ * Všechny naše scénáře začínají `ROB_` (uživatel 3. 10. 2026, dřív
+ * `JIN_DIPLO_`): soubor sondy se jmenuje jako scénář, agent na herním PC tak
+ * hlídá jen `ROB_*.xsdat` a cizí soubory modů nečte vůbec. Nový mód nebo
+ * scénář dostane `ROB_<CO>_<N>` a masku sledování nemění.
  */
 export function jmenoScenareProHru(poradi: number): string {
-  return `JIN_DIPLO_${poradi}.aoe2scenario`;
+  return `ROB_DIPLO_${poradi}.aoe2scenario`;
 }
 
 /** Co rozbor scénáře (src/diplomacie/rozbor.py) vrací; spec §5.2. */

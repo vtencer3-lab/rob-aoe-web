@@ -1,10 +1,11 @@
 """Čtečka souboru `profile\\<scénář>.xsdat`, který píše XS sonda Diplomacie.
 
-Rozložení verze 3 (XS v `src/diplomacie/sonda.xs`, přibaluje ho web):
-int verze | int čas | 8× int slot scénáře → číslo hráče ve hře | 8× (string
+Rozložení verze 5 (XS v `src/diplomacie/sonda.xs`, přibaluje ho web):
+int značka 0x44424F52 (bajty „ROBD“) | int verze | int čas | 8× int slot scénáře → číslo hráče ve hře | 8× (string
 jméno, string barva, float relikvie, int žije) podle čísla hráče ve hře
 | 64× int diplomacie(a, b) | 256× int proměnné triggerů | int čas;
-string = uint32 délka + bajty. Verze 2 je totéž bez převodu slotů a bez
+string = uint32 délka + bajty. Verze 3 je totéž bez značky na začátku
+(do 1.13.10-29.7, sondy ze scénářů JIN_DIPLO_<N>). Verze 2 je totéž bez převodu slotů a bez
 proměnných, verze 1 navíc bez jmen a barev; soubor bez čísla verze (328 B,
 první zkouška 2. 10. 2026) je verze 1. Super sondu (verze 100) čte
 `supersonda.py`.
@@ -22,6 +23,8 @@ import struct
 import sys
 
 POSTOJ = {0: "spojenec", 1: "neutral", 3: "nepritel"}
+# Značka našich souborů (od verze 5): první int32, bajty „ROBD“.
+ZNACKA = 0x44424F52
 
 
 def cti_xsdat(data: bytes) -> dict:
@@ -46,8 +49,13 @@ def _cti(data: bytes) -> dict:
     if len(data) != bez_verze:
         (verze,) = struct.unpack_from("<i", data, pos)
         pos += 4
-    if verze not in (1, 2, 3):
-        return {"platne": False, "verze": verze, "duvod": f"verze {verze}, čtečka zná 1–3 (super sondu čte supersonda.py)"}
+    if verze == ZNACKA:
+        (verze,) = struct.unpack_from("<i", data, pos)
+        pos += 4
+        if verze != 5:
+            return {"platne": False, "verze": verze, "duvod": f"náš soubor verze {verze}, čtečka zná 5"}
+    elif verze not in (1, 2, 3):
+        return {"platne": False, "verze": verze, "duvod": f"verze {verze}, čtečka zná 1–3 a 5 (super sondu čte supersonda.py)"}
     (cas,) = struct.unpack_from("<i", data, pos)
     pos += 4
     sloty = None

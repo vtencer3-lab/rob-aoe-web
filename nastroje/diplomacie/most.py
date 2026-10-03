@@ -36,13 +36,14 @@ import time
 import urllib.error
 import urllib.request
 
-from xsdat import cti_xsdat
+from xsdat import ZNACKA, cti_xsdat
 
 VYCHOZI_URL = "https://jouki.cz/aoe/diplo"
-FORMAT = 3
+# Formáty sondy, které web bere: 5 se značkou „ROBD“, 3 starší bez ní.
+FORMATY = (3, 5)
 BEZ_VERZE = 328
-# Sonda přepisuje soubor každé 2 herní sekundy; častěji posílat nemá smysl.
-ROZESTUP_S = 2.0
+# Sonda přepisuje soubor každou herní sekundu; častěji posílat nemá smysl.
+ROZESTUP_S = 1.0
 TEP_S = 15.0
 # Soubor, který se půl minuty nezměnil, je z dřívější hry: jeho cíle by web
 # vzal za dnešní a nastavil podle nich Nástupce.
@@ -66,11 +67,11 @@ def nacti_token() -> str:
 
 
 def najdi_soubor(koren: str, zname: dict):
-    """Nejnověji změněný soubor sondy formátu 3: (cesta, mtime, čtení) nebo None.
+    """Nejnověji změněný soubor naší sondy: (cesta, mtime, čtení) nebo None.
 
     Rozepsaný soubor (hra ho zrovna přepisuje) znamená „zkus to za chvíli“,
     ne „vezmi starší soubor jiného scénáře“ — proto si `zname` pamatuje,
-    které cesty formát 3 jsou.
+    které cesty naše sonda jsou.
     """
     kandidati = []
     for cesta in glob.glob(os.path.join(glob.escape(koren), "*", "profile", "*.xsdat")):
@@ -89,12 +90,13 @@ def najdi_soubor(koren: str, zname: dict):
                 return None
             continue
         # Soubor první zkoušky sondy číslo verze nemá (328 B) a začíná časem.
-        je_sonda = len(data) != BEZ_VERZE and int.from_bytes(data[:4], "little", signed=True) == FORMAT
+        prvni = int.from_bytes(data[:4], "little", signed=True)
+        je_sonda = len(data) != BEZ_VERZE and (prvni == ZNACKA or prvni == 3)
         zname[cesta] = je_sonda
         if not je_sonda:
             continue
         v = cti_xsdat(data)
-        return (cesta, mtime, v) if v.get("platne") and v.get("verze") == FORMAT else None
+        return (cesta, mtime, v) if v.get("platne") and v.get("verze") in FORMATY else None
     return None
 
 

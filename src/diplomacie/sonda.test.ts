@@ -75,7 +75,7 @@ describe.skipIf(!maPython())("sonda v LLC (vyžaduje Python s AoE2ScenarioParser
     expect(JSON.parse(vystup)).toEqual({ ok: true });
     const xs = await readFile(new URL("./sonda.xs", import.meta.url));
     expect([...xs].every((b) => b < 128)).toBe(true);
-    expect(xs.toString("ascii")).toContain("xsWriteInt(3);");
+    expect(xs.toString("ascii")).toContain("xsWriteInt(114519637 * 10);");
   }, 60_000);
 });
 
@@ -92,7 +92,7 @@ describe("sonda.xs píše na každém počítači", () => {
     expect(xs).toMatch(/\n {2}xsCreateFile\(false\);\n/);
     expect(xs).toMatch(/xsCloseFile\(\);\n\}\n/);
     // Rozložení se nezměnilo — formát zůstává 3.
-    expect(xs).toContain("xsWriteInt(3);");
+    expect(xs).toContain("xsWriteInt(114519637 * 10);");
   });
 
   it("revize sondy je otisk jejího textu", () => {

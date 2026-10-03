@@ -376,7 +376,7 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   vždy nejvýš jedna, nová verze se neaktivuje sama (kromě úplně první
   úspěšně přečtené) — tlačítko „Nastavit jako aktivní“. Verze, kterou se nepodařilo přečíst,
   jde stáhnout, ale ne aktivovat. Hostovi web verzi posílá pod jménem
-  **`JIN_DIPLO_<N>.aoe2scenario`** (N = pořadí nahrání 1, 2, 3…, po smazání
+  **`ROB_DIPLO_<N>.aoe2scenario`** (N = pořadí nahrání 1, 2, 3…, po smazání
   se číslo znovu nepoužije) a podle něj porovnává všechno — kontrolu lobby,
   uložení do složky hry i data ze hry; jméno, pod kterým autor soubor
   nahrál, zůstává jen originálu. Řádek verze ve správě: jméno, kdo, kdy,
@@ -425,7 +425,7 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   (originál od autora zůstává a autor nebo admin ho stáhne tlačítkem
   „Stáhnout originál“ ve správě scénáře; verzi nahrané dřív sondu doplní
   tlačítko „Přibalit automatizace“). Kopie se jmenuje
-  `JIN_DIPLO_<N>.aoe2scenario`, soubor sondy ve hře tedy `JIN_DIPLO_<N>.xsdat`. Sonda za hry zapisuje stav
+  `ROB_DIPLO_<N>.aoe2scenario`, soubor sondy ve hře tedy `ROB_DIPLO_<N>.xsdat`. Sonda za hry zapisuje stav
   do souboru na každém počítači ve hře, u hráčů i diváků (bez šifrování —
   kdo se podívá do své složky profilu, vidí tajné cíle všech; komunitní hra
   s přáteli). Vedle hry se pustí `python nastroje/diplomacie/most.py`
