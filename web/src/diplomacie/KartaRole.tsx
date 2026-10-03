@@ -100,11 +100,21 @@ function popiskyRole(zapas: ZapasView, d: DiploZapas, moje: RoleHrace): PopiskyS
     };
   };
   pridej(moje.hracId, "ja");
-  if (moje.role === "najezdnik") for (const r of d.role) if (r.role === "najezdnik" && r.hracId !== moje.hracId) pridej(r.hracId, "spojenec");
-  if (moje.role === "kat" && moje.cilHracId) pridej(moje.cilHracId, "obet");
-  if (moje.role === "zoldak" && moje.cilHracId) pridej(moje.cilHracId, "pouto");
+  for (const v of vztahyRole(d, moje)) pridej(v.hracId, v.druh);
   if (d.nastupceHracId) pridej(d.nastupceHracId, "nastupce");
   return popisky;
+}
+
+/**
+ * Ke kterým hráčům má role vztah, který se ukazuje na mapě: další
+ * Nájezdníci, oběť Kata, pokrevní pouto Žoldáka. Jediné místo pro kartu
+ * role i pult GM (najetí na hráče, uživatel 3. 10. 2026).
+ */
+export function vztahyRole(d: Pick<DiploZapas, "role">, r: RoleHrace): { hracId: string; druh: DruhPopisku }[] {
+  if (r.role === "najezdnik") return d.role.filter((x) => x.role === "najezdnik" && x.hracId !== r.hracId).map((x) => ({ hracId: x.hracId, druh: "spojenec" }));
+  if (r.role === "kat" && r.cilHracId) return [{ hracId: r.cilHracId, druh: "obet" }];
+  if (r.role === "zoldak" && r.cilHracId) return [{ hracId: r.cilHracId, druh: "pouto" }];
+  return [];
 }
 
 /**

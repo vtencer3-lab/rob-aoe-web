@@ -1779,6 +1779,10 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .druh-spojenec .popisek { color: var(--ok-svetle); border: 1px solid var(--ok); }
 .mapa-scenare .druh-pouto .popisek { color: var(--zlato-svetle); border: 3px double var(--zlato); }
 .mapa-scenare .druh-obet .popisek { color: var(--chyba); border: 1px solid var(--chyba); }
+/* Pult GM: hráč pod kurzorem (start na mapě nebo řádek tabulky) — zlatý
+   rámeček popisku a světlejší řádek; jeho vztahy nesou druhy výš. */
+.mapa-scenare .start.najeto .popisek { box-shadow: 0 0 0 2px var(--zlato), 0 0 10px 2px color-mix(in srgb, var(--zlato) 55%, transparent); }
+.tabulka-roli tr.najeto > *, .tabulka-roli tr.najeto + tr.radek-hry > * { background: color-mix(in srgb, var(--zlato) 8%, transparent); }
 /* Karta role (Diplomacie, KartaRole.tsx): sekce pod kontrolou lobby se
    záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
    kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,

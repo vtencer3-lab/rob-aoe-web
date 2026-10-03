@@ -9,7 +9,7 @@ import { Potvrzeni } from "../views/Potvrzeni.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
 import { NastupceZeHry, RadekHry, StariHry } from "./HraZive.js";
-import { diploZapasu, RubKarty, verzeZapasu } from "./KartaRole.js";
+import { diploZapasu, RubKarty, verzeZapasu, vztahyRole } from "./KartaRole.js";
 import { MapaScenare, popiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
@@ -21,6 +21,9 @@ const POPIS_STAVU = { priprava: "Příprava", losovano: "Losováno", rozeslano: 
 export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploData; hlidej: Hlidej }) {
   const [pracuje, setPracuje] = useState(false);
   const [ptaSeNaZpet, setPtaSeNaZpet] = useState(false);
+  // Hráč pod kurzorem (řádek tabulky nebo start na mapě): mapa ukáže jeho
+  // vztahy jako na jeho kartě — oběť Kata, pouto Žoldáka, druhého Nájezdníka.
+  const [najetoHrac, setNajetoHrac] = useState<string | null>(null);
   const d = diploZapasu(data, zapas.id);
   if (!d) return null;
   const verze = verzeZapasu(data, d, zapas);
@@ -58,6 +61,15 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   const popisky = verze ? popiskyStartu(verze, jmena) : {};
   const barvaNastupce = nastupce === null ? undefined : mujUcastnik(zapas, nastupce)?.barva;
   if (barvaNastupce !== undefined && popisky[barvaNastupce]) popisky[barvaNastupce] = { ...popisky[barvaNastupce], druhy: ["nastupce"] };
+  // Role existují od losu (návrh i rozeslané); v přípravě není co ukázat.
+  const najetaRole = najetoHrac === null ? undefined : d.role.find((r) => r.hracId === najetoHrac);
+  for (const v of najetaRole ? vztahyRole(d, najetaRole) : []) {
+    const b = mujUcastnik(zapas, v.hracId)?.barva;
+    const p = b === undefined ? undefined : popisky[b];
+    if (b !== undefined && p) popisky[b] = { ...p, druhy: [...(p.druhy ?? []), v.druh] };
+  }
+  const najetaBarva = najetoHrac === null ? null : (mujUcastnik(zapas, najetoHrac)?.barva ?? null);
+  const najetiNaMape = (barva: Barva | null) => setNajetoHrac(barva === null ? null : (zapas.ucastnici.find((u) => u.barva === barva)?.hracId ?? null));
 
   return (
     <section className="sekce-krok pult-gm" data-testid="pult-gm">
@@ -71,7 +83,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         {/* Na širokém displeji mapa vlevo a pult vpravo (uživatel 3. 10. 2026),
             ať GM vidí mapu i role bez posouvání; na úzkém pod sebou. */}
         <div className="pult-vedle">
-          {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" /> : null}
+          {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" onNajeti={najetiNaMape} najeto={najetaBarva} /> : null}
           <div className="pult-strana">
             <StariHry hra={d.hra} />
 
@@ -115,7 +127,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                       const barvaCile = r.cilHracId ? mujUcastnik(zapas, r.cilHracId)?.barva : undefined;
                       // Pod řádkem hráče ještě řádek s daty ze hry (bez nich nic nekreslí).
                       return [
-                        <tr key={r.hracId}>
+                        <tr key={r.hracId} className={najetoHrac === r.hracId ? "najeto" : undefined} onMouseEnter={() => setNajetoHrac(r.hracId)} onMouseLeave={() => setNajetoHrac(null)}>
                           {/* Čtvereček barvy jako na dlaždicích: řádky jdou v pořadí slotů, dlaždice podle barvy. */}
                           <th scope="row">{hrac(r.hracId)}</th>
                           {/* Znak ve vlastní buňce, ne v th: v hlavičce řádku by alt

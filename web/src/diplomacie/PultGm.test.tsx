@@ -286,3 +286,28 @@ it("pult dohraného zápasu, jehož verze byla smazána, se vykreslí bez mapy",
   expect(screen.getAllByRole("img", { name: NAZEV_ROLE.kat }).length).toBeGreaterThan(0);
   expect(screen.queryByRole("img", { name: /^Mapa scénáře/ })).toBeNull();
 });
+
+// Najetí na hráče (řádek tabulky nebo start na mapě) ukáže na mapě pultu jeho
+// vztahy stejně jako na jeho kartě: oběť Kata, druhého Nájezdníka, pouto
+// Žoldáka (uživatel 3. 10. 2026). Po odjetí kurzoru zmizí.
+it("najetí na hráče ukáže na mapě jeho vztahy jako na jeho kartě", () => {
+  render(<PultGm zapas={zapas} data={gmData("losovano", ROLE_LOS, "h1")} hlidej={spust} />);
+  odkryj();
+  const start = (hracId: string) => screen.getAllByTestId("start").find((s) => s.classList.contains(`barva-${hracId.slice(1)}`))!;
+  const radek = (hracId: string) => screen.getByRole("rowheader", { name: jmeno(hracId) }).closest("tr")!;
+  const kat = ROLE_LOS.find((r) => r.role === "kat")!;
+  fireEvent.mouseEnter(radek(kat.hracId));
+  expect(start(kat.cilHracId!)).toHaveClass("druh-obet");
+  expect(start(kat.hracId)).toHaveClass("najeto");
+  expect(radek(kat.hracId)).toHaveClass("najeto");
+  fireEvent.mouseLeave(radek(kat.hracId));
+  expect(document.querySelector(".mapa-scenare .druh-obet, .mapa-scenare .najeto")).toBeNull();
+  const [n1, n2] = ROLE_LOS.filter((r) => r.role === "najezdnik");
+  fireEvent.mouseEnter(start(n1!.hracId));
+  expect(start(n2!.hracId)).toHaveClass("druh-spojenec");
+  expect(radek(n1!.hracId)).toHaveClass("najeto");
+  fireEvent.mouseLeave(start(n1!.hracId));
+  const zoldak = ROLE_LOS.find((r) => r.role === "zoldak")!;
+  fireEvent.mouseEnter(radek(zoldak.hracId));
+  expect(start(zoldak.cilHracId!)).toHaveClass("druh-pouto");
+});

@@ -26,6 +26,10 @@ interface Props {
   /** Které starty ukázat a co u nich stojí; bez popisků je mapa jen obrázek. */
   popisky?: PopiskyStartu;
   velikost?: "mala" | "velka";
+  /** Najetí na start (pult GM ukáže vztahy toho hráče); null = kurzor odjel. */
+  onNajeti?: (barva: Barva | null) => void;
+  /** Start, na kterém je kurzor (z mapy nebo z řádku tabulky) — zvýrazní se. */
+  najeto?: Barva | null;
 }
 
 /**
@@ -71,7 +75,7 @@ function bublina(p: PopisekStartu, spojencu: number): string {
  * Druh popisku je třída `druh-*` na značce — vzhled je v CSS; Nástupce
  * císaře má nad značkou korunu (znak role), u vlastní mapy nad kosočtvercem.
  */
-export function MapaScenare({ verze, popisky = {}, velikost = "mala" }: Props) {
+export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, najeto = null }: Props) {
   if (!verze.rozbor) return null;
   const viditelne = verze.rozbor.starty.flatMap((s) => {
     const popisek = popisky[s.barva];
@@ -85,7 +89,9 @@ export function MapaScenare({ verze, popisky = {}, velikost = "mala" }: Props) {
         <span
           key={s.barva}
           data-testid="start"
-          className={`start barva-${s.barva}${s.druhy.map((d) => ` druh-${d}`).join("")}`}
+          className={`start barva-${s.barva}${s.druhy.map((d) => ` druh-${d}`).join("")}${najeto === s.barva ? " najeto" : ""}`}
+          onMouseEnter={onNajeti ? () => onNajeti(s.barva) : undefined}
+          onMouseLeave={onNajeti ? () => onNajeti(null) : undefined}
           // `--x` čte CSS: popisek drží osu značky, dokud se vejde do mapy, jinak se posune dovnitř.
           style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%`, "--x": s.x } as CSSProperties}
           title={BARVA_NAZEV[s.barva]}
