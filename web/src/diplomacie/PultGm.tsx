@@ -78,7 +78,11 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
 
             {d.stav === "priprava" ? (
               <>
-                <p>Komu hra nedala sekundární cíl? Hláška ve hře „pN ma: …“ — číslo hráče je jeho barva.</p>
+                {/* Ikona v 64 px, CSS ji zmenší na 32 — při zoomu zůstane ostrá. */}
+                <p className="kdo-nastupce">
+                  Kdo je <img className="znak-role" src={ZNAK_ROLE.nastupce} alt="" width={64} height={64} />
+                  Nástupcem císaře?
+                </p>
                 <NastupceZeHry hra={d.hra} ucastnici={zapas.ucastnici} />
                 <div className="dlazdice-nastupce">
                   {hraci.map((u) => (
@@ -86,10 +90,12 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                       key={u.hracId}
                       type="button"
                       data-testid="dlazdice"
-                      className={`dlazdice barva-${u.barva}${nastupce === u.hracId ? " vybrana" : ""}`}
+                      className={`dlazdice barva-${u.barva}${nastupce === u.hracId ? " vybrana" : ""}${d.hra?.nastupceHracId === u.hracId ? " ze-hry" : ""}`}
                       disabled={pracuje}
                       onClick={() => akce(() => diploApi.nastupce(zapas.id, u.hracId))}
                     >
+                      {/* Koho předvybrala hra (most ke hře): koruna a záře, ať GM vidí, jestli sedí. */}
+                      {d.hra?.nastupceHracId === u.hracId ? <img className="znak-role" src={ZNAK_ROLE.nastupce} alt="Nástupce podle hry" width={64} height={64} /> : null}
                       <span className="cislo">p{u.barva}</span> <span className="barva">{BARVA_NAZEV[u.barva]}</span> <strong>{jmenoHrace(u)}</strong>
                     </button>
                   ))}

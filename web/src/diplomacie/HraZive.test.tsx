@@ -77,6 +77,11 @@ it("GM hru přepsal: věta dál jmenuje hráče ze hry, vybraná je dlaždice GM
   odkryj();
   expect(screen.getByTestId("nastupce-ze-hry")).toHaveTextContent("Nástupce určila hra: Hráč 4");
   expect(screen.getAllByTestId("dlazdice").find((d) => d.classList.contains("vybrana"))!.textContent).toMatch(/p2.*Hráč 2/);
+  // Předvýběr hry nese korunu a záři i tehdy, když GM vybral jinak.
+  const zeHry = screen.getAllByTestId("dlazdice").filter((d) => d.classList.contains("ze-hry"));
+  expect(zeHry).toHaveLength(1);
+  expect(zeHry[0]!.textContent).toMatch(/p4.*Hráč 4/);
+  expect(zeHry[0]!.querySelector("img")).toHaveAttribute("alt", "Nástupce podle hry");
 });
 
 it("dokud hra Nástupce neurčila, věta chybí; stáří dat je vidět i tak", () => {

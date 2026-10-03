@@ -1842,6 +1842,14 @@ button.dlazdice.barva-4, button.dlazdice.barva-8 { color: var(--obrys); text-sha
    nedosáhne), tak se aspoň rozsvítí; zlatý rám výběru se prolne. */
 button.dlazdice:hover:enabled { filter: brightness(1.12); }
 button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0 0 2px var(--zlato), 0 2px 6px color-mix(in srgb, var(--obrys) 70%, transparent); }
+/* Předvýběr hry (most ke hře): koruna nad číslem a zlatá záře kolem dlaždice;
+   s ručním výběrem se záře sčítá s rámečkem výběru. */
+button.dlazdice.ze-hry { box-shadow: 0 0 12px 3px color-mix(in srgb, var(--zlato) 60%, transparent); }
+button.dlazdice.ze-hry.vybrana { box-shadow: 0 0 0 2px var(--zlato), 0 0 14px 4px color-mix(in srgb, var(--zlato) 60%, transparent); }
+button.dlazdice .znak-role { width: 2rem; height: 2rem; filter: drop-shadow(0 1px 2px var(--obrys)); }
+/* Otázka nad dlaždicemi: ikona 64 px zmenšená na 32 (ostrá i při zoomu). */
+.pult-gm .kdo-nastupce { display: flex; align-items: center; justify-content: center; gap: 0.35rem; flex-wrap: wrap; font-family: "Cinzel", Georgia, serif; font-weight: 700; font-size: 1.1rem; }
+.pult-gm .kdo-nastupce .znak-role { width: 2rem; height: 2rem; }
 /* Znak role v tabulce má 36 px (`--znak`): při 26 px byly úzké znaky —
    pochodeň Nájezdníka, sekera Kata, žezlo Nástupce — nečitelné (uživatel
    1. 10. 2026). Řádek dostane výšku podle znaku a buňky o něco víc vzduchu. */
