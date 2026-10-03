@@ -1907,6 +1907,15 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 /* Druhá řada pultu: Zpět u levého kraje, Rozeslat role u pravého; po
    rozeslání zbude jen Zpět a stojí uprostřed. */
 .pult-gm .ovladani.krajni { justify-content: space-between; }
+/* Souhrn složení uprostřed řádku, Přelosovat u pravého kraje: krajní sloupce
+   stejně široké, ať text zůstane na středu i s tlačítkem vedle. */
+.pult-gm .souhrn-radek { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.pult-gm .souhrn-radek > .souhrn { grid-column: 2; margin: 0; }
+.pult-gm .souhrn-radek > button { grid-column: 3; justify-self: end; }
+@media (max-width: 40rem) {
+  .pult-gm .souhrn-radek { grid-template-columns: 1fr; justify-items: center; }
+  .pult-gm .souhrn-radek > .souhrn, .pult-gm .souhrn-radek > button { grid-column: 1; justify-self: center; }
+}
 .pult-gm .ovladani.krajni:has(> :only-child) { justify-content: center; }
 /* Nástupce je zvolený → další krok GM je rozdat role: tlačítko jemně dýchá
    zlatou (uživatel 3. 10. 2026: „aby to tlačítko trochu glowovalo“, pak

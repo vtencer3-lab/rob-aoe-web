@@ -182,17 +182,17 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                     })}
                   </tbody>
                 </table>
-                <p className={odchylky.length > 0 ? "souhrn varovani" : "souhrn"}>{odchylky.length > 0 ? odchylky.join(", ") : "Složení odpovídá pravidlům."}</p>
-                {/* Dvě řady (uživatel 3. 10. 2026): nahoře uprostřed Přelosovat,
-                    pod ním Zpět na výběr Nástupce u levého a Rozeslat role
-                    u pravého kraje. */}
-                {d.stav === "losovano" ? (
-                  <div className="ovladani">
+                {/* Souhrn uprostřed, Přelosovat na témže řádku u pravého kraje;
+                    pod tím Zpět na výběr Nástupce vlevo a Rozeslat role vpravo
+                    (uživatel 3. 10. 2026). */}
+                <div className="souhrn-radek">
+                  <p className={odchylky.length > 0 ? "souhrn varovani" : "souhrn"}>{odchylky.length > 0 ? odchylky.join(", ") : "Složení odpovídá pravidlům."}</p>
+                  {d.stav === "losovano" ? (
                     <button type="button" disabled={pracuje} onClick={() => akce(() => diploApi.los(zapas.id))}>
                       Přelosovat
                     </button>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
                 <div className="ovladani krajni">
                   <button type="button" disabled={pracuje} onClick={zpet}>
                     Zpět na výběr Nástupce
