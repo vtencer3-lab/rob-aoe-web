@@ -143,3 +143,7 @@ v `docs/prehled-praci-a-zameru.md` §3.60); modul módu je `src/diplomacie/`,
 Tajná data módu nikdy neopustí větev `rezim.data` stavu a zaslepuje je mód
 sám (`rediguj`), i pro admina: admin, který není GM, role nevidí.
 Podrobně `docs/prehled-praci-a-zameru.md` §3.60.
+
+**Pravidla Diplomacie mají kontrolní seznam** [`docs/diplomacie-kontrolni-seznam.md`](docs/diplomacie-kontrolni-seznam.md):
+co platí, kde to je a který test to hlídá. Nové pravidlo nebo funkci zapsat
+tam hned; po změně v Diplomacii seznam projít jako regresní kontrolu.
