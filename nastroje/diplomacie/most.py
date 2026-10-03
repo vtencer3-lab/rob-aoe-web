@@ -40,7 +40,7 @@ from xsdat import ZNACKA, cti_xsdat
 
 VYCHOZI_URL = "https://jouki.cz/aoe/diplo"
 # Formáty sondy, které web bere: 5 se značkou „ROBD“, 3 starší bez ní.
-FORMATY = (3, 5)
+FORMATY = (3, 5, 6)
 BEZ_VERZE = 328
 # Sonda přepisuje soubor každou herní sekundu; častěji posílat nemá smysl.
 ROZESTUP_S = 1.0
@@ -110,7 +110,8 @@ def zprava(cesta: str, v: dict, odesilatel: str | None) -> dict:
         "scenar": os.path.splitext(os.path.basename(cesta))[0] + ".aoe2scenario",
         "cas": v["cas"],
         "sloty": v["sloty"],
-        "hraci": [{"cislo": h["hrac"], "jmeno": h["jmeno"], "barva": h["barva"], "relikvie": h["relikvie"], "zije": h["zije"]} for h in v["hraci"]],
+        # `kral` jen od formátu 6 (poloha prvního krále v dílcích, null = žádný).
+        "hraci": [{"cislo": h["hrac"], "jmeno": h["jmeno"], "barva": h["barva"], "relikvie": h["relikvie"], "zije": h["zije"], **({"kral": h["kral"]} if "kral" in h else {})} for h in v["hraci"]],
         "diplomacie": v["diplomacieKody"],
         "promenne": v["promenne"],
     }

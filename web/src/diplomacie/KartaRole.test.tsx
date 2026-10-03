@@ -191,3 +191,18 @@ it("Nástupce má korunu na vlastním startu; oběť, která je Nástupcem, koru
   expect(start(1)!.querySelector("img.koruna")).toBeTruthy();
   expect(within(start(1)!).getByText("Hráč 1")).toHaveAttribute("title", "Hráč 1 — Nástupce císaře, tvá oběť");
 });
+
+// Hráč vidí na své mapě jen vlastního krále (redakce mu dá `mujKral`),
+// v barvě svého startu; bez dat ze hry žádného.
+it("na mapě karty je jen vlastní král", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "sasek", cilHracId: null }]);
+  const sKralem = { ...data, zapasy: data.zapasy.map((z) => ({ ...z, mujKral: { x: 110, y: 110 } })) };
+  const { rerender } = render(<KartaRole zapas={zapas} data={sKralem} ja="h2" />);
+  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
+  const kralove = screen.getAllByTestId("kral");
+  expect(kralove).toHaveLength(1);
+  expect(kralove[0]).toHaveClass("barva-2");
+  expect(kralove[0]!.style.left).toBe("50%");
+  rerender(<KartaRole zapas={zapas} data={data} ja="h2" />);
+  expect(screen.queryByTestId("kral")).toBeNull();
+});

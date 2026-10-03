@@ -1,6 +1,7 @@
 """Čtečka souboru `profile\\<scénář>.xsdat`, který píše XS sonda Diplomacie.
 
-Rozložení verze 5 (XS v `src/diplomacie/sonda.xs`, přibaluje ho web):
+Rozložení verze 6 (XS v `src/diplomacie/sonda.xs`, přibaluje ho web);
+verze 5 je totéž bez bloku králů (8× float x, float y za hráči):
 int značka 0x44424F52 (bajty „ROBD“) | int verze | int čas | 8× int slot scénáře → číslo hráče ve hře | 8× (string
 jméno, string barva, float relikvie, int žije) podle čísla hráče ve hře
 | 64× int diplomacie(a, b) | 256× int proměnné triggerů | int čas;
@@ -52,8 +53,8 @@ def _cti(data: bytes) -> dict:
     if verze == ZNACKA:
         (verze,) = struct.unpack_from("<i", data, pos)
         pos += 4
-        if verze != 5:
-            return {"platne": False, "verze": verze, "duvod": f"náš soubor verze {verze}, čtečka zná 5"}
+        if verze not in (5, 6):
+            return {"platne": False, "verze": verze, "duvod": f"náš soubor verze {verze}, čtečka zná 5 a 6"}
     elif verze not in (1, 2, 3):
         return {"platne": False, "verze": verze, "duvod": f"verze {verze}, čtečka zná 1–3 a 5 (super sondu čte supersonda.py)"}
     (cas,) = struct.unpack_from("<i", data, pos)
@@ -71,6 +72,12 @@ def _cti(data: bytes) -> dict:
         relikvie, zije = struct.unpack_from("<fi", data, pos)
         pos += 8
         hraci.append({"hrac": p, "jmeno": jmeno, "barva": barva, "relikvie": int(relikvie), "zije": bool(zije)})
+    if verze >= 6:
+        # Poloha prvního krále v dílcích; -1 = hráč krále nemá.
+        for h in hraci:
+            kx, ky = struct.unpack_from("<ff", data, pos)
+            pos += 8
+            h["kral"] = None if kx < 0 or ky < 0 else {"x": round(kx, 2), "y": round(ky, 2)}
     kody = []
     for a in range(8):
         kody.append(list(struct.unpack_from("<8i", data, pos)))

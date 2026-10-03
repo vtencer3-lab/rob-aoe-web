@@ -2428,6 +2428,7 @@ projektu RobJewsALot (Židolišta), složka `RobJewsALot/Streamer.bot - GAME PC/
 - Pult GM: na širokém displeji (≥ 72rem) mapa vlevo, pult vpravo; „Rozdat
   role“ jemně pulzuje, jakmile je Nástupce zvolený.
 - Stará aktivní verze (LLC_2) smazaná na přání uživatele, nahraje ji znovu.
+- **Králové na mapě (31.0):** sonda formát 6 zapisuje za hráči `8× (float x, float y)` — poloha prvního krále (objekt 434, `xsGetPlayerUnitIds` + `xsGetUnitPosition`) v dílcích, bez krále −1. Most i Židolišta posílají `hraci[].kral` (`{x,y}`/null), web ho nese v `HraZapasu.hraci[].kral`; `naMinimapu` (minimapa.ts) převádí dílce na kosočtverec minimapy jako `otoc` v rozbor.py. GM vidí na mapě pultu krále všech (♚ v barvě hráče), hráč na kartě jen svého (`DiploZapas.mujKral`, plní redakce). Neověřeno ve hře: pořadí os X/Y z `xsGetUnitPosition` proti `unit.x/y` scénáře.
 
 **Vědomě ponecháno:** most má jeden globální token (`MOST_TOKEN`) — kdo ho
 má, může v kterémkoli běžícím zápase Diplomacie nastavit Nástupce (jen
@@ -2882,6 +2883,7 @@ má jeden souhrnný řádek (verze `1.13.10-A.B`).
 | 1.13.10-29.2 | 3. 10. (větev `diplo`) | **Mazání verzí scénáře povolenější a srozumitelnější (§3.60)** — verzi hranou jen dohranými, zrušenými nebo uzavřenými zápasy jde smazat (zápasy dostanou `scenar_id = NULL` a ukážou se bez mapy), běžící zápas otevřené akce ji drží; důvod odmítnutí přímo pod řádkem verze; pole „Co je nového“ pryč |
 | 1.13.10-29.3 | 3. 10. (větev `diplo`) | **Chyby nahrání a dalších akcí přímo ve správě scénáře (§3.60)** — odmítnutí (např. „Tahle verze už je nahraná“) se ukáže pod formulářem nebo řádkem verze, ne v obecné chybě nahoře nad panelem |
 | 1.13.10-29.4 … 1.13.10-30.0 | 3. 10. (větev `diplo`) | **Most přes agenta herního PC doladěn (§3.60)** — glow „Rozdat role“ (-29.4), rozesílání po 1,5 s (-29.5), sonda každou herní sekundu (-29.6), pult GM vedle mapy (-29.7), prefix `ROB_` u jmen pro hru a značka „ROBD“ ve formátu 5 sondy, migrace 037 (-30.0) |
+| 1.13.10-30.1 … 1.13.10-31.0 | 3. 10. (větev `diplo`) | **Ladění pultu GM a králové na mapě (§3.60)** — GM automaticky hostem (-30.1), Team Positions ve scénáři jen informace (-30.2), otázka „Kdo je Nástupcem císaře?“ a předvýběr hry (-30.3), čísla v barevných čtverečcích a koruna zvoleného (-30.4), Nástupce smí svolávat rady (-30.5), veřejnost Nástupce jako informace (-30.6), stažení scénáře před Spustit hru, tlačítko „Uložit scénář do hry“ zrušeno (-30.7/-30.8), bez problikávání a s viditelným glow (-30.9), tlačítka pultu (-30.10/-30.12/-30.13), vztahy při najetí (-30.11), poloha králů ze hry — sonda formát 6 (-31.0) |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |

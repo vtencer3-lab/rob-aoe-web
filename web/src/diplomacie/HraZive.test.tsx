@@ -144,3 +144,14 @@ it("v tabulce rolí má každý hráč řádek s cílem a postupem, relikviemi a
   // Věta o Nástupci patří k výběru v přípravě; po rozdání rolí ho nese tabulka.
   expect(screen.queryByTestId("nastupce-ze-hry")).toBeNull();
 });
+
+// GM vidí na mapě pultu krále všech hráčů z běžící hry (uživatel 3. 10. 2026);
+// hráč bez známé polohy (starší sonda, král padl) značku nemá.
+it("pult GM ukáže krále všech hráčů, kteří ho ve hře mají", () => {
+  const sKraly: HraZapasu = { ...HRA, hraci: HRA.hraci.map((h) => (h.hracId === "h3" ? { ...h, kral: null } : { ...h, kral: { x: 20, y: 30 } })) };
+  render(<PultGm zapas={zapas} data={gmData("priprava", [], "h4", sKraly)} hlidej={spust} />);
+  odkryj();
+  const kralove = screen.getAllByTestId("kral");
+  expect(kralove.map((k) => k.className)).toEqual(["kral barva-1", "kral barva-2", "kral barva-4", "kral barva-5", "kral barva-6", "kral barva-8"]);
+  expect(kralove[0]).toHaveAttribute("title", "Král — modrá");
+});

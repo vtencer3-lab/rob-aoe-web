@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
 import { BARVA_NAZEV, type Barva } from "../../../src/shared/types.js";
 import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
+import type { PolohaVeHre } from "../../../src/shared/diplomacie/hra.js";
+import { naMinimapu } from "../../../src/shared/diplomacie/minimapa.js";
 import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { diploApi } from "./api.js";
 import { ZNAK_ROLE } from "./znaky.js";
@@ -21,6 +23,22 @@ export interface PopisekStartu {
 /** Popisky podle barvy startu; barva bez záznamu se na mapě nekreslí vůbec. */
 export type PopiskyStartu = Partial<Record<Barva, PopisekStartu>>;
 
+/** Král z běžící hry na minimapě: barva hráče a místo 0–1 (`kralNaMape`). */
+export interface KralNaMape {
+  barva: Barva;
+  x: number;
+  y: number;
+}
+
+/**
+ * Poloha krále ze hry (dílce) → značka na minimapě verze. Null, když verze
+ * nemá rozbor (neznáme velikost mapy) nebo hráč barvu v zápase.
+ */
+export function kralNaMape(verze: ScenarVerze, barva: Barva | undefined, poloha: PolohaVeHre | null | undefined): KralNaMape | null {
+  if (!verze.rozbor || barva === undefined || !poloha) return null;
+  return { barva, ...naMinimapu(poloha.x, poloha.y, verze.rozbor.velikostMapy) };
+}
+
 interface Props {
   verze: ScenarVerze;
   /** Které starty ukázat a co u nich stojí; bez popisků je mapa jen obrázek. */
@@ -30,6 +48,8 @@ interface Props {
   onNajeti?: (barva: Barva | null) => void;
   /** Start, na kterém je kurzor (z mapy nebo z řádku tabulky) — zvýrazní se. */
   najeto?: Barva | null;
+  /** Králové z běžící hry: GM vidí všechny, hráč jen svého (redakce). */
+  kralove?: readonly KralNaMape[];
 }
 
 /**
@@ -75,7 +95,7 @@ function bublina(p: PopisekStartu, spojencu: number): string {
  * Druh popisku je třída `druh-*` na značce — vzhled je v CSS; Nástupce
  * císaře má nad značkou korunu (znak role), u vlastní mapy nad kosočtvercem.
  */
-export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, najeto = null }: Props) {
+export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, najeto = null, kralove = [] }: Props) {
   if (!verze.rozbor) return null;
   const viditelne = verze.rozbor.starty.flatMap((s) => {
     const popisek = popisky[s.barva];
@@ -100,6 +120,17 @@ export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, 
           <span className="popisek" title={bublina(s.popisek, spojencu)}>
             {s.popisek.text}
           </span>
+        </span>
+      ))}
+      {kralove.map((k) => (
+        <span
+          key={`kral-${k.barva}`}
+          data-testid="kral"
+          className={`kral barva-${k.barva}`}
+          style={{ left: `${k.x * 100}%`, top: `${k.y * 100}%` }}
+          title={`Král — ${BARVA_NAZEV[k.barva]}`}
+        >
+          ♚
         </span>
       ))}
     </figure>

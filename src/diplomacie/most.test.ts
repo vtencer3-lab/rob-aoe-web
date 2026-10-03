@@ -37,7 +37,7 @@ const desetinne = (n: number) => {
  * je starší tvar bez značky. GM sedí v lobby první (slot 7 → hráč 1), cíl
  * dostali všichni kromě slotu 4.
  */
-function souborSondy(cas: number, casNaKonci = cas, format: 3 | 5 = 5): Buffer {
+function souborSondy(cas: number, casNaKonci = cas, format: 3 | 5 | 6 = 5): Buffer {
   const promenne = new Array<number>(256).fill(0);
   for (const [slot, pocitadlo] of [
     [1, 15],
@@ -51,10 +51,12 @@ function souborSondy(cas: number, casNaKonci = cas, format: 3 | 5 = 5): Buffer {
   }
   promenne[16] = 120;
   return Buffer.concat([
-    ...(format === 5 ? [cislo(0x44424f52), cislo(5)] : [cislo(3)]),
+    ...(format === 3 ? [cislo(3)] : [cislo(0x44424f52), cislo(format)]),
     cislo(cas),
     ...[7, 2, 3, 4, 5, 6, 1, 8].map(cislo),
     ...[1, 2, 3, 4, 5, 6, 7, 8].flatMap((p) => [retezec(`Hráč ${p}`), retezec("<BLUE>"), desetinne(p === 7 ? 2 : 0), cislo(p === 3 ? 0 : 1)]),
+    // Formát 6: poloha krále hráče 1 je (12.5, 40), ostatní krále nemají.
+    ...(format === 6 ? [1, 2, 3, 4, 5, 6, 7, 8].flatMap((p) => (p === 1 ? [desetinne(12.5), desetinne(40)] : [desetinne(-1), desetinne(-1)])) : []),
     ...new Array<number>(64).fill(3).map(cislo),
     ...promenne.map(cislo),
     cislo(casNaKonci),
@@ -114,6 +116,9 @@ describe.skipIf(!maPython())("most ke hře (vyžaduje Python)", () => {
     expect(cele).toMatchObject({ platne: true, verze: 5, cas: 95, sloty: [7, 2, 3, 4, 5, 6, 1, 8] });
     expect(Buffer.from(souborSondy(95).subarray(0, 4)).toString("ascii")).toBe("ROBD");
     expect(await cti(souborSondy(95, 95, 3))).toMatchObject({ platne: true, verze: 3, cas: 95 });
+    const s6 = await cti(souborSondy(95, 95, 6));
+    expect(s6).toMatchObject({ platne: true, verze: 6, cas: 95, sloty: [7, 2, 3, 4, 5, 6, 1, 8] });
+    expect((s6["hraci"] as { kral: unknown }[]).map((h) => h.kral)).toEqual([{ x: 12.5, y: 40 }, null, null, null, null, null, null, null]);
     expect((cele["promenne"] as number[])[204]).toBe(0);
     expect((cele["promenne"] as number[])[202]).toBe(16);
     // Čas na začátku a na konci se liší = hra soubor zrovna přepisovala.

@@ -10,7 +10,7 @@ import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
 import { NastupceZeHry, RadekHry, StariHry } from "./HraZive.js";
 import { diploZapasu, RubKarty, verzeZapasu, vztahyRole } from "./KartaRole.js";
-import { MapaScenare, popiskyStartu } from "./MapaScenare.js";
+import { kralNaMape, MapaScenare, popiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
 import { ZNAK_ROLE } from "./znaky.js";
@@ -69,6 +69,8 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
     if (b !== undefined && p) popisky[b] = { ...p, druhy: [...(p.druhy ?? []), v.druh] };
   }
   const najetaBarva = najetoHrac === null ? null : (mujUcastnik(zapas, najetoHrac)?.barva ?? null);
+  // Králové všech hráčů z běžící hry (uživatel 3. 10. 2026: „GM uvidí na mapě pozici krále“).
+  const kralove = verze ? (d.hra?.hraci ?? []).flatMap((h) => kralNaMape(verze, mujUcastnik(zapas, h.hracId)?.barva, h.kral) ?? []) : [];
   const najetiNaMape = (barva: Barva | null) => setNajetoHrac(barva === null ? null : (zapas.ucastnici.find((u) => u.barva === barva)?.hracId ?? null));
 
   return (
@@ -83,7 +85,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         {/* Na širokém displeji mapa vlevo a pult vpravo (uživatel 3. 10. 2026),
             ať GM vidí mapu i role bez posouvání; na úzkém pod sebou. */}
         <div className="pult-vedle">
-          {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" onNajeti={najetiNaMape} najeto={najetaBarva} /> : null}
+          {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" onNajeti={najetiNaMape} najeto={najetaBarva} kralove={kralove} /> : null}
           <div className="pult-strana">
             <StariHry hra={d.hra} />
 

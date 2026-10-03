@@ -221,6 +221,15 @@ describe("tělo od mostu", () => {
     expect(() => prectiSnimek(bezOdesilatele)).toThrow(/odesilatel není text/);
   });
 
+  // Sonda od formátu 6 posílá polohu krále; starší ji nemají vůbec.
+  it("poloha krále: číslo, null (krále nemá), nebo chybí (starší sonda)", () => {
+    const sKralem = (kral: unknown) => ({ ...telo(), hraci: telo().hraci.map((h, i) => (i === 0 ? { ...h, kral } : h)) });
+    expect(prectiSnimek(sKralem({ x: 10.5, y: 200 })).hraci[0]!.kral).toEqual({ x: 10.5, y: 200 });
+    expect(prectiSnimek(sKralem(null)).hraci[0]!.kral).toBeNull();
+    expect("kral" in prectiSnimek(telo()).hraci[0]!).toBe(false);
+    expect(() => prectiSnimek(sKralem({ x: "a", y: 1 }))).toThrow(/kral.x není číslo/);
+  });
+
   it("odmítne jinou verzi, chybějícího odesílatele a špatné délky polí", () => {
     expect(() => prectiSnimek({ ...telo(), v: 2 })).toThrow(/neznámá verze/);
     expect(() => prectiSnimek({ ...telo(), odesilatel: "" })).toThrow(/chybí odesilatel/);

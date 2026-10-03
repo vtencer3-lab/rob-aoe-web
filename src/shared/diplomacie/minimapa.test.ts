@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import type { Barva } from "../types.js";
-import { procNelzePrevzitMinimapu } from "./minimapa.js";
+import { naMinimapu, procNelzePrevzitMinimapu } from "./minimapa.js";
 
 // Starty verze 1 LLC na /aoe/diplo — středy kosočtverců z obrázku ze hry.
 const OBRAZEK = {
@@ -53,4 +53,14 @@ it("start posunutý o víc než 0,05 nepřevezme", () => {
   expect(procNelzePrevzitMinimapu(OBRAZEK, jinde)).toBe("Start barvy 5 je jinde než na vlastní minimapě.");
   // Hranice se měří vzdušnou čarou: 0,04 na obou osách je ~0,057.
   expect(procNelzePrevzitMinimapu(OBRAZEK, posun(0.04, 0.04))).toMatch("je jinde");
+});
+
+// Dílec → minimapa jako `otoc` v rozbor.py: střed mapy je střed obrázku,
+// roh (0, 0) je levý vrchol kosočtverce, (n, n) pravý, (n, 0) horní.
+it("dílec hry se převede na místo v kosočtverci minimapy", () => {
+  expect(naMinimapu(110, 110, 220)).toEqual({ x: 0.5, y: 0.5 });
+  expect(naMinimapu(0, 0, 220)).toEqual({ x: 0, y: 0.5 });
+  expect(naMinimapu(220, 220, 220)).toEqual({ x: 1, y: 0.5 });
+  expect(naMinimapu(220, 0, 220)).toEqual({ x: 0.5, y: 0 });
+  expect(naMinimapu(0, 220, 220)).toEqual({ x: 0.5, y: 1 });
 });

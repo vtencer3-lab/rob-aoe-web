@@ -87,6 +87,12 @@ export function prectiSondu(json: unknown): SondaScenare {
   };
 }
 
+/** Poloha jednotky na mapě v dílcích (souřadnice hry, 0 až velikost mapy). */
+export interface PolohaVeHre {
+  x: number;
+  y: number;
+}
+
 /** Záznam hráče ve hře podle čísla hráče (pořadí v lobby, ne slot scénáře). */
 export interface HracVeHre {
   cislo: number;
@@ -95,6 +101,8 @@ export interface HracVeHre {
   barva: string;
   relikvie: number;
   zije: boolean;
+  /** První král hráče (sonda od formátu 6); null = krále nemá, chybí = starší sonda. */
+  kral?: PolohaVeHre | null;
 }
 
 /** Tělo `POST /api/diplo/hra` — jedno platné čtení souboru sondy (formát 3). */
@@ -144,7 +152,11 @@ export function prectiSnimek(telo: unknown): SnimekHry {
     hraci: hraci.map((x, i) => {
       const h = objekt(x, `hráč ${i}`);
       if (typeof h["zije"] !== "boolean") throw new Error("Data ze hry: hráč.zije není ano/ne.");
-      return { cislo: celeCislo(h["cislo"], "hráč.cislo"), jmeno: kratky(h["jmeno"], "hráč.jmeno", 100), barva: kratky(h["barva"], "hráč.barva", 40), relikvie: cislo(h["relikvie"], "hráč.relikvie"), zije: h["zije"] };
+      const zaklad: HracVeHre = { cislo: celeCislo(h["cislo"], "hráč.cislo"), jmeno: kratky(h["jmeno"], "hráč.jmeno", 100), barva: kratky(h["barva"], "hráč.barva", 40), relikvie: cislo(h["relikvie"], "hráč.relikvie"), zije: h["zije"] };
+      if (!("kral" in h)) return zaklad;
+      if (h["kral"] === null) return { ...zaklad, kral: null };
+      const k = objekt(h["kral"], "hráč.kral");
+      return { ...zaklad, kral: { x: cislo(k["x"], "kral.x"), y: cislo(k["y"], "kral.y") } };
     }),
     diplomacie: delka(o["diplomacie"], "diplomacie", 8).map((r) => delka(r, "řádek diplomacie", 8).map((x) => celeCislo(x, "postoj"))),
     promenne: delka(o["promenne"], "promenne", POCET_PROMENNYCH).map((x) => celeCislo(x, "proměnná")),
@@ -165,6 +177,8 @@ export interface HracHry {
   /** Null = slot ve hře nikdo neobsadil (hra o něm nic neposlala). */
   relikvie: number | null;
   zije: boolean | null;
+  /** Poloha krále v dílcích; null/chybí = neznámá (starší sonda, krále nemá, slot neobsazený). */
+  kral?: PolohaVeHre | null;
 }
 
 /**
@@ -300,6 +314,7 @@ export function vyhodnotHru(snimek: Pick<SnimekHry, "cas" | "sloty" | "hraci" | 
       cil: pocitadlo === 0 ? null : { text: popis?.text ?? null, limit: popis?.limit ?? null, hodnota: snimek.promenne[pocitadlo] ?? 0 },
       relikvie: veHre ? veHre.relikvie : null,
       zije: veHre ? veHre.zije : null,
+      kral: veHre?.kral ?? null,
     };
   });
   const bezCile = radky.filter((r) => r.cil === null);

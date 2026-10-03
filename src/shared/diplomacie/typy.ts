@@ -1,4 +1,4 @@
-import type { HraZapasu, SouhrnSondy } from "./hra.js";
+import type { HraZapasu, PolohaVeHre, SouhrnSondy } from "./hra.js";
 import type { RozborScenare } from "./scenar.js";
 
 /** Role hráče (spec §6.1). Nástupce se nelosuje — určí ho hra a odklikne GM. */
@@ -32,6 +32,12 @@ export interface DiploZapas {
    * neposlala. Jen pro GM — ostatním, i adminovi, je redakce maže.
    */
   hra?: HraZapasu;
+  /**
+   * Poloha vlastního krále z běžící hry pro hráče, který není GM (redakce ji
+   * vybere z `hra`, kterou mu maže). Cizí krále hráč nevidí (uživatel
+   * 3. 10. 2026: „hráči uvidí pouze svého krále“).
+   */
+  mujKral?: PolohaVeHre;
 }
 
 /** Verze scénáře bez souboru a minimapy (ty jdou zvlášť adresou). */

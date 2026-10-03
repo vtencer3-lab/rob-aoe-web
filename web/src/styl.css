@@ -1779,6 +1779,17 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .druh-spojenec .popisek { color: var(--ok-svetle); border: 1px solid var(--ok); }
 .mapa-scenare .druh-pouto .popisek { color: var(--zlato-svetle); border: 3px double var(--zlato); }
 .mapa-scenare .druh-obet .popisek { color: var(--chyba); border: 1px solid var(--chyba); }
+/* Král z běžící hry (♚ v barvě hráče, tmavý obrys) — GM všechny, hráč svého.
+   Přesouvá se plynule, jak chodí snímky (každou herní sekundu). */
+.mapa-scenare .kral { position: absolute; transform: translate(-50%, -50%); font-size: calc(var(--znacka) * 1.5); line-height: 1; pointer-events: none; text-shadow: -1px -1px 0 var(--obrys), 1px -1px 0 var(--obrys), -1px 1px 0 var(--obrys), 1px 1px 0 var(--obrys), 0 0 4px var(--obrys); transition: left 0.9s linear, top 0.9s linear; z-index: 2; }
+.mapa-scenare .kral.barva-1 { color: var(--b1); }
+.mapa-scenare .kral.barva-2 { color: var(--b2); }
+.mapa-scenare .kral.barva-3 { color: var(--b3); }
+.mapa-scenare .kral.barva-4 { color: var(--b4); }
+.mapa-scenare .kral.barva-5 { color: var(--b5); }
+.mapa-scenare .kral.barva-6 { color: var(--b6); }
+.mapa-scenare .kral.barva-7 { color: var(--b7); }
+.mapa-scenare .kral.barva-8 { color: var(--b8); }
 /* Pult GM: hráč pod kurzorem (start na mapě nebo řádek tabulky) — zlatý
    rámeček popisku a světlejší řádek; jeho vztahy nesou druhy výš. */
 .mapa-scenare .start.najeto .popisek { box-shadow: 0 0 0 2px var(--zlato), 0 0 10px 2px color-mix(in srgb, var(--zlato) 55%, transparent); }

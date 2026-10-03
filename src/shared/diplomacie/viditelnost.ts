@@ -15,6 +15,9 @@ function redigujZapas(cely: DiploZapas, divak: string | null): DiploZapas {
   // totéž co role — patří jen GM, v každém stavu.
   const z = { ...cely };
   delete z.hra;
+  // Vlastního krále hráč vidí vždy — jeho poloha neprozradí nic tajného.
+  const kral = divak === null ? null : (cely.hra?.hraci.find((h) => h.hracId === divak)?.kral ?? null);
+  if (kral) z.mujKral = kral;
   if (z.stav !== "rozeslano") return { ...z, nastupceHracId: null, role: [] };
   const moje = divak === null ? undefined : z.role.find((r) => r.hracId === divak);
   if (!moje) return { ...z, role: [] };

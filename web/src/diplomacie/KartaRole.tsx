@@ -5,8 +5,8 @@ import type { ZapasView } from "../../../src/shared/types.js";
 import zvonUrl from "../assets/zvon.mp3";
 import { prehraj } from "../zvuk.js";
 import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
-import { jmenoVZapasu } from "../zapas.js";
-import { MapaScenare, type DruhPopisku, type PopiskyStartu } from "./MapaScenare.js";
+import { jmenoVZapasu, mujUcastnik } from "../zapas.js";
+import { kralNaMape, MapaScenare, type DruhPopisku, type PopiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
 import { RUB_KARTY, ZNAK_ROLE } from "./znaky.js";
@@ -71,7 +71,7 @@ export function KartaRole({ zapas, data, ja }: Props) {
           </p>
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
             <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
-            {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" /> : null}
+            {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} /> : null}
           </Zakryti>
         </>
       )}

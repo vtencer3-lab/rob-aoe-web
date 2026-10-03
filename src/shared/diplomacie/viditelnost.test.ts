@@ -79,3 +79,19 @@ describe("data ze hry vidí jen GM", () => {
     });
   }
 });
+
+// Krále vidí GM všechny (v `hra`), hráč jen svého (`mujKral`) — v každém
+// stavu, poloha vlastního krále nic neprozradí (uživatel 3. 10. 2026).
+describe("král z běžící hry", () => {
+  const hra = { cas: 95, prijato: "2026-10-02T20:00:00.000Z", rozdano: true, nastupceHracId: "n", hraci: [{ hracId: "n", cil: null, relikvie: 0, zije: true, kral: { x: 10, y: 20 } }, { hracId: "k", cil: null, relikvie: 0, zije: true, kral: { x: 30, y: 40 } }] };
+  const sHrou = (stav: StavDiplo): DiploData => ({ ...data(stav), zapasy: data(stav).zapasy.map((z) => ({ ...z, hra })) });
+  for (const stav of ["priprava", "rozeslano"] as const) {
+    it(`${stav}: hráč vidí jen svého krále, GM všechny, nepřihlášený žádného`, () => {
+      expect(redigujDiplo(sHrou(stav), "k").zapasy[0]!.mujKral).toEqual({ x: 30, y: 40 });
+      expect(JSON.stringify(redigujDiplo(sHrou(stav), "k"))).not.toContain('"x":10');
+      expect(redigujDiplo(sHrou(stav), GM).zapasy[0]!.hra!.hraci.map((h) => h.kral)).toEqual([{ x: 10, y: 20 }, { x: 30, y: 40 }]);
+      expect("mujKral" in redigujDiplo(sHrou(stav), null).zapasy[0]!).toBe(false);
+      expect("mujKral" in redigujDiplo(sHrou(stav), "admin").zapasy[0]!).toBe(false);
+    });
+  }
+});

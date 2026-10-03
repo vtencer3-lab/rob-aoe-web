@@ -11,6 +11,16 @@ export const TOLERANCE_STARTU = 0.05;
 type Mapa = Pick<RozborScenare, "velikostMapy" | "starty">;
 
 /**
+ * Dílec hry (x, y) → místo na minimapě 0–1 (kosočtverec otočený o 45°).
+ * Totéž co `otoc` v rozbor.py, jen zjednodušené: střed dílce n/2 je střed
+ * obrázku a osy se sčítají/odčítají. Vlastní minimapa (obrázek ze hry) se od
+ * výpočtu liší jen o setiny (viz `TOLERANCE_STARTU`).
+ */
+export function naMinimapu(x: number, y: number, velikostMapy: number): { x: number; y: number } {
+  return { x: (x + y) / (2 * velikostMapy), y: (y - x) / (2 * velikostMapy) + 0.5 };
+}
+
+/**
  * Smí nová verze převzít vlastní minimapu (obrázek ze hry) od verze `zdroj`?
  * Ano, jen když jde zjevně o tutéž mapu: stejná velikost, stejné barvy startů
  * a každý start nejvýš `TOLERANCE_STARTU` od startu téže barvy ve zdroji.
