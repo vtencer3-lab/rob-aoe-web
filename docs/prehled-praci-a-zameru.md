@@ -2390,7 +2390,20 @@ projektu RobJewsALot (Židolišta), složka `RobJewsALot/Streamer.bot - GAME PC/
   herním PC (server nemůže poslat libovolný příkaz), meze délky a četnosti,
   **samovrácení na agentovi** (i při výpadku spojení), panic klávesová
   zkratka, volba „jen mimo hru“, log každé akce.
-- **Další krok:** až Židolišta dodá agenta, otestovat z PC uživatele
+- **Agent dodán (3. 10. 2026, RobJewsALot 14f82b9 + fe94711):**
+  `wss://api-zidolista.jouki.cz/ws/agent?token=<SB token>`, obálka
+  `{type, id?, data?}`; server → agent `hello`, `agent.config {roots, watches}`,
+  `agent.status`, `fs.list`, `fs.read` (po ≤ 512 kB), `action.run`; agent →
+  server `agent.hello`, `watch.changed`, `heartbeat`; HTTP záloha
+  `POST /sb-api/agent/event`. AoE = sledování `aoe.xsdat` (kořen `aoe`,
+  maska `*\profile\*.xsdat`) a zpracování na serveru — v SB nic o AoE.
+  SB akce `Agent_Odeslat.cs`, `Agent_Zpravy.cs`, `Agent_Sledovani.cs`
+  (starý `AoE_Diplomacie_Most.cs` smazán), postup v jejich README.
+  Naschvály zatím jen model (lokální allowlist `AGENT_Actions`, panic
+  `AGENT_Panic`, odpovědi `not_enabled`/`panic`/`not_implemented`).
+  Ověřeno simulovaným agentem až po odpověď webu 404 (neběžel zápas);
+  skutečný Streamer.bot ještě neběžel.
+- **Další krok:** otestovat z PC uživatele
   proti `/aoe/diplo` s `JIN_DIPLO_2.aoe2scenario` (případně znovu „Přibalit
   automatizace“) a **jediným** běžícím zápasem — automatický Nástupce přes
   celou cestu hra → SB → Židolišta → web.
