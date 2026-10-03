@@ -332,3 +332,11 @@ it("Garda vidí role padlých hráčů", () => {
   odkryj();
   expect(screen.getByTestId("odhalene-role")).toHaveTextContent("Hráč 4: Kat");
 });
+
+it("Nástupce po smrti Šaška vidí úkol prodat 1 relikvii", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "nastupce", cilHracId: null }]);
+  const schopnosti = [{ id: 2, hracId: "h2", druh: "nastupce_prodej" as const, cilHracId: "h4", stav: "ceka" as const, vytvoreno: "2026-10-03T20:00:00.000Z", poradi: 0 }];
+  render(<KartaRole zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, schopnosti })) }} ja="h2" hlidej={hlidej} />);
+  odkryj();
+  expect(screen.getByTestId("prodej-relikvii")).toHaveTextContent("Šašek padl — musíš prodat 1 relikvii.");
+});

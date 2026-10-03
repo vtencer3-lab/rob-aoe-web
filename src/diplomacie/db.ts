@@ -3,7 +3,7 @@ import { getPool, withTransaction } from "../db/pool.js";
 import { prectiSondu, souhrnSondy, type BeziciZapasDiplo, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { procNelzePrevzitMinimapu } from "../shared/diplomacie/minimapa.js";
 import { jmenoScenareProHru, prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
-import type { DruhPripominky, DruhSchopnosti, DruhZadosti, StavSchopnosti } from "../shared/diplomacie/schopnosti.js";
+import type { DruhSchopnosti, DruhZadosti, NovaPripominka, StavSchopnosti } from "../shared/diplomacie/schopnosti.js";
 import { revizeSondy } from "./sonda.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo, ZobrazeniMapy } from "../shared/diplomacie/typy.js";
@@ -288,6 +288,7 @@ interface SchopnostDb {
   cil_hrac_id: string | null;
   stav: StavSchopnosti;
   vytvoreno_v: Date;
+  poradi: number | null;
 }
 
 async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
@@ -299,7 +300,7 @@ async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
     [zapasy.map((z) => z.zapas_id)],
   );
   const { rows: schopnosti } = await getPool().query<SchopnostDb>(
-    `SELECT id, zapas_id, hrac_id, druh, cil_hrac_id, stav, vytvoreno_v FROM diplo_schopnost WHERE zapas_id = ANY($1::int[]) ORDER BY id`,
+    `SELECT id, zapas_id, hrac_id, druh, cil_hrac_id, stav, vytvoreno_v, poradi FROM diplo_schopnost WHERE zapas_id = ANY($1::int[]) ORDER BY id`,
     [zapasy.map((z) => z.zapas_id)],
   );
   return zapasy.map((z) => ({
@@ -316,7 +317,7 @@ async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
       .map((r) => ({ hracId: r.hrac_id, role: r.role, cilHracId: r.cil_hrac_id, ...(r.puvodni_role ? { puvodniRole: r.puvodni_role, promenaVidena: r.promena_videna } : {}) })),
     schopnosti: schopnosti
       .filter((x) => x.zapas_id === z.zapas_id)
-      .map((x) => ({ id: x.id, hracId: x.hrac_id, druh: x.druh, cilHracId: x.cil_hrac_id, stav: x.stav, vytvoreno: x.vytvoreno_v.toISOString() })),
+      .map((x) => ({ id: x.id, hracId: x.hrac_id, druh: x.druh, cilHracId: x.cil_hrac_id, stav: x.stav, vytvoreno: x.vytvoreno_v.toISOString(), ...(x.poradi === null ? {} : { poradi: x.poradi }) })),
   }));
 }
 
@@ -479,13 +480,13 @@ export async function vyridSchopnost(zapasId: number, id: number, stav: "potvrze
 }
 
 /** Připomínky ze hry; každá k jednomu padlému jen jednou (unikátní index). Vrací, jestli nějaká přibyla. */
-export async function pridejPripominky(zapasId: number, pripominky: readonly { druh: DruhPripominky; hracId: string; cilHracId: string }[]): Promise<boolean> {
+export async function pridejPripominky(zapasId: number, pripominky: readonly NovaPripominka[]): Promise<boolean> {
   let pribylo = false;
   for (const p of pripominky) {
     const { rowCount } = await getPool().query(
-      `INSERT INTO diplo_schopnost (zapas_id, hrac_id, druh, cil_hrac_id) VALUES ($1, $2, $3, $4)
-         ON CONFLICT (zapas_id, druh, hrac_id, cil_hrac_id) WHERE druh IN ('kat_odmena', 'garda_role', 'sasek_prodej') DO NOTHING`,
-      [zapasId, p.hracId, p.druh, p.cilHracId],
+      `INSERT INTO diplo_schopnost (zapas_id, hrac_id, druh, cil_hrac_id, poradi) VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (zapas_id, druh, hrac_id, cil_hrac_id) WHERE druh IN ('kat_odmena', 'garda_role', 'sasek_prodej', 'nastupce_prodej') DO NOTHING`,
+      [zapasId, p.hracId, p.druh, p.cilHracId, p.poradi ?? null],
     );
     pribylo ||= (rowCount ?? 0) > 0;
   }

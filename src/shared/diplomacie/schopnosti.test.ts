@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { procNelze, promennaProdeju, udalostiHry, zbyva, type Schopnost } from "./schopnosti.js";
+import { promennaProdeju } from "./hra.js";
+import { procNelze, splnenePripominky, udalostiHry, zbyva, type Schopnost } from "./schopnosti.js";
 import type { RoleHrace } from "./typy.js";
 
 const ROLE: RoleHrace[] = [
@@ -83,4 +84,19 @@ it("počitadlo prodejů slotu je proměnná jeho cíle „prodej relikvií“", 
   expect(promennaProdeju(cile, 1)).toBe(13);
   expect(promennaProdeju(cile, 2)).toBe(43);
   expect(promennaProdeju(cile, 3)).toBeNull();
+});
+
+describe("Nástupce po smrti Šaška", () => {
+  it("prodává 1 relikvii bez vlastního odpočtu; počitadlo si připomínka pamatuje", () => {
+    const prodej = (hraci: { hracId: string; zije: boolean | null; relikvie?: number | null; prodano?: number | null }[]) => udalostiHry(ROLE, hraci).pripominky.filter((p) => p.druh === "nastupce_prodej");
+    expect(prodej([{ hracId: "s", zije: false }, { hracId: "n", zije: true, relikvie: 4, prodano: 2 }])).toEqual([{ druh: "nastupce_prodej", hracId: "n", cilHracId: "s", poradi: 2 }]);
+    expect(prodej([{ hracId: "s", zije: false }, { hracId: "n", zije: true, relikvie: 7, prodano: 0 }])).toEqual([]);
+    expect(prodej([{ hracId: "s", zije: true }, { hracId: "n", zije: true, relikvie: 0 }])).toEqual([]);
+  });
+
+  it("splnění: Nástupce prodal víc než předtím, Šašek nemá relikvie", () => {
+    const sch = [s("n", "nastupce_prodej", "ceka", "s"), s("s", "sasek_prodej", "ceka", "n")].map((x, i) => (i === 0 ? { ...x, poradi: 2 } : x));
+    expect(splnenePripominky(sch, [{ hracId: "n", relikvie: 3, prodano: 2 }, { hracId: "s", relikvie: 1 }])).toEqual([]);
+    expect(splnenePripominky(sch, [{ hracId: "n", relikvie: 3, prodano: 3 }, { hracId: "s", relikvie: 0 }])).toEqual(sch.map((x) => x.id));
+  });
 });

@@ -17,8 +17,8 @@ import {
   type SnimekHry,
   type ZdrojHry,
 } from "../shared/diplomacie/hra.js";
-import { promennaProdeju, udalostiHry } from "../shared/diplomacie/schopnosti.js";
-import { beziciZapasyDiplo, getDiploZapas, getSonduVerze, nastavNastupceZeHry, odvolejNastupceZeHry, povysSaska, pridejDoplatky, pridejPripominky } from "./db.js";
+import { splnenePripominky, udalostiHry } from "../shared/diplomacie/schopnosti.js";
+import { beziciZapasyDiplo, getDiploZapas, getSonduVerze, nastavNastupceZeHry, odvolejNastupceZeHry, povysSaska, pridejDoplatky, pridejPripominky, vyridSchopnost } from "./db.js";
 import { pametHer } from "./hraPamet.js";
 
 /**
@@ -127,13 +127,14 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
     if (povysit !== null && (await povysSaska(zapasId, povysit))) zmenaStavu = true;
     if (await pridejPripominky(zapasId, pripominky)) zmenaStavu = true;
   }
-  // Každý prodej relikvie Žoldákem = připomínka GM doplatit 4000 zlata.
   if (diplo.stav === "rozeslano" && !jinyScenar) {
+    // Každý prodej relikvie Žoldákem = připomínka GM doplatit 4000 zlata.
     for (const z of diplo.role.filter((r) => r.role === "zoldak")) {
-      const barva = zaznam.ucastnici.find((u) => u.hracId === z.hracId)?.barva;
-      const promenna = barva === undefined ? null : promennaProdeju(verze?.sonda?.cile ?? [], barva);
-      if (promenna !== null && (await pridejDoplatky(zapasId, z.hracId, snimek.promenne[promenna] ?? 0))) zmenaStavu = true;
+      const prodano = odpoved.hraci.find((h) => h.hracId === z.hracId)?.prodano;
+      if (prodano && (await pridejDoplatky(zapasId, z.hracId, prodano))) zmenaStavu = true;
     }
+    // Povinný prodej splněný ve hře (Šašek bez relikvií, Nástupce prodal) se odškrtne sám.
+    for (const id of splnenePripominky(diplo.schopnosti ?? [], odpoved.hraci)) if (await vyridSchopnost(zapasId, id, "potvrzeno")) zmenaStavu = true;
   }
 
   const rozeslat = zmenaStavu || !predchozi || ted.getTime() - predchozi.rozeslanoMs >= ROZESTUP_ROZESLANI_MS;

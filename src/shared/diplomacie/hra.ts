@@ -213,6 +213,8 @@ export interface HracHry {
   kral?: PolohaVeHre | null;
   /** Herní sekundy se 7+ relikviemi (`PROMENNA_DRZENI`); null = slot neobsazený, chybí u starších dat. */
   drzeni?: number | null;
+  /** Kolik relikvií hráč prodal (počitadlo scénáře, `promennaProdeju`); null = verze ho nemá. */
+  prodano?: number | null;
 }
 
 /**
@@ -348,6 +350,7 @@ export function vyhodnotHru(snimek: Pick<SnimekHry, "cas" | "sloty" | "hraci" | 
     const cislo = snimek.sloty[h.barva - 1];
     const veHre = snimek.hraci.find((x) => x.cislo === cislo);
     const popis = cile.find((c) => c.promenna === pocitadlo && c.slot === h.barva) ?? cile.find((c) => c.promenna === pocitadlo);
+    const promennaProdejuSlotu = promennaProdeju(cile, h.barva);
     return {
       hracId: h.hracId,
       cil: pocitadlo === 0 ? null : { text: popis?.text ?? null, limit: popis?.limit ?? null, hodnota: snimek.promenne[pocitadlo] ?? 0 },
@@ -355,6 +358,7 @@ export function vyhodnotHru(snimek: Pick<SnimekHry, "cas" | "sloty" | "hraci" | 
       zije: veHre ? veHre.zije : null,
       kral: veHre?.kral ?? null,
       drzeni: veHre ? (snimek.promenne[PROMENNA_DRZENI + veHre.cislo] ?? 0) : null,
+      prodano: promennaProdejuSlotu === null ? null : (snimek.promenne[promennaProdejuSlotu] ?? 0),
     };
   });
   const bezCile = radky.filter((r) => r.cil === null);
@@ -383,6 +387,16 @@ export function popisCile(cil: CilHrace): string {
   const veta = cil.text?.includes("{}") ? cil.text.replace("{}", hodnota) : `${cil.text ?? "cíl"}: ${hodnota}${cil.limit === null ? "" : `/${cil.limit}`}`;
   // Autor píše „zabito : 3 /650“ — mezery před dvojtečkou a lomítkem pryč.
   return veta.replace(/\s+([:/])/g, "$1").replace(/\/\s+/g, "/");
+}
+
+/**
+ * Proměnná, ve které scénář počítá prodané relikvie slotu: počitadlo cíle
+ * „prodej 5 relikvií“ ze sondy (text „… prodanych reliku“). Scénář ji
+ * zvyšuje při každém prodeji, i když hráč ten cíl nedostal. Null = verze
+ * takový cíl nemá.
+ */
+export function promennaProdeju(cile: readonly { promenna: number; slot: number; text: string }[], slot: number): number | null {
+  return cile.find((c) => c.slot === slot && /prodan/i.test(c.text))?.promenna ?? null;
 }
 
 /** Minuty a sekundy: „04:05“, přes hodinu „61:00“ (odpočet 15 minut). */

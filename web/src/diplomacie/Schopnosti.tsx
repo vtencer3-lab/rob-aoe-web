@@ -26,14 +26,7 @@ export function MojeSchopnosti({ zapas, d, moje, hlidej }: { zapas: ZapasView; d
   const [cil, setCil] = useState<string | null>(null);
   const [pracuje, setPracuje] = useState(false);
   const mojeZadosti = (d.schopnosti ?? []).filter((s) => s.hracId === moje.hracId);
-  // Po smrti Nástupce musí Šašek prodat relikvie (bez vlastního odpočtu) —
-  // cinkne, ať se podívá na web (uživatel 3. 10. 2026).
-  const prodej = mojeZadosti.some((s) => s.druh === "sasek_prodej" && s.stav === "ceka");
-  const drivProdej = useRef<boolean | null>(null);
-  useEffect(() => {
-    if (drivProdej.current === false && prodej) prehraj(chatUrl, hlasitostChatu());
-    drivProdej.current = prodej;
-  }, [prodej]);
+
   const akce = (fn: () => Promise<unknown>) => {
     setPracuje(true);
     void hlidej(fn).finally(() => setPracuje(false));
@@ -70,11 +63,6 @@ export function MojeSchopnosti({ zapas, d, moje, hlidej }: { zapas: ZapasView; d
     const ceka = mojeZadosti.some((s) => s.druh === "informace" && s.stav === "ceka");
     return (
       <div className="moje-schopnosti" data-testid="schopnosti">
-        {prodej ? (
-          <p className="varovani prodej-relikvii" data-testid="prodej-relikvii">
-            Nástupce padl — musíš prodat všechny své relikvie.
-          </p>
-        ) : null}
         <h5>Tajná informace od GM</h5>
         <p data-testid="stav-schopnosti">
           Zbývá <strong>{zbyvaInfo}/{MAX_INFORMACI}</strong>
@@ -109,6 +97,27 @@ export function MojeSchopnosti({ zapas, d, moje, hlidej }: { zapas: ZapasView; d
   return null;
 }
 
+/**
+ * Povinný prodej relikvií na kartě (uživatel 3. 10. 2026): Šašek po smrti
+ * Nástupce všechny, Nástupce po smrti Šaška jednu — jen bez vlastního
+ * odpočtu (rozhoduje server). Zmizí, až hra ukáže splnění. Nový cinkne.
+ */
+export function PovinnyProdej({ d, hracId }: { d: DiploZapas; hracId: string }) {
+  const ukol = (d.schopnosti ?? []).find((s) => s.hracId === hracId && s.stav === "ceka" && (s.druh === "sasek_prodej" || s.druh === "nastupce_prodej"));
+  const druh = ukol?.druh ?? null;
+  const driv = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (driv.current === null && druh !== null) prehraj(chatUrl, hlasitostChatu());
+    driv.current = druh;
+  }, [druh]);
+  if (!ukol) return null;
+  return (
+    <p className="varovani prodej-relikvii" data-testid="prodej-relikvii">
+      {ukol.druh === "sasek_prodej" ? "Nástupce padl — musíš prodat všechny své relikvie." : "Šašek padl — musíš prodat 1 relikvii."} Prodává se odevzdáním mnicha s relikvií uprostřed mapy.
+    </p>
+  );
+}
+
 /** Co se GM ukáže za žádost nebo připomínku. */
 function TextOznameni({ s, zapas, d }: { s: Schopnost; zapas: ZapasView; d: DiploZapas }) {
   const hrac = (id: string) => <JmenoUcastnika ucastnici={zapas.ucastnici} hracId={id} />;
@@ -135,6 +144,12 @@ function TextOznameni({ s, zapas, d }: { s: Schopnost; zapas: ZapasView; d: Dipl
       return (
         <>
           {hrac(s.cilHracId!)} padl — dej Katovi {hrac(s.hracId)} <strong>{ODMENA_KATA} zlata</strong>
+        </>
+      );
+    case "nastupce_prodej":
+      return (
+        <>
+          Šašek {hrac(s.cilHracId!)} padl — Nástupce {hrac(s.hracId)} musí <strong>prodat 1 relikvii</strong>
         </>
       );
     case "sasek_prodej":

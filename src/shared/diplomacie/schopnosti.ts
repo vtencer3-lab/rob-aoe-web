@@ -1,4 +1,4 @@
-import { RELIKVII_K_VITEZSTVI } from "./hra.js";
+import { RELIKVII_K_VITEZSTVI, type HracHry } from "./hra.js";
 import type { DiploZapas, Role, RoleHrace } from "./typy.js";
 
 /**
@@ -14,7 +14,7 @@ export type DruhZadosti = "sabotaz" | "informace" | "doplatek";
  * Co hlásí hra GM bez žádosti: Katovi 2000 zlata za padlého, Gardě roli
  * padlého, Šaškovi prodej relikvií po smrti Nástupce (vidí ji i Šašek).
  */
-export type DruhPripominky = "kat_odmena" | "garda_role" | "sasek_prodej";
+export type DruhPripominky = "kat_odmena" | "garda_role" | "sasek_prodej" | "nastupce_prodej";
 export type DruhSchopnosti = DruhZadosti | DruhPripominky;
 export type StavSchopnosti = "ceka" | "potvrzeno" | "zamitnuto";
 
@@ -25,6 +25,8 @@ export interface Schopnost {
   druh: DruhSchopnosti;
   /** Cíl Sabotáže, u připomínky padlý hráč; jinak null. */
   cilHracId: string | null;
+  /** U `nastupce_prodej` počitadlo prodejů ve chvíli smrti Šaška; jinak chybí. */
+  poradi?: number;
   stav: StavSchopnosti;
   vytvoreno: string;
 }
@@ -32,7 +34,7 @@ export interface Schopnost {
 export const DRUHY_ZADOSTI: readonly DruhZadosti[] = ["sabotaz", "informace", "doplatek"];
 export const jeZadost = (druh: DruhSchopnosti): druh is DruhZadosti => (DRUHY_ZADOSTI as readonly string[]).includes(druh);
 /** Co z řádků vidí hráč, kterého se týkají: své žádosti a povinnost prodat relikvie. */
-export const vidiHrac = (druh: DruhSchopnosti): boolean => jeZadost(druh) || druh === "sasek_prodej";
+export const vidiHrac = (druh: DruhSchopnosti): boolean => jeZadost(druh) || druh === "sasek_prodej" || druh === "nastupce_prodej";
 
 /** Kdo smí o schopnost žádat (podle role, kterou má teď — Šašek po proměně v Gardu už ne). */
 export const ROLE_ZADOSTI: Record<DruhZadosti, Role> = { sabotaz: "najezdnik", informace: "sasek", doplatek: "zoldak" };
@@ -72,22 +74,22 @@ export function procNelze(d: Pick<DiploZapas, "stav" | "role">, schopnosti: read
   return null;
 }
 
-/**
- * Proměnná, ve které scénář počítá prodané relikvie slotu: počitadlo cíle
- * „prodej 5 relikvií“ ze sondy (text „… prodanych reliku“). Scénář ji
- * zvyšuje při každém prodeji, i když hráč ten cíl nedostal. Null = verze
- * takový cíl nemá.
- */
-export function promennaProdeju(cile: readonly { promenna: number; slot: number; text: string }[], slot: number): number | null {
-  return cile.find((c) => c.slot === slot && /prodan/i.test(c.text))?.promenna ?? null;
-}
-
 /** Stav hráče ve hře, jak ho zná server (`HracHry.zije`). */
 export interface ZivotHrace {
   hracId: string;
   zije: boolean | null;
   /** Relikvie v klášterech; 7+ = běží odpočet vítězství. Chybí = neznámo. */
   relikvie?: number | null;
+  /** Počitadlo prodaných relikvií ze scénáře. */
+  prodano?: number | null;
+}
+
+/** Připomínka, kterou zakládá hra (`poradi` jen u prodeje Nástupce). */
+export interface NovaPripominka {
+  druh: DruhPripominky;
+  hracId: string;
+  cilHracId: string;
+  poradi?: number;
 }
 
 /**
@@ -101,15 +103,17 @@ export interface ZivotHrace {
  * - **Šašek prodává relikvie**, když padl Nástupce — jen když Šaškovi
  *   samotnému neběží odpočet (nemá 7+ relikvií); odpočet jiného hráče ho
  *   nechrání (uživatel 3. 10. 2026).
+ * - **Nástupce prodává 1 relikvii**, když padl Šašek — zase jen bez
+ *   vlastního odpočtu; `poradi` = kolik měl prodáno, splněno při dalším prodeji.
  */
-export function udalostiHry(role: readonly RoleHrace[], hraci: readonly ZivotHrace[]): { povysit: string | null; pripominky: { druh: DruhPripominky; hracId: string; cilHracId: string }[] } {
+export function udalostiHry(role: readonly RoleHrace[], hraci: readonly ZivotHrace[]): { povysit: string | null; pripominky: NovaPripominka[] } {
   const zije = (id: string) => hraci.find((h) => h.hracId === id)?.zije !== false;
   const padli = hraci.filter((h) => h.zije === false).map((h) => h.hracId);
   const garda = role.find((r) => r.role === "garda" && !r.puvodniRole);
   const uzPovysen = role.some((r) => r.puvodniRole === "sasek");
   const sasek = role.find((r) => r.role === "sasek");
   const povysit = garda && !zije(garda.hracId) && !uzPovysen && sasek && zije(sasek.hracId) ? sasek.hracId : null;
-  const pripominky: { druh: DruhPripominky; hracId: string; cilHracId: string }[] = [];
+  const pripominky: NovaPripominka[] = [];
   for (const padly of padli) {
     for (const kat of role.filter((r) => r.role === "kat" && r.hracId !== padly && zije(r.hracId))) pripominky.push({ druh: "kat_odmena", hracId: kat.hracId, cilHracId: padly });
   }
@@ -120,5 +124,27 @@ export function udalostiHry(role: readonly RoleHrace[], hraci: readonly ZivotHra
       if (!odpocet) pripominky.push({ druh: "sasek_prodej", hracId: s.hracId, cilHracId: nastupce.hracId });
     }
   }
+  const padlySasek = role.find((r) => r.role === "sasek" && padli.includes(r.hracId));
+  if (padlySasek && nastupce && zije(nastupce.hracId)) {
+    const n = hraci.find((h) => h.hracId === nastupce.hracId);
+    if ((n?.relikvie ?? 0) < RELIKVII_K_VITEZSTVI) pripominky.push({ druh: "nastupce_prodej", hracId: nastupce.hracId, cilHracId: padlySasek.hracId, poradi: n?.prodano ?? 0 });
+  }
   return { povysit, pripominky };
+}
+
+/**
+ * Čekající povinné prodeje, které hra už ukazuje jako splněné: Šašek nemá
+ * žádnou relikvii, Nástupce prodal víc než ve chvíli smrti Šaška.
+ */
+export function splnenePripominky(schopnosti: readonly Schopnost[], hraci: readonly Pick<HracHry, "hracId" | "relikvie" | "prodano">[]): number[] {
+  return schopnosti
+    .filter((s) => {
+      if (s.stav !== "ceka") return false;
+      const h = hraci.find((x) => x.hracId === s.hracId);
+      if (!h) return false;
+      if (s.druh === "sasek_prodej") return h.relikvie === 0;
+      if (s.druh === "nastupce_prodej") return h.prodano != null && h.prodano > (s.poradi ?? 0);
+      return false;
+    })
+    .map((s) => s.id);
 }

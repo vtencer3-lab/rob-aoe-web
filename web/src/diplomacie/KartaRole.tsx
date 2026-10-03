@@ -11,7 +11,7 @@ import { kralNaMape, MapaScenare, type DruhPopisku, type PopiskyStartu } from ".
 import type { Hlidej } from "../rezimy/index.js";
 import { diploApi } from "./api.js";
 import { MojeCile } from "./MojeCile.js";
-import { MojeSchopnosti } from "./Schopnosti.js";
+import { MojeSchopnosti, PovinnyProdej } from "./Schopnosti.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
 import { RUB_KARTY, ZNAK_PROHRA, ZNAK_ROLE } from "./znaky.js";
@@ -116,6 +116,7 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
             <div className="karta-vedle">
               {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} pingy={(d.pingy ?? []).map((p) => ({ id: p.id, x: p.x, y: p.y }))} /> : null}
               <div className="karta-strana">
+                <PovinnyProdej d={d} hracId={moje.hracId} />
                 <MojeCile hra={d.mojeHra} role={moje.role} ucastnici={zapas.ucastnici} />
                 <MojeSchopnosti zapas={zapas} d={d} moje={moje} hlidej={hlidej} />
                 <OdhaleneRole odhalene={d.odhaleneRole} ucastnici={zapas.ucastnici} />
