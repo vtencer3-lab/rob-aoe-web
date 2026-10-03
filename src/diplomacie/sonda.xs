@@ -17,12 +17,14 @@
 // Atribut 7 = relikvie (cAttributeRelics). Kral = objekt 434 (GM jich ma
 // vic, bere se prvni; web GM na mape nekresli).
 // Relikvie na mape (overeno ve hre 3. 10. 2026): volna je objekt 285 gaii;
-// kdyz ji jednotka zvedne, relikvie zanikne a nese ji jednotka - v LLC
-// misionar (objekt 775, „Missionary with Relic“, neco drzi), jinde mnich
-// s relikvii (286); ulozena v klasteru je jen v atributu 7 hrace. Sonda
-// proto pise volne relikvie (mimo 8 dilcu od trziste GM - zazemi GM na kraji
-// mapy), nosice vsech hracu (i GM - relikvie, se kterou GM pohne, je porad
-// ve hre) a za kazdou ulozenou relikvii polohu prvniho klastera (104) hrace.
+// kdyz ji jednotka zvedne, relikvie zanikne a jednotka ji "drzi"
+// (xsGetUnitAttributeHeld > 0; misionar 775 "Missionary with Relic" drzi 100,
+// ale nest ji muze i jina jednotka). Ulozena v klasteru je jen v atributu 7
+// hrace. Sonda proto pise volne relikvie (mimo 8 dilcu od trziste GM -
+// zazemi GM na kraji mapy), kazdou jednotku vsech hracu (i GM), ktera neco
+// drzi - krome tech, co nosi suroviny (vesnican 904, obchodni vuz 919,
+// obchodni lod 902, rybarska lod 921) - a za kazdou ulozenou relikvii polohu
+// prvniho klastera (104) hrace.
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
@@ -95,16 +97,13 @@ void sondaZapis() {
   }
   for (h = 1; < 9) {
     if (h > 0) {
-      // Nesene: misionar (775) nebo mnich s relikvii (286), ktery neco drzi.
-      for (d = 0; < 2) {
-        int druhNosice = 775;
-        if (d == 1) {
-          druhNosice = 286;
-        }
-        sondaNosici = xsGetPlayerUnitIds(h, druhNosice, sondaNosici);
-        for (m = 0; < xsArrayGetSize(sondaNosici)) {
-          int nosic = xsArrayGetInt(sondaNosici, m);
-          if ((xsGetUnitAttributeHeld(nosic, -1) > 0.0) && (pocetRelikvii < 32)) {
+      // Nesene: kazda jednotka, ktera neco drzi a nenosi suroviny.
+      sondaNosici = xsGetPlayerUnitIds(h, -1, sondaNosici);
+      for (m = 0; < xsArrayGetSize(sondaNosici)) {
+        int nosic = xsArrayGetInt(sondaNosici, m);
+        int trida = xsGetUnitClass(nosic);
+        if ((trida != 904) && (trida != 919) && (trida != 902) && (trida != 921) && (pocetRelikvii < 32)) {
+          if (xsGetUnitAttributeHeld(nosic, -1) > 0.0) {
             xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsGetUnitPosition(nosic));
             pocetRelikvii = pocetRelikvii + 1;
           }
