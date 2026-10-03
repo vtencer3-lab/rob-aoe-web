@@ -7,6 +7,7 @@ import { redigujDiplo } from "../shared/diplomacie/viditelnost.js";
 import { smiGmMluvit } from "./opravneni.js";
 import { getAktivniVerze, getDiploZapas, getVerze, ktereZapasyBezi, listDiploZapasy, listVerzi, zalozDiploZapas, zrusNastupceMimoSestavu } from "./db.js";
 import { hraZapasu, pametHer, ponechHry } from "./hraPamet.js";
+import { pingyZapasu } from "./pingy.js";
 
 /**
  * Co z verzí scénáře patří do nastavení lobby akce (spec §5.5). Velikost
@@ -78,7 +79,8 @@ export const diplomacie: RezimAkce = {
     if (pametHer.size > 0) ponechHry(await ktereZapasyBezi([...pametHer.keys()]));
     const zapasy = (await listDiploZapasy(akce.id)).map((z) => {
       const hra = hraZapasu(z.zapasId);
-      return hra ? { ...z, hra } : z;
+      const pingy = pingyZapasu(z.zapasId);
+      return { ...z, ...(hra ? { hra } : {}), ...(pingy.length > 0 ? { pingy } : {}) };
     });
     const verze: DiploData["verze"] = {};
     for (const id of new Set(zapasy.map((z) => z.scenarId).filter((id): id is number => id !== null))) {

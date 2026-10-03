@@ -50,6 +50,10 @@ interface Props {
   najeto?: Barva | null;
   /** Králové z běžící hry: GM vidí všechny, hráč jen svého (redakce). */
   kralove?: readonly KralNaMape[];
+  /** Pingy GM (místa 0–1); `barva` = komu patří (bez ní všem). */
+  pingy?: readonly { id: number; x: number; y: number; barva?: Barva }[];
+  /** Klik do mapy (pult GM: ping) — místo 0–1 v obrázku minimapy. */
+  onKlik?: (x: number, y: number) => void;
   /** Relikvie z běžící hry, místa 0–1 na minimapě (jen GM a overlay); `barva` = kdo ji nese / má v klášteře. */
   relikvie?: readonly { x: number; y: number; barva?: Barva }[];
 }
@@ -97,7 +101,7 @@ function bublina(p: PopisekStartu, spojencu: number): string {
  * Druh popisku je třída `druh-*` na značce — vzhled je v CSS; Nástupce
  * císaře má nad značkou korunu (znak role), u vlastní mapy nad kosočtvercem.
  */
-export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, najeto = null, kralove = [], relikvie = [] }: Props) {
+export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, najeto = null, kralove = [], relikvie = [], pingy = [], onKlik }: Props) {
   if (!verze.rozbor) return null;
   const viditelne = verze.rozbor.starty.flatMap((s) => {
     const popisek = popisky[s.barva];
@@ -105,7 +109,22 @@ export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, 
   });
   const spojencu = viditelne.filter((s) => s.druhy.includes("spojenec")).length;
   return (
-    <figure className={`mapa-scenare ${velikost}${verze.minimapaVlastni ? " vlastni" : ""}`}>
+    <figure
+      className={`mapa-scenare ${velikost}${verze.minimapaVlastni ? " vlastni" : ""}${onKlik ? " klikaci" : ""}`}
+      onClick={
+        onKlik
+          ? (e) => {
+              // Místo vůči obrázku minimapy (bez rámu), ne vůči celé figuře.
+              const img = e.currentTarget.querySelector("img");
+              if (!img) return;
+              const r = img.getBoundingClientRect();
+              const x = (e.clientX - r.left) / r.width;
+              const y = (e.clientY - r.top) / r.height;
+              if (x >= 0 && x <= 1 && y >= 0 && y <= 1) onKlik(x, y);
+            }
+          : undefined
+      }
+    >
       <img src={diploApi.minimapaUrl(verze.id, verze.minimapaOtisk)} alt={`Mapa scénáře ${verze.jmenoSouboru}`} width={verze.rozbor.minimapa.sirka} height={verze.rozbor.minimapa.vyska} />
       {viditelne.map((s) => (
         <span
@@ -126,6 +145,9 @@ export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, 
       ))}
       {relikvie.map((r, i) => (
         <img key={`relikvie-${i}`} data-testid="relikvie" className={r.barva ? `relikvie-na-mape barva-${r.barva}` : "relikvie-na-mape"} title={r.barva ? `Relikvii má ${BARVA_NAZEV[r.barva]}` : "Volná relikvie"} src={ZNAK_RELIKVIE} alt="Relikvie" width={90} height={95} style={{ left: `${r.x * 100}%`, top: `${r.y * 100}%` }} />
+      ))}
+      {pingy.map((p) => (
+        <span key={`ping-${p.id}`} data-testid="ping" className={p.barva ? `ping barva-${p.barva}` : "ping"} style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%` }} aria-label={p.barva ? `Ping pro ${BARVA_NAZEV[p.barva]}` : "Ping pro všechny"} />
       ))}
       {kralove.map((k) => (
         <span

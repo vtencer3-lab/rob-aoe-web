@@ -27,6 +27,8 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   // Hráč pod kurzorem (řádek tabulky nebo start na mapě): mapa ukáže jeho
   // vztahy jako na jeho kartě — oběť Kata, pouto Žoldáka, druhého Nájezdníka.
   const [najetoHrac, setNajetoHrac] = useState<string | null>(null);
+  // Komu půjde ping kliknutím do mapy; null = všem hráčům.
+  const [pingKomu, setPingKomu] = useState<string | null>(null);
   const d = diploZapasu(data, zapas.id);
   if (!d) return null;
   const verze = verzeZapasu(data, d, zapas);
@@ -54,7 +56,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   };
   const odchylky = d.role.length > 0 ? odchylkySlozeni(d.role) : [];
   const nastupce = zvolenyNastupce(zapas, d);
-  const { popisky, kralove, relikvie } = mapaPultu(zapas, d, verze, najetoHrac);
+  const { popisky, kralove, relikvie, pingy } = mapaPultu(zapas, d, verze, najetoHrac);
   const najetaBarva = najetoHrac === null ? null : (mujUcastnik(zapas, najetoHrac)?.barva ?? null);
   const najetiNaMape = (barva: Barva | null) => setNajetoHrac(barva === null ? null : (zapas.ucastnici.find((u) => u.barva === barva)?.hracId ?? null));
 
@@ -72,8 +74,31 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         <div className="pult-vedle">
           {verze ? (
             <div className="mapa-pultu">
-              <MapaScenare verze={verze} popisky={popisky} velikost="velka" onNajeti={najetiNaMape} najeto={najetaBarva} kralove={kralove} relikvie={relikvie} />
+              <MapaScenare
+                verze={verze}
+                popisky={popisky}
+                velikost="velka"
+                onNajeti={najetiNaMape}
+                najeto={najetaBarva}
+                kralove={kralove}
+                relikvie={relikvie}
+                pingy={pingy}
+                onKlik={(x, y) => void hlidej(() => diploApi.ping(zapas.id, x, y, pingKomu))}
+              />
               {/* Co z běžící hry ukázat na mapě — platí i pro overlaye do OBS (uživatel 3. 10. 2026). */}
+              {/* Ping: klik do mapy ukáže značku vybraným hráčům (uživatel 3. 10. 2026). */}
+              <div className="ping-pro">
+                <span>Klik do mapy pingne:</span>
+                <Rozbalovaci<string | null>
+                  trida="vyber-hrace"
+                  popisek="Komu pingnout"
+                  polozky={[null, ...hraci.map((u) => u.hracId)]}
+                  hodnota={pingKomu}
+                  onZmena={setPingKomu}
+                  klic={(h) => h ?? "vsem"}
+                  obsah={(h) => <span>{h === null ? "Všem hráčům" : hrac(h)}</span>}
+                />
+              </div>
               <div className="nastaveni-mapy">
                 <Prepinac popisek="Zobrazit krále" vpravo="Zobrazit krále" zapnuto={d.mapa?.kralove !== false} onZmena={(v) => akce(() => diploApi.mapa(zapas.id, { kralove: v }))} testId="prepinac-kralove" />
                 <Prepinac popisek="Zobrazit relikvie" vpravo="Zobrazit relikvie" zapnuto={d.mapa?.relikvie !== false} onZmena={(v) => akce(() => diploApi.mapa(zapas.id, { relikvie: v }))} testId="prepinac-relikvie" />
@@ -177,8 +202,8 @@ export function mapaPultu(
   d: DiploZapas,
   verze: ScenarVerze | null,
   najetoHrac: string | null = null,
-): { popisky: PopiskyStartu; kralove: KralNaMape[]; relikvie: { x: number; y: number; barva?: Barva }[] } {
-  if (!verze?.rozbor) return { popisky: verze ? popiskyStartu(verze, {}) : {}, kralove: [], relikvie: [] };
+): { popisky: PopiskyStartu; kralove: KralNaMape[]; relikvie: { x: number; y: number; barva?: Barva }[]; pingy: { id: number; x: number; y: number; barva?: Barva }[] } {
+  if (!verze?.rozbor) return { popisky: verze ? popiskyStartu(verze, {}) : {}, kralove: [], relikvie: [], pingy: [] };
   const velikost = verze.rozbor.velikostMapy;
   const jmena = Object.fromEntries(zapas.ucastnici.map((u) => [u.barva, jmenoHrace(u)])) as Partial<Record<Barva, string>>;
   const popisky = popiskyStartu(verze, jmena);
@@ -196,7 +221,12 @@ export function mapaPultu(
   const kralove = d.mapa?.kralove === false ? [] : (d.hra?.hraci ?? []).flatMap((h) => kralNaMape(verze, mujUcastnik(zapas, h.hracId)?.barva, h.kral) ?? []);
   // Relikvie (uživatel 3. 10. 2026): kde leží, jen GM a overlay.
   const relikvie = d.mapa?.relikvie === false ? [] : (d.hra?.relikvie ?? []).map((r) => ({ ...naMinimapu(r.x, r.y, velikost), ...(r.barva ? { barva: r.barva } : {}) }));
-  return { popisky, kralove, relikvie };
+  // Pingy GM: barva hráče, kterému patří; ping pro všechny bez barvy.
+  const pingy = (d.pingy ?? []).map((p) => {
+    const barva = p.komu === null ? undefined : mujUcastnik(zapas, p.komu)?.barva;
+    return { id: p.id, x: p.x, y: p.y, ...(barva ? { barva } : {}) };
+  });
+  return { popisky, kralove, relikvie, pingy };
 }
 
 /**

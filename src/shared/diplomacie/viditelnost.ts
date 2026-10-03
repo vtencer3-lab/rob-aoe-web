@@ -15,6 +15,12 @@ function redigujZapas(cely: DiploZapas, divak: string | null): DiploZapas {
   // totéž co role — patří jen GM, v každém stavu.
   const z = { ...cely };
   delete z.hra;
+  // Ping GM vidí hráč, kterému patří (nebo všem); cizí pingy ne.
+  if (cely.pingy) {
+    const moje = cely.pingy.filter((p) => p.komu === null || p.komu === divak);
+    if (moje.length > 0) z.pingy = moje;
+    else delete z.pingy;
+  }
   // Vlastního krále hráč vidí vždy — jeho poloha neprozradí nic tajného.
   const kral = divak === null ? null : (cely.hra?.hraci.find((h) => h.hracId === divak)?.kral ?? null);
   if (kral) z.mujKral = kral;

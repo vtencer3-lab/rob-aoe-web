@@ -58,10 +58,10 @@ export function ObsMapa() {
   useProhledne();
   const s = useObsStav();
   if (!s?.verze) return null;
-  const { popisky, kralove, relikvie } = mapaPultu(s.zapas, s.d, s.verze);
+  const { popisky, kralove, relikvie, pingy } = mapaPultu(s.zapas, s.d, s.verze);
   return (
     <main className="obs-overlay obs-mapa">
-      <MapaScenare verze={s.verze} popisky={popisky} velikost="velka" kralove={kralove} relikvie={relikvie} />
+      <MapaScenare verze={s.verze} popisky={popisky} velikost="velka" kralove={kralove} relikvie={relikvie} pingy={pingy} />
     </main>
   );
 }

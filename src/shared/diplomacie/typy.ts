@@ -20,6 +20,15 @@ export interface RoleHrace {
 }
 
 /** Diplomacie jednoho zápasu, jak ji vidí GM (nic nezaslepeno). */
+/** Ping GM na mapě: místo 0–1 na minimapě, komu (null = všem), kdy (ISO, čas serveru). */
+export interface PingNaMape {
+  id: number;
+  x: number;
+  y: number;
+  komu: string | null;
+  kdy: string;
+}
+
 /** Co GM ukazuje na mapě z běžící hry — pult i overlaye (uživatel 3. 10. 2026). */
 export interface ZobrazeniMapy {
   kralove: boolean;
@@ -46,6 +55,8 @@ export interface DiploZapas {
    * 3. 10. 2026: „hráči uvidí pouze svého krále“).
    */
   mujKral?: PolohaVeHre;
+  /** Pingy GM na mapě, které ještě svítí. GM vidí všechny, hráč jen pro všechny a pro sebe. */
+  pingy?: PingNaMape[];
 }
 
 /** Verze scénáře bez souboru a minimapy (ty jdou zvlášť adresou). */

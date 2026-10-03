@@ -194,3 +194,17 @@ it("zobrazení mapy: výchozí zapnuté, mění jen GM, každé zvlášť", asyn
   expect((await post(`/api/diplo/zapas/${zapas.id}/mapa`, gm, { relikvie: false })).statusCode).toBe(200);
   expect((await getDiploZapas(zapas.id))!.mapa).toEqual({ kralove: false, relikvie: false });
 });
+
+// Ping na mapě: jen GM, místo 0–1, adresát všichni nebo hráč zápasu.
+it("ping: GM 200, hráč 403, mimo mapu a cizí adresát 400", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  const gm = await klient("h7", false);
+  const hrac = await klient("h1", false);
+  const u = `/api/diplo/zapas/${zapas.id}/ping`;
+  expect((await post(u, hrac, { x: 0.5, y: 0.5, komu: null })).statusCode).toBe(403);
+  expect((await post(u, gm, { x: 1.5, y: 0.5, komu: null })).statusCode).toBe(400);
+  expect((await post(u, gm, { x: 0.5, y: 0.5, komu: "cizi" })).statusCode).toBe(400);
+  expect((await post(u, gm, { x: 0.5, y: 0.5, komu: "h7" })).statusCode).toBe(400);
+  expect((await post(u, gm, { x: 0.5, y: 0.5, komu: null })).statusCode).toBe(200);
+  expect((await post(u, gm, { x: 0.2, y: 0.8, komu: "h2" })).statusCode).toBe(200);
+});

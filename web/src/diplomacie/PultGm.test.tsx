@@ -16,6 +16,7 @@ vi.mock("./api.js", () => ({
     rozeslat: vi.fn(async () => ({ ok: true })),
     zpet: vi.fn(async () => ({ ok: true })),
     mapa: vi.fn(async () => ({ ok: true })),
+    ping: vi.fn(async () => ({ ok: true })),
     minimapaUrl: () => "/m.webp",
   },
 }));
@@ -342,4 +343,23 @@ it("přepínače pod mapou posílají, co ukázat, a mapa je poslechne", () => {
   rerender(<PultGm zapas={zapas} data={sHrou({ kralove: true, relikvie: false })} hlidej={spust} />);
   expect(screen.getAllByTestId("kral")).toHaveLength(1);
   expect(screen.queryByTestId("relikvie")).toBeNull();
+});
+
+// Ping (uživatel 3. 10. 2026): klik do mapy pultu pošle místo a adresáta —
+// výchozí všem, nebo hráči vybranému pod mapou.
+it("klik do mapy pingne všem nebo vybranému hráči", () => {
+  render(<PultGm zapas={zapas} data={gmData("priprava", [], "h1")} hlidej={spust} />);
+  odkryj();
+  const mapa = document.querySelector(".mapa-scenare.klikaci")! as HTMLElement;
+  const obrazek = mapa.querySelector("img")!;
+  obrazek.getBoundingClientRect = () => ({ left: 100, top: 50, width: 200, height: 100, right: 300, bottom: 150, x: 100, y: 50, toJSON: () => ({}) });
+  fireEvent.click(mapa, { clientX: 150, clientY: 75 });
+  expect(diploApi.ping).toHaveBeenCalledWith(zapas.id, 0.25, 0.25, null);
+  fireEvent.click(screen.getByRole("button", { name: "Komu pingnout" }));
+  fireEvent.click(screen.getByRole("option", { name: jmeno("h2") }));
+  fireEvent.click(mapa, { clientX: 300, clientY: 150 });
+  expect(diploApi.ping).toHaveBeenLastCalledWith(zapas.id, 1, 1, "h2");
+  // Mimo obrázek minimapy se nepinguje.
+  fireEvent.click(mapa, { clientX: 50, clientY: 75 });
+  expect(diploApi.ping).toHaveBeenCalledTimes(2);
 });

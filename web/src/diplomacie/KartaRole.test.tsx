@@ -206,3 +206,14 @@ it("na mapě karty je jen vlastní král", () => {
   rerender(<KartaRole zapas={zapas} data={data} ja="h2" />);
   expect(screen.queryByTestId("kral")).toBeNull();
 });
+
+// Ping GM se hráči ukáže na mapě karty (server mu pošle jen ten jeho a společné).
+it("ping GM je vidět na mapě karty", () => {
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "sasek", cilHracId: null }]);
+  const sPingem = { ...data, zapasy: data.zapasy.map((z) => ({ ...z, pingy: [{ id: 7, x: 0.5, y: 0.25, komu: null, kdy: "2026-10-03T12:00:00.000Z" }] })) };
+  render(<KartaRole zapas={zapas} data={sPingem} ja="h2" />);
+  fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));
+  const ping = screen.getByTestId("ping");
+  expect(ping.style.left).toBe("50%");
+  expect(ping.style.top).toBe("25%");
+});

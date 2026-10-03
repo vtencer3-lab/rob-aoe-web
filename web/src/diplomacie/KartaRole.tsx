@@ -71,7 +71,7 @@ export function KartaRole({ zapas, data, ja }: Props) {
           </p>
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
             <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
-            {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} /> : null}
+            {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} pingy={(d.pingy ?? []).map((p) => ({ id: p.id, x: p.x, y: p.y }))} /> : null}
           </Zakryti>
         </>
       )}

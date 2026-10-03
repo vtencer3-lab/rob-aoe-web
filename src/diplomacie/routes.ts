@@ -32,6 +32,7 @@ import {
   vratNaPripravu,
 } from "./db.js";
 import { registerHraRoutes } from "./hra.js";
+import { PING_TRVA_MS, pridejPing } from "./pingy.js";
 import { registerObsRoutes } from "./obs.js";
 import { jeGm, smiNahratScenar } from "./opravneni.js";
 import { nastaveniZAktivniVerze } from "./rezim.js";
@@ -92,6 +93,21 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
     const relikvie = ano(telo.relikvie, "relikvie");
     await setMapaZapasu(diplo.zapasId, { ...(kralove === undefined ? {} : { kralove }), ...(relikvie === undefined ? {} : { relikvie }) });
     await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Ping na mapě (uživatel 3. 10. 2026): GM klikne do mapy pultu, hráčům
+  // (všem, nebo jednomu) se na mapě karty na chvíli ukáže značka. Po
+  // PING_TRVA_MS se rozešle stav znovu, ať značka zmizí i bez dalšího dění.
+  app.post("/api/diplo/zapas/:id/ping", async (request) => {
+    const { diplo, hraci } = await requireGm(request);
+    const { x, y, komu } = (request.body ?? {}) as { x?: unknown; y?: unknown; komu?: unknown };
+    const mistoNaMape = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1;
+    if (!mistoNaMape(x) || !mistoNaMape(y)) throw new HttpError(400, "Ping musí být na mapě (x a y od 0 do 1).");
+    if (komu !== null && komu !== undefined && (typeof komu !== "string" || !hraci.includes(komu))) throw new HttpError(400, "Ping jde všem, nebo hráči zápasu.");
+    pridejPing(diplo.zapasId, x as number, y as number, (komu as string | null | undefined) ?? null);
+    await broadcastAkce();
+    setTimeout(() => void broadcastAkce().catch(() => {}), PING_TRVA_MS + 200).unref?.();
     return { ok: true };
   });
 

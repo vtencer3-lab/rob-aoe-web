@@ -95,3 +95,18 @@ describe("král z běžící hry", () => {
     });
   }
 });
+
+// Ping GM: GM vidí všechny, hráč jen ping pro všechny a pro sebe.
+it("ping vidí GM všechny, hráč jen společné a své", () => {
+  const pingy = [
+    { id: 1, x: 0.1, y: 0.1, komu: null, kdy: "2026-10-03T12:00:00.000Z" },
+    { id: 2, x: 0.2, y: 0.2, komu: "k", kdy: "2026-10-03T12:00:00.000Z" },
+    { id: 3, x: 0.3, y: 0.3, komu: "n", kdy: "2026-10-03T12:00:00.000Z" },
+  ];
+  const d: DiploData = { ...data("rozeslano"), zapasy: data("rozeslano").zapasy.map((z) => ({ ...z, pingy })) };
+  expect(redigujDiplo(d, GM).zapasy[0]!.pingy!.map((p) => p.id)).toEqual([1, 2, 3]);
+  expect(redigujDiplo(d, "k").zapasy[0]!.pingy!.map((p) => p.id)).toEqual([1, 2]);
+  expect(redigujDiplo(d, null).zapasy[0]!.pingy!.map((p) => p.id)).toEqual([1]);
+  const jenCizi: DiploData = { ...d, zapasy: d.zapasy.map((z) => ({ ...z, pingy: [pingy[2]!] })) };
+  expect("pingy" in redigujDiplo(jenCizi, "k").zapasy[0]!).toBe(false);
+});
