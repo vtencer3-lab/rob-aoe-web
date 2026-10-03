@@ -1816,8 +1816,11 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .ping.barva-8 { border-color: var(--b8); }
 @keyframes ping-pulz { 0% { scale: 0.4; opacity: 1; } 100% { scale: 1.4; opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { .mapa-scenare .ping { animation: none; } }
-.pult-gm .ping-pro { display: flex; align-items: center; justify-content: center; gap: 0.6rem; margin: 0.4rem 0; font-size: 0.9rem; color: var(--tlumene); }
-.pult-gm .ping-pro .rozbalovaci { min-width: 12rem; }
+.pult-gm .ping-pro { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.5rem; margin: 0.4rem 0; font-size: 0.9rem; }
+.pult-gm .ping-vypinac.zapnuto { border-color: var(--zlato); color: var(--zlato-svetle); box-shadow: 0 0 0 1px var(--zlato), 0 0 8px color-mix(in srgb, var(--zlato) 50%, transparent); }
+.pult-gm .ping-adresati { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; }
+.pult-gm .ping-adresati .adresat { padding: 0.2rem 0.5rem; font-family: inherit; font-size: 0.85rem; }
+.pult-gm .ping-adresati .adresat.vybrany { border-color: var(--zlato); color: var(--zlato-svetle); background: color-mix(in srgb, var(--zlato) 22%, transparent); }
 /* Relikvie, kterou někdo nese nebo má v klášteře: obrys v barvě hráče. */
 .mapa-scenare .relikvie-na-mape.barva-1 { filter: drop-shadow(0 0 1px var(--b1)) drop-shadow(0 0 2px var(--b1)) drop-shadow(0 0 3px var(--b1)); }
 .mapa-scenare .relikvie-na-mape.barva-2 { filter: drop-shadow(0 0 1px var(--b2)) drop-shadow(0 0 2px var(--b2)) drop-shadow(0 0 3px var(--b2)); }

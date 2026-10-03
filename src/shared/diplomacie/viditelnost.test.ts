@@ -100,8 +100,8 @@ describe("král z běžící hry", () => {
 it("ping vidí GM všechny, hráč jen společné a své", () => {
   const pingy = [
     { id: 1, x: 0.1, y: 0.1, komu: null, kdy: "2026-10-03T12:00:00.000Z" },
-    { id: 2, x: 0.2, y: 0.2, komu: "k", kdy: "2026-10-03T12:00:00.000Z" },
-    { id: 3, x: 0.3, y: 0.3, komu: "n", kdy: "2026-10-03T12:00:00.000Z" },
+    { id: 2, x: 0.2, y: 0.2, komu: ["k", "x"], kdy: "2026-10-03T12:00:00.000Z" },
+    { id: 3, x: 0.3, y: 0.3, komu: ["n"], kdy: "2026-10-03T12:00:00.000Z" },
   ];
   const d: DiploData = { ...data("rozeslano"), zapasy: data("rozeslano").zapasy.map((z) => ({ ...z, pingy })) };
   expect(redigujDiplo(d, GM).zapasy[0]!.pingy!.map((p) => p.id)).toEqual([1, 2, 3]);

@@ -21,18 +21,18 @@
 // (xsGetUnitAttributeHeld > 0; misionar 775 "Missionary with Relic" drzi 100,
 // ale nest ji muze i jina jednotka). Ulozena v klasteru je jen v atributu 7
 // hrace. Sonda proto pise volne relikvie (mimo 8 dilcu od trziste GM -
-// zazemi GM na kraji mapy), kazdou jednotku vsech hracu (i GM), ktera neco
-// drzi - jen jednotky (typ objektu 70), budovy drzi suroviny take (farma
-// jidlo; 3. 10. 2026 se tak farmy ukazovaly jako relikvie), a krome tech, co
-// nosi suroviny (vesnican 904, obchodni vuz 919, obchodni lod 902, rybarska
-// lod 921) - a za kazdou ulozenou relikvii polohu prvniho klastera (104).
+// zazemi GM na kraji mapy) a nosice vsech hracu (i GM). Nosic = jednotka
+// tridy 943 (mnich s relikvii 286, misionar s relikvii 2557 - overeno ve hre
+// 3. 10. 2026); mnich bez relikvie je trida 918 a "drzi" 100 viry, proto se
+// "drzi neco" nepouziva (bralo i farmy, ovce a volne mnichy). Relikvie ulozena
+// v klasteru je dal objekt 285 gaii, jen garrisonovana v budove: dostane
+// barvu majitele budovy (xsGetGarrisonedInUnitId + xsGetUnitOwner).
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
 int sondaRelikvie = -1;
 int sondaTrhyGm = -1;
 int sondaNosici = -1;
-int sondaKlastery = -1;
 // Polohy relikvii pro zapis (nejvys 32): nejdriv se sesbiraji, pak zapise pocet.
 int sondaMistaRelikvii = -1;
 
@@ -92,39 +92,25 @@ void sondaZapis() {
       }
     }
     if ((uGm == false) && (pocetRelikvii < 32)) {
-      // Treti slozka vektoru nese cislo hrace (0 = volna relikvie).
-      xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(volna), xsVectorGetY(volna), 0.0));
+      // Treti slozka vektoru nese cislo hrace: 0 = volna, jinak majitel
+      // budovy (klastera), ve ktere je relikvie ulozena.
+      int budova = xsGetGarrisonedInUnitId(xsArrayGetInt(sondaRelikvie, n));
+      int majitel = 0;
+      if (budova >= 0) {
+        majitel = xsGetUnitOwner(budova);
+      }
+      xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(volna), xsVectorGetY(volna), majitel));
       pocetRelikvii = pocetRelikvii + 1;
     }
   }
   for (h = 1; < 9) {
-    if (h > 0) {
-      // Nesene: kazda jednotka, ktera neco drzi a nenosi suroviny.
-      sondaNosici = xsGetPlayerUnitIds(h, -1, sondaNosici);
-      for (m = 0; < xsArrayGetSize(sondaNosici)) {
-        int nosic = xsArrayGetInt(sondaNosici, m);
-        int trida = xsGetUnitClass(nosic);
-        if ((xsGetUnitType(nosic) == 70) && (trida != 904) && (trida != 919) && (trida != 902) && (trida != 921) && (pocetRelikvii < 32)) {
-          if (xsGetUnitAttributeHeld(nosic, -1) > 0.0) {
-            vector nesena = xsGetUnitPosition(nosic);
-            xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(nesena), xsVectorGetY(nesena), h));
-            pocetRelikvii = pocetRelikvii + 1;
-          }
-        }
-      }
-      // Ulozene v klasteru: kolik jich hrac ma, tolikrat poloha jeho klastera.
-      float ulozenych = xsPlayerAttribute(h, 7);
-      if (ulozenych > 0.5) {
-        sondaKlastery = xsGetPlayerUnitIds(h, 104, sondaKlastery);
-        if (xsArrayGetSize(sondaKlastery) > 0) {
-          vector klaster = xsGetUnitPosition(xsArrayGetInt(sondaKlastery, 0));
-          for (u = 0; < 32) {
-            if ((u < ulozenych) && (pocetRelikvii < 32)) {
-              xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(klaster), xsVectorGetY(klaster), h));
-              pocetRelikvii = pocetRelikvii + 1;
-            }
-          }
-        }
+    // Nesene: kazda jednotka tridy 943 (s relikvii).
+    sondaNosici = xsGetPlayerUnitIds(h, 943, sondaNosici);
+    for (m = 0; < xsArrayGetSize(sondaNosici)) {
+      if (pocetRelikvii < 32) {
+        vector nesena = xsGetUnitPosition(xsArrayGetInt(sondaNosici, m));
+        xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(nesena), xsVectorGetY(nesena), h));
+        pocetRelikvii = pocetRelikvii + 1;
       }
     }
   }

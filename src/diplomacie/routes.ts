@@ -104,8 +104,11 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
     const { x, y, komu } = (request.body ?? {}) as { x?: unknown; y?: unknown; komu?: unknown };
     const mistoNaMape = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1;
     if (!mistoNaMape(x) || !mistoNaMape(y)) throw new HttpError(400, "Ping musí být na mapě (x a y od 0 do 1).");
-    if (komu !== null && komu !== undefined && (typeof komu !== "string" || !hraci.includes(komu))) throw new HttpError(400, "Ping jde všem, nebo hráči zápasu.");
-    pridejPing(diplo.zapasId, x as number, y as number, (komu as string | null | undefined) ?? null);
+    // komu: seznam hráčů zápasu (víc najednou, uživatel 3. 10. 2026); null nebo prázdný = všem.
+    if (komu !== null && komu !== undefined && (!Array.isArray(komu) || komu.length > 8 || komu.some((h) => typeof h !== "string" || !hraci.includes(h))))
+      throw new HttpError(400, "Ping jde všem, nebo hráčům zápasu.");
+    const adresati = Array.isArray(komu) && komu.length > 0 ? [...new Set(komu as string[])] : null;
+    pridejPing(diplo.zapasId, x as number, y as number, adresati);
     await broadcastAkce();
     setTimeout(() => void broadcastAkce().catch(() => {}), PING_TRVA_MS + 200).unref?.();
     return { ok: true };

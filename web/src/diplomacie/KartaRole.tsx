@@ -2,8 +2,9 @@ import { useEffect, useRef } from "react";
 import { NAZEV_ROLE, POPIS_ROLE } from "../../../src/shared/diplomacie/role.js";
 import type { DiploData, DiploZapas, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
 import type { ZapasView } from "../../../src/shared/types.js";
+import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
-import { prehraj } from "../zvuk.js";
+import { hlasitostChatu, prehraj } from "../zvuk.js";
 import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
 import { jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { kralNaMape, MapaScenare, type DruhPopisku, type PopiskyStartu } from "./MapaScenare.js";
@@ -52,6 +53,16 @@ export function KartaRole({ zapas, data, ja }: Props) {
     driv.current = d?.stav;
     if (predtim !== undefined && predtim !== "rozeslano" && d?.stav === "rozeslano") prehraj(zvonUrl);
   }, [d?.stav]);
+
+  // Nový ping GM cinkne (zvuk chatu); pingy známé už při načtení ne.
+  const znamePingy = useRef<Set<number> | null>(null);
+  const idPingu = (d?.pingy ?? []).map((p) => p.id).join(",");
+  useEffect(() => {
+    const ted = new Set((d?.pingy ?? []).map((p) => p.id));
+    const driv = znamePingy.current;
+    znamePingy.current = ted;
+    if (driv !== null && [...ted].some((id) => !driv.has(id))) prehraj(chatUrl, hlasitostChatu());
+  }, [idPingu]);
 
   if (!d) return null;
   const verze = verzeZapasu(data, d, zapas);

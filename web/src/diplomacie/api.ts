@@ -15,7 +15,7 @@ const post = (url: string, telo?: object) =>
 export const diploApi = {
   nastupce: (zapasId: number, hracId: string) => post(`/api/diplo/zapas/${zapasId}/nastupce`, { hracId }),
   mapa: (zapasId: number, zmena: { kralove?: boolean; relikvie?: boolean }) => post(`/api/diplo/zapas/${zapasId}/mapa`, zmena),
-  ping: (zapasId: number, x: number, y: number, komu: string | null) => post(`/api/diplo/zapas/${zapasId}/ping`, { x, y, komu }),
+  ping: (zapasId: number, x: number, y: number, komu: string[] | null) => post(`/api/diplo/zapas/${zapasId}/ping`, { x, y, komu }),
   los: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/los`),
   role: (zapasId: number, hracId: string, zmena: { role?: Role; cilHracId?: string }) =>
     fetch(cesta(`/api/diplo/zapas/${zapasId}/role/${encodeURIComponent(hracId)}`), {

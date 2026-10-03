@@ -20,12 +20,12 @@ export interface RoleHrace {
 }
 
 /** Diplomacie jednoho zápasu, jak ji vidí GM (nic nezaslepeno). */
-/** Ping GM na mapě: místo 0–1 na minimapě, komu (null = všem), kdy (ISO, čas serveru). */
+/** Ping GM na mapě: místo 0–1 na minimapě, komu (hráči; null = všem), kdy (ISO, čas serveru). */
 export interface PingNaMape {
   id: number;
   x: number;
   y: number;
-  komu: string | null;
+  komu: string[] | null;
   kdy: string;
 }
 

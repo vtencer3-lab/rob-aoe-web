@@ -24,8 +24,8 @@ export function pingyZapasu(zapasId: number, ted = Date.now()): PingNaMape[] {
   return platne;
 }
 
-/** Nový ping: místo 0–1 na minimapě, komu (null = všem). */
-export function pridejPing(zapasId: number, x: number, y: number, komu: string | null, ted = Date.now()): PingNaMape {
+/** Nový ping: místo 0–1 na minimapě, komu (hráči; null = všem). */
+export function pridejPing(zapasId: number, x: number, y: number, komu: string[] | null, ted = Date.now()): PingNaMape {
   const ping: PingNaMape = { id: dalsiId++, x, y, komu, kdy: new Date(ted).toISOString() };
   pamet.set(zapasId, [...pingyZapasu(zapasId, ted), ping].slice(-MAX_PINGU));
   return ping;

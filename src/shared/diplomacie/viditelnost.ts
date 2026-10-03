@@ -17,7 +17,7 @@ function redigujZapas(cely: DiploZapas, divak: string | null): DiploZapas {
   delete z.hra;
   // Ping GM vidí hráč, kterému patří (nebo všem); cizí pingy ne.
   if (cely.pingy) {
-    const moje = cely.pingy.filter((p) => p.komu === null || p.komu === divak);
+    const moje = cely.pingy.filter((p) => p.komu === null || (divak !== null && p.komu.includes(divak)));
     if (moje.length > 0) z.pingy = moje;
     else delete z.pingy;
   }

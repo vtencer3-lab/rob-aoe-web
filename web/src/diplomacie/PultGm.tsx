@@ -27,8 +27,11 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   // Hráč pod kurzorem (řádek tabulky nebo start na mapě): mapa ukáže jeho
   // vztahy jako na jeho kartě — oběť Kata, pouto Žoldáka, druhého Nájezdníka.
   const [najetoHrac, setNajetoHrac] = useState<string | null>(null);
-  // Komu půjde ping kliknutím do mapy; null = všem hráčům.
-  const [pingKomu, setPingKomu] = useState<string | null>(null);
+  // Ping: vypínač (dokud je vypnutý, klik do mapy nic nedělá) a adresáti —
+  // prázdný výběr = všem hráčům (uživatel 3. 10. 2026).
+  const [pingZapnuty, setPingZapnuty] = useState(false);
+  const [pingKomu, setPingKomu] = useState<string[]>([]);
+  const prepniAdresata = (hracId: string) => setPingKomu((v) => (v.includes(hracId) ? v.filter((h) => h !== hracId) : [...v, hracId]));
   const d = diploZapasu(data, zapas.id);
   if (!d) return null;
   const verze = verzeZapasu(data, d, zapas);
@@ -83,21 +86,27 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                 kralove={kralove}
                 relikvie={relikvie}
                 pingy={pingy}
-                onKlik={(x, y) => void hlidej(() => diploApi.ping(zapas.id, x, y, pingKomu))}
+                onKlik={pingZapnuty ? (x, y) => void hlidej(() => diploApi.ping(zapas.id, x, y, pingKomu.length > 0 ? pingKomu : null)) : undefined}
               />
               {/* Co z běžící hry ukázat na mapě — platí i pro overlaye do OBS (uživatel 3. 10. 2026). */}
-              {/* Ping: klik do mapy ukáže značku vybraným hráčům (uživatel 3. 10. 2026). */}
+              {/* Ping: vypínač, a když je zapnutý, komu klik do mapy ukáže značku
+                  (víc hráčů najednou, nic vybraného = všem; uživatel 3. 10. 2026). */}
               <div className="ping-pro">
-                <span>Klik do mapy pingne:</span>
-                <Rozbalovaci<string | null>
-                  trida="vyber-hrace"
-                  popisek="Komu pingnout"
-                  polozky={[null, ...hraci.map((u) => u.hracId)]}
-                  hodnota={pingKomu}
-                  onZmena={setPingKomu}
-                  klic={(h) => h ?? "vsem"}
-                  obsah={(h) => <span>{h === null ? "Všem hráčům" : hrac(h)}</span>}
-                />
+                <button type="button" className={pingZapnuty ? "ping-vypinac zapnuto" : "ping-vypinac"} aria-pressed={pingZapnuty} onClick={() => setPingZapnuty((z) => !z)} title="Ping na mapě: klik do mapy ukáže hráčům značku">
+                  <span aria-hidden="true">◎</span> Ping
+                </button>
+                {pingZapnuty ? (
+                  <div className="ping-adresati" role="group" aria-label="Komu pingnout">
+                    <button type="button" className={pingKomu.length === 0 ? "adresat vybrany" : "adresat"} aria-pressed={pingKomu.length === 0} onClick={() => setPingKomu([])}>
+                      Všem
+                    </button>
+                    {hraci.map((u) => (
+                      <button key={u.hracId} type="button" className={pingKomu.includes(u.hracId) ? "adresat vybrany" : "adresat"} aria-pressed={pingKomu.includes(u.hracId)} onClick={() => prepniAdresata(u.hracId)}>
+                        {hrac(u.hracId)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="nastaveni-mapy">
                 <Prepinac popisek="Zobrazit krále" vpravo="Zobrazit krále" zapnuto={d.mapa?.kralove !== false} onZmena={(v) => akce(() => diploApi.mapa(zapas.id, { kralove: v }))} testId="prepinac-kralove" />
@@ -223,7 +232,8 @@ export function mapaPultu(
   const relikvie = d.mapa?.relikvie === false ? [] : (d.hra?.relikvie ?? []).map((r) => ({ ...naMinimapu(r.x, r.y, velikost), ...(r.barva ? { barva: r.barva } : {}) }));
   // Pingy GM: barva hráče, kterému patří; ping pro všechny bez barvy.
   const pingy = (d.pingy ?? []).map((p) => {
-    const barva = p.komu === null ? undefined : mujUcastnik(zapas, p.komu)?.barva;
+    // Jednomu hráči v jeho barvě; víc hráčům nebo všem zlatě.
+    const barva = p.komu?.length === 1 ? mujUcastnik(zapas, p.komu[0]!)?.barva : undefined;
     return { id: p.id, x: p.x, y: p.y, ...(barva ? { barva } : {}) };
   });
   return { popisky, kralove, relikvie, pingy };

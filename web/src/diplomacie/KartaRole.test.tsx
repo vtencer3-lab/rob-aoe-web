@@ -4,7 +4,7 @@ import { aiId, JMENO_AI } from "../../../src/shared/aiHraci.js";
 import { stavDiplo, ZAPAS as zapas } from "./fixtury.js";
 import { KartaRole } from "./KartaRole.js";
 
-vi.mock("../zvuk.js", () => ({ prehraj: vi.fn(), hlasitost: () => 70 }));
+vi.mock("../zvuk.js", () => ({ prehraj: vi.fn(), hlasitost: () => 70, hlasitostChatu: () => 50 }));
 import { prehraj } from "../zvuk.js";
 
 /** Text karty role (bez mapy pod ní a věty o Nástupci nad ní) — tatáž jména jsou i na mapě. */
@@ -216,4 +216,18 @@ it("ping GM je vidět na mapě karty", () => {
   const ping = screen.getByTestId("ping");
   expect(ping.style.left).toBe("50%");
   expect(ping.style.top).toBe("25%");
+});
+
+// Nový ping GM cinkne zvukem chatu; pingy, které už svítily při načtení, ne.
+it("nový ping cinkne, ping známý při načtení ne", () => {
+  vi.mocked(prehraj).mockClear();
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "sasek", cilHracId: null }]);
+  const sPingy = (ids: number[]) => ({ ...data, zapasy: data.zapasy.map((z) => ({ ...z, pingy: ids.map((id) => ({ id, x: 0.5, y: 0.5, komu: null, kdy: "2026-10-03T12:00:00.000Z" })) })) });
+  const { rerender } = render(<KartaRole zapas={zapas} data={sPingy([1])} ja="h2" />);
+  expect(prehraj).not.toHaveBeenCalled();
+  rerender(<KartaRole zapas={zapas} data={sPingy([1, 2])} ja="h2" />);
+  expect(prehraj).toHaveBeenCalledTimes(1);
+  expect(vi.mocked(prehraj).mock.calls[0]![1]).toBe(50);
+  rerender(<KartaRole zapas={zapas} data={sPingy([2])} ja="h2" />);
+  expect(prehraj).toHaveBeenCalledTimes(1);
 });
