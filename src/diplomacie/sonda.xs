@@ -15,12 +15,19 @@
 // Promenna 200 + slot nese cislo pocitadla prideleneho sekundarniho cile
 // (zapisuje ji web pri pribaleni sondy, viz sonda.py); 0 = bez cile.
 // Atribut 7 = relikvie (cAttributeRelics). Kral = objekt 434 (GM jich ma
-// vic, bere se prvni; web GM na mape nekresli). Relikvie = objekt 285,
-// vzdy gaia (hrac 0), i kdyz ji nese mnich nebo lezi v klasteru.
+// vic, bere se prvni; web GM na mape nekresli). Relikvie = objekt 285.
+// xsGetPlayerUnitIds vraci jen relikvie volne na mape - zvednuta (nalozena
+// v jednotce nebo klasteru) v nem chybi. Sonda si proto pamatuje id kazde
+// relikvie, kterou jednou videla, a u nalozene zapise polohu toho, kdo ji
+// nese (xsGetGarrisonedInUnitId). Relikvie, ktera na mape nikdy nelezela
+// (trigger ji vlozi rovnou do klastera), se neukaze, dokud ji nikdo nepolozi.
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
 int sondaRelikvie = -1;
+// Id relikvii, ktere sonda uz videla na mape (nejvys 32), a kolik jich je.
+int sondaZnameRelikvie = -1;
+int sondaPocetZnamych = 0;
 
 void sondaZapis() {
   int t = xsGetGameTime();
@@ -61,16 +68,44 @@ void sondaZapis() {
       xsWriteFloat(-1.0);
     }
   }
+  if (sondaZnameRelikvie < 0) {
+    sondaZnameRelikvie = xsArrayCreateInt(32, -1, "sondaZnameRelikvie");
+  }
+  // Nove relikvie volne na mape do pameti.
   sondaRelikvie = xsGetPlayerUnitIds(0, 285, sondaRelikvie);
-  int pocetRelikvii = xsArrayGetSize(sondaRelikvie);
-  if (pocetRelikvii > 32) {
-    pocetRelikvii = 32;
+  for (n = 0; < xsArrayGetSize(sondaRelikvie)) {
+    int idNove = xsArrayGetInt(sondaRelikvie, n);
+    bool znama = false;
+    for (z = 0; < sondaPocetZnamych) {
+      if (xsArrayGetInt(sondaZnameRelikvie, z) == idNove) {
+        znama = true;
+      }
+    }
+    if ((znama == false) && (sondaPocetZnamych < 32)) {
+      xsArraySetInt(sondaZnameRelikvie, sondaPocetZnamych, idNove);
+      sondaPocetZnamych = sondaPocetZnamych + 1;
+    }
+  }
+  // Zapisuji se zname relikvie, ktere porad existuji: volna na svem miste,
+  // nalozena na miste jednotky nebo budovy, ktera ji nese.
+  int pocetRelikvii = 0;
+  for (e = 0; < sondaPocetZnamych) {
+    if (xsDoesUnitExist(xsArrayGetInt(sondaZnameRelikvie, e))) {
+      pocetRelikvii = pocetRelikvii + 1;
+    }
   }
   xsWriteInt(pocetRelikvii);
-  for (r = 0; < pocetRelikvii) {
-    vector misto = xsGetUnitPosition(xsArrayGetInt(sondaRelikvie, r));
-    xsWriteFloat(xsVectorGetX(misto));
-    xsWriteFloat(xsVectorGetY(misto));
+  for (q = 0; < sondaPocetZnamych) {
+    int idRelikvie = xsArrayGetInt(sondaZnameRelikvie, q);
+    if (xsDoesUnitExist(idRelikvie)) {
+      int nosic = xsGetGarrisonedInUnitId(idRelikvie);
+      if (nosic >= 0) {
+        idRelikvie = nosic;
+      }
+      vector misto = xsGetUnitPosition(idRelikvie);
+      xsWriteFloat(xsVectorGetX(misto));
+      xsWriteFloat(xsVectorGetY(misto));
+    }
   }
   for (a = 1; < 9) {
     for (b = 1; < 9) {
