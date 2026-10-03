@@ -206,22 +206,23 @@ describe("pořadí snímků a paměť", () => {
     expect(db.nastupce).toBe("h5");
   });
 
-  it("průběžné snímky rozesílá nejvýš jednou za 5 s, změnu Nástupce hned", async () => {
+  it("průběžné snímky rozesílá nejvýš jednou za 1,5 s, změnu Nástupce hned", async () => {
     await posli([4], 100);
-    await posli([4], 102);
+    await posli([4], 101);
     expect(db.broadcastAkce).toHaveBeenCalledTimes(1);
+    await posli([4], 103);
+    expect(db.broadcastAkce).toHaveBeenCalledTimes(2);
     // Potvrzení a zápis Nástupce se rozešle hned, i když od posledního
-    // rozeslání uběhly jen 4 s.
+    // rozeslání uběhla jen 1 s.
     await posli([4], 104);
     expect(db.zapisy).toEqual(["nastav h4"]);
-    expect(db.broadcastAkce).toHaveBeenCalledTimes(2);
-    await posli([4], 106);
-    await posli([4], 108);
-    expect(db.broadcastAkce).toHaveBeenCalledTimes(2);
-    // Paměť nese vždy poslední snímek, i ten nerozeslaný.
-    expect(hraZapasu(12)).toMatchObject({ cas: 108 });
-    await posli([4], 109);
     expect(db.broadcastAkce).toHaveBeenCalledTimes(3);
+    await posli([4], 105);
+    expect(db.broadcastAkce).toHaveBeenCalledTimes(3);
+    // Paměť nese vždy poslední snímek, i ten nerozeslaný.
+    expect(hraZapasu(12)).toMatchObject({ cas: 105 });
+    await posli([4], 106);
+    expect(db.broadcastAkce).toHaveBeenCalledTimes(4);
   });
 
   it("žádný běžící zápas = nenalezeno s větou (routa z toho udělá 404) a nic se neukládá", async () => {

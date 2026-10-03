@@ -34,11 +34,13 @@ import { pametHer } from "./hraPamet.js";
  */
 
 /**
- * Stav všem prohlížečům se staví z databáze; při boji se počitadla mění
- * každé 2 s, tak se průběžné změny rozesílají nejvýš takhle často (změna
- * Nástupce hned). Tep mostu (15 s) doručí poslední hodnoty i po klidu.
+ * Stav všem prohlížečům se staví z databáze, tak se průběžné změny
+ * rozesílají nejvýš takhle často (změna Nástupce hned). Most posílá snímek
+ * nejvýš jednou za 2 s; původních 5 s pult zdržovalo — uživatel 3. 10. 2026
+ * viděl „občas celkem delay“. 1,5 s propustí každý snímek mostu a jen
+ * odfiltruje dvojí doručení (WS + HTTP záloha, GM + divák).
  */
-const ROZESTUP_ROZESLANI_MS = 5_000;
+const ROZESTUP_ROZESLANI_MS = 1_500;
 
 export interface PrijetiSnimku {
   zapasId: number;
