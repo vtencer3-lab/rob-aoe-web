@@ -671,8 +671,10 @@ main > .prazdno::after {
    ho drží čitelný na tmavém dřevě i u tmavých barev. */
 .swatch { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 1.2em; height: 1.2em; border-radius: 2px; border: 1px solid var(--obrys); box-shadow: 0 0 0 1px color-mix(in srgb, var(--zlato) 40%, transparent); vertical-align: -0.25em; }
 /* Číslo barvy uvnitř (`data-cislo`, uživatel 3. 10. 2026): jako „pN“ ve hře.
+   Písmo Cinzel, ne Georgia: ta má minuskové číslice (3, 4, 5, 7, 9 klesají
+   pod účaří) a pětka ve čtverečku seděla níž než ostatní.
    Světlé barvy (žlutá, oranžová) tmavé číslo bez stínu, jako na dlaždicích. */
-.swatch[data-cislo]::before { content: attr(data-cislo); font: 700 0.78em/1 Georgia, "Times New Roman", serif; color: #fff; text-shadow: 0 1px 1px var(--obrys); }
+.swatch[data-cislo]::before { content: attr(data-cislo); font: 800 0.74em/1 "Cinzel", Georgia, serif; font-variant-numeric: lining-nums; color: #fff; text-shadow: 0 1px 1px var(--obrys); }
 .swatch.barva-4[data-cislo]::before, .swatch.barva-8[data-cislo]::before { color: var(--obrys); text-shadow: none; }
 .swatch.barva-1 { background: var(--b1); }
 .swatch.barva-2 { background: var(--b2); }
