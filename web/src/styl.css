@@ -1816,10 +1816,12 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .mapa-scenare .ping.barva-8 { border-color: var(--b8); }
 @keyframes ping-pulz { 0% { scale: 0.4; opacity: 1; } 100% { scale: 1.4; opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { .mapa-scenare .ping { animation: none; } }
-.pult-gm .ping-pro { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.5rem; margin: 0.4rem 0; font-size: 0.9rem; }
+.pult-gm .ping-pro { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin: 0.4rem 0; font-size: 0.9rem; }
 .pult-gm .ping-vypinac.zapnuto { border-color: var(--zlato); color: var(--zlato-svetle); box-shadow: 0 0 0 1px var(--zlato), 0 0 8px color-mix(in srgb, var(--zlato) 50%, transparent); }
-.pult-gm .ping-adresati { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; }
-.pult-gm .ping-adresati { transition: opacity var(--prechod) ease; }
+/* Adresáti ve dvou sloupcích (uživatel 3. 10. 2026): vlevo Všem a hráči 1–3,
+   vpravo 4–8 — plní se po sloupcích, tlačítka na celou šířku kvůli jménům. */
+.pult-gm .ping-adresati { display: grid; grid-auto-flow: column; grid-template-rows: repeat(4, auto); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem 0.5rem; width: min(100%, 28rem); transition: opacity var(--prechod) ease; }
+.pult-gm .ping-adresati .adresat { justify-content: flex-start; text-align: left; overflow: hidden; }
 .pult-gm .ping-adresati.vypnuto { opacity: 0.4; }
 .pult-gm .ping-adresati .adresat { padding: 0.25rem 0.6rem; font-family: inherit; font-size: 0.9rem; border: 2px solid var(--zlato-stin); }
 /* Vybraný adresát musí být vidět na první pohled (uživatel 3. 10. 2026):
