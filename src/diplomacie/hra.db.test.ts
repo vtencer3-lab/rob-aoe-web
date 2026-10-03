@@ -242,7 +242,7 @@ it("postup cílů bere text a limit z verze scénáře, kterou zápas hraje; rel
   const hra = (await pohled(await klient("h7", false))).hra;
   expect(hra).not.toHaveProperty("varovani");
   const hrac = (id: string) => hra.hraci.find((h: { hracId: string }) => h.hracId === id);
-  expect(hrac("h2")).toEqual({ hracId: "h2", cil: { text: "zabito : {} /650 jednotek", limit: 650, hodnota: 120 }, relikvie: 0, zije: true });
+  expect(hrac("h2")).toEqual({ hracId: "h2", cil: { text: "zabito : {} /650 jednotek", limit: 650, hodnota: 120 }, relikvie: 0, zije: true, kral: null });
   // Slot 1 je ve hře hráč 7 (dvě relikvie), slot 3 hráč 3 (vyřazen); slot 4 cíl nemá.
   expect(hrac("h1")).toMatchObject({ relikvie: 2, zije: true });
   expect(hrac("h3")).toMatchObject({ zije: false, cil: { text: null, limit: null, hodnota: 0 } });
