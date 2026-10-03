@@ -457,8 +457,9 @@ it("data ze hry jdou streamem jen GM zápasu, adminovi-ne-GM ne", async () => {
       const cizi = await stav(sid);
       expect(cizi.zapas.zapasId).toBe(zapas.id);
       expect("hra" in cizi.zapas).toBe(false);
-      expect(cizi.text).not.toContain("prijato");
-      expect(cizi.text).not.toContain("rozdano");
+      // Hráč h4 dostane jen vlastní postup (`mojeHra`), výpis hráčů ze hry nikdo jiný než GM.
+      expect(JSON.stringify(cizi.zapas)).not.toContain('"hraci"');
+      expect(JSON.stringify(cizi.zapas)).not.toContain("nastupceHracId\":\"h4\",\"hraci");
     }
   } finally {
     zapomenHry();
