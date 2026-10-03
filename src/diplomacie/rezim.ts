@@ -1,5 +1,6 @@
 import type { RezimAkce } from "../rezimy/index.js";
 import { REZIM_SCENARIO, type NastaveniLobby } from "../shared/lobbyKontrola.js";
+import { jeAi } from "../shared/aiHraci.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploData, ScenarVerze } from "../shared/diplomacie/typy.js";
 import { redigujDiplo } from "../shared/diplomacie/viditelnost.js";
@@ -59,6 +60,10 @@ export const diplomacie: RezimAkce = {
     // „Rozdat role“ ano. Nástupcem může být jen hráč zápasu mimo GM.
     await zrusNastupceMimoSestavu(zapasId, sestava.filter((s) => s.barva !== GM_BARVA).map((s) => s.hracId));
   },
+
+  // GM zakládá lobby sám (uživatel 3. 10. 2026): má scénář se sondou a celý
+  // zápas řídí; počítač na šedé hostem být nemůže, pak vybírá jádro.
+  hostSestavy: (sestava) => sestava.find((s) => s.barva === GM_BARVA && !jeAi(s.hracId))?.hracId ?? null,
 
   async poVytvoreniZapasu(client, zapasId, sedadla) {
     // Kontrola sestavy šedou vynutila; kdyby tu chyběla, je to chyba kódu.

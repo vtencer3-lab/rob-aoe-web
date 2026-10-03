@@ -144,7 +144,10 @@ async function pripravSedadla(client: PoolClient, akceId: number, sestava: Sesta
       throw new UcastnikOdhlasenChyba(`Hráč ${hracId} už není přihlášený do akce.`);
     }
   }
-  return { seats: sestavSedadla(sestava, odehrano), elo };
+  // Host podle módu (Diplomacie: GM), jinak podle odehraných her.
+  const { rows: rezimRows } = await client.query<{ rezim: RezimId }>("SELECT rezim FROM akce WHERE id = $1", [akceId]);
+  const pevnyHost = rezimAkce(rezimRows[0]?.rezim ?? "klasicky").hostSestavy(sestava);
+  return { seats: sestavSedadla(sestava, odehrano, pevnyHost), elo, pevnyHost };
 }
 
 async function vlozSedadla(client: PoolClient, zapasId: number, seats: Seat[], elo: ReadonlyMap<string, number | null>): Promise<void> {
@@ -217,8 +220,9 @@ export async function nahradSestavu(zapasId: number, sestava: SestavaVstup[]): P
     const { rows: hostRows } = await client.query<{ hrac_id: string }>("SELECT hrac_id FROM ucastnik WHERE zapas_id = $1 AND je_host", [zapasId]);
     const dosavadniHost = hostRows[0]?.hrac_id ?? null;
 
-    const { seats, elo } = await pripravSedadla(client, radek.akce_id, sestava);
-    const hostZustava = dosavadniHost !== null && seats.some((s) => s.hracId === dosavadniHost);
+    const { seats, elo, pevnyHost } = await pripravSedadla(client, radek.akce_id, sestava);
+    // Hosta určeného módem (GM Diplomacie) nepřebije ani dosavadní host.
+    const hostZustava = dosavadniHost !== null && seats.some((s) => s.hracId === dosavadniHost) && (pevnyHost === null || !seats.some((s) => s.hracId === pevnyHost) || pevnyHost === dosavadniHost);
     const nova = hostZustava ? seats.map((s) => ({ ...s, jeHost: s.hracId === dosavadniHost })) : seats;
 
     await client.query("DELETE FROM ucastnik WHERE zapas_id = $1", [zapasId]);

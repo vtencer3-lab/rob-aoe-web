@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { ROZBOR } from "../shared/diplomacie/fixtures.js";
 import { jmenoScenareProHru } from "../shared/diplomacie/scenar.js";
 import type { ScenarVerze } from "../shared/diplomacie/typy.js";
-import { nastaveniScenare } from "./rezim.js";
+import { diplomacie, nastaveniScenare } from "./rezim.js";
 
 const verze = (id: number, jmenoSouboru: string, cast: Partial<ScenarVerze> = {}): ScenarVerze => ({
   id,
@@ -45,4 +45,10 @@ it("bez aktivní verze je všechno null", () => {
 it("aktivní verze bez rozboru nechá velikost null", () => {
   const v = verze(1, "LLC.aoe2scenario", { aktivni: true, rozbor: null, chybaRozboru: "x" });
   expect(nastaveniScenare(v, [v])).toEqual({ scenar: "ROB_DIPLO_1.aoe2scenario", scenarStarsi: [], velikost: null });
+});
+
+it("hostem lobby je GM na šedé; počítač na šedé hostem není (vybere jádro)", () => {
+  const s = (gm: string) => [{ hracId: "a", tym: 0, barva: 1 }, { hracId: gm, tym: 0, barva: 7 }, { hracId: "b", tym: 0, barva: 2 }] as Parameters<typeof diplomacie.hostSestavy>[0];
+  expect(diplomacie.hostSestavy(s("gm"))).toBe("gm");
+  expect(diplomacie.hostSestavy(s("ai:3"))).toBeNull();
 });

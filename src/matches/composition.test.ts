@@ -43,6 +43,15 @@ describe("sestavSedadla", () => {
     expect(seats.filter((s) => s.jeHost).map((s) => s.hracId)).toEqual(["A"]);
   });
 
+  it("host určený módem přebije odehrané hry; AI nebo hráč mimo sestavu ne", () => {
+    const sestava = [h("A", 1, 1), h("B", 1, 3), h("ai:1", 2, 7)];
+    const host = (pevny: string | null) => sestavSedadla(sestava, her({ A: 900, B: 1 }), pevny).filter((s) => s.jeHost).map((s) => s.hracId);
+    expect(host("B")).toEqual(["B"]);
+    expect(host(null)).toEqual(["A"]);
+    expect(host("ai:1")).toEqual(["A"]);
+    expect(host("cizi")).toEqual(["A"]);
+  });
+
   it("neplatnou sestavu odmítne českou větou", () => {
     expect(() => sestavSedadla([h("A", 1, 1)], her({}))).toThrow(/aspoň 2/);
     expect(() => sestavSedadla([h("A", 1, 1), h("A", 2, 2)], her({}))).toThrow(/dvakrát/);

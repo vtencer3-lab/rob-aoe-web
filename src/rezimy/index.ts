@@ -37,6 +37,11 @@ export interface RezimAkce {
    * Admina se jádro neptá — ten smí vždycky (routes/hlas.ts).
    */
   smiMluvitDoZapasu(zapasId: number, hracId: string): Promise<boolean>;
+  /**
+   * Kdo má být hostem lobby, rozhoduje-li o tom mód (Diplomacie: GM na
+   * šedé). Null = vybere jádro (nejvíc odehraných her, `sestavSedadla`).
+   */
+  hostSestavy(sestava: SestavaVstup[]): string | null;
 }
 
 const klasicky: RezimAkce = {
@@ -48,6 +53,7 @@ const klasicky: RezimAkce = {
   doplnStav: async () => undefined,
   rediguj: (rezim) => rezim,
   smiMluvitDoZapasu: async () => false,
+  hostSestavy: () => null,
 };
 
 const REZIMY: Record<RezimId, RezimAkce> = { klasicky, diplomacie };
