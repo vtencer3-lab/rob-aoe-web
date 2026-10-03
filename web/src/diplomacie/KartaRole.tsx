@@ -110,7 +110,7 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
               <ObsahRole moje={{ ...moje, role: "sasek" }} vse={d.role} ucastnici={zapas.ucastnici} />
             </PromenaSaska>
           ) : (
-          <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
+          <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />} pamet={`diplo-karta-${zapas.id}`}>
             <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
             {/* Na širokém displeji mapa vlevo a cíle vpravo, jako mapa a tabulka v pultu GM (uživatel 3. 10. 2026). */}
             <div className="karta-vedle">

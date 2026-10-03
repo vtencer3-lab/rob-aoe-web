@@ -73,7 +73,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 | 5.1 | Mapa: králové, relikvie s barvou nosiče, přepínače (platí i pro overlaye) | W PultGm, DB routes „zobrazení mapy“ |
 | 5.2 | Ping: víc adresátů, vypínač, zvuk u hráče | DB routes „ping“, S pingy.test |
 | 5.3 | Tabulka: pod hráčem sekundární cíl, relikvie, odpočet držení; vyřazený přeškrtnutý | W PultGm |
-| 5.5 | Odkrytý pult GM zůstane odkrytý po obnovení stránky v téže záložce (sessionStorage `diplo-pult-<id>`); karta hráče se po obnovení zakryje vždy (stream) | W Zakryti.test „s pamětí zůstane odkrytý …“ |
+| 5.5 | Odkrytý pult GM i karta hráče zůstanou odkryté po obnovení stránky v téže záložce (sessionStorage `diplo-pult-<id>`, `diplo-karta-<id>`); nová záložka začíná zakrytá (stream) | W Zakryti.test „s pamětí zůstane odkrytý …“ |
 | 5.6 | Nové části (cíle, schopnosti, oznámení, role padlých, povinný prodej) se objevují animací; změněná hodnota dosedne razítkem; při omezení pohybu nic | ruční |
 | 5.4 | Overlaye OBS `/obs/mapa`, `/obs/tabulka` s `OBS_KLIC` | ruční |
 

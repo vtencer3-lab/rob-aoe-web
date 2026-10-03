@@ -17,9 +17,9 @@ const natoceni = (vzdalenost: number, stupne: number) => `perspective(${vzdaleno
  * Tajný obsah, ve výchozím stavu zakrytý (spec §1.1 bod 8). Stav je jen
  * v paměti komponenty — po obnovení stránky je karta zase zakrytá, ať si ji
  * streamer neprozradí tím, že stránku znovu načte. Výjimka je `pamet`
- * (pult GM, uživatel 3. 10. 2026: „když byl pult rozbalený, refresh ho
- * nechá rozbalený“): stav drží sessionStorage pod tímhle klíčem — jen
- * v téže záložce, nová záložka nebo okno začíná zakryté. `napoveda` je bublina
+ * (pult GM i karta hráče, uživatel 3. 10. 2026: „když byl pult rozbalený,
+ * refresh ho nechá rozbalený“): stav drží sessionStorage pod tímhle klíčem
+ * — jen v téže záložce, nová záložka nebo okno začíná zakryté. `napoveda` je bublina
  * zakrytého tlačítka (`title`) pro popisek, který sám neříká, co kliknutí
  * udělá.
  *
