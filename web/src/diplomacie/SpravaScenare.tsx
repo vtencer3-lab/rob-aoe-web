@@ -7,8 +7,12 @@ import { diploApi } from "./api.js";
 import { MapaScenare, popiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 
-/** Verze má přibalenou dnešní sondu — kopii pro hru jde stáhnout. */
-const maSondu = (v: ScenarVerze) => v.sonda !== null && v.sonda.chyba === null && !v.sonda.zastarala;
+/**
+ * Kopii pro hru jde stáhnout, dokud přibalení sondy neselhalo. Zastaralou
+ * sondu přebalí server sám — po startu i těsně před stažením (uživatel
+ * 3. 10. 2026: „na webu jen hotové verze sond“), tlačítko na to není.
+ */
+const lzeStahnout = (v: ScenarVerze) => v.sonda?.chyba == null;
 
 /** Stažení souboru tlačítkem (stažení až po potvrzení, nebo z tlačítka, které jde zamknout). */
 function stahni(url: string, jmeno: string) {
@@ -18,7 +22,6 @@ function stahni(url: string, jmeno: string) {
   a.click();
 }
 
-const NAPOVEDA_AUTOMATIZACE = "Do scénáře se přibalí skripty na sledování statistik ze hry.";
 const VAROVANI_ORIGINALU = "Tahle verze nebude automaticky posílat průběh hry na stránku. Opravdu stáhnout?";
 
 /**
@@ -127,15 +130,6 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
         setVerze((await diploApi.verze()).verze);
       });
   };
-  // Přibalení trvá vteřiny (Python na serveru) — tlačítko je mezitím zamčené.
-  const [pribaluje, setPribaluje] = useState<number | null>(null);
-  const pribalSondu = (id: number) => {
-    setPribaluje(id);
-    void akce(id, async () => {
-      await diploApi.pribalSondu(id);
-      setVerze((await diploApi.verze()).verze);
-    }).finally(() => setPribaluje(null));
-  };
 
   return (
     <Skladaci className="sprava-scenare" testId="sprava-scenare" hlava="Scénář Diplomacie" otevreno={otevreno} onPrepnout={setOtevreno}>
@@ -179,7 +173,6 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
           .sort((a, b) => b.id - a.id)
           .map((v) => {
             const zdroj = zdrojMinimapy(verze, v);
-            const sonda = maSondu(v);
             return (
               <li key={v.id} className={v.aktivni ? "aktivni" : ""} data-testid="verze-scenare">
                 <div className="popis">
@@ -206,20 +199,10 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
                   <button type="button" onClick={() => zeptejSe("original", v)}>
                     Stáhnout originál
                   </button>
-                  {/* Hlavní akce, dokud verze nemá dnešní sondu (chybí, nebo je zastaralá). */}
-                  <button
-                    type="button"
-                    className={sonda ? "napoveda" : "cta napoveda"}
-                    data-napoveda={NAPOVEDA_AUTOMATIZACE}
-                    disabled={pribaluje !== null}
-                    onClick={() => pribalSondu(v.id)}
-                  >
-                    Přibalit automatizace
-                  </button>
                   <button
                     type="button"
                     className="cta"
-                    disabled={!sonda}
+                    disabled={!lzeStahnout(v)}
                     onClick={() => {
                       setChyba(null);
                       stahni(diploApi.souborUrl(v.id), v.jmenoHry);

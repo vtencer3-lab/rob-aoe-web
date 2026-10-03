@@ -5,7 +5,8 @@ import { getAktivniAkce, setNastaveniLobby } from "../db/events.js";
 import { getZapas } from "../db/matches.js";
 import { HttpError, requireId, requireUser } from "../http/guards.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
-import { souhrnSondy } from "../shared/diplomacie/hra.js";
+import { config } from "../config.js";
+import { souhrnSondy, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { losujRole, zmenCil, zmenRoli } from "../shared/diplomacie/los.js";
 import { ROLE_VOLITELNE, type DiploZapas, type Role } from "../shared/diplomacie/typy.js";
 import { jePlatneJmenoScenare, type NastaveniLobby } from "../shared/lobbyKontrola.js";
@@ -20,6 +21,7 @@ import {
   najdiVerziPodleSha,
   ulozSondu,
   setMapaZapasu,
+  verzeSeZastaralouSondou,
   setNastupce,
   setStavDiplo,
   smazVerzi,
@@ -194,6 +196,37 @@ function posliSoubor(reply: FastifyReply, soubor: { jmenoSouboru: string; data: 
 }
 
 /** Routy verzí scénáře (spec §5.3). Čtení a stažení jsou veřejné — scénář je se souhlasem autora. */
+/**
+ * Přibalí do verze sondu z aktuálního `sonda.xs` a uloží ji (i s chybou, když
+ * přibalení selže). Jediné místo pro tlačítko ve správě, start serveru
+ * i stažení. Null = taková verze není.
+ */
+async function prebalSondu(id: number, deps: DiploDeps): Promise<SondaScenare | null> {
+  const original = await getSouborVerze(id, true);
+  if (!original) return null;
+  const vysledek = await deps.pribalSondu(original.data);
+  const sonda = vysledek.ok ? vysledek.sonda : sondaSChybou(vysledek.chyba);
+  await ulozSondu(id, sonda, vysledek.ok ? vysledek.soubor : null);
+  return sonda;
+}
+
+/** Přebalí všechny verze se zastaralou sondou, jednu po druhé (Python je náročný). */
+async function prebalZastaraleSondy(deps: DiploDeps): Promise<void> {
+  const revize = revizeSondy();
+  if (revize === null) return;
+  const ids = await verzeSeZastaralouSondou(revize);
+  for (const id of ids) await prebalSondu(id, deps);
+  if (ids.length > 0) await broadcastAkce();
+}
+
+/** Před stažením: má-li verze zastaralou sondu, přebalí ji hned. */
+async function zajistiAktualniSondu(id: number, deps: DiploDeps): Promise<void> {
+  const revize = revizeSondy();
+  if (revize === null || !(await verzeSeZastaralouSondou(revize)).includes(id)) return;
+  await prebalSondu(id, deps);
+  await broadcastAkce();
+}
+
 function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
   app.get("/api/diplo/scenar", async () => ({ verze: await listVerzi() }));
 
@@ -305,15 +338,21 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
   // chyba serveru: uloží se s důvodem a správa ho ukáže.
   app.post("/api/diplo/scenar/:id/sonda", async (request) => {
     await requireAutorScenare(request);
-    const id = requireId(request);
-    const original = await getSouborVerze(id, true);
-    if (!original) throw new HttpError(404, "Taková verze není.");
-    const vysledek = await deps.pribalSondu(original.data);
-    const sonda = vysledek.ok ? vysledek.sonda : sondaSChybou(vysledek.chyba);
-    await ulozSondu(id, sonda, vysledek.ok ? vysledek.soubor : null);
+    const sonda = await prebalSondu(requireId(request), deps);
+    if (!sonda) throw new HttpError(404, "Taková verze není.");
     await broadcastAkce();
     return { ok: true, sonda: souhrnSondy(sonda, revizeSondy()) };
   });
+
+  // Na webu jsou jen hotové verze (uživatel 3. 10. 2026: „natvrdo, aby na
+  // webu byly už jen hotové verze sond“): po startu serveru — tedy po každém
+  // nasazení se změněnou sondou — se zastaralé sondy přebalí samy na pozadí.
+  // Jen na nasazeném webu; testy a vývoj Python s knihovnami mít nemusí.
+  if (config.jeProdukce) {
+    app.addHook("onReady", async () => {
+      void prebalZastaraleSondy(deps).catch((e: unknown) => app.log.error(e, "přebalení zastaralých sond selhalo"));
+    });
+  }
 
   // Vlastní minimapa pro verzi, která ji při nahrání nepřevzala (mapa se
   // podle kontroly změnila, nebo vlastní minimapa přibyla až potom).
@@ -339,13 +378,17 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
   app.get("/api/diplo/scenar/aktivni/soubor", async (request, reply) => {
     const original = await chceOriginal(request);
     const aktivni = await getAktivniVerze();
+    // Pojistka, kdyby přebalení po startu ještě nedoběhlo: stáhne se vždy aktuální sonda.
+    if (aktivni && !original) await zajistiAktualniSondu(aktivni.id, deps);
     const soubor = aktivni ? await getSouborVerze(aktivni.id, original) : null;
     if (!soubor) throw new HttpError(404, "Scénář zatím nikdo nenahrál.");
     return posliSoubor(reply, soubor);
   });
 
   app.get("/api/diplo/scenar/:id/soubor", async (request, reply) => {
-    const soubor = await getSouborVerze(requireId(request), await chceOriginal(request));
+    const original = await chceOriginal(request);
+    if (!original) await zajistiAktualniSondu(requireId(request), deps);
+    const soubor = await getSouborVerze(requireId(request), original);
     if (!soubor) throw new HttpError(404, "Taková verze není.");
     return posliSoubor(reply, soubor);
   });

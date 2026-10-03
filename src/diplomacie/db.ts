@@ -201,6 +201,15 @@ export async function getSonduVerze(id: number): Promise<{ jmenoHry: string; son
 }
 
 /** Výsledek (i neúspěšný) přibalení sondy k verzi; `dataSonda` null = kopie se sondou není. */
+/** Verze, jejichž přibalená sonda není z aktuálního `sonda.xs` (jiná revize, nebo žádná). */
+export async function verzeSeZastaralouSondou(revize: string): Promise<number[]> {
+  const { rows } = await getPool().query<{ id: number }>(
+    "SELECT id FROM diplo_scenar WHERE sonda IS NULL OR sonda->>'revize' IS DISTINCT FROM $1 ORDER BY id",
+    [revize],
+  );
+  return rows.map((r) => r.id);
+}
+
 export async function ulozSondu(id: number, sonda: SondaScenare, dataSonda: Buffer | null): Promise<void> {
   await getPool().query("UPDATE diplo_scenar SET sonda = $2::jsonb, data_sonda = $3 WHERE id = $1", [id, JSON.stringify(sonda), dataSonda]);
 }

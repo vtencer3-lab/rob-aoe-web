@@ -76,7 +76,7 @@ it("autor nahraje, první verze se aktivuje, stažení vrátí kopii se sondou p
   // Originál si nechává jméno, pod kterým ho autor nahrál.
   const original = await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor?original=1`, cookies: { sid: jin } });
   expect(original.headers["content-disposition"]).toBe(`attachment; filename*=UTF-8''${encodeURIComponent("Diplomacie LLC v1.aoe2scenario")}`);
-  expect((await app.inject({ method: "GET", url: "/api/diplo/scenar/aktivni/soubor" })).rawPayload.equals(seSondou(LLC))).toBe(true);
+  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor` })).rawPayload.equals(seSondou(LLC))).toBe(true);
   const mapa = await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/minimapa.webp` });
   expect(mapa.headers["content-type"]).toBe("image/webp");
   expect(mapa.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
@@ -145,11 +145,21 @@ it("sonda s jinou revizí je zastaralá, dokud se nepřibalí znovu; varování 
   expect((await verze()).sonda).toMatchObject({ zastarala: false });
 });
 
-it("verze uložená bez údajů o sondě (nahraná dřív) má sonda null a stahuje se originál", async () => {
-  await klient("autor", false);
+// Na webu jsou jen hotové verze (3. 10. 2026): stažení verze bez sondy nebo
+// se zastaralou sondou ji nejdřív přebalí; originál přes ?original=1 nic nemění.
+it("stažení verze bez sondy nebo se zastaralou ji přebalí; originál ne", async () => {
+  const jin = await klient("autor", false);
   const { id } = await ulozVerziScenare({ ...VERZE, data: LLC });
   expect((await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze[0].sonda).toBeNull();
-  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor` })).rawPayload.equals(LLC)).toBe(true);
+  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor?original=1`, cookies: { sid: jin } })).rawPayload.equals(LLC)).toBe(true);
+  expect((await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze[0].sonda).toBeNull();
+  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor` })).rawPayload.equals(seSondou(LLC))).toBe(true);
+  expect((await getSonduVerze(id))!.sonda?.revize).toBe(revizeSondy());
+  // Zastaralá revize: znovu přebalí.
+  await getPool().query("UPDATE diplo_scenar SET sonda = jsonb_set(sonda, '{revize}', '\"000000000000\"') WHERE id = $1", [id]);
+  expect((await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze[0].sonda).toMatchObject({ zastarala: true });
+  expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor` })).rawPayload.equals(seSondou(LLC))).toBe(true);
+  expect((await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze[0].sonda).toMatchObject({ zastarala: false });
 });
 
 it("cizí hráč 403, nepřihlášený 401, špatné jméno a hlavička 400, duplicita 409", async () => {

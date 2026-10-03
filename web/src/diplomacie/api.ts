@@ -52,7 +52,6 @@ export const diploApi = {
   /** Verze `id` převezme vlastní minimapu (obrázek ze hry) verze `zdrojId`; jiná mapa = 409. */
   prevzitMinimapu: (id: number, zdrojId: number) => post(`/api/diplo/scenar/${id}/minimapa-z/${zdrojId}`),
   /** Dopočítá sondu verzi nahrané dřív (nebo po neúspěchu znovu); výsledek nese i případnou chybu. */
-  pribalSondu: (id: number) => fetch(cesta(`/api/diplo/scenar/${id}/sonda`), { method: "POST" }).then((r) => json<{ ok: true; sonda: SouhrnSondy }>(r)),
   /** Ke stažení jde kopie se sondou; `original` (jen autor a admin) vrátí soubor, jak ho autor nahrál. */
   souborUrl: (id: number | "aktivni", original = false) => cesta(`/api/diplo/scenar/${id}/soubor${original ? "?original=1" : ""}`),
   // Otisk obsahu v adrese: route posílá roční cache a po výměně obrázku u

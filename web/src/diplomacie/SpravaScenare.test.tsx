@@ -117,9 +117,9 @@ it("po nahrání ukáže výsledek, vyprázdní formulář a načte seznam znovu
   expect(await screen.findByText(/Soubor je uložený, ale nepodařilo se ho přečíst: chybí hlavička/)).toBeTruthy();
 });
 
-// Tlačítka verze místo textu „sonda: ano (zastaralá)“: „Přibalit automatizace“
-// je hlavní (zlaté), dokud verze nemá dnešní sondu; „Stáhnout scénář“ je
-// zlaté a zamčené, dokud ji nemá. Bublina říká, co přibalení dělá.
+// Zastaralou sondu přebalí server sám (3. 10. 2026), tlačítko „Přibalit
+// automatizace“ zmizelo. „Stáhnout scénář“ je zamčené jen tehdy, když
+// přibalení sondy selhalo.
 const stazeni = () => {
   const kliky: { href: string; download: string }[] = [];
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
@@ -129,7 +129,7 @@ const stazeni = () => {
 };
 const SONDA = { cilu: 42, oznaceno: 42, chyba: null, zastarala: false, varovani: [] };
 
-it("Stáhnout scénář jde až s dnešní sondou; jinak je hlavní akcí Přibalit automatizace", async () => {
+it("Stáhnout scénář jde i se zastaralou sondou (server ji přebalí), jen se selhanou ne", async () => {
   const kliky = stazeni();
   const sDnesni: ScenarVerze = { ...V2, sonda: SONDA };
   const zastarala: ScenarVerze = { ...V1, rozbor: ROZBOR, chybaRozboru: null, sonda: { ...SONDA, zastarala: true, varovani: ["počet označených triggerů (41) nesedí na 7 hráčů bez GM"] } };
@@ -139,23 +139,18 @@ it("Stáhnout scénář jde až s dnešní sondou; jinak je hlavní akcí Přiba
   expect(screen.queryByText(/sonda:/)).toBeNull();
   expect(screen.queryByRole("link", { name: "originál" })).toBeNull();
   const stahnout = screen.getAllByRole("button", { name: "Stáhnout scénář" });
-  const pribalit = screen.getAllByRole("button", { name: "Přibalit automatizace" });
+  expect(screen.queryByRole("button", { name: "Přibalit automatizace" })).toBeNull();
   expect(stahnout.map((b) => [b.className, (b as HTMLButtonElement).disabled])).toEqual([
     ["cta", false],
-    ["cta", true],
+    ["cta", false],
     ["cta", true],
   ]);
-  expect(pribalit.map((b) => b.classList.contains("cta"))).toEqual([false, true, true]);
-  expect(pribalit[0]!.getAttribute("data-napoveda")).toBe("Do scénáře se přibalí skripty na sledování statistik ze hry.");
   // Důvod chybějící sondy a varování přibalení zůstávají jako krátká věta.
   expect(screen.getByText(/ValueError: bez sondy/)).toBeTruthy();
   expect(screen.getByText(/nesedí na 7 hráčů bez GM/)).toBeTruthy();
 
   fireEvent.click(stahnout[0]!);
   expect(kliky).toEqual([{ href: "/api/diplo/scenar/3/soubor", download: "ROB_DIPLO_3.aoe2scenario" }]);
-  fireEvent.click(pribalit[1]!);
-  expect(diploApi.pribalSondu).toHaveBeenCalledWith(2);
-  await waitFor(() => expect(diploApi.verze).toHaveBeenCalledTimes(2));
 });
 
 it("Stáhnout originál se ptá, že originál nepošle průběh hry; stáhne ho pod jménem od autora", async () => {
@@ -213,8 +208,9 @@ it("odmítnuté smazání ukáže větu serveru pod řádkem verze až do dalš�
   // Seznam se po odmítnutí nenačítá znovu; věta zůstává, dokud se nic nestane.
   expect(diploApi.verze).toHaveBeenCalledTimes(1);
   expect(screen.getByTestId("chyba-smazani")).toBeTruthy();
-  // Další akce (tady Přibalit automatizace) ji uklidí.
-  fireEvent.click(screen.getAllByRole("button", { name: "Přibalit automatizace" })[0]!);
+  // Další akce (tady Stáhnout scénář) ji uklidí.
+  stazeni();
+  fireEvent.click(screen.getAllByRole("button", { name: "Stáhnout scénář" })[0]!);
   expect(screen.queryByTestId("chyba-smazani")).toBeNull();
 });
 

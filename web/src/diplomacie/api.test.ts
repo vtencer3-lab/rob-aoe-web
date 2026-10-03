@@ -66,9 +66,3 @@ it("adresy souboru a minimapy vedou na routy scénáře", () => {
   expect(diploApi.minimapaUrl(3, "0123456789abcdef")).toBe("/api/diplo/scenar/3/minimapa.webp?v=0123456789abcdef");
 });
 
-it("přibalení sondy je POST bez těla na routu verze a vrací výsledek i s případnou chybou", async () => {
-  const sonda = { cilu: 0, oznaceno: 0, chyba: "ValueError: x", zastarala: false, varovani: [] };
-  const f = stubFetch({ ok: true, sonda });
-  await expect(diploApi.pribalSondu(3)).resolves.toEqual({ ok: true, sonda });
-  expect(f).toHaveBeenCalledWith("/api/diplo/scenar/3/sonda", { method: "POST" });
-});
