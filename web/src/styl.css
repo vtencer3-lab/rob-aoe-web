@@ -1570,12 +1570,14 @@ details[open]:not([data-zavira]) > summary::before { rotate: 90deg; }
 .nastaveni-lobby select, .nastaveni-lobby input[type="number"] { color: var(--text); }
 
 /* Vyber civilizace s erbem (48 px) jako ve hre: tlacitko + vlastni seznam. */
-.vyber-civ { position: relative; }
-.vyber-civ-tlacitko { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; font-size: 1rem; font-family: "Cinzel", Georgia, serif; }
-.vyber-civ-tlacitko > span:first-of-type { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.vyber-civ-tlacitko .sipka { margin-left: auto; color: var(--tlumene); }
+/* Rozbalovací výběr s obrázky (`Rozbalovaci`): civilizace s erbem, hráč se
+   čtverečkem barvy. Vzhled konkrétního výběru nese třída obalu. */
+.rozbalovaci { position: relative; }
+.rozbalovaci-tlacitko { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; font-size: 1rem; font-family: "Cinzel", Georgia, serif; }
+.rozbalovaci-tlacitko > span:first-of-type { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rozbalovaci-tlacitko .sipka { margin-left: auto; color: var(--tlumene); }
 .vyber-civ .erb { height: 48px; width: auto; flex: none; }
-.vyber-civ-seznam {
+.rozbalovaci-seznam {
   position: absolute; z-index: 20; top: calc(100% + 4px); left: 0;
   /* Stejně široký jako tlačítko nad ním (sloupec 16,5 rem). */
   width: 100%; box-sizing: border-box; max-height: 26rem; overflow-y: auto;
@@ -1584,12 +1586,12 @@ details[open]:not([data-zavira]) > summary::before { rotate: 90deg; }
 }
 /* Rozbalovací seznamy (civilizace, našeptávač chatu) se rozvinou od svého
    tlačítka, místo aby naskočily. */
-.vyber-civ-seznam { transform-origin: top; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
+.rozbalovaci-seznam { transform-origin: top; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
 .chat .naseptavac { transform-origin: bottom; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
 @keyframes seznam-vznik { from { opacity: 0; scale: 1 0.92; } }
-.vyber-civ-seznam li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 1.05rem; transition: background-color var(--prechod-rychly) ease; }
-.vyber-civ-seznam li:hover { background: rgba(216, 168, 58, 0.16); }
-.vyber-civ-seznam li.vybrana { background: linear-gradient(#e2c47c, #c99a35); color: #23150a; }
+.rozbalovaci-seznam li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 1.05rem; transition: background-color var(--prechod-rychly) ease; }
+.rozbalovaci-seznam li:hover { background: rgba(216, 168, 58, 0.16); }
+.rozbalovaci-seznam li.vybrana { background: linear-gradient(#e2c47c, #c99a35); color: #23150a; }
 
 /* Nastaveni lobby jako herni panel Game Settings: popisek vlevo, ovladani
    vpravo, pod tim Team Settings a Advanced Settings vedle sebe. */
@@ -1904,23 +1906,12 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
   .tabulka-roli td.znak { width: var(--znak); }
 }
 /* Čtvereček barvy před jménem (`JmenoSBarvou`): GM si řádek spojí s dlaždicí
-   a s „pN“ ze hry i u dvou AI se stejným jménem. U výběru cíle stojí
-   čtvereček vybraného hráče vedle roletky — položky roletky barvu nést
-   neumějí. */
+   a s „pN“ ze hry i u dvou AI se stejným jménem. */
 .tabulka-roli td select { width: 100%; box-sizing: border-box; }
-.tabulka-roli .cil-s-barvou { display: flex; align-items: center; gap: 0.4rem; }
-.tabulka-roli .cil-s-barvou select { min-width: 0; }
-/* Položky výběru cíle v barvě hráče (pozadí položky — čtvereček do <option>
-   vložit nejde). Světlé barvy s tmavým písmem jako na dlaždicích. */
-.tabulka-roli option.barva-1 { background: var(--b1); color: #fff; }
-.tabulka-roli option.barva-2 { background: var(--b2); color: #fff; }
-.tabulka-roli option.barva-3 { background: var(--b3); color: #fff; }
-.tabulka-roli option.barva-4 { background: var(--b4); color: var(--obrys); }
-.tabulka-roli option.barva-5 { background: var(--b5); color: #fff; }
-.tabulka-roli option.barva-6 { background: var(--b6); color: #fff; }
-.tabulka-roli option.barva-7 { background: var(--b7); color: #fff; }
-.tabulka-roli option.barva-8 { background: var(--b8); color: var(--obrys); }
-.tabulka-roli .cil-s-barvou .swatch { flex: none; }
+/* Výběr cíle (Kat, Žoldák): vlastní rozbalovací seznam se čtverečkem barvy
+   u každého hráče (`Rozbalovaci`, uživatel 3. 10. 2026). */
+.vyber-hrace .rozbalovaci-tlacitko { font-family: inherit; font-size: 0.95rem; padding: 0.3rem 0.6rem; }
+.vyber-hrace .rozbalovaci-seznam li { font-size: 0.95rem; }
 .tabulka-roli td > span { color: var(--tlumene); font-size: 0.9rem; }
 /* Data z běžící hry (HraZive.tsx): stáří dat a věta o Nástupci jsou drobné
    poznámky pod mapou. Cíl hráče s postupem je vlastní řádek tabulky pod jeho
@@ -2067,8 +2058,8 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .skladani.jen-ke-cteni .jmeno { max-width: none; }
 .skladani.jen-ke-cteni .radek { cursor: default; }
 .skladani.jen-ke-cteni .radek.ja .jmeno { font-weight: 700; color: var(--akcent); }
-.skladani.jen-ke-cteni .vyber-civ-tlacitko:disabled { opacity: 0.6; cursor: default; }
-.skladani.jen-ke-cteni .vyber-civ-tlacitko .sipka { visibility: hidden; }
+.skladani.jen-ke-cteni .vyber-civ .rozbalovaci-tlacitko:disabled { opacity: 0.6; cursor: default; }
+.skladani.jen-ke-cteni .vyber-civ .rozbalovaci-tlacitko .sipka { visibility: hidden; }
 
 /* Řazení tabulky přihlášených v režii: hlavička je tlačítko, šipka říká směr. */
 .seznam > thead > tr > th button.razeni { background: none; border: none; box-shadow: none; padding: 0; margin: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }

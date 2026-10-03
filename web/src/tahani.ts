@@ -63,7 +63,7 @@ export function animovanyPosunY(el: HTMLElement): number {
 }
 
 /** Interaktivní prvky uvnitř řádku, ze kterých se tažení nezačíná. */
-const NETAHAT = "button, a, input, select, textarea, [role='listbox'], [role='option'], .vyber-civ";
+const NETAHAT = "button, a, input, select, textarea, [role='listbox'], [role='option'], .rozbalovaci";
 
 /**
  * Přetahování řádků v rámci jedné skupiny (vybraní, nebo nevybraní).

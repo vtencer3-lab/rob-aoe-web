@@ -4,7 +4,8 @@ import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
 import { ROLE_VOLITELNE, type DiploData, type DiploZapas, type Role, type ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { BARVA_NAZEV, type Barva, type ZapasView } from "../../../src/shared/types.js";
 import type { Hlidej } from "../rezimy/index.js";
-import { JmenoUcastnika, VycetUcastniku, ZnakBarvy } from "../views/JmenoSBarvou.js";
+import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
+import { Rozbalovaci } from "../views/Rozbalovaci.js";
 import { Potvrzeni } from "../views/Potvrzeni.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
@@ -201,7 +202,6 @@ export function TabulkaRoli({
     <table className="tabulka-roli">
       <tbody>
         {d.role.flatMap((r) => {
-          const barvaCile = r.cilHracId ? mujUcastnik(zapas, r.cilHracId)?.barva : undefined;
           // Vyřazený hráč (hra hlásí, že už nehraje): jméno přeškrtnuté, řádek ztlumený (uživatel 3. 10. 2026).
           const vyrazen = d.hra?.hraci.find((h) => h.hracId === r.hracId)?.zije === false;
           // Pod řádkem hráče ještě řádek s daty ze hry (bez nich nic nekreslí).
@@ -236,26 +236,22 @@ export function TabulkaRoli({
                     {r.cilHracId ? hrac(r.cilHracId) : "—"}
                   </span>
                 ) : upravy && (r.role === "kat" || r.role === "zoldak") ? (
-                  <div className="cil-s-barvou">
-                    {barvaCile === undefined ? null : <ZnakBarvy barva={barvaCile} />}
-                    <select aria-label={`Cíl: ${jmeno(r.hracId)}`} value={r.cilHracId ?? ""} disabled={upravy.pracuje} onChange={(e) => upravy.zmen(r.hracId, { cilHracId: e.target.value })}>
-                      {povoleneCile(
-                        d.role.map((x) => x.hracId),
-                        r.hracId,
-                        d.nastupceHracId!,
-                      ).map((c) => {
-                        // Položka seznamu nesmí obsahovat čtvereček, jen text: barvu
-                        // nese pozadí položky a číslo barvy stojí před jménem
-                        // (uživatel 3. 10. 2026); „(pN)“ tím odpadá.
-                        const u = mujUcastnik(zapas, c);
-                        return (
-                          <option key={c} value={c} className={u ? `barva-${u.barva}` : undefined}>
-                            {u ? `${u.barva} · ${jmenoHrace(u)}` : jmeno(c)}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
+                  // Vlastní rozbalovací výběr: u každého hráče čtvereček barvy
+                  // s číslem, jako všude jinde (uživatel 3. 10. 2026).
+                  <Rozbalovaci<string | null>
+                    trida="vyber-hrace"
+                    popisek={`Cíl: ${jmeno(r.hracId)}`}
+                    polozky={povoleneCile(
+                      d.role.map((x) => x.hracId),
+                      r.hracId,
+                      d.nastupceHracId!,
+                    )}
+                    hodnota={r.cilHracId}
+                    vypnuto={upravy.pracuje}
+                    onZmena={(c) => (c === null ? undefined : upravy.zmen(r.hracId, { cilHracId: c }))}
+                    klic={(c) => c ?? "zadny"}
+                    obsah={(c) => <span>{c === null ? "—" : hrac(c)}</span>}
+                  />
                 ) : r.role === "najezdnik" ? (
                   <span>
                     zná: <VycetUcastniku ucastnici={zapas.ucastnici} hraci={d.role.filter((x) => x.role === "najezdnik" && x.hracId !== r.hracId).map((x) => x.hracId)} />

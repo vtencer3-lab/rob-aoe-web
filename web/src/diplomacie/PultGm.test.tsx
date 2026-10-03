@@ -74,20 +74,22 @@ it("po losu tabulka s roletkami, cíle jen povolené, souhrn složení a rozesl�
   odkryj();
   const kat = ROLE_LOS.find((r) => r.role === "kat")!;
   expect(screen.getByRole("combobox", { name: `Role: ${jmeno(kat.hracId)}` })).toHaveValue("kat");
-  const cil = screen.getByRole("combobox", { name: `Cíl: ${jmeno(kat.hracId)}` });
-  expect(cil).toHaveValue(kat.cilHracId);
-  const moznosti = within(cil).getAllByRole("option").map((o) => o.getAttribute("value"));
-  expect(moznosti).not.toContain("h1");
-  expect(moznosti).not.toContain(kat.hracId);
+  // Výběr cíle je vlastní rozbalovací seznam (tlačítko + listbox se čtverečky barev).
+  const cil = screen.getByRole("button", { name: `Cíl: ${jmeno(kat.hracId)}` });
+  expect(cil).toHaveTextContent(jmeno(kat.cilHracId!));
+  fireEvent.click(cil);
+  const moznosti = within(screen.getByRole("listbox", { name: `Cíl: ${jmeno(kat.hracId)}` })).getAllByRole("option").map((o) => o.textContent);
+  expect(moznosti).not.toContain("Hráč 1");
+  expect(moznosti).not.toContain(jmeno(kat.hracId));
+  fireEvent.click(cil);
   fireEvent.change(screen.getByRole("combobox", { name: `Role: ${jmeno(kat.hracId)}` }), { target: { value: "garda" } });
   expect(diploApi.role).toHaveBeenCalledWith(zapas.id, kat.hracId, { role: "garda" });
   expect(screen.getByText("Složení odpovídá pravidlům.")).toBeTruthy();
-  // Jméno v řádku nese čtvereček barvy hráče; u roletky cíle stojí čtvereček
-  // právě vybraného cíle (položky roletky barvu nést neumějí) a Nájezdník
-  // má u „zná:“ barvu druhého Nájezdníka.
+  // Jméno v řádku nese čtvereček barvy hráče, výběr cíle čtvereček vybraného
+  // cíle a Nájezdník má u „zná:“ barvu druhého Nájezdníka.
   const barvaHrace = (id: string) => `barva-${zapas.ucastnici.find((u) => u.hracId === id)!.barva}`;
   expect(screen.getByRole("rowheader", { name: jmeno(kat.hracId) }).querySelector(".swatch")).toHaveClass(barvaHrace(kat.hracId));
-  expect(cil.parentElement!.querySelector(".swatch")).toHaveClass(barvaHrace(kat.cilHracId!));
+  expect(cil.querySelector(".swatch")).toHaveClass(barvaHrace(kat.cilHracId!));
   const [najezdnik, druhy] = ROLE_LOS.filter((r) => r.role === "najezdnik");
   const zna = within(screen.getByRole("rowheader", { name: jmeno(najezdnik!.hracId) }).closest("tr")!).getByText(/^zná:/);
   expect(zna).toHaveTextContent(`zná: ${jmeno(druhy!.hracId)}`);
@@ -138,12 +140,13 @@ it("po rozeslání Kat i Žoldák bez cíle ukážou „—“, ne roletku", () 
 });
 
 // Před rozesláním se úprava neptá — hráči ještě nic nevidí.
-it("po losu jde cíl změnit roletkou rovnou, bez dotazu", () => {
+it("po losu jde cíl změnit výběrem rovnou, bez dotazu", () => {
   render(<PultGm zapas={zapas} data={gmData("losovano", ROLE_LOS, "h1")} hlidej={spust} />);
   odkryj();
   const kat = ROLE_LOS.find((r) => r.role === "kat")!;
   const jiny = ["h2", "h3", "h4", "h5", "h6", "h8"].find((h) => h !== kat.hracId && h !== kat.cilHracId)!;
-  fireEvent.change(screen.getByRole("combobox", { name: `Cíl: ${jmeno(kat.hracId)}` }), { target: { value: jiny } });
+  fireEvent.click(screen.getByRole("button", { name: `Cíl: ${jmeno(kat.hracId)}` }));
+  fireEvent.click(screen.getByRole("option", { name: jmeno(jiny) }));
   expect(screen.queryByRole("alertdialog")).toBeNull();
   expect(diploApi.role).toHaveBeenCalledWith(zapas.id, kat.hracId, { cilHracId: jiny });
 });
@@ -270,10 +273,12 @@ it("dvě AI v sestavě rozliší barva: řádky, cíle i spojenec", () => {
   expect(screen.getByRole("combobox", { name: "Role: AI (p3)" })).toBeTruthy();
   expect(screen.getByRole("combobox", { name: "Role: AI (p5)" })).toBeTruthy();
   const kat = ROLE_AI.find((r) => r.role === "kat")!;
-  const cile = within(screen.getByRole("combobox", { name: `Cíl: ${jmeno(kat.hracId)}` })).getAllByRole("option").map((o) => o.textContent);
-  // Položky cíle nesou číslo barvy před jménem a barvu v pozadí položky.
-  expect(cile).toContain("3 · AI");
-  expect(cile).toContain("5 · AI");
+  fireEvent.click(screen.getByRole("button", { name: `Cíl: ${jmeno(kat.hracId)}` }));
+  // Položky výběru cíle nesou čtvereček barvy s číslem; čtečkám „(pN)“.
+  const cile = within(screen.getByRole("listbox")).getAllByRole("option");
+  expect(cile.map((o) => o.textContent)).toContain("AI (p3)");
+  expect(cile.map((o) => o.textContent)).toContain("AI (p5)");
+  expect(cile.flatMap((o) => [...o.querySelectorAll(".swatch")].map((s) => s.getAttribute("data-cislo")))).toEqual(expect.arrayContaining(["3", "5"]));
   expect(screen.getAllByText(/^zná:/).map((z) => z.textContent)).toContain("zná: AI (p3)");
   expect(screen.queryByText(/Hráč \d \(p\d\)/)).toBeNull();
 });
