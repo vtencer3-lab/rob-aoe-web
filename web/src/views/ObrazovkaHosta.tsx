@@ -19,7 +19,7 @@ interface Props {
   onKontrolaLobby: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
   /** Doplněk módu akce (např. karta role Diplomacie), pod kontrolou lobby. */
   doplnek?: ReactNode;
-  /** Doplněk módu do kroku „Zakládáš!“ (Diplomacie: stažení scénáře), před oknem Create Lobby. */
+  /** Doplněk módu do kroku „Zakládáš!“ (Diplomacie: stažení scénáře), před tlačítkem Spustit hru. */
   doplnekKroku?: ReactNode;
 }
 
@@ -78,6 +78,9 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
             </span>
           ) : null}
         </header>
+        {/* Mód před spuštěním hry: v Diplomacii host nejdřív stáhne scénář do
+            složky hry, teprve pak hru spouští (uživatel 3. 10. 2026). */}
+        {doplnekKroku}
         {/* Host si hru pouští odtud: steam://run ji nastartuje (nebo vytáhne
             do popředí). */}
         <div className="ovladani hostovi">
@@ -86,9 +89,6 @@ export function ObrazovkaHosta({ zapas, ja, nastaveniLobby, onHledatLobby, onKon
           </a>
           <small className="rucne">(Lobby zakládáš ručně)</small>
         </div>
-        {/* Mód před oknem lobby: v Diplomacii host nejdřív stáhne scénář do
-            složky hry a teprve pak zakládá lobby, ve které ho vybírá. */}
-        {doplnekKroku}
         <OknoCreateLobby
           nazevLobby={zapas.nazevLobby}
           heslo={zapas.heslo}

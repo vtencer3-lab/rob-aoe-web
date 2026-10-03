@@ -21,32 +21,26 @@ export function cestaKeScenarum(hracId: string): string {
  * věta by ho jen opakovala (uživatel 2. 10. 2026). Ostatní hráči scénář
  * dostanou přenosem v lobby, tak tohle vidí jen host.
  *
- * Kde prohlížeč umí zapisovat do složky (Chrome, Edge), je hlavní cesta
- * „Uložit scénář do hry“ a obyčejné stažení zůstává jako druhá; jinde
- * (Firefox, Safari, telefon) je jen stažení jako dřív.
+ * Pořadí (uživatel 3. 10. 2026): nahoře „Stáhnout scénář“, po kliknutí
+ * „Ulož scénář do:“ s cestou ke zkopírování, a až pod tím (v jádře)
+ * „Spustit hru“. Kde prohlížeč umí zapisovat do složky (Chrome, Edge),
+ * zůstává „Uložit scénář do hry“ jako vedlejší možnost.
  */
 export function StazeniScenare({ verze, ja }: { verze: ScenarVerze | null; ja: string }) {
+  const [stazeno, setStazeno] = useState(false);
   if (!verze) return <p className="ceka stred">Scénář zatím nikdo nenahrál.</p>;
-  const doHry = umiSlozkuHry();
-  const stazeni = (
-    <a className={doHry ? undefined : "cta"} href={diploApi.souborUrl(verze.id)} download={verze.jmenoHry}>
-      Stáhnout scénář
-    </a>
-  );
   return (
     <div className="stazeni-scenare">
-      {doHry ? (
+      <a className="cta" href={diploApi.souborUrl(verze.id)} download={verze.jmenoHry} onClick={() => setStazeno(true)}>
+        Stáhnout scénář
+      </a>
+      {stazeno ? (
         <>
-          <UlozeniDoHry verze={verze} ja={ja} />
-          <p className="rucne">Nebo ručně: {stazeni}</p>
+          <p>Ulož scénář do:</p>
+          <Kopirovatelne hodnota={cestaKeScenarum(ja)} popis="cestu ke scénářům" />
         </>
-      ) : (
-        stazeni
-      )}
-      <p>
-        Ulož <strong>{verze.jmenoHry}</strong> do složky (starou kopii stejného jména přepiš):
-      </p>
-      <Kopirovatelne hodnota={cestaKeScenarum(ja)} popis="cestu ke scénářům" />
+      ) : null}
+      {umiSlozkuHry() ? <UlozeniDoHry verze={verze} ja={ja} /> : null}
     </div>
   );
 }
@@ -100,12 +94,12 @@ function UlozeniDoHry({ verze, ja }: { verze: ScenarVerze; ja: string }) {
 
   return (
     <>
-      <button type="button" className="cta" disabled={pracuje} onClick={() => uloz()}>
+      <button type="button" disabled={pracuje} onClick={() => uloz()}>
         {pracuje ? "Ukládám…" : "Uložit scénář do hry"}
       </button>
       {hlaska?.druh === "vyzva" ? (
         <p className="vyzva" role="status">
-          Vyber složku scénářů hry — cestu máš zkopírovanou níž.
+          Vyber složku scénářů hry — cestu máš ve schránce, v dialogu ji vlož.
         </p>
       ) : null}
       {hlaska?.druh === "ulozeno" ? (

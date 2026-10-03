@@ -11,10 +11,14 @@ it("cesta pro Steam a pro Xbox hráče", () => {
   expect(cestaKeScenarum("xbox:2533274952064423")).toBe("%USERPROFILE%\\Games\\Age of Empires 2 DE\\2533274952064423\\resources\\_common\\scenario\\");
 });
 
+// Pořadí (uživatel 3. 10. 2026): nejdřív „Stáhnout scénář“, cesta až po kliknutí.
 it("host dostane odkaz na verzi zápasu, nebo větu, že scénář chybí", () => {
   const { rerender } = render(<StazeniScenare verze={VERZE} ja="76561198014056480" />);
-  expect(screen.getByRole("link", { name: "Stáhnout scénář" }).getAttribute("href")).toMatch(/\/api\/diplo\/scenar\/3\/soubor$/);
-  expect(screen.getByText(/přepiš/)).toBeTruthy();
+  const odkaz = screen.getByRole("link", { name: "Stáhnout scénář" });
+  expect(odkaz.getAttribute("href")).toMatch(/\/api\/diplo\/scenar\/3\/soubor$/);
+  expect(screen.queryByText("Ulož scénář do:")).toBeNull();
+  fireEvent.click(odkaz);
+  expect(screen.getByText("Ulož scénář do:")).toBeTruthy();
   // Věta o Create Lobby tu není: totéž ukazuje okno Create Lobby hned pod tím.
   expect(screen.queryByText(/Create Lobby/)).toBeNull();
   expect(screen.queryByText("Custom Scenario")).toBeNull();
@@ -26,9 +30,10 @@ it("host dostane odkaz na verzi zápasu, nebo větu, že scénář chybí", () =
 // zkopírování jedním kliknutím, i s jménem souboru v instrukci.
 it("odkaz stahuje pod jménem verze a cesta je kopírovatelná", () => {
   render(<StazeniScenare verze={VERZE} ja="xbox:2533274952064423" />);
-  expect(screen.getByRole("link", { name: "Stáhnout scénář" }).getAttribute("download")).toBe("ROB_DIPLO_3.aoe2scenario");
+  const odkaz = screen.getByRole("link", { name: "Stáhnout scénář" });
+  expect(odkaz.getAttribute("download")).toBe("ROB_DIPLO_3.aoe2scenario");
+  fireEvent.click(odkaz);
   expect(screen.getByRole("button", { name: "Kopírovat cestu ke scénářům" }).textContent).toContain("\\2533274952064423\\resources\\_common\\scenario\\");
-  expect(screen.getAllByText("ROB_DIPLO_3.aoe2scenario").length).toBeGreaterThan(0);
 });
 
 // Bez File System Access API (Firefox, Safari, telefon — a testovací DOM)
@@ -40,8 +45,8 @@ it("bez podpory složek nabídne jen stažení", () => {
   expect(screen.queryByText(/Nebo ručně/)).toBeNull();
 });
 
-// Chrome a Edge: hlavní cesta je uložení rovnou do složky hry, stažení
-// zůstává jako druhá možnost (uživatel 2. 10. 2026).
+// Chrome a Edge: hlavní je od 3. 10. 2026 i tady „Stáhnout scénář“, uložení
+// rovnou do složky hry zůstává jako vedlejší tlačítko.
 describe("s podporou složek", () => {
   const JA = "76561198014056480";
   let prohlizec: PodvrzenyProhlizec;
@@ -58,14 +63,13 @@ describe("s podporou složek", () => {
   const ulozit = () => screen.getByRole("button", { name: "Uložit scénář do hry" });
   const ulozeno = () => screen.findByText("Uloženo do složky", { exact: false });
 
-  it("hlavní je „Uložit scénář do hry“, stažení zůstává jako odkaz a cesta ke zkopírování taky", () => {
+  it("hlavní je „Stáhnout scénář“, „Uložit scénář do hry“ je vedlejší", () => {
     render(<StazeniScenare verze={VERZE} ja={JA} />);
-    expect(ulozit()).toHaveClass("cta");
+    expect(ulozit()).not.toHaveClass("cta");
     const odkaz = screen.getByRole("link", { name: "Stáhnout scénář" });
-    expect(odkaz).not.toHaveClass("cta");
+    expect(odkaz).toHaveClass("cta");
     expect(odkaz.getAttribute("href")).toMatch(/\/api\/diplo\/scenar\/3\/soubor$/);
     expect(odkaz.getAttribute("download")).toBe("ROB_DIPLO_3.aoe2scenario");
-    expect(screen.getByRole("button", { name: "Kopírovat cestu ke scénářům" })).toBeInTheDocument();
     // Dokud hráč složku nevybral, o žádné se nemluví.
     expect(screen.queryByRole("button", { name: "změnit složku" })).toBeNull();
   });
@@ -79,7 +83,7 @@ describe("s podporou složek", () => {
     render(<StazeniScenare verze={VERZE} ja={JA} />);
     fireEvent.click(ulozit());
     expect(schranka).toHaveBeenCalledWith(cestaKeScenarum(JA));
-    expect(screen.getByText("Vyber složku scénářů hry — cestu máš zkopírovanou níž.")).toBeInTheDocument();
+    expect(screen.getByText("Vyber složku scénářů hry — cestu máš ve schránce, v dialogu ji vlož.")).toBeInTheDocument();
     // Během výběru a zápisu je tlačítko zamčené, ať se soubor nezapisuje dvakrát.
     expect(screen.getByRole("button", { name: "Ukládám…" })).toBeDisabled();
     vyber(slozka);
