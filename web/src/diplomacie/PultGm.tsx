@@ -93,10 +93,10 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                   (víc hráčů najednou, nic vybraného = všem; uživatel 3. 10. 2026). */}
               <div className="ping-pro">
                 <button type="button" className={pingZapnuty ? "ping-vypinac zapnuto" : "ping-vypinac"} aria-pressed={pingZapnuty} onClick={() => setPingZapnuty((z) => !z)} title="Ping na mapě: klik do mapy ukáže hráčům značku">
-                  <span aria-hidden="true">◎</span> Ping
+                  Ping
                 </button>
-                {pingZapnuty ? (
-                  <div className="ping-adresati" role="group" aria-label="Komu pingnout">
+                {/* Adresáti jsou vidět pořád; při vypnutém pingu ztmavení (vybírat jde i tak). */}
+                <div className={pingZapnuty ? "ping-adresati" : "ping-adresati vypnuto"} role="group" aria-label="Komu pingnout">
                     <button type="button" className={pingKomu.length === 0 ? "adresat vybrany" : "adresat"} aria-pressed={pingKomu.length === 0} onClick={() => setPingKomu([])}>
                       Všem
                     </button>
@@ -105,8 +105,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                         {hrac(u.hracId)}
                       </button>
                     ))}
-                  </div>
-                ) : null}
+                </div>
               </div>
               <div className="nastaveni-mapy">
                 <Prepinac popisek="Zobrazit krále" vpravo="Zobrazit krále" zapnuto={d.mapa?.kralove !== false} onZmena={(v) => akce(() => diploApi.mapa(zapas.id, { kralove: v }))} testId="prepinac-kralove" />
