@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { NAZEV_ROLE, POPIS_ROLE } from "../../../src/shared/diplomacie/role.js";
-import type { DiploData, DiploZapas, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
+import type { DiploData, DiploZapas, PingNaMape, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
 import type { ZapasView } from "../../../src/shared/types.js";
 import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
@@ -42,6 +42,21 @@ export function RubKarty() {
   return <img className="rub-karty" src={RUB_KARTY} alt="" width={600} height={362} />;
 }
 
+/**
+ * Nový ping GM cinkne (zvuk chatu, hlasitost chatu); pingy známé už při
+ * načtení ne. Hráč na kartě i GM v pultu (potvrzení, že ping odešel).
+ */
+export function useZvukPingu(pingy: readonly PingNaMape[] | undefined): void {
+  const znamePingy = useRef<Set<number> | null>(null);
+  const idPingu = (pingy ?? []).map((p) => p.id).join(",");
+  useEffect(() => {
+    const ted = new Set((pingy ?? []).map((p) => p.id));
+    const driv = znamePingy.current;
+    znamePingy.current = ted;
+    if (driv !== null && [...ted].some((id) => !driv.has(id))) prehraj(chatUrl, hlasitostChatu());
+  }, [idPingu]);
+}
+
 /** Tajná karta role hráče (spec §8.2). Data jsou už zredigovaná serverem. */
 export function KartaRole({ zapas, data, ja }: Props) {
   const d = diploZapasu(data, zapas.id);
@@ -54,15 +69,7 @@ export function KartaRole({ zapas, data, ja }: Props) {
     if (predtim !== undefined && predtim !== "rozeslano" && d?.stav === "rozeslano") prehraj(zvonUrl);
   }, [d?.stav]);
 
-  // Nový ping GM cinkne (zvuk chatu); pingy známé už při načtení ne.
-  const znamePingy = useRef<Set<number> | null>(null);
-  const idPingu = (d?.pingy ?? []).map((p) => p.id).join(",");
-  useEffect(() => {
-    const ted = new Set((d?.pingy ?? []).map((p) => p.id));
-    const driv = znamePingy.current;
-    znamePingy.current = ted;
-    if (driv !== null && [...ted].some((id) => !driv.has(id))) prehraj(chatUrl, hlasitostChatu());
-  }, [idPingu]);
+  useZvukPingu(d?.pingy);
 
   if (!d) return null;
   const verze = verzeZapasu(data, d, zapas);

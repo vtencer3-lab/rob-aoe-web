@@ -12,7 +12,7 @@ import { Prepinac } from "../views/Prepinac.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
 import { NastupceZeHry, RadekHry, StariHry } from "./HraZive.js";
-import { diploZapasu, RubKarty, verzeZapasu, vztahyRole } from "./KartaRole.js";
+import { diploZapasu, RubKarty, useZvukPingu, verzeZapasu, vztahyRole } from "./KartaRole.js";
 import { kralNaMape, MapaScenare, popiskyStartu, type KralNaMape, type PopiskyStartu } from "./MapaScenare.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
@@ -33,6 +33,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   const [pingKomu, setPingKomu] = useState<string[]>([]);
   const prepniAdresata = (hracId: string) => setPingKomu((v) => (v.includes(hracId) ? v.filter((h) => h !== hracId) : [...v, hracId]));
   const d = diploZapasu(data, zapas.id);
+  useZvukPingu(d?.pingy);
   if (!d) return null;
   const verze = verzeZapasu(data, d, zapas);
   const hraci = zapas.ucastnici.filter((u) => u.hracId !== d.gmHracId).sort((a, b) => a.barva - b.barva);
