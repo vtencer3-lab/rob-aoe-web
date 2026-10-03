@@ -148,7 +148,8 @@ it("sonda s jinou revizí je zastaralá, dokud se nepřibalí znovu; varování 
 // Na webu jsou jen hotové verze (3. 10. 2026): stažení verze bez sondy nebo
 // se zastaralou sondou ji nejdřív přebalí; originál přes ?original=1 nic nemění.
 it("stažení verze bez sondy nebo se zastaralou ji přebalí; originál ne", async () => {
-  const jin = await klient("autor", false);
+  await klient("autor", false);
+  const jin = await klient("jin", false);
   const { id } = await ulozVerziScenare({ ...VERZE, data: LLC });
   expect((await app.inject({ method: "GET", url: "/api/diplo/scenar" })).json().verze[0].sonda).toBeNull();
   expect((await app.inject({ method: "GET", url: `/api/diplo/scenar/${id}/soubor?original=1`, cookies: { sid: jin } })).rawPayload.equals(LLC)).toBe(true);
