@@ -1968,7 +1968,9 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 /* Hodnoty (postup cíle, počet relikvií) tučně a světleji než popis. */
 .tabulka-roli tr.radek-hry strong { color: var(--text); }
 /* Relikvie: obrázek 28 px vysoký (poměr stran zdroje 90×95), číslo hned za ním. */
-.tabulka-roli tr.radek-hry .relikvie { display: inline-flex; align-items: center; gap: 0.2rem; vertical-align: middle; margin-left: 0.6rem; }
+/* Cíl a relikvie ve dvou pevných sloupcích: relikvie všech hráčů pod sebou. */
+.tabulka-roli tr.radek-hry .radek-hry-obsah { display: grid; grid-template-columns: minmax(0, 15rem) auto; align-items: center; column-gap: 0.8rem; }
+.tabulka-roli tr.radek-hry .relikvie { display: inline-flex; align-items: center; gap: 0.2rem; }
 .tabulka-roli tr.radek-hry .relikvie img { height: 28px; width: auto; }
 .pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }
 .pult-gm .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 0.6rem; }
