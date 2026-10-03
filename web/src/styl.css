@@ -1814,7 +1814,15 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    a nadpis drží spolu. */
 .pult-gm .zahlavi-sekce { gap: 0.4rem; }
 .pult-gm .zahlavi-sekce .znak-role { width: 1.6rem; height: 1.6rem; margin-bottom: 0.3rem; }
-.pult-gm .zakryti-lic > p { max-width: 34rem; margin: 0.6rem auto; }
+.pult-gm .zakryti-lic > p, .pult-gm .pult-strana > p { max-width: 34rem; margin: 0.6rem auto; }
+/* Mapa vlevo, pult vpravo (uživatel 3. 10. 2026: „takhle vedle sebe pro
+   GMko“) — jen když se vedle velké mapy vejde i tabulka rolí; jinak pod
+   sebou jako dřív. Pravý sloupec pak zabírá celou zbylou šířku. */
+@media (min-width: 72rem) {
+  .pult-gm .pult-vedle { display: grid; grid-template-columns: minmax(0, calc(36rem + 2px)) minmax(0, 1fr); gap: 0 1.5rem; align-items: start; }
+  .pult-gm .pult-vedle > .mapa-scenare { margin: 0.6rem 0; }
+  .pult-gm .pult-strana > p, .pult-gm .pult-strana > .tabulka-roli, .pult-gm .pult-strana > .dlazdice-nastupce, .pult-gm .pult-strana > .souhrn { max-width: none; }
+}
 .dlazdice-nastupce { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem; max-width: 34rem; margin: 0.6rem auto 0.8rem; }
 button.dlazdice { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.55rem 0.6rem; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; text-shadow: 0 1px 2px color-mix(in srgb, var(--obrys) 60%, transparent); }
 button.dlazdice .cislo { font-family: "Cinzel", Georgia, serif; font-weight: 800; font-size: 1.25rem; }
@@ -1865,10 +1873,10 @@ button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0
 /* Data z běžící hry (HraZive.tsx): stáří dat a věta o Nástupci jsou drobné
    poznámky pod mapou. Cíl hráče s postupem je vlastní řádek tabulky pod jeho
    řádkem — linka mezi hráči se proto přesouvá až pod něj. */
-.pult-gm .zakryti-lic > p.stari-hry { margin: 0.3rem auto; font-size: 0.85rem; color: var(--tlumene); }
+.pult-gm .pult-strana > p.stari-hry { margin: 0.3rem auto; font-size: 0.85rem; color: var(--tlumene); }
 .pult-gm .nastupce-ze-hry strong { color: var(--zlato-svetle); }
 /* Varování k datům ze hry je věta pro GM, ne nápověda — bez kurzoru s otazníkem. */
-.pult-gm .zakryti > p.varovani { font-size: 0.9rem; cursor: auto; }
+.pult-gm .zakryti > p.varovani, .pult-gm .pult-strana > p.varovani { font-size: 0.9rem; cursor: auto; }
 .tabulka-roli tr:has(+ tr.radek-hry) > * { border-bottom: 0; padding-bottom: 0.1rem; }
 .tabulka-roli tr.radek-hry td { padding-top: 0; color: var(--tlumene); font-size: 0.85rem; }
 .pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }

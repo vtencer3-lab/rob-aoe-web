@@ -69,113 +69,119 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         <span className="stav-diplo" key={d.stav}>{POPIS_STAVU[d.stav]}</span>
       </header>
       <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<RubKarty />}>
-        {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" /> : null}
-        <StariHry hra={d.hra} />
+        {/* Na širokém displeji mapa vlevo a pult vpravo (uživatel 3. 10. 2026),
+            ať GM vidí mapu i role bez posouvání; na úzkém pod sebou. */}
+        <div className="pult-vedle">
+          {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" /> : null}
+          <div className="pult-strana">
+            <StariHry hra={d.hra} />
 
-        {d.stav === "priprava" ? (
-          <>
-            <p>Komu hra nedala sekundární cíl? Hláška ve hře „pN ma: …“ — číslo hráče je jeho barva.</p>
-            <NastupceZeHry hra={d.hra} ucastnici={zapas.ucastnici} />
-            <div className="dlazdice-nastupce">
-              {hraci.map((u) => (
-                <button
-                  key={u.hracId}
-                  type="button"
-                  data-testid="dlazdice"
-                  className={`dlazdice barva-${u.barva}${nastupce === u.hracId ? " vybrana" : ""}`}
-                  disabled={pracuje}
-                  onClick={() => akce(() => diploApi.nastupce(zapas.id, u.hracId))}
-                >
-                  <span className="cislo">p{u.barva}</span> <span className="barva">{BARVA_NAZEV[u.barva]}</span> <strong>{jmenoHrace(u)}</strong>
+            {d.stav === "priprava" ? (
+              <>
+                <p>Komu hra nedala sekundární cíl? Hláška ve hře „pN ma: …“ — číslo hráče je jeho barva.</p>
+                <NastupceZeHry hra={d.hra} ucastnici={zapas.ucastnici} />
+                <div className="dlazdice-nastupce">
+                  {hraci.map((u) => (
+                    <button
+                      key={u.hracId}
+                      type="button"
+                      data-testid="dlazdice"
+                      className={`dlazdice barva-${u.barva}${nastupce === u.hracId ? " vybrana" : ""}`}
+                      disabled={pracuje}
+                      onClick={() => akce(() => diploApi.nastupce(zapas.id, u.hracId))}
+                    >
+                      <span className="cislo">p{u.barva}</span> <span className="barva">{BARVA_NAZEV[u.barva]}</span> <strong>{jmenoHrace(u)}</strong>
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="cta rozdat-role" disabled={pracuje || nastupce === null} onClick={() => akce(() => diploApi.los(zapas.id))}>
+                  Rozdat role
                 </button>
-              ))}
-            </div>
-            <button type="button" className="cta rozdat-role" disabled={pracuje || nastupce === null} onClick={() => akce(() => diploApi.los(zapas.id))}>
-              Rozdat role
-            </button>
-          </>
-        ) : (
-          <>
-            <table className="tabulka-roli">
-              <tbody>
-                {d.role.flatMap((r) => {
-                  const barvaCile = r.cilHracId ? mujUcastnik(zapas, r.cilHracId)?.barva : undefined;
-                  // Pod řádkem hráče ještě řádek s daty ze hry (bez nich nic nekreslí).
-                  return [
-                    <tr key={r.hracId}>
-                      {/* Čtvereček barvy jako na dlaždicích: řádky jdou v pořadí slotů, dlaždice podle barvy. */}
-                      <th scope="row">{hrac(r.hracId)}</th>
-                      {/* Znak ve vlastní buňce, ne v th: v hlavičce řádku by alt
-                          přepsal přístupné jméno hráče, vedle roletky by ji zalomil. */}
-                      <td className="znak">
-                        <img key={r.role} className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={36} height={36} />
-                      </td>
-                      <td>
-                        {r.role === "nastupce" || rozeslano ? (
-                          <strong>{NAZEV_ROLE[r.role]}</strong>
-                        ) : (
-                          <select aria-label={`Role: ${jmeno(r.hracId)}`} value={r.role} disabled={pracuje} onChange={(e) => zmen(r.hracId, { role: e.target.value as Role })}>
-                            {ROLE_VOLITELNE.map((v) => (
-                              <option key={v} value={v}>
-                                {NAZEV_ROLE[v]}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </td>
-                      <td>
-                        {rozeslano && (r.role === "kat" || r.role === "zoldak") ? (
-                          // Po rozeslání se nic nemění — ani cíl, který chybí.
-                          <span>
-                            {r.role === "kat" ? "oběť: " : "pokrevní pouto: "}
-                            {r.cilHracId ? hrac(r.cilHracId) : "—"}
-                          </span>
-                        ) : r.role === "kat" || r.role === "zoldak" ? (
-                          <div className="cil-s-barvou">
-                            {barvaCile === undefined ? null : <ZnakBarvy barva={barvaCile} />}
-                            <select aria-label={`Cíl: ${jmeno(r.hracId)}`} value={r.cilHracId ?? ""} disabled={pracuje} onChange={(e) => zmen(r.hracId, { cilHracId: e.target.value })}>
-                              {povoleneCile(
-                                d.role.map((x) => x.hracId),
-                                r.hracId,
-                                d.nastupceHracId!,
-                              ).map((c) => (
-                                <option key={c} value={c}>
-                                  {jmeno(c)}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        ) : r.role === "najezdnik" ? (
-                          <span>
-                            zná: <VycetUcastniku ucastnici={zapas.ucastnici} hraci={d.role.filter((x) => x.role === "najezdnik" && x.hracId !== r.hracId).map((x) => x.hracId)} />
-                          </span>
-                        ) : null}
-                      </td>
-                    </tr>,
-                    <RadekHry key={`${r.hracId}-hra`} hra={d.hra} hracId={r.hracId} />,
-                  ];
-                })}
-              </tbody>
-            </table>
-            <p className={odchylky.length > 0 ? "souhrn varovani" : "souhrn"}>{odchylky.length > 0 ? odchylky.join(", ") : "Složení odpovídá pravidlům."}</p>
-            <div className="ovladani">
-              {d.stav === "losovano" ? (
-                <>
-                  <button type="button" disabled={pracuje} onClick={() => akce(() => diploApi.los(zapas.id))}>
-                    Přelosovat
+              </>
+            ) : (
+              <>
+                <table className="tabulka-roli">
+                  <tbody>
+                    {d.role.flatMap((r) => {
+                      const barvaCile = r.cilHracId ? mujUcastnik(zapas, r.cilHracId)?.barva : undefined;
+                      // Pod řádkem hráče ještě řádek s daty ze hry (bez nich nic nekreslí).
+                      return [
+                        <tr key={r.hracId}>
+                          {/* Čtvereček barvy jako na dlaždicích: řádky jdou v pořadí slotů, dlaždice podle barvy. */}
+                          <th scope="row">{hrac(r.hracId)}</th>
+                          {/* Znak ve vlastní buňce, ne v th: v hlavičce řádku by alt
+                              přepsal přístupné jméno hráče, vedle roletky by ji zalomil. */}
+                          <td className="znak">
+                            <img key={r.role} className="znak-role" src={ZNAK_ROLE[r.role]} alt={NAZEV_ROLE[r.role]} width={36} height={36} />
+                          </td>
+                          <td>
+                            {r.role === "nastupce" || rozeslano ? (
+                              <strong>{NAZEV_ROLE[r.role]}</strong>
+                            ) : (
+                              <select aria-label={`Role: ${jmeno(r.hracId)}`} value={r.role} disabled={pracuje} onChange={(e) => zmen(r.hracId, { role: e.target.value as Role })}>
+                                {ROLE_VOLITELNE.map((v) => (
+                                  <option key={v} value={v}>
+                                    {NAZEV_ROLE[v]}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </td>
+                          <td>
+                            {rozeslano && (r.role === "kat" || r.role === "zoldak") ? (
+                              // Po rozeslání se nic nemění — ani cíl, který chybí.
+                              <span>
+                                {r.role === "kat" ? "oběť: " : "pokrevní pouto: "}
+                                {r.cilHracId ? hrac(r.cilHracId) : "—"}
+                              </span>
+                            ) : r.role === "kat" || r.role === "zoldak" ? (
+                              <div className="cil-s-barvou">
+                                {barvaCile === undefined ? null : <ZnakBarvy barva={barvaCile} />}
+                                <select aria-label={`Cíl: ${jmeno(r.hracId)}`} value={r.cilHracId ?? ""} disabled={pracuje} onChange={(e) => zmen(r.hracId, { cilHracId: e.target.value })}>
+                                  {povoleneCile(
+                                    d.role.map((x) => x.hracId),
+                                    r.hracId,
+                                    d.nastupceHracId!,
+                                  ).map((c) => (
+                                    <option key={c} value={c}>
+                                      {jmeno(c)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            ) : r.role === "najezdnik" ? (
+                              <span>
+                                zná: <VycetUcastniku ucastnici={zapas.ucastnici} hraci={d.role.filter((x) => x.role === "najezdnik" && x.hracId !== r.hracId).map((x) => x.hracId)} />
+                              </span>
+                            ) : null}
+                          </td>
+                        </tr>,
+                        <RadekHry key={`${r.hracId}-hra`} hra={d.hra} hracId={r.hracId} />,
+                      ];
+                    })}
+                  </tbody>
+                </table>
+                <p className={odchylky.length > 0 ? "souhrn varovani" : "souhrn"}>{odchylky.length > 0 ? odchylky.join(", ") : "Složení odpovídá pravidlům."}</p>
+                <div className="ovladani">
+                  {d.stav === "losovano" ? (
+                    <>
+                      <button type="button" disabled={pracuje} onClick={() => akce(() => diploApi.los(zapas.id))}>
+                        Přelosovat
+                      </button>
+                      <button type="button" className="cta" disabled={pracuje} onClick={() => akce(() => diploApi.rozeslat(zapas.id))}>
+                        Rozeslat role
+                      </button>
+                    </>
+                  ) : null}
+                  <button type="button" disabled={pracuje} onClick={zpet}>
+                    Zpět na výběr Nástupce
                   </button>
-                  <button type="button" className="cta" disabled={pracuje} onClick={() => akce(() => diploApi.rozeslat(zapas.id))}>
-                    Rozeslat role
-                  </button>
-                </>
-              ) : null}
-              <button type="button" disabled={pracuje} onClick={zpet}>
-                Zpět na výběr Nástupce
-              </button>
-              <Kopirovatelne hodnota={textPrehledu(d.role, jmeno)} popis="přehled rolí" jenIkona />
-            </div>
-          </>
-        )}
+                  <Kopirovatelne hodnota={textPrehledu(d.role, jmeno)} popis="přehled rolí" jenIkona />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
         <PravidlaHry verze={verze} />
       </Zakryti>
       {ptaSeNaZpet ? (
