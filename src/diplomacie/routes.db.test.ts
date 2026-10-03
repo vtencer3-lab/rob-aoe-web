@@ -209,3 +209,41 @@ it("ping: GM 200, hráč 403, mimo mapu a cizí adresát 400", async () => {
   expect((await post(u, gm, { x: 0.5, y: 0.5, komu: null })).statusCode).toBe(200);
   expect((await post(u, gm, { x: 0.2, y: 0.8, komu: ["h2", "h3"] })).statusCode).toBe(200);
 });
+
+// Schopnosti rolí (uživatel 3. 10. 2026): hráč žádá, GM potvrzuje; Šašek
+// se po pádu Gardy (ručně GM) stává Gardou a informace už žádat nesmí.
+it("schopnosti: Sabotáž Nájezdníka, potvrzení GM, proměna Šaška", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  const gm = await klient("h7", false);
+  const u = `/api/diplo/zapas/${zapas.id}`;
+  expect((await post(`${u}/nastupce`, gm, { hracId: "h3" })).statusCode).toBe(200);
+  expect((await post(`${u}/los`, gm)).statusCode).toBe(200);
+  const role = (await getDiploZapas(zapas.id))!.role;
+  const kdo = (r: string) => role.find((x) => x.role === r)!.hracId;
+  const najezdnik = await klient(kdo("najezdnik"), false);
+  const sasek = await klient(kdo("sasek"), false);
+
+  // Před rozesláním nic.
+  expect((await post(`${u}/schopnost`, najezdnik, { druh: "sabotaz", cilHracId: "h3" })).statusCode).toBe(409);
+  expect((await post(`${u}/rozeslat`, gm)).statusCode).toBe(200);
+  expect((await post(`${u}/schopnost`, najezdnik, { druh: "hokus" })).statusCode).toBe(400);
+  expect((await post(`${u}/schopnost`, sasek, { druh: "sabotaz", cilHracId: "h3" })).statusCode).toBe(409);
+  expect((await post(`${u}/schopnost`, najezdnik, { druh: "sabotaz", cilHracId: "h3" })).statusCode).toBe(200);
+  expect((await post(`${u}/schopnost`, najezdnik, { druh: "sabotaz", cilHracId: "h1" })).statusCode).toBe(409);
+  const zadost = (await getDiploZapas(zapas.id))!.schopnosti![0]!;
+  expect(zadost).toMatchObject({ hracId: kdo("najezdnik"), druh: "sabotaz", cilHracId: "h3", stav: "ceka" });
+  expect((await post(`${u}/schopnost/${zadost.id}`, najezdnik, { stav: "potvrzeno" })).statusCode).toBe(403);
+  expect((await post(`${u}/schopnost/${zadost.id}`, gm, { stav: "potvrzeno" })).statusCode).toBe(200);
+  expect((await post(`${u}/schopnost/${zadost.id}`, gm, { stav: "zamitnuto" })).statusCode).toBe(409);
+
+  // Šašek žádá informaci, pak padne Garda: žádost propadne a Šašek je Gardou.
+  expect((await post(`${u}/schopnost`, sasek, { druh: "informace" })).statusCode).toBe(200);
+  expect((await post(`${u}/garda-padla`, gm)).statusCode).toBe(200);
+  expect((await post(`${u}/garda-padla`, gm)).statusCode).toBe(409);
+  const po = (await getDiploZapas(zapas.id))!;
+  expect(po.role.find((r) => r.hracId === kdo("sasek"))).toMatchObject({ role: "garda", puvodniRole: "sasek", promenaVidena: false });
+  expect(po.schopnosti!.find((s) => s.druh === "informace")!.stav).toBe("zamitnuto");
+  expect((await post(`${u}/schopnost`, sasek, { druh: "informace" })).statusCode).toBe(409);
+  expect((await post(`${u}/promena`, sasek)).statusCode).toBe(200);
+  expect((await getDiploZapas(zapas.id))!.role.find((r) => r.hracId === kdo("sasek"))!.promenaVidena).toBe(true);
+});

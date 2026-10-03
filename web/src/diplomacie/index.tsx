@@ -14,7 +14,7 @@ export const diplomacieKlient: RezimKlienta = {
   kartaHrace: ({ zapas, stav, ja, hlidej }) => {
     if (!stav.rezim || !ja) return null;
     const d = diploZapasu(stav.rezim.data, zapas.id);
-    return d?.gmHracId === ja ? <PultGm zapas={zapas} data={stav.rezim.data} hlidej={hlidej} /> : <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} />;
+    return d?.gmHracId === ja ? <PultGm zapas={zapas} data={stav.rezim.data} hlidej={hlidej} /> : <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} hlidej={hlidej} />;
   },
   // Verze, kterou zápas hraje (otisknutá při založení), ne nutně ta aktivní:
   // host musí mít v lobby přesně tu, ke které web počítá pravidla.

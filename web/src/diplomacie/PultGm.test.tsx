@@ -17,6 +17,8 @@ vi.mock("./api.js", () => ({
     zpet: vi.fn(async () => ({ ok: true })),
     mapa: vi.fn(async () => ({ ok: true })),
     ping: vi.fn(async () => ({ ok: true })),
+    vyridit: vi.fn(async () => ({ ok: true })),
+    gardaPadla: vi.fn(async () => ({ ok: true })),
     minimapaUrl: () => "/m.webp",
   },
 }));
@@ -366,4 +368,35 @@ it("ping: vypínač, pak klik do mapy pingne všem nebo vybraným hráčům", ()
   // Mimo obrázek minimapy se nepinguje.
   fireEvent.click(mapa, { clientX: 50, clientY: 75 });
   expect(diploApi.ping).toHaveBeenCalledTimes(2);
+});
+
+// Žádosti o schopnosti a připomínky ze hry nad tabulkou (uživatel 3. 10. 2026).
+it("GM vidí čekající Sabotáž s cílem a potvrdí ji; připomínku Kata odklikne", async () => {
+  const role: RoleHrace[] = [
+    { hracId: "h1", role: "nastupce", cilHracId: null },
+    { hracId: "h2", role: "najezdnik", cilHracId: null },
+    { hracId: "h3", role: "kat", cilHracId: "h4" },
+    { hracId: "h4", role: "sasek", cilHracId: null },
+  ];
+  const data = gmData("rozeslano", role, "h1");
+  const schopnosti = [
+    { id: 5, hracId: "h2", druh: "sabotaz" as const, cilHracId: "h3", stav: "ceka" as const, vytvoreno: "2026-10-03T20:00:00.000Z" },
+    { id: 6, hracId: "h3", druh: "kat_odmena" as const, cilHracId: "h4", stav: "ceka" as const, vytvoreno: "2026-10-03T20:00:00.000Z" },
+  ];
+  render(<PultGm zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, schopnosti })) }} hlidej={spust} />);
+  fireEvent.click(screen.getByRole("button", { name: "Pult GM — klikni pro odkrytí" }));
+  const oznameni = screen.getByTestId("oznameni-gm");
+  expect(oznameni).toHaveTextContent("Hráč 2 provádí Sabotáž na Hráč 3");
+  expect(oznameni).toHaveTextContent("Hráč 4 padl — dej Katovi Hráč 3 2000 zlata");
+  fireEvent.click(within(oznameni).getAllByRole("button", { name: "Potvrdit" })[0]!);
+  expect(diploApi.vyridit).toHaveBeenCalledWith(zapas.id, 5, "potvrzeno");
+  // Během odesílání jsou tlačítka zamčená (proti dvojímu kliknutí).
+  await waitFor(() => expect(within(oznameni).getByRole("button", { name: "Vyřízeno" })).toBeEnabled());
+  fireEvent.click(within(oznameni).getByRole("button", { name: "Vyřízeno" }));
+  expect(diploApi.vyridit).toHaveBeenCalledWith(zapas.id, 6, "potvrzeno");
+  expect(screen.getAllByTestId("schopnost-gm").map((x) => x.textContent)).toEqual(["Sabotáž nepoužita", "informace 0/3"]);
+  // Bez mostu spustí proměnu Šaška GM.
+  await waitFor(() => expect(screen.getByRole("button", { name: "Garda padla" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Garda padla" }));
+  expect(diploApi.gardaPadla).toHaveBeenCalledWith(zapas.id);
 });

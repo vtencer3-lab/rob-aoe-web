@@ -8,6 +8,7 @@ import { broadcastAkce } from "../realtime/akceStav.js";
 import { config } from "../config.js";
 import { souhrnSondy, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { losujRole, zmenCil, zmenRoli } from "../shared/diplomacie/los.js";
+import { DRUHY_ZADOSTI, procNelze, udalostiHry, type DruhZadosti } from "../shared/diplomacie/schopnosti.js";
 import { ROLE_VOLITELNE, type DiploZapas, type Role } from "../shared/diplomacie/typy.js";
 import { jePlatneJmenoScenare, type NastaveniLobby } from "../shared/lobbyKontrola.js";
 import {
@@ -28,7 +29,11 @@ import {
   ulozRole,
   ulozVerziScenare,
   prevezmiMinimapuZ,
+  pridejSchopnost,
+  povysSaska,
+  promenaVidena,
   upravRoli,
+  vyridSchopnost,
   vratNaPripravu,
 } from "./db.js";
 import { registerHraRoutes } from "./hra.js";
@@ -111,6 +116,56 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
     pridejPing(diplo.zapasId, x as number, y as number, adresati);
     await broadcastAkce();
     setTimeout(() => void broadcastAkce().catch(() => {}), PING_TRVA_MS + 200).unref?.();
+    return { ok: true };
+  });
+
+  // Schopnosti rolí (uživatel 3. 10. 2026): hráč žádá z karty, GM v pultu
+  // potvrdí nebo zamítne. Pravidla (kdo, kolikrát, na koho) v schopnosti.ts.
+  app.post("/api/diplo/zapas/:id/schopnost", async (request) => {
+    const hracId = await requireUser(request);
+    const zapasId = requireId(request);
+    const diplo = await getDiploZapas(zapasId);
+    if (!diplo) throw new HttpError(404, "Tohle není zápas Diplomacie.");
+    const { druh, cilHracId } = (request.body ?? {}) as { druh?: unknown; cilHracId?: unknown };
+    if (typeof druh !== "string" || !(DRUHY_ZADOSTI as readonly string[]).includes(druh)) throw new HttpError(400, "Neznámá schopnost.");
+    if (cilHracId !== undefined && cilHracId !== null && typeof cilHracId !== "string") throw new HttpError(400, "Cíl je hráč zápasu.");
+    const zaznam = await getZapas(zapasId);
+    const hraci = (zaznam?.ucastnici ?? []).filter((u) => u.hracId !== diplo.gmHracId).map((u) => u.hracId);
+    const cil = typeof cilHracId === "string" ? cilHracId : null;
+    const chyba = procNelze(diplo, diplo.schopnosti ?? [], hraci, hracId, druh as DruhZadosti, cil);
+    if (chyba) throw new HttpError(409, chyba);
+    await pridejSchopnost(zapasId, hracId, druh as DruhZadosti, cil);
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  app.post("/api/diplo/zapas/:id/schopnost/:sid", async (request) => {
+    const { diplo } = await requireGm(request);
+    const sid = Number((request.params as { sid: string }).sid);
+    if (!Number.isInteger(sid) || sid <= 0 || sid > 2147483647) throw new HttpError(400, "Neplatné číslo žádosti.");
+    const { stav } = (request.body ?? {}) as { stav?: unknown };
+    if (stav !== "potvrzeno" && stav !== "zamitnuto") throw new HttpError(400, "Žádost jde potvrdit, nebo zamítnout.");
+    if (!(await vyridSchopnost(diplo.zapasId, sid, stav))) throw new HttpError(409, "Tahle žádost už vyřízená je.");
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Garda padla, ale most nejede (nebo hra nic neposlala): GM proměnu Šaška
+  // spustí ručně. Stejná pravidla jako z dat hry.
+  app.post("/api/diplo/zapas/:id/garda-padla", async (request) => {
+    const { diplo } = await requireGm(request);
+    if (diplo.stav !== "rozeslano") throw new HttpError(409, "Role ještě nejsou rozeslané.");
+    const garda = diplo.role.find((r) => r.role === "garda" && !r.puvodniRole);
+    const { povysit } = udalostiHry(diplo.role, garda ? [{ hracId: garda.hracId, zije: false }] : []);
+    if (povysit === null || !(await povysSaska(diplo.zapasId, povysit))) throw new HttpError(409, "Šašek, který by se stal Gardou, není (padl, nebo už Gardou je).");
+    await broadcastAkce();
+    return { ok: true };
+  });
+
+  // Hráč klikl na kartě na „Královská garda padla“ — karta Šaška shoří.
+  app.post("/api/diplo/zapas/:id/promena", async (request) => {
+    const hracId = await requireUser(request);
+    if (await promenaVidena(requireId(request), hracId)) await broadcastAkce();
     return { ok: true };
   });
 

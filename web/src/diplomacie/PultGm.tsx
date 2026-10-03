@@ -11,6 +11,7 @@ import { Potvrzeni } from "../views/Potvrzeni.js";
 import { Prepinac } from "../views/Prepinac.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
+import { OznameniGm, StavSchopnostiGm } from "./Schopnosti.js";
 import { NastupceZeHry, RadekHry, StariHry } from "./HraZive.js";
 import { diploZapasu, RubKarty, useZvukPingu, verzeZapasu, vztahyRole } from "./KartaRole.js";
 import { kralNaMape, MapaScenare, popiskyStartu, type KralNaMape, type PopiskyStartu } from "./MapaScenare.js";
@@ -151,6 +152,8 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
               </>
             ) : (
               <>
+                {/* Žádosti hráčů o schopnosti a připomínky ze hry (uživatel 3. 10. 2026). */}
+                <OznameniGm zapas={zapas} d={d} akce={akce} pracuje={pracuje} />
                 <TabulkaRoli zapas={zapas} d={d} upravy={rozeslano ? null : { pracuje, zmen }} najetoHrac={najetoHrac} onNajeti={setNajetoHrac} />
                 {/* Souhrn uprostřed, Přelosovat na témže řádku u pravého kraje;
                     pod tím Zpět na výběr Nástupce vlevo a Rozeslat role vpravo
@@ -167,6 +170,12 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                   <button type="button" disabled={pracuje} onClick={zpet}>
                     Zpět na výběr Nástupce
                   </button>
+                  {/* Bez mostu web pád Gardy nepozná — proměnu Šaška spustí GM. */}
+                  {rozeslano && d.role.some((r) => r.role === "sasek") && !d.role.some((r) => r.puvodniRole) ? (
+                    <button type="button" disabled={pracuje} onClick={() => akce(() => diploApi.gardaPadla(zapas.id))}>
+                      Garda padla
+                    </button>
+                  ) : null}
                   {d.stav === "losovano" ? (
                     <button type="button" className="cta" disabled={pracuje} onClick={() => akce(() => diploApi.rozeslat(zapas.id))}>
                       Rozeslat role
@@ -277,7 +286,11 @@ export function TabulkaRoli({
               <td>
                 {vyrazen ? <span className="sr-only">vyřazen, </span> : null}
                 {r.role === "nastupce" || !upravy ? (
-                  <strong>{NAZEV_ROLE[r.role]}</strong>
+                  <>
+                    <strong>{NAZEV_ROLE[r.role]}</strong>
+                    {r.puvodniRole ? <span className="drive-role"> (dříve {NAZEV_ROLE[r.puvodniRole]})</span> : null}{" "}
+                    <StavSchopnostiGm d={d} r={r} />
+                  </>
                 ) : (
                   <select aria-label={`Role: ${jmeno(r.hracId)}`} value={r.role} disabled={upravy.pracuje} onChange={(e) => upravy.zmen(r.hracId, { role: e.target.value as Role })}>
                     {ROLE_VOLITELNE.map((v) => (

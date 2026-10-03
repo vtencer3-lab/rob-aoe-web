@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NAZEV_ROLE, POPIS_ROLE } from "../../../src/shared/diplomacie/role.js";
 import type { DiploData, DiploZapas, PingNaMape, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
 import type { ZapasView } from "../../../src/shared/types.js";
@@ -8,7 +8,10 @@ import { hlasitostChatu, prehraj } from "../zvuk.js";
 import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
 import { jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { kralNaMape, MapaScenare, type DruhPopisku, type PopiskyStartu } from "./MapaScenare.js";
+import type { Hlidej } from "../rezimy/index.js";
+import { diploApi } from "./api.js";
 import { MojeCile } from "./MojeCile.js";
+import { MojeSchopnosti } from "./Schopnosti.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
 import { RUB_KARTY, ZNAK_ROLE } from "./znaky.js";
@@ -17,6 +20,7 @@ interface Props {
   zapas: ZapasView;
   data: DiploData;
   ja: string;
+  hlidej: Hlidej;
 }
 
 export function diploZapasu(data: DiploData, zapasId: number): DiploZapas | undefined {
@@ -59,7 +63,7 @@ export function useZvukPingu(pingy: readonly PingNaMape[] | undefined): void {
 }
 
 /** Tajná karta role hráče (spec §8.2). Data jsou už zredigovaná serverem. */
-export function KartaRole({ zapas, data, ja }: Props) {
+export function KartaRole({ zapas, data, ja, hlidej }: Props) {
   const d = diploZapasu(data, zapas.id);
   // Zvon jen při přechodu do „rozesláno“, ne při načtení stránky s už
   // rozeslanými rolemi — stejně jako ostatní zvonění v App.tsx.
@@ -71,6 +75,17 @@ export function KartaRole({ zapas, data, ja }: Props) {
   }, [d?.stav]);
 
   useZvukPingu(d?.pingy);
+
+  // Šašek, kterému padla Garda (uživatel 3. 10. 2026): zvon, ať se podívá na
+  // web, karta Šaška ztmavne a čeká na klik; pak shoří a objeví se Garda.
+  const ja_ = d?.role.find((r) => r.hracId === ja);
+  const promena = ja_?.puvodniRole === "sasek" && ja_.promenaVidena === false;
+  const drivPromena = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    const predtim = drivPromena.current;
+    drivPromena.current = promena;
+    if (predtim === false && promena) prehraj(zvonUrl);
+  }, [promena]);
 
   if (!d) return null;
   const verze = verzeZapasu(data, d, zapas);
@@ -88,18 +103,57 @@ export function KartaRole({ zapas, data, ja }: Props) {
           <p className="stred">
             Nástupcem císaře je <strong>{d.nastupceHracId ? <JmenoUcastnika ucastnici={zapas.ucastnici} hracId={d.nastupceHracId} /> : "?"}</strong>.
           </p>
+          {promena ? (
+            <PromenaSaska onHotovo={() => void hlidej(() => diploApi.promenaVidena(zapas.id))}>
+              <ObsahRole moje={{ ...moje, role: "sasek" }} vse={d.role} ucastnici={zapas.ucastnici} />
+            </PromenaSaska>
+          ) : (
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />}>
             <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
             {/* Na širokém displeji mapa vlevo a cíle vpravo, jako mapa a tabulka v pultu GM (uživatel 3. 10. 2026). */}
             <div className="karta-vedle">
               {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} pingy={(d.pingy ?? []).map((p) => ({ id: p.id, x: p.x, y: p.y }))} /> : null}
-              <MojeCile hra={d.mojeHra} role={moje.role} ucastnici={zapas.ucastnici} />
+              <div className="karta-strana">
+                <MojeCile hra={d.mojeHra} role={moje.role} ucastnici={zapas.ucastnici} />
+                <MojeSchopnosti zapas={zapas} d={d} moje={moje} hlidej={hlidej} />
+              </div>
             </div>
           </Zakryti>
+          )}
         </>
       )}
       <PravidlaHry verze={verze} />
     </section>
+  );
+}
+
+/** Jak dlouho karta Šaška hoří, než se ukáže Garda (CSS `.karta-promena.hori`). */
+const HORENI_MS = 1600;
+
+/**
+ * Karta Šaška po pádu Gardy: ztmavlá, přes ni velké tlačítko. Po kliknutí
+ * shoří (animace) a teprve pak se serveru řekne, že hráč proměnu viděl —
+ * stav pak přinese kartu Gardy.
+ */
+function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHotovo: () => void }) {
+  const [hori, setHori] = useState(false);
+  useEffect(() => {
+    if (!hori) return;
+    const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const t = setTimeout(onHotovo, bezPohybu ? 0 : HORENI_MS);
+    return () => clearTimeout(t);
+  }, [hori]);
+  return (
+    <div className={hori ? "karta-promena hori" : "karta-promena"} data-testid="promena-saska">
+      <div className="karta-promena-obsah" aria-hidden="true">
+        {children}
+      </div>
+      {hori ? null : (
+        <button type="button" className="primarni promena-tlacitko" onClick={() => setHori(true)}>
+          Královská garda padla
+        </button>
+      )}
+    </div>
   );
 }
 

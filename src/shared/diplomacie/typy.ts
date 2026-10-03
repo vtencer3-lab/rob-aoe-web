@@ -1,4 +1,5 @@
 import type { CilHrace, HraZapasu, PolohaVeHre, SouhrnSondy } from "./hra.js";
+import type { Schopnost } from "./schopnosti.js";
 import type { RozborScenare } from "./scenar.js";
 
 /** Role hráče (spec §6.1). Nástupce se nelosuje — určí ho hra a odklikne GM. */
@@ -17,6 +18,10 @@ export interface RoleHrace {
   role: Role;
   /** Oběť Kata nebo pakt Žoldáka; jinak null. */
   cilHracId: string | null;
+  /** Role před proměnou ve hře (Šašek, který po smrti Gardy převzal její roli); chybí = beze změny. */
+  puvodniRole?: Role;
+  /** Hráč proměnu na kartě viděl (klikl na „Královská garda padla“); jen u `puvodniRole`. */
+  promenaVidena?: boolean;
 }
 
 /** Diplomacie jednoho zápasu, jak ji vidí GM (nic nezaslepeno). */
@@ -55,6 +60,8 @@ export interface DiploZapas {
    * 3. 10. 2026: „hráči uvidí pouze svého krále“).
    */
   mujKral?: PolohaVeHre;
+  /** Žádosti o schopnosti a připomínky ze hry; GM všechny, hráč jen své žádosti. */
+  schopnosti?: Schopnost[];
   /** Vlastní cíle hráče z běžící hry (panel vedle mapy na kartě); jen hráč zápasu, ne GM. */
   mojeHra?: MojeHra;
   /** Pingy GM na mapě, které ještě svítí. GM vidí všechny, hráč jen pro všechny a pro sebe. */

@@ -1,3 +1,4 @@
+import { vidiHrac } from "./schopnosti.js";
 import type { DiploData, DiploZapas, RoleHrace } from "./typy.js";
 
 /**
@@ -15,6 +16,11 @@ function redigujZapas(cely: DiploZapas, divak: string | null): DiploZapas {
   // totéž co role — patří jen GM, v každém stavu.
   const z = { ...cely };
   delete z.hra;
+  // Žádosti o schopnosti: hráč jen své (cíl Sabotáže je tajemství Nájezdníka a GM)
+  // a povinnost prodat relikvie, je-li jeho.
+  delete z.schopnosti;
+  const mojeZadosti = (cely.schopnosti ?? []).filter((s) => divak !== null && s.hracId === divak && vidiHrac(s.druh));
+  if (mojeZadosti.length > 0) z.schopnosti = mojeZadosti;
   // Ping GM vidí hráč, kterému patří (nebo všem); cizí pingy ne.
   if (cely.pingy) {
     const moje = cely.pingy.filter((p) => p.komu === null || (divak !== null && p.komu.includes(divak)));

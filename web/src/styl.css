@@ -1873,6 +1873,38 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .moje-cile .radek-cile.ztlumeny { opacity: 0.45; }
 .moje-cile .znak-relikvie { height: 28px; width: auto; }
 .moje-cile .padl { color: var(--chyba); }
+/* Schopnosti role pod cíli (Schopnosti.tsx). */
+.moje-schopnosti { max-width: 34rem; margin: 0.6rem auto; padding: 0.4rem 1rem 0.7rem; text-align: left; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
+.moje-schopnosti h5 { margin: 0.5rem 0 0.3rem; font-size: 0.95rem; color: var(--zlato); }
+.moje-schopnosti p { margin: 0.25rem 0 0.5rem; }
+.moje-schopnosti .schopnost-ovladani { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+/* Pult GM: čekající žádosti a připomínky nad tabulkou rolí; stav schopnosti v řádku. */
+.oznameni-gm { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.4rem; }
+.oznameni-gm .oznameni { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.8rem; padding: 0.45rem 0.7rem; border: 1px solid var(--zlato); border-radius: 3px; background: color-mix(in srgb, var(--zlato) 10%, transparent); animation: vznik var(--prechod) var(--krivka); }
+.oznameni-gm .oznameni-tlacitka { display: flex; gap: 0.4rem; }
+.tabulka-roli .schopnost-gm { font-size: 0.8rem; color: var(--tlumene); white-space: nowrap; }
+.tabulka-roli .schopnost-gm.pouzita { color: var(--zlato); }
+.tabulka-roli .drive-role { font-size: 0.85rem; color: var(--tlumene); }
+/* Šašek po pádu Gardy: karta ztmavne, přes ni velké tlačítko; po kliknutí
+   shoří zdola nahoru (maska posouvá `--hori`) a ukáže se karta Gardy. */
+@property --hori { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+.karta-promena { position: relative; max-width: 34rem; margin: 0.8rem auto; }
+.karta-promena .karta-promena-obsah { filter: brightness(0.35) grayscale(0.6); pointer-events: none; }
+.karta-promena .promena-tlacitko { position: absolute; inset: 50% auto auto 50%; translate: -50% -50%; font-size: 1.3rem; padding: 0.9rem 1.6rem; animation: zare-rozdat 2s ease-in-out infinite; }
+.karta-promena.hori .karta-promena-obsah {
+  -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) - 12%), black calc(var(--hori) + 4%));
+  mask-image: linear-gradient(to top, transparent calc(var(--hori) - 12%), black calc(var(--hori) + 4%));
+  animation: hori 1.6s ease-in forwards;
+}
+@keyframes hori {
+  0% { --hori: 0%; filter: brightness(0.35) grayscale(0.6); }
+  25% { filter: sepia(1) saturate(4) brightness(1.1) drop-shadow(0 0 6px var(--zlato)); }
+  100% { --hori: 125%; filter: sepia(1) saturate(3) brightness(0.5) drop-shadow(0 0 10px var(--zlato)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .karta-promena .promena-tlacitko { animation: none; }
+  .karta-promena.hori .karta-promena-obsah { animation: none; opacity: 0; }
+}
 @media (min-width: 72rem) {
   .karta-role .karta-vedle { display: grid; grid-template-columns: minmax(0, calc(36rem + 2px)) minmax(0, 1fr); gap: 0 1.5rem; align-items: start; }
   .karta-role .karta-vedle .mapa-scenare { margin: 0.6rem 0; }

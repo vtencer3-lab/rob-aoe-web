@@ -1,4 +1,5 @@
 import type { SouhrnSondy } from "../../../src/shared/diplomacie/hra.js";
+import type { DruhZadosti } from "../../../src/shared/diplomacie/schopnosti.js";
 import type { Role, ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { json } from "../api.js";
 import { cesta } from "../cesty.js";
@@ -17,6 +18,12 @@ export const diploApi = {
   mapa: (zapasId: number, zmena: { kralove?: boolean; relikvie?: boolean }) => post(`/api/diplo/zapas/${zapasId}/mapa`, zmena),
   ping: (zapasId: number, x: number, y: number, komu: string[] | null) => post(`/api/diplo/zapas/${zapasId}/ping`, { x, y, komu }),
   los: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/los`),
+  /** Hráč žádá o schopnost své role (Sabotáž s cílem, informace, doplatek). */
+  schopnost: (zapasId: number, druh: DruhZadosti, cilHracId: string | null = null) => post(`/api/diplo/zapas/${zapasId}/schopnost`, { druh, cilHracId }),
+  /** GM žádost potvrdí/zamítne, připomínku odklikne (potvrzeno = vyřízeno). */
+  vyridit: (zapasId: number, id: number, stav: "potvrzeno" | "zamitnuto") => post(`/api/diplo/zapas/${zapasId}/schopnost/${id}`, { stav }),
+  gardaPadla: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/garda-padla`),
+  promenaVidena: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/promena`),
   role: (zapasId: number, hracId: string, zmena: { role?: Role; cilHracId?: string }) =>
     fetch(cesta(`/api/diplo/zapas/${zapasId}/role/${encodeURIComponent(hracId)}`), {
       method: "PUT",

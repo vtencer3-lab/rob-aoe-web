@@ -3,6 +3,7 @@ import { getPool, withTransaction } from "../db/pool.js";
 import { prectiSondu, souhrnSondy, type BeziciZapasDiplo, type SondaScenare } from "../shared/diplomacie/hra.js";
 import { procNelzePrevzitMinimapu } from "../shared/diplomacie/minimapa.js";
 import { jmenoScenareProHru, prectiRozbor, type RozborScenare } from "../shared/diplomacie/scenar.js";
+import type { DruhPripominky, DruhSchopnosti, DruhZadosti, StavSchopnosti } from "../shared/diplomacie/schopnosti.js";
 import { revizeSondy } from "./sonda.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploZapas, Role, RoleHrace, ScenarVerze, StavDiplo, ZobrazeniMapy } from "../shared/diplomacie/typy.js";
@@ -276,14 +277,29 @@ interface RoleDb {
   hrac_id: string;
   role: Role;
   cil_hrac_id: string | null;
+  puvodni_role: Role | null;
+  promena_videna: boolean;
+}
+interface SchopnostDb {
+  id: number;
+  zapas_id: number;
+  hrac_id: string;
+  druh: DruhSchopnosti;
+  cil_hrac_id: string | null;
+  stav: StavSchopnosti;
+  vytvoreno_v: Date;
 }
 
 async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
   if (zapasy.length === 0) return [];
   const { rows: role } = await getPool().query<RoleDb>(
-    `SELECT r.zapas_id, r.hrac_id, r.role, r.cil_hrac_id
+    `SELECT r.zapas_id, r.hrac_id, r.role, r.cil_hrac_id, r.puvodni_role, r.promena_videna
        FROM diplo_role r JOIN ucastnik u ON u.zapas_id = r.zapas_id AND u.hrac_id = r.hrac_id
       WHERE r.zapas_id = ANY($1::int[]) ORDER BY r.zapas_id, u.poradi`,
+    [zapasy.map((z) => z.zapas_id)],
+  );
+  const { rows: schopnosti } = await getPool().query<SchopnostDb>(
+    `SELECT id, zapas_id, hrac_id, druh, cil_hrac_id, stav, vytvoreno_v FROM diplo_schopnost WHERE zapas_id = ANY($1::int[]) ORDER BY id`,
     [zapasy.map((z) => z.zapas_id)],
   );
   return zapasy.map((z) => ({
@@ -297,7 +313,10 @@ async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
     mapa: { kralove: z.mapa_kralove, relikvie: z.mapa_relikvie },
     role: role
       .filter((r) => r.zapas_id === z.zapas_id)
-      .map((r) => ({ hracId: r.hrac_id, role: r.role, cilHracId: r.cil_hrac_id })),
+      .map((r) => ({ hracId: r.hrac_id, role: r.role, cilHracId: r.cil_hrac_id, ...(r.puvodni_role ? { puvodniRole: r.puvodni_role, promenaVidena: r.promena_videna } : {}) })),
+    schopnosti: schopnosti
+      .filter((x) => x.zapas_id === z.zapas_id)
+      .map((x) => ({ id: x.id, hracId: x.hrac_id, druh: x.druh, cilHracId: x.cil_hrac_id, stav: x.stav, vytvoreno: x.vytvoreno_v.toISOString() })),
   }));
 }
 
@@ -441,6 +460,58 @@ export async function setStavDiplo(zapasId: number, stav: StavDiplo): Promise<vo
 export async function vratNaPripravu(zapasId: number): Promise<void> {
   await withTransaction(async (c) => {
     await c.query("DELETE FROM diplo_role WHERE zapas_id = $1", [zapasId]);
+    await c.query("DELETE FROM diplo_schopnost WHERE zapas_id = $1", [zapasId]);
     await c.query("UPDATE diplo_zapas SET stav = 'priprava', nastupce_hrac_id = NULL, rozeslano_v = NULL, upraveno_v = now() WHERE zapas_id = $1", [zapasId]);
   });
+}
+
+// --- schopnosti rolí a připomínky ze hry (migrace 039) ---
+
+/** Žádost hráče o schopnost (pravidla hlídá `procNelze` před zápisem). */
+export async function pridejSchopnost(zapasId: number, hracId: string, druh: DruhZadosti, cilHracId: string | null): Promise<void> {
+  await getPool().query("INSERT INTO diplo_schopnost (zapas_id, hrac_id, druh, cil_hrac_id) VALUES ($1, $2, $3, $4)", [zapasId, hracId, druh, cilHracId]);
+}
+
+/** GM žádost potvrdí nebo zamítne (připomínku odklikne jako vyřízenou); jen čekající. Vrací, jestli se něco změnilo. */
+export async function vyridSchopnost(zapasId: number, id: number, stav: "potvrzeno" | "zamitnuto"): Promise<boolean> {
+  const { rowCount } = await getPool().query("UPDATE diplo_schopnost SET stav = $3, vyrizeno_v = now() WHERE zapas_id = $1 AND id = $2 AND stav = 'ceka'", [zapasId, id, stav]);
+  return (rowCount ?? 0) > 0;
+}
+
+/** Připomínky ze hry; každá k jednomu padlému jen jednou (unikátní index). Vrací, jestli nějaká přibyla. */
+export async function pridejPripominky(zapasId: number, pripominky: readonly { druh: DruhPripominky; hracId: string; cilHracId: string }[]): Promise<boolean> {
+  let pribylo = false;
+  for (const p of pripominky) {
+    const { rowCount } = await getPool().query(
+      `INSERT INTO diplo_schopnost (zapas_id, hrac_id, druh, cil_hrac_id) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (zapas_id, druh, hrac_id, cil_hrac_id) WHERE druh IN ('kat_odmena', 'garda_role', 'sasek_prodej') DO NOTHING`,
+      [zapasId, p.hracId, p.druh, p.cilHracId],
+    );
+    pribylo ||= (rowCount ?? 0) > 0;
+  }
+  return pribylo;
+}
+
+/**
+ * Šašek se stává Gardou (`udalostiHry`): role 'garda', původní 'sasek',
+ * proměnu ještě neviděl. Čekající žádosti o informace propadnou — výhody
+ * Šaška ztratil. Podmíněně (jen dokud je Šaškem), ať dvojí snímek nic nezdvojí.
+ */
+export async function povysSaska(zapasId: number, hracId: string): Promise<boolean> {
+  return withTransaction(async (c) => {
+    const { rowCount } = await c.query(
+      "UPDATE diplo_role SET role = 'garda', puvodni_role = 'sasek', promena_videna = false WHERE zapas_id = $1 AND hrac_id = $2 AND role = 'sasek'",
+      [zapasId, hracId],
+    );
+    if (!rowCount) return false;
+    await c.query("UPDATE diplo_schopnost SET stav = 'zamitnuto', vyrizeno_v = now() WHERE zapas_id = $1 AND hrac_id = $2 AND druh = 'informace' AND stav = 'ceka'", [zapasId, hracId]);
+    await c.query("UPDATE diplo_zapas SET upraveno_v = now() WHERE zapas_id = $1", [zapasId]);
+    return true;
+  });
+}
+
+/** Hráč na kartě klikl na „Královská garda padla“. */
+export async function promenaVidena(zapasId: number, hracId: string): Promise<boolean> {
+  const { rowCount } = await getPool().query("UPDATE diplo_role SET promena_videna = true WHERE zapas_id = $1 AND hrac_id = $2 AND puvodni_role IS NOT NULL AND NOT promena_videna", [zapasId, hracId]);
+  return (rowCount ?? 0) > 0;
 }

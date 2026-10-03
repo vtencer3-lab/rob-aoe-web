@@ -17,7 +17,8 @@ import {
   type SnimekHry,
   type ZdrojHry,
 } from "../shared/diplomacie/hra.js";
-import { beziciZapasyDiplo, getDiploZapas, getSonduVerze, nastavNastupceZeHry, odvolejNastupceZeHry } from "./db.js";
+import { udalostiHry } from "../shared/diplomacie/schopnosti.js";
+import { beziciZapasyDiplo, getDiploZapas, getSonduVerze, nastavNastupceZeHry, odvolejNastupceZeHry, povysSaska, pridejPripominky } from "./db.js";
 import { pametHer } from "./hraPamet.js";
 
 /**
@@ -114,13 +115,20 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
   // Oba zápisy jsou podmíněné v jednom příkazu (stav `priprava`, poslední
   // odpověď hry) — souběžný los GM ani jeho ruční volbu nepřepíšou; tady
   // se jen šetří dotazy, které by určitě nic nezměnily.
-  let zmenaNastupce = false;
+  let zmenaStavu = false;
   if (diplo.stav === "priprava" && !jinyScenar) {
-    if (potvrzeny !== null) zmenaNastupce = await nastavNastupceZeHry(zapasId, potvrzeny);
-    else if (odpoved.nastupceHracId === null && diplo.nastupceHracId !== null) zmenaNastupce = await odvolejNastupceZeHry(zapasId);
+    if (potvrzeny !== null) zmenaStavu = await nastavNastupceZeHry(zapasId, potvrzeny);
+    else if (odpoved.nastupceHracId === null && diplo.nastupceHracId !== null) zmenaStavu = await odvolejNastupceZeHry(zapasId);
+  }
+  // Po rozeslání: pád Gardy promění Šaška v Gardu, za každého padlého
+  // připomínky GM (Katovi zlato, Gardě role padlého) — uživatel 3. 10. 2026.
+  if (diplo.stav === "rozeslano" && !jinyScenar && odpoved.hraci.some((h) => h.zije === false)) {
+    const { povysit, pripominky } = udalostiHry(diplo.role, odpoved.hraci);
+    if (povysit !== null && (await povysSaska(zapasId, povysit))) zmenaStavu = true;
+    if (await pridejPripominky(zapasId, pripominky)) zmenaStavu = true;
   }
 
-  const rozeslat = zmenaNastupce || !predchozi || ted.getTime() - predchozi.rozeslanoMs >= ROZESTUP_ROZESLANI_MS;
+  const rozeslat = zmenaStavu || !predchozi || ted.getTime() - predchozi.rozeslanoMs >= ROZESTUP_ROZESLANI_MS;
   pametHer.set(zapasId, {
     hra,
     kandidat,
