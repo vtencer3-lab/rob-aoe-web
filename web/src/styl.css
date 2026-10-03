@@ -1831,8 +1831,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 }
 .dlazdice-nastupce { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem; max-width: 34rem; margin: 0.6rem auto 0.8rem; }
 button.dlazdice { position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.55rem 0.6rem; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; text-shadow: 0 1px 2px color-mix(in srgb, var(--obrys) 60%, transparent); }
-button.dlazdice .cislo { font-family: "Cinzel", Georgia, serif; font-weight: 800; font-size: 1.25rem; }
-button.dlazdice .barva { font-size: 0.8rem; opacity: 0.9; }
+button.dlazdice .barva { font-family: "Cinzel", Georgia, serif; font-weight: 800; font-size: 1.05rem; text-transform: capitalize; }
 button.dlazdice strong { font-weight: 700; overflow-wrap: anywhere; }
 button.dlazdice.barva-1 { background: var(--b1); border-color: var(--b1); }
 button.dlazdice.barva-2 { background: var(--b2); border-color: var(--b2); }
@@ -1902,12 +1901,15 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
    omylem a nehledá. */
 .pult-gm .ovladani .cta { font-size: 1.15rem; padding: 0.75rem 1.6rem; }
 /* Nástupce je zvolený → další krok GM je rozdat role: tlačítko jemně dýchá
-   zlatou. Přes filter, ne box-shadow — ten nese kov tlačítka a animace by ho
-   přepsala (uživatel 3. 10. 2026: „aby to tlačítko trochu glowovalo“). */
-.pult-gm button.rozdat-role:enabled { animation: zare-rozdat 2.4s ease-in-out infinite; }
+   zlatou (uživatel 3. 10. 2026: „aby to tlačítko trochu glowovalo“, pak
+   „mělo by pulsovat glowem, ne až když hoveruju“). */
+.pult-gm button.rozdat-role:enabled { animation: zare-rozdat 2s ease-in-out infinite; }
+/* Kovové stíny zlatého tlačítka (`.cta`) zůstávají, přidává se jen zlatá
+   záře kolem. Přes filter (drop-shadow) byla na zlatém tlačítku skoro
+   neviditelná — uživatel ji poznal až pod kurzorem. */
 @keyframes zare-rozdat {
-  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
-  50% { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--zlato) 55%, transparent)); }
+  0%, 100% { box-shadow: inset 0 1px 0 rgba(255, 245, 215, 0.75), inset 0 -2px 5px rgba(90, 50, 8, 0.55), 0 2px 4px rgba(0, 0, 0, 0.55), 0 0 0 0 transparent; }
+  50% { box-shadow: inset 0 1px 0 rgba(255, 245, 215, 0.75), inset 0 -2px 5px rgba(90, 50, 8, 0.55), 0 2px 4px rgba(0, 0, 0, 0.55), 0 0 18px 5px color-mix(in srgb, var(--zlato) 70%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) { .pult-gm button.rozdat-role:enabled { animation: none; } }
 /* Pravidla hry (PravidlaHry.tsx): sbalovací tahák jako sekce kontroly lobby

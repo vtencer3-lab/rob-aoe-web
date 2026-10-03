@@ -55,7 +55,7 @@ it("je zakrytý; v přípravě nabídne 7 dlaždic s pN a barvou", () => {
   odkryj();
   const dlazdice = screen.getAllByTestId("dlazdice");
   expect(dlazdice).toHaveLength(7);
-  expect(dlazdice[0]!.textContent).toMatch(/p1.*modrá.*Hráč 1/);
+  expect(dlazdice[0]!.textContent).toMatch(/^modrá.*Hráč 1$/);
 });
 
 it("klik na dlaždici vybere Nástupce, pak Rozdat role losuje", async () => {
@@ -155,16 +155,20 @@ it("odchylka složení je vidět", () => {
   expect(screen.getByText("3× Nájezdník (má být 2×), chybí Kat")).toBeTruthy();
 });
 
-// Dokud server neodpoví, GM nesmí kliknout podruhé — jinak by dvě rychlá
-// kliknutí na „Rozdat role“ losovala dvakrát.
-it("během běžící akce jsou tlačítka zamčená a po doběhnutí zase volná", async () => {
+// Dokud server neodpoví, druhé kliknutí nic nepošle — jinak by dvě rychlá
+// kliknutí na „Rozdat role“ losovala dvakrát. Tlačítka se přitom nezamykají
+// (zprůhlednění při každé volbě sekci rozblikalo, uživatel 3. 10. 2026).
+it("během běžící akce druhé kliknutí nic nepošle a tlačítka nezešednou", async () => {
   let dokonci!: () => void;
-  const ceka = (fn: () => Promise<unknown>) => new Promise<void>((resolve) => { dokonci = () => void fn().then(() => resolve()); });
+  const ceka = vi.fn((fn: () => Promise<unknown>) => new Promise<void>((resolve) => { dokonci = () => void fn().then(() => resolve()); }));
   render(<PultGm zapas={zapas} data={gmData("priprava", [], "h3")} hlidej={ceka} />);
   odkryj();
   fireEvent.click(screen.getByRole("button", { name: "Rozdat role" }));
-  expect(screen.getByRole("button", { name: "Rozdat role" })).toBeDisabled();
-  expect(screen.getAllByTestId("dlazdice")[0]).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Rozdat role" }));
+  fireEvent.click(screen.getAllByTestId("dlazdice")[0]!);
+  expect(ceka).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: "Rozdat role" })).toBeEnabled();
+  expect(screen.getAllByTestId("dlazdice")[0]).toBeEnabled();
   await act(async () => dokonci());
   await odemceno("Rozdat role");
 });

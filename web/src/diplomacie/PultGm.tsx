@@ -91,18 +91,20 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
                       type="button"
                       data-testid="dlazdice"
                       className={`dlazdice barva-${u.barva}${nastupce === u.hracId ? " vybrana" : ""}${d.hra?.nastupceHracId === u.hracId ? " ze-hry" : ""}`}
-                      disabled={pracuje}
-                      onClick={() => akce(() => diploApi.nastupce(zapas.id, u.hracId))}
+                      // Bez `disabled` během ukládání: zamčená tlačítka zprůhlední
+                      // a celá sekce při každé volbě problikla (uživatel 3. 10.
+                      // 2026). Dvojí odeslání hlídá podmínka v obsluze.
+                      onClick={() => (pracuje ? undefined : akce(() => diploApi.nastupce(zapas.id, u.hracId)))}
                     >
                       {/* Zvolený Nástupce: nakloněná koruna v rohu dlaždice (uživatel 3. 10. 2026). */}
                       {nastupce === u.hracId ? <img className="koruna-roh" src={ZNAK_ROLE.nastupce} alt="" width={64} height={64} /> : null}
                       {/* Koho předvybrala hra (most ke hře): koruna a záře, ať GM vidí, jestli sedí. */}
                       {d.hra?.nastupceHracId === u.hracId ? <img className="znak-role" src={ZNAK_ROLE.nastupce} alt="Nástupce podle hry" width={64} height={64} /> : null}
-                      <span className="cislo">p{u.barva}</span> <span className="barva">{BARVA_NAZEV[u.barva]}</span> <strong>{jmenoHrace(u)}</strong>
+                      <span className="barva">{BARVA_NAZEV[u.barva]}</span> <strong>{jmenoHrace(u)}</strong>
                     </button>
                   ))}
                 </div>
-                <button type="button" className="cta rozdat-role" disabled={pracuje || nastupce === null} onClick={() => akce(() => diploApi.los(zapas.id))}>
+                <button type="button" className="cta rozdat-role" disabled={nastupce === null} onClick={() => (pracuje ? undefined : akce(() => diploApi.los(zapas.id)))}>
                   Rozdat role
                 </button>
               </>

@@ -69,18 +69,18 @@ it("v přípravě řekne, koho určila hra — jméno s barvou — a jeho dlažd
   expect(veta.querySelector("strong .swatch")).toHaveClass("barva-4");
   const vybrane = screen.getAllByTestId("dlazdice").filter((d) => d.classList.contains("vybrana"));
   expect(vybrane).toHaveLength(1);
-  expect(vybrane[0]!.textContent).toMatch(/p4.*Hráč 4/);
+  expect(vybrane[0]!.textContent).toMatch(/žlutá.*Hráč 4/);
 });
 
 it("GM hru přepsal: věta dál jmenuje hráče ze hry, vybraná je dlaždice GM", () => {
   render(<PultGm zapas={zapas} data={gmData("priprava", [], "h2", HRA)} hlidej={spust} />);
   odkryj();
   expect(screen.getByTestId("nastupce-ze-hry")).toHaveTextContent("Nástupce určila hra: Hráč 4");
-  expect(screen.getAllByTestId("dlazdice").find((d) => d.classList.contains("vybrana"))!.textContent).toMatch(/p2.*Hráč 2/);
+  expect(screen.getAllByTestId("dlazdice").find((d) => d.classList.contains("vybrana"))!.textContent).toMatch(/červená.*Hráč 2/);
   // Předvýběr hry nese korunu a záři i tehdy, když GM vybral jinak.
   const zeHry = screen.getAllByTestId("dlazdice").filter((d) => d.classList.contains("ze-hry"));
   expect(zeHry).toHaveLength(1);
-  expect(zeHry[0]!.textContent).toMatch(/p4.*Hráč 4/);
+  expect(zeHry[0]!.textContent).toMatch(/žlutá.*Hráč 4/);
   expect(zeHry[0]!.querySelector("img")).toHaveAttribute("alt", "Nástupce podle hry");
 });
 
