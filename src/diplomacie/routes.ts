@@ -29,6 +29,7 @@ import {
   vratNaPripravu,
 } from "./db.js";
 import { registerHraRoutes } from "./hra.js";
+import { registerObsRoutes } from "./obs.js";
 import { jeGm, smiNahratScenar } from "./opravneni.js";
 import { nastaveniZAktivniVerze } from "./rezim.js";
 import { jeHlavickaScenare, type rozeberScenar } from "./rozbor.js";
@@ -131,6 +132,7 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
 
   registerScenarRoutes(app, deps);
   registerHraRoutes(app);
+  registerObsRoutes(app);
 }
 
 /** Scénář má přes 100 kB; 5 MB nechává rezervu, ale nepustí libovolný balast (spec §5.2). */

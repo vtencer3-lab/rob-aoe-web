@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import type { AkceStavPayload, Barva, RezimId, ZapasView } from "../../../src/shared/types.js";
 import { diplomacieKlient } from "../diplomacie/index.js";
 
@@ -31,9 +31,24 @@ export interface RezimKlienta {
    * háčkem (`RezimAkce.smiMluvitDoZapasu`).
    */
   smiMluvitDoZapasu?(p: KontextZapasu): boolean;
+  /**
+   * Samostatné stránky módu podle cesty bez základu webu (Diplomacie:
+   * overlaye do OBS „/obs/mapa“, „/obs/tabulka“). Nezávisí na otevřené
+   * akci — browser source načítá adresu napřímo.
+   */
+  stranky?: Record<string, () => ReactElement>;
 }
 
 const KLIENTI: Record<RezimId, RezimKlienta> = { klasicky: {}, diplomacie: diplomacieKlient };
+
+/** Samostatná stránka některého módu pro tuhle cestu, nebo null. */
+export function strankaModu(cesta: string): ReactElement | null {
+  for (const klient of Object.values(KLIENTI)) {
+    const stranka = klient.stranky?.[cesta];
+    if (stranka) return stranka();
+  }
+  return null;
+}
 
 /** Bez módu (starší snímek stavu) je to klasický večer. */
 export function rezimKlienta(id: RezimId | undefined): RezimKlienta {

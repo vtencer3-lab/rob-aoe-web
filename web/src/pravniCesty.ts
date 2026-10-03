@@ -2,6 +2,12 @@ import { ZAKLAD } from "./cesty.js";
 
 export type PravniStranka = "podminky" | "soukromi";
 
+/** Cesta z adresního řádku bez základu webu a bez koncového lomítka („/aoe/diplo/obs/mapa/“ → „/obs/mapa“). */
+export function cestaBezZakladu(pathname: string, zaklad: string = ZAKLAD): string {
+  const bezZakladu = pathname.startsWith(zaklad) ? pathname.slice(zaklad.length) : pathname;
+  return bezZakladu.replace(/\/+$/, "") || "/";
+}
+
 /**
  * Adresa, na kterou se píše o smazání účtu. Stojí tu, protože ji jmenují obě
  * právní stránky — kdyby si ji každá držela svou, jedna by po změně mlčky
@@ -20,8 +26,7 @@ export const KONTAKT_SMAZANI = "m.joukal+aoekomunitky@gmail.com";
  * chování pro všechna tři nasazení bez přepínání `import.meta.env` v testu.
  */
 export function pravniStrankaZCesty(pathname: string, zaklad: string = ZAKLAD): PravniStranka | null {
-  const bezZakladu = pathname.startsWith(zaklad) ? pathname.slice(zaklad.length) : pathname;
-  const cesta = bezZakladu.replace(/\/+$/, "") || "/";
+  const cesta = cestaBezZakladu(pathname, zaklad);
   if (cesta === "/podminky") return "podminky";
   if (cesta === "/soukromi") return "soukromi";
   return null;

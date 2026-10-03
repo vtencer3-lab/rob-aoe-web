@@ -134,6 +134,13 @@ export const config = {
   get mostToken(): string {
     return process.env["MOST_TOKEN"] ?? "";
   },
+  /**
+   * Klíč overlayů do OBS (Diplomacie, `GET /api/diplo/obs?klic=`): kdo ho
+   * má, vidí běžící zápas očima GM. Prázdné = routa se neregistruje.
+   */
+  get obsKlic(): string {
+    return process.env["OBS_KLIC"] ?? "";
+  },
   get jeProdukce(): boolean {
     return this.baseUrl.startsWith("https://");
   },

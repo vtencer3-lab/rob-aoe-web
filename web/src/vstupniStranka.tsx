@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { App } from "./App.js";
-import { pravniStrankaZCesty } from "./pravniCesty.js";
+import { cestaBezZakladu, pravniStrankaZCesty } from "./pravniCesty.js";
+import { strankaModu } from "./rezimy/index.js";
 import { Podminky } from "./views/Podminky.js";
 import { Soukromi } from "./views/Soukromi.js";
 
@@ -15,5 +16,5 @@ export function vstupniStranka(pathname: string): ReactElement {
   const stranka = pravniStrankaZCesty(pathname);
   if (stranka === "podminky") return <Podminky />;
   if (stranka === "soukromi") return <Soukromi />;
-  return <App />;
+  return strankaModu(cestaBezZakladu(pathname)) ?? <App />;
 }

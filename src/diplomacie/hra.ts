@@ -134,12 +134,21 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
 /** Těla od mostu mají kolem 3 kB; 64 kB je strop proti balastu. */
 const MAX_TELO = 64 * 1024;
 
-/** Porovnání otisků: `timingSafeEqual` chce stejně dlouhé vstupy a délka tokenu se nemá prozradit. */
+/**
+ * Sedí předložené tajemství? Porovnání otisků: `timingSafeEqual` chce stejně
+ * dlouhé vstupy a délka tajemství se nemá prozradit. Prázdné nesedí nikdy.
+ * Sdílí most (token v hlavičce) i overlay OBS (klíč v adrese).
+ */
+export function sediTajemstvi(predlozene: string, spravne: string): boolean {
+  if (spravne === "") return false;
+  const otisk = (t: string) => createHash("sha256").update(t).digest();
+  return timingSafeEqual(otisk(predlozene), otisk(spravne));
+}
+
 function sediToken(request: FastifyRequest): boolean {
   const hlavicka = request.headers.authorization;
   const predlozeny = typeof hlavicka === "string" && hlavicka.startsWith("Bearer ") ? hlavicka.slice("Bearer ".length) : "";
-  const otisk = (t: string) => createHash("sha256").update(t).digest();
-  return timingSafeEqual(otisk(predlozeny), otisk(config.mostToken));
+  return sediTajemstvi(predlozeny, config.mostToken);
 }
 
 /** Bez `MOST_TOKEN` se routa vůbec neregistruje — web pak data ze hry nepřijímá od nikoho. */

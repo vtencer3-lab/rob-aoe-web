@@ -1,6 +1,7 @@
 import { GM_BARVA } from "../../../src/shared/diplomacie/sestava.js";
 import type { RezimKlienta } from "../rezimy/index.js";
 import { diploZapasu, KartaRole, verzeZapasu } from "./KartaRole.js";
+import { ObsMapa, ObsTabulka } from "./Obs.js";
 import { PultGm } from "./PultGm.js";
 import { StazeniScenare } from "./StazeniScenare.js";
 import { VerejnyRadek } from "./VerejnyRadek.js";
@@ -8,6 +9,8 @@ import { VerejnyRadek } from "./VerejnyRadek.js";
 /** Diplomacie na obrazovkách jádra (spec §4.2): GM dostane pult, ostatní kartu role, host stažení scénáře. */
 export const diplomacieKlient: RezimKlienta = {
   stitek: () => "Diplomacie",
+  // Overlaye do OBS (uživatel 3. 10. 2026): `…/obs/mapa?klic=…`, `…/obs/tabulka?klic=…`.
+  stranky: { "/obs/mapa": () => <ObsMapa />, "/obs/tabulka": () => <ObsTabulka /> },
   kartaHrace: ({ zapas, stav, ja, hlidej }) => {
     if (!stav.rezim || !ja) return null;
     const d = diploZapasu(stav.rezim.data, zapas.id);

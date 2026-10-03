@@ -145,6 +145,16 @@ html.pozadi-nove {
   background-image: url(./assets/ui/pozadi-nove.webp);
 }
 /* Volba pozadí v záhlaví (debug): tři tlačítka, zvolené zlatě. */
+/* Overlaye do OBS (`/obs/mapa`, `/obs/tabulka`, Obs.tsx): průhledná stránka
+   bez scény a viněty — browser source ukáže jen mapu nebo tabulku. Mapa
+   vyplní menší stranu okna zdroje, tabulka má tmavý podklad kvůli čitelnosti
+   nad hrou. Velikost se ladí velikostí zdroje v OBS. */
+html.obs, html.obs.pozadi-puvodni, html.obs.pozadi-nove { background: transparent; }
+html.obs body::before { content: none; }
+.obs-overlay { max-width: none; margin: 0; padding: 0; }
+.obs-mapa .mapa-scenare.velka { width: min(100vw, 100vh); margin: 0; }
+.obs-tabulka { padding: 0.6rem 1rem; border: 1px solid var(--zlato-tmave); border-radius: 4px; background: color-mix(in srgb, var(--drevo-tmave) 88%, transparent); font-size: 1.15rem; }
+.obs-tabulka .tabulka-roli { max-width: none; margin: 0; }
 .volba-pozadi { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
 .volba-pozadi > span { color: var(--tlumene); margin-right: 0.2rem; }
 .volba-pozadi > button { padding: 0.15rem 0.6rem; font-size: 0.75rem; }
