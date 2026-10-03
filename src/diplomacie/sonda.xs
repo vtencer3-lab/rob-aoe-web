@@ -22,9 +22,10 @@
 // ale nest ji muze i jina jednotka). Ulozena v klasteru je jen v atributu 7
 // hrace. Sonda proto pise volne relikvie (mimo 8 dilcu od trziste GM -
 // zazemi GM na kraji mapy), kazdou jednotku vsech hracu (i GM), ktera neco
-// drzi - krome tech, co nosi suroviny (vesnican 904, obchodni vuz 919,
-// obchodni lod 902, rybarska lod 921) - a za kazdou ulozenou relikvii polohu
-// prvniho klastera (104) hrace.
+// drzi - jen jednotky (typ objektu 70), budovy drzi suroviny take (farma
+// jidlo; 3. 10. 2026 se tak farmy ukazovaly jako relikvie), a krome tech, co
+// nosi suroviny (vesnican 904, obchodni vuz 919, obchodni lod 902, rybarska
+// lod 921) - a za kazdou ulozenou relikvii polohu prvniho klastera (104).
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
@@ -103,7 +104,7 @@ void sondaZapis() {
       for (m = 0; < xsArrayGetSize(sondaNosici)) {
         int nosic = xsArrayGetInt(sondaNosici, m);
         int trida = xsGetUnitClass(nosic);
-        if ((trida != 904) && (trida != 919) && (trida != 902) && (trida != 921) && (pocetRelikvii < 32)) {
+        if ((xsGetUnitType(nosic) == 70) && (trida != 904) && (trida != 919) && (trida != 902) && (trida != 921) && (pocetRelikvii < 32)) {
           if (xsGetUnitAttributeHeld(nosic, -1) > 0.0) {
             vector nesena = xsGetUnitPosition(nosic);
             xsArraySetVector(sondaMistaRelikvii, pocetRelikvii, xsVectorSet(xsVectorGetX(nesena), xsVectorGetY(nesena), h));
