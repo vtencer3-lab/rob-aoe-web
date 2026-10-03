@@ -1796,6 +1796,9 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Král z běžící hry (♚ v barvě hráče, tmavý obrys) — GM všechny, hráč svého.
    Přesouvá se plynule, jak chodí snímky (každou herní sekundu). */
 .mapa-scenare .kral { position: absolute; transform: translate(-50%, -50%); font-size: calc(var(--znacka) * 1.5); line-height: 1; pointer-events: none; text-shadow: -1px -1px 0 var(--obrys), 1px -1px 0 var(--obrys), -1px 1px 0 var(--obrys), 1px 1px 0 var(--obrys), 0 0 4px var(--obrys); transition: left 0.9s linear, top 0.9s linear; z-index: 2; }
+/* Relikvie z běžící hry (jen GM a overlay): obrázek relikvie velikosti
+   značky startu, pod králi. */
+.mapa-scenare .relikvie-na-mape { position: absolute; transform: translate(-50%, -50%); height: calc(var(--znacka) * 1.4); width: auto; pointer-events: none; filter: drop-shadow(0 0 2px var(--obrys)) drop-shadow(0 1px 1px var(--obrys)); transition: left 0.9s linear, top 0.9s linear; z-index: 1; }
 .mapa-scenare .kral.barva-1 { color: var(--b1); }
 .mapa-scenare .kral.barva-2 { color: var(--b2); }
 .mapa-scenare .kral.barva-3 { color: var(--b3); }

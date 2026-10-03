@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { odchylkySlozeni, povoleneCile } from "../../../src/shared/diplomacie/los.js";
+import { naMinimapu } from "../../../src/shared/diplomacie/minimapa.js";
 import { NAZEV_ROLE } from "../../../src/shared/diplomacie/role.js";
 import { ROLE_VOLITELNE, type DiploData, type DiploZapas, type Role, type ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { BARVA_NAZEV, type Barva, type ZapasView } from "../../../src/shared/types.js";
@@ -52,7 +53,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
   };
   const odchylky = d.role.length > 0 ? odchylkySlozeni(d.role) : [];
   const nastupce = zvolenyNastupce(zapas, d);
-  const { popisky, kralove } = mapaPultu(zapas, d, verze, najetoHrac);
+  const { popisky, kralove, relikvie } = mapaPultu(zapas, d, verze, najetoHrac);
   const najetaBarva = najetoHrac === null ? null : (mujUcastnik(zapas, najetoHrac)?.barva ?? null);
   const najetiNaMape = (barva: Barva | null) => setNajetoHrac(barva === null ? null : (zapas.ucastnici.find((u) => u.barva === barva)?.hracId ?? null));
 
@@ -68,7 +69,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         {/* Na širokém displeji mapa vlevo a pult vpravo (uživatel 3. 10. 2026),
             ať GM vidí mapu i role bez posouvání; na úzkém pod sebou. */}
         <div className="pult-vedle">
-          {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" onNajeti={najetiNaMape} najeto={najetaBarva} kralove={kralove} /> : null}
+          {verze ? <MapaScenare verze={verze} popisky={popisky} velikost="velka" onNajeti={najetiNaMape} najeto={najetaBarva} kralove={kralove} relikvie={relikvie} /> : null}
           <div className="pult-strana">
             <StariHry hra={d.hra} />
 
@@ -161,8 +162,14 @@ function zvolenyNastupce(zapas: ZapasView, d: DiploZapas): string | null {
  * zvolený Nástupce s korunou, králové všech hráčů z běžící hry (uživatel
  * 3. 10. 2026) a vztahy hráče pod kurzorem jako na jeho kartě.
  */
-export function mapaPultu(zapas: ZapasView, d: DiploZapas, verze: ScenarVerze | null, najetoHrac: string | null = null): { popisky: PopiskyStartu; kralove: KralNaMape[] } {
-  if (!verze) return { popisky: {}, kralove: [] };
+export function mapaPultu(
+  zapas: ZapasView,
+  d: DiploZapas,
+  verze: ScenarVerze | null,
+  najetoHrac: string | null = null,
+): { popisky: PopiskyStartu; kralove: KralNaMape[]; relikvie: { x: number; y: number }[] } {
+  if (!verze?.rozbor) return { popisky: verze ? popiskyStartu(verze, {}) : {}, kralove: [], relikvie: [] };
+  const velikost = verze.rozbor.velikostMapy;
   const jmena = Object.fromEntries(zapas.ucastnici.map((u) => [u.barva, jmenoHrace(u)])) as Partial<Record<Barva, string>>;
   const popisky = popiskyStartu(verze, jmena);
   const nastupce = zvolenyNastupce(zapas, d);
@@ -176,7 +183,9 @@ export function mapaPultu(zapas: ZapasView, d: DiploZapas, verze: ScenarVerze | 
     if (b !== undefined && p) popisky[b] = { ...p, druhy: [...(p.druhy ?? []), v.druh] };
   }
   const kralove = (d.hra?.hraci ?? []).flatMap((h) => kralNaMape(verze, mujUcastnik(zapas, h.hracId)?.barva, h.kral) ?? []);
-  return { popisky, kralove };
+  // Relikvie (uživatel 3. 10. 2026): kde leží, jen GM a overlay.
+  const relikvie = (d.hra?.relikvie ?? []).map((r) => naMinimapu(r.x, r.y, velikost));
+  return { popisky, kralove, relikvie };
 }
 
 /**

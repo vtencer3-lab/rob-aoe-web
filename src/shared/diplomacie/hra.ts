@@ -122,7 +122,12 @@ export interface SnimekHry {
   hraci: HracVeHre[];
   diplomacie: number[][];
   promenne: number[];
+  /** Polohy relikvií na mapě v dílcích (sonda od formátu 7); chybí = starší sonda. */
+  relikvieNaMape?: PolohaVeHre[];
 }
+
+/** Sonda zapisuje nejvýš tolik relikvií. */
+const MAX_RELIKVII_NA_MAPE = 32;
 
 /** Ověří tělo od mostu; chyba je česká věta pro odpověď 400. */
 export function prectiSnimek(telo: unknown): SnimekHry {
@@ -144,7 +149,18 @@ export function prectiSnimek(telo: unknown): SnimekHry {
   if (odesilatel === "") throw new Error("Data ze hry: chybí odesilatel.");
   const hraci = pole(o["hraci"], "hraci");
   if (hraci.length > 8) throw new Error("Data ze hry: hráčů je nejvýš 8.");
+  const poloha = (v: unknown, kde: string): PolohaVeHre => {
+    const p = objekt(v, kde);
+    return { x: cislo(p["x"], `${kde}.x`), y: cislo(p["y"], `${kde}.y`) };
+  };
+  let relikvieNaMape: PolohaVeHre[] | undefined;
+  if ("relikvieNaMape" in o) {
+    const r = pole(o["relikvieNaMape"], "relikvieNaMape");
+    if (r.length > MAX_RELIKVII_NA_MAPE) throw new Error(`Data ze hry: relikvií je nejvýš ${MAX_RELIKVII_NA_MAPE}.`);
+    relikvieNaMape = r.map((x) => poloha(x, "relikvie"));
+  }
   return {
+    ...(relikvieNaMape ? { relikvieNaMape } : {}),
     odesilatel,
     scenar: kratky(o["scenar"], "scenar", 200),
     cas: celeCislo(o["cas"], "cas"),
@@ -155,8 +171,7 @@ export function prectiSnimek(telo: unknown): SnimekHry {
       const zaklad: HracVeHre = { cislo: celeCislo(h["cislo"], "hráč.cislo"), jmeno: kratky(h["jmeno"], "hráč.jmeno", 100), barva: kratky(h["barva"], "hráč.barva", 40), relikvie: cislo(h["relikvie"], "hráč.relikvie"), zije: h["zije"] };
       if (!("kral" in h)) return zaklad;
       if (h["kral"] === null) return { ...zaklad, kral: null };
-      const k = objekt(h["kral"], "hráč.kral");
-      return { ...zaklad, kral: { x: cislo(k["x"], "kral.x"), y: cislo(k["y"], "kral.y") } };
+      return { ...zaklad, kral: poloha(h["kral"], "kral") };
     }),
     diplomacie: delka(o["diplomacie"], "diplomacie", 8).map((r) => delka(r, "řádek diplomacie", 8).map((x) => celeCislo(x, "postoj"))),
     promenne: delka(o["promenne"], "promenne", POCET_PROMENNYCH).map((x) => celeCislo(x, "proměnná")),
@@ -267,6 +282,8 @@ export interface HraZapasu {
   hraci: HracHry[];
   /** Česká věta, když data nesedí k zápasu (jiný scénář, verze bez výpisu cílů). */
   varovani?: string;
+  /** Kde leží relikvie (dílce); jen GM — prozradilo by to hráčům víc, než vidí ve hře. */
+  relikvie?: PolohaVeHre[];
 }
 
 /**
@@ -302,7 +319,7 @@ export function posunKandidata(kandidat: KandidatNastupce | null, odpoved: strin
  * cíle** poté, co hra začala cíle rozdávat — při nule nebo víc hráčích bez
  * cíle je to nejednoznačné a nehádá se (null).
  */
-export function vyhodnotHru(snimek: Pick<SnimekHry, "cas" | "sloty" | "hraci" | "promenne">, hraci: { hracId: string; barva: Barva }[], cile: CilSondy[], prijato: string): HraZapasu {
+export function vyhodnotHru(snimek: Pick<SnimekHry, "cas" | "sloty" | "hraci" | "promenne" | "relikvieNaMape">, hraci: { hracId: string; barva: Barva }[], cile: CilSondy[], prijato: string): HraZapasu {
   const radky = hraci.map((h): HracHry => {
     const pocitadlo = snimek.promenne[PROMENNA_CILE + h.barva] ?? 0;
     // XS čísluje hráče podle pořadí v lobby: slot → číslo ve hře → záznam hráče.
@@ -319,7 +336,14 @@ export function vyhodnotHru(snimek: Pick<SnimekHry, "cas" | "sloty" | "hraci" | 
   });
   const bezCile = radky.filter((r) => r.cil === null);
   const rozdano = bezCile.length < radky.length;
-  return { cas: snimek.cas, prijato, rozdano, nastupceHracId: rozdano && bezCile.length === 1 ? bezCile[0]!.hracId : null, hraci: radky };
+  return {
+    cas: snimek.cas,
+    prijato,
+    rozdano,
+    nastupceHracId: rozdano && bezCile.length === 1 ? bezCile[0]!.hracId : null,
+    hraci: radky,
+    ...(snimek.relikvieNaMape ? { relikvie: snimek.relikvieNaMape } : {}),
+  };
 }
 
 /** Postup cíle jednou řádkou: „zabito: 3/650 jednotek“. */

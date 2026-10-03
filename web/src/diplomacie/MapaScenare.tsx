@@ -5,7 +5,7 @@ import type { PolohaVeHre } from "../../../src/shared/diplomacie/hra.js";
 import { naMinimapu } from "../../../src/shared/diplomacie/minimapa.js";
 import type { ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { diploApi } from "./api.js";
-import { ZNAK_ROLE } from "./znaky.js";
+import { ZNAK_RELIKVIE, ZNAK_ROLE } from "./znaky.js";
 
 /**
  * Čím je start pro toho, kdo se na mapu dívá: jeho vlastní, druhý Nájezdník,
@@ -50,6 +50,8 @@ interface Props {
   najeto?: Barva | null;
   /** Králové z běžící hry: GM vidí všechny, hráč jen svého (redakce). */
   kralove?: readonly KralNaMape[];
+  /** Relikvie z běžící hry, místa 0–1 na minimapě (jen GM a overlay). */
+  relikvie?: readonly { x: number; y: number }[];
 }
 
 /**
@@ -95,7 +97,7 @@ function bublina(p: PopisekStartu, spojencu: number): string {
  * Druh popisku je třída `druh-*` na značce — vzhled je v CSS; Nástupce
  * císaře má nad značkou korunu (znak role), u vlastní mapy nad kosočtvercem.
  */
-export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, najeto = null, kralove = [] }: Props) {
+export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, najeto = null, kralove = [], relikvie = [] }: Props) {
   if (!verze.rozbor) return null;
   const viditelne = verze.rozbor.starty.flatMap((s) => {
     const popisek = popisky[s.barva];
@@ -121,6 +123,9 @@ export function MapaScenare({ verze, popisky = {}, velikost = "mala", onNajeti, 
             {s.popisek.text}
           </span>
         </span>
+      ))}
+      {relikvie.map((r, i) => (
+        <img key={`relikvie-${i}`} data-testid="relikvie" className="relikvie-na-mape" src={ZNAK_RELIKVIE} alt="Relikvie" width={90} height={95} style={{ left: `${r.x * 100}%`, top: `${r.y * 100}%` }} />
       ))}
       {kralove.map((k) => (
         <span

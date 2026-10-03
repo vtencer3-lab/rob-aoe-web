@@ -1,12 +1,13 @@
-// Sonda Diplomacie (rob-aoe-web), format 6: kazdou herni sekundu prepise
+// Sonda Diplomacie (rob-aoe-web), format 7: kazdou herni sekundu prepise
 // soubor profile\<scenar>.xsdat - NA KAZDEM POCITACI VE HRE (hraci i divaci).
 // Rozlozeni:
 //   int znacka 0x44424F52 (bajty "ROBD" - nase soubory pozna kazda
-//   ctecka driv, nez cokoli dalsiho cte) | int verze (6) | int cas (herni s)
+//   ctecka driv, nez cokoli dalsiho cte) | int verze (7) | int cas (herni s)
 //   | 8x int slot scenare -> cislo hrace ve hre (xsGetWorldPlayerId(1..8))
 //   | 8x (string jmeno, string barva, float relikvie, int zije) podle cisla
 //     hrace ve hre | 8x (float x, float y) prvni kral hrace v dilcich, bez
-//     krale -1 -1 | 64x int diplomacie(a, b) | 256x int promenne triggeru
+//     krale -1 -1 | int pocet relikvii (nejvys 32) | pocet x (float x,
+//     float y) | 64x int diplomacie(a, b) | 256x int promenne triggeru
 //   | int cas
 // Cas je na zacatku i na konci: zapis nemusi byt atomicky, ctenar bere jen
 // cteni, kde se obe hodnoty shoduji. Cisla hracu v XS jsou poradi v lobby,
@@ -14,10 +15,12 @@
 // Promenna 200 + slot nese cislo pocitadla prideleneho sekundarniho cile
 // (zapisuje ji web pri pribaleni sondy, viz sonda.py); 0 = bez cile.
 // Atribut 7 = relikvie (cAttributeRelics). Kral = objekt 434 (GM jich ma
-// vic, bere se prvni; web GM na mape nekresli).
+// vic, bere se prvni; web GM na mape nekresli). Relikvie = objekt 285,
+// vzdy gaia (hrac 0), i kdyz ji nese mnich nebo lezi v klasteru.
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
+int sondaRelikvie = -1;
 
 void sondaZapis() {
   int t = xsGetGameTime();
@@ -32,7 +35,7 @@ void sondaZapis() {
   xsCreateFile(false);
   // Znacka 0x44424F52 = 1145196370; XS bere nejvys 9ciferny literal.
   xsWriteInt(114519637 * 10);
-  xsWriteInt(6);
+  xsWriteInt(7);
   xsWriteInt(t);
   for (s = 1; < 9) {
     xsWriteInt(xsGetWorldPlayerId(s));
@@ -57,6 +60,17 @@ void sondaZapis() {
       xsWriteFloat(-1.0);
       xsWriteFloat(-1.0);
     }
+  }
+  sondaRelikvie = xsGetPlayerUnitIds(0, 285, sondaRelikvie);
+  int pocetRelikvii = xsArrayGetSize(sondaRelikvie);
+  if (pocetRelikvii > 32) {
+    pocetRelikvii = 32;
+  }
+  xsWriteInt(pocetRelikvii);
+  for (r = 0; < pocetRelikvii) {
+    vector misto = xsGetUnitPosition(xsArrayGetInt(sondaRelikvie, r));
+    xsWriteFloat(xsVectorGetX(misto));
+    xsWriteFloat(xsVectorGetY(misto));
   }
   for (a = 1; < 9) {
     for (b = 1; < 9) {

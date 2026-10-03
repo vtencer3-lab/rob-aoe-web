@@ -40,7 +40,7 @@ from xsdat import ZNACKA, cti_xsdat
 
 VYCHOZI_URL = "https://jouki.cz/aoe/diplo"
 # Formáty sondy, které web bere: 5 se značkou „ROBD“, 3 starší bez ní.
-FORMATY = (3, 5, 6)
+FORMATY = (3, 5, 6, 7)
 BEZ_VERZE = 328
 # Sonda přepisuje soubor každou herní sekundu; častěji posílat nemá smysl.
 ROZESTUP_S = 1.0
@@ -114,6 +114,8 @@ def zprava(cesta: str, v: dict, odesilatel: str | None) -> dict:
         "hraci": [{"cislo": h["hrac"], "jmeno": h["jmeno"], "barva": h["barva"], "relikvie": h["relikvie"], "zije": h["zije"], **({"kral": h["kral"]} if "kral" in h else {})} for h in v["hraci"]],
         "diplomacie": v["diplomacieKody"],
         "promenne": v["promenne"],
+        # Polohy relikvií na mapě jen od formátu 7.
+        **({"relikvieNaMape": v["relikvie"]} if "relikvie" in v else {}),
     }
 
 

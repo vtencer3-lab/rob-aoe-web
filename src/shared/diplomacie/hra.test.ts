@@ -230,6 +230,16 @@ describe("tělo od mostu", () => {
     expect(() => prectiSnimek(sKralem({ x: "a", y: 1 }))).toThrow(/kral.x není číslo/);
   });
 
+  // Sonda od formátu 7 posílá polohy relikvií na mapě; jdou dál jen GM (`hra.relikvie`).
+  it("polohy relikvií: přečte je, víc než 32 odmítne, starší sonda je nemá", () => {
+    expect(prectiSnimek({ ...telo(), relikvieNaMape: [{ x: 1, y: 2 }] }).relikvieNaMape).toEqual([{ x: 1, y: 2 }]);
+    expect("relikvieNaMape" in prectiSnimek(telo())).toBe(false);
+    expect(() => prectiSnimek({ ...telo(), relikvieNaMape: new Array(33).fill({ x: 1, y: 1 }) })).toThrow(/nejvýš 32/);
+    expect(() => prectiSnimek({ ...telo(), relikvieNaMape: [{ x: "a", y: 1 }] })).toThrow(/relikvie.x není číslo/);
+    const hra = vyhodnotHru({ ...prectiSnimek(telo()), relikvieNaMape: [{ x: 5, y: 6 }] }, [], [], "2026-10-03T12:00:00.000Z");
+    expect(hra.relikvie).toEqual([{ x: 5, y: 6 }]);
+  });
+
   it("odmítne jinou verzi, chybějícího odesílatele a špatné délky polí", () => {
     expect(() => prectiSnimek({ ...telo(), v: 2 })).toThrow(/neznámá verze/);
     expect(() => prectiSnimek({ ...telo(), odesilatel: "" })).toThrow(/chybí odesilatel/);
