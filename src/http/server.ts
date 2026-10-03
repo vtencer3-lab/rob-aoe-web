@@ -166,7 +166,16 @@ export function buildServer(castDeps: Partial<ServerDeps> = {}): FastifyInstance
   // navíc jedna úroveň ".." oproti tomu, co by čekal zrcadlený src → dist.
   const webDist = join(import.meta.dirname, "..", "..", "..", "web", "dist");
   if (existsSync(webDist)) {
-    app.register(fastifyStatic, { root: webDist });
+    app.register(fastifyStatic, {
+      root: webDist,
+      // Soubory z `assets/` mají otisk obsahu ve jméně (Vite), nikdy se nemění:
+      // cache napořád. S výchozím `max-age=0` se prohlížeč u každého obrázku
+      // znovu ptal serveru a rám mapy či znaky rolí naskakovaly pozdě (uživatel
+      // 3. 10. 2026). index.html dál bez cache — nese odkazy na nové otisky.
+      setHeaders: (odpoved, cesta) => {
+        if (/[\\/]assets[\\/]/.test(cesta)) odpoved.header("cache-control", "public, max-age=31536000, immutable");
+      },
+    });
     app.setNotFoundHandler((request, reply) => {
       if (request.url.startsWith("/api/")) return reply.code(404).send({ chyba: "Neznámá cesta." });
       return reply.sendFile("index.html");
