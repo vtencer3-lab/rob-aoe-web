@@ -20,6 +20,8 @@ export interface PopisRole {
  * 2. 10. 2026: „ekonomická sankce“ Nájezdníků se jmenuje Sabotáž a každý
  * Nájezdník ji má jen jednu za hru (dřív 1× na každého hráče). Sankce Rady
  * králů u Nástupce je jiná věc a zůstává.
+ * 3. 10. 2026 (nová verze pravidel): Nástupce smí svolávat rady — nevýhoda
+ * „Nemůže svolávat rady.“ škrtnuta.
  *
  * Sloh je pro všechny role jeden (uživatel 2. 10. 2026): cíl začíná
  * „Vyhrává, když …“, výhody a nevýhody jsou krátké věcné věty ve 3. osobě.
@@ -30,7 +32,6 @@ export const POPIS_ROLE: Record<Role, PopisRole> = {
     cil: "Vyhrává, když získá 7 relikvií a udrží je 15 minut.",
     vyhody: ["Je veřejně znám od začátku hry.", "Začíná se 2 relikviemi navíc.", "Nelze na něj uvalit sankci Rady králů."],
     nevyhody: [
-      "Nemůže svolávat rady.",
       "Může vyhrát jen relikviemi.",
       "Když zemře Šašek, musí prodat 1 relikvii (neplatí, pokud už běží 15minutový odpočet se 7 relikviemi).",
     ],
