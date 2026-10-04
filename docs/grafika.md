@@ -362,10 +362,10 @@ python nastroje/grafika/export.py vyber/ram-mapy.png -o web/src/assets/diplomaci
 |---|---|---|---|---|
 | `role-nastupce.webp` | `role-nastupce` var. 01 | 422259639657672192 | 1024×1024 | 208×208 |
 | `role-garda.webp` | `role-garda` var. 01 | 1961912996385478678 | 1024×1024 | 208×208 |
-| `role-najezdnik.webp` | `role-najezdnik` var. 03 | 5711619230035920029 | 1024×1024 | 208×208 |
+| `role-najezdnik.webp` | `role-najezdnik2` var. 00 (4. 10. 2026: louč mezi dvěma sekerami, širší než samotná louč — líp čitelná zmenšená; vybral uživatel), pozadí přes Scenario (`scenario_bg.py` → `klic.py --alfa-ze-vstupu`) | 727059449898112161 | 1024×1024 | 208×208 |
 | `role-sasek.webp` | `role-sasek` var. 00 | 3043748249855321627 | 1024×1024 | 208×208 |
 | `role-zoldak.webp` | `role-zoldak` var. 01 | 3616151696795561981 | 1024×1024 | 208×208 |
-| `role-kat.webp` | `role-kat` var. 01 | 6085078050798561359 | 1024×1024 | 208×208 |
+| `role-kat.webp` | role Popravčí (dřív Kat, soubor podle id `kat`): `role-popravci` var. 03 (4. 10. 2026: červená kápě popravčího; vybral uživatel), pozadí přes Scenario | 8097900961104008609 | 1024×1024 | 208×208 |
 | `role-gm.webp` | `role-gm` var. 01 | 2580788674960196035 | 1024×1024 | 208×208 |
 | `plameny.webm` | 2D simulace hoření (rychlost, teplota, palivo, kouř; blackbody barvy, jiskry s motion blur) v JS, Codex 4. 10. 2026 (4. verze na míru karty s mapou: rozhoření a dohoření uvnitř záběru; první malovaná verze zamítnuta) — `node nastroje/grafika/plameny.mjs`, výstupy píše vedle skriptu; čelo ohně musí držet `baseline(t)` (web podle něj posouvá masku karty, `celoOhne`). Codex kódoval téměř bezeztrátově (22 MB), na web překódováno `ffmpeg … -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 0 -crf 30 -auto-alt-ref 0 -metadata:s:v:0 alpha_mode=1` | v generátoru | 1440×1440, 30 fps, 2,4 s | VP9 s alfou, 2,4 MB |
 | `ikonka-<role>.webp`, `ikonka-relikvie.webp` | zmenšené znaky rolí a relikvie (4. 10. 2026), `python nastroje/grafika/export.py web/src/assets/diplomacie/role-kat.webp -o …/ikonka-kat.webp -q 90 --sirka 56 --ctverec` | — | 208×208 / 90×95 | 56×56, CSS 28×28 (ikonky v textech, `TextSIkonami`) |

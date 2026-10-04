@@ -6,7 +6,7 @@ export const NAZEV_ROLE: Record<Role, string> = {
   najezdnik: "Nájezdník",
   sasek: "Šašek",
   zoldak: "Žoldák",
-  kat: "Kat",
+  kat: "Popravčí",
 };
 
 export interface PopisRole {
@@ -28,6 +28,9 @@ export interface PopisRole {
  * králů u Nástupce je jiná věc a zůstává.
  * 3. 10. 2026 (nová verze pravidel): Nástupce smí svolávat rady — nevýhoda
  * „Nemůže svolávat rady.“ škrtnuta.
+ *
+ * 4. 10. 2026: Kat se jmenuje Popravčí (dohoda s Jinem — zvučnější a líp se
+ * skloňuje); interní id role zůstává `kat`.
  *
  * Sloh je pro všechny role jeden (uživatel 2. 10. 2026): cíl začíná
  * „Vyhrává, když …“, výhody a nevýhody jsou krátké věcné věty ve 3. osobě.

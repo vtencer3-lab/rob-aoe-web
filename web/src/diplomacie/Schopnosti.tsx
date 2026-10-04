@@ -12,7 +12,7 @@ import { diploApi } from "./api.js";
 
 /**
  * Schopnosti rolí (uživatel 3. 10. 2026): hráč žádá z karty, GM v pultu
- * potvrdí nebo zamítne; připomínky ze hry (Katovi zlato, Gardě role
+ * potvrdí nebo zamítne; připomínky ze hry (Popravčímu zlato, Gardě role
  * padlého) GM jen odklikne. Pravidla sdílí server (schopnosti.ts).
  */
 
@@ -143,7 +143,7 @@ function TextOznameni({ s, zapas, d }: { s: Schopnost; zapas: ZapasView; d: Dipl
     case "kat_odmena":
       return (
         <>
-          {hrac(s.cilHracId!)} padl — dej Katovi {hrac(s.hracId)} <strong>{ODMENA_KATA} zlata</strong>
+          {hrac(s.cilHracId!)} padl — dej Popravčímu {hrac(s.hracId)} <strong>{ODMENA_KATA} zlata</strong>
         </>
       );
     case "nastupce_prodej":

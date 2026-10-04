@@ -33,7 +33,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 |---|---|---|
 | 2.1 | Celá data hry (`hra`) jen GM zápasu — admin-ne-GM ne | S viditelnost.test „data ze hry vidí jen GM“, DB stream.db.test |
 | 2.2 | Hráč vidí jen svého krále (`mujKral`) | S viditelnost.test „král z běžící hry“ |
-| 2.3 | Hráč dostane jen vlastní postup (`mojeHra`): relikvie, odpočet, sekundární cíl, stav hráčů, na kterých závisí jeho výhra (Kat → oběť, Žoldák → pouto, Garda a Nájezdník → Nástupce) | S viditelnost.test „vlastní cíle ze hry“ |
+| 2.3 | Hráč dostane jen vlastní postup (`mojeHra`): relikvie, odpočet, sekundární cíl, stav hráčů, na kterých závisí jeho výhra (Popravčí → oběť, Žoldák → pouto, Garda a Nájezdník → Nástupce) | S viditelnost.test „vlastní cíle ze hry“ |
 | 2.4 | Garda vidí role padlých hráčů sama (`odhaleneRole`, jen role bez cíle) | S viditelnost.test „Garda vidí role padlých“ |
 | 2.5 | Žádosti o schopnosti: hráč jen své; povinný prodej vidí ten, koho se týká | S viditelnost (vidiHrac), W KartaRole |
 | 2.6 | Pingy: GM všechny, hráč jen pro všechny a pro sebe | S viditelnost.test „ping …“ |
@@ -56,7 +56,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 | 4.1 | **Nájezdník — Sabotáž:** 1× za hru, hráč vybere cíl; na jednoho hráče nejvýš jedna (i od druhého Nájezdníka); zamítnutá se nepočítá | S schopnosti.test „Sabotáž …“, DB routes „schopnosti …“, W „Nájezdník vybere cíl …“ |
 | 4.2 | **Šašek — 3 informace:** jen tlačítko, odpověď ústně; jedna žádost naráz | S „Šašek 3 informace …“, W |
 | 4.3 | **Žoldák — doplatek 4000:** s daty ze hry ho web hlásí GM sám za každý prodej (scénář dá 4000, GM doplatí 4000); tlačítko jen bez mostu | DB „doplatky … se nezdvojí“, W „Žoldákovi padlo pouto …“ (bez tlačítka) |
-| 4.4 | **Kat — 2000 zlata** za každého padlého (Kat žije a nepadl on sám): připomínka GM | S „za padlého připomínka Katovi …“, DB |
+| 4.4 | **Popravčí (dřív Kat, id `kat`) — 2000 zlata** za každého padlého (Popravčí žije a nepadl on sám): připomínka GM | S „za padlého připomínka Katovi …“, DB |
 | 4.5 | **Garda — role padlého:** web ukáže Gardě sám (bod 2.4), GM připomínku nedostává | S, W „Garda vidí role padlých“ |
 | 4.6 | **Šašek → Garda:** padla původní Garda a Šašek žije → role `garda`, `puvodni_role = sasek`, čekající informace propadnou; bez mostu tlačítko GM „Garda padla“ | S „pád Gardy promění …“, DB routes „schopnosti …“ |
 | 4.7 | Proměna na kartě: zvon, ztmavlá karta Šaška, tlačítko „Královská garda padla“ → karta shoří (video `plameny.webm` načtené předem, maska karty se posouvá každý snímek podle času videa — `celoOhne`, týž vzorec jako generátor; konec = konec videa, pojistka 3 s) → karta Gardy; Šašek po proměně informace nežádá | W „Šaškovi padla Garda …“, „hořící karta Šaška přehraje video plamenů“, „čelo ohně …“, S „Šašek proměněný v Gardu …“ |
@@ -100,4 +100,4 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 8. Rezignace Nástupce → Šašek prodává vše; Garda a Nájezdník vidí „padl“; Garda prohrává.
 9. Žoldák prodá relikvii → GM připomínka doplatit 4000.
 10. Rezignace pouta Žoldáka → obrazovka prohry.
-11. Kdokoli padne → GM připomínka „dej Katovi 2000“; Garda vidí roli padlého.
+11. Kdokoli padne → GM připomínka „dej Popravčímu 2000“; Garda vidí roli padlého.

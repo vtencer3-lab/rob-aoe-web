@@ -33,7 +33,7 @@ it("před rozesláním čeká", () => {
 
 it("po rozeslání je karta zakrytá a po odkrytí ukáže roli, cíl a oběť", () => {
   const { container } = render(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ hracId: "h2", role: "kat", cilHracId: "h4" }])} ja="h2" hlidej={hlidej} />);
-  expect(screen.queryByText("Kat")).toBeNull();
+  expect(screen.queryByText("Popravčí")).toBeNull();
   // Zakrytá karta leží rubem nahoru (bez alt — není to informace, jen obrázek).
   expect(container.querySelector("img.rub-karty")).toBeTruthy();
   // Tlačítkem je karta sama: „Tvá tajná role“ je jen její jméno, nápis nemá;
@@ -44,8 +44,8 @@ it("po rozeslání je karta zakrytá a po odkrytí ukáže roli, cíl a oběť",
   expect(tlacitko).toHaveAttribute("title", "Klikni pro odkrytí");
   fireEvent.click(tlacitko);
   expect(container.querySelector("img.rub-karty")).toBeNull();
-  expect(screen.getByRole("heading", { name: "Kat" })).toBeTruthy();
-  expect(screen.getByRole("img", { name: "Kat" })).toHaveClass("znak-role");
+  expect(screen.getByRole("heading", { name: "Popravčí" })).toBeTruthy();
+  expect(screen.getByRole("img", { name: "Popravčí" })).toHaveClass("znak-role");
   // Popisky tajných údajů jsou věcné a u všech rolí stejné: „Oběť:“,
   // „Pokrevní pouto:“, „Druhý Nájezdník:“ — bez oslovení.
   expect(screen.getByText("Oběť:")).toBeTruthy();
@@ -333,7 +333,7 @@ it("Garda vidí role padlých hráčů", () => {
   const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null }]);
   render(<KartaRole zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, odhaleneRole: [{ hracId: "h4", role: "kat" as const }] })) }} ja="h2" hlidej={hlidej} />);
   odkryj();
-  expect(screen.getByTestId("odhalene-role")).toHaveTextContent("Hráč 4: Kat");
+  expect(screen.getByTestId("odhalene-role")).toHaveTextContent("Hráč 4: Popravčí");
 });
 
 it("Nástupce po smrti Šaška vidí úkol prodat 1 relikvii", () => {

@@ -159,7 +159,7 @@ it("odchylka složení je vidět", () => {
   const tri = ROLE_LOS.map((r) => (r.role === "kat" ? { ...r, role: "najezdnik" as const, cilHracId: null } : r));
   render(<PultGm zapas={zapas} data={gmData("losovano", tri, "h1")} hlidej={spust} />);
   odkryj();
-  expect(screen.getByText("3× Nájezdník (má být 2×), chybí Kat")).toBeTruthy();
+  expect(screen.getByText("3× Nájezdník (má být 2×), chybí Popravčí")).toBeTruthy();
 });
 
 // Dokud server neodpoví, druhé kliknutí nic nepošle — jinak by dvě rychlá
@@ -387,7 +387,7 @@ it("GM vidí čekající Sabotáž s cílem a potvrdí ji; připomínku Kata odk
   fireEvent.click(screen.getByRole("button", { name: "Pult GM — klikni pro odkrytí" }));
   const oznameni = screen.getByTestId("oznameni-gm");
   expect(oznameni).toHaveTextContent("Hráč 2 provádí Sabotáž na Hráč 3");
-  expect(oznameni).toHaveTextContent("Hráč 4 padl — dej Katovi Hráč 3 2000 zlata");
+  expect(oznameni).toHaveTextContent("Hráč 4 padl — dej Popravčímu Hráč 3 2000 zlata");
   fireEvent.click(within(oznameni).getAllByRole("button", { name: "Potvrdit" })[0]!);
   expect(diploApi.vyridit).toHaveBeenCalledWith(zapas.id, 5, "potvrzeno");
   // Během odesílání jsou tlačítka zamčená (proti dvojímu kliknutí).

@@ -121,7 +121,7 @@ export async function prijmiSnimek(snimek: SnimekHry, ted: Date = new Date()): P
     else if (odpoved.nastupceHracId === null && diplo.nastupceHracId !== null) zmenaStavu = await odvolejNastupceZeHry(zapasId);
   }
   // Po rozeslání: pád Gardy promění Šaška v Gardu, za každého padlého
-  // připomínky GM (Katovi zlato, Gardě role padlého) — uživatel 3. 10. 2026.
+  // připomínky GM (Popravčímu zlato) — uživatel 3. 10. 2026.
   if (diplo.stav === "rozeslano" && !jinyScenar && odpoved.hraci.some((h) => h.zije === false)) {
     const { povysit, pripominky } = udalostiHry(diplo.role, odpoved.hraci);
     if (povysit !== null && (await povysSaska(zapasId, povysit))) zmenaStavu = true;

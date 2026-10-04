@@ -77,12 +77,12 @@ describe("úpravy GM (chování Jinova nástroje)", () => {
   it("Nástupci roli změnit nejde a nepovolený cíl se odmítne", () => {
     expect(() => zmenRoli(zaklad, "a", "kat", "a")).toThrow("Nástupce se mění výběrem Nástupce, ne rolí.");
     expect(() => zmenCil(zaklad, kdo("kat"), "a", "a")).toThrow("Tenhle cíl není povolený.");
-    expect(() => zmenCil(zaklad, kdo("sasek"), "c", "a")).toThrow("Cíl má jen Kat a Žoldák.");
+    expect(() => zmenCil(zaklad, kdo("sasek"), "c", "a")).toThrow("Cíl má jen Popravčí a Žoldák.");
   });
 
   it("odchylky složení", () => {
     expect(odchylkySlozeni(zaklad)).toEqual([]);
     const triNajezdnici = zmenRoli(zaklad, kdo("kat"), "najezdnik", "a", nula);
-    expect(odchylkySlozeni(triNajezdnici)).toEqual(["3× Nájezdník (má být 2×)", "chybí Kat"]);
+    expect(odchylkySlozeni(triNajezdnici)).toEqual(["3× Nájezdník (má být 2×)", "chybí Popravčí"]);
   });
 });

@@ -1930,8 +1930,10 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    spodu, `celoOhne`); pod čelem je ve videu ~4 % výšky spálený pás, karta
    pod ním zmizí. Filtr je pevný — animovaný se trhal. */
 .karta-promena.hori .karta-promena-obsah {
-  -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) - 4%), black calc(var(--hori) + 1%));
-  mask-image: linear-gradient(to top, transparent calc(var(--hori) - 4%), black calc(var(--hori) + 1%));
+  /* Karta mizí až kousek nad čelem (plameny to místo kryjí) — rezerva na
+     nepravidelnou hranu ohně, ať pod spálenou hranou nikdy neprosvítá text. */
+  -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) + 1%), black calc(var(--hori) + 6%));
+  mask-image: linear-gradient(to top, transparent calc(var(--hori) + 1%), black calc(var(--hori) + 6%));
   filter: brightness(0.55) sepia(0.5);
 }
 /* Hořící karta nemá rám ani pozadí panelu (uživatel 4. 10. 2026: „proč je
@@ -1943,7 +1945,10 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    přes celou kartu; oheň se v něm rozhoří i dohoří uvnitř záběru, nic
    nevyjíždí ven. Roztažené (fill), ať čelo sedí s maskou i u jiného poměru
    stran; boky se jemně vytrácí. Do kliknutí skryté, ale načtené. */
-.karta-promena .plameny { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden; }
+.karta-promena .plameny { position: absolute; top: 0; bottom: 0; left: -6%; right: -6%; width: 112%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden;
+  /* O 6 % širší na každou stranu a vytrácí se jen v tomhle přesahu: okraje
+     karty zůstanou zakryté, konec ohně je měkký (uživatel 4. 10. 2026). */
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5.4%, black 94.6%, transparent); mask-image: linear-gradient(to right, transparent, black 5.4%, black 94.6%, transparent); }
 /* U horního okraje oheň nemá kam růst a ve videu se slisuje — místo toho
    se vypaří: zprůhlední, rozmaže a stoupne (uživatel 4. 10. 2026). */
 .karta-promena.vyparuje .plameny { opacity: 0; filter: blur(6px); translate: 0 -4%; transition: opacity 0.45s ease-in, filter 0.45s ease-in, translate 0.45s ease-out; }

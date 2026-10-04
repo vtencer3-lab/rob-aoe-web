@@ -293,10 +293,21 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
     const v = video.current;
     void v?.play?.()?.catch?.(() => dokonci());
     let snimek = 0;
+    let snimekVidea = 0;
     let vyparuje: ReturnType<typeof setTimeout> | null = null;
+    // Čas právě vykresleného snímku videa (requestVideoFrameCallback); bez
+    // něj `currentTime`. `currentTime` běží s hodinami a vykreslený snímek
+    // za ním občas zaostal o pár snímků — maska pak nesedla s čelem a pod
+    // ohněm prosvítal text (uživatel 4. 10. 2026).
+    let casSnimku: number | null = null;
+    const naSnimek = (_ted: number, meta: { mediaTime: number }) => {
+      casSnimku = meta.mediaTime;
+      snimekVidea = v?.requestVideoFrameCallback?.(naSnimek) ?? 0;
+    };
+    snimekVidea = v?.requestVideoFrameCallback?.(naSnimek) ?? 0;
     const tik = () => {
-      // Video leží přesně přes kartu: čelo ve videu = výška karty.
-      const cel = celoOhne(v?.currentTime ?? 0);
+      // Video leží přes kartu: čelo ve videu = výška karty.
+      const cel = celoOhne(casSnimku ?? v?.currentTime ?? 0);
       obal.current?.style.setProperty("--hori", `${(cel * 100).toFixed(2)}%`);
       // U horního okraje se oheň ve videu slisuje — vypaří se dřív a karta
       // mezitím dohoří maskou.
@@ -311,6 +322,7 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
     const pojistka = setTimeout(dokonci, POJISTKA_HORENI_MS);
     return () => {
       cancelAnimationFrame(snimek);
+      if (snimekVidea) v?.cancelVideoFrameCallback?.(snimekVidea);
       v?.removeEventListener("ended", dokonci);
       clearTimeout(pojistka);
       if (vyparuje !== null) clearTimeout(vyparuje);

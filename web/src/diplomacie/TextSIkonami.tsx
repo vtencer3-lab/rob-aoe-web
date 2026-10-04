@@ -6,7 +6,7 @@ import { IKONKA_RELIKVIE, IKONKA_ROLE } from "./znaky.js";
 /**
  * Text pravidel s ikonkami (uživatel 4. 10. 2026, „IconLinky“): před každý
  * výskyt role ve větě — v jakémkoli pádě („Nástupce císaře“, „Gardou“,
- * „Kata“) — a před relikvie dá malý znak, ať se ve větách dá rychle
+ * „Popravčímu“) — a před relikvie dá malý znak, ať se ve větách dá rychle
  * zorientovat. Text zůstává stejný, ikonka je jen obrázek bez alt.
  * „GM“ dostane šedý čtvereček s číslem 7 jako hráči v sestavě (GM sedí na
  * šedé).
@@ -18,7 +18,7 @@ const VZORY: { vzor: string; ikona: string | "gm" }[] = [
   { vzor: "Nájezdník\\p{L}*", ikona: IKONKA_ROLE.najezdnik },
   { vzor: "Šaš(?:ek|k\\p{L}*)", ikona: IKONKA_ROLE.sasek },
   { vzor: "Žoldák\\p{L}*", ikona: IKONKA_ROLE.zoldak },
-  { vzor: "Kat(?:a|ovi|em)?(?!\\p{L})", ikona: IKONKA_ROLE.kat },
+  { vzor: "Popravč\\p{L}*", ikona: IKONKA_ROLE.kat },
   { vzor: "[Rr]elikvi\\p{L}*", ikona: IKONKA_RELIKVIE },
   { vzor: "GM(?!\\p{L})", ikona: "gm" },
 ];

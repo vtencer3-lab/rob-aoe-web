@@ -28,7 +28,7 @@ export function losujRole(hraci: string[], nastupce: string, nahoda: Nahoda = vy
   });
 }
 
-/** GM změní roli: Kat/Žoldák dostane platný cíl (starý platný zůstává), ostatní cíl ztratí. */
+/** GM změní roli: Popravčí/Žoldák dostane platný cíl (starý platný zůstává), ostatní cíl ztratí. */
 export function zmenRoli(role: RoleHrace[], hracId: string, nova: Role, nastupce: string, nahoda: Nahoda = vychoziNahoda): RoleHrace[] {
   if (hracId === nastupce || nova === "nastupce") throw new Error("Nástupce se mění výběrem Nástupce, ne rolí.");
   const hraci = role.map((r) => r.hracId);
@@ -44,7 +44,7 @@ export function zmenCil(role: RoleHrace[], hracId: string, cil: string, nastupce
   const hraci = role.map((r) => r.hracId);
   return role.map((r) => {
     if (r.hracId !== hracId) return r;
-    if (!S_CILEM.has(r.role)) throw new Error("Cíl má jen Kat a Žoldák.");
+    if (!S_CILEM.has(r.role)) throw new Error("Cíl má jen Popravčí a Žoldák.");
     if (!povoleneCile(hraci, hracId, nastupce).includes(cil)) throw new Error("Tenhle cíl není povolený.");
     return { ...r, cilHracId: cil };
   });

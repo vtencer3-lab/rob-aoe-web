@@ -88,5 +88,21 @@
     "lora": 0.0,
     "raw": true,
     "seed": 680650941923940174
+  },
+  "role-popravci": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: a medieval executioner's hood, a pointed deep blood-red cloth hood mask with two dark eye holes and a fold at the mouth, slightly worn fabric with subtle stitched seams, framed by a thin polished gold rim at the neck. Rich crimson fabric with warm highlights and dark outlines, one bold readable shape, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters, no face, no skin",
+    "n": 6,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
+  },
+  "role-najezdnik2": {
+    "prompt": "A single heraldic emblem for a medieval game interface, seen flat from the front with no perspective: a burning torch with a bright orange flame crossed diagonally with a viking raider battle axe, forming a wide X shape, dark wooden handles bound with gold bands, polished steel axe blade. Polished gold with warm highlights and dark outlines, one bold readable shape, wider than tall, centred, filling the frame, painted game user interface asset in the style of Age of Empires II Definitive Edition, isolated on solid pure black background, no text, no letters",
+    "n": 6,
+    "width": 1024,
+    "height": 1024,
+    "lora": 0.0,
+    "raw": true
   }
 }

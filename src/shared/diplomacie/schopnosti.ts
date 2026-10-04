@@ -11,7 +11,7 @@ import type { DiploZapas, Role, RoleHrace } from "./typy.js";
 /** Co hráč žádá sám z karty. */
 export type DruhZadosti = "sabotaz" | "informace" | "doplatek";
 /**
- * Co hlásí hra GM bez žádosti: Katovi 2000 zlata za padlého, Gardě roli
+ * Co hlásí hra GM bez žádosti: Popravčímu 2000 zlata za padlého, Gardě roli
  * padlého, Šaškovi prodej relikvií po smrti Nástupce (vidí ji i Šašek).
  */
 export type DruhPripominky = "kat_odmena" | "garda_role" | "sasek_prodej" | "nastupce_prodej";
@@ -20,7 +20,7 @@ export type StavSchopnosti = "ceka" | "potvrzeno" | "zamitnuto";
 
 export interface Schopnost {
   id: number;
-  /** Kdo žádá (u připomínky komu GM něco dluží: Kat, Garda). */
+  /** Kdo žádá (u připomínky komu GM něco dluží: Popravčí). */
   hracId: string;
   druh: DruhSchopnosti;
   /** Cíl Sabotáže, u připomínky padlý hráč; jinak null. */
@@ -97,7 +97,7 @@ export interface NovaPripominka {
  * - **Šašek se stává Gardou** (pravidla: „Když zemře Královská Garda, tajně
  *   se stává novou Gardou a ztrácí výhody Šaška“), když původní Garda padla,
  *   Šašek žije a ještě se neproměnil.
- * - **Připomínka GM** za každého padlého: Katovi 2000 zlata (pokud Kat žije
+ * - **Připomínka GM** za každého padlého: Popravčímu 2000 zlata (pokud Popravčí žije
  *   a nepadl on sám). Roli padlého Garda nedostává od GM, web jí ji ukáže
  *   sám (redakce, `odhaleneRole`; uživatel 3. 10. 2026).
  * - **Šašek prodává relikvie**, když padl Nástupce — jen když Šaškovi
