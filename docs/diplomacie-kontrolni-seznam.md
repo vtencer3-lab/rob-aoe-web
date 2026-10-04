@@ -79,6 +79,8 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 
 ## 6. Známé meze (vědomě)
 
+- **DOČASNÉ, před mergem do dev odstranit:** tlačítko „Přehrát hoření znovu (dočasné, ladění)“ na kartě proměněného Šaška (`ladeniHoreni` v `KartaRole.tsx`) — jen lokální přehrání animace, server nemění.
+
 - Šaškův povinný prodej se vyhodnocuje každým snímkem: když mu při smrti
   Nástupce běžel odpočet a později ho ztratil, připomínka vznikne až tehdy.
 - Prodej misionářem s relikvií (2557) scénář nepočítá (trigger maže jen

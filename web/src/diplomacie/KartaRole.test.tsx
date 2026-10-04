@@ -370,3 +370,16 @@ it("čelo ohně: u spodku na začátku, nahoře v 1,4 s, pak nad kartou", async 
   expect(celoOhne(1.4)).toBeCloseTo(1.007, 2);
   expect(celoOhne(1.8)).toBeGreaterThan(1.03);
 });
+
+it("dočasné tlačítko přehraje hoření znovu bez volání serveru", async () => {
+  vi.useFakeTimers();
+  const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null, puvodniRole: "sasek", promenaVidena: true }]);
+  render(<KartaRole zapas={zapas} data={data} ja="h2" hlidej={hlidej} />);
+  vi.mocked(diploApi.promenaVidena).mockClear();
+  fireEvent.click(screen.getByRole("button", { name: "Přehrát hoření znovu (dočasné, ladění)" }));
+  fireEvent.click(screen.getByRole("button", { name: "Královská garda padla" }));
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(diploApi.promenaVidena).not.toHaveBeenCalled();
+  expect(screen.queryByTestId("promena-saska")).toBeNull();
+  vi.useRealTimers();
+});

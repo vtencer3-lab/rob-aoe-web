@@ -79,7 +79,11 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
   // Šašek, kterému padla Garda (uživatel 3. 10. 2026): zvon, ať se podívá na
   // web, karta Šaška ztmavne a čeká na klik; pak shoří a objeví se Garda.
   const ja_ = d?.role.find((r) => r.hracId === ja);
-  const promena = ja_?.puvodniRole === "sasek" && ja_.promenaVidena === false;
+  // DOČASNÉ (uživatel 4. 10. 2026, ladění animace hoření): proměněný Šašek
+  // si může hoření přehrát znovu jen u sebe, server se nemění. Před mergem
+  // do dev odstranit (docs/diplomacie-kontrolni-seznam.md, bod 4.7).
+  const [ladeniHoreni, setLadeniHoreni] = useState(false);
+  const promena = (ja_?.puvodniRole === "sasek" && ja_.promenaVidena === false) || ladeniHoreni;
   const drivPromena = useRef<boolean | undefined>(undefined);
   useEffect(() => {
     const predtim = drivPromena.current;
@@ -106,10 +110,18 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
             Nástupcem císaře je <strong>{d.nastupceHracId ? <JmenoUcastnika ucastnici={zapas.ucastnici} hracId={d.nastupceHracId} /> : "?"}</strong>.
           </p>
           {promena ? (
-            <PromenaSaska onHotovo={() => void hlidej(() => diploApi.promenaVidena(zapas.id))}>
+            <PromenaSaska key={String(ladeniHoreni)} onHotovo={() => (ladeniHoreni ? setLadeniHoreni(false) : void hlidej(() => diploApi.promenaVidena(zapas.id)))}>
               <ObsahRole moje={{ ...moje, role: "sasek" }} vse={d.role} ucastnici={zapas.ucastnici} />
             </PromenaSaska>
           ) : (
+          <>
+          {ja_?.puvodniRole === "sasek" ? (
+            <p className="stred ladeni-horeni">
+              <button type="button" onClick={() => setLadeniHoreni(true)}>
+                Přehrát hoření znovu (dočasné, ladění)
+              </button>
+            </p>
+          ) : null}
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />} pamet={`diplo-karta-${zapas.id}`}>
             <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
             {/* Na širokém displeji mapa vlevo a cíle vpravo, jako mapa a tabulka v pultu GM (uživatel 3. 10. 2026). */}
@@ -123,6 +135,7 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
               </div>
             </div>
           </Zakryti>
+          </>
           )}
         </>
       )}
