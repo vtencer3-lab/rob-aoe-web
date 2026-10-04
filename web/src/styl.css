@@ -1939,7 +1939,13 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-promena.hori .zar { visibility: visible; }
 .karta-promena.hori .karta-promena-obsah { animation: bledne 1.8s ease-in forwards; }
 @keyframes bledne { from { opacity: 1; } to { opacity: 0.55; } }
-.karta-promena .plameny { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden; }
+/* Video plamenů přes kartu, roztažené (fill): spodek sedí se spodkem karty,
+   nahoru přesahuje o čtvrtinu výšky karty (PRESAH_PLAMENU v KartaRole.tsx),
+   ať plameny vyšlehnou i nad horní okraj, a do stran o 5 %, kde se plynule
+   vytratí — bez ostrého řezu rámem karty (uživatel 4. 10. 2026). Do
+   kliknutí skryté, ale načtené. */
+.karta-promena .plameny { position: absolute; top: -25%; bottom: 0; left: -5%; right: -5%; width: 110%; height: 125%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent); mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent); }
 .karta-promena.hori .plameny { visibility: visible; }
 @media (prefers-reduced-motion: reduce) {
   .karta-promena .promena-tlacitko { animation: none; }

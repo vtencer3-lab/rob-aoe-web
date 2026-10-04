@@ -194,6 +194,9 @@ function OdhaleneRole({ odhalene, ucastnici }: { odhalene: DiploZapas["odhaleneR
   );
 }
 
+/** O kolik výšky karty video plamenů přesahuje nad ni (CSS `.karta-promena .plameny`, top: -25 %). */
+const PRESAH_PLAMENU = 0.25;
+
 /** Pojistka: kdyby video neskončilo (nenačetlo se, prohlížeč ho nepustí), Garda se ukáže i tak. */
 const POJISTKA_HORENI_MS = 3000;
 
@@ -245,7 +248,8 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
     void v?.play?.()?.catch?.(() => dokonci());
     let snimek = 0;
     const tik = () => {
-      obal.current?.style.setProperty("--hori", `${(celoOhne(v?.currentTime ?? 0) * 100).toFixed(2)}%`);
+      // Čelo ve videu → výška karty: video je o PRESAH_PLAMENU vyšší a spodky sedí.
+      obal.current?.style.setProperty("--hori", `${(celoOhne(v?.currentTime ?? 0) * (1 + PRESAH_PLAMENU) * 100).toFixed(2)}%`);
       snimek = requestAnimationFrame(tik);
     };
     snimek = requestAnimationFrame(tik);
