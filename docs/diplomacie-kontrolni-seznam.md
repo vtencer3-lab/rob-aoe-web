@@ -82,8 +82,13 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 
 - Šaškův povinný prodej se vyhodnocuje každým snímkem: když mu při smrti
   Nástupce běžel odpočet a později ho ztratil, připomínka vznikne až tehdy.
-- Prodej misionářem s relikvií (2557) scénář nepočítá (trigger maže jen
-  286) — počitadlo prodejů ho nevidí.
+- **Mez scénáře, ne webu (oprava u Jina):** prodej relikvie hlídají triggery
+  „pN relic sell“ — podmínka *Objects in Area* (dílce 102,118–105,122) jen na
+  jednotku **286 (mnich s relikvií)**. Misionář s relikvií (2557) ve středu
+  mapy neprodá nic: hra mu nedá 4000 zlata, relikvii neodebere ani nezvýší
+  počitadlo `pN_sell_relic`. Stačí ve scénáři přidat stejný trigger pro 2557
+  (nebo podmínku na třídu 943) — web pak prodej uvidí sám, čte totéž
+  počitadlo.
 - Bez mostu (dat ze hry) nefungují automatické události; zůstávají
   tlačítka (Garda padla, doplatek Žoldáka) a GM.
 
