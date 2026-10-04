@@ -45,7 +45,7 @@ export function verzeZapasu(data: DiploData, d: DiploZapas | undefined, zapas: P
  * ho v `Zakryti` obaluje (karta je tlačítkem sama).
  */
 export function RubKarty() {
-  return <img className="rub-karty" src={RUB_KARTY} alt="" width={600} height={362} />;
+  return <img className="rub-karty" src={RUB_KARTY} alt="" width={600} height={365} />;
 }
 
 /**

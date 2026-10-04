@@ -373,6 +373,8 @@ python nastroje/grafika/export.py vyber/ram-mapy.png -o web/src/assets/diplomaci
 | `rub-karty.webp` | `rub-karty` var. 03 | 7973333685969451956 | 1152×768 | 600×362 |
 | `ram-mapy.webp` | `ram-mapy` var. 00, `devitidil.py --roh 112 --pas 96 --prah 20` | 2975078811603106970 | 1024×1024 | 320×320 (řez 112) |
 
+**4. 10. 2026 — pozadí přes Scenario.** Znaky rolí, GM, prohra a rub karty mají pozadí odstraněné přes Scenario (`scenario_bg.py` → `klic.py --alfa-ze-vstupu` → `export.py` se stejnými parametry jako výš), ne vlastní záplavou s prahem 12 — ta nechávala tmavý lem a žrala jemné hrany. Rub karty tím vyšel 600×365 (dřív 600×362). Ikonky 56×56 (`ikonka-*.webp`) jsou zmenšené z nových 208px znaků.
+
 Seedy vybraných variant jsou zapsané i v `diplomacie.json` (`seed`), takže
 nový běh dávky dá jako `_00` přesně to, co je na webu — čísla variant
 v tabulce platí pro původní nesemínkovaný běh (1. 10. 2026).
