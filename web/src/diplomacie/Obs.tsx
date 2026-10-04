@@ -3,7 +3,7 @@ import type { DiploData, DiploZapas, ScenarVerze } from "../../../src/shared/dip
 import type { ZapasView } from "../../../src/shared/types.js";
 import { json } from "../api.js";
 import { cesta } from "../cesty.js";
-import { verzeZapasu } from "./KartaRole.js";
+import { TeloKarty, verzeZapasu } from "./KartaRole.js";
 import { MapaScenare } from "./MapaScenare.js";
 import { mapaPultu, TabulkaRoli } from "./PultGm.js";
 
@@ -21,13 +21,14 @@ const INTERVAL_MS = 1000;
  * sekundu. Výpadek nebo špatný klíč nechá poslední známý stav (OBS nemá kde
  * ukázat chybu a prázdná scéna by na streamu blikla).
  */
-function useObsStav(): { zapas: ZapasView; d: DiploZapas; verze: ScenarVerze | null } | null {
+function useObsStav(adresa = "/api/diplo/obs"): { zapas: ZapasView; d: DiploZapas; verze: ScenarVerze | null; data: DiploData } | null {
   const [stav, setStav] = useState<ObsStav | null>(null);
   useEffect(() => {
-    const klic = new URLSearchParams(window.location.search).get("klic") ?? "";
+    // Parametry z adresy overlaye (`klic`, u karty i `hrac`) jdou dál na server beze změny.
+    const dotaz = new URLSearchParams(window.location.search).toString();
     let zije = true;
     const nacti = () =>
-      fetch(cesta(`/api/diplo/obs?klic=${encodeURIComponent(klic)}`))
+      fetch(cesta(`${adresa}?${dotaz}`))
         .then((r) => json<ObsStav>(r))
         .then((s) => {
           if (zije) setStav(s);
@@ -42,7 +43,7 @@ function useObsStav(): { zapas: ZapasView; d: DiploZapas; verze: ScenarVerze | n
   }, []);
   const d = stav?.data?.zapasy[0];
   if (!stav?.zapas || !stav.data || !d) return null;
-  return { zapas: stav.zapas, d, verze: verzeZapasu(stav.data, d, stav.zapas) };
+  return { zapas: stav.zapas, d, verze: verzeZapasu(stav.data, d, stav.zapas), data: stav.data };
 }
 
 /** Průhledné pozadí stránky: OBS browser source pak ukáže jen overlay. */
@@ -74,6 +75,27 @@ export function ObsTabulka() {
   return (
     <main className="obs-overlay obs-tabulka">
       <TabulkaRoli zapas={s.zapas} d={s.d} upravy={null} />
+    </main>
+  );
+}
+
+/** Overlay neposílá nic: na kartě v OBS se nic neodklikává. */
+const bezAkci = async () => {};
+
+/**
+ * Osobní overlay karty hráče pro streamery (uživatel 4. 10. 2026,
+ * `…/obs/karta?hrac=…&klic=…`): jeho role, mapa a cíle přesně jako na
+ * webu, bez zakrývání. Do rozeslání rolí prázdný (průhledný).
+ */
+export function ObsKarta() {
+  useProhledne();
+  const s = useObsStav("/api/diplo/obs/hrac");
+  const hrac = new URLSearchParams(window.location.search).get("hrac");
+  const moje = s?.d.stav === "rozeslano" ? s.d.role.find((r) => r.hracId === hrac) : undefined;
+  if (!s || !moje) return null;
+  return (
+    <main className="obs-overlay obs-karta karta-role">
+      <TeloKarty zapas={s.zapas} d={s.d} moje={moje} verze={s.verze} hlidej={bezAkci} />
     </main>
   );
 }

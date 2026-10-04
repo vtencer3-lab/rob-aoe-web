@@ -18,6 +18,8 @@ export const diploApi = {
   mapa: (zapasId: number, zmena: { kralove?: boolean; relikvie?: boolean }) => post(`/api/diplo/zapas/${zapasId}/mapa`, zmena),
   ping: (zapasId: number, x: number, y: number, komu: string[] | null) => post(`/api/diplo/zapas/${zapasId}/ping`, { x, y, komu }),
   los: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/los`),
+  /** Podpis pro osobní overlay karty do OBS (jen přihlášený hráč sám pro sebe). */
+  mujOverlay: () => fetch(cesta("/api/diplo/obs/muj-odkaz")).then((r) => json<{ hrac: string; klic: string }>(r)),
   /** Hráč žádá o schopnost své role (Sabotáž s cílem, informace, doplatek). */
   schopnost: (zapasId: number, druh: DruhZadosti, cilHracId: string | null = null) => post(`/api/diplo/zapas/${zapasId}/schopnost`, { druh, cilHracId }),
   /** GM žádost potvrdí/zamítne, připomínku odklikne (potvrzeno = vyřízeno). */

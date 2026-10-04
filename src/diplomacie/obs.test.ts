@@ -54,3 +54,32 @@ describe("routa GET /api/diplo/obs", () => {
     expect((await ziskej(KLIC)).json()).toEqual({ zapas: null, data: null });
   });
 });
+
+// Osobní overlay karty (uživatel 4. 10. 2026): klíč je podpis id hráče,
+// data jen jeho (redakce jako na webu) a jen z jeho běžícího zápasu.
+describe("routa GET /api/diplo/obs/hrac", () => {
+  afterEach(() => vi.unstubAllEnvs());
+  const sUcastniky = (id: number, poradi: number, hraci: string[]) => ({ id, poradi, stav: "bezi", ucastnici: hraci.map((hracId) => ({ hracId })) });
+  const role = [
+    { hracId: "h1", role: "nastupce", cilHracId: null },
+    { hracId: "h2", role: "kat", cilHracId: "h3" },
+    { hracId: "h3", role: "sasek", cilHracId: null },
+  ];
+  const ziskejKartu = async (hrac: string, klic: string) => (await server()).inject({ method: "GET", url: `/api/diplo/obs/hrac?hrac=${hrac}&klic=${klic}` });
+
+  it("cizí nebo chybějící podpis 401; vlastní vrátí jen jeho roli", async () => {
+    vi.stubEnv("OBS_KLIC", KLIC);
+    const { klicKarty } = await import("./obs.js");
+    stav = {
+      zapasy: [sUcastniky(10, 1, ["h1", "h2", "h3", "h7"])] as never,
+      rezim: { id: "diplomacie", data: { aktivni: null, verze: {}, zapasy: [{ ...diplo(10), role }] } } as never,
+    };
+    expect((await ziskejKartu("h2", "spatny")).statusCode).toBe(401);
+    expect((await ziskejKartu("h2", klicKarty("h3"))).statusCode).toBe(401);
+    const res = (await ziskejKartu("h2", klicKarty("h2"))).json();
+    expect(res.zapas.id).toBe(10);
+    expect(res.data.zapasy[0].role).toEqual([role[1]]);
+    // Hráč mimo běžící zápas: nic.
+    expect((await ziskejKartu("h9", klicKarty("h9"))).json()).toEqual({ zapas: null, data: null });
+  });
+});

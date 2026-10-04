@@ -157,6 +157,9 @@ html.obs body::before { content: none; }
    4. 10. 2026) — čitelná na jakémkoli pozadí vysílání. Rám a výplň z
    pravidla panelů výš; tady jen písmo a žádný vnější okraj. */
 .obs-tabulka { font-size: 1.15rem; }
+/* Osobní karta hráče v OBS: deska s rámem, rozvržení jako na webu (mapa vlevo, cíle vpravo). */
+.obs-overlay.obs-karta { margin: 0; max-width: none; }
+.overlay-karty { margin: 0.6rem 0; }
 .obs-overlay.obs-tabulka { margin: 0; }
 .obs-tabulka .tabulka-roli { max-width: none; margin: 0; }
 .volba-pozadi { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
@@ -587,7 +590,7 @@ main > .prazdno::after {
 /* Rám panelu je devítidílný obrázek (`nastroje/grafika/devitidil.py`): rohy
    se nekreslí znovu, strany se opakují. Výplň drží `background-clip:
    padding-box`, aby tmavé dřevo nevykukovalo zpod průhledných rohů rámu. */
-.karta, .zapas, .host, .sprava-akce, .sprava-scenare, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka, .pravidla-akce, .obs-tabulka, .nahled-hracu {
+.karta, .zapas, .host, .sprava-akce, .sprava-scenare, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka, .pravidla-akce, .obs-tabulka, .nahled-hracu, .obs-karta {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
   border-radius: 0;

@@ -79,6 +79,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 | 5.5 | Odkrytý pult GM i karta hráče zůstanou odkryté po obnovení stránky v téže záložce (sessionStorage `diplo-pult-<id>`, `diplo-karta-<id>`); nová záložka začíná zakrytá (stream) | W Zakryti.test „s pamětí zůstane odkrytý …“ |
 | 5.6 | Nové části (cíle, schopnosti, oznámení, role padlých, povinný prodej) se objevují animací; změněná hodnota dosedne razítkem; při omezení pohybu nic | ruční |
 | 5.7 | Stránka akce: sekce „Pravidla hry“ pro každého (háček `sekceAkce`) — velká mapa aktivní verze, pod ní kartičky po třech; odkaz na dokument pravidel (`ODKAZ_PRAVIDEL` v `PravidlaAkce.tsx`) až bude kopie jen ke čtení | W PravidlaAkce.test |
+| 5.8 | Osobní overlay karty pro streamery `…/obs/karta?hrac=&klic=` — klíč = HMAC id hráče tajemstvím `OBS_KLIC` (odkaz si hráč vygeneruje na kartě, „Overlay karty do OBS“); data redigovaná jako pro hráče, jen z jeho běžícího zápasu, do rozeslání prázdné | obs.test „routa GET /api/diplo/obs/hrac“ |
 | 5.4 | Overlaye OBS `/obs/mapa`, `/obs/tabulka` s `OBS_KLIC` | ruční |
 
 ## 6. Známé meze (vědomě)

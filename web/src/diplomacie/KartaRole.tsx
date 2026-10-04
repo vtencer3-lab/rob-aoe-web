@@ -9,11 +9,13 @@ import { JmenoUcastnika, VycetUcastniku } from "../views/JmenoSBarvou.js";
 import { jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { kralNaMape, MapaScenare, type DruhPopisku, type PopiskyStartu } from "./MapaScenare.js";
 import type { Hlidej } from "../rezimy/index.js";
+import { cesta } from "../cesty.js";
 import { diploApi } from "./api.js";
 import { MojeCile } from "./MojeCile.js";
 import { TextSIkonami } from "./TextSIkonami.js";
 import { MojeSchopnosti, PovinnyProdej } from "./Schopnosti.js";
 import { PravidlaHry } from "./PravidlaHry.js";
+import { Kopirovatelne } from "../views/Kopirovatelne.js";
 import { Zakryti } from "./Zakryti.js";
 import { PLAMENY, RUB_KARTY, ZNAK_PROHRA, ZNAK_ROLE } from "./znaky.js";
 
@@ -118,13 +120,41 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
           )}
         </>
       )}
+      {d.stav === "rozeslano" && moje ? <OverlayKarty hlidej={hlidej} /> : null}
       <PravidlaHry verze={verze} />
     </section>
   );
 }
 
+/**
+ * Odkaz na osobní overlay karty do OBS pro streamery (uživatel 4. 10. 2026):
+ * server ho podepíše jen přihlášenému hráči pro jeho vlastní kartu.
+ */
+function OverlayKarty({ hlidej }: { hlidej: Hlidej }) {
+  const [odkaz, setOdkaz] = useState<string | null>(null);
+  const vytvor = () =>
+    void hlidej(async () => {
+      const { hrac, klic } = await diploApi.mujOverlay();
+      setOdkaz(`${window.location.origin}${cesta(`/obs/karta?hrac=${encodeURIComponent(hrac)}&klic=${klic}`)}`);
+    });
+  return (
+    <div className="overlay-karty stred">
+      {odkaz ? (
+        <>
+          <p className="ceka">Vlož jako Browser Source do OBS. Kdo odkaz uvidí, uvidí tvou roli — nesdílej ho.</p>
+          <Kopirovatelne hodnota={odkaz} popis="odkaz na overlay karty" testId="overlay-karty" />
+        </>
+      ) : (
+        <button type="button" onClick={vytvor}>
+          Overlay karty do OBS
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** Role, mapa a cíle — líc karty hráče i karta Šaška, která při proměně hoří. */
-function TeloKarty({ zapas, d, moje, verze, hlidej }: { zapas: ZapasView; d: DiploZapas; moje: RoleHrace; verze: ReturnType<typeof verzeZapasu>; hlidej: Hlidej }) {
+export function TeloKarty({ zapas, d, moje, verze, hlidej }: { zapas: ZapasView; d: DiploZapas; moje: RoleHrace; verze: ReturnType<typeof verzeZapasu>; hlidej: Hlidej }) {
   return (
     <>
       <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
