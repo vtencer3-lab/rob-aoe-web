@@ -26,7 +26,7 @@ export const ZNAK_PROHRA: string = prohra;
 
 /**
  * Plameny hořící karty (proměna Šaška v Gardu): VP9 s průhledností,
- * 720×960, 1,8 s. Vygeneroval je Codex procedurálně, `nastroje/grafika/plameny.mjs`.
+ * 720×960, 1,8 s. 2D simulace hoření (Codex), `nastroje/grafika/plameny.mjs`.
  */
 export const PLAMENY: string = plameny;
 
