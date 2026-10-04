@@ -7,7 +7,7 @@ import { ObsahPravidel } from "./PravidlaHry.js";
  * být kopie jen ke čtení (uživatel 4. 10. 2026: „nový dokument, který nemůže
  * kdokoli měnit“).
  */
-const ODKAZ_PRAVIDEL: string | null = null;
+const ODKAZ_PRAVIDEL: string | null = "https://docs.google.com/document/d/1uoFXXmSo2_FNP0w_Fgu-XL6eo1dYAXAuh0FAsNikWB0/edit?tab=t.0";
 
 /**
  * Pravidla hry na stránce akce pro každého, i bez zápasu a bez přihlášení
