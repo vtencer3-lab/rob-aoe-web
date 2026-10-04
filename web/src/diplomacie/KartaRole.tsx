@@ -197,8 +197,11 @@ function OdhaleneRole({ odhalene, ucastnici }: { odhalene: DiploZapas["odhaleneR
 /** O kolik výšky karty video plamenů přesahuje nad ni (CSS `.karta-promena .plameny`, top: -25 %). */
 const PRESAH_PLAMENU = 0.25;
 
+/** Plameny o něco pomaleji, než je video natočené (uživatel 4. 10. 2026: „trochu pomalejší, ne o moc“) — 1,8 s → 2,25 s. Maska jde podle času videa, sesazení zůstane. */
+const RYCHLOST_PLAMENU = 0.8;
+
 /** Pojistka: kdyby video neskončilo (nenačetlo se, prohlížeč ho nepustí), Garda se ukáže i tak. */
-const POJISTKA_HORENI_MS = 3000;
+const POJISTKA_HORENI_MS = 3500;
 
 /**
  * Kde je čelo ohně ve videu `plameny.webm` v čase `t` (s): podíl výšky od
@@ -245,6 +248,7 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       return;
     }
     const v = video.current;
+    if (v) v.playbackRate = RYCHLOST_PLAMENU;
     void v?.play?.()?.catch?.(() => dokonci());
     let snimek = 0;
     const tik = () => {

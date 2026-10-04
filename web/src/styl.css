@@ -1934,13 +1934,19 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    obdélníku karty byla zrušena (uživatel 4. 10. 2026: obrysovala i už
    spálenou část). Karta
    navíc během hoření postupně bledne (opacity běží mimo překreslování). */
-.karta-promena .zar { position: absolute; inset: 0; pointer-events: none; z-index: 1; visibility: hidden; mix-blend-mode: screen;
-  background: linear-gradient(to top, transparent calc(var(--hori) - 7%), color-mix(in srgb, var(--ohen) 75%, transparent) calc(var(--hori) - 1%), color-mix(in srgb, var(--ohen) 35%, transparent) calc(var(--hori) + 10%), color-mix(in srgb, var(--ohen) 12%, transparent) calc(var(--hori) + 28%), transparent calc(var(--hori) + 45%)); }
-.karta-promena.hori .zar { visibility: visible; -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent); mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent); }
+/* Vrstva záře je vyšší než karta (nahoru o 40 % výšky karty, do stran o 5 %),
+   ať ji při stoupání ohně neusekne horní hrana karty (uživatel 4. 10. 2026);
+   proto se `--hori` (v jednotkách výšky karty) dělí 1,4. Boky i vršek se
+   plynule vytrácí maskou. */
+.karta-promena .zar { --h: calc(var(--hori) / 1.4); position: absolute; top: -40%; bottom: 0; left: -5%; right: -5%; pointer-events: none; z-index: 1; visibility: hidden; mix-blend-mode: screen;
+  background: linear-gradient(to top, transparent calc(var(--h) - 5%), color-mix(in srgb, var(--ohen) 75%, transparent) calc(var(--h) - 1%), color-mix(in srgb, var(--ohen) 35%, transparent) calc(var(--h) + 7%), color-mix(in srgb, var(--ohen) 12%, transparent) calc(var(--h) + 20%), transparent calc(var(--h) + 32%)); }
+.karta-promena.hori .zar { visibility: visible;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent), linear-gradient(to bottom, transparent, black 25%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent), linear-gradient(to bottom, transparent, black 25%); mask-composite: intersect; }
 /* Hořící karta nemá rám ani pozadí panelu (uživatel 4. 10. 2026: „proč je
    furt kolem toho okna ten border“) — hoří obsah, ne obdélník. */
 .karta-promena.hori .role { border-color: transparent; background: transparent; transition: border-color var(--prechod) ease, background-color var(--prechod) ease; }
-.karta-promena.hori .karta-promena-obsah { animation: bledne 1.8s ease-in forwards; }
+.karta-promena.hori .karta-promena-obsah { animation: bledne 2.25s ease-in forwards; }
 @keyframes bledne { from { opacity: 1; } to { opacity: 0.55; } }
 /* Video plamenů přes kartu, roztažené (fill): spodek sedí se spodkem karty,
    nahoru přesahuje o čtvrtinu výšky karty (PRESAH_PLAMENU v KartaRole.tsx),

@@ -282,7 +282,7 @@ it("Šaškovi padla Garda: zvon, karta Šaška s tlačítkem, po kliknutí shoř
   fireEvent.click(screen.getByRole("button", { name: "Královská garda padla" }));
   expect(promena).toHaveClass("hori");
   expect(diploApi.promenaVidena).not.toHaveBeenCalled();
-  await vi.advanceTimersByTimeAsync(3500);
+  await vi.advanceTimersByTimeAsync(4000);
   expect(diploApi.promenaVidena).toHaveBeenCalledWith(zapas.id);
   expect(diploApi.promenaVidena).toHaveBeenCalledTimes(1);
   rerender(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ ...sasek, role: "garda", puvodniRole: "sasek", promenaVidena: true }])} ja="h2" hlidej={hlidej} />);
