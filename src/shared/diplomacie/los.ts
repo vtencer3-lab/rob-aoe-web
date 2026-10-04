@@ -54,7 +54,12 @@ export function zmenCil(role: RoleHrace[], hracId: string, cil: string, nastupce
 export function odchylkySlozeni(role: RoleHrace[]): string[] {
   const ocekavane: Record<Role, number> = { nastupce: 1, garda: 1, najezdnik: 2, sasek: 1, zoldak: 1, kat: 1 };
   const pocty = new Map<Role, number>();
-  for (const r of role) pocty.set(r.role, (pocty.get(r.role) ?? 0) + 1);
+  // Složení se posuzuje podle rozdání: Šašek proměněný ve hře v Gardu
+  // (`puvodniRole`) se počítá jako Šašek, ne jako druhá Garda.
+  for (const r of role) {
+    const rozdana = r.puvodniRole ?? r.role;
+    pocty.set(rozdana, (pocty.get(rozdana) ?? 0) + 1);
+  }
   const vety: string[] = [];
   for (const [r, ma] of Object.entries(ocekavane) as [Role, number][]) {
     const je = pocty.get(r) ?? 0;

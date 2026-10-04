@@ -84,5 +84,8 @@ describe("úpravy GM (chování Jinova nástroje)", () => {
     expect(odchylkySlozeni(zaklad)).toEqual([]);
     const triNajezdnici = zmenRoli(zaklad, kdo("kat"), "najezdnik", "a", nula);
     expect(odchylkySlozeni(triNajezdnici)).toEqual(["3× Nájezdník (má být 2×)", "chybí Popravčí"]);
+    // Šašek proměněný ve hře v Gardu se počítá jako Šašek (uživatel 4. 10. 2026).
+    const poPromene = zaklad.map((r) => (r.role === "sasek" ? { ...r, role: "garda" as const, puvodniRole: "sasek" as const } : r));
+    expect(odchylkySlozeni(poPromene)).toEqual([]);
   });
 });
