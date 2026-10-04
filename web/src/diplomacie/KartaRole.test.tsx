@@ -282,8 +282,9 @@ it("Šaškovi padla Garda: zvon, karta Šaška s tlačítkem, po kliknutí shoř
   fireEvent.click(screen.getByRole("button", { name: "Královská garda padla" }));
   expect(promena).toHaveClass("hori");
   expect(diploApi.promenaVidena).not.toHaveBeenCalled();
-  await vi.advanceTimersByTimeAsync(2000);
+  await vi.advanceTimersByTimeAsync(3500);
   expect(diploApi.promenaVidena).toHaveBeenCalledWith(zapas.id);
+  expect(diploApi.promenaVidena).toHaveBeenCalledTimes(1);
   rerender(<KartaRole zapas={zapas} data={stavDiplo("rozeslano", [{ ...sasek, role: "garda", puvodniRole: "sasek", promenaVidena: true }])} ja="h2" hlidej={hlidej} />);
   odkryj();
   expect(screen.getByRole("heading", { name: "Královská Garda" })).toBeTruthy();
@@ -355,7 +356,17 @@ it("obrazovka prohry jde zavřít", () => {
 it("hořící karta Šaška přehraje video plamenů", () => {
   const data = stavDiplo("rozeslano", [{ hracId: "h2", role: "garda", cilHracId: null, puvodniRole: "sasek", promenaVidena: false }]);
   render(<KartaRole zapas={zapas} data={data} ja="h2" hlidej={hlidej} />);
-  expect(screen.queryByTestId("plameny")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Královská garda padla" }));
+  // Video je v DOM hned (načítá se předem), vidět je až po kliknutí.
   expect(screen.getByTestId("plameny").tagName).toBe("VIDEO");
+  expect(screen.getByTestId("plameny")).toHaveAttribute("preload", "auto");
+  fireEvent.click(screen.getByRole("button", { name: "Královská garda padla" }));
+  expect(screen.getByTestId("promena-saska")).toHaveClass("hori");
+});
+
+it("čelo ohně: u spodku na začátku, nahoře v 1,4 s, pak nad kartou", async () => {
+  const { celoOhne } = await import("./KartaRole.js");
+  expect(celoOhne(0)).toBeCloseTo(-0.007, 2);
+  expect(celoOhne(0.775)).toBeCloseTo(0.5, 1);
+  expect(celoOhne(1.4)).toBeCloseTo(1.007, 2);
+  expect(celoOhne(1.8)).toBeGreaterThan(1.03);
 });

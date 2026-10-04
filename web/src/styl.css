@@ -1916,23 +1916,19 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-promena { position: relative; max-width: 34rem; margin: 0.8rem auto; }
 .karta-promena .karta-promena-obsah { filter: brightness(0.35) grayscale(0.6); pointer-events: none; }
 .karta-promena .promena-tlacitko { position: absolute; inset: 50% auto auto 50%; translate: -50% -50%; font-size: 1.3rem; padding: 0.9rem 1.6rem; animation: zare-rozdat 2s ease-in-out infinite; }
+/* Hoří: maska posouvaná z JS podle času videa (`--hori` = čelo ohně od
+   spodu, `celoOhne`); pod čelem je ve videu ~6 % výšky spálený pás, karta
+   pod ním zmizí. Filtr je pevný — animovaný se trhal. */
 .karta-promena.hori .karta-promena-obsah {
-  -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) - 12%), black calc(var(--hori) + 4%));
-  mask-image: linear-gradient(to top, transparent calc(var(--hori) - 12%), black calc(var(--hori) + 4%));
-  animation: hori 1.8s linear forwards;
+  -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) - 6%), black calc(var(--hori) + 1%));
+  mask-image: linear-gradient(to top, transparent calc(var(--hori) - 6%), black calc(var(--hori) + 1%));
+  filter: brightness(0.55) sepia(0.5);
 }
-/* Maska jde s čelem ohně ve videu (plameny.webm): to vyšlehne v 0,15 s
-   a nahoře je v 1,4 s; okraj masky drží těsně pod spáleným pásem. */
-@keyframes hori {
-  0% { --hori: 0%; filter: brightness(0.35) grayscale(0.6); }
-  8% { --hori: 0%; }
-  25% { filter: sepia(1) saturate(4) brightness(1.1); }
-  78% { --hori: 105%; }
-  100% { --hori: 125%; filter: sepia(1) saturate(3) brightness(0.5); }
-}
-/* Video plamenů přes celou kartu: roztažené (fill), ať čelo ohně ve videu
-   sedí s maskou i u karty jiného poměru stran než 3 : 4. */
-.karta-promena .plameny { position: absolute; inset: -6% -3% -2%; width: auto; height: auto; object-fit: fill; pointer-events: none; z-index: 2; }
+/* Video plamenů přesně přes kartu, roztažené (fill): souřadnice čela ve
+   videu pak odpovídají masce i u karty jiného poměru stran než 3 : 4.
+   Do kliknutí skryté, ale načtené. */
+.karta-promena .plameny { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden; }
+.karta-promena.hori .plameny { visibility: visible; }
 @media (prefers-reduced-motion: reduce) {
   .karta-promena .promena-tlacitko { animation: none; }
   .karta-promena.hori .karta-promena-obsah { animation: none; opacity: 0; }

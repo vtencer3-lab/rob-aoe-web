@@ -194,29 +194,76 @@ function OdhaleneRole({ odhalene, ucastnici }: { odhalene: DiploZapas["odhaleneR
   );
 }
 
-/** Jak dlouho karta Šaška hoří, než se ukáže Garda — délka videa plamenů i CSS `.karta-promena.hori`. */
-const HORENI_MS = 1800;
+/** Pojistka: kdyby video neskončilo (nenačetlo se, prohlížeč ho nepustí), Garda se ukáže i tak. */
+const POJISTKA_HORENI_MS = 3000;
+
+/**
+ * Kde je čelo ohně ve videu `plameny.webm` v čase `t` (s): podíl výšky od
+ * spodního okraje. Týž vzorec jako `baseline` v `nastroje/grafika/plameny.mjs`
+ * (720×960, y shora): 0–0,15 s vyšlehne u spodku, do 1,4 s rovnoměrně
+ * vystoupá nahoru, pak dohoří.
+ */
+export function celoOhne(t: number): number {
+  const mix = (a: number, b: number, x: number) => a + (b - a) * Math.min(1, Math.max(0, x));
+  const plynule = (a: number, b: number, x: number) => {
+    const u = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    return u * u * (3 - 2 * u);
+  };
+  const y = t < 0.15 ? mix(967, 949, plynule(0, 0.15, t)) : t <= 1.4 ? mix(949, -7, (t - 0.15) / 1.25) : mix(-7, -34, plynule(1.4, 1.8, t));
+  return 1 - y / 960;
+}
 
 /**
  * Karta Šaška po pádu Gardy: ztmavlá, přes ni velké tlačítko. Po kliknutí
- * shoří (animace) a teprve pak se serveru řekne, že hráč proměnu viděl —
- * stav pak přinese kartu Gardy.
+ * shoří a teprve pak se serveru řekne, že hráč proměnu viděl — stav pak
+ * přinese kartu Gardy.
+ *
+ * Hoření (uživatel 3. 10. 2026: animace se trhala a nesedělo čelo ohně):
+ * video je načtené předem (`preload`), pustí se kliknutím a masku karty
+ * posouvá každý snímek podle času videa (`celoOhne`) — maska a plameny tak
+ * jdou spolu i při zaváhání přehrávání. Filtry se neanimují (drahé
+ * překreslování celé karty). Konec = konec videa, s pojistkou.
  */
 function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHotovo: () => void }) {
   const [hori, setHori] = useState(false);
+  const obal = useRef<HTMLDivElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const hotovo = useRef(false);
   useEffect(() => {
     if (!hori) return;
+    const dokonci = () => {
+      if (hotovo.current) return;
+      hotovo.current = true;
+      onHotovo();
+    };
     const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const t = setTimeout(onHotovo, bezPohybu ? 0 : HORENI_MS);
-    return () => clearTimeout(t);
+    if (bezPohybu) {
+      dokonci();
+      return;
+    }
+    const v = video.current;
+    void v?.play?.()?.catch?.(() => dokonci());
+    let snimek = 0;
+    const tik = () => {
+      obal.current?.style.setProperty("--hori", `${(celoOhne(v?.currentTime ?? 0) * 100).toFixed(2)}%`);
+      snimek = requestAnimationFrame(tik);
+    };
+    snimek = requestAnimationFrame(tik);
+    v?.addEventListener("ended", dokonci);
+    const pojistka = setTimeout(dokonci, POJISTKA_HORENI_MS);
+    return () => {
+      cancelAnimationFrame(snimek);
+      v?.removeEventListener("ended", dokonci);
+      clearTimeout(pojistka);
+    };
   }, [hori]);
   return (
-    <div className={hori ? "karta-promena hori" : "karta-promena"} data-testid="promena-saska">
+    <div ref={obal} className={hori ? "karta-promena hori" : "karta-promena"} data-testid="promena-saska">
       <div className="karta-promena-obsah" aria-hidden="true">
         {children}
       </div>
-      {/* Plameny přes kartu (video s průhledností, uživatel 3. 10. 2026); pod nimi ji maska ukusuje zdola. */}
-      {hori ? <video className="plameny" src={PLAMENY} autoPlay muted playsInline preload="auto" aria-hidden="true" data-testid="plameny" /> : null}
+      {/* Plameny přes kartu (video s průhledností); načtené hned, ať po kliknutí naběhnou bez zpoždění. */}
+      <video ref={video} className="plameny" src={PLAMENY} muted playsInline preload="auto" aria-hidden="true" data-testid="plameny" />
       {hori ? null : (
         <button type="button" className="primarni promena-tlacitko" onClick={() => setHori(true)}>
           Královská garda padla
