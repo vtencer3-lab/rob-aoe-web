@@ -1929,20 +1929,15 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Video plamenů přesně přes kartu, roztažené (fill): souřadnice čela ve
    videu pak odpovídají masce i u karty jiného poměru stran než 3 : 4.
    Do kliknutí skryté, ale načtené. */
-/* Záře nad čelem ohně (vrstva pod videem, jde s `--hori`) a rozpálený okraj
-   karty — místo animovaného filtru na celé kartě, který se trhal. Karta
+/* Záře nad čelem ohně (vrstva pod videem, jde s `--hori`) — místo
+   animovaného filtru na celé kartě, který se trhal. Záře kolem celého
+   obdélníku karty byla zrušena (uživatel 4. 10. 2026: obrysovala i už
+   spálenou část). Karta
    navíc během hoření postupně bledne (opacity běží mimo překreslování). */
 .karta-promena .zar { position: absolute; inset: 0; pointer-events: none; z-index: 1; visibility: hidden; mix-blend-mode: screen;
   background: linear-gradient(to top, transparent calc(var(--hori) - 7%), color-mix(in srgb, var(--ohen) 75%, transparent) calc(var(--hori) - 1%), color-mix(in srgb, var(--ohen) 35%, transparent) calc(var(--hori) + 10%), color-mix(in srgb, var(--ohen) 12%, transparent) calc(var(--hori) + 28%), transparent calc(var(--hori) + 45%)); }
 .karta-promena.hori .zar { visibility: visible; }
-.karta-promena.hori { animation: zar-karty 1.8s ease-out forwards; }
 .karta-promena.hori .karta-promena-obsah { animation: bledne 1.8s ease-in forwards; }
-@keyframes zar-karty {
-  0% { box-shadow: 0 0 0 0 transparent; }
-  25% { box-shadow: 0 0 28px 6px color-mix(in srgb, var(--ohen) 70%, transparent); }
-  70% { box-shadow: 0 -10px 36px 8px color-mix(in srgb, var(--ohen) 55%, transparent); }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
 @keyframes bledne { from { opacity: 1; } to { opacity: 0.55; } }
 .karta-promena .plameny { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden; }
 .karta-promena.hori .plameny { visibility: visible; }
@@ -1950,7 +1945,6 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
   .karta-promena .promena-tlacitko { animation: none; }
   .karta-promena.hori .karta-promena-obsah { animation: none; opacity: 0; }
   .karta-promena .plameny, .karta-promena .zar { display: none; }
-  .karta-promena.hori { animation: none; }
 }
 @media (min-width: 72rem) {
   .karta-role .karta-vedle { display: grid; grid-template-columns: minmax(0, calc(36rem + 2px)) minmax(0, 1fr); gap: 0 1.5rem; align-items: start; }
