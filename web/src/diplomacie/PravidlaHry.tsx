@@ -25,6 +25,16 @@ export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
           {/* Kartičky jako cíle u mapy (uživatel 4. 10. 2026). Jen obecná
               pravidla — žádný postup ani role konkrétních hráčů. */}
           <div className="pravidla-mrizka">
+            {/* Shrnutí, o co ve hře jde (uživatel 4. 10. 2026). */}
+            <section className="pravidla-karta">
+              <h4>Cíl hry</h4>
+              <ul>
+                <li>Splnit primární cíl.</li>
+                <li>
+                  <TextSIkonami text="Splnit sekundární cíl (vyjma Nástupce císaře)." />
+                </li>
+              </ul>
+            </section>
             {r ? (
               <section className="pravidla-karta">
                 <h4>Start</h4>
