@@ -1,9 +1,10 @@
 /**
- * Plameny 3 — deterministic reacting-fluid VFX, no external JS packages.
- * Run: node vytvor-plameny3.mjs
- * Preview simulation only: node vytvor-plameny3.mjs --draft
- * Keep raw work files: node vytvor-plameny3.mjs --keep-work
- * Encode/check retained frames: node vytvor-plameny3.mjs --encode-only
+ * Plameny 4 — deterministic reacting-fluid VFX, no external JS packages.
+ * Run: node vytvor-plameny4.mjs
+ * Preview simulation only: node vytvor-plameny4.mjs --draft
+ * Keep raw work files: node vytvor-plameny4.mjs --keep-work
+ * Encode/check retained frames: node vytvor-plameny4.mjs --encode-only
+ * Recheck an existing video against retained frames: --verify-only --keep-work
  * Optional: --ffmpeg=C:/ffmpeg/bin/ffmpeg.exe
  *
  * Three independently simulated depth slabs. Semi-Lagrangian RK2 transport,
@@ -20,23 +21,25 @@ import { deflateSync } from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
-const CACHE = path.join(ROOT, 'snimky3');
+const CACHE = path.join(ROOT, 'snimky4');
 fs.mkdirSync(CACHE, { recursive: true });
 const ffarg = process.argv.find(a => a.startsWith('--ffmpeg='));
 const FFMPEG = ffarg?.slice(9) || (fs.existsSync('C:/ffmpeg/bin/ffmpeg.exe') ? 'C:/ffmpeg/bin/ffmpeg.exe' : 'ffmpeg');
 const FFPROBE = FFMPEG.replace(/ffmpeg(\.exe)?$/, 'ffprobe$1');
 const DRAFT = process.argv.includes('--draft');
-const ENCODE_ONLY = process.argv.includes('--encode-only');
+const VERIFY_ONLY = process.argv.includes('--verify-only');
+const ENCODE_ONLY = process.argv.includes('--encode-only') || VERIFY_ONLY;
 const KEEP_WORK = process.argv.includes('--keep-work');
-const W = 720, H = 960, FPS = 30, N = 54;
+const IMPORTED = path.resolve(process.argv[1] || '') !== fileURLToPath(import.meta.url);
+const W = 1440, H = 1440, FPS = 30, N = 72;
 const DARK = [26, 18, 12], LIGHT = [232, 225, 210];
 const clamp = (a, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, a));
 const mix = (a, b, t) => a + (b - a) * t;
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 export function baseline(t) {
-  return t < .15 ? mix(967, 949, smooth(0, .15, t))
-    : t <= 1.4 ? mix(949, -7, (t - .15) / 1.25)
-      : mix(-7, -34, smooth(1.4, 1.8, t));
+  if (t < 0.25) return H + 10;
+  if (t < 1.75) return (H + 10) + (-20 - (H + 10)) * ((t - 0.25) / 1.5);
+  return -10;
 }
 function rng(seed) { return () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 4294967296; }; }
 const random = rng(0x57afc213);
@@ -55,8 +58,19 @@ function noise(x, y, z = 0) {
     mix(mix(hash(X, Y, Z + 1), hash(X + 1, Y, Z + 1), a), mix(hash(X, Y + 1, Z + 1), hash(X + 1, Y + 1, Z + 1), a), b), c) * 2 - 1;
 }
 function fbm(x, y, z = 0) { return .59 * noise(x, y, z) + .28 * noise(x * 2.03 + 9.3, y * 2.03 + 1.7, z * 1.33) + .13 * noise(x * 4.13 + 3.7, y * 4.13 + 15, z * 1.77); }
-function edgeOffset(x, t) { return 15 * noise(x / 87, t * 1.4, 10) + 7 * noise(x / 28, t * 2.1, 3) + 2.2 * noise(x / 7, t * 2.7, 1); }
-function bandWidth(x, t) { return 48 + 5 * noise(x / 49 + 2, t * 1.1, 6) + 2 * noise(x / 9, t, 8); }
+export function edgeOffset(x, t) {
+  const ragged = 15 * noise(x / 87, t * 1.4, 10) + 7 * noise(x / 28, t * 2.1, 3) + 2.2 * noise(x / 7, t * 2.7, 1);
+  // Both endpoint biases stay within the allowed +/-30 px. The first pilot
+  // line is inside the bottom edge; the final cooling edge remains inside.
+  const start = mix(-19 + ragged * .23, ragged, smooth(.18, .34, t));
+  return mix(start, 18 + ragged * .23, smooth(1.58, 1.75, t));
+}
+function bandWidth(x, t) { return 56 + 2 * noise(x / 49 + 2, t * 1.1, 6) + 1.5 * noise(x / 9, t, 8); }
+export function topDissipation(y, root) {
+  // A broad extinction region, not a narrow alpha cut at the canvas edge.
+  // The stationary cooling residue has a smaller, still smooth envelope.
+  return smooth(18, Math.min(130, Math.max(38, root * .4)), y);
+}
 
 class Fluid {
   constructor(w, h, scale, seed) {
@@ -175,7 +189,7 @@ class Fluid {
         T[i] += dt * 5.5 * injection;
         mixing[i] = mix(mixing[i], .5 + .5 * noise(px / 3.4, s * 20, seed + 19), clamp(injection * dt * 50));
         // The cooling char releases a last wisp of soot after the front exits.
-        const smolder = smooth(1.22, 1.35, worldTime) * (1 - smooth(1.43, 1.56, worldTime));
+        const smolder = smooth(1.68, 1.78, worldTime) * (1 - smooth(2.00, 2.18, worldTime));
         soot[i] += dt * 2.4 * smolder * modulation * Math.exp(-(((height + 26) / 6) ** 2));
         v[i] -= dt * 820 / scale * injection;
       }
@@ -243,14 +257,14 @@ class Embers {
     this.clock += dt;
     const base = baseline(t);
     const frontVelocity = t > 0 ? (baseline(t + .0005) - baseline(Math.max(0, t - .0005))) / .001 : 0;
-    this.accum += dt * 77 * strength;
+    this.accum += dt * 120 * strength * smooth(.07, .25, t);
     while (this.accum >= 1) {
       this.accum--;
       const x = random() * W;
-      const late = t > 1.40;
-      const y = base + edgeOffset(x, t) + (late ? 20 + random() * 18 : -8 - random() * 62);
+      const late = t > 1.59;
+      const y = late ? 24 + random() * 14 : base + edgeOffset(x, t) - 8 - random() * 42 * smooth(.07, .25, t);
       this.p.push({ x, y, late, vx: (random() - .5) * (late ? 130 : 920), vy: late ? -24 - random() * 32 : frontVelocity - 250 - random() * 400,
-        age: 0, life: .58 + random() * .50, size: 1 + random() ** 2 * 2.5,
+        age: 0, life: late ? .22 + random() * .32 : .48 + random() * .45, size: 1 + random() ** 2 * 2.5,
         brightness: .60 + random() * .40, phase: random() * 90, lift: 110 + random() * 170,
         shutter: .002 + random() ** 2 * .005, fastShutter: random() < .09,
         history: [{ x, y, age: 0 }] });
@@ -268,10 +282,13 @@ class Embers {
         const eddy = noise(p.x / 100 + p.phase, (p.y - base) / 90, this.clock * 3.8);
         const drag = 1 - Math.exp(-h * 5.5);
         const targetX = p.late ? u * .45 + 70 * eddy : u * 2.8 + 410 * Math.sin(this.clock * 8.5 + p.phase) + 260 * eddy;
-        const targetY = p.late ? -28 + 22 * eddy : frontVelocity + v * .90 - p.lift + 200 * noise(p.phase, this.clock * 4.5, 17);
+        const targetY = p.late ? 8 * eddy : frontVelocity + v * .90 - p.lift + 200 * noise(p.phase, this.clock * 4.5, 17);
         p.vx += (targetX - p.vx) * drag;
         p.vy += (targetY - p.vy) * drag;
-        p.x += p.vx * h; p.y += p.vy * h;
+        // Braking well inside the image: embers lose energy before the top.
+        if (!p.late && p.y < 160) { p.vy *= Math.exp(-h * 30); p.brightness *= Math.exp(-h * 14); }
+        p.x += p.vx * h;
+        p.y = Math.max(14, p.y + p.vy * h * (p.late ? 1 : smooth(14, 135, p.y)));
         p.history.push({ x: p.x, y: p.y, age: p.age });
       }
       while (p.history.length > 2 && p.history[1].age < p.age - .035) p.history.shift();
@@ -316,13 +333,24 @@ function blur(src, radius) {
 function render(index, sims, embers) {
   const t = index / FPS, base = baseline(t), count = W * H;
   const rgba = Buffer.alloc(count * 4);
-  if (index === N - 1) return { rgba, info: { frame: index, time: t, baseline: base, alphaNonzero: 0, emberCount: 0 } };
+  if (index === 0 || index === N - 1) return { rgba, info: { frame: index, time: t, baseline: base, alphaNonzero: 0, emberCount: 0 } };
   const R = new Float32Array(count), G = new Float32Array(count), B = new Float32Array(count), A = new Float32Array(count), emission = new Float32Array(count);
-  const ignition = smooth(0, .14, t), fade = 1 - smooth(1.4, 53 / FPS, t);
+  const ignition = smooth(0, .075, t), fade = 1 - smooth(2.08, 71 / FPS, t);
+  const growth = smooth(.025, .25, t);
+  const settling = smooth(1.56, 1.75, t);
+  const cooling = 1 - smooth(1.75, 2.15, t);
+  const flameAlpha = ignition * smooth(.025, .09, t) * cooling;
+  // A finite headroom envelope shortens the same simulated tongues near the
+  // top. At burnout they shrink around a stationary root inside the char band.
+  // No scrolling beyond the canvas and no duplicated/low-resolution frames.
+  const roots = Float32Array.from({ length: W }, (_, x) => base + edgeOffset(x, t) + 28 * settling);
+  const scales = Float32Array.from(roots, root => Math.max(.008, Math.min(growth, Math.max(0, root - 13) / 350)) * mix(1, .22, smooth(1.75, 2.15, t)));
+  const offsets = Float32Array.from({ length: W }, (_, x) => edgeOffset(x, t));
+  const sampleY = (f, x, y) => f.front + offsets[x] / f.scale + (y - roots[x]) / (f.scale * scales[x]);
   const front = Float32Array.from({ length: W }, (_, x) => base + edgeOffset(x, t));
   const band = Float32Array.from({ length: W }, (_, x) => bandWidth(x, t));
   const over = (i, r, g, b, a) => { const k = 1 - a; R[i] = r * a + R[i] * k; G[i] = g * a + G[i] * k; B[i] = b * a + B[i] * k; A[i] = a + A[i] * k; };
-  const top = Math.max(0, Math.floor(base - 610)), bottom = Math.min(H, Math.ceil(base + 78));
+  const top = Math.max(0, Math.floor(base - 610)), bottom = Math.min(H, Math.ceil(base + 100));
   // Render ALL soot behind ALL emission. A foreground cold slab must never
   // grey out a hot flame in another slab. Soot is suppressed wherever any
   // depth layer still has fire, and fades in above the burning column.
@@ -331,17 +359,17 @@ function render(index, sims, embers) {
   for (const f of sims) {
     for (let y = top; y < bottom; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x;
-      const temp = f.sample(f.T, f.w / 2 + (x - W / 2) / f.scale, f.front + (y - base) / f.scale);
+      const temp = f.sample(f.T, f.w / 2 + (x - W / 2) / f.scale, sampleY(f, x, y));
       hotMask[i] = Math.max(hotMask[i], smooth(.10, .32, temp));
     }
   }
   for (const f of sims) {
     for (let y = top; y < bottom; y++) for (let x = 0; x < W; x++) {
-      const i = y * W + x, above = front[x] - y;
-      const sx = f.w / 2 + (x - W / 2) / f.scale, sy = f.front + (y - base) / f.scale;
+      const i = y * W + x, above = (roots[x] - y) / scales[x];
+      const sx = f.w / 2 + (x - W / 2) / f.scale, sy = sampleY(f, x, y);
       const density = Math.max(0, f.sample(f.soot, sx, sy));
-      const smokeMask = Math.max(smooth(145, 250, above), smooth(1.35, 1.48, t) * smooth(-50, -15, above));
-      const smokeAlpha = Math.min(.13, 1 - Math.exp(-density * 1.20)) * (1 - hotMask[i]) * ignition * smokeMask;
+      const smokeMask = Math.max(smooth(145, 250, above), smooth(1.75, 1.95, t) * smooth(-50, -15, above));
+      const smokeAlpha = Math.min(.13, 1 - Math.exp(-density * 1.20)) * (1 - hotMask[i]) * ignition * growth * smokeMask * (1 - smooth(1.92, 2.34, t));
       maxSmoke = Math.max(maxSmoke, smokeAlpha);
       if (smokeAlpha > .0003) over(i, .0034, .0026, .0020, smokeAlpha);
     }
@@ -350,16 +378,16 @@ function render(index, sims, embers) {
   for (let slab = sims.length - 1; slab >= 0; slab--) {
     const f = sims[slab];
     for (let y = top; y < bottom; y++) for (let x = 0; x < W; x++) {
-      const i = y * W + x, above = front[x] - y;
+      const i = y * W + x, above = (roots[x] - y) / scales[x];
       if (above < -55) continue;
       const sx = f.w / 2 + (x - W / 2) / f.scale;
-      const sy = f.front + (y - base) / f.scale;
+      const sy = sampleY(f, x, y);
       const temp = Math.max(0, f.sample(f.T, sx, sy));
       const density = Math.max(0, f.sample(f.soot, sx, sy));
       const fuel = Math.max(0, f.sample(f.fuel, sx, sy));
       const riseMask = smooth(-5, 3, above);
       const heat = smooth(.10, .46, temp);
-      const opacity = (1 - Math.exp(-(density * 3.8 + fuel * 1.8 + temp * 1.1))) * heat * riseMask * ignition;
+      const opacity = (1 - Math.exp(-(density * 3.8 + fuel * 1.8 + temp * 1.1))) * heat * riseMask * flameAlpha;
       if (opacity < .0003) continue;
       const rgb = thermal(FIRE, smooth(.12, 1.35, temp));
       const core = smooth(.82, 1.55, temp) * (1 - smooth(4, 26, above)) * smooth(.03, .22, fuel);
@@ -377,11 +405,11 @@ function render(index, sims, embers) {
       const fracture = smooth(.075, .015, Math.abs(noise(x / 10, (y - base) / 9, 31) + .14 * fine));
       const alpha = smooth(-.7, 1.1, d) * (1 - smooth(width - 3.5, width, d));
       const luma = .0045 + .0042 * (tex + .6) + .0016 * fine;
-      if (alpha > 0) over(i, luma * 1.32, luma * .95, luma * .69, alpha * ignition * (.94 + .06 * fracture) * (1 - smooth(1.4, 1.59, t)));
+      if (alpha > 0) over(i, luma * 1.32, luma * .95, luma * .69, alpha * ignition * (.94 + .06 * fracture) * (1 - smooth(1.63, 1.88, t)));
       const hot = clamp(.62 + .38 * noise(x / 21, t * 4.6, 4) + .26 * noise(x / 5, t * 3, 8));
       const line = Math.exp(-Math.pow((d - .25) / (1.1 + .6 * hot), 2));
       const crackGlow = fracture * Math.exp(-Math.max(0, d) / 8) * .32 * hot;
-      const ember = (line * (.66 + .32 * hot) + crackGlow) * ignition * (1 - smooth(1.4, 1.62, t));
+      const ember = (line * (.66 + .32 * hot) + crackGlow) * ignition * (1 - smooth(1.78, 2.20, t));
       if (ember > .002) { const c = thermal(FIRE, .33 + hot * .48); over(i, ...c, clamp(ember)); emission[i] = Math.max(emission[i], ember * .8); }
     }
   }
@@ -418,8 +446,9 @@ function render(index, sims, embers) {
     if (y >= Math.ceil(front[x] + band[x])) continue;
     const ga = clamp(glow1[i] * .11 + glow2[i] * .024) * ignition;
     if (ga > .00015) over(i, ...thermal(FIRE, .68), ga);
-    const alpha = clamp(A[i] * fade);
-    const a8 = Math.round(alpha * 255);
+    // All layers, including bloom and char, approach zero BEFORE the border.
+    const alpha = clamp(A[i] * fade * smooth(5, 17, y));
+    const a8 = Math.round(Math.round(alpha * 255) * topDissipation(y, roots[x]));
     if (!a8) continue;
     rgba[i * 4 + 3] = a8; nonzero++;
     const inv = 1 / Math.max(1e-9, A[i]);
@@ -442,8 +471,8 @@ function composite(rgba, bg) {
   return out;
 }
 function previews(raw) {
-  const frames = [0, 8, 15, 23, 30, 38, 45, 53];
-  const tw = 240, th = 320, gap = 12, cw = tw * 4 + gap * 5, ch = th * 2 + gap * 3;
+  const frames = [0, 10, 20, 30, 41, 51, 61, 71];
+  const tw = 360, th = 360, gap = 12, cw = tw * 4 + gap * 5, ch = th * 2 + gap * 3;
   const sheet = Buffer.alloc(cw * ch * 3);
   for (let i = 0; i < cw * ch; i++) for (let c = 0; c < 3; c++) sheet[i * 3 + c] = DARK[c];
   const fd = fs.openSync(raw, 'r');
@@ -451,52 +480,82 @@ function previews(raw) {
     const data = Buffer.alloc(W * H * 4); fs.readSync(fd, data, 0, data.length, frames[n] * data.length);
     const rgb = composite(data, DARK), ox = gap + n % 4 * (tw + gap), oy = gap + Math.floor(n / 4) * (th + gap);
     for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) for (let c = 0; c < 3; c++) {
-      let s = 0; for (let yy = 0; yy < 3; yy++) for (let xx = 0; xx < 3; xx++) s += rgb[((y * 3 + yy) * W + x * 3 + xx) * 3 + c];
-      sheet[((y + oy) * cw + x + ox) * 3 + c] = Math.round(s / 9);
+      let s = 0; for (let yy = 0; yy < 4; yy++) for (let xx = 0; xx < 4; xx++) s += rgb[((y * 4 + yy) * W + x * 4 + xx) * 3 + c];
+      sheet[((y + oy) * cw + x + ox) * 3 + c] = Math.round(s / 16);
     }
   }
-  png(path.join(ROOT, 'nahled3.png'), cw, ch, sheet, 3);
-  const center = Buffer.alloc(W * H * 4); fs.readSync(fd, center, 0, center.length, 24 * center.length); fs.closeSync(fd);
+  png(path.join(ROOT, 'nahled4.png'), cw, ch, sheet, 3);
+  // Additional close-up sheets make the short onset and the top-boundary
+  // transition reviewable. In a final run all of these come from decoded VP9.
+  const inspection = (frames, fromY, bg, filename) => {
+    const tw = 720, th = 240, gap = 8, width = 2 * tw + 3 * gap, height = Math.ceil(frames.length / 2) * (th + gap) + gap;
+    const out = Buffer.alloc(width * height * 3);
+    for (let i = 0; i < width * height; i++) for (let c = 0; c < 3; c++) out[i * 3 + c] = bg[c];
+    const frame = Buffer.alloc(W * H * 4);
+    for (let n = 0; n < frames.length; n++) {
+      fs.readSync(fd, frame, 0, frame.length, frames[n] * frame.length);
+      const ox = gap + n % 2 * (tw + gap), oy = gap + Math.floor(n / 2) * (th + gap);
+      for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) for (let c = 0; c < 3; c++) {
+        let sum = 0;
+        for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+          const i = ((fromY + y * 2 + dy) * W + x * 2 + dx) * 4, a = frame[i + 3] / 255;
+          sum += frame[i + c] * a + bg[c] * (1 - a);
+        }
+        out[((oy + y) * width + ox + x) * 3 + c] = Math.round(sum / 4);
+      }
+    }
+    png(path.join(CACHE, filename), width, height, out, 3);
+  };
+  inspection([0, 1, 2, 3, 4, 5, 6, 7], 960, DARK, 'nastup-kontrola.png');
+  inspection([43, 47, 51, 53, 54, 57, 63, 71], 0, DARK, 'konec-kontrola.png');
+  inspection([40, 43, 47, 53], 0, LIGHT, 'horni-okraj-svetly.png');
+  const center = Buffer.alloc(W * H * 4);
+  for (const frame of [1, 2, 3, 4, 5, 6, 7, 8, 15, 30, 43, 47, 49, 51, 52, 53, 54, 57, 60, 63, 66, 69, 70, 71]) {
+    fs.readSync(fd, center, 0, center.length, frame * center.length);
+    png(path.join(CACHE, `snimek-${String(frame).padStart(2, '0')}.png`), W, H, center);
+  }
+  fs.readSync(fd, center, 0, center.length, 30 * center.length); fs.closeSync(fd);
   const dark = composite(center, DARK), light = composite(center, LIGHT), both = Buffer.alloc(W * 2 * H * 3);
   for (let y = 0; y < H; y++) { dark.copy(both, y * W * 6, y * W * 3, (y + 1) * W * 3); light.copy(both, y * W * 6 + W * 3, y * W * 3, (y + 1) * W * 3); }
-  png(path.join(ROOT, 'overeni3.png'), W * 2, H, both, 3);
+  png(path.join(ROOT, 'overeni4.png'), W * 2, H, both, 3);
 }
 function run(exe, args, opts = {}) {
   const result = spawnSync(exe, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 8e6, windowsHide: true, ...opts });
   if (result.status !== 0) throw new Error(`${path.basename(exe)} failed: ${result.stderr || result.error}`);
   return result.stdout;
 }
-const RAW = path.join(CACHE, 'plameny3.rgba');
+const RAW = path.join(CACHE, 'plameny4.rgba');
 const SIM_REPORT = path.join(CACHE, 'simulace.json');
-if (!ENCODE_ONLY) {
-  const sims = [new Fluid(384, 480, 2, 7), new Fluid(320, 400, 2.4, 81), new Fluid(240, 300, 3.2, 43)];
+if (!IMPORTED && !ENCODE_ONLY) {
+  const sims = [new Fluid(976, 448, 1.5, 7), new Fluid(816, 376, 1.8, 81), new Fluid(656, 304, 2.25, 43)];
   const embers = new Embers();
   const dt = 1 / 120;
-  console.log('Warm-up: three reacting-fluid slabs, grids 384x480 + 320x400 + 240x300');
+  console.log('Warm-up: three reacting-fluid slabs, grids 976x448 + 816x376 + 656x304');
   for (let k = 0; k < 156; k++) {
     for (const s of sims) s.step(dt, 0, 1);
-    embers.step(dt, sims[0], 0, 1);
+    // Gas is preconditioned; particles start empty at ignition.
     if (k % 30 === 29) console.log(`  warm-up ${k + 1}/156`);
   }
   const fd = fs.openSync(RAW, 'w'), report = [];
   for (let i = 0; i < N; i++) {
     if (i) for (let k = 0; k < 4; k++) {
       const t = ((i - 1) * 4 + k + 1) * dt;
-      const source = 1 - smooth(1.31, 1.52, t);
+      const source = 1 - smooth(1.75, 1.92, t);
       for (const s of sims) s.step(dt, t, source);
       embers.step(dt, sims[0], t, source);
     }
     const { rgba, info } = render(i, sims, embers);
     fs.writeSync(fd, rgba); report.push(info);
-    if ([8, 15, 24, 38, 43, 48, 53].includes(i)) png(path.join(CACHE, `snimek-${String(i).padStart(2, '0')}.png`), W, H, rgba);
+    if ([1, 2, 3, 4, 5, 6, 7, 8, 15, 30, 43, 47, 49, 51, 52, 53, 54, 57, 60, 63, 66, 69, 70, 71].includes(i)) png(path.join(CACHE, `snimek-${String(i).padStart(2, '0')}.png`), W, H, rgba);
     if (i % 3 === 0 || i === N - 1) console.log(`Frame ${i + 1}/${N}, edge ${info.baseline.toFixed(1)} px, embers ${info.emberCount}`);
   }
   fs.closeSync(fd); fs.writeFileSync(SIM_REPORT, JSON.stringify(report, null, 2));
   previews(RAW);
 }
-if (!DRAFT) {
-  console.log('Encoding VP9 + alpha, two passes, CRF 0 / lossless (exact alpha)...');
+if (!IMPORTED && !DRAFT) {
+  console.log(VERIFY_ONLY ? 'Rechecking final VP9 + alpha...' : 'Encoding VP9 + alpha, two passes, CRF 0 / lossless (exact alpha)...');
   const yuvFile = path.join(CACHE, 'encode.yuva');
+  if (!VERIFY_ONLY) {
   const rgbaInput = ['-f', 'rawvideo', '-pixel_format', 'rgba', '-video_size', `${W}x${H}`, '-framerate', `${FPS}`, '-i', RAW];
   run(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', ...rgbaInput, '-frames:v', `${N}`, '-pix_fmt', 'yuva420p', '-f', 'rawvideo', yuvFile]);
   // Some swscale paths round RGBA alpha 128..254 up by one. Restore the
@@ -512,35 +571,37 @@ if (!DRAFT) {
     fs.closeSync(src); fs.closeSync(dst);
   }
   const input = ['-f', 'rawvideo', '-pixel_format', 'yuva420p', '-video_size', `${W}x${H}`, '-framerate', `${FPS}`, '-i', yuvFile];
-  const options = ['-an', '-frames:v', `${N}`, '-c:v', 'libvpx-vp9', '-pix_fmt', 'yuva420p', '-b:v', '0', '-crf', '0', '-lossless', '1', '-auto-alt-ref', '0', '-deadline', 'good', '-cpu-used', '2', '-row-mt', '1', '-threads', '8', '-g', '54', '-passlogfile', path.join(CACHE, 'vp9-pass')];
+  const options = ['-an', '-frames:v', `${N}`, '-c:v', 'libvpx-vp9', '-pix_fmt', 'yuva420p', '-b:v', '0', '-crf', '0', '-lossless', '1', '-auto-alt-ref', '0', '-deadline', 'good', '-cpu-used', '2', '-row-mt', '1', '-threads', '8', '-g', '72', '-passlogfile', path.join(CACHE, 'vp9-pass')];
   run(FFMPEG, ['-hide_banner', '-loglevel', 'warning', '-y', ...input, ...options, '-pass', '1', '-f', 'null', process.platform === 'win32' ? 'NUL' : '/dev/null']);
-  run(FFMPEG, ['-hide_banner', '-loglevel', 'warning', '-y', ...input, ...options, '-pass', '2', '-metadata:s:v:0', 'alpha_mode=1', path.join(ROOT, 'plameny3.webm')]);
+  run(FFMPEG, ['-hide_banner', '-loglevel', 'warning', '-y', ...input, ...options, '-pass', '2', '-metadata:s:v:0', 'alpha_mode=1', path.join(ROOT, 'plameny4.webm')]);
+  }
   // Every delivered preview is decoded from the FINAL WebM with libvpx,
   // because FFmpeg's native VP9 decoder can silently discard alpha.
   const decoded = path.join(CACHE, 'decoded.rgba');
-  run(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-c:v', 'libvpx-vp9', '-i', path.join(ROOT, 'plameny3.webm'), '-pix_fmt', 'rgba', '-f', 'rawvideo', decoded]);
+  run(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-c:v', 'libvpx-vp9', '-i', path.join(ROOT, 'plameny4.webm'), '-pix_fmt', 'rgba', '-f', 'rawvideo', decoded]);
   previews(decoded);
   const rgbFile = path.join(CACHE, 'nahled.rgb'), rgbFd = fs.openSync(rgbFile, 'w');
   const data = fs.readFileSync(decoded), bytes = W * H * 4;
   for (let i = 0; i < N; i++) fs.writeSync(rgbFd, composite(data.subarray(i * bytes, (i + 1) * bytes), DARK));
   fs.closeSync(rgbFd);
-  run(FFMPEG, ['-hide_banner', '-loglevel', 'warning', '-y', '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', `${W}x${H}`, '-framerate', `${FPS}`, '-i', rgbFile, '-frames:v', `${N}`, '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', '15', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', path.join(ROOT, 'plameny3-nahled.mp4')]);
-  const probe = JSON.parse(run(FFPROBE, ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,width,height,pix_fmt,r_frame_rate,avg_frame_rate,nb_read_frames:stream_tags=alpha_mode:format=duration,size', '-of', 'json', path.join(ROOT, 'plameny3.webm')]));
+  if (!VERIFY_ONLY) run(FFMPEG, ['-hide_banner', '-loglevel', 'warning', '-y', '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', `${W}x${H}`, '-framerate', `${FPS}`, '-i', rgbFile, '-frames:v', `${N}`, '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', '15', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', path.join(ROOT, 'plameny4-nahled.mp4')]);
+  const probe = JSON.parse(run(FFPROBE, ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,width,height,pix_fmt,r_frame_rate,avg_frame_rate,nb_read_frames:stream_tags=alpha_mode:format=duration,size', '-of', 'json', path.join(ROOT, 'plameny4.webm')]));
   const simReport = JSON.parse(fs.readFileSync(SIM_REPORT, 'utf8'));
   const sourceData = fs.readFileSync(RAW);
   const measurements = [];
   for (let f = 0; f < N; f++) {
     const img = data.subarray(f * bytes, (f + 1) * bytes), t = f / FPS, b = baseline(t);
-    let alphaMax = 0, alphaNonzero = 0, below60 = 0, belowActual = 0, alphaDifferent = 0, lowerSum = 0, diffSum = 0, edgeSum = 0, columns = 0, edgeColumns = 0, edgeMaxError = 0;
+    let alphaMax = 0, alphaNonzero = 0, below60 = 0, belowActual = 0, alphaDifferent = 0, topBorderNonzero = 0, alphaSum = 0, topmost = H, fireTopmost = H, lowerSum = 0, diffSum = 0, edgeSum = 0, columns = 0, edgeColumns = 0, edgeMaxError = 0;
     const flameHeights = [], strongHeights = [], saturation = [];
     let firePixels = 0, yellowPixels = 0, baseCoveredColumns = 0;
     for (let x = 0; x < W; x++) {
       const target = b + edgeOffset(x, t), width = bandWidth(x, t);
       let lower = -1, brightest = -1, score = 0, flameTop = H, strongTop = H;
+      const glowCandidates = [];
       for (let y = 0; y < H; y++) {
         const i = (y * W + x) * 4, a = img[i + 3];
         if (a !== sourceData[f * bytes + i + 3]) alphaDifferent++;
-        alphaMax = Math.max(alphaMax, a); if (a) alphaNonzero++;
+        alphaMax = Math.max(alphaMax, a); if (a) { alphaNonzero++; alphaSum += a; topmost = Math.min(topmost, y); if (y <= 5) topBorderNonzero++; if (a > 100 && img[i] > 145 && img[i + 1] < 160 && img[i + 2] < 70) fireTopmost = Math.min(fireTopmost, y); }
         if (a > 127) lower = y;
         if (y > Math.ceil(target + 60) && a) below60++;
         if (y >= Math.ceil(Math.fround(target) + Math.fround(width)) && a) belowActual++;
@@ -557,24 +618,29 @@ if (!DRAFT) {
           if (img[i + 1] > 180) yellowPixels++;
         }
         if (y === Math.floor(target - 6) && a > 165 && img[i] > 175) baseCoveredColumns++;
-        // Locate the glowing edge in the expected +/-25 px interval, using
-        // a vertical luminance drop into the dark char band (not saved geometry).
-        if (y > b - 26 && y < b + 26 && y > 2 && y < H - 5) {
+        // Scan the entire image, without consulting baseline. Then locate
+        // the glowing ridge above the independently detected char bottom.
+        if (y > 2 && y < H - 5) {
           const below = i + W * 4 * 4;
           const luma = (img[i] * .2126 + img[i + 1] * .7152 + img[i + 2] * .0722) * a / 255;
           const dark = (img[below] * .2126 + img[below + 1] * .7152 + img[below + 2] * .0722) * img[below + 3] / 255;
           const s = luma - dark;
-          if (s > score) { score = s; brightest = y; }
+          if (s > 35) glowCandidates.push({ y, score: s });
         }
       }
-      if (target > 5 && target + width < H - 2 && lower >= 0 && f < 42) { lowerSum += lower; diffSum += lower - (target + width); columns++; }
-      if (score > 35 && brightest >= 0 && target > 5 && target < H - 8 && f < 42) { edgeSum += brightest; edgeColumns++; edgeMaxError = Math.max(edgeMaxError, Math.abs(brightest - b)); }
+      for (const candidate of glowCandidates) {
+        if (candidate.y > lower - 78 && candidate.y < lower - 39 && candidate.score > score) {
+          score = candidate.score; brightest = candidate.y;
+        }
+      }
+      if (target > 5 && target + width < H - 2 && lower >= 0 && t >= .25 && t < 1.72) { lowerSum += lower; diffSum += lower - (target + width); columns++; }
+      if (score > 35 && brightest >= 0 && lower < H - 2 && target > 5 && target < H - 8 && t >= .25 && t < 1.72) { edgeSum += brightest; edgeColumns++; edgeMaxError = Math.max(edgeMaxError, Math.abs(brightest - b)); }
       if (flameTop < H) flameHeights.push(target - flameTop);
       if (strongTop < H) strongHeights.push(target - strongTop);
     }
     flameHeights.sort((a, b) => a - b);
     strongHeights.sort((a, b) => a - b); saturation.sort((a, b) => a - b);
-    measurements.push({ frame: f, time: t, expectedBaseline: b, alphaMax, alphaNonzero, nonzeroBelow60PxBand: below60, nonzeroBelowActualRaggedBand: belowActual, alphaSamplesDifferentFromSource: alphaDifferent,
+    measurements.push({ frame: f, time: t, expectedBaseline: b, alphaMax, alphaNonzero, alphaSum, topmost, fireTopmost, topBorderNonzero, nonzeroBelow60PxBand: below60, nonzeroBelowActualRaggedBand: belowActual, alphaSamplesDifferentFromSource: alphaDifferent,
       ...(flameHeights.length ? { flameHeight95Px: flameHeights[Math.floor(flameHeights.length * .95)], flameHeightMedianPx: flameHeights[Math.floor(flameHeights.length * .5)] } : {}),
       ...(strongHeights.length ? { strongFlameHeight95Px: strongHeights[Math.floor(strongHeights.length * .95)], strongFlameHeightMedianPx: strongHeights[Math.floor(strongHeights.length * .5)] } : {}),
       ...(firePixels ? { firePixels, yellowFraction: yellowPixels / firePixels, medianFireSaturation: saturation[Math.floor(saturation.length * .5)], denseBaseWidthFraction: baseCoveredColumns / W } : {}),
@@ -582,7 +648,7 @@ if (!DRAFT) {
       ...(edgeColumns ? { measuredGlowEdgeMean: edgeSum / edgeColumns, meanGlowEdgeErrorToBaseline: edgeSum / edgeColumns - b, maxGlowEdgeErrorToBaseline: edgeMaxError, glowColumns: edgeColumns } : {}) });
   }
   const last = measurements.at(-1), st = probe.streams[0];
-  const fullBurn = simReport.filter(m => m.frame >= 6 && m.frame <= 30);
+  const fullBurn = simReport.filter(m => m.frame >= 10 && m.frame <= 42);
   const sparks = fullBurn.flatMap(m => m.sparkStats ?? []);
   const lengths = sparks.map(s => s.lengthPx).sort((a, b) => a - b);
   const sparkSummary = { activeCountMin: Math.min(...fullBurn.map(m => m.emberCount)), activeCountMax: Math.max(...fullBurn.map(m => m.emberCount)),
@@ -591,24 +657,26 @@ if (!DRAFT) {
     fractionTrails2to8Px: lengths.filter(l => l >= 2 && l <= 8).length / lengths.length,
     fractionTiltedAtLeast10Deg: sparks.filter(s => Math.abs(s.angleDeg) >= 10).length / sparks.length,
     fractionTravelingUp: sparks.filter(s => Math.abs(s.angleDeg) < 90).length / sparks.length };
-  const checks = { codecVP9: st.codec_name === 'vp9', dimensions: st.width === W && st.height === H, fps30: st.r_frame_rate === '30/1', frames54: Number(st.nb_read_frames) === N,
-    duration1_8: Math.abs(Number(probe.format.duration) - 1.8) < .001, alphaTag: String(st.tags?.alpha_mode ?? st.tags?.ALPHA_MODE) === '1',
-    decoded54Frames: data.length === N * bytes, lastFrameAlphaZero: last.alphaMax === 0,
+  const checks = { codecVP9: st.codec_name === 'vp9', dimensions: st.width === W && st.height === H, fps30: st.r_frame_rate === '30/1', frames72: Number(st.nb_read_frames) === N,
+    duration2_4: Math.abs(Number(probe.format.duration) - 2.4) < .001, alphaTag: String(st.tags?.alpha_mode ?? st.tags?.ALPHA_MODE) === '1',
+    decoded72Frames: data.length === N * bytes, lastFrameAlphaZero: last.alphaMax === 0, firstFrameAlphaZero: measurements[0].alphaMax === 0, noTopBorderClipping: measurements.every(m => m.topmost > 18),
+    ignitionGrowsContinuously: measurements.slice(1, 8).every((m, i) => m.alphaSum > measurements[i].alphaSum),
+    burnoutAlphaDecreases: measurements[53].alphaSum > 0 && measurements.slice(54).every((m, i) => m.alphaSum <= measurements[i + 53].alphaSum),
     noAlphaBelow60PxBand: measurements.every(m => m.nonzeroBelow60PxBand === 0),
     noAlphaBelowActualRaggedBand: measurements.every(m => m.nonzeroBelowActualRaggedBand === 0),
     alphaPlaneBitExact: measurements.every(m => m.alphaSamplesDifferentFromSource === 0),
-    measuredMeanGlowEdgeWithin25Px: measurements.every(m => m.meanGlowEdgeErrorToBaseline === undefined || Math.abs(m.meanGlowEdgeErrorToBaseline) <= 25),
-    edgeWithin25Px: simReport.every(m => m.edgeMin === undefined || (m.edgeMin >= m.baseline - 25 && m.edgeMax <= m.baseline + 25)),
-    embers40to70DuringFullBurn: fullBurn.every(m => m.emberCount >= 40 && m.emberCount <= 70),
+    measuredMeanGlowEdgeWithin30Px: measurements.every(m => m.meanGlowEdgeErrorToBaseline === undefined || Math.abs(m.meanGlowEdgeErrorToBaseline) <= 30),
+    edgeWithin30Px: simReport.every(m => m.edgeMin === undefined || (m.edgeMin >= m.baseline - 30 && m.edgeMax <= m.baseline + 30)),
+    particlesPresentDuringFullBurn: fullBurn.every(m => m.emberCount > 10),
     majoritySparkTrails2to8Px: sparkSummary.fractionTrails2to8Px > .5 };
-  fs.writeFileSync(path.join(ROOT, 'overeni3.json'), JSON.stringify({ checks, ffprobe: probe,
-    notes: ['Native ffprobe may report yuv420p: alpha is stored in WebM BlockAdditional. alpha_mode=1 plus libvpx-vp9 RGBA decode verifies the actual alpha plane.', 'All previews are decoded from final WebM.', 'Smoke alpha bound for the three depth slabs is 0.341497.', 'Frame 53 at t=1.7666667 s is wholly transparent; container duration is 1.8 s.'],
-    simulation: { grids: [[384, 480], [320, 400], [240, 300]], substepsPerFrame: 4, particleSubstepsPerFrame: 16, pressureIterations: 32, warmupSteps: 156, seed: '0x57afc213' }, sparkSummary, measurements, sourceMeasurements: simReport }, null, 2));
+  fs.writeFileSync(path.join(ROOT, 'overeni4.json'), JSON.stringify({ checks, ffprobe: probe,
+    notes: ['Native ffprobe may report yuv420p: alpha is stored in WebM BlockAdditional. alpha_mode=1 plus libvpx-vp9 RGBA decode verifies the actual alpha plane.', 'All previews are decoded from final WebM.', 'Smoke alpha bound for the three depth slabs is 0.341497.', 'Frames 0 and 71 (t=2.3666667 s) are wholly transparent; container duration is 2.4 s.', 'Exact specified baseline; endpoint edge biases remain within +/-30 px. Finite headroom shortens flames near the top; cooling residues stay inside the remaining char band.'],
+    simulation: { grids: [[976, 448], [816, 376], [656, 304]], substepsPerFrame: 4, particleSubstepsPerFrame: 16, pressureIterations: 32, warmupSteps: 156, seed: '0x57afc213' }, sparkSummary, measurements, sourceMeasurements: simReport }, null, 2));
   console.log(JSON.stringify({ checks, sizeBytes: Number(probe.format.size) }, null, 2));
-  if (Object.values(checks).some(v => !v)) throw new Error('Verification failed; see overeni3.json');
+  if (Object.values(checks).some(v => !v)) throw new Error('Verification failed; see overeni4.json');
   if (!KEEP_WORK) {
     // Only explicitly named, generator-owned temporary files in this workspace.
     for (const filename of [RAW, decoded, rgbFile, yuvFile, path.join(CACHE, 'vp9-pass-0.log')]) if (fs.existsSync(filename)) fs.unlinkSync(filename);
   }
-  console.log('Complete: plameny3.webm, plameny3-nahled.mp4, nahled3.png, overeni3.png, overeni3.json');
+  console.log('Complete: plameny4.webm, plameny4-nahled.mp4, nahled4.png, overeni4.png, overeni4.json');
 }

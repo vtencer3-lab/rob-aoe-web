@@ -1928,48 +1928,35 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-promena .promena-poznamka { margin: 0; padding: 0.45rem 1rem; font-size: 1.05rem; font-weight: 700; color: var(--zlato-svetle); background: color-mix(in srgb, var(--drevo-tmave) 94%, transparent); border: 1px solid var(--zlato-tmave); border-radius: 3px; box-shadow: 0 4px 18px color-mix(in srgb, var(--obrys) 80%, transparent); animation: vznik var(--prechod) var(--krivka); }
 .karta-promena .promena-tlacitko { font-size: 1.3rem; padding: 0.9rem 1.6rem; animation: zare-rozdat 2s ease-in-out infinite; }
 /* Hoří: maska posouvaná z JS podle času videa (`--hori` = čelo ohně od
-   spodu, `celoOhne`); pod čelem je ve videu ~6 % výšky spálený pás, karta
+   spodu, `celoOhne`); pod čelem je ve videu ~4 % výšky spálený pás, karta
    pod ním zmizí. Filtr je pevný — animovaný se trhal. */
 .karta-promena.hori .karta-promena-obsah {
-  -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) - 6%), black calc(var(--hori) + 1%));
-  mask-image: linear-gradient(to top, transparent calc(var(--hori) - 6%), black calc(var(--hori) + 1%));
+  -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) - 4%), black calc(var(--hori) + 1%));
+  mask-image: linear-gradient(to top, transparent calc(var(--hori) - 4%), black calc(var(--hori) + 1%));
   filter: brightness(0.55) sepia(0.5);
 }
-/* Video plamenů přesně přes kartu, roztažené (fill): souřadnice čela ve
-   videu pak odpovídají masce i u karty jiného poměru stran než 3 : 4.
-   Do kliknutí skryté, ale načtené. */
 /* Záře nad čelem ohně (vrstva pod videem, jde s `--hori`) — místo
-   animovaného filtru na celé kartě, který se trhal. Záře kolem celého
-   obdélníku karty byla zrušena (uživatel 4. 10. 2026: obrysovala i už
-   spálenou část). Karta
-   navíc během hoření postupně bledne (opacity běží mimo překreslování). */
-/* Vrstva záře je vyšší než karta (nahoru o 40 % výšky karty, do stran o 5 %),
-   ať ji při stoupání ohně neusekne horní hrana karty (uživatel 4. 10. 2026);
-   proto se `--hori` (v jednotkách výšky karty) dělí 1,4. Boky i vršek se
-   plynule vytrácí maskou. */
-.karta-promena .zar { --h: calc(var(--hori) / 1.4); position: absolute; top: -40%; bottom: 0; left: -5%; right: -5%; pointer-events: none; z-index: 1; visibility: hidden; mix-blend-mode: screen;
+   animovaného filtru na celé kartě, který se trhal; boky se vytrácí. Záře
+   kolem celého obdélníku karty byla zrušena (uživatel 4. 10. 2026:
+   obrysovala i už spálenou část). Karta během hoření postupně bledne
+   (opacity běží mimo překreslování). */
+.karta-promena .zar { --h: var(--hori); position: absolute; inset: 0; pointer-events: none; z-index: 1; visibility: hidden; mix-blend-mode: screen;
   background: linear-gradient(to top, transparent calc(var(--h) - 5%), color-mix(in srgb, var(--ohen) 75%, transparent) calc(var(--h) - 1%), color-mix(in srgb, var(--ohen) 35%, transparent) calc(var(--h) + 7%), color-mix(in srgb, var(--ohen) 12%, transparent) calc(var(--h) + 20%), transparent calc(var(--h) + 32%)); }
 .karta-promena.hori .zar { visibility: visible; animation: nastup-ohne 0.35s ease-out;
-  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent), linear-gradient(to bottom, transparent, black 25%); -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent), linear-gradient(to bottom, transparent, black 25%); mask-composite: intersect; }
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent), linear-gradient(to bottom, transparent, black 6%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent), linear-gradient(to bottom, transparent, black 6%); mask-composite: intersect; }
 /* Hořící karta nemá rám ani pozadí panelu (uživatel 4. 10. 2026: „proč je
    furt kolem toho okna ten border“) — hoří obsah, ne obdélník. */
 .karta-promena.hori .role { border-color: transparent; background: transparent; transition: border-color var(--prechod) ease, background-color var(--prechod) ease; }
-.karta-promena.hori .karta-promena-obsah { animation: bledne 2.25s ease-in forwards; }
+.karta-promena.hori .karta-promena-obsah { animation: bledne 2.4s ease-in forwards; }
 @keyframes bledne { from { opacity: 1; } to { opacity: 0.55; } }
-/* Video plamenů přes kartu, roztažené (fill): spodek sedí se spodkem karty,
-   nahoru přesahuje o čtvrtinu výšky karty (PRESAH_PLAMENU v KartaRole.tsx),
-   ať plameny vyšlehnou i nad horní okraj, a do stran o 5 %, kde se plynule
-   vytratí — bez ostrého řezu rámem karty (uživatel 4. 10. 2026). Do
-   kliknutí skryté, ale načtené. */
-.karta-promena .plameny { position: absolute; top: -25%; bottom: 0; left: -5%; right: -5%; width: 110%; height: 125%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden;
-  /* Boky se vytrácí; nahoře (přesah nad kartou, horních 20 % videa) taky —
-     plameny nešlehají přes nadpis a sekci nad kartou (uživatel 4. 10. 2026). */
-  -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent), linear-gradient(to bottom, transparent 2%, black 22%); -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent), linear-gradient(to bottom, transparent 2%, black 22%); mask-composite: intersect; }
+/* Video plamenů na míru karty (1440×1440, uživatel 4. 10. 2026) přesně
+   přes celou kartu; oheň se v něm rozhoří i dohoří uvnitř záběru, nic
+   nevyjíždí ven. Roztažené (fill), ať čelo sedí s maskou i u jiného poměru
+   stran; boky se jemně vytrácí. Do kliknutí skryté, ale načtené. */
+.karta-promena .plameny { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent); mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent); }
 .karta-promena.hori .plameny { visibility: visible; animation: nastup-ohne 0.35s ease-out; }
-/* Dohořelo k hornímu okraji karty: oheň i záře zhasnou (ZHASINANI_MS). */
-.karta-promena.zhasina .plameny, .karta-promena.zhasina .zar { opacity: 0; transition: opacity 0.45s ease-in; }
 /* Oheň se nezjeví bliknutím, ale rozhoří (uživatel 4. 10. 2026). */
 @keyframes nastup-ohne { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {

@@ -363,12 +363,11 @@ it("hořící karta Šaška přehraje video plamenů", () => {
   expect(screen.getByTestId("promena-saska")).toHaveClass("hori");
 });
 
-it("čelo ohně: u spodku na začátku, nahoře v 1,4 s, pak nad kartou", async () => {
+it("čelo ohně: do 0,25 s u spodku, v 1 s v půlce, od 1,75 s nad kartou", async () => {
   const { celoOhne } = await import("./KartaRole.js");
-  expect(celoOhne(0)).toBeCloseTo(-0.007, 2);
-  expect(celoOhne(0.775)).toBeCloseTo(0.5, 1);
-  expect(celoOhne(1.4)).toBeCloseTo(1.007, 2);
-  expect(celoOhne(1.8)).toBeGreaterThan(1.03);
+  expect(celoOhne(0.1)).toBeLessThan(0);
+  expect(celoOhne(1.0)).toBeCloseTo(0.5, 1);
+  expect(celoOhne(1.8)).toBeGreaterThan(1);
 });
 
 it("dočasné tlačítko přehraje hoření znovu bez volání serveru", async () => {

@@ -230,39 +230,20 @@ function OdhaleneRole({ odhalene, ucastnici }: { odhalene: DiploZapas["odhaleneR
   );
 }
 
-/** O kolik výšky karty video plamenů přesahuje nad ni (CSS `.karta-promena .plameny`, top: -25 %). */
-const PRESAH_PLAMENU = 0.25;
-
-/** Plameny o něco pomaleji, než je video natočené (uživatel 4. 10. 2026: „trochu pomalejší, ne o moc“) — 1,8 s → 2,25 s. Maska jde podle času videa, sesazení zůstane. */
-const RYCHLOST_PLAMENU = 0.8;
-
-/**
- * Od jaké výšky čela (podíl výšky karty) oheň zhasíná: o něco dřív než
- * u horního okraje, ať vysoké plameny nešlehají přes sekci nad kartou;
- * zbytek karty dohoří maskou během zhasínání.
- */
-const ZHASNOUT_OD = 0.85;
-
-/** Jak dlouho oheň zhasíná, když dohoří k hornímu okraji karty (CSS `.karta-promena.zhasina`). */
-const ZHASINANI_MS = 450;
-
 /** Pojistka: kdyby video neskončilo (nenačetlo se, prohlížeč ho nepustí), Garda se ukáže i tak. */
 const POJISTKA_HORENI_MS = 3500;
 
 /**
- * Kde je čelo ohně ve videu `plameny.webm` v čase `t` (s): podíl výšky od
- * spodního okraje. Týž vzorec jako `baseline` v `nastroje/grafika/plameny.mjs`
- * (720×960, y shora): 0–0,15 s vyšlehne u spodku, do 1,4 s rovnoměrně
- * vystoupá nahoru, pak dohoří.
+ * Kde je čelo ohně ve videu `plameny.webm` v čase `t` (s): podíl výšky karty
+ * od spodního okraje. Týž vzorec jako `baseline` v `nastroje/grafika/plameny.mjs`
+ * (video na míru karty 1440×1440, 2,4 s, uživatel 4. 10. 2026): 0–0,25 s se
+ * oheň rozhoří u spodku, do 1,75 s rovnoměrně vystoupá k hornímu okraji,
+ * pak dohoří uvnitř záběru.
  */
 export function celoOhne(t: number): number {
-  const mix = (a: number, b: number, x: number) => a + (b - a) * Math.min(1, Math.max(0, x));
-  const plynule = (a: number, b: number, x: number) => {
-    const u = Math.min(1, Math.max(0, (x - a) / (b - a)));
-    return u * u * (3 - 2 * u);
-  };
-  const y = t < 0.15 ? mix(967, 949, plynule(0, 0.15, t)) : t <= 1.4 ? mix(949, -7, (t - 0.15) / 1.25) : mix(-7, -34, plynule(1.4, 1.8, t));
-  return 1 - y / 960;
+  const H = 1440;
+  const y = t < 0.25 ? H + 10 : t < 1.75 ? H + 10 + (-20 - (H + 10)) * ((t - 0.25) / 1.5) : -10;
+  return 1 - y / H;
 }
 
 /**
@@ -306,21 +287,11 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       return;
     }
     const v = video.current;
-    if (v) v.playbackRate = RYCHLOST_PLAMENU;
     void v?.play?.()?.catch?.(() => dokonci());
     let snimek = 0;
-    let zhasina: ReturnType<typeof setTimeout> | null = null;
     const tik = () => {
-      // Čelo ve videu → výška karty: video je o PRESAH_PLAMENU vyšší a spodky sedí.
-      const hori = celoOhne(v?.currentTime ?? 0) * (1 + PRESAH_PLAMENU);
-      obal.current?.style.setProperty("--hori", `${(hori * 100).toFixed(2)}%`);
-      // Karta shořela celá (čelo u horního okraje): oheň dál nestoupá, plynule
-      // zhasne a ukáže se Garda (uživatel 4. 10. 2026).
-      // Maska jede dál, ať zbytek karty dohoří i během zhasínání.
-      if (hori >= ZHASNOUT_OD && zhasina === null) {
-        obal.current?.classList.add("zhasina");
-        zhasina = setTimeout(dokonci, ZHASINANI_MS);
-      }
+      // Video leží přesně přes kartu: čelo ve videu = výška karty.
+      obal.current?.style.setProperty("--hori", `${(celoOhne(v?.currentTime ?? 0) * 100).toFixed(2)}%`);
       snimek = requestAnimationFrame(tik);
     };
     snimek = requestAnimationFrame(tik);
@@ -330,7 +301,6 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       cancelAnimationFrame(snimek);
       v?.removeEventListener("ended", dokonci);
       clearTimeout(pojistka);
-      if (zhasina !== null) clearTimeout(zhasina);
     };
   }, [hori]);
   return (
