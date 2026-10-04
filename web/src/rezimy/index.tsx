@@ -32,6 +32,11 @@ export interface RezimKlienta {
    */
   smiMluvitDoZapasu?(p: KontextZapasu): boolean;
   /**
+   * Sekce módu na stránce akce pod zápasy — pro každého, i bez přihlášení
+   * (Diplomacie: pravidla hry s mapou, uživatel 4. 10. 2026).
+   */
+  sekceAkce?(stav: AkceStavPayload): ReactNode;
+  /**
    * Samostatné stránky módu podle cesty bez základu webu (Diplomacie:
    * overlaye do OBS „/obs/mapa“, „/obs/tabulka“). Nezávisí na otevřené
    * akci — browser source načítá adresu napřímo.

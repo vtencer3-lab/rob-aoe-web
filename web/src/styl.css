@@ -2114,6 +2114,9 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .pravidla-hry h5 { margin: 0.5rem 0 0.1rem; font-size: 0.95rem; color: var(--zlato); }
 .pravidla-hry p, .pravidla-hry ul { margin: 0.2rem 0; font-size: 0.92rem; }
 .pravidla-hry ul { padding-left: 1.2rem; }
+/* Pravidla hry na stránce akce: velká mapa nahoře, kartičky po třech pod ní. */
+.pravidla-akce .pravidla-hry { margin-top: 0.4rem; }
+@media (min-width: 60rem) { .pravidla-akce .pravidla-mrizka { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 /* Pravidla v kartičkách (uživatel 4. 10. 2026), stejný panel jako cíle u mapy. */
 .pravidla-mrizka { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 0.7rem; margin: 0.6rem 0; }
 .pravidla-karta { padding: 0.4rem 0.9rem 0.6rem; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); animation: vznik var(--prechod) var(--krivka); }

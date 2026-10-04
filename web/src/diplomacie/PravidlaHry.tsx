@@ -17,10 +17,21 @@ const PORADI: Role[] = ["nastupce", "garda", "najezdnik", "sasek", "zoldak", "ka
  */
 export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
   const [otevreno, setOtevreno] = useState(false);
-  const r = verze?.rozbor ?? null;
   return (
     <Skladaci className="pravidla-hry" testId="pravidla-hry" hlava="Pravidla hry" otevreno={otevreno} onPrepnout={setOtevreno}>
-      {otevreno ? (
+      {otevreno ? <ObsahPravidel verze={verze} /> : null}
+    </Skladaci>
+  );
+}
+
+/**
+ * Tělo pravidel — kartičky (start, primární a sekundární cíle, role). Sdílí
+ * rozbalovací tahák u karty i otevřená sekce pravidel pro diváky na stránce
+ * akce (`PravidlaAkce`).
+ */
+export function ObsahPravidel({ verze }: { verze: ScenarVerze | null }) {
+  const r = verze?.rozbor ?? null;
+  return (
         <>
           {/* Kartičky jako cíle u mapy (uživatel 4. 10. 2026). Jen obecná
               pravidla — žádný postup ani role konkrétních hráčů. */}
@@ -112,8 +123,6 @@ export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
             })}
           </div>
         </>
-      ) : null}
-    </Skladaci>
   );
 }
 

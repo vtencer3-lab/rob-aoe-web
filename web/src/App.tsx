@@ -801,6 +801,8 @@ export function App() {
               má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
               karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}
           {stav ? <HistorieZapasu stav={stav} obsluha={admin ? rezieObsluha : undefined} doplnek={(zapas) => doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} /> : null}
+          {/* Sekce módu pro každého (Diplomacie: pravidla hry s mapou) — až pod zápasy. */}
+          {stav ? rk.sekceAkce?.(stav) : null}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>
