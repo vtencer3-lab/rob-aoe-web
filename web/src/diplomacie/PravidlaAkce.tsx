@@ -1,4 +1,5 @@
-import type { DiploData } from "../../../src/shared/diplomacie/typy.js";
+import type { ReactNode } from "react";
+import type { DiploData, ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { MapaScenare, popiskyStartu } from "./MapaScenare.js";
 import { ObsahPravidel } from "./PravidlaHry.js";
 
@@ -21,7 +22,21 @@ export function PravidlaAkce({ data }: { data: DiploData }) {
     <section className="pravidla-akce" data-testid="pravidla-akce">
       {/* Nadpis se zdobným podtržením jako „Přihlášení hráči“. */}
       <h3 className="nadpis-seznamu">Pravidla hry</h3>
+      <PrehledPravidel verze={verze} />
+    </section>
+  );
+}
+
+/**
+ * Velká mapa, odkaz na dokument a kartičky pravidel po třech — stejně na
+ * stránce akce pro hráče i ve správě scénáře (uživatel 4. 10. 2026).
+ * `podMapou` = co se má ukázat hned pod mapou (správa: varování rozboru).
+ */
+export function PrehledPravidel({ verze, podMapou }: { verze: ScenarVerze | null; podMapou?: ReactNode }) {
+  return (
+    <div className="prehled-pravidel">
       {verze?.rozbor ? <MapaScenare verze={verze} popisky={popiskyStartu(verze)} velikost="velka" /> : null}
+      {podMapou}
       {ODKAZ_PRAVIDEL ? (
         <p className="stred">
           <a href={ODKAZ_PRAVIDEL} target="_blank" rel="noreferrer">
@@ -32,6 +47,6 @@ export function PravidlaAkce({ data }: { data: DiploData }) {
       <div className="pravidla-hry">
         <ObsahPravidel verze={verze} />
       </div>
-    </section>
+    </div>
   );
 }

@@ -90,7 +90,7 @@ it("náhled aktivní verze a aktivace starší čitelné verze", async () => {
   await rozbal();
   expect(screen.getByRole("img", { name: "Mapa scénáře LLC v2.aoe2scenario" }).getAttribute("src")).toBe("/api/diplo/scenar/3/minimapa.webp");
   expect(screen.getAllByTestId("start")).toHaveLength(7);
-  fireEvent.click(screen.getByText("Pravidla hry"));
+  // Pravidla jsou rozložená jako pro hráče (kartičky rovnou, bez rozbalování).
   expect(screen.getByText("Zabij 650 nepratelskych jednotek")).toBeTruthy();
   expect(screen.getByText("Nejvýš 30 vesničanů")).toBeTruthy();
   const tlacitka = screen.getAllByRole("button", { name: "Nastavit jako aktivní" });

@@ -2114,9 +2114,9 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .pravidla-hry h5 { margin: 0.5rem 0 0.1rem; font-size: 0.95rem; color: var(--zlato); }
 .pravidla-hry p, .pravidla-hry ul { margin: 0.2rem 0; font-size: 0.92rem; }
 .pravidla-hry ul { padding-left: 1.2rem; }
-/* Pravidla hry na stránce akce: velká mapa nahoře, kartičky po třech pod ní. */
-.pravidla-akce .pravidla-hry { margin-top: 0.4rem; }
-@media (min-width: 60rem) { .pravidla-akce .pravidla-mrizka { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Pravidla hry (stránka akce i správa scénáře): velká mapa nahoře, kartičky po třech pod ní. */
+.prehled-pravidel .pravidla-hry { margin-top: 0.4rem; }
+@media (min-width: 60rem) { .prehled-pravidel .pravidla-mrizka { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 /* Pravidla v kartičkách (uživatel 4. 10. 2026), stejný panel jako cíle u mapy. */
 .pravidla-mrizka { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 0.7rem; margin: 0.6rem 0; }
 .pravidla-karta { padding: 0.4rem 0.9rem 0.6rem; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); animation: vznik var(--prechod) var(--krivka); }
@@ -2159,11 +2159,6 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .sprava-scenare form input { flex: 1 1 8rem; min-width: 0; }
 .sprava-scenare form .varovani, .sprava-scenare form .vysledek { flex-basis: 100%; margin: 0; }
 .sprava-scenare .varovani { cursor: auto; margin-left: 0; }
-.nahled-scenare { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; align-items: flex-start; margin: 0.6rem 0; }
-.nahled-scenare .mapa-scenare { margin: 0; }
-.nahled-scenare .cile { flex: 1 1 14rem; min-width: 0; }
-.nahled-scenare h4 { margin: 0 0 0.2rem; font-size: 1rem; color: var(--zlato); }
-.nahled-scenare ul { margin: 0; padding-left: 1.2rem; }
 .verze-scenare { list-style: none; margin: 0.6rem 0 0; padding: 0; }
 .verze-scenare li { padding: 0.3rem 0; border-top: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); color: var(--tlumene); }
 .verze-scenare li.aktivni { color: var(--text); }
@@ -3073,7 +3068,7 @@ body.bez-scrollu { overflow: hidden; }
 /* Hlášky: chyba nahoře na stránce a u pole, ztráta spojení, výsledek nahrání scénáře. */
 main > .chyba, main > .spojeni, .chyba-pole, p.vysledek, .hledani-lobby .potvrzeno, .hledani-lobby .chyba,
 /* Chat, karta statistik pod kurzorem, správa scénáře. */
-.chat .zpravy li.zprava, .chat .odpoved-lista, .staty-hrace, .nahled-scenare, .verze-scenare li,
+.chat .zpravy li.zprava, .chat .odpoved-lista, .staty-hrace, .prehled-pravidel, .verze-scenare li,
 /* Diplomacie: věta o Nástupci a čekání na kartě role, stavy pultu GM
    (příprava → losováno → rozesláno) a to, co se v tabulce po rozeslání
    promění z roletky v text. Popisek stavu v záhlaví pultu má v PultGm.tsx

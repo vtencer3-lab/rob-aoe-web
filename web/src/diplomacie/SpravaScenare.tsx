@@ -4,8 +4,7 @@ import type { Hlidej } from "../rezimy/index.js";
 import { Potvrzeni } from "../views/Potvrzeni.js";
 import { Skladaci } from "../views/Skladaci.js";
 import { diploApi } from "./api.js";
-import { MapaScenare, popiskyStartu } from "./MapaScenare.js";
-import { PravidlaHry } from "./PravidlaHry.js";
+import { PrehledPravidel } from "./PravidlaAkce.js";
 
 /**
  * Kopii pro hru jde stáhnout, dokud přibalení sondy neselhalo. Zastaralou
@@ -153,19 +152,17 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
         ) : null}
       </form>
       {aktivni?.rozbor ? (
-        <div className="nahled-scenare">
-          <MapaScenare verze={aktivni} popisky={popiskyStartu(aktivni)} />
-          {/* Tatáž pravidla, jaká uvidí hráči na kartě (cíle, suroviny,
-              limity, vítězství) — autor hned vidí, co web ze souboru přečetl. */}
-          <div className="cile">
-            <PravidlaHry verze={aktivni} />
-            {aktivni.rozbor.varovani.map((v) => (
-              <p key={v} className="varovani">
-                {v}
-              </p>
-            ))}
-          </div>
-        </div>
+        // Stejné rozvržení jako pravidla pro hráče na stránce akce (velká
+        // mapa, kartičky po třech; uživatel 4. 10. 2026) — autor hned vidí,
+        // co web ze souboru přečetl a co uvidí hráči.
+        <PrehledPravidel
+          verze={aktivni}
+          podMapou={aktivni.rozbor.varovani.map((v) => (
+            <p key={v} className="varovani">
+              {v}
+            </p>
+          ))}
+        />
       ) : null}
       <ul className="verze-scenare">
         {/* Nejnovější nahoře i nezávisle na pořadí ze serveru. */}
