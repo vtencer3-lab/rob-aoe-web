@@ -2145,7 +2145,7 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 /* Ikonky rolí a relikvií v textech pravidel a karty (TextSIkonami). */
 .s-ikonou { white-space: nowrap; }
 .s-ikonou .swatch { margin-right: 0.2em; }
-.ikonka-textu { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 0.12em; object-fit: contain; filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--obrys) 70%, transparent)); }
+.ikonka-textu { width: 28px; height: 28px; vertical-align: -8px; margin-right: 0.12em; object-fit: contain; filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--obrys) 70%, transparent)); }
 /* Role po třech na řádek (uživatel 4. 10. 2026), na užším displeji méně. */
 @media (min-width: 60rem) { .pravidla-hry .role-mrizka { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 /* Veřejný řádek Diplomacie pod stranami zápasu (VerejnyRadek.tsx). */
