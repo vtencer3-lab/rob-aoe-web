@@ -12,17 +12,18 @@ export function redigujDiplo(data: DiploData, divakHracId: string | null, nahled
 
 /**
  * Jediná výjimka (uživatel 4. 10. 2026): kdo má právo náhledu
- * (`DIPLO_NAHLED`, rozhoduje server), dostane zápas celý — ale jen když
- * v něm nehraje. Účastnictví se bere ze sestavy (`ucastnici`); bez ní se
- * nic nepovolí.
+ * (`DIPLO_NAHLED`, rozhoduje server), dostane navíc celý zápas ve větvi
+ * `nahled` — i v zápase, kde sám hraje (moderuje jako GM). Jeho vlastní
+ * pohled zůstává redigovaný; panel náhledu je na webu sbalený, ať si nic
+ * nevyzradí omylem.
  */
-function smiNahled(z: DiploZapas, divak: string | null, nahled: boolean): boolean {
-  return nahled && divak !== null && z.ucastnici !== undefined && !z.ucastnici.includes(divak) && !z.role.some((r) => r.hracId === divak);
+function redigujZapas(cely: DiploZapas, divak: string | null, nahled: boolean): DiploZapas {
+  const z = redigujPohled(cely, divak);
+  return nahled && divak !== null && divak !== cely.gmHracId ? { ...z, nahled: cely } : z;
 }
 
-function redigujZapas(cely: DiploZapas, divak: string | null, nahled: boolean): DiploZapas {
+function redigujPohled(cely: DiploZapas, divak: string | null): DiploZapas {
   if (divak !== null && divak === cely.gmHracId) return cely;
-  if (smiNahled(cely, divak, nahled)) return { ...cely, nahled: true };
   // Data ze hry (kdo má jaký cíl, kdo je podle hry Nástupce) prozrazují
   // totéž co role — patří jen GM, v každém stavu.
   const z = { ...cely };

@@ -38,7 +38,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 | 2.4 | Garda vidí role padlých hráčů sama (`odhaleneRole`, jen role bez cíle) | S viditelnost.test „Garda vidí role padlých“ |
 | 2.5 | Žádosti o schopnosti: hráč jen své; povinný prodej vidí ten, koho se týká | S viditelnost (vidiHrac), W KartaRole |
 | 2.6 | Pingy: GM všechny, hráč jen pro všechny a pro sebe | S viditelnost.test „ping …“ |
-| 2.8 | **Náhled do cizího zápasu:** kdo je v `DIPLO_NAHLED` (env, hráčská id, teď Jouki a Tonner) a v zápase nehraje, dostane zápas celý (`nahled: true`) a pod zápasy si vybere, čí pohled vidět (karta hráče redigovaná za něj, nebo pult GM) — jen ke čtení; účastníkovi zápasu se nic nepovolí | S viditelnost.test „náhled do cizího zápasu“, W NahledHracu.test |
+| 2.8 | **Náhled zápasu (moderování):** kdo je v `DIPLO_NAHLED` (env, teď Jouki a Tonner), dostane ke každému zápasu navíc celý zápas ve větvi `nahled` — **i když v něm hraje**; jeho vlastní karta zůstává redigovaná. Panel „Náhled zápasu #N (moderování)“ pod zápasy je sbalený a obsah vykreslí až po rozbalení; výběr hráče (karta redigovaná za něj) nebo GM (pult) — jen ke čtení | S viditelnost.test „náhled zápasu pro jmenované“, W NahledHracu.test |
 | 2.7 | Před rozesláním nikdo kromě GM role nevidí | S viditelnost.test „před rozesláním …“ |
 
 ## 3. Karta hráče

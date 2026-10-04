@@ -68,10 +68,11 @@ export interface DiploZapas {
   /** Hráčská id všech účastníků zápasu (i GM) — kdo v zápase hraje; veřejné jako sestava. */
   ucastnici?: string[];
   /**
-   * Zápas je divákovi poslaný celý kvůli náhledu (`DIPLO_NAHLED`): v zápase
-   * nehraje a smí si prohlédnout pohled kteréhokoli hráče, jen ke čtení.
+   * Celý zápas (bez redakce) pro náhled (`DIPLO_NAHLED`) — jen pro jmenované,
+   * i když v zápase hrají (moderování jako GM, uživatel 4. 10. 2026). Jejich
+   * vlastní pohled (zbytek objektu) je redigovaný jako u ostatních.
    */
-  nahled?: true;
+  nahled?: DiploZapas;
   /** Žádosti o schopnosti a připomínky ze hry; GM všechny, hráč jen své žádosti. */
   schopnosti?: Schopnost[];
   /** Vlastní cíle hráče z běžící hry (panel vedle mapy na kartě); jen hráč zápasu, ne GM. */

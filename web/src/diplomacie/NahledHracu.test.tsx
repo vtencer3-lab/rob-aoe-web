@@ -11,13 +11,18 @@ const ROLE = [
   { hracId: "h4", role: "sasek" as const, cilHracId: null },
 ];
 
-// Náhled (uživatel 4. 10. 2026): jen u zápasu, který server poslal s příznakem
-// `nahled`; vybraný hráč se ukáže přesně tak, jak se vidí sám.
-it("bez příznaku náhledu nic; s ním výběr hráče a jeho karta", () => {
+// Náhled (uživatel 4. 10. 2026): jen u zápasu, ke kterému server poslal celý
+// zápas v `nahled`; sbalený, vybraný hráč se ukáže přesně tak, jak se vidí sám.
+it("bez náhledu nic; s ním sbalený panel, výběr hráče a jeho karta", () => {
   const data = stavDiplo("rozeslano", ROLE);
   const { rerender } = render(<NahledHracu zapas={zapas} data={data} />);
   expect(screen.queryByTestId("nahled-hracu")).toBeNull();
-  rerender(<NahledHracu zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, nahled: true as const })) }} />);
+  // Server pošle vlastní pohled redigovaný a celý zápas zvlášť v `nahled`.
+  const plny = data.zapasy[0]!;
+  rerender(<NahledHracu zapas={zapas} data={{ ...data, zapasy: [{ ...plny, role: [], nahled: plny }] }} />);
+  // Sbalené: obsah v DOM není, dokud se panel nerozbalí.
+  expect(screen.queryByRole("button", { name: /Čí pohled zobrazit/ })).toBeNull();
+  fireEvent.click(screen.getByText(/Náhled zápasu/));
   fireEvent.click(screen.getByRole("button", { name: /Čí pohled zobrazit/ }));
   fireEvent.click(screen.getByRole("option", { name: /Hráč 2/ }));
   fireEvent.click(screen.getByRole("button", { name: "Tvá tajná role" }));

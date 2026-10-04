@@ -153,25 +153,26 @@ it("Garda vidí role padlých, bez cílů; jiná role ne", () => {
   expect("odhaleneRole" in redigujDiplo(d, "z").zapasy[0]!).toBe(false);
 });
 
-// Náhled (uživatel 4. 10. 2026): jmenovaný divák (DIPLO_NAHLED) vidí zápas,
-// ve kterém nehraje, celý — v zápase, kde hraje, jen svou roli.
-describe("náhled do cizího zápasu", () => {
+// Náhled (uživatel 4. 10. 2026): jmenovaný (DIPLO_NAHLED) dostane navíc celý
+// zápas ve větvi `nahled` — i když hraje; jeho vlastní pohled zůstane redigovaný.
+describe("náhled zápasu pro jmenované", () => {
   const hra = { cas: 95, prijato: "2026-10-04T20:00:00.000Z", rozdano: true, nastupceHracId: "n", hraci: [{ hracId: "n", cil: null, relikvie: 0, zije: true }] };
-  const sUcastniky = (): DiploData => ({ ...data("rozeslano"), zapasy: data("rozeslano").zapasy.map((z) => ({ ...z, hra, ucastnici: [GM, ...role.map((r) => r.hracId)] })) });
+  const sHrou = (): DiploData => ({ ...data("rozeslano"), zapasy: data("rozeslano").zapasy.map((z) => ({ ...z, hra })) });
 
-  it("s právem a mimo zápas: celý zápas s příznakem náhledu", () => {
-    const z = redigujDiplo(sUcastniky(), "jouki", true).zapasy[0]!;
-    expect(z.nahled).toBe(true);
-    expect(z.role).toEqual(role);
-    expect(z.hra).toEqual(hra);
+  it("mimo zápas: vlastní pohled jako divák, celý zápas v náhledu", () => {
+    const z = redigujDiplo(sHrou(), "jouki", true).zapasy[0]!;
+    expect(z.role).toEqual([]);
+    expect(z.nahled!.role).toEqual(role);
+    expect(z.nahled!.hra).toEqual(hra);
   });
-  it("s právem, ale v zápase hraje: jen vlastní role", () => {
-    const z = redigujDiplo(sUcastniky(), "k", true).zapasy[0]!;
-    expect("nahled" in z).toBe(false);
+  it("v zápase hraje: vlastní karta jen s jeho rolí, náhled celý", () => {
+    const z = redigujDiplo(sHrou(), "k", true).zapasy[0]!;
     expect(z.role).toEqual([role.find((r) => r.hracId === "k")]);
+    expect("hra" in z).toBe(false);
+    expect(z.nahled!.role).toEqual(role);
   });
-  it("bez práva nic, a bez známé sestavy taky nic", () => {
-    expect("nahled" in redigujDiplo(sUcastniky(), "jouki", false).zapasy[0]!).toBe(false);
-    expect("nahled" in redigujDiplo(data("rozeslano"), "jouki", true).zapasy[0]!).toBe(false);
+  it("bez práva náhled není; GM ho nepotřebuje", () => {
+    expect("nahled" in redigujDiplo(sHrou(), "jouki", false).zapasy[0]!).toBe(false);
+    expect("nahled" in redigujDiplo(sHrou(), GM, true).zapasy[0]!).toBe(false);
   });
 });
