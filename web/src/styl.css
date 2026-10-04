@@ -153,7 +153,11 @@ html.obs, html.obs.pozadi-puvodni, html.obs.pozadi-nove { background: transparen
 html.obs body::before { content: none; }
 .obs-overlay { max-width: none; margin: 0; padding: 0; }
 .obs-mapa .mapa-scenare.velka { --ram: 0px; width: min(100vw, 100vh); margin: 0; border: 0; border-image: none; }
-.obs-tabulka { padding: 0.6rem 1rem; border: 1px solid var(--zlato-tmave); border-radius: 4px; background: color-mix(in srgb, var(--drevo-tmave) 88%, transparent); font-size: 1.15rem; }
+/* Tabulka v OBS na stejné dřevěné desce s rámem jako panely webu (uživatel
+   4. 10. 2026) — čitelná na jakémkoli pozadí vysílání. Rám a výplň z
+   pravidla panelů výš; tady jen písmo a žádný vnější okraj. */
+.obs-tabulka { font-size: 1.15rem; }
+.obs-overlay.obs-tabulka { margin: 0; }
 .obs-tabulka .tabulka-roli { max-width: none; margin: 0; }
 .volba-pozadi { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
 .volba-pozadi > span { color: var(--tlumene); margin-right: 0.2rem; }
@@ -583,7 +587,7 @@ main > .prazdno::after {
 /* Rám panelu je devítidílný obrázek (`nastroje/grafika/devitidil.py`): rohy
    se nekreslí znovu, strany se opakují. Výplň drží `background-clip:
    padding-box`, aby tmavé dřevo nevykukovalo zpod průhledných rohů rámu. */
-.karta, .zapas, .host, .sprava-akce, .sprava-scenare, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka, .pravidla-akce {
+.karta, .zapas, .host, .sprava-akce, .sprava-scenare, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka, .pravidla-akce, .obs-tabulka {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
   border-radius: 0;
