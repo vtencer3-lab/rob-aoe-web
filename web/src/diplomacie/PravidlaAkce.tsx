@@ -17,10 +17,10 @@ const ODKAZ_PRAVIDEL: string | null = null;
 export function PravidlaAkce({ data }: { data: DiploData }) {
   const verze = data.aktivni;
   return (
-    <section className="sekce-krok pravidla-akce" data-testid="pravidla-akce">
-      <header className="zahlavi-sekce">
-        <h3>Pravidla hry</h3>
-      </header>
+    // Deska s rámem jako panel přihlášených hráčů (uživatel 4. 10. 2026).
+    <section className="pravidla-akce" data-testid="pravidla-akce">
+      {/* Nadpis se zdobným podtržením jako „Přihlášení hráči“. */}
+      <h3 className="nadpis-seznamu">Pravidla hry</h3>
       {verze?.rozbor ? <MapaScenare verze={verze} popisky={popiskyStartu(verze)} velikost="velka" /> : null}
       {ODKAZ_PRAVIDEL ? (
         <p className="stred">
