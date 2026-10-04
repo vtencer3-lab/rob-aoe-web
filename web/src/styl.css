@@ -2115,6 +2115,14 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .pravidla-hry h5 { margin: 0.5rem 0 0.1rem; font-size: 0.95rem; color: var(--zlato); }
 .pravidla-hry p, .pravidla-hry ul { margin: 0.2rem 0; font-size: 0.92rem; }
 .pravidla-hry ul { padding-left: 1.2rem; }
+/* Pravidla v kartičkách (uživatel 4. 10. 2026), stejný panel jako cíle u mapy. */
+.pravidla-mrizka { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 0.7rem; margin: 0.6rem 0; }
+.pravidla-karta { padding: 0.4rem 0.9rem 0.6rem; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); animation: vznik var(--prechod) var(--krivka); }
+.pravidla-karta h4 { margin: 0.3rem 0 0.3rem; color: var(--zlato); }
+.pravidla-hry .pravidla-nadpis { margin: 1rem 0 0.2rem; }
+.pravidla-role { display: flex; gap: 0.7rem; align-items: flex-start; }
+.pravidla-role .znak-role { width: 56px; height: 56px; flex: none; margin-top: 0.2rem; filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--obrys) 75%, transparent)); }
+.pravidla-role h5 { margin-top: 0.2rem; }
 /* Veřejný řádek Diplomacie pod stranami zápasu (VerejnyRadek.tsx). */
 .diplo-radek { color: var(--zlato-svetle); font-size: 0.9rem; }
 /* Stažení scénáře pro hosta (StazeniScenare.tsx) na konci kroku „Zakládáš!“:

@@ -6,7 +6,7 @@ import { PravidlaHry } from "./PravidlaHry.js";
 it("pravidla vypíšou cíle s čísly ze scénáře a limity", () => {
   render(<PravidlaHry verze={verze} />);
   fireEvent.click(screen.getByText("Pravidla hry"));
-  expect(screen.getByText(/zabij 650 nepratelskych jednotek/)).toBeTruthy();
+  expect(screen.getByText(/Zabij 650 nepratelskych jednotek/)).toBeTruthy();
   expect(screen.getByText(/Nejvýš 30 vesničanů/)).toBeTruthy();
   expect(screen.getByText("Nástupce císaře")).toBeTruthy();
   expect(screen.getByText(/Vlastní podmínky scénáře/)).toBeTruthy();

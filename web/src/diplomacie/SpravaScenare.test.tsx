@@ -91,7 +91,7 @@ it("náhled aktivní verze a aktivace starší čitelné verze", async () => {
   expect(screen.getByRole("img", { name: "Mapa scénáře LLC v2.aoe2scenario" }).getAttribute("src")).toBe("/api/diplo/scenar/3/minimapa.webp");
   expect(screen.getAllByTestId("start")).toHaveLength(7);
   fireEvent.click(screen.getByText("Pravidla hry"));
-  expect(screen.getByText("zabij 650 nepratelskych jednotek")).toBeTruthy();
+  expect(screen.getByText("Zabij 650 nepratelskych jednotek")).toBeTruthy();
   expect(screen.getByText("Nejvýš 30 vesničanů")).toBeTruthy();
   const tlacitka = screen.getAllByRole("button", { name: "Nastavit jako aktivní" });
   expect(tlacitka).toHaveLength(1);
