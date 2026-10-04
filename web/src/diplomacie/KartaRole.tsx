@@ -263,6 +263,7 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
         {children}
       </div>
       {/* Plameny přes kartu (video s průhledností); načtené hned, ať po kliknutí naběhnou bez zpoždění. */}
+      <div className="zar" aria-hidden="true" />
       <video ref={video} className="plameny" src={PLAMENY} muted playsInline preload="auto" aria-hidden="true" data-testid="plameny" />
       {hori ? null : (
         <button type="button" className="primarni promena-tlacitko" onClick={() => setHori(true)}>
