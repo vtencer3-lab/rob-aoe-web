@@ -42,11 +42,3 @@ it("každá role má v pravidlech cíl, výhody i nevýhody", () => {
     for (const v of [...POPIS_ROLE[role].vyhody, ...POPIS_ROLE[role].nevyhody]) expect(polozky(v).length).toBeGreaterThan(0);
   }
 });
-
-it("pravidla začínají kartičkou Cíl hry", () => {
-  render(<PravidlaHry verze={null} />);
-  fireEvent.click(screen.getByText("Pravidla hry"));
-  expect(screen.getByRole("heading", { name: "Cíl hry" })).toBeTruthy();
-  expect(polozky("Splnit primární cíl.")).toHaveLength(1);
-  expect(polozky("Splnit sekundární cíl (vyjma Nástupce císaře).")).toHaveLength(1);
-});

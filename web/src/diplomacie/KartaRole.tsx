@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NAZEV_ROLE, POPIS_ROLE } from "../../../src/shared/diplomacie/role.js";
-import type { DiploData, DiploZapas, MojeHra, PingNaMape, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
+import type { DiploData, DiploZapas, PingNaMape, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
 import type { ZapasView } from "../../../src/shared/types.js";
 import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
@@ -80,11 +80,7 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
   // Šašek, kterému padla Garda (uživatel 3. 10. 2026): zvon, ať se podívá na
   // web, karta Šaška ztmavne a čeká na klik; pak shoří a objeví se Garda.
   const ja_ = d?.role.find((r) => r.hracId === ja);
-  // DOČASNÉ (uživatel 4. 10. 2026, ladění animace hoření): proměněný Šašek
-  // si může hoření přehrát znovu jen u sebe, server se nemění. Před mergem
-  // do dev odstranit (docs/diplomacie-kontrolni-seznam.md, bod 4.7).
-  const [ladeniHoreni, setLadeniHoreni] = useState(false);
-  const promena = (ja_?.puvodniRole === "sasek" && ja_.promenaVidena === false) || ladeniHoreni;
+  const promena = ja_?.puvodniRole === "sasek" && ja_.promenaVidena === false;
   const drivPromena = useRef<boolean | undefined>(undefined);
   useEffect(() => {
     const predtim = drivPromena.current;
@@ -111,24 +107,14 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
             Nástupcem císaře je <strong>{d.nastupceHracId ? <JmenoUcastnika ucastnici={zapas.ucastnici} hracId={d.nastupceHracId} /> : "?"}</strong>.
           </p>
           {promena ? (
-            <PromenaSaska key={String(ladeniHoreni)} onHotovo={() => (ladeniHoreni ? setLadeniHoreni(false) : void hlidej(() => diploApi.promenaVidena(zapas.id)))}>
-              {/* Hoří celá karta Šaška i s mapou a cíli (uživatel 4. 10. 2026);
-                  bez dat ze hry při ladění ukázkové hodnoty. */}
-              <TeloKarty zapas={zapas} d={ladeniHoreni && !d.mojeHra ? { ...d, mojeHra: UKAZKOVA_HRA } : d} moje={{ ...moje, role: "sasek" }} verze={verze} hlidej={hlidej} />
+            <PromenaSaska onHotovo={() => void hlidej(() => diploApi.promenaVidena(zapas.id))}>
+              {/* Hoří celá karta Šaška i s mapou a cíli (uživatel 4. 10. 2026). */}
+              <TeloKarty zapas={zapas} d={d} moje={{ ...moje, role: "sasek" }} verze={verze} hlidej={hlidej} />
             </PromenaSaska>
           ) : (
-          <>
-          {ja_?.puvodniRole === "sasek" ? (
-            <p className="stred ladeni-horeni">
-              <button type="button" onClick={() => setLadeniHoreni(true)}>
-                Přehrát hoření znovu (dočasné, ladění)
-              </button>
-            </p>
-          ) : null}
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />} pamet={`diplo-karta-${zapas.id}`}>
             <TeloKarty zapas={zapas} d={d} moje={moje} verze={verze} hlidej={hlidej} />
           </Zakryti>
-          </>
           )}
         </>
       )}
@@ -155,17 +141,6 @@ function TeloKarty({ zapas, d, moje, verze, hlidej }: { zapas: ZapasView; d: Dip
     </>
   );
 }
-
-/** DOČASNÉ (ladění hoření): ukázkový postup Šaška, když ze hry nic nechodí. */
-const UKAZKOVA_HRA: MojeHra = {
-  cas: 1834,
-  prijato: "2026-10-04T12:00:00.000Z",
-  rozdano: true,
-  cil: { text: "zkonvertovano : {} /99", limit: 99, hodnota: 37 },
-  relikvie: 3,
-  drzeni: 0,
-  sledovani: [],
-};
 
 /**
  * Role prohrává s pádem jiného hráče (pravidla): Žoldák se svým pokrevním
