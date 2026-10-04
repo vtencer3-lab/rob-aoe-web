@@ -230,6 +230,10 @@ function OdhaleneRole({ odhalene, ucastnici }: { odhalene: DiploZapas["odhaleneR
   );
 }
 
+/** Od jaké výšky čela (podíl výšky karty) se oheň vypaří, a jak dlouho (CSS `.karta-promena.vyparuje`). */
+const VYPARIT_OD = 0.85;
+const VYPAROVANI_MS = 450;
+
 /** Pojistka: kdyby video neskončilo (nenačetlo se, prohlížeč ho nepustí), Garda se ukáže i tak. */
 const POJISTKA_HORENI_MS = 3500;
 
@@ -289,9 +293,17 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
     const v = video.current;
     void v?.play?.()?.catch?.(() => dokonci());
     let snimek = 0;
+    let vyparuje: ReturnType<typeof setTimeout> | null = null;
     const tik = () => {
       // Video leží přesně přes kartu: čelo ve videu = výška karty.
-      obal.current?.style.setProperty("--hori", `${(celoOhne(v?.currentTime ?? 0) * 100).toFixed(2)}%`);
+      const cel = celoOhne(v?.currentTime ?? 0);
+      obal.current?.style.setProperty("--hori", `${(cel * 100).toFixed(2)}%`);
+      // U horního okraje se oheň ve videu slisuje — vypaří se dřív a karta
+      // mezitím dohoří maskou.
+      if (cel >= VYPARIT_OD && vyparuje === null) {
+        obal.current?.classList.add("vyparuje");
+        vyparuje = setTimeout(dokonci, VYPAROVANI_MS);
+      }
       snimek = requestAnimationFrame(tik);
     };
     snimek = requestAnimationFrame(tik);
@@ -301,6 +313,7 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       cancelAnimationFrame(snimek);
       v?.removeEventListener("ended", dokonci);
       clearTimeout(pojistka);
+      if (vyparuje !== null) clearTimeout(vyparuje);
     };
   }, [hori]);
   return (
@@ -309,7 +322,6 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
         {children}
       </div>
       {/* Plameny přes kartu (video s průhledností); načtené hned, ať po kliknutí naběhnou bez zpoždění. */}
-      <div className="zar" aria-hidden="true" />
       <video ref={video} className="plameny" src={PLAMENY} muted playsInline preload="auto" aria-hidden="true" data-testid="plameny" />
       {hori ? null : (
         <div className="promena-vyzva" style={stredRole === null ? undefined : { top: `${stredRole}px` }}>
