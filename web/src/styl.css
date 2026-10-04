@@ -1924,7 +1924,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Vystředění přes `transform`, ne `translate`: stisk tlačítka (globální
    :active) nastavuje `translate` a tlačítko pak odskočilo na bok. */
 .karta-promena .promena-vyzva { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: max-content; max-width: 90%; text-align: center; }
-.karta-promena .promena-poznamka { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--zlato-svetle); text-shadow: 0 1px 3px var(--obrys), 0 0 10px var(--obrys); animation: vznik var(--prechod) var(--krivka); }
+/* Poznámka na vlastním tmavém podkladu — přes ztlumený text karty se špatně četla (uživatel 4. 10. 2026). */
+.karta-promena .promena-poznamka { margin: 0; padding: 0.45rem 1rem; font-size: 1.05rem; font-weight: 700; color: var(--zlato-svetle); background: color-mix(in srgb, var(--drevo-tmave) 94%, transparent); border: 1px solid var(--zlato-tmave); border-radius: 3px; box-shadow: 0 4px 18px color-mix(in srgb, var(--obrys) 80%, transparent); animation: vznik var(--prechod) var(--krivka); }
 .karta-promena .promena-tlacitko { font-size: 1.3rem; padding: 0.9rem 1.6rem; animation: zare-rozdat 2s ease-in-out infinite; }
 /* Hoří: maska posouvaná z JS podle času videa (`--hori` = čelo ohně od
    spodu, `celoOhne`); pod čelem je ve videu ~6 % výšky spálený pás, karta
@@ -2143,6 +2144,7 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .pravidla-role li.informace-role { color: var(--tlumene); font-style: italic; }
 /* Ikonky rolí a relikvií v textech pravidel a karty (TextSIkonami). */
 .s-ikonou { white-space: nowrap; }
+.s-ikonou .swatch { margin-right: 0.2em; }
 .ikonka-textu { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 0.12em; object-fit: contain; filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--obrys) 70%, transparent)); }
 /* Role po třech na řádek (uživatel 4. 10. 2026), na užším displeji méně. */
 @media (min-width: 60rem) { .pravidla-hry .role-mrizka { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

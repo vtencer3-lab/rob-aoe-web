@@ -10,3 +10,10 @@ it("před role v různých tvarech a relikvie dá ikonku, text nemění", () => 
   expect(container.textContent).toBe(text);
   expect([...container.querySelectorAll(".s-ikonou")].map((s) => s.textContent)).toEqual(["Královská Garda", "Gardou", "Šaška", "Kata", "Nástupce císaře", "relikvie"]);
 });
+
+it("GM dostane šedý čtvereček s číslem 7", () => {
+  const { container } = render(<p><TextSIkonami text="Začíná s 1 relikvií od GM." /></p>);
+  expect(container.querySelector(".swatch")).toHaveClass("barva-7");
+  expect(container.querySelector(".swatch")).toHaveAttribute("data-cislo", "7");
+  expect(container.textContent).toBe("Začíná s 1 relikvií od GM.");
+});
