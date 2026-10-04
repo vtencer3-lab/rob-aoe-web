@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NAZEV_ROLE, POPIS_ROLE } from "../../../src/shared/diplomacie/role.js";
 import type { Role, ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import { Skladaci } from "../views/Skladaci.js";
+import { TextSIkonami } from "./TextSIkonami.js";
 import { ZNAK_ROLE } from "./znaky.js";
 
 const PORADI: Role[] = ["nastupce", "garda", "najezdnik", "sasek", "zoldak", "kat"];
@@ -40,7 +41,9 @@ export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
             <section className="pravidla-karta">
               <h4>Primární cíle</h4>
               <ul>
-                <li>Hráč vyhrává, když drží 7 relikvií 15 herních minut.</li>
+                <li>
+                  <TextSIkonami text="Hráč vyhrává, když drží 7 relikvií 15 herních minut." />
+                </li>
                 <li>Hráč prohrává, když zemře jeho král.</li>
               </ul>
               {r?.vitezstvi ? <p className="ceka">Vítězství ve scénáři: {r.vitezstvi.popis}.</p> : null}
@@ -71,10 +74,12 @@ export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
                     <h5>{NAZEV_ROLE[role]}</h5>
                   </header>
                   <ul>
-                    <li className="cil">{popis.cil}</li>
+                    <li className="cil">
+                      <TextSIkonami text={popis.cil} />
+                    </li>
                     {popis.informace?.map((v) => (
                       <li key={v} className="informace-role">
-                        {v}
+                        <TextSIkonami text={v} />
                       </li>
                     ))}
                   </ul>
@@ -83,7 +88,9 @@ export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
                       <h6>Výhody</h6>
                       <ul>
                         {popis.vyhody.map((v) => (
-                          <li key={v}>{v}</li>
+                          <li key={v}>
+                            <TextSIkonami text={v} />
+                          </li>
                         ))}
                       </ul>
                     </>
@@ -93,7 +100,9 @@ export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
                       <h6>Nevýhody</h6>
                       <ul>
                         {popis.nevyhody.map((v) => (
-                          <li key={v}>{v}</li>
+                          <li key={v}>
+                            <TextSIkonami text={v} />
+                          </li>
                         ))}
                       </ul>
                     </>

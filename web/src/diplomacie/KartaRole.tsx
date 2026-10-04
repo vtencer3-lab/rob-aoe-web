@@ -11,6 +11,7 @@ import { kralNaMape, MapaScenare, type DruhPopisku, type PopiskyStartu } from ".
 import type { Hlidej } from "../rezimy/index.js";
 import { diploApi } from "./api.js";
 import { MojeCile } from "./MojeCile.js";
+import { TextSIkonami } from "./TextSIkonami.js";
 import { MojeSchopnosti, PovinnyProdej } from "./Schopnosti.js";
 import { PravidlaHry } from "./PravidlaHry.js";
 import { Zakryti } from "./Zakryti.js";
@@ -341,9 +342,12 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       <div className="zar" aria-hidden="true" />
       <video ref={video} className="plameny" src={PLAMENY} muted playsInline preload="auto" aria-hidden="true" data-testid="plameny" />
       {hori ? null : (
-        <button type="button" className="primarni promena-tlacitko" style={stredRole === null ? undefined : { top: `${stredRole}px` }} onClick={() => setHori(true)}>
-          Královská garda padla
-        </button>
+        <div className="promena-vyzva" style={stredRole === null ? undefined : { top: `${stredRole}px` }}>
+          <button type="button" className="primarni promena-tlacitko" onClick={() => setHori(true)}>
+            Královská garda padla
+          </button>
+          <p className="promena-poznamka">Královská Garda padla, stáváš se novou Královskou Gardou!</p>
+        </div>
       )}
     </div>
   );
@@ -400,7 +404,9 @@ function ObsahRole({ moje, vse, ucastnici }: { moje: RoleHrace; vse: RoleHrace[]
       {/* Znak mimo h4: uvnitř by alt zdvojil přístupný název nadpisu. */}
       <img className="znak-role" src={ZNAK_ROLE[moje.role]} alt={NAZEV_ROLE[moje.role]} width={104} height={104} />
       <h4>{NAZEV_ROLE[moje.role]}</h4>
-      <p className="cil">{popis.cil}</p>
+      <p className="cil">
+        <TextSIkonami text={popis.cil} />
+      </p>
       {moje.role === "kat" && moje.cilHracId ? (
         <p>
           <span>Oběť:</span>{" "}
@@ -427,7 +433,7 @@ function ObsahRole({ moje, vse, ucastnici }: { moje: RoleHrace; vse: RoleHrace[]
       ) : null}
       {popis.informace?.map((v) => (
         <p key={v} className="informace-role">
-          {v}
+          <TextSIkonami text={v} />
         </p>
       ))}
       {popis.vyhody.length > 0 ? (
@@ -435,7 +441,9 @@ function ObsahRole({ moje, vse, ucastnici }: { moje: RoleHrace; vse: RoleHrace[]
           <h5>Výhody</h5>
           <ul>
             {popis.vyhody.map((v) => (
-              <li key={v}>{v}</li>
+              <li key={v}>
+                <TextSIkonami text={v} />
+              </li>
             ))}
           </ul>
         </>
@@ -445,7 +453,9 @@ function ObsahRole({ moje, vse, ucastnici }: { moje: RoleHrace; vse: RoleHrace[]
           <h5>Nevýhody</h5>
           <ul>
             {popis.nevyhody.map((v) => (
-              <li key={v}>{v}</li>
+              <li key={v}>
+                <TextSIkonami text={v} />
+              </li>
             ))}
           </ul>
         </>
