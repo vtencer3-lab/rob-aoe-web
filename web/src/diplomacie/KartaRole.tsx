@@ -213,6 +213,9 @@ const PRESAH_PLAMENU = 0.25;
 /** Plameny o něco pomaleji, než je video natočené (uživatel 4. 10. 2026: „trochu pomalejší, ne o moc“) — 1,8 s → 2,25 s. Maska jde podle času videa, sesazení zůstane. */
 const RYCHLOST_PLAMENU = 0.8;
 
+/** Jak dlouho oheň zhasíná, když dohoří k hornímu okraji karty (CSS `.karta-promena.zhasina`). */
+const ZHASINANI_MS = 450;
+
 /** Pojistka: kdyby video neskončilo (nenačetlo se, prohlížeč ho nepustí), Garda se ukáže i tak. */
 const POJISTKA_HORENI_MS = 3500;
 
@@ -264,9 +267,18 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
     if (v) v.playbackRate = RYCHLOST_PLAMENU;
     void v?.play?.()?.catch?.(() => dokonci());
     let snimek = 0;
+    let zhasina: ReturnType<typeof setTimeout> | null = null;
     const tik = () => {
       // Čelo ve videu → výška karty: video je o PRESAH_PLAMENU vyšší a spodky sedí.
-      obal.current?.style.setProperty("--hori", `${(celoOhne(v?.currentTime ?? 0) * (1 + PRESAH_PLAMENU) * 100).toFixed(2)}%`);
+      const hori = celoOhne(v?.currentTime ?? 0) * (1 + PRESAH_PLAMENU);
+      obal.current?.style.setProperty("--hori", `${(hori * 100).toFixed(2)}%`);
+      // Karta shořela celá (čelo u horního okraje): oheň dál nestoupá, plynule
+      // zhasne a ukáže se Garda (uživatel 4. 10. 2026).
+      if (hori >= 1 && zhasina === null) {
+        obal.current?.classList.add("zhasina");
+        zhasina = setTimeout(dokonci, ZHASINANI_MS);
+        return;
+      }
       snimek = requestAnimationFrame(tik);
     };
     snimek = requestAnimationFrame(tik);
@@ -276,6 +288,7 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       cancelAnimationFrame(snimek);
       v?.removeEventListener("ended", dokonci);
       clearTimeout(pojistka);
+      if (zhasina !== null) clearTimeout(zhasina);
     };
   }, [hori]);
   return (

@@ -1961,6 +1961,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .karta-promena .plameny { position: absolute; top: -25%; bottom: 0; left: -5%; right: -5%; width: 110%; height: 125%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden;
   -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent); mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent); }
 .karta-promena.hori .plameny { visibility: visible; animation: nastup-ohne 0.35s ease-out; }
+/* Dohořelo k hornímu okraji karty: oheň i záře zhasnou (ZHASINANI_MS). */
+.karta-promena.zhasina .plameny, .karta-promena.zhasina .zar { opacity: 0; transition: opacity 0.45s ease-in; }
 /* Oheň se nezjeví bliknutím, ale rozhoří (uživatel 4. 10. 2026). */
 @keyframes nastup-ohne { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
