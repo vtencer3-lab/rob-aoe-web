@@ -1916,8 +1916,13 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Dědí se: JS ji nastavuje na obalu karty, maska a záře ji čtou v dětech. */
 @property --hori { syntax: "<percentage>"; inherits: true; initial-value: 0%; }
 .karta-promena { position: relative; max-width: 34rem; margin: 0.8rem auto; }
-.karta-promena .karta-promena-obsah { filter: brightness(0.35) grayscale(0.6); pointer-events: none; }
-.karta-promena .promena-tlacitko { position: absolute; inset: 50% auto auto 50%; translate: -50% -50%; font-size: 1.3rem; padding: 0.9rem 1.6rem; animation: zare-rozdat 2s ease-in-out infinite; }
+/* Ztmavnutí karty Šaška se při objevení plynule rozjede (jednorázová animace
+   filtru — trvalá by se trhala, viz hoření). */
+.karta-promena .karta-promena-obsah { filter: brightness(0.35) grayscale(0.6); pointer-events: none; animation: ztmavnuti 1.2s var(--krivka); }
+@keyframes ztmavnuti { from { filter: none; } }
+/* Vystředění přes `transform`, ne `translate`: stisk tlačítka (globální
+   :active) nastavuje `translate` a tlačítko pak odskočilo na bok. */
+.karta-promena .promena-tlacitko { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); font-size: 1.3rem; padding: 0.9rem 1.6rem; animation: zare-rozdat 2s ease-in-out infinite; }
 /* Hoří: maska posouvaná z JS podle času videa (`--hori` = čelo ohně od
    spodu, `celoOhne`); pod čelem je ve videu ~6 % výšky spálený pás, karta
    pod ním zmizí. Filtr je pevný — animovaný se trhal. */
@@ -1940,7 +1945,7 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    plynule vytrácí maskou. */
 .karta-promena .zar { --h: calc(var(--hori) / 1.4); position: absolute; top: -40%; bottom: 0; left: -5%; right: -5%; pointer-events: none; z-index: 1; visibility: hidden; mix-blend-mode: screen;
   background: linear-gradient(to top, transparent calc(var(--h) - 5%), color-mix(in srgb, var(--ohen) 75%, transparent) calc(var(--h) - 1%), color-mix(in srgb, var(--ohen) 35%, transparent) calc(var(--h) + 7%), color-mix(in srgb, var(--ohen) 12%, transparent) calc(var(--h) + 20%), transparent calc(var(--h) + 32%)); }
-.karta-promena.hori .zar { visibility: visible;
+.karta-promena.hori .zar { visibility: visible; animation: nastup-ohne 0.35s ease-out;
   -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent), linear-gradient(to bottom, transparent, black 25%); -webkit-mask-composite: source-in;
   mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent), linear-gradient(to bottom, transparent, black 25%); mask-composite: intersect; }
 /* Hořící karta nemá rám ani pozadí panelu (uživatel 4. 10. 2026: „proč je
@@ -1955,9 +1960,11 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    kliknutí skryté, ale načtené. */
 .karta-promena .plameny { position: absolute; top: -25%; bottom: 0; left: -5%; right: -5%; width: 110%; height: 125%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden;
   -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent); mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent); }
-.karta-promena.hori .plameny { visibility: visible; }
+.karta-promena.hori .plameny { visibility: visible; animation: nastup-ohne 0.35s ease-out; }
+/* Oheň se nezjeví bliknutím, ale rozhoří (uživatel 4. 10. 2026). */
+@keyframes nastup-ohne { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .karta-promena .promena-tlacitko { animation: none; }
+  .karta-promena .promena-tlacitko, .karta-promena .karta-promena-obsah { animation: none; }
   .karta-promena.hori .karta-promena-obsah { animation: none; opacity: 0; }
   .karta-promena .plameny, .karta-promena .zar { display: none; }
 }
