@@ -88,9 +88,11 @@ it("sbalená nic nenačítá; bez souboru nejde nahrát", async () => {
 it("náhled aktivní verze a aktivace starší čitelné verze", async () => {
   vi.mocked(diploApi.verze).mockResolvedValue({ verze: [V2, { ...V1, rozbor: ROZBOR, chybaRozboru: null }] });
   await rozbal();
+  // Pravidla (s mapou) jsou rozložená jako pro hráče, ve výchozím stavu sbalená.
+  expect(screen.queryByText("Zabij 650 nepratelskych jednotek")).toBeNull();
+  fireEvent.click(screen.getByText("Pravidla hry"));
   expect(screen.getByRole("img", { name: "Mapa scénáře LLC v2.aoe2scenario" }).getAttribute("src")).toBe("/api/diplo/scenar/3/minimapa.webp");
   expect(screen.getAllByTestId("start")).toHaveLength(7);
-  // Pravidla jsou rozložená jako pro hráče (kartičky rovnou, bez rozbalování).
   expect(screen.getByText("Zabij 650 nepratelskych jednotek")).toBeTruthy();
   expect(screen.getByText("Nejvýš 30 vesničanů")).toBeTruthy();
   const tlacitka = screen.getAllByRole("button", { name: "Nastavit jako aktivní" });

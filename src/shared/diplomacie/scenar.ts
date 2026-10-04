@@ -12,10 +12,24 @@ import { overovace } from "./overeni.js";
  * `JIN_DIPLO_`): soubor sondy se jmenuje jako scénář, agent na herním PC tak
  * hlídá jen `ROB_*.xsdat` a cizí soubory modů nečte vůbec. Nový mód nebo
  * scénář dostane `ROB_<CO>_<N>` a masku sledování nemění.
+ *
+ * Od 4. 10. 2026 nese jméno i verzi sondy (`…_v<VERZE_SONDY>`): ze jména
+ * souboru ve složce hry je hned vidět, jestli je stažený se současnou
+ * sondou. Starší stažená kopie má jiné jméno — kontrola lobby i most ji
+ * poznají jako jiný soubor a hlásí to.
  */
 export function jmenoScenareProHru(poradi: number): string {
-  return `ROB_DIPLO_${poradi}.aoe2scenario`;
+  return `ROB_DIPLO_${poradi}_v${VERZE_SONDY}.aoe2scenario`;
 }
+
+/**
+ * Naše verze sondy (src/diplomacie/sonda.xs) — zvednout při každé změně
+ * jejího kódu; test v sonda.test.ts to hlídá přes otisk `REVIZE_SONDY`.
+ * 9 = formát souboru 8 + počitadlo držení 7 relikvií (proměnné 240–247).
+ */
+export const VERZE_SONDY = 9;
+/** Otisk sonda.xs (`revizeSondy`), ke kterému patří `VERZE_SONDY`. */
+export const REVIZE_SONDY = "923c7f4a7ea8";
 
 /** Co rozbor scénáře (src/diplomacie/rozbor.py) vrací; spec §5.2. */
 export interface RozborScenare {

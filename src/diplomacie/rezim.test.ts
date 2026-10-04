@@ -25,7 +25,7 @@ const verze = (id: number, jmenoSouboru: string, cast: Partial<ScenarVerze> = {}
 it("z aktivní verze bere jméno pro hru, starší jména pro hru i velikost mapy z rozboru", () => {
   const v1 = verze(1, "LLC v1.aoe2scenario");
   const v2 = verze(2, "LLC v2.aoe2scenario", { aktivni: true });
-  expect(nastaveniScenare(v2, [v1, v2])).toEqual({ scenar: "ROB_DIPLO_2.aoe2scenario", scenarStarsi: ["ROB_DIPLO_1.aoe2scenario"], velikost: 220 });
+  expect(nastaveniScenare(v2, [v1, v2])).toEqual({ scenar: "ROB_DIPLO_2_v9.aoe2scenario", scenarStarsi: ["ROB_DIPLO_1_v9.aoe2scenario"], velikost: 220 });
 });
 
 // Hostovi soubor přijde jako ROB_DIPLO_<pořadí>: dvě verze nahrané pod
@@ -33,7 +33,7 @@ it("z aktivní verze bere jméno pro hru, starší jména pro hru i velikost map
 it("jméno originálu nehraje roli — stejně pojmenované verze se liší jménem pro hru", () => {
   const v1 = verze(1, "LLC.aoe2scenario");
   const v2 = verze(2, "LLC.aoe2scenario", { aktivni: true });
-  expect(nastaveniScenare(v2, [v2, v1])).toMatchObject({ scenar: "ROB_DIPLO_2.aoe2scenario", scenarStarsi: ["ROB_DIPLO_1.aoe2scenario"] });
+  expect(nastaveniScenare(v2, [v2, v1])).toMatchObject({ scenar: "ROB_DIPLO_2_v9.aoe2scenario", scenarStarsi: ["ROB_DIPLO_1_v9.aoe2scenario"] });
 });
 
 it("bez aktivní verze je všechno null", () => {
@@ -44,7 +44,7 @@ it("bez aktivní verze je všechno null", () => {
 // rozešel, kontrola má radši velikost jen vypsat než hádat.
 it("aktivní verze bez rozboru nechá velikost null", () => {
   const v = verze(1, "LLC.aoe2scenario", { aktivni: true, rozbor: null, chybaRozboru: "x" });
-  expect(nastaveniScenare(v, [v])).toEqual({ scenar: "ROB_DIPLO_1.aoe2scenario", scenarStarsi: [], velikost: null });
+  expect(nastaveniScenare(v, [v])).toEqual({ scenar: "ROB_DIPLO_1_v9.aoe2scenario", scenarStarsi: [], velikost: null });
 });
 
 it("hostem lobby je GM na šedé; počítač na šedé hostem není (vybere jádro)", () => {

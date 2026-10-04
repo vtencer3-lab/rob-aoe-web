@@ -376,7 +376,7 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
   vždy nejvýš jedna, nová verze se neaktivuje sama (kromě úplně první
   úspěšně přečtené) — tlačítko „Nastavit jako aktivní“. Verze, kterou se nepodařilo přečíst,
   jde stáhnout, ale ne aktivovat. Hostovi web verzi posílá pod jménem
-  **`ROB_DIPLO_<N>.aoe2scenario`** (N = pořadí nahrání 1, 2, 3…, po smazání
+  **`ROB_DIPLO_<N>_v<verze sondy>.aoe2scenario`** (N = pořadí nahrání 1, 2, 3…, po smazání
   se číslo znovu nepoužije) a podle něj porovnává všechno — kontrolu lobby,
   uložení do složky hry i data ze hry; jméno, pod kterým autor soubor
   nahrál, zůstává jen originálu. Řádek verze ve správě: jméno, kdo, kdy,
@@ -423,9 +423,9 @@ obcházení voice roomek — každý dostane svou roli na tajné kartě.
 - **Data ze hry (zkušebně).** Scénář, který host z webu stahuje, má
   přibalenou **sondu**: web ji do kopie přidá sám (originál od autora
   zůstává a autor nebo admin ho stáhne tlačítkem „Stáhnout originál“ ve
-  správě scénáře). Kopie se jmenuje `ROB_DIPLO_<N>.aoe2scenario` (všechny
+  správě scénáře). Kopie se jmenuje `ROB_DIPLO_<N>_v<verze sondy>.aoe2scenario` (všechny
   naše scénáře mají prefix `ROB_`), soubor sondy ve hře tedy
-  `ROB_DIPLO_<N>.xsdat` a začíná značkou „ROBD“ (formát 8). Sonda každou
+  `ROB_DIPLO_<N>_v<verze sondy>.xsdat` a začíná značkou „ROBD“ (formát 8). Sonda každou
   herní sekundu zapisuje stav
   do souboru na každém počítači ve hře, u hráčů i diváků (bez šifrování —
   kdo se podívá do své složky profilu, vidí tajné cíle všech; komunitní hra

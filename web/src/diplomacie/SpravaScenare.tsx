@@ -48,6 +48,8 @@ function vetaMinimapy(m: { zdrojId: number; prevzata: boolean } | null): string 
  */
 export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
   const [otevreno, setOtevreno] = useState(false);
+  // Pravidla aktivní verze jsou dlouhá — ve výchozím stavu sbalená (uživatel 4. 10. 2026).
+  const [pravidlaOtevrena, setPravidlaOtevrena] = useState(false);
   const [verze, setVerze] = useState<ScenarVerze[]>([]);
   const [soubor, setSoubor] = useState<File | null>(null);
   const [vysledek, setVysledek] = useState<string | null>(null);
@@ -155,14 +157,18 @@ export function SpravaScenare({ hlidej }: { hlidej: Hlidej }) {
         // Stejné rozvržení jako pravidla pro hráče na stránce akce (velká
         // mapa, kartičky po třech; uživatel 4. 10. 2026) — autor hned vidí,
         // co web ze souboru přečetl a co uvidí hráči.
-        <PrehledPravidel
-          verze={aktivni}
-          podMapou={aktivni.rozbor.varovani.map((v) => (
-            <p key={v} className="varovani">
-              {v}
-            </p>
-          ))}
-        />
+        <Skladaci className="pravidla-spravy" testId="pravidla-spravy" hlava="Pravidla hry" otevreno={pravidlaOtevrena} onPrepnout={setPravidlaOtevrena}>
+          {pravidlaOtevrena ? (
+            <PrehledPravidel
+              verze={aktivni}
+              podMapou={aktivni.rozbor.varovani.map((v) => (
+                <p key={v} className="varovani">
+                  {v}
+                </p>
+              ))}
+            />
+          ) : null}
+        </Skladaci>
       ) : null}
       <ul className="verze-scenare">
         {/* Nejnovější nahoře i nezávisle na pořadí ze serveru. */}

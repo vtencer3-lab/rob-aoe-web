@@ -6,7 +6,7 @@ se to hlídá. Slouží k regresní kontrole — po každé změně v Diplomacii
 sloupec „Hlídá“ (testy) a před hrou s lidmi část „Ruční zkouška ve hře“.
 
 Zdroj pravidel: `src/shared/diplomacie/role.ts` (POPIS_ROLE, z Jinových
-pravidel), scénář `ROB_DIPLO_<N>` (triggery). Kontext a historie:
+pravidel), scénář `ROB_DIPLO_<N>_v<verze sondy>` (triggery). Kontext a historie:
 `docs/prehled-praci-a-zameru.md` §3.60. Nový bod sem zapsat hned, jak vznikne.
 
 Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
@@ -18,13 +18,14 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 
 | # | Co platí | Kde | Hlídá |
 |---|---|---|---|
-| 1.1 | Sonda (formát 8) píše každou herní sekundu na každém PC; soubor `ROB_DIPLO_<N>.xsdat`, značka „ROBD“ | `src/diplomacie/sonda.xs` | `python src/diplomacie/sonda.py --over` (xs-check), ruční zkouška |
+| 1.1 | Sonda (formát 8) píše každou herní sekundu na každém PC; soubor `ROB_DIPLO_<N>_v<verze sondy>.xsdat`, značka „ROBD“ | `src/diplomacie/sonda.xs` | `python src/diplomacie/sonda.py --over` (xs-check), ruční zkouška |
 | 1.2 | XS čísluje hráče podle lobby, ne podle slotů → všude převod slot → číslo ve hře | `vyhodnotHru` (`src/shared/diplomacie/hra.ts`) | S hra.test „relikvie a žije jdou přes převod slot → číslo“ |
 | 1.3 | Nástupce = jediný hráč bez sekundárního cíle po rozdání; potvrzen dvěma snímky ≥ 4 s od sebe | `vyhodnotHru`, `posunKandidata` | S hra.test „Nástupce ze slotů“, DB hra.db.test |
 | 1.4 | Data od GM mají přednost, divák (i hráč bez role GM) je záloha; víc běžících zápasů = data diváka nejdou přiřadit | `vyberZapasSnimku`, `divakUstupuje` | S hra.test |
 | 1.5 | Odpočet 7 relikvií: sonda sčítá sekundy se 7+ relikviemi do proměnných 240–247 (239 + číslo hráče); při ztrátě **jen stojí** (hra ho nuluje, my ne) | `sonda.xs`, `PROMENNA_DRZENI` | S hra.test „držení 7 relikvií …“ |
 | 1.6 | Počitadlo prodejů relikvií = proměnná cíle „prodej 5 relikvií“ slotu (scénář ji zvyšuje vždy, i bez toho cíle) | `promennaProdeju`, `HracHry.prodano` | S schopnosti.test „počitadlo prodejů …“ |
 | 1.7 | Relikvie: volná objekt 285 gaii, nesená = jednotka třídy 943, v klášteře = garrisonovaná 285; u tržiště GM se nesleduje | `sonda.xs` | ruční zkouška (diagnostika 3. 10.) |
+| 1.9 | Jméno scénáře nese verzi sondy (`ROB_DIPLO_<N>_v<VERZE_SONDY>`, `jmenoScenareProHru`); po změně sonda.xs zvednout `VERZE_SONDY` a `REVIZE_SONDY` v `src/shared/diplomacie/scenar.ts` | `scenar.ts` | sonda.test „otisk sonda.xs patří k VERZE_SONDY“ |
 | 1.8 | Web přibaluje sondu sám (nahrání, start serveru, před stažením) | `prebalZastaraleSondy`, `zajistiAktualniSondu` | ruční: po nasazení stáhnout scénář |
 
 ## 2. Co kdo vidí (redakce `viditelnost.ts`)

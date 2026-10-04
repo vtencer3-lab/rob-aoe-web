@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { config } from "../config.js";
+import { REVIZE_SONDY, VERZE_SONDY } from "../shared/diplomacie/scenar.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import { rozeberScenar } from "./rozbor.js";
 import { pribalSondu, revizeSondy } from "./sonda.js";
@@ -137,4 +138,10 @@ print(json.dumps([m.varovani_cilu(scenar, cile(uplne)), m.varovani_cilu(scenar, 
     expect(zadny).toEqual(["sonda nenašla žádný trigger přidělení sekundárního cíle — Nástupce se ze hry nepozná"]);
     expect(proGm).toContain("cíl má dostat i slot GM (p7)");
   });
+});
+
+// Verze sondy je ve jméně scénáře (ROB_DIPLO_<N>_v<VERZE_SONDY>). Změna
+// sonda.xs bez zvednutí verze by dala dvěma různým sondám stejné jméno.
+it("otisk sonda.xs patří k VERZE_SONDY — po změně sondy zvednout verzi i REVIZE_SONDY", () => {
+  expect({ verze: VERZE_SONDY, revize: revizeSondy() }).toEqual({ verze: VERZE_SONDY, revize: REVIZE_SONDY });
 });

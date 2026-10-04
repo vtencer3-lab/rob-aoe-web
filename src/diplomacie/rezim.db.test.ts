@@ -31,7 +31,7 @@ it("akce Diplomacie dostane nastavení scénáře z aktivní verze", async () =>
   const n = (await getAktivniAkce())!.nastaveniLobby;
   // Velikost mapy bere z rozboru aktivní verze (fixtura ROZBOR: 220) — v
   // Custom Scenario ji hra v lobby nenabízí, posílá tu ze scénáře.
-  expect(n).toMatchObject({ rezim: 3, scenar: "ROB_DIPLO_2.aoe2scenario", scenarStarsi: ["ROB_DIPLO_1.aoe2scenario"], mapaId: null, velikost: 220, populace: 200, lockTeams: false, sharedExploration: false, cheaty: false, povolitDivaky: true, maxHracu: 8 });
+  expect(n).toMatchObject({ rezim: 3, scenar: "ROB_DIPLO_2_v9.aoe2scenario", scenarStarsi: ["ROB_DIPLO_1_v9.aoe2scenario"], mapaId: null, velikost: 220, populace: 200, lockTeams: false, sharedExploration: false, cheaty: false, povolitDivaky: true, maxHracu: 8 });
   expect(v1.aktivovana).toBe(true);
 });
 
@@ -57,7 +57,7 @@ it("reset nastavení dá akci Diplomacie výchozí hodnoty módu, klasické akci
   await rozhas(diplo);
   expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ lockTeams: true, maxHracu: 2 });
   expect((await reset(diplo)).statusCode).toBe(200);
-  const ocekavane = { rezim: 3, scenar: "ROB_DIPLO_1.aoe2scenario", velikost: 220, lockTeams: false, sharedExploration: false, maxHracu: 8, populace: 200 };
+  const ocekavane = { rezim: 3, scenar: "ROB_DIPLO_1_v9.aoe2scenario", velikost: 220, lockTeams: false, sharedExploration: false, maxHracu: 8, populace: 200 };
   expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject(ocekavane);
   expect((await app.inject({ method: "GET", url: "/api/akce", cookies: { sid } })).json().akce.vychoziNastaveniLobby).toMatchObject(ocekavane);
   await app.inject({ method: "POST", url: `/api/akce/${diplo}/stav`, cookies: { sid }, payload: { stav: "konec" } });

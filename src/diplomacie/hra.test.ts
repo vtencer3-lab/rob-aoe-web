@@ -23,7 +23,7 @@ const db = vi.hoisted(() => ({
 }));
 
 vi.mock("./db.js", () => ({
-  beziciZapasyDiplo: async (): Promise<BeziciZapasDiplo[]> => db.bezici ?? (db.zapasId === null ? [] : [{ zapasId: db.zapasId, gmHracId: "h7", jmenoScenare: "ROB_DIPLO_1.aoe2scenario" }]),
+  beziciZapasyDiplo: async (): Promise<BeziciZapasDiplo[]> => db.bezici ?? (db.zapasId === null ? [] : [{ zapasId: db.zapasId, gmHracId: "h7", jmenoScenare: "ROB_DIPLO_1_v9.aoe2scenario" }]),
   getDiploZapas: async (zapasId: number): Promise<DiploZapas> => ({ zapasId, gmHracId: "h7", stav: db.stav, nastupceHracId: db.nastupce, scenarId: db.verze ? 3 : null, role: [] }),
   getSonduVerze: async () => db.verze,
   nastavNastupceZeHry: async (_zapasId: number, hracId: string) => {
@@ -50,7 +50,7 @@ const { prijmiSnimek } = await import("./hra.js");
 const { hraZapasu, pametHer, ponechHry, zapomenHry } = await import("./hraPamet.js");
 
 /** Snímek v herním čase `cas`, kde cíl mají všichni hráči kromě slotů `bezCile`. */
-function snimek(bezCile: number[], cas: number, scenar = "ROB_DIPLO_1.aoe2scenario", odesilatel = "h7"): SnimekHry {
+function snimek(bezCile: number[], cas: number, scenar = "ROB_DIPLO_1_v9.aoe2scenario", odesilatel = "h7"): SnimekHry {
   const promenne = new Array<number>(256).fill(0);
   for (const slot of [1, 2, 3, 4, 5, 6, 8]) if (!bezCile.includes(slot)) promenne[200 + slot] = 14 + slot;
   return { odesilatel, scenar, cas, sloty: [1, 2, 3, 4, 5, 6, 7, 8], hraci: [], diplomacie: [], promenne };
@@ -60,7 +60,7 @@ const T0 = Date.parse("2026-10-02T20:00:00.000Z");
 const v = (sekund: number) => new Date(T0 + sekund * 1000);
 const posli = async (bezCile: number[], cas: number, scenar?: string) => (await prijmiSnimek(snimek(bezCile, cas, scenar), v(cas))) as PrijetiSnimku;
 /** Snímek od diváka (jiné id než GM): herní čas `cas`, přijatý v čase serveru `prijatoS` (od T0). */
-const odDivaka = async (bezCile: number[], cas: number, prijatoS: number) => (await prijmiSnimek(snimek(bezCile, cas, "ROB_DIPLO_1.aoe2scenario", "d1"), v(prijatoS))) as PrijetiSnimku;
+const odDivaka = async (bezCile: number[], cas: number, prijatoS: number) => (await prijmiSnimek(snimek(bezCile, cas, "ROB_DIPLO_1_v9.aoe2scenario", "d1"), v(prijatoS))) as PrijetiSnimku;
 /** Hra jmenuje téhož hráče ve dvou snímcích 4 herní sekundy po sobě — tím je odpověď potvrzená. */
 const potvrd = async (bezCile: number[], cas: number) => {
   await posli(bezCile, cas);
@@ -169,10 +169,10 @@ describe("automatický Nástupce", () => {
 
   // Starý soubor sondy nebo jiná hra téhož GM: data se ukážou, Nástupce ne.
   it("když hra hlásí jiný scénář, než zápas hraje, Nástupce nenastaví ani neodvolá", async () => {
-    db.verze = { jmenoHry: "ROB_DIPLO_1.aoe2scenario", sonda: { cile: [], oznaceno: 42, chyba: null } };
+    db.verze = { jmenoHry: "ROB_DIPLO_1_v9.aoe2scenario", sonda: { cile: [], oznaceno: 42, chyba: null } };
     await posli([4], 100, "Jiny.aoe2scenario");
     const res = await posli([4], 104, "Jiny.aoe2scenario");
-    expect(res).toEqual({ zapasId: 12, zdroj: "gm", nastupce: "h4", varovani: "Hra hlásí scénář „Jiny.aoe2scenario“, zápas ale hraje „ROB_DIPLO_1.aoe2scenario“ — Nástupce se podle ní nenastavuje." });
+    expect(res).toEqual({ zapasId: 12, zdroj: "gm", nastupce: "h4", varovani: "Hra hlásí scénář „Jiny.aoe2scenario“, zápas ale hraje „ROB_DIPLO_1_v9.aoe2scenario“ — Nástupce se podle ní nenastavuje." });
     expect(db.zapisy).toEqual([]);
     expect(db.nastupce).toBeNull();
     // Pult data dostane i s varováním.
@@ -183,7 +183,7 @@ describe("automatický Nástupce", () => {
     await posli([], 110, "Jiny.aoe2scenario");
     expect(db.nastupce).toBe("h4");
     // Správný scénář (i jinou velikostí písmen) projde bez varování.
-    expect(await posli([4], 120, "rob_diplo_1.aoe2scenario")).not.toHaveProperty("varovani");
+    expect(await posli([4], 120, "rob_diplo_1_v9.aoe2scenario")).not.toHaveProperty("varovani");
   });
 });
 
@@ -231,10 +231,10 @@ describe("pořadí snímků a paměť", () => {
     expect(await prijmiSnimek(snimek([4], 100), v(100))).toEqual({ nenalezeno: "Na webu teď neběží žádný zápas Diplomacie." });
     // Cizí odesílatel u dvou běžících zápasů: data diváka nejde přiřadit.
     db.bezici = [
-      { zapasId: 13, gmHracId: "h7", jmenoScenare: "ROB_DIPLO_1.aoe2scenario" },
-      { zapasId: 12, gmHracId: "h6", jmenoScenare: "ROB_DIPLO_1.aoe2scenario" },
+      { zapasId: 13, gmHracId: "h7", jmenoScenare: "ROB_DIPLO_1_v9.aoe2scenario" },
+      { zapasId: 12, gmHracId: "h6", jmenoScenare: "ROB_DIPLO_1_v9.aoe2scenario" },
     ];
-    expect(await prijmiSnimek(snimek([4], 100, "ROB_DIPLO_1.aoe2scenario", "cizi"), v(100))).toEqual({
+    expect(await prijmiSnimek(snimek([4], 100, "ROB_DIPLO_1_v9.aoe2scenario", "cizi"), v(100))).toEqual({
       nenalezeno: "cizi není GM žádného běžícího zápasu Diplomacie a zápasů běží víc (2) — data diváka nejde přiřadit. Pusť most na PC GM.",
     });
     expect(db.broadcastAkce).not.toHaveBeenCalled();
@@ -253,7 +253,7 @@ describe("pořadí snímků a paměť", () => {
   });
 
   it("verze bez výpisu cílů: Nástupce se nastaví, most i pult se dozví, že postup cílů chybí", async () => {
-    db.verze = { jmenoHry: "ROB_DIPLO_1.aoe2scenario", sonda: null };
+    db.verze = { jmenoHry: "ROB_DIPLO_1_v9.aoe2scenario", sonda: null };
     const res = await potvrd([4], 100);
     expect(res).toEqual({ zapasId: 12, zdroj: "gm", nastupce: "h4", varovani: "Verze scénáře v zápase nemá u webu výpis cílů — postup cílů se neukáže." });
     expect(db.nastupce).toBe("h4");
