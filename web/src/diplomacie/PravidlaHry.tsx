@@ -59,15 +59,48 @@ export function PravidlaHry({ verze }: { verze: ScenarVerze | null }) {
           </div>
           <h4 className="pravidla-nadpis">Role</h4>
           <div className="pravidla-mrizka role-mrizka">
-            {PORADI.map((role) => (
-              <section key={role} className="pravidla-karta pravidla-role">
-                <img className="znak-role" src={ZNAK_ROLE[role]} alt="" width={56} height={56} />
-                <div>
-                  <h5>{NAZEV_ROLE[role]}</h5>
-                  <p>{POPIS_ROLE[role].cil}</p>
-                </div>
-              </section>
-            ))}
+            {/* Celý popis role v bodech — cíl, výhody, nevýhody — ať každý ví,
+                co mohou ostatní role (uživatel 4. 10. 2026). Obecná pravidla,
+                nic o konkrétních hráčích. */}
+            {PORADI.map((role) => {
+              const popis = POPIS_ROLE[role];
+              return (
+                <section key={role} className="pravidla-karta pravidla-role">
+                  <header>
+                    <img className="znak-role" src={ZNAK_ROLE[role]} alt="" width={56} height={56} />
+                    <h5>{NAZEV_ROLE[role]}</h5>
+                  </header>
+                  <ul>
+                    <li className="cil">{popis.cil}</li>
+                    {popis.informace?.map((v) => (
+                      <li key={v} className="informace-role">
+                        {v}
+                      </li>
+                    ))}
+                  </ul>
+                  {popis.vyhody.length > 0 ? (
+                    <>
+                      <h6>Výhody</h6>
+                      <ul>
+                        {popis.vyhody.map((v) => (
+                          <li key={v}>{v}</li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                  {popis.nevyhody.length > 0 ? (
+                    <>
+                      <h6>Nevýhody</h6>
+                      <ul>
+                        {popis.nevyhody.map((v) => (
+                          <li key={v}>{v}</li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </section>
+              );
+            })}
           </div>
         </>
       ) : null}

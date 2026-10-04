@@ -1,3 +1,4 @@
+import { POPIS_ROLE } from "../../../src/shared/diplomacie/role.js";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { VERZE as verze } from "./fixtury.js";
@@ -27,4 +28,14 @@ it("sbalený tahák nic nevypisuje; bez rozboru jen role a primární cíle", ()
   expect(screen.queryByText(/Nejvýš/)).toBeNull();
   fireEvent.click(screen.getByText("Pravidla hry"));
   expect(screen.queryByText("Nástupce císaře")).toBeNull();
+});
+
+// Role v pravidlech v bodech i s výhodami a nevýhodami (uživatel 4. 10. 2026):
+// každý ví, co mohou ostatní role — bez čehokoli o konkrétních hráčích.
+it("každá role má v pravidlech cíl, výhody i nevýhody", () => {
+  render(<PravidlaHry verze={null} />);
+  fireEvent.click(screen.getByText("Pravidla hry"));
+  for (const role of Object.keys(POPIS_ROLE) as (keyof typeof POPIS_ROLE)[]) {
+    for (const v of [...POPIS_ROLE[role].vyhody, ...POPIS_ROLE[role].nevyhody]) expect(screen.getAllByText(v).length).toBeGreaterThan(0);
+  }
 });

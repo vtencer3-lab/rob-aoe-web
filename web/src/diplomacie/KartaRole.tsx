@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { NAZEV_ROLE, POPIS_ROLE } from "../../../src/shared/diplomacie/role.js";
-import type { DiploData, DiploZapas, PingNaMape, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
+import type { DiploData, DiploZapas, MojeHra, PingNaMape, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
 import type { ZapasView } from "../../../src/shared/types.js";
 import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
@@ -111,7 +111,9 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
           </p>
           {promena ? (
             <PromenaSaska key={String(ladeniHoreni)} onHotovo={() => (ladeniHoreni ? setLadeniHoreni(false) : void hlidej(() => diploApi.promenaVidena(zapas.id)))}>
-              <ObsahRole moje={{ ...moje, role: "sasek" }} vse={d.role} ucastnici={zapas.ucastnici} />
+              {/* Hoří celá karta Šaška i s mapou a cíli (uživatel 4. 10. 2026);
+                  bez dat ze hry při ladění ukázkové hodnoty. */}
+              <TeloKarty zapas={zapas} d={ladeniHoreni && !d.mojeHra ? { ...d, mojeHra: UKAZKOVA_HRA } : d} moje={{ ...moje, role: "sasek" }} verze={verze} hlidej={hlidej} />
             </PromenaSaska>
           ) : (
           <>
@@ -123,17 +125,7 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
             </p>
           ) : null}
           <Zakryti popisek="Tvá tajná role" napoveda="Klikni pro odkrytí" rub={<RubKarty />} pamet={`diplo-karta-${zapas.id}`}>
-            <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
-            {/* Na širokém displeji mapa vlevo a cíle vpravo, jako mapa a tabulka v pultu GM (uživatel 3. 10. 2026). */}
-            <div className="karta-vedle">
-              {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} pingy={(d.pingy ?? []).map((p) => ({ id: p.id, x: p.x, y: p.y }))} /> : null}
-              <div className="karta-strana">
-                <PovinnyProdej d={d} hracId={moje.hracId} />
-                <MojeCile hra={d.mojeHra} role={moje.role} ucastnici={zapas.ucastnici} />
-                <MojeSchopnosti zapas={zapas} d={d} moje={moje} hlidej={hlidej} />
-                <OdhaleneRole odhalene={d.odhaleneRole} ucastnici={zapas.ucastnici} />
-              </div>
-            </div>
+            <TeloKarty zapas={zapas} d={d} moje={moje} verze={verze} hlidej={hlidej} />
           </Zakryti>
           </>
           )}
@@ -143,6 +135,36 @@ export function KartaRole({ zapas, data, ja, hlidej }: Props) {
     </section>
   );
 }
+
+/** Role, mapa a cíle — líc karty hráče i karta Šaška, která při proměně hoří. */
+function TeloKarty({ zapas, d, moje, verze, hlidej }: { zapas: ZapasView; d: DiploZapas; moje: RoleHrace; verze: ReturnType<typeof verzeZapasu>; hlidej: Hlidej }) {
+  return (
+    <>
+      <ObsahRole moje={moje} vse={d.role} ucastnici={zapas.ucastnici} />
+      {/* Na širokém displeji mapa vlevo a cíle vpravo, jako mapa a tabulka v pultu GM (uživatel 3. 10. 2026). */}
+      <div className="karta-vedle">
+        {verze ? <MapaScenare verze={verze} popisky={popiskyRole(zapas, d, moje)} velikost="velka" kralove={[kralNaMape(verze, mujUcastnik(zapas, moje.hracId)?.barva, d.mujKral)].flatMap((k) => k ?? [])} pingy={(d.pingy ?? []).map((p) => ({ id: p.id, x: p.x, y: p.y }))} /> : null}
+        <div className="karta-strana">
+          <PovinnyProdej d={d} hracId={moje.hracId} />
+          <MojeCile hra={d.mojeHra} role={moje.role} ucastnici={zapas.ucastnici} />
+          <MojeSchopnosti zapas={zapas} d={d} moje={moje} hlidej={hlidej} />
+          <OdhaleneRole odhalene={d.odhaleneRole} ucastnici={zapas.ucastnici} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** DOČASNÉ (ladění hoření): ukázkový postup Šaška, když ze hry nic nechodí. */
+const UKAZKOVA_HRA: MojeHra = {
+  cas: 1834,
+  prijato: "2026-10-04T12:00:00.000Z",
+  rozdano: true,
+  cil: { text: "zkonvertovano : {} /99", limit: 99, hodnota: 37 },
+  relikvie: 3,
+  drzeni: 0,
+  sledovani: [],
+};
 
 /**
  * Role prohrává s pádem jiného hráče (pravidla): Žoldák se svým pokrevním
@@ -213,6 +235,13 @@ const PRESAH_PLAMENU = 0.25;
 /** Plameny o něco pomaleji, než je video natočené (uživatel 4. 10. 2026: „trochu pomalejší, ne o moc“) — 1,8 s → 2,25 s. Maska jde podle času videa, sesazení zůstane. */
 const RYCHLOST_PLAMENU = 0.8;
 
+/**
+ * Od jaké výšky čela (podíl výšky karty) oheň zhasíná: o něco dřív než
+ * u horního okraje, ať vysoké plameny nešlehají přes sekci nad kartou;
+ * zbytek karty dohoří maskou během zhasínání.
+ */
+const ZHASNOUT_OD = 0.85;
+
 /** Jak dlouho oheň zhasíná, když dohoří k hornímu okraji karty (CSS `.karta-promena.zhasina`). */
 const ZHASINANI_MS = 450;
 
@@ -274,10 +303,10 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       obal.current?.style.setProperty("--hori", `${(hori * 100).toFixed(2)}%`);
       // Karta shořela celá (čelo u horního okraje): oheň dál nestoupá, plynule
       // zhasne a ukáže se Garda (uživatel 4. 10. 2026).
-      if (hori >= 1 && zhasina === null) {
+      // Maska jede dál, ať zbytek karty dohoří i během zhasínání.
+      if (hori >= ZHASNOUT_OD && zhasina === null) {
         obal.current?.classList.add("zhasina");
         zhasina = setTimeout(dokonci, ZHASINANI_MS);
-        return;
       }
       snimek = requestAnimationFrame(tik);
     };

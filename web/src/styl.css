@@ -1915,7 +1915,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    shoří zdola nahoru (maska posouvá `--hori`) a ukáže se karta Gardy. */
 /* Dědí se: JS ji nastavuje na obalu karty, maska a záře ji čtou v dětech. */
 @property --hori { syntax: "<percentage>"; inherits: true; initial-value: 0%; }
-.karta-promena { position: relative; max-width: 34rem; margin: 0.8rem auto; }
+/* Hoří celá karta i s mapou a cíli — šíře jako líc karty. */
+.karta-promena { position: relative; margin: 0.8rem auto; }
 /* Ztmavnutí karty Šaška se při objevení plynule rozjede (jednorázová animace
    filtru — trvalá by se trhala, viz hoření). */
 .karta-promena .karta-promena-obsah { filter: brightness(0.35) grayscale(0.6); pointer-events: none; animation: ztmavnuti 1.2s var(--krivka); }
@@ -1959,7 +1960,10 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    vytratí — bez ostrého řezu rámem karty (uživatel 4. 10. 2026). Do
    kliknutí skryté, ale načtené. */
 .karta-promena .plameny { position: absolute; top: -25%; bottom: 0; left: -5%; right: -5%; width: 110%; height: 125%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden;
-  -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent); mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent); }
+  /* Boky se vytrácí; nahoře (přesah nad kartou, horních 20 % videa) taky —
+     plameny nešlehají přes nadpis a sekci nad kartou (uživatel 4. 10. 2026). */
+  -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent), linear-gradient(to bottom, transparent 2%, black 22%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent), linear-gradient(to bottom, transparent 2%, black 22%); mask-composite: intersect; }
 .karta-promena.hori .plameny { visibility: visible; animation: nastup-ohne 0.35s ease-out; }
 /* Dohořelo k hornímu okraji karty: oheň i záře zhasnou (ZHASINANI_MS). */
 .karta-promena.zhasina .plameny, .karta-promena.zhasina .zar { opacity: 0; transition: opacity 0.45s ease-in; }
@@ -2129,9 +2133,14 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
 .pravidla-karta { padding: 0.4rem 0.9rem 0.6rem; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); animation: vznik var(--prechod) var(--krivka); }
 .pravidla-karta h4 { margin: 0.3rem 0 0.3rem; color: var(--zlato); }
 .pravidla-hry .pravidla-nadpis { margin: 1rem 0 0.2rem; }
-.pravidla-role { display: flex; gap: 0.7rem; align-items: flex-start; }
-.pravidla-role .znak-role { width: 56px; height: 56px; flex: none; margin-top: 0.2rem; filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--obrys) 75%, transparent)); }
-.pravidla-role h5 { margin-top: 0.2rem; }
+.pravidla-role header { display: flex; gap: 0.6rem; align-items: center; margin: 0.2rem 0 0.3rem; }
+.pravidla-role .znak-role { width: 48px; height: 48px; flex: none; filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--obrys) 75%, transparent)); }
+.pravidla-role h5 { margin: 0; font-size: 1.05rem; }
+.pravidla-role h6 { margin: 0.5rem 0 0.1rem; font-size: 0.85rem; color: var(--zlato); }
+.pravidla-role li.cil { font-weight: 700; }
+.pravidla-role li.informace-role { color: var(--tlumene); font-style: italic; }
+/* Role po třech na řádek (uživatel 4. 10. 2026), na užším displeji méně. */
+@media (min-width: 60rem) { .pravidla-hry .role-mrizka { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 /* Veřejný řádek Diplomacie pod stranami zápasu (VerejnyRadek.tsx). */
 .diplo-radek { color: var(--zlato-svetle); font-size: 0.9rem; }
 /* Stažení scénáře pro hosta (StazeniScenare.tsx) na konci kroku „Zakládáš!“:
