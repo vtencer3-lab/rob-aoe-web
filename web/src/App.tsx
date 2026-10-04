@@ -1,7 +1,7 @@
 import { cisloTauntu } from "../../src/shared/taunty.js";
 import { hlasitostAdmina as nactiHlasitostAdmina, spustPrehravacHlasu, zesileniMikrofonu as nactiZesileniMikrofonu } from "./hlas.js";
 import { jeDulezita } from "../../src/shared/cenzura.js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
 import { doplnNastaveni, type NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
@@ -797,6 +797,13 @@ export function App() {
                 .map((zapas) => (
                   <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.hracId ?? null} doplnek={doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} />
                 ))}
+          {/* Náhled do cizích zápasů pro jmenované (DIPLO_NAHLED, Diplomacie):
+              server takový zápas pošle celý jen jim a jen tam, kde nehrají. */}
+          {stav && me
+            ? stav.zapasy
+                .filter(jeVeHre)
+                .map((zapas) => <Fragment key={`nahled-${zapas.id}`}>{rk.nahledZapasu?.({ zapas, stav, ja: me.hracId, hlidej })}</Fragment>)
+            : null}
           {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
               má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
               karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}

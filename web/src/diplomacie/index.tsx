@@ -2,6 +2,7 @@ import { GM_BARVA } from "../../../src/shared/diplomacie/sestava.js";
 import type { RezimKlienta } from "../rezimy/index.js";
 import { diploZapasu, KartaRole, verzeZapasu } from "./KartaRole.js";
 import { ObsMapa, ObsTabulka } from "./Obs.js";
+import { NahledHracu } from "./NahledHracu.js";
 import { PravidlaAkce } from "./PravidlaAkce.js";
 import { PultGm } from "./PultGm.js";
 import { StazeniScenare } from "./StazeniScenare.js";
@@ -25,6 +26,7 @@ export const diplomacieKlient: RezimKlienta = {
   },
   verejnyZapas: ({ zapas, stav }) => (stav.rezim ? <VerejnyRadek zapas={zapas} data={stav.rezim.data} /> : null),
   popisSlotu: (barva) => (barva === GM_BARVA ? "GM" : null),
+  nahledZapasu: ({ zapas, stav }) => (stav.rezim?.id === "diplomacie" ? <NahledHracu zapas={zapas} data={stav.rezim.data} /> : null),
   sekceAkce: (stav) => (stav.rezim?.id === "diplomacie" ? <PravidlaAkce data={stav.rezim.data} /> : null),
   // GM „svolává všechny“ (uživatel 2. 10. 2026): push-to-talk v chatu své
   // karty — jen dokud zápas běží, stejně jako háček na serveru.

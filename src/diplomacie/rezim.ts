@@ -3,6 +3,7 @@ import { REZIM_SCENARIO, type NastaveniLobby } from "../shared/lobbyKontrola.js"
 import { jeAi } from "../shared/aiHraci.js";
 import { GM_BARVA } from "../shared/diplomacie/sestava.js";
 import type { DiploData, ScenarVerze } from "../shared/diplomacie/typy.js";
+import { config } from "../config.js";
 import { redigujDiplo } from "../shared/diplomacie/viditelnost.js";
 import { smiGmMluvit } from "./opravneni.js";
 import { getAktivniVerze, getDiploZapas, getVerze, ktereZapasyBezi, listDiploZapasy, listVerzi, zalozDiploZapas, zrusNastupceMimoSestavu } from "./db.js";
@@ -91,7 +92,8 @@ export const diplomacie: RezimAkce = {
   },
 
   rediguj(rezim, divak) {
-    return { ...rezim, data: redigujDiplo(rezim.data, divak.hracId) };
+    // Náhled do cizích zápasů jen pro výslovně jmenované (DIPLO_NAHLED).
+    return { ...rezim, data: redigujDiplo(rezim.data, divak.hracId, divak.hracId !== null && config.diploNahled.includes(divak.hracId)) };
   },
 
   // GM „svolává všechny“ (uživatel 2. 10. 2026): mluví do svého zápasu jako

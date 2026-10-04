@@ -299,6 +299,10 @@ async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
       WHERE r.zapas_id = ANY($1::int[]) ORDER BY r.zapas_id, u.poradi`,
     [zapasy.map((z) => z.zapas_id)],
   );
+  const { rows: ucastnici } = await getPool().query<{ zapas_id: number; hrac_id: string }>(
+    "SELECT zapas_id, hrac_id FROM ucastnik WHERE zapas_id = ANY($1::int[])",
+    [zapasy.map((z) => z.zapas_id)],
+  );
   const { rows: schopnosti } = await getPool().query<SchopnostDb>(
     `SELECT id, zapas_id, hrac_id, druh, cil_hrac_id, stav, vytvoreno_v, poradi FROM diplo_schopnost WHERE zapas_id = ANY($1::int[]) ORDER BY id`,
     [zapasy.map((z) => z.zapas_id)],
@@ -315,6 +319,7 @@ async function sestav(zapasy: ZapasDb[]): Promise<DiploZapas[]> {
     role: role
       .filter((r) => r.zapas_id === z.zapas_id)
       .map((r) => ({ hracId: r.hrac_id, role: r.role, cilHracId: r.cil_hrac_id, ...(r.puvodni_role ? { puvodniRole: r.puvodni_role, promenaVidena: r.promena_videna } : {}) })),
+    ucastnici: ucastnici.filter((u) => u.zapas_id === z.zapas_id).map((u) => u.hrac_id),
     schopnosti: schopnosti
       .filter((x) => x.zapas_id === z.zapas_id)
       .map((x) => ({ id: x.id, hracId: x.hrac_id, druh: x.druh, cilHracId: x.cil_hrac_id, stav: x.stav, vytvoreno: x.vytvoreno_v.toISOString(), ...(x.poradi === null ? {} : { poradi: x.poradi }) })),

@@ -587,7 +587,7 @@ main > .prazdno::after {
 /* Rám panelu je devítidílný obrázek (`nastroje/grafika/devitidil.py`): rohy
    se nekreslí znovu, strany se opakují. Výplň drží `background-clip:
    padding-box`, aby tmavé dřevo nevykukovalo zpod průhledných rohů rámu. */
-.karta, .zapas, .host, .sprava-akce, .sprava-scenare, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka, .pravidla-akce, .obs-tabulka {
+.karta, .zapas, .host, .sprava-akce, .sprava-scenare, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka, .pravidla-akce, .obs-tabulka, .nahled-hracu {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
   border-radius: 0;

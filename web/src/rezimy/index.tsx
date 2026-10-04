@@ -37,6 +37,11 @@ export interface RezimKlienta {
    */
   sekceAkce?(stav: AkceStavPayload): ReactNode;
   /**
+   * Blok pod zápasy pro diváka s právem náhledu (Diplomacie: pohled
+   * kteréhokoli hráče cizího zápasu, jen ke čtení). Null = nic.
+   */
+  nahledZapasu?(p: KontextZapasu): ReactNode;
+  /**
    * Samostatné stránky módu podle cesty bez základu webu (Diplomacie:
    * overlaye do OBS „/obs/mapa“, „/obs/tabulka“). Nezávisí na otevřené
    * akci — browser source načítá adresu napřímo.

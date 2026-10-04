@@ -6,12 +6,23 @@ import type { DiploData, DiploZapas, RoleHrace } from "./typy.js";
  * kdo uvidí cizí roli. Admin tu **nemá výjimku**: kdo není GM zápasu, je
  * obyčejný divák — Rob streamuje a role by se objevily ve vysílání.
  */
-export function redigujDiplo(data: DiploData, divakHracId: string | null): DiploData {
-  return { ...data, zapasy: data.zapasy.map((z) => redigujZapas(z, divakHracId)) };
+export function redigujDiplo(data: DiploData, divakHracId: string | null, nahled = false): DiploData {
+  return { ...data, zapasy: data.zapasy.map((z) => redigujZapas(z, divakHracId, nahled)) };
 }
 
-function redigujZapas(cely: DiploZapas, divak: string | null): DiploZapas {
+/**
+ * Jediná výjimka (uživatel 4. 10. 2026): kdo má právo náhledu
+ * (`DIPLO_NAHLED`, rozhoduje server), dostane zápas celý — ale jen když
+ * v něm nehraje. Účastnictví se bere ze sestavy (`ucastnici`); bez ní se
+ * nic nepovolí.
+ */
+function smiNahled(z: DiploZapas, divak: string | null, nahled: boolean): boolean {
+  return nahled && divak !== null && z.ucastnici !== undefined && !z.ucastnici.includes(divak) && !z.role.some((r) => r.hracId === divak);
+}
+
+function redigujZapas(cely: DiploZapas, divak: string | null, nahled: boolean): DiploZapas {
   if (divak !== null && divak === cely.gmHracId) return cely;
+  if (smiNahled(cely, divak, nahled)) return { ...cely, nahled: true };
   // Data ze hry (kdo má jaký cíl, kdo je podle hry Nástupce) prozrazují
   // totéž co role — patří jen GM, v každém stavu.
   const z = { ...cely };

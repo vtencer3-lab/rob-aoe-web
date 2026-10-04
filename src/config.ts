@@ -141,6 +141,17 @@ export const config = {
   get obsKlic(): string {
     return process.env["OBS_KLIC"] ?? "";
   },
+  /**
+   * Kdo smí u zápasu Diplomacie, ve kterém **nehraje**, nahlédnout do pohledu
+   * kteréhokoli hráče i GM (jen ke čtení; uživatel 4. 10. 2026). Hráčská id
+   * oddělená čárkou; prázdné = nikdo. Admin bez zápisu tady výjimku nemá.
+   */
+  get diploNahled(): string[] {
+    return (process.env["DIPLO_NAHLED"] ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  },
   get jeProdukce(): boolean {
     return this.baseUrl.startsWith("https://");
   },
