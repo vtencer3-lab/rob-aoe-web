@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NAZEV_ROLE, POPIS_ROLE } from "../../../src/shared/diplomacie/role.js";
 import type { DiploData, DiploZapas, MojeHra, PingNaMape, RoleHrace } from "../../../src/shared/diplomacie/typy.js";
 import type { ZapasView } from "../../../src/shared/types.js";
@@ -280,6 +280,18 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
   const obal = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const hotovo = useRef(false);
+  // Tlačítko doprostřed panelu role Šaška, ne celého bloku s mapou
+  // (uživatel 4. 10. 2026); panel se změří a sleduje při změně velikosti.
+  const [stredRole, setStredRole] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const zmer = () => {
+      const role = obal.current?.querySelector<HTMLElement>(".role");
+      if (role) setStredRole(role.offsetTop + role.offsetHeight / 2);
+    };
+    zmer();
+    window.addEventListener("resize", zmer);
+    return () => window.removeEventListener("resize", zmer);
+  }, []);
   useEffect(() => {
     if (!hori) return;
     const dokonci = () => {
@@ -329,7 +341,7 @@ function PromenaSaska({ children, onHotovo }: { children: React.ReactNode; onHot
       <div className="zar" aria-hidden="true" />
       <video ref={video} className="plameny" src={PLAMENY} muted playsInline preload="auto" aria-hidden="true" data-testid="plameny" />
       {hori ? null : (
-        <button type="button" className="primarni promena-tlacitko" onClick={() => setHori(true)}>
+        <button type="button" className="primarni promena-tlacitko" style={stredRole === null ? undefined : { top: `${stredRole}px` }} onClick={() => setHori(true)}>
           Královská garda padla
         </button>
       )}
