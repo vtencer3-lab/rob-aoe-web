@@ -18,5 +18,5 @@ afterEach(() => {
   cleanup();
   // Pult GM si pamatuje odkrytí v sessionStorage (Zakryti `pamet`); jinak by
   // odkrytý pult z jednoho testu zůstal odkrytý v dalším.
-  sessionStorage.clear();
+  if (typeof sessionStorage !== "undefined") sessionStorage.clear();
 });

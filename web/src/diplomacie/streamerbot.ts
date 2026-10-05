@@ -11,9 +11,8 @@
  */
 export function akceStreamerbotu(url: string, klic: string): string {
   return `// AoE2 Diplomacie — data ze hry na web (${url})
-// Streamer.bot: Actions → nová akce → sub-akce Core → C# → Execute C# Code,
-// vlož celý tento kód, Compile, Save. Trigger: Core → Timed Actions,
-// interval 1 s, zapnout. Klíč níž je tvůj osobní — nesdílej ho.
+// Importováno z webu (Streamer.bot → Import). Spouští ho časovač
+// „AoE Diplomacie — most“ každou sekundu. Klíč níž je tvůj osobní — nesdílej ho.
 using System;
 using System.IO;
 using System.Net;
@@ -87,4 +86,77 @@ public class CPHInline
     }
 }
 `;
+}
+
+/**
+ * Import pro Streamer.bot (uživatel 5. 10. 2026: „rovnou ve formátu importu,
+ * klíč zaintegrovaný dynamicky“): base64 z bajtů „SBAE“ + gzip JSONu —
+ * stejný formát, jaký Streamer.bot sám exportuje (ověřeno na exportech
+ * 1.0.x: obálka `meta`/`data`, `version` 23, C# kód jako base64 zdrojáku
+ * v `byteCode`, časovač v `data.timers` a trigger 701 s `timerId`).
+ * Obsahuje akci s kódem `akceStreamerbotu`, časovač 1 s a trigger.
+ */
+export async function importStreamerbotu(url: string, klic: string): Promise<string> {
+  const id = () => crypto.randomUUID();
+  const akceId = id();
+  const casovacId = id();
+  const kod = new TextEncoder().encode(akceStreamerbotu(url, klic));
+  const json = {
+    meta: { name: "AoE Diplomacie — most ke hře", author: "jouki.cz", version: "1.0.0", description: "Posílá soubor sondy z běžící hry AoE2 (ROB_*.xsdat) na web Diplomacie. Obsahuje tvůj osobní klíč — nesdílej ho.", autoRunAction: null, minimumVersion: null },
+    data: {
+      actions: [
+        {
+          id: akceId,
+          queue: "00000000-0000-0000-0000-000000000000",
+          enabled: true,
+          excludeFromHistory: true,
+          excludeFromPending: false,
+          name: "AoE Diplomacie — most",
+          group: "AoE Diplomacie",
+          alwaysRun: false,
+          randomAction: false,
+          concurrent: false,
+          triggers: [{ timerId: casovacId, id: id(), type: 701, enabled: true, exclusions: [] }],
+          subActions: [
+            {
+              name: null,
+              description: null,
+              references: ["C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll", "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.dll"],
+              byteCode: base64(kod),
+              precompile: false,
+              delayStart: false,
+              saveResultToVariable: false,
+              saveToVariable: "",
+              id: id(),
+              weight: 0,
+              type: 99999,
+              parentId: null,
+              enabled: true,
+              index: 0,
+            },
+          ],
+          collapsedGroups: [],
+        },
+      ],
+      queues: [],
+      commands: [],
+      websocketServers: [],
+      websocketClients: [],
+      timers: [{ id: casovacId, name: "AoE Diplomacie — most", enabled: true, repeat: true, interval: 1, randomInterval: false, upperInterval: 0, lines: 0, counter: 0 }],
+    },
+    version: 23,
+    exportedFrom: "1.0.1",
+    minimumVersion: "1.0.0-alpha.1",
+  };
+  const gzip = new Uint8Array(await new Response(new Blob([JSON.stringify(json)]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
+  const vse = new Uint8Array(4 + gzip.length);
+  vse.set(new TextEncoder().encode("SBAE"), 0);
+  vse.set(gzip, 4);
+  return base64(vse);
+}
+
+function base64(bajty: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bajty.length; i += 0x8000) s += String.fromCharCode(...bajty.subarray(i, i + 0x8000));
+  return btoa(s);
 }

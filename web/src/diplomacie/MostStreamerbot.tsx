@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import type { Hlidej } from "../rezimy/index.js";
 import { cesta } from "../cesty.js";
-import { Kopirovatelne } from "../views/Kopirovatelne.js";
 import { Skladaci } from "../views/Skladaci.js";
 import { diploApi } from "./api.js";
-import { akceStreamerbotu } from "./streamerbot.js";
+import { importStreamerbotu } from "./streamerbot.js";
 
 /** Kdy klíč vznikl a kdy jím naposledy přišla data — krátce česky. */
 const kdy = (iso: string) => new Date(iso).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -18,7 +17,9 @@ const kdy = (iso: string) => new Date(iso).toLocaleString("cs-CZ", { day: "numer
 export function MostStreamerbot({ hlidej }: { hlidej: Hlidej }) {
   const [otevreno, setOtevreno] = useState(false);
   const [stav, setStav] = useState<{ vytvoren: string; naposledy: string | null } | null | undefined>(undefined);
-  const [novy, setNovy] = useState<string | null>(null);
+  // Import pro Streamer.bot s právě vytvořeným klíčem — klíč se ukáže jen teď.
+  const [importText, setImportText] = useState<string | null>(null);
+  const [zkopirovano, setZkopirovano] = useState(false);
   useEffect(() => {
     if (otevreno && stav === undefined) void hlidej(async () => setStav((await diploApi.stavKliceMostu()).klic));
   }, [otevreno]);
@@ -26,22 +27,19 @@ export function MostStreamerbot({ hlidej }: { hlidej: Hlidej }) {
   const vytvor = () =>
     void hlidej(async () => {
       const { klic } = await diploApi.novyKlicMostu();
-      setNovy(klic);
+      setImportText(await importStreamerbotu(url, klic));
+      setZkopirovano(false);
       setStav((await diploApi.stavKliceMostu()).klic);
     });
   const zrus = () =>
     void hlidej(async () => {
       await diploApi.zrusKlicMostu();
-      setNovy(null);
+      setImportText(null);
       setStav(null);
     });
-  const stahni = () => {
-    if (!novy) return;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([akceStreamerbotu(url, novy)], { type: "text/plain;charset=utf-8" }));
-    a.download = "aoe-diplomacie-streamerbot.cs";
-    a.click();
-    URL.revokeObjectURL(a.href);
+  const kopiruj = () => {
+    if (!importText) return;
+    void navigator.clipboard?.writeText(importText).then(() => setZkopirovano(true));
   };
   return (
     <Skladaci className="most-streamerbot" testId="most-streamerbot" hlava="Data ze hry přes Streamer.bot" otevreno={otevreno} onPrepnout={setOtevreno}>
@@ -57,21 +55,18 @@ export function MostStreamerbot({ hlidej }: { hlidej: Hlidej }) {
           ) : (
             <p data-testid="stav-klice">Klíč zatím nemáš.</p>
           )}
-          {novy ? (
+          {importText ? (
             <>
-              <p className="varovani">Klíč se ukazuje jen teď. Stáhni si akci (klíč je v ní) a nikomu ho neposílej.</p>
-              <Kopirovatelne hodnota={novy} popis="klíč mostu" testId="novy-klic" />
+              <p className="varovani">Import obsahuje tvůj osobní klíč a ukazuje se jen teď — nikomu ho neposílej.</p>
+              <textarea className="import-streamerbot" readOnly value={importText} rows={3} onFocus={(e) => e.currentTarget.select()} data-testid="import-streamerbot" />
               <p>
-                <button type="button" className="primarni" onClick={stahni}>
-                  Stáhnout akci pro Streamer.bot
+                <button type="button" className="primarni" onClick={kopiruj}>
+                  {zkopirovano ? "Zkopírováno" : "Kopírovat import"}
                 </button>
               </p>
-              <ol className="postup-streamerbot">
-                <li>Streamer.bot → Actions → pravým tlačítkem Add → pojmenuj třeba „AoE Diplomacie“.</li>
-                <li>Do akce přidej sub-akci Core → C# → Execute C# Code, vlož celý stažený soubor, Compile a Save.</li>
-                <li>Settings → Timed Actions → Add, interval 1 s, Enabled; pak ho akci přiřaď jako trigger (Core → Timed Actions).</li>
-                <li>Za hry se tu nahoře v pultu objeví „ze hry (GM) před … s“. Chyby píše Streamer.bot do svého logu.</li>
-              </ol>
+              <p className="ceka">
+                Ve Streamer.botu nahoře <strong>Import</strong> → vlož → <strong>Import</strong>. Hotovo: akce „AoE Diplomacie — most“ běží sama každou sekundu a za hry se tu nahoře objeví „ze hry (GM) před … s“.
+              </p>
             </>
           ) : null}
           <p className="most-tlacitka">
