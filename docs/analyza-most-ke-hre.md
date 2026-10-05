@@ -1,0 +1,152 @@
+# Analýza: most ke hře — co jde číst z běžící hry a jak to dostat na web
+
+Průzkum 1. 10. 2026 pro Židolištu (most ve Streamer.botu na PC GM). V žádném repu se nic neměnilo.
+Značky: **[D]** dokumentováno · **[O]** ověřeno na autorově PC 1. 10. 2026 (jen výpis a čtení složek) · **[I]** odvozeno · **[?]** neznámé.
+Zdroje: UGC-F <https://ugc.aoe2.rocks/general/xs/functions/functions/>, UGC-K <https://ugc.aoe2.rocks/general/xs/constants/constants/>, UGC-B <https://ugc.aoe2.rocks/general/xs/beginner/>,
+FE <https://www.forgottenempires.net/age-of-empires-ii-definitive-edition/xs-scripting-in-age-of-empires-ii-definitive-edition>, MOD = `D:\_BACKUP_2.0\Code Projects\Age Of Empires 2 DE - Maps & Ideas\docs\aoe2-modding.md`
+(živé pokusy AgeOfTwitch), PŘ = `docs/prehled-praci-a-zameru.md`, SPEC = `docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`.
+
+## Q1 — Co AoE2 DE zapisuje během zápasu
+
+Kořen: `%USERPROFILE%\Games\Age of Empires 2 DE\<id>\`, kde `<id>` je Steam ID nebo Xbox XUID (SPEC:398–401). `%LOCALAPPDATA%` ani složky Steamu jsem neprocházel a žádný ze zdrojů o nich nemluví: [?].
+
+- **`<id>\profile\<scénář>.xsdat` je jediný živý zdroj stavu hry.**
+  - [D] `bool xsCreateFile(bool append = true)` vytvoří soubor „with the same name as the RMS/scenario being played“, `false` ho přepíše. „In a multiplayer game a file is created for each player, and subsequent writes will be duplicated to each player“ (UGC-F §13.1). Zápis: `xsWriteString` (uint32 délka + bajty), `xsWriteInt` (int32), `xsWriteFloat` (float32), `xsWriteVector` (3× float), konec `xsCloseFile` (UGC-F §13.3–13.6, §13.13). Strop 1 MB na soubor, „unique to each player’s profile“ (FE, oddíl xsCreateFile).
+  - [O] Soubory leží v `profile\`, ne v kořeni `<id>` (MOD:16). V `<id>\profile\` jsou `aot_mpsync.xsdat`, `aot_votes.xsdat` a `AgeOfTwitch.xsdat` ze srpnových pokusů. V kořeni leží navíc jeden zbloudilý `AgeOfTwitch.xsdat` (12 B, 20. 8.), původ [?], takže hlídat jen `profile\`. Pro `LLC.aoe2scenario` čekám soubor `profile\LLC.xsdat` [I].
+  - Jak často:
+    - [D] XS `rule … active minInterval N maxInterval N { … }` (UGC-B §3 Rules, příklad „every 2 seconds“). Volba `highFrequency` je „independent of ingame speed“, takže min/maxInterval se počítají v herních sekundách [I]. MP běží 1,7× (MOD:99–100), tedy 30 herních s ≈ 18 s reálných.
+    - [D] Efekt triggeru **Script Call** zavolá funkci XS (UGC-B §1.1). Událost tak jde zapsat přímo z triggeru scénáře, třeba těsně před Declare Victory. Smyčkový trigger s podmínkou Timer jako náhrada rule: [I].
+    - [O] Rule, který každé ~2 s zapíše `xsGetGameTime()`, funguje jako heartbeat. Opakované čtení téhož souboru za běhu hry funguje taky (MOD:61–66).
+  - Co XS umí přečíst [D]:
+    - `xsGetPlayerInGame` = „still alive“ (UGC-F §7.6). Smrt a rezignaci nerozliší [I].
+    - `xsGetDiplomacy(a,b)` (§7.12): `cDiplomacyAlly`=0, `Neutral`=1, `Enemy`=3 (UGC-K §20).
+    - `xsPlayerAttribute` s `cAttributeRelics` 7, `Kills` 20, `Razings` 43, `UnitsConverted` 240 (UGC-K §13).
+    - `xsGetObjectCount` (hrady, UGC-F §9.34), `xsGetGameTime` (§11.3), `xsGetPlayerName` (§7.10).
+    - `xsTriggerVariable` (§10.8, „only works in a custom scenario“). LLC už v proměnných počítá zabití, ztráty a prodané relikvie (PŘ:2242–2248).
+    - Konstantu pro celkové skóre jsem v UGC-K nenašel [?].
+  - Přenos se scénářem [D]: kód v efektu Script Call se při načtení přesune do `default0.xs` „on every machine separately“ a funguje v MP i u diváků. Samostatný `.xs` dostanou hráči, diváci ne (<https://github.com/KSneijders/AoE2ScenarioParser/blob/master/docs/cheatsheets/xs.md> ř. 12–19). Kód mostu tedy patří do Script Call přímo v LLC, což musí udělat Jin.
+  - Rizika:
+    - Soubor vznikne **u každého hráče** (UGC-F §13.1). Psát do něj jen to, co smí vidět všichni, nebo zápis podmínit `xsUnsyncGetLocalPlayerId() == 7` (podmínka u diváka nefunguje a od 27.0 se nepoužívá — viz „Implementováno“). UGC-F §12.14 u té funkce varuje „only chat/UI … desync“. Zápis souboru simulaci nemění, takže by to mělo být bezpečné [I], ale **neověřené**.
+    - Jestli hra soubor zapisuje atomicky, dokumentace neříká [?]. Proto pořadové číslo na začátek i na konec souboru a čtenář přijme jen čtení, kde se obě shodují [I].
+- **`<id>\savegame\MP Replay v<build> @<datum> <čas> (n).aoe2record` se píše průběžně.**
+  - [D] „DE writes a replay *while the match is being played*, so a recording of a game in progress is half a file and does not parse until the game has finished“ (<https://github.com/ozansahal/aoe2-record-viewer> README ř. 201–203).
+  - [O] Soubor vzniká se startem hry a naposledy se zapíše na jejím konci (1. 10. 18:21:56 → 18:25:04, 4,7 MB; 20. 9. 19:33:57 → 20:26:55, 10,5 MB).
+  - Obsahuje jen příkazy hráčů: `CHAT`, `RESIGN`, `STANCE` (změna diplomacie v panelu), `TRIBUTE` (<https://github.com/happyleavesaoc/aoc-mgz/blob/master/mgz/fast/enums.py> ř. 10, 27, 30, 59, 84). Číst se dá proudově přes `fast.operation` až po EOF (README aoc-mgz ř. 41–56). Stav hry v něm není (smrt, relikvie, diplomacie nastavená triggery), viz PŘ:2251–2253 [I].
+  - [O] **Sonda na běžící hře 2. 10. 2026 (build 101.103.54800, hra pro víc hráčů, scénář):** záznam vzniká se startem hry a roste průběžně (~11 kB/s), **zkopírovat ho za běhu jde** (hra ho nedrží výhradně). Hlavička je u scénáře obří (3,9 MB — scénář je v ní vložený) a **`mgz` 1.8.51 ji nepřečte u žádného záznamu z DE** (`de.players`, i u zářijového buildu 48987). Tělo jde číst bez hlavičky (délka hlavičky = první uint32): u zářijového buildu celé (86 min, 9× chat, 1× změna postoje `STANCE`, `POSTGAME` na konci), u říjnového buildu spadne po 10 synchronizacích na „unknown data received“ — u dohraného i rozepsaného souboru stejně. **Záznam z aktuálního buildu `mgz` samo nepřečte** — ale stačí málo: nový typ operace 5 má pevných 12 B (`05 00 00 00 | ff ff ff ff` nebo `0`, čítač) a jde přeskočit. Vlastní čtečka [`nastroje/diplomacie/zaznam.py`](../nastroje/diplomacie/zaznam.py) (hlavičku přeskočí podle délky v prvních 4 bajtech, typ 5 přeskočí, zbytek čte funkcemi `mgz.fast`) přečetla **rozepsaný záznam běžící hry až po poslední celou operaci** (18 min herního času, 225 tisíc operací) i dohraný záznam včetně `POSTGAME`. Co z něj jde: herní čas, chat včetně systémových zpráv (`<player_id,N,-1> advanced to the Imperial Age.`), zpráv triggerů scénáře a AI, rezignace (`0b | hráč | 01 00 00`, ověřeno 2×), **změna postoje v panelu Diplomacie** (akce `GAME`, příkaz 0: `67 | hráč | 10 00 | 00 00 00 00 | hráč u16 | cíl u16 | postoj float | postoj u32`, 0 spojenec / 1 neutrál / 3 nepřítel — ověřeno živě: uživatel přepnul dva postoje a oba jsou v záznamu; `mgz` tenhle tvar parsuje špatně, čtečka má vlastní) a **tribut** (akce 196 `DE_TRIBUTE`: `c4 | hráč | 29 00 00 00 | jídlo f | dřevo f | kámen f | zlato f | … | cíl` — ověřeno živě 500 dřeva a 200 zlata; panel Diplomacie při zavření rozešle tribut 0 všem, to je šum). Stav hry (smrt krále, relikvie, diplomacie nastavená triggery) v záznamu není. Při téže hře nevznikl žádný `.xsdat` (scénář bez XS kódu) a `resources/_common/xs/default0.xs` byl jen auto-generovaná hlavička; `logs/<relace>/Main.txt` končí načtením profilu.
+- **Autosave** [O]: `<id>\savegame\-AUTOSAVE-.aoe2spgame` a `-LASTAUTOSAVE-.aoe2spgame` jsou jen ze hry pro jednoho (poslední zápis 20. 9. 19:13 během SP hry 18:58–19:14). Žádný `.aoe2mpgame` ve složce není. Interval je asi 20 min a nastavit nejde, to ale tvrdí jen komunita (<https://forums.ageofempires.com/t/how-to-turn-on-autosave/117825>). Autosave v MP: [?].
+- **Logy** [O]: `%USERPROFILE%\Games\Age of Empires 2 DE\logs\<RRRR.MM.DD-HHMM.SS>\Main.txt` a `MainLog.txt`, tedy mimo `<id>`. MainLog relace z 20. 9. 18:57 zabírá i 53minutovou MP hru, a přesto v něm není jediný řádek o rezignaci, vítězství ani zápase, jen síť a inicializace. Pro most nepoužitelné.
+- **Ostatní** [O]: `profile\Player.nfp` a `AdditionalOptions.aop` jsou nastavení, hra je zapisuje při odchodu (18:25:07–08). `telemetry\*.json` je neodeslaná telemetrie relace. Soubor s lobby jsem v `<id>` ani v `profile\` nenašel. Lobby a fázi „hraje se“ web už zná z WorldsEdge (`src/external/worldsEdgeLobby.ts:397`, `src/realtime/fazeLobby.ts:45`). Čtení paměti ve stylu CaptureAge je zamítnuté (PŘ:2236–2238).
+- **Sonda XS ověřena 2. 10. 2026 (02:36–02:45, build 101.103.54800).** Kopie LLC s jedním triggerem „XS SCRIPT“ (efekt Script Call, vložil `nastroje/diplomacie/sonda.py` přes `xs_manager.add_script` AoE2ScenarioParseru; Jinových 334 triggerů netknutých) ve hře opravdu píše `<id>\profile\LLC-sonda.xsdat`: pravidlo `minInterval 2 maxInterval 2` ho přepisuje každé 2 herní sekundy (čas 14 → 20 → 28 s), obě časové značky sedí, `xsPlayerAttribute(p, 7)` dává relikvie (mnich hráče 8 sebral relikvii → `[0,0,0,0,0,0,0,1]` hned v dalším zápisu), `xsGetPlayerInGame` kdo žije, `xsGetDiplomacy` matice 8×8 (FFA: spojenec sám sobě, ostatní nepřátelé). Soubor 332 B (s číslem verze), čtečka `nastroje/diplomacie/xsdat.py`. **Rozhodnutí uživatele:** sondu nebude dodávat autor scénáře — web ji při nahrání každé verze scénáře Diplomacie přibalí do kopie, kterou host stahuje (originál zůstává), aby „funkce byly vždy ready“ pro jakýkoli scénář (podprojekt 2). Neověřeno zůstává jen chování ve hře pro víc hráčů (Script Call se přenáší se scénářem, takže kompilace proběhne všude; soubor od 1.13.10-27.0 zapisuje každý počítač ve hře, hráči i diváci — viz „Soubor sondy vzniká na každém počítači“ níž) — první ostrá hra.
+- **Závěr Q1:** živý stav hry dává jen XS přes `.xsdat`. `.aoe2record` může doplnit chat, rezignaci (odliší ji od smrti) a tributy, pokud sonda potvrdí, že jde číst rozepsaný.
+
+## Q2 — Co mód Diplomacie potřebuje (návrh; web na tato data zatím žádného konzumenta nemá)
+
+- Proč (`src/shared/diplomacie/role.ts`):
+  - Garda se dozví roli každého mrtvého nebo rezignujícího hráče a se smrtí Nástupce prohrává (ř. 30–32).
+  - Šašek po smrti Nástupce prodává relikvie a po smrti Gardy se Gardou stává (ř. 43–44).
+  - Kat potřebuje smrt oběti „kýmkoli“ a za každou rezignaci nebo porážku dostává 2000 (ř. 53–54).
+  - Žoldák vyhrává a prohrává se svým paktem (ř. 48). Nájezdník vyhrává jen po porážce Nástupce (ř. 35). Nástupce musí 15 minut držet 7 relikvií (ř. 21).
+  - Sekundární cíle: 650 zabití, 150 zbouraných budov, 900 ztrát, 15 hradů, 5 prodaných relikvií, 99 konverzí (SPEC:85–91). Nástupce je ten, kdo cíl nedostal, a dnes ho odklikává GM (SPEC:91–92, 475–477). Role a cíle jsou v `src/shared/diplomacie/typy.ts:4–20`.
+- **Minimální události (posílat při změně):** `start` (hráči 1–8 se jmény); `cil` (pN dostal cíl k, takže web může navrhnout Nástupce); `vyrazen` (pN, herní čas, `druh: smrt|rezignace|nezname`); `diplomacie` (pN→pM `spojenec|neutral|nepritel`); `vitezstvi` (seznam pN); `konec`; volitelně `relikvie` (změna počtu).
+- **Heartbeat snímek každých 30–60 s reálného času** (rule zhruba po 50–100 herních s): u každého hráče `veHre`, relikvie, zabití, zbourané budovy, konverze a postup cíle z trigger proměnných, k tomu matice diplomacie 8×8. Snímek dorovná ztracenou událost. Web pak prohlížečům posílá dál celý stav, jako všude jinde (CLAUDE.md, Konvence).
+- **Identita hráče = barva (nebo jméno), nikdy číslo.** [O] Ověřeno 2. 10. 2026 ve 3 ráno: **XS čísluje hráče podle pořadí v lobby, ne podle slotů scénáře** — uživatel hrál šedého (scénářový hráč 7, `GM_BARVA = 7` v `src/shared/diplomacie/sestava.ts:5`) z prvního místa v lobby a sonda ho vedla jako 1, modrého AI (scénářový 1) jako 7; stejná čísla (lobby sloty) jsou i u akcí v záznamu `.aoe2record`. XS nezná Steam ID ani XUID, ale umí jméno (`xsGetPlayerName`) a barvu (`xsGetPlayerColorTag`); sonda ve formátu 2 obojí zapisuje ke každému číslu. Web zná dvojice `hrac_id ↔ barva` ze sestavy zápasu (`ucastnik.barva`, `src/diplomacie/db.ts:145–147`) a kontrola lobby hlídá, že barvy sedí — web tedy přeloží barvu → `hrac_id` a jméno použije ke kontrole.
+- Navržený tvar zprávy:
+  `{"v":1,"zapasId":123,"scenar":"LLC.aoe2scenario","seq":42,"herniCas":1834,"udalosti":[{"seq":41,"cas":1830,"typ":"vyrazen","hrac":3,"druh":"nezname"},{"seq":42,"cas":1834,"typ":"diplomacie","od":1,"k":5,"postoj":"spojenec"}],"snimek":{"hraci":[{"hrac":1,"jmeno":"…","veHre":true,"relikvie":2,"zabiti":120,"zbourano":8,"konverze":0}],"diplomacie":[[0,3,…]]}}`
+  `seq` v rámci zápasu jen roste, takže opakované doručení nic nepokazí. Když herní čas klesne, začal nový zápas (MOD:84–86).
+- Spotřebitel zatím neexistuje. Deník GM a vyhodnocení jsou podprojekt 2, který ještě nemá spec (SPEC:56, 661–668). Most je zatím jen zapsaný nápad (PŘ:2235–2256).
+
+## Q3 — Jak to web přijme
+
+- **Dnes žádný vstupní bod není.**
+  - Přihlášení je jen přes session cookie (`currentUser`, `src/auth/routes.ts:59–62`; `httpOnly`, `sameSite: lax`, ř. 43–57). Stráže jsou `requireUser`/`requireAdmin` (`src/http/guards.ts:14–25`) a `requireGm` (`src/diplomacie/routes.ts:36–46`).
+  - API token ani `Bearer` web nemá: grep přes `src/` najde jen odchozí volání Microsoftu a Xboxu.
+  - Routy se registrují v `src/http/server.ts:147–160` a CORS plugin tam není.
+  - SSE `/api/stream` (`src/http/routes/stream.ts:14`) posílá celý stav (`src/realtime/akceStav.ts:122–124`). Tajná data módu zaslepuje `rezim.rediguj` uvnitř `redigujProDivaka` (`src/realtime/redakce.ts:32–42`).
+- **A: Židolišta posílá data na web (doporučuji).**
+  - `POST /api/diplo/zapas/:id/hra` s hlavičkou `Authorization: Bearer <MOST_TOKEN>`. `MOST_TOKEN` je nová proměnná prostředí, nastavená jen v Coolify u `aoe-web-diplo` (`docs/nasazeni-jouki-cz.md` §3.6, ř. 295–313). Token porovnávat přes `crypto.timingSafeEqual` [I].
+  - Server ověří, že jde o zápas Diplomacie (`getDiploZapas`), a nastaví malý `bodyLimit` (vzor `MAX_VELIKOST`, `src/diplomacie/routes.ts:127–128`). Židolišta unese 12 MB, zpráva má pár kB.
+  - Pak zahodí `seq`, které už má, zbytek uloží do nové tabulky (např. `diplo_hra_udalost(zapas_id, seq, herni_cas, typ, data jsonb, prijato_v)` a k ní poslední snímek) a zavolá `broadcastAkce()`. Data jdou jen do `rezim.data`, takže je uvidí GM.
+  - Bez `:id` (`POST /api/diplo/hra`, server vybere běžící diplo zápas aktivní akce) by Židolišta nemusela nic nastavovat. Večer ale může běžet víc diplo zápasů (SPEC:604), a pro ten případ ukáže id pult GM ke zkopírování.
+  - Jeden token na celé nasazení dovolí zápis do kteréhokoli zápasu. Přísnější je token pro jeden zápas, vydaný v pultu GM.
+- **B: prohlížeč GM si data stahuje ze Židolišty.**
+  - Stránka `https://jouki.cz` volá `http://localhost:<port>`. Loopback se za smíšený obsah nepovažuje (<https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content>), ale Chrome od verze 142 chce povolení Local Network Access (<https://developer.chrome.com/blog/local-network-access>). Židolišta navíc musí vracet `Access-Control-Allow-Origin: https://jouki.cz`.
+  - Na web pak data posílá prohlížeč přes session GM (`requireGm`), takže žádné nové tajemství. Funguje to ale jen, dokud má GM stránku otevřenou. Jak se zachová Firefox a Safari: [?].
+- **Doporučení: A.** Nezávisí na otevřené kartě ani na povolení v prohlížeči, Židolišta už zprávy posílat umí a token je jedna proměnná v Coolify. B jen jako nouzové řešení, které nevyžaduje zásah na serveru.
+
+## Návrh Židolišty (odpověď peer session robjewsalot-d4, 1. 10. 2026 večer)
+
+- Most ve Streamer.botu umí kořeny jen pro čtení + FileSystemWatcher; owner nastaví kořen `aoe` = `%USERPROFILE%\Games\Age of Empires 2 DE\<steamid>\profile`. Při změně `LLC.xsdat` si server soubor vyžádá (≤ 1 MB), zparsuje a přepošle.
+- Formát xsdat: `xsWriteInt(seq)`, `xsWriteString(json)`, `xsWriteInt(seq)`; Židolišta bere jen čtení se shodným seq na začátku i konci. Při limitu délky stringu chunky (seq, count, chunks…, seq).
+- Tvar zprávy na web = návrh z Q2 + obálka `zdroj:'zidolista'`, `prijato` (ISO), `souborSeq`; snímek `hraci` jako objekt p1..p8 (veHre, relikvie, zabiti, zbourano, konverze, cil), `diplomacie` matice.
+- Doručení: varianta A, `POST …/hra`, `Authorization: Bearer <MOST_TOKEN>` (u Židolišty env `AOE_INVITER_URL` + `AOE_INVITER_TOKEN`, workspace rob). Preferují bez `:id` — moje odpověď: tělo nese `gm: "<steamid>"`, web najde běžící zápas Diplomacie aktivní akce s tímhle GM.
+- Kadence: při každé změně souboru (throttle 2 s), heartbeat řídí XS (minInterval 30–60 s).
+- Čeká se na spec podprojektu 2 (routa, env, odpovědi 200/409/404, JSON schéma); do té doby neimplementují odesílání, jen watcher + parser.
+
+## Implementováno 2. 10. 2026 — první kus mostu (`diplo` 1.13.10-23.0)
+
+Zkušební integrace na PC uživatele: data z běžící hry → web → pult GM, zatím jen pro **automatického Nástupce císaře** a postup sekundárních cílů. Deník GM, vyhodnocení a Židolišta jsou další kroky podprojektu 2.
+
+- **Sonda formátu 3** (`src/diplomacie/sonda.xs`, čisté ASCII, interval 2 herní s): `int verze (3) | int čas (herní s) | 8× int slot scénáře → číslo hráče ve hře (xsGetWorldPlayerId) | 8× (string jméno, string barva, float relikvie, int žije) podle čísla hráče ve hře | 64× int diplomacie | 256× int proměnné triggerů | int čas`. Čte ji `nastroje/diplomacie/xsdat.py` (verze 1 a 2 čte dál). Kód hlídá `python src/diplomacie/sonda.py --over` (xs-check; varování `InfLoopLim` u `infiniteLoopLimit` se ignoruje — příkaz je v sondě schválně, běžel ve hře v super sondě).
+- **Soubor sondy vzniká na každém počítači ve hře — hráči i diváci (od 1.13.10-27.0).** Historie:
+  - Do 1.13.10-26.1 sonda soubor každé 2 s přepisovala u každého hráče (UGC-F §13.1: „a file is created for each player“). Od 26.1 do 26.8 byl celý zápis uvnitř `if (xsUnsyncGetLocalPlayerId() == xsGetWorldPlayerId(7)) { … }`: psal jen počítač, u kterého sedí hráč na slotu GM (šedá, `GM_BARVA` módu).
+  - **[O] Zkouška s divákem 2. 10. 2026:** sonda běží i u diváka a soubor u něj vzniká, když podmínka platí. **`xsUnsyncGetLocalPlayerId()` ale u diváka vrací hráče, na kterého se divák právě dívá** — při přepínání pohledu 1 → 2 → 7 → 8. XS tedy diváka od hráče nerozezná a podmínka „jen GM“ u diváka platila, kdykoli se díval na šedého.
+  - Rob bude v zápasech Diplomacie buď GM (šedá), nebo jen divák, a data se mají sbírat v obou případech (hlavně jako GM). **Rozhodnutí uživatele 2. 10. 2026:** soubor se píše na každém počítači, bez šifrování — „komunitní hra s přáteli, co nemají zájem podvádět“. Podmínka ze `sonda.xs` zmizela, rozložení souboru se nezměnilo (formát 3).
+  - **Důsledek (vědomě přijatý):** soubor nese tajné věci všech — přidělené sekundární cíle (tedy i to, kdo je Nástupce císaře), relikvie, kdo žije. **Kterýkoli hráč si je může přečíst ze své složky `<id>\profile\`** veřejnou čtečkou `nastroje/diplomacie/xsdat.py`.
+  - Formát 4 s `localPlayer` (kdo sedí u počítače) nevznikl: web zdroj pozná podle id odesílatele (níž) a u diváka by číslo jen opakovalo sledovaného hráče — na nic by se nedalo spolehnout.
+  - Zápis souboru není stav simulace, takže stejné chování na všech počítačích hru nerozejde (a jiné chování od 26.1 do 26.8 ji v testu s divákem nerozešlo).
+  - **Verze nahrané s jinou sondou** (do 26.0 psala všem, 26.1–26.8 jen „GM“, tedy i divákovi, který sledoval šedého). Web u každé kopie ukládá otisk kódu sondy (`revize` v `diplo_scenar.sonda`, prvních 12 znaků SHA-256 textu `sonda.xs`) a ve správě scénáře udělá z „Přibalit automatizace“ hlavní (zlaté) tlačítko a zamkne „Stáhnout scénář“ (do 29.0 text „sonda: ano (zastaralá)“ s tlačítkem „Přibalit sondu“), když se liší od dnešního — po 27.0 to platí pro všechny dřív přibalené kopie. Po přibalení musí host scénář **stáhnout znovu**.
+  - Přibalení navíc hlásí, když nalezené cíle nevypadají jako úplné rozdání (počet označených triggerů není násobek počtu hráčů bez GM, žádný trigger, cíl pro slot GM) — věta se ukáže ve správě vedle „sonda: ano“.
+- **Web sondu přibaluje sám** (`src/diplomacie/sonda.py` + `sonda.ts`, stejný vzor jako rozbor: podproces Pythonu, limit 60 s, selhání = verze bez sondy s uloženým důvodem). Při nahrání verze vznikne kopie se sondou (`diplo_scenar.data_sonda`) a výpis cílů (`diplo_scenar.sonda`: `{ cile: [{ promenna, slot, text, limit }], oznaceno, chyba }`, migrace 033; do stavu pro prohlížeče jde jen souhrn `{ cilu, oznaceno, chyba }` — výpis cílů čte server při vyhodnocení snímku). U LLC: 42 označených triggerů přidělení, 42 cílů (6 druhů × 7 hráčů, slot 7 = GM žádný). Stažení (`/api/diplo/scenar/:id/soubor`, `/aktivni/soubor`) vrací kopii se sondou pod jménem **`ROB_DIPLO_<N>_v<verze sondy>.aoe2scenario`** (od 1.13.10-29.0; N = `diplo_scenar.poradi`, migrace 035 — dřív pod jménem originálu), soubor sondy ve hře je tedy `profile\ROB_DIPLO_<N>_v<verze sondy>.xsdat` a most posílá `scenar: "ROB_DIPLO_<N>_v<verze sondy>.aoe2scenario"`; originál dostane autor/admin přes `?original=1` pod jménem, pod kterým ho nahrál. Verzi nahrané dřív sondu dopočítá `POST /api/diplo/scenar/:id/sonda` (tlačítko „Přibalit automatizace“ ve správě scénáře). `nastroje/diplomacie/sonda.py` volá tentýž kód (`pribal`).
+  - Označení cílů: do každého triggeru, který aktivuje trigger-cíl (`display_as_objective` + podmínka na proměnnou), přibude efekt „proměnná 200 + slot := číslo počitadla“. Text cíle je popis triggeru se zástupkou `{}` místo `<p1_kill_count>` („zabito : {} /650 jednotek“), limit číslo z podmínky.
+  - Pojistky: scénář, který sondu už obsahuje, nebo sám používá proměnné 201–208, nebo má počitadlo cíle v proměnné 0, se neinstrumentuje (chyba s českou větou).
+  - **Validace XS je ve webovém kroku vypnutá** (`settings.ENABLE_XS_CHECK_INTEGRATION = False`): parser při zápisu scénáře s XS spouští přibalenou binárku `xs-check`, která je pro glibc, a produkční obraz je Alpine. Kód sondy validuje test lokálně; autorovo XS se nevaliduje (LLC žádné nemá).
+- **Příjem dat:** `POST /api/diplo/hra`, `Authorization: Bearer <MOST_TOKEN>` (bez proměnné se routa neregistruje; porovnání `timingSafeEqual` nad otisky, před čtením těla; `bodyLimit` 64 kB). Tělo: `{ v: 1, odesilatel, scenar, cas, sloty: [8], hraci: [{ cislo, jmeno, barva, relikvie, zije }], diplomacie: [[8×8]], promenne: [256] }`; `odesilatel` je id počítače, na kterém most běží (jméno složky profilu), starší most ho posílá jako `gm` a to se bere dál. Poslední snímek je jen v paměti (`src/diplomacie/hraPamet.ts`).
+  - **Hledání zápasu (od 27.0, `vyberZapasSnimku`):** (a) běžící zápas Diplomacie otevřené akce, kde `odesilatel` (nebo `xbox:<odesilatel>`) sedí na šedé — při víc takových nejnověji založený → zdroj **„gm“**; jinak (b) **běží-li v otevřené akci jediný** zápas Diplomacie a jméno pro hru jeho otištěné verze scénáře (`ROB_DIPLO_<N>`) je stejné jako `scenar` (bez přípony a velikosti písmen) → zdroj **„divak“**; jinak 404 s českou větou podle důvodu (nic neběží / běží víc zápasů / jiný scénář / zápas bez scénáře). U víc běžících zápasů se data diváka nepřiřazují — nehádá se.
+  - **Přednost GM:** snímek diváka se nepoužije, když od GM téhož zápasu přišel snímek před méně než 20 s (čas serveru, `DIVAK_USTUPUJE_GM_MS`); odpověď pak nese `pouzito: false` a poslední stav od GM. Když GM mlčí, přebírá divák; po přepnutí zdroje se herní časy obou zdrojů neporovnávají (divák je pozadu o zpoždění pro diváky — jeho starší čas není přeházené doručení ani nová hra) a odpověď hry o Nástupci se potvrzuje znovu dvěma snímky.
+  - **Data od diváka jsou opožděná o zpoždění pro diváky** (spectator delay hry): Nástupce i postup cílů se v pultu objeví o tolik později. Pult proto u stáří dat píše zdroj: „ze hry (GM) před 3 s“ / „ze hry (divák) před 3 s“.
+  - Automatický Nástupce (stálost dvou snímků, `nastupce_ze_hry`, podmíněný zápis v `priprava`) platí pro oba zdroje stejně.
+  - Odpověď `{ ok: true, zapasId, zdroj, nastupce }`, případně `pouzito: false` a `varovani` (hra hlásí jiný scénář, než zápas hraje; verze nemá výpis cílů).
+- **Odvození** (`src/shared/diplomacie/hra.ts`, čisté funkce): cíl slotu = `promenne[200 + slot]` pro sloty hráčů zápasu kromě GM (slot = barva v sestavě); „rozdáno“ = aspoň jeden slot má cíl; **Nástupce = jediný hráč bez cíle** (nula nebo víc → nejednoznačné, nehádá se); postup cíle `{ text, limit, hodnota: promenne[počitadlo] }`; relikvie a žije přes `sloty` (slot → číslo ve hře → záznam hráče).
+- **Automatický Nástupce:** ve stavu `priprava` ho server nastaví sám (od 26.0 jedním podmíněným `UPDATE`, až když ho dva snímky aspoň 4 herní s od sebe jmenují stejně; poslední odpověď hry drží `diplo_zapas.nastupce_ze_hry`) a rozešle stav. Ruční volbu GM nepřepíše, dokud hra neurčí někoho jiného; zápas bez Nástupce (po „Zpět na výběr Nástupce“) ho dostane znovu. V `losovano`/`rozeslano` se nic nemění. Průběžné snímky se prohlížečům rozesílají nejvýš jednou za 5 s (změna Nástupce hned).
+- **Viditelnost:** data ze hry jsou ve stavu jen jako `rezim.data.zapasy[i].hra` a `redigujDiplo` je maže každému kromě GM zápasu — i adminovi.
+- **Pult GM:** v přípravě věta „Nástupce určila hra: X“ a vybraná dlaždice; v tabulce rolí pod každým hráčem řádek „zabito: 3/650 jednotek · relikvie 0 · vyřazen“; pod mapou stáří dat („ze hry před 4 s“, po 45 s „hra mlčí …“).
+- **Zkušební most** `nastroje/diplomacie/most.py` (jen standardní knihovna): hlídá `<id>\profile\*.xsdat`, bere nejnověji změněný soubor formátu 3 a jen platná čtení; posílá při změně obsahu (bez herního času) nejvýš jednou za 2 s a aspoň jednou za 15 s jako tep, dokud hra soubor přepisuje. Soubor nezměněný 30 s je z dřívější hry a neposílá se. Token z `MOST_TOKEN` nebo `~/.aoe-most-token`, `odesilatel` = jméno složky `<id>` (`--odesilatel` pro jiné, `--gm` zůstává jako starší jméno přepínače), `--url` (výchozí `https://jouki.cz/aoe/diplo`), `--nasucho` jen vypisuje. U každého odeslání vypíše, jak ho web vzal („jako GM“ / „jako divák“, u diváka případně „nepoužito, data posílá GM“). Běží na PC GM i diváka; **na streamu se dvěma počítači musí běžet na tom, kde běží hra** (soubor je v profilu hry na tom počítači).
+
+**Neověřeno ve hře** (první ostrá zkouška je na uživateli): že hra se scénářem ze stažené kopie zapisuje do proměnných 201–208 (označení cílů ve hře ještě neběželo); že `xsGetWorldPlayerId` v provozní sondě dává stejný převod jako v super sondě; most na PC diváka proti webu (zdroj „divak“, přednost GM) — divák soubor píše (ověřeno), odeslání z jeho PC ještě neběželo. **Ověřeno v kontejneru** (kontrolor, 2. 10. 2026): `sonda.py` v produkčním obrazu (Alpine) nad LLC — ok, 42 označených triggerů, 5 s.
+
+Proti návrhu z Q2/Q3 výš: žádné `seq` ani události — most posílá celé snímky a web z nich bere poslední (obnova po výpadku zdarma, jako u SSE); routa je bez `:id`, zápas se hledá podle odesílatele (GM, nebo divák jediného běžícího zápasu); žádná tabulka, data jsou pomíjivá.
+
+## Stav 3. 10. 2026 večer (`diplo` 1.13.10-37.4) — formát 8, agent, králové, relikvie
+
+- **Cesta dat:** hra (sonda v kopii `ROB_DIPLO_<N>_v<verze sondy>.aoe2scenario`) →
+  `<id>\profile\ROB_DIPLO_<N>_v<verze sondy>.xsdat` → **agent Streamer.botu na herním PC**
+  (trvalé WebSocket spojení se serverem Židolišty, sleduje jen
+  `*\profile\ROB_*.xsdat`, víc PC na jednom tokenu rozlišuje server) →
+  server Židolišty (dekodér formátů 1–4 bez značky a 5–8 se značkou) →
+  `POST /api/diplo/hra` (Bearer `MOST_TOKEN`). `most.py` zůstává jako
+  zkušební náhrada agenta.
+- **Formát 8** (sonda každou herní sekundu): `int32 0x44424F52` („ROBD“) |
+  `int32 8` | `int32 čas` | `8× int32 slot → hráč` | `8× (string jméno,
+  string barva, float relikvie v klášteře, int žije)` | `8× (float x, float
+  y)` první král (objekt 434; −1 = žádný) | `int32 počet` (0–32) +
+  `počet× (float x, float y, float hráč)` relikvie | `64× int32
+  diplomacie` | `256× int32 proměnné` | `int32 čas`. Formát 5 = bez králů
+  a relikvií, 6 = s králi, 7 = relikvie bez hráče. Tělo pro web navíc nese
+  `hraci[].kral: {x,y}|null` a `relikvieNaMape: [{x,y,hrac}]`.
+- **Relikvie — ověřeno diagnostikou ve hře:** volná = objekt 285 gaii
+  (třída 942). **Zvednutá relikvie zanikne** a nosič změní typ: mnich
+  s relikvií objekt 286, misionář s relikvií objekt 2557 — oba **třída
+  943**. Mnich/misionář bez relikvie je třída 918 a
+  `xsGetUnitAttributeHeld(u, -1)` u něj vrací 100 (víra) — proto „drží
+  něco“ relikvii nepozná (bralo i farmy a ovce). Relikvie v klášteře je dál
+  objekt 285, jen garrisonovaná v budově (`xsGetGarrisonedInUnitId` →
+  `xsGetUnitOwner`). Relikvie do 8 dílců od tržiště GM (slot 7) se
+  nesleduje (zázemí GM na kraji mapy).
+- **XS pasti:** literál nejvýš 9 číslic (`114519637 * 10` místo
+  1145196370); `xsGetPlayerUnitIds` vrací jen jednotky na mapě
+  (garrisonované ne); pole se nedají mazat — opakovaně volat jen funkce
+  s parametrem „znovu použít pole“; sonda musí být čisté ASCII (i komentáře).
+- **Diagnostika ve hře:** vlastní scénář, který místo sondy zapisuje do
+  `<scénář>.xsdat` vlastní výpis (skripty `diag4.py` + `cti_diag.py` ve
+  scratchpadu session 3. 10.), je rychlejší než výpis do chatu a screenshoty.
+

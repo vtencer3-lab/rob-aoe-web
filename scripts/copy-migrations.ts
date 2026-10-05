@@ -13,3 +13,14 @@ const dest = join(import.meta.dirname, "..", "dist", "database");
 await mkdir(dest, { recursive: true });
 await cp(src, dest, { recursive: true });
 console.log(`Zkopírováno database/ -> ${dest}`);
+
+// Rozbor scénáře Diplomacie a přibalení sondy běží v Pythonu vedle
+// zkompilovaných rozbor.js a sonda.js (hledají je přes import.meta.dirname).
+// requirements.txt sem nepatří: čte ho jen Dockerfile, a to ze src/.
+const diplo = join(import.meta.dirname, "..", "src", "diplomacie");
+const diploCil = join(import.meta.dirname, "..", "dist", "src", "diplomacie");
+await mkdir(diploCil, { recursive: true });
+for (const soubor of ["rozbor.py", "barvy_terenu.json", "sonda.py", "sonda.xs"]) {
+  await cp(join(diplo, soubor), join(diploCil, soubor));
+}
+console.log(`Zkopírován rozbor scénáře a sonda -> ${diploCil}`);

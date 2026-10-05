@@ -1,12 +1,13 @@
 # Nasazení na jouki.cz a pracovní postup (dev → main)
 
-Web běží na serveru jouki.cz ve **třech** kopiích, každá z jedné větve repozitáře:
+Web běží na serveru jouki.cz ve **čtyřech** kopiích, každá z jedné větve repozitáře:
 
 | Větev | Adresa | K čemu |
 |---|---|---|
 | `main` | <https://jouki.cz/aoe> | ostrá verze, na kterou se posílají lidé |
 | `dev` | <https://jouki.cz/aoe/dev> | vývojová verze, odtud se releasuje; musí zůstat pořád vydatelná, aby šel kdykoliv poslat hotfix |
 | `experimental` | <https://jouki.cz/aoe/experimental> | pískoviště na velké pokusy, které se klidně zahodí (od 8. 9. 2026) |
+| `diplo` | <https://jouki.cz/aoe/diplo> | Coolify `aoe-web-diplo` (`0kh5tb4uqgkyeuy77sy32mng`), DB `rob_aoe_diplo` — mód Diplomacie, do `dev` přes merge jako `experimental` (od 1. 10. 2026) |
 
 **Commit do větve = nasazení.** Nic dalšího se nedělá: po pushi se na serveru
 sestaví nový obraz, proběhnou migrace a nová verze se objeví na adrese. Trvá
@@ -194,6 +195,9 @@ npm run verze -- experiment    # dev 0.19.0 → 0.19.0-19.0
 Bez argumentu si příkaz základ vezme z větve `dev` sám, když je vlastní
 verze ještě ta stará pokusná; jinak zdvojí verzi, kterou má.
 
+Stejně se verzuje větev `diplo` (`POKUSNE_VETVE` ve `scripts/verze.ts`);
+`z-experimentu` pro ni dostává verzi ručně.
+
 Pravidla jsou celá v `scripts/verze.ts` a hlídá je `scripts/verze.test.ts`
 (tabulka výše je v něm doslova jako testy). Skript navíc odmítne:
 
@@ -218,8 +222,9 @@ jako tři aplikace:
 | `aoe-web` | `main` | `https://jouki.cz/aoe` | `https://jouki.cz/aoe` | `/aoe/` |
 | `aoe-web-dev` | `dev` | `https://jouki.cz/aoe/dev` | `https://jouki.cz/aoe/dev` | `/aoe/dev/` |
 | `aoe-web-experimental` | `experimental` | `https://jouki.cz/aoe/experimental` | `https://jouki.cz/aoe/experimental` | `/aoe/experimental/` |
+| `aoe-web-diplo` | `diplo` | `https://jouki.cz/aoe/diplo` | `https://jouki.cz/aoe/diplo` | `/aoe/diplo/` |
 
-Obě staví z veřejného repa (`https://github.com/vtencer3-lab/rob-aoe-web`)
+Všechny staví z veřejného repa (`https://github.com/vtencer3-lab/rob-aoe-web`)
 podle `Dockerfile` v kořeni. Sestavený kontejner obsluhuje API i frontend
 z jednoho procesu (`node dist/src/main.js`), přesně jako `npm start` lokálně.
 
@@ -281,28 +286,32 @@ pár vteřin běží předchozí verze nad novým schématem.
 ### 3.5 Databáze
 
 Každá kopie má **vlastní databázi** (`rob_aoe`, `rob_aoe_dev`,
-`rob_aoe_experimental`) na jednom PostgreSQL 18, který na serveru už běžel
-pro jiné projekty. Přístup k němu mají jen kontejnery na serveru, zvenčí
-není vidět. Vývojová i pokusná databáze se dají kdykoliv vyprázdnit; ostrá
-ne. Databázové testy běží proti čtvrté, `rob_aoe_test`.
+`rob_aoe_experimental`, `rob_aoe_diplo`) na jednom PostgreSQL 18, který na
+serveru už běžel pro jiné projekty. Přístup k němu mají jen kontejnery na
+serveru, zvenčí není vidět. Vývojová i pokusná databáze (`experimental`,
+`diplo`) se dají kdykoliv vyprázdnit; ostrá ne. Databázové testy běží proti
+páté, `rob_aoe_test`.
 
 ### 3.6 Proměnné prostředí
 
 Nastavují se v Coolify u každé aplikace zvlášť, do repa nepatří:
 
-| Proměnná | ostrá | vývojová | pokusná |
-|---|---|---|---|
-| `DATABASE_URL` | `postgres://…/rob_aoe` | `postgres://…/rob_aoe_dev` | `postgres://…/rob_aoe_experimental` |
-| `BASE_URL` | `https://jouki.cz/aoe` | `https://jouki.cz/aoe/dev` | `https://jouki.cz/aoe/experimental` |
-| `BASE_PATH` (build) | `/aoe/` | `/aoe/dev/` | `/aoe/experimental/` |
-| `HOST` | `0.0.0.0` | `0.0.0.0` | `0.0.0.0` |
-| `PORT` | `3000` | `3000` | `3000` |
-| `ADMIN_STEAM_ID` | seznam `hrac_id` s režií oddělený čárkou (Rob + správce); bere Steam ID i `xbox:<xuid>`, jméno proměnné zůstalo kvůli nasazení (viz `docs/prehled-praci-a-zameru.md` §3.57) | totéž | totéž |
-| `STEAM_API_KEY` | volitelné | volitelné | volitelné |
-| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | nastaveno 17. 9. 2026 — táž registrace jako dev | registrace z entra.microsoft.com | **nenastaveno** — pokusná Microsoft přihlášení nemá |
-| `LOG_LEVEL` | `info` | `info` | `info` |
-| `DEV_PRISTUP` | nenastavovat | nenastavovat | nenastavovat |
-| `ZKUSEBNI_HRACI` | `true` — na výslovné přání uživatele od 9. 9. 2026, ať jdou zkušební hráči a přetáčení času i na ostré | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` |
+| Proměnná | ostrá | vývojová | pokusná | diplo |
+|---|---|---|---|---|
+| `DATABASE_URL` | `postgres://…/rob_aoe` | `postgres://…/rob_aoe_dev` | `postgres://…/rob_aoe_experimental` | `postgres://…/rob_aoe_diplo` |
+| `BASE_URL` | `https://jouki.cz/aoe` | `https://jouki.cz/aoe/dev` | `https://jouki.cz/aoe/experimental` | `https://jouki.cz/aoe/diplo` |
+| `BASE_PATH` (build) | `/aoe/` | `/aoe/dev/` | `/aoe/experimental/` | `/aoe/diplo/` |
+| `HOST` | `0.0.0.0` | `0.0.0.0` | `0.0.0.0` | `0.0.0.0` |
+| `PORT` | `3000` | `3000` | `3000` | `3000` |
+| `ADMIN_STEAM_ID` | seznam `hrac_id` s režií oddělený čárkou (Rob + správce); bere Steam ID i `xbox:<xuid>`, jméno proměnné zůstalo kvůli nasazení (viz `docs/prehled-praci-a-zameru.md` §3.57) | totéž | totéž | zkopírováno z vývojové (1. 10. 2026) |
+| `STEAM_API_KEY` | volitelné | volitelné | volitelné | zkopírováno z vývojové (1. 10. 2026) |
+| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | nastaveno 17. 9. 2026 — táž registrace jako dev | registrace z entra.microsoft.com | **nenastaveno** — pokusná Microsoft přihlášení nemá | zkopírováno z vývojové (1. 10. 2026) — stejná registrace |
+| `LOG_LEVEL` | `info` | `info` | `info` | `info` |
+| `DEV_PRISTUP` | nenastavovat | nenastavovat | nenastavovat | nenastavovat |
+| `ZKUSEBNI_HRACI` | `true` — na výslovné přání uživatele od 9. 9. 2026, ať jdou zkušební hráči a přetáčení času i na ostré | `true` — tlačítka „+ Zkušební hráč“ v režii | `true` | `true` |
+| `AUTORI_SCENARE` | — | — | — | seznam `hrac_id` autorů scénáře Diplomacie oddělený čárkou, stejný tvar jako `ADMIN_STEAM_ID` (smí nahrávat a aktivovat verze scénáře i bez režie, spec §5.1); admini nahrávat smí vždy. Zatím nenastaveno — Jinovo `hrac_id` po jeho prvním přihlášení na `/aoe/diplo` |
+| `PYTHON` | — | — | — | nenastavovat: interpret pro rozbor scénáře (`src/diplomacie/rozbor.py`) má v kontejneru výchozí `/opt/rozbor/bin/python` z Dockerfile (`config.python`); ověřeno `docker exec` 1. 10. 2026. Lokálně na Windows `PYTHON=python` v `.env` |
+| `MOST_TOKEN` | — | — | — | sdílené tajemství mostu ke hře (Diplomacie): s ním posílá skript na PC GM (`nastroje/diplomacie/most.py`) data z běžící hry na `POST /api/diplo/hra` (`Authorization: Bearer …`). Bez proměnné se routa vůbec neregistruje. Dlouhý náhodný řetězec; nastavuje se jen v Coolify a u GM (proměnná `MOST_TOKEN` nebo soubor `~/.aoe-most-token`), do repa ani do dokumentace nepatří. Po nastavení `/deploy`, ne `/restart` |
 
 Zkušební dveře (`/api/dev/*`) se na `https` samy zavírají, takže na jouki.cz
 nejsou dostupné ani ve vývojové verzi. Zkouška večera nasucho se dělá lokálně.
@@ -316,8 +325,8 @@ jinde, a když jedna chybí, selže to jinak:
 
 **Registrace v Azure.** Jediná, sdílená všemi nasazeními, `AoE 2 komunitky`,
 ID aplikace `87a13d9c-6d99-4090-abbd-ad985c042691`, adresář *Default Directory*
-(`mjoukalgmail.onmicrosoft.com`). Má čtyři návratové adresy — ostrá, dev,
-pokusná a `http://localhost:3000` — všechny ve tvaru
+(`mjoukalgmail.onmicrosoft.com`). Má pět návratových adres — ostrá, dev,
+pokusná, `diplo` (od 1. 10. 2026) a `http://localhost:3000` — všechny ve tvaru
 `<base>/api/auth/microsoft/return`. Adresa **musí být zapsaná v té registraci,
 jejíž `client_id` server posílá**; jinak Microsoft vrátí chybovou stránku až po
 přesměrování, ne dřív.

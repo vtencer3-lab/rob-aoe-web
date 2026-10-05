@@ -21,9 +21,11 @@ oba odkazy se z něj odvozují. Nikdy neukládat sestavené URI.
 
 ## Větve, verze a nasazení (platí pro každého agenta v tomhle repu)
 
-Web běží na **jouki.cz** ve třech kopiích a nasazuje se samo z commitu:
+Web běží na **jouki.cz** ve čtyřech kopiích a nasazuje se samo z commitu:
 `dev` → <https://jouki.cz/aoe/dev>, `main` → <https://jouki.cz/aoe>,
-`experimental` → <https://jouki.cz/aoe/experimental>.
+`experimental` → <https://jouki.cz/aoe/experimental>,
+`diplo` → <https://jouki.cz/aoe/diplo> — mód Diplomacie, pravidla jako
+`experimental`.
 Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
 
 - **Pracuje se ve větvi `dev`.** Do `main` se přímo necommituje.
@@ -32,6 +34,10 @@ Podrobně v [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md).
   `main` nejde nikdy přímo — vždycky přes merge do `dev`. Smysl: `dev`
   zůstane kdykoliv vydatelná pro hotfix. Postup a řešení konfliktu verzí
   má [`docs/nasazeni-jouki-cz.md`](docs/nasazeni-jouki-cz.md) §1.1.
+- **`diplo` je pokusná větev jako `experimental`**, ale dlouhodobá: mód
+  Diplomacie. Nasazuje se na `/aoe/diplo` nad vlastní databází
+  (`rob_aoe_diplo`), verzuje se stejně (`POKUSNE_VETVE` ve
+  `scripts/verze.ts`) a do `main` nejde nikdy přímo.
 - **Každý commit, který mění chování, zvedne verzi:** `npm run verze`
   (patch) v tomtéž commitu. Nová funkce nebo migrace = `npm run verze -- minor`.
   Verze je v `package.json` a `src/shared/verze.ts`, příkaz mění obojí.
@@ -82,7 +88,7 @@ npm test                    # hermetické
 npm run test:db             # databázové — POZOR níž
 npm --prefix web test       # frontend
 npx tsc --noEmit            # typová kontrola BACKENDU — na web/ nesahá
-npm --prefix web exec tsc -- -b --force   # typová kontrola frontendu
+(cd web && npx tsc -b --force)   # typová kontrola frontendu
 ```
 
 **`npx tsc --noEmit` frontend nekontroluje.** Kořenový `tsconfig.json` `web/`
@@ -92,6 +98,10 @@ testů) tiše zastaví `vite build` — `web/dist` zůstane starý, server dál
 servíruje předchozí bundle a v prohlížeči se změna neprojeví. Po zásahu do
 sdílených typů proto vždycky doběhnout celý `npm run build` a podívat se, že
 se změnil hash souboru ve `web/dist/assets`.
+
+**`npm --prefix web exec tsc` taky ne** — `npm exec` spustí `tsc` v kořeni repa,
+takže zkontroluje backend a hlásí zeleno i s chybou ve `web/` (zjištěno
+3. 10. 2026). Frontend jen `cd web && npx tsc -b --force`, výsledek z návratového kódu.
 
 `.env` čtou jen `dev`, `start` a `db:migrate` (`--env-file-if-exists`).
 Testy schválně ne.
@@ -123,3 +133,17 @@ Spouštění a živé ověření dělá Claude, ne uživatel: přebuildovat, res
 ověřit curlem a teprve pak odpovídat. Zelená sada testů není důkaz, že UI
 funguje — několik vad viditelných na první pohled jí prošlo. Vizuální kontrola
 zůstává na uživateli.
+
+**Módy akce (Diplomacie) žijí vedle jádra, ne v něm.** Jádro mód zná jen
+přes háčky: registry `src/rezimy/index.ts` a `web/src/rezimy/index.tsx`,
+sdílené `src/shared/rezimy.ts` a sloty v obrazovkách jádra (výčet H1–H13
+v `docs/prehled-praci-a-zameru.md` §3.60); modul módu je `src/diplomacie/`,
+`src/shared/diplomacie/`, `web/src/diplomacie/`. Žádné
+`if (rezim === "diplomacie")` v jádru — chybí-li háček, přidat háček.
+Tajná data módu nikdy neopustí větev `rezim.data` stavu a zaslepuje je mód
+sám (`rediguj`), i pro admina: admin, který není GM, role nevidí.
+Podrobně `docs/prehled-praci-a-zameru.md` §3.60.
+
+**Pravidla Diplomacie mají kontrolní seznam** [`docs/diplomacie-kontrolni-seznam.md`](docs/diplomacie-kontrolni-seznam.md):
+co platí, kde to je a který test to hlídá. Nové pravidlo nebo funkci zapsat
+tam hned; po změně v Diplomacii seznam projít jako regresní kontrolu.

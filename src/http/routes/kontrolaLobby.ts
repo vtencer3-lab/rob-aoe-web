@@ -9,6 +9,7 @@ import { nastavFaziLobby } from "../../realtime/fazeLobby.js";
 import {
   AI_OBTIZNOSTI,
   doplnNastaveni,
+  jePlatneJmenoScenare,
   KONECNE_VEKY,
   ODKRYTI_MAPY,
   DATA_MODY,
@@ -57,8 +58,10 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   // vit === 9`, takže Time Limit, Score a Last Man Standing server tiše
   // zahodil — panel je poslal, zpátky přes SSE přišla stará hodnota a výběr
   // se sám přepnul na původní.
+  // Nula je v tabulce jen kvůli výpisu scénářových lobby (hra ji posílá,
+  // ale nenabízí) — jako očekávání by neměla co porovnávat.
   const vit = cislo(t["vitezstvi"]);
-  if (vit !== undefined && vit in VITEZSTVI) v.vitezstvi = vit;
+  if (vit !== undefined && vit !== 0 && vit in VITEZSTVI) v.vitezstvi = vit;
   if (typeof t["cheaty"] === "boolean") v.cheaty = t["cheaty"];
 
   // Další nastavení: číselníky jen z hodnot, které hra opravdu vydává;
@@ -97,6 +100,17 @@ export function prectiNastaveniLobby(telo: unknown): Partial<NastaveniLobby> {
   for (const { klic } of ZASKRTAVATKA) {
     if (typeof t[klic] === "boolean" || t[klic] === null) v[klic] = t[klic] as boolean | null;
   }
+
+  if (t["scenar"] === null) v.scenar = null;
+  else if (typeof t["scenar"] === "string") {
+    if (!jePlatneJmenoScenare(t["scenar"])) throw new HttpError(400, "Jméno scénáře musí být soubor .aoe2scenario bez cesty.");
+    v.scenar = t["scenar"];
+  }
+  if (t["scenarStarsi"] === null) v.scenarStarsi = null;
+  else if (Array.isArray(t["scenarStarsi"]) && t["scenarStarsi"].every((j) => typeof j === "string" && jePlatneJmenoScenare(j))) {
+    v.scenarStarsi = t["scenarStarsi"] as string[];
+  }
+
   if (Object.keys(v).length === 0) throw new HttpError(400, "Nastavení lobby neobsahuje nic, co by šlo uložit.");
   return v;
 }

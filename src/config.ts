@@ -31,6 +31,18 @@ export function nazevCookie(basePath: string): string {
   return `sid${basePath.replace(/\//g, "_")}`;
 }
 
+/**
+ * Seznam `hrac_id` z proměnné prostředí: čárkou (nebo mezerou, středníkem)
+ * oddělené hodnoty, prázdné se zahodí; chybějící proměnná = prázdný seznam.
+ * Bere Steam ID i `xbox:<xuid>`.
+ */
+function seznamId(jmeno: string): string[] {
+  return (process.env[jmeno] ?? "")
+    .split(/[\s,;]+/)
+    .map((id) => id.trim())
+    .filter((id) => id !== "");
+}
+
 export const config = {
   get baseUrl(): string {
     return process.env["BASE_URL"] ?? "http://localhost:3000";
@@ -78,10 +90,14 @@ export const config = {
    * Prázdný seznam = proměnná chybí.
    */
   get adminHracIds(): string[] {
-    return (process.env["ADMIN_STEAM_ID"] ?? "")
-      .split(/[\s,;]+/)
-      .map((id) => id.trim())
-      .filter((id) => id !== "");
+    return seznamId("ADMIN_STEAM_ID");
+  },
+  /**
+   * Autoři scénáře Diplomacie (spec §5.1): smí nahrávat verze, i když
+   * nejsou admini. Stejný tvar jako ADMIN_STEAM_ID.
+   */
+  get autoriScenare(): string[] {
+    return seznamId("AUTORI_SCENARE");
   },
   /** Nouzový režim pro rozjezd bez Roba: první přihlášený se stane adminem. */
   get adminBootstrap(): boolean {
@@ -101,6 +117,40 @@ export const config = {
    */
   get zkusebniHraci(): boolean {
     return process.env["ZKUSEBNI_HRACI"] === "true";
+  },
+  /**
+   * Interpret pro rozbor scénáře Diplomacie (src/diplomacie/rozbor.py).
+   * V kontejneru virtuální prostředí z Dockerfile; ve vývoji na Windows
+   * `PYTHON=python` v .env.
+   */
+  get python(): string {
+    return process.env["PYTHON"] ?? "/opt/rozbor/bin/python";
+  },
+  /**
+   * Sdílené tajemství mostu ke hře (Diplomacie): skript na PC GM s ním
+   * posílá data z běžící hry na `POST /api/diplo/hra`. Prázdné = routa se
+   * vůbec neregistruje.
+   */
+  get mostToken(): string {
+    return process.env["MOST_TOKEN"] ?? "";
+  },
+  /**
+   * Klíč overlayů do OBS (Diplomacie, `GET /api/diplo/obs?klic=`): kdo ho
+   * má, vidí běžící zápas očima GM. Prázdné = routa se neregistruje.
+   */
+  get obsKlic(): string {
+    return process.env["OBS_KLIC"] ?? "";
+  },
+  /**
+   * Kdo smí u zápasu Diplomacie, ve kterém **nehraje**, nahlédnout do pohledu
+   * kteréhokoli hráče i GM (jen ke čtení; uživatel 4. 10. 2026). Hráčská id
+   * oddělená čárkou; prázdné = nikdo. Admin bez zápisu tady výjimku nemá.
+   */
+  get diploNahled(): string[] {
+    return (process.env["DIPLO_NAHLED"] ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
   },
   get jeProdukce(): boolean {
     return this.baseUrl.startsWith("https://");

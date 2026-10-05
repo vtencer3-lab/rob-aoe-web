@@ -133,6 +133,9 @@ export function nastaveniZOptions(o: Map<string, string>): NonNullable<PoznatekL
     cheaty: ano("1"),
     sadaCivilizaci: cislo(o.get("101")),
     rezim: cislo(o.get("5")),
+    // Jméno souboru scénáře; ověřeno naživo 1. 10. 2026 na 10 scénářových
+    // lobby (spec Diplomacie §2.2). U ostatních režimů klíč chybí.
+    scenar: o.get("38") ?? null,
     aiObtiznost: cislo(o.get("61")),
     suroviny: cislo(o.get("37")),
     odkrytiMapy: cislo(o.get("82")),

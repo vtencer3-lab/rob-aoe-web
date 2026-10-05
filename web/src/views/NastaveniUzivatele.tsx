@@ -3,7 +3,7 @@ import { useState, type CSSProperties } from "react";
 import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT, ZVONEK_PO_MINUTACH } from "../../../src/shared/aktivita.js";
 import chatUrl from "../assets/chat.mp3";
 import zvonUrl from "../assets/zvon.mp3";
-import { nahrajZkousku, nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, ZESILENI_MAX, ZESILENI_MIN } from "../hlas.js";
+import { nahrajZkousku, nastavHlasitostAdmina, nastavZesileniMikrofonu, VYCHOZI_HLASITOST_ADMINA, VYCHOZI_ZESILENI, ZESILENI_MAX, ZESILENI_MIN, zesilPrehravani } from "../hlas.js";
 import { useZamekScrollu } from "../zamekScrollu.js";
 import { hlasitostUdalosti, nastavHlasitost, nastavHlasitostChatu, prehraj } from "../zvuk.js";
 
@@ -38,7 +38,8 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
   const [chat, setChat] = useState(hlasitostChatu);
   const [mikrofon, setMikrofon] = useState(zesileniMikrofonu ?? VYCHOZI_ZESILENI);
   const [admin, setAdmin] = useState(hlasitostAdmina ?? VYCHOZI_HLASITOST_ADMINA);
-  // Zkouška mikrofonu: 3 s nahrávky týmž řetězcem jako push-to-talk a přehrát.
+  // Zkouška mikrofonu: 3 s nahrávky jako u push-to-talk a přehrát zesílené
+  // stejně, jako to zesílí přehrávač posluchačů.
   const [zkouska, setZkouska] = useState<"klid" | "nahravam" | "prehravam">("klid");
   const [zkouskaChyba, setZkouskaChyba] = useState<string | null>(null);
   const zkusMikrofon = async () => {
@@ -46,12 +47,14 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
     setZkouskaChyba(null);
     setZkouska("nahravam");
     try {
-      const adresa = await nahrajZkousku(mikrofon);
+      const adresa = await nahrajZkousku();
       setZkouska("prehravam");
       const audio = new Audio(adresa);
       // Naplno jako u ostatních — takhle to uslyší i oni.
       audio.volume = 1;
+      const odpojZesileni = zesilPrehravani(audio, mikrofon);
       audio.onended = () => {
+        odpojZesileni();
         URL.revokeObjectURL(adresa);
         setZkouska("klid");
       };
@@ -120,7 +123,7 @@ export function NastaveniUzivatele({ hlasitost, onHlasitost, hlasitostChatu, onH
         {zesileniMikrofonu !== undefined && onZesileniMikrofonu ? (
           <Posuvnik
             popisek="Zesílení mikrofonu"
-            info="Jen pro tvůj push-to-talk: 100 % je mikrofon tak, jak ho slyší systém. Zesiluj, až když jsi i na plný výstup moc tichý — zesílení vstupu ubírá z kvality, i když přebuzení hlídá měkké omezení."
+            info="Jen pro tvůj push-to-talk: 100 % je mikrofon tak, jak ho slyší systém. Zesiluj, až když jsi i na plný výstup moc tichý. Nahrává se nezesíleně a zesiluje se až posluchačům při přehrávání; přebuzení hlídá měkké omezení."
             hodnota={mikrofon}
             min={ZESILENI_MIN}
             max={ZESILENI_MAX}

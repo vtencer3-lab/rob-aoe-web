@@ -4,6 +4,7 @@ import { joinUri, spectatorUri } from "../aoe/lobbyUri.js";
 import { getAktivniAkce, getLhutaAktivity, listSignups } from "../db/events.js";
 import { listZapasy } from "../db/matches.js";
 import type { PlayerRow } from "../db/players.js";
+import { rezimAkce, vychoziNastaveniAkce } from "../rezimy/index.js";
 import type { AkceStavPayload, PlayerView, ZapasView } from "../shared/types.js";
 import { fazeLobbyPro } from "./fazeLobby.js";
 import { hub, KANAL_AKCE } from "./hub.js";
@@ -87,6 +88,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
   const prihlaseni = await listSignups(akce.id);
   const zapasy = await listZapasy(akce.id);
   const zpravy = await listZpravy(akce.id);
+  const rezim = await rezimAkce(akce.rezim).doplnStav(akce);
   return {
     akce: {
       id: akce.id,
@@ -94,12 +96,15 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       stav: akce.stav,
       nastaveniLobby: akce.nastaveniLobby,
       ulozeneNastaveniLobby: akce.ulozeneNastaveniLobby,
+      // Proti čemu panel pozná „Nastavení je výchozí“ — podle módu akce.
+      vychoziNastaveniLobby: await vychoziNastaveniAkce(akce.rezim),
       skladani: akce.skladani,
       // Co bude mít příští lobby: jméno se odvodí z pořadí, heslo je
       // připravené dopředu (viz db/events.pripravPristiHeslo). Heslo mimo
       // adminy zaslepuje redakce.
       pristiNazevLobby: lobbyName(zapasy.length + 1),
       pristiHeslo: akce.pristiHeslo ?? "",
+      rezim: akce.rezim,
     },
     lhutaAktivityMinut,
     // Lhůta aktivity patří k přihlášce, ne k hráči: mimo akci nemá smysl.
@@ -110,6 +115,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       svolalJmeno: hrac.svolalJmeno,
     })),
     zapasy: zapasy.map((z) => zapasView(z, zpravy.get(z.zapas.id) ?? [])),
+    ...(rezim ? { rezim } : {}),
   };
 }
 

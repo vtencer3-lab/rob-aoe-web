@@ -117,6 +117,41 @@ it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async ()
   expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
 });
 
+// Správa scénáře Diplomacie patří autorovi (Jin není admin) a nezávisí na
+// běžící akci (spec §5.3): příznak jde z /api/me vedle řádku hráče.
+it("autor scénáře vidí správu scénáře i bez akce", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "jin", alias: "Jin", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: true });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByText("Scénář Diplomacie")).toBeInTheDocument();
+  expect(screen.getByText("Právě neběží žádná akce.")).toBeInTheDocument();
+});
+
+// „Pohled uživatele“ schovává správu jen adminovi; localStorage je jeden pro
+// /aoe i /aoe/diplo, takže autor bez režie by s uloženou jedničkou správu
+// neviděl a neměl by ji jak vrátit (přepínač vidí jen admin).
+it("autor bez režie vidí správu i s uloženým pohledem uživatele", async () => {
+  localStorage.setItem("rezie.pohled-uzivatele", "1");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "jin", alias: "Jin", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: true });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByText("Scénář Diplomacie")).toBeInTheDocument();
+});
+
+it("kdo scénář nahrávat nesmí, správu nevidí", async () => {
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "h1", alias: "Hrac", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: false });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+
+  render(<App />);
+
+  expect(await screen.findByRole("button", { name: "Odhlásit" })).toBeInTheDocument();
+  expect(screen.queryByText("Scénář Diplomacie")).not.toBeInTheDocument();
+});
+
 it("kdo v žádném zápase nehraje, nevidí ani jednu obrazovku", async () => {
   vi.mocked(api.me).mockResolvedValue({
     hrac: { hracId: "divak", alias: "Divak", platformaJmeno: null, jeAdmin: false },
@@ -333,7 +368,7 @@ it("hráči po zapsání výsledku zápas nezmizí", async () => {
 // nevidí ani jeden přepínač.
 it("admin si přepne na pohled uživatele a adminské části zmizí", async () => {
   const { fireEvent } = await import("@testing-library/react");
-  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "rob", alias: "Rob", platformaJmeno: null, jeAdmin: true } });
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "rob", alias: "Rob", platformaJmeno: null, jeAdmin: true }, smiNahratScenar: true });
   nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
 
   render(<App />);
@@ -341,10 +376,13 @@ it("admin si přepne na pohled uživatele a adminské části zmizí", async () 
   expect(await screen.findByRole("button", { name: /vytvořit zápas/i })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Nastavení Lobby" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Přihlášení hráči" })).toBeInTheDocument();
+  expect(screen.getByText("Scénář Diplomacie")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("switch", { name: /pohled uživatele/i }));
   expect(screen.queryByRole("button", { name: /vytvořit zápas/i })).not.toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Nastavení Lobby" })).not.toBeInTheDocument();
+  // Správa scénáře je adminský nástroj; v pohledu uživatele se admin dívá jako hráč.
+  expect(screen.queryByText("Scénář Diplomacie")).not.toBeInTheDocument();
   // Název akce zůstává: patří celému večeru, ne režii. Přestane být tlačítkem.
   expect(screen.getByTestId("nazev-akce")).toHaveTextContent("Akce 1");
   expect(screen.queryByRole("button", { name: "Akce 1" })).not.toBeInTheDocument();

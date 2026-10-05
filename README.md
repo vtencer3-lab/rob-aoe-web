@@ -117,6 +117,9 @@ protože je stejné ve všech třech nasazeních v Coolify a přejmenovat by ji
 | `STEAM_API_KEY` | bezplatný klíč z <https://steamcommunity.com/dev/apikey>, kterým se web ptá Steamu na odehrané hodiny v AoE2 a na profilovou přezdívku s avatarem | neukážou se odehrané hodiny ani avatary. ELO, herní přezdívka i počet odehraných her chodí ze žebříčku Worlds Edge, který žádný klíč nechce, takže zbytek funguje beze změny. Bez klíče se Steamu vůbec neptáme, takže se nikomu u jména neobjeví varování o chybě |
 | `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | Client ID a Client Secret z registrace aplikace na <https://entra.microsoft.com> (App registrations, „Personal Microsoft accounts only“), kterými web ověřuje Microsoft přihlášení | Microsoft routy se vůbec nezaregistrují a tlačítko „Přihlásit se Microsoft účtem“ se na přihlašovací obrazovce neukáže. Steam přihlášení funguje beze změny |
 | `LOG_LEVEL` | úroveň serverového logu (výchozí `info`) | loguje se od `info` výš |
+| `AUTORI_SCENARE` | mód Diplomacie: `hrac_id` autorů scénáře oddělená čárkou (stejný tvar jako `ADMIN_STEAM_ID`), kteří smí nahrávat a aktivovat verze scénáře i bez režie | nahrávat smí jen admini |
+| `PYTHON` | mód Diplomacie: interpret Pythonu s AoE2ScenarioParser a Pillow pro rozbor nahraného scénáře (`src/diplomacie/requirements.txt`); při vývoji na Windows `PYTHON=python` | použije se `/opt/rozbor/bin/python` z Docker obrazu; mimo kontejner pak rozbor selže a nahraná verze se uloží s chybou rozboru (nejde ji aktivovat) |
+| `MOST_TOKEN` | mód Diplomacie: sdílené tajemství, se kterým most na PC Game Mastera nebo diváka (`nastroje/diplomacie/most.py`) posílá data z běžící hry na `POST /api/diplo/hra` | routa se neregistruje — web data ze hry nepřijímá a Nástupce vybírá GM ručně |
 
 ## Testy
 
@@ -128,6 +131,13 @@ protože je stejné ve všech třech nasazeních v Coolify a přejmenovat by ji
   jméno databáze v `DATABASE_URL` nekončí na `_test`, run se rovnou zastaví
   chybou dřív, než se stihne cokoliv smazat.
 - `npm run test:web` — testy frontendu (`web/`).
+- `PYTHON=python npx vitest run src/diplomacie/rozbor.test.ts` — rozbor
+  scénáře Diplomacie skutečným Pythonem (`pip install -r
+  src/diplomacie/requirements.txt` a Pillow). Bez interpretu s knihovnami se
+  tyhle testy v `npm test` jen přeskočí s hláškou, neselžou.
+- `PYTHON=python npx vitest run src/diplomacie/sonda.test.ts src/diplomacie/most.test.ts`
+  — přibalení XS sondy do scénáře (včetně validace kódu sondy nástrojem
+  xs-check) a most ke hře; stejně jako rozbor se bez Pythonu přeskočí.
 
 ## Zkouška večera nasucho (bez čtyř Steam účtů)
 
@@ -337,6 +347,123 @@ lobby zanikne).
 Do 5. 9. 2026 byl mezi krokem 2 a 3 ještě mezikrok „Vyhlásit“ a akce měla pět
 stavů; obojí zmizelo, protože se na tom dalo v přímém přenosu jen zaseknout.
 Podrobnosti v [návrhu z 5. 9. 2026](docs/superpowers/specs/2026-09-05-zjednoduseni-stavu-design.md).
+
+## Diplomacie
+
+Druhý mód večera vedle klasického (zatím ve větvi `diplo` na
+<https://jouki.cz/aoe/diplo>): custom scénář *Diplomacie – Ať žije císař*
+(`LLC.aoe2scenario`, autor Jin) pro 7 hráčů a jednoho GameMastera se
+skrytými rolemi. Web nahrazuje losování rolí v samostatném nástroji a
+obcházení voice roomek — každý dostane svou roli na tajné kartě.
+
+- **Založení akce.** Rob při zakládání akce zapne přepínač **Diplomacie**
+  vedle názvu. Nastavení lobby se předvyplní z módu: Game Mode Custom
+  Scenario, scénář (aktivní verze), velikost mapy ze scénáře, populace 200,
+  Lock Teams a Shared Exploration vypnuto, diváci povoleni; „Reset
+  nastavení“ se vrací k těmhle hodnotám, ne ke klasickým. Mapu, velikost
+  a Victory v panelu nenajdeš — v Custom Scenario je určuje scénář, panel
+  místo nich ukáže jeden řádek „Scénář“.
+- **Kdo je GM.** Ten, kdo v sestavě sedí **na šedé barvě (7)** — stejně
+  jako ve scénáři. Neukládá se nikam zvlášť: výměna GM je změna sestavy
+  (jde jen do té doby, než jsou role rozdané). GM nemusí být admin; práva
+  GM má jen pro ten zápas. Sestava: přesně 8 hráčů, každý jinou barvu,
+  všichni bez týmu („–“, nový hráč ho dostane sám), civilizace se
+  nepředepisují. Počítač v sestavě být smí, jen na šedé musí sedět člověk.
+- **Scénář nahrávají přes web** admini a autoři ze `AUTORI_SCENARE`
+  (sekce „Správa scénáře“ pod panelem akce, i když žádná akce neběží).
+  Web si každou verzi uloží, sám ji rozebere (čísla sekundárních cílů,
+  limity, starty, podmínky vítězství, minimapa) a archivuje; aktivní je
+  vždy nejvýš jedna, nová verze se neaktivuje sama (kromě úplně první
+  úspěšně přečtené) — tlačítko „Nastavit jako aktivní“. Verze, kterou se nepodařilo přečíst,
+  jde stáhnout, ale ne aktivovat. Hostovi web verzi posílá pod jménem
+  **`ROB_DIPLO_<N>_v<verze sondy>.aoe2scenario`** (N = pořadí nahrání 1, 2, 3…, po smazání
+  se číslo znovu nepoužije) a podle něj porovnává všechno — kontrolu lobby,
+  uložení do složky hry i data ze hry; jméno, pod kterým autor soubor
+  nahrál, zůstává jen originálu. Řádek verze ve správě: jméno, kdo, kdy,
+  „aktivní“ / „Nastavit jako aktivní“ a tlačítka **Stáhnout
+  originál** (s upozorněním, že originál nepošle průběh hry na stránku) a
+  **Stáhnout scénář** (zlaté; zamčené, jen když přibalení sondy selhalo).
+  Sondu web přibaluje sám: při nahrání, po každém startu serveru do verzí
+  se zastaralou sondou a pro jistotu těsně před stažením — ve správě není
+  co přibalovat ručně. **Smazat** jde
+  verzi, která není aktivní a nehraje ji běžící zápas otevřené akce;
+  dohrané a zrušené zápasy o ni přijdou (karta role a pult GM se pak
+  ukážou bez mapy). Proč smazání neprošlo, napíše web červeně přímo pod
+  řádek verze. Pole „Co je nového“ formulář nahrání nemá.
+- **Host** je v Diplomacii automaticky GM na šedé. V kroku „Zakládáš!“ má
+  nahoře **Stáhnout scénář** (verzi, kterou zápas hraje); po kliknutí se
+  ukáže, kam soubor uložit —
+  `%USERPROFILE%\Games\Age of Empires 2 DE\<Steam ID nebo XUID>\resources\_common\scenario\`
+  (přímo pro přihlášeného hosta, ke zkopírování); starou kopii stejného
+  jména je potřeba přepsat. Teprve pod tím je **Spustit hru**. V Create
+  Lobby zvolí Game Mode Custom Scenario a tenhle
+  scénář; ostatní hráči ho dostanou přenosem v lobby. Kontrola lobby má
+  řádek „Scénář“ (shoda, jiná verze téhož scénáře, jiný soubor); velikost,
+  Victory a Team Positions určuje scénář a kontrola je jen vypíše.
+- **Co vidí hráči.** Před rozesláním jen „Role se rozdají po startu hry“.
+  Po startu hry rozdá sekundární cíle hra sama; GM v pultu označí hráče,
+  který cíl nedostal (**Nástupce císaře**), nechá web rozdat zbylé role
+  (Šašek, Garda, 2× Nájezdník, Žoldák, Kat), případně je upraví a **rozešle**.
+  Po rozeslání už role měnit nejde — tabulka v pultu je jen text a zpátky
+  vede jen „Zpět na výběr Nástupce“.
+  Hráčům zazvoní zvon a objeví se **zakrytá karta**: kliknutím odkryjí
+  znak a název role, cíl, výhody a nevýhody, tajné údaje (Kat svou oběť,
+  Žoldák svůj pakt, Nájezdník druhého Nájezdníka) a minimapu se svým
+  startem, na které jsou i hráči, ke kterým má podle role vztah (další
+  Nájezdník zeleně, oběť červeně, pokrevní pouto ve zlatém rámečku)
+  a Nástupce císaře s korunou; další klik zakryje, po obnovení stránky je
+  karta zase zakrytá.
+  Pod kartou vidí všichni v zápase jméno Nástupce a pravidla hry. **Admin,
+  který není GM, role nevidí** — Rob streamuje. Hráči mimo zápas vidí jen
+  „Diplomacie · Nástupce: X“.
+- **Výsledek.** Aliance vznikají až ve hře, takže vyhrát může víc hráčů
+  naráz: u zápasu s víc než dvěma stranami má režie vedle tlačítek po
+  stranách i „Víc vítězů…“ se zaškrtávátky u jmen. Vyhodnocení podle rolí
+  a odhalení rolí všem přijde v dalším kroku módu.
+- **Data ze hry (zkušebně).** Scénář, který host z webu stahuje, má
+  přibalenou **sondu**: web ji do kopie přidá sám (originál od autora
+  zůstává a autor nebo admin ho stáhne tlačítkem „Stáhnout originál“ ve
+  správě scénáře). Kopie se jmenuje `ROB_DIPLO_<N>_v<verze sondy>.aoe2scenario` (všechny
+  naše scénáře mají prefix `ROB_`), soubor sondy ve hře tedy
+  `ROB_DIPLO_<N>_v<verze sondy>.xsdat` a začíná značkou „ROBD“ (formát 8). Sonda každou
+  herní sekundu zapisuje stav
+  do souboru na každém počítači ve hře, u hráčů i diváků (bez šifrování —
+  kdo se podívá do své složky profilu, vidí tajné cíle všech; komunitní hra
+  s přáteli). Vedle hry se pustí `python nastroje/diplomacie/most.py`
+  (token v proměnné `MOST_TOKEN` nebo v souboru `~/.aoe-most-token`) —
+  **Rob ho může mít na herním PC jako Game Master (šedá) i jako pouhý
+  divák**; data od GM mají přednost, data od diváka jsou opožděná
+  o zpoždění pro diváky a jako divák se přiřadí, jen když běží jediný zápas
+  Diplomacie. **Na streamu se dvěma počítači musí most běžet na tom, kde
+  běží hra** (soubor sondy je v profilu hry tam). Web pak **Nástupce císaře nastaví sám**
+  — je to hráč, kterému hra nedala sekundární cíl. GM ho v pultu vidí
+  („Nástupce určila hra: X“), může ho přepsat a u každého hráče vidí
+  postup jeho cíle, relikvie a jestli je ještě ve hře, a odkud data jsou
+  („ze hry (GM) před 3 s“ / „ze hry (divák) před 3 s“). Tahle data vidí jen
+  GM. Bez mostu všechno funguje jako dřív, Nástupce GM odklikne ručně.
+  Na herním PC Roba most nahrazuje agent Streamer.botu napojený na server
+  Židolišty (`RobJewsALot/Streamer.bot - GAME PC/`), který soubory
+  `ROB_*.xsdat` posílá na web.
+- **Mapa v pultu GM** (na širokém displeji vedle tabulky rolí): jména u
+  startů, Nástupce s korunou, **králové** všech hráčů z běžící hry (♚ v
+  barvě hráče) a **relikvie** — volné bez obrysu, nesené (mnich/misionář
+  s relikvií) a uložené v klášteře s obrysem v barvě hráče. Přepínače
+  „Zobrazit krále“ a „Zobrazit relikvie“ pod mapou (platí i pro overlaye).
+  Najetí na hráče (řádek tabulky nebo start na mapě) ukáže jeho vztahy jako
+  na jeho kartě. **Ping:** tlačítko „Ping“ zapne kliknutí do mapy, adresáti
+  ve dvou sloupcích (víc najednou, nic vybraného = všem); hráčům se na mapě
+  karty na 10 s ukáže pulzující kruh a cinkne zvuk chatu. Hráč na své mapě
+  vidí jen svého krále. Pod každým hráčem v tabulce je sekundární cíl
+  s postupem (hodnoty tučně) a počet relikvií; vyřazený hráč má jméno
+  přeškrtnuté.
+- **Overlaye do OBS** (Browser Source): `…/aoe/diplo/obs/mapa?klic=…`
+  (mapa bez rámu) a `…/obs/tabulka?klic=…` (tabulka rolí), průhledné pozadí,
+  obnova každou sekundu, vždy nejnovější běžící zápas Diplomacie očima GM.
+  Klíč je env `OBS_KLIC` (bez něj routa neexistuje) — kdo ho má, vidí role
+  jako GM.
+
+Návrh a rozhodnutí: `docs/prehled-praci-a-zameru.md` §3.60, spec
+`docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`.
 
 ## Jak to funguje ve zkratce
 

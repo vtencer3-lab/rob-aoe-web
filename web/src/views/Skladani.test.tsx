@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { PlayerView, SestavaVstup } from "../../../src/shared/types.js";
+import type { Barva, PlayerView, SestavaVstup } from "../../../src/shared/types.js";
 import { useSkladani } from "../skladani.js";
 import { SeznamPrihlasenych } from "./SeznamPrihlasenych.js";
 import { Skladani } from "./Skladani.js";
@@ -28,15 +28,17 @@ const prihlaseni = [hrac("a", "TenceR", 1136), hrac("b", "Pepa"), hrac("c", "Mar
 function Panel({
   onVytvoritZapas = vi.fn(),
   sadaCivilizaci = null,
+  popisSlotu,
 }: {
   onVytvoritZapas?: (s: SestavaVstup[]) => void;
   sadaCivilizaci?: number | null;
+  popisSlotu?: (barva: Barva) => string | null;
 }) {
   const skladani = useSkladani(prihlaseni);
   return (
     <>
       <SeznamPrihlasenych prihlaseni={prihlaseni} skladani={skladani} />
-      <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} sadaCivilizaci={sadaCivilizaci} />
+      <Skladani skladani={skladani} onVytvoritZapas={onVytvoritZapas} rezim="klasicky" sadaCivilizaci={sadaCivilizaci} popisSlotu={popisSlotu} />
     </>
   );
 }
@@ -57,6 +59,18 @@ const nevybraniJmena = () =>
     .slice(1)
     .filter((r) => !r.classList.contains("odchazi"))
     .map((r) => r.querySelectorAll("td")[1]!.textContent);
+
+// Mód akce může slot podle barvy pojmenovat (Diplomacie: šedá = GM). Štítek
+// je jen u řádku, kde mód něco vrátí.
+it("štítek slotu podle barvy ukáže jen tam, kde ho mód dá", () => {
+  render(<Panel popisSlotu={(barva) => (barva === 2 ? "GM" : null)} />);
+  vyber("Pepa");
+  vyber("Marek");
+  const stitky = screen.getAllByText("GM");
+  expect(stitky).toHaveLength(1);
+  expect(stitky[0]).toHaveClass("popis-slotu");
+  expect(stitky[0]!.closest("li")).toHaveTextContent("Marek");
+});
 
 it("tlačítko „+“ přesune hráče z tabulky do sestavy s barvou a týmem", () => {
   render(<Panel />);
@@ -293,4 +307,26 @@ it("AI nezasahuje do součtu ELO týmu ani do seznamu bez ELO", () => {
   expect(tymy.map((h) => h.textContent)).toEqual(["Tým 1", "Tým 2"]);
   expect(screen.getByTestId("elo-tymu").textContent).toContain("1136");
   expect(screen.getByTestId("elo-tymu").textContent).not.toContain("bez ELO");
+});
+
+const zamichat = () => screen.getByRole("button", { name: "Zamíchat barvy" });
+
+// Míchat je co až od dvou hráčů. Dva hráči mají dvě barvy, takže zamíchání
+// je vždy prohodí (sdílená funkce nikdy nevrátí totéž rozdání); pořadí
+// a týmy zůstávají, jak byly.
+it("„Zamíchat barvy“ je aktivní od dvou vybraných a mění jen barvy", () => {
+  render(<Panel />);
+  expect(zamichat()).toBeDisabled();
+  vyber("TenceR");
+  expect(zamichat()).toBeDisabled();
+  vyber("Pepa");
+  expect(zamichat()).toBeEnabled();
+  expect(screen.getByRole("button", { name: /barva tencer: modrá/i })).toBeTruthy();
+
+  fireEvent.click(zamichat());
+  expect(vybraniJmena()).toEqual(["TenceR", "Pepa"]);
+  expect(screen.getByRole("button", { name: /barva tencer: červená/i })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /barva pepa: modrá/i })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /tým tencer: 1/i })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /tým pepa: 2/i })).toBeTruthy();
 });

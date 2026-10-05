@@ -9,6 +9,8 @@ import {
   PRIMERI,
   REZIM_EMPIRE_WARS,
   REZIM_REGICIDE,
+  REZIM_SCENARIO,
+  URCUJE_SCENAR,
   REZIM_SUDDEN_DEATH,
   REZIMY,
   ZASKRTAVATKO_REZIMU,
@@ -35,10 +37,23 @@ interface Props {
   onZmena: (nastaveni: Nastaveni) => void;
   /** „Uložit preset lobby“: server si udělá snímek živého nastavení. */
   onUlozit: () => void;
+  /** „Reset nastavení“: výchozí hodnoty podle módu akce nasadí server. */
+  onReset: () => void;
+  /**
+   * Výchozí nastavení akce (ze snímku, podle módu): proti němu se pozná
+   * „Nastavení je výchozí“ a panel ho po Resetu ukáže hned. Chybí ve
+   * starších snímcích = základ jádra.
+   */
+  vychozi?: Partial<Nastaveni>;
   /** Klíč nastavení ke zvýraznění po změně / zpět / znovu. */
   zvyraznit?: { cil: string | null; cas: number } | null;
   /** Bez tlačítka „Reset nastavení“ (úprava zápasu: reset by přepsal, co host už má ve hře). */
   bezResetu?: boolean;
+  /**
+   * Custom Scenario: podmínky vítězství z rozboru aktivní verze scénáře
+   * (dodá mód přes App.tsx). Bez nich řádek „Scénář“ říká „podle scénáře“.
+   */
+  scenar?: { vitezstvi: string | null };
 }
 
 /**
@@ -73,6 +88,11 @@ const ADVANCED_SETTINGS: ReadonlyArray<{ klic: KlicTrojstavu | "cheaty"; popis: 
 
 /** AI podle obtížnosti, ne podle čísla ve hře (to jde obráceně a Extreme má −1). */
 const PORADI_AI = [4, 3, 2, 1, 0, -1];
+
+/** Victory jen z herní nabídky: nula („podle scénáře“) je v tabulce kvůli kontrole, ne k výběru. */
+const VITEZSTVI_NABIDKA = Object.keys(VITEZSTVI)
+  .map(Number)
+  .filter((v) => v !== 0);
 
 /**
  * Co s nastavením udělá přepnutí na Empire Wars — ověřeno 9. 9. 2026 na
@@ -152,6 +172,26 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
 }
 
 /**
+ * Custom Scenario: hra v lobby Location, Map Size ani Victory nenabízí —
+ * mapu i velikost určuje scénář, podmínky vítězství taky. Místo tří voleb
+ * jeden řádek ke čtení (uživatel 1. 10. 2026: schovat, ne zašedit).
+ */
+function RadekScenare({ jmeno, velikost, vitezstvi }: { jmeno: string | null; velikost: number | null; vitezstvi: string | null }) {
+  return (
+    <div className="radek" data-klic="scenar">
+      <span>Scénář:</span>
+      <span className="scenar-info" data-testid="nastaveni-scenar">
+        <span className="jmeno">{jmeno === null ? "scénář zatím nikdo nenahrál" : jmeno.replace(/\.aoe2scenario$/i, "")}</span>
+        {" · "}
+        {velikost === null ? "?" : (VELIKOSTI[velikost] ?? `${velikost} dílců`)}
+        {" · Victory: "}
+        {vitezstvi ?? "podle scénáře"}
+      </span>
+    </div>
+  );
+}
+
+/**
  * Očekávané nastavení lobby pro kontrolu, rozložené stejně jako herní panel
  * Game Settings: řádky ve stejném pořadí, pod nimi Team Settings a Advanced
  * Settings ve dvou sloupcích. Host tak srovnává jedna ku jedné. U voleb
@@ -162,7 +202,7 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
  * požadavek na každou číslici) a přes SSE ji uvidí všichni. „Uložit“ dělá
  * snímek, ke kterému se „Načíst uložený preset“ vrátí; „Reset“ nasadí výchozí.
  */
-export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, bezResetu }: Props) {
+export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, onReset, vychozi, zvyraznit, bezResetu, scenar }: Props) {
   const [n, setN] = useState<Nastaveni>(() => doplnNastaveni(zive as Partial<Nastaveni>));
   const casovac = useRef<ReturnType<typeof setTimeout>>(undefined);
   const ceka = useRef(false);
@@ -196,10 +236,27 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
     }, ODKLAD_ZMENY_MS);
   };
 
+  // Reset dělá server (zná výchozí hodnoty módu); panel je ukáže hned a
+  // zahodí rozepsanou změnu, která by jinak po odkladu reset přepsala.
+  const reset = () => {
+    clearTimeout(casovac.current);
+    ceka.current = false;
+    setN(doplnNastaveni(vychozi));
+    onReset();
+  };
+
   const cislo = (v: string) => (v === "" ? null : Number(v));
-  const stejne = (a: Nastaveni, b: Nastaveni) => (Object.keys(a) as Array<keyof Nastaveni>).every((k) => (a[k] ?? null) === (b[k] ?? null));
+  // Hodnoty jsou čísla, řetězce, booleany a null — až na `scenarStarsi`, což
+  // je pole: to se srovnává po prvcích, jinak by dvě stejná pole ze dvou
+  // snímků stavu nikdy nebyla „stejná“ a Reset by u Diplomacie nikdy nezhasl.
+  const stejnaHodnota = (a: unknown, b: unknown): boolean =>
+    Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((x, i) => x === b[i]) : (a ?? null) === (b ?? null);
+  const stejne = (a: Nastaveni, b: Nastaveni) => (Object.keys(a) as Array<keyof Nastaveni>).every((k) => stejnaHodnota(a[k], b[k]));
   const jakoUlozene = ulozene !== null && ulozene !== undefined && stejne(n, doplnNastaveni(ulozene as Partial<Nastaveni>));
-  const jakoVychozi = stejne(n, VYCHOZI_NASTAVENI);
+  const jakoVychozi = stejne(n, doplnNastaveni(vychozi));
+  // Z živého stavu panelu, ne jen ze serveru: přepnutí Game Mode se má
+  // projevit hned, ne až po cestě přes server a SSE.
+  const scenarovy = n.rezim === REZIM_SCENARIO;
 
   return (
     <form className="nastaveni-lobby" data-testid="nastaveni-lobby" onSubmit={(e) => e.preventDefault()} ref={formular}>
@@ -233,45 +290,51 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
           jedno
           onZmena={(v) => zmen({ ...n, ...(v === null ? {} : (NASTAVENI_REZIMU[v] ?? {})), rezim: v })}
         />
-        {/* Vypadá jako rozbalovací seznam, ale otevírá okno s minimapami —
-            u dvou set map řekne obrázek víc než jméno. */}
-        <div className="radek" data-klic="mapaId">
-          <span>Location:</span>
-          <button
-            type="button"
-            className="vyber-mapy-tlacitko"
-            aria-haspopup="dialog"
-            aria-expanded={vyberMap}
-            aria-label={`Location: ${nazevMapy(n.mapaId)}`}
-            data-testid="vyber-mapy-tlacitko"
-            onClick={() => setVyberMap(true)}
-          >
-            {nahledMapy(n.mapaId) ? <img src={nahledMapy(n.mapaId)!} alt="" width={22} height={22} /> : null}
-            <span className="jmeno">{nazevMapy(n.mapaId)}</span>
-            <span className="sipka" aria-hidden="true" />
-          </button>
-        </div>
-        {vyberMap ? (
-          <VyberMapy
-            hodnota={n.mapaId}
-            onVybrat={(id) => {
-              zmen({ ...n, mapaId: id });
-              setVyberMap(false);
-            }}
-            onZavrit={() => setVyberMap(false)}
-          />
-        ) : null}
-        <label className="radek" data-klic="velikost">
-          <span>Map Size:</span>
-          <select value={n.velikost ?? ""} onChange={(e) => zmen({ ...n, velikost: cislo(e.target.value) })}>
-            <option value="">podle počtu hráčů</option>
-            {Object.entries(VELIKOSTI).map(([v, nazev]) => (
-              <option key={v} value={v}>
-                {nazev}
-              </option>
-            ))}
-          </select>
-        </label>
+        {scenarovy ? (
+          <RadekScenare jmeno={n.scenar} velikost={n.velikost} vitezstvi={scenar?.vitezstvi ?? null} />
+        ) : (
+          <>
+            {/* Vypadá jako rozbalovací seznam, ale otevírá okno s minimapami —
+                u dvou set map řekne obrázek víc než jméno. */}
+            <div className="radek" data-klic="mapaId">
+              <span>Location:</span>
+              <button
+                type="button"
+                className="vyber-mapy-tlacitko"
+                aria-haspopup="dialog"
+                aria-expanded={vyberMap}
+                aria-label={`Location: ${nazevMapy(n.mapaId)}`}
+                data-testid="vyber-mapy-tlacitko"
+                onClick={() => setVyberMap(true)}
+              >
+                {nahledMapy(n.mapaId) ? <img src={nahledMapy(n.mapaId)!} alt="" width={22} height={22} /> : null}
+                <span className="jmeno">{nazevMapy(n.mapaId)}</span>
+                <span className="sipka" aria-hidden="true" />
+              </button>
+            </div>
+            {vyberMap ? (
+              <VyberMapy
+                hodnota={n.mapaId}
+                onVybrat={(id) => {
+                  zmen({ ...n, mapaId: id });
+                  setVyberMap(false);
+                }}
+                onZavrit={() => setVyberMap(false)}
+              />
+            ) : null}
+            <label className="radek" data-klic="velikost">
+              <span>Map Size:</span>
+              <select value={n.velikost ?? ""} onChange={(e) => zmen({ ...n, velikost: cislo(e.target.value) })}>
+                <option value="">podle počtu hráčů</option>
+                {Object.entries(VELIKOSTI).map(([v, nazev]) => (
+                  <option key={v} value={v}>
+                    {nazev}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
         <Vyber klic="aiObtiznost" popis="AI Difficulty" hodnota={n.aiObtiznost} tabulka={AI_OBTIZNOSTI} jedno poradi={PORADI_AI} onZmena={(v) => zmen({ ...n, aiObtiznost: v })} />
         <Vyber klic="suroviny" popis="Resources" hodnota={n.suroviny} tabulka={SUROVINY} jedno onZmena={(v) => zmen({ ...n, suroviny: v })} />
         <Vyber klic="populace" popis="Population" hodnota={n.populace} tabulka={POPULACE} onZmena={(v) => zmen({ ...n, populace: v ?? VYCHOZI_NASTAVENI.populace })} />
@@ -280,7 +343,11 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
         <Vyber klic="pocatecniVek" popis="Starting Age" hodnota={n.pocatecniVek} tabulka={POCATECNI_VEKY} jedno onZmena={(v) => zmen({ ...n, pocatecniVek: v })} />
         <Vyber klic="konecnyVek" popis="Ending Age" hodnota={n.konecnyVek} tabulka={KONECNE_VEKY} jedno onZmena={(v) => zmen({ ...n, konecnyVek: v })} />
         <Vyber klic="primeri" popis="Treaty Length" hodnota={n.primeri} tabulka={PRIMERI} jedno onZmena={(v) => zmen({ ...n, primeri: v })} />
-        <Vyber klic="vitezstvi" popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} onZmena={(v) => zmen({ ...n, vitezstvi: v ?? VYCHOZI_NASTAVENI.vitezstvi })} />
+        {/* Victory ve scénáři určuje scénář (řádek „Scénář“ výš); nabídka bez
+            nuly — tu hra nenabízí, jen ji ve scénářové lobby posílá. */}
+        {scenarovy ? null : (
+          <Vyber klic="vitezstvi" popis="Victory" hodnota={n.vitezstvi} tabulka={VITEZSTVI} poradi={VITEZSTVI_NABIDKA} onZmena={(v) => zmen({ ...n, vitezstvi: v ?? VYCHOZI_NASTAVENI.vitezstvi })} />
+        )}
       </div>
 
       <div className="sloupce">
@@ -288,7 +355,8 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
           <legend>Team Settings</legend>
           {/* Team Positions jde ve hře zaškrtnout jen s Team Together; bez něj
               je zašedlé a kontrola ho bere jako „je to jedno“. */}
-          {TEAM_SETTINGS.map(({ klic, popis }) => (
+          {/* Ve scénáři určuje Team Positions scénář (URCUJE_SCENAR) — schované. */}
+          {TEAM_SETTINGS.filter(({ klic }) => !(scenarovy && URCUJE_SCENAR.includes(klic))).map(({ klic, popis }) => (
             <Zaskrtavatko
               key={klic}
               klic={klic}
@@ -336,13 +404,13 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, zvyraznit, be
           >
             Načíst uložený preset
           </button>
-          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={reset}>
             Reset nastavení
           </button>
         </div>
       ) : bezResetu ? null : (
         <div className="ovladani">
-          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={() => zmen({ ...VYCHOZI_NASTAVENI }, true)}>
+          <button type="button" disabled={jakoVychozi} title={jakoVychozi ? "Nastavení je výchozí" : undefined} onClick={reset}>
             Reset nastavení
           </button>
         </div>

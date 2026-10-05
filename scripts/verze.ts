@@ -30,10 +30,19 @@ import { join } from "node:path";
  *                                       z verze větve dev
  *   npm run verze -- z-experimentu [V]  po mergi experimental → dev, viz `verzePoMergi`
  *   npm run verze -- 1.2.3              přesně tahle
+ *
+ * Pokusné větve jsou v `POKUSNE_VETVE` (dnes `experimental` a `diplo`).
  */
 
 const TVAR_ZAKLADNI = /^(\d+)\.(\d+)\.(\d+)$/;
 const TVAR_POKUSNY = /^(\d+)\.(\d+)\.(\d+)-(\d+)\.(\d+)$/;
+
+/**
+ * Větve s pokusným verzováním `X.Y.Z-A.B`. `diplo` (mód Diplomacie, od
+ * 1. 10. 2026) se verzuje stejně jako `experimental`: je to odbočka z devu,
+ * která se do něj jednou vrátí.
+ */
+export const POKUSNE_VETVE: readonly string[] = ["experimental", "diplo"];
 
 export interface Verze {
   /** `X.Y.Z` — na pokusné větvi verze devu, ze které pokus vyšel. */
@@ -130,7 +139,7 @@ export function verzePoMergi(verzeDev: string, verzeExperimentu: string): string
  */
 export function duvodOdmitnuti(soucasna: string, pokyn: string, vetev: string | null): string | null {
   const vyslovna = TVAR_ZAKLADNI.test(pokyn) || TVAR_POKUSNY.test(pokyn);
-  if (vyslovna || vetev === null || vetev === "experimental") return null;
+  if (vyslovna || vetev === null || POKUSNE_VETVE.includes(vetev)) return null;
   if (!rozeber(soucasna).pokus) return null;
   return `Ve větvi ${vetev} je pokusná verze ${soucasna}. Vezmi verzi z devu a spusť npm run verze -- z-experimentu ${soucasna}.`;
 }
@@ -175,8 +184,8 @@ function spust(): void {
   const vetev = vetevHead();
 
   if (pokyn === "experiment") {
-    if (vetev !== null && vetev !== "experimental") {
-      throw new Error(`Pokusné verzování patří do větve experimental, ne do ${vetev}.`);
+    if (vetev !== null && !POKUSNE_VETVE.includes(vetev)) {
+      throw new Error(`Pokusné verzování patří do větví ${POKUSNE_VETVE.join(", ")}, ne do ${vetev}.`);
     }
     // Po mergi zpátky do devu se pokus zakládá znovu, a to z nové verze devu:
     // vlastní verze je v tu chvíli ještě ta stará pokusná, tak se základ vezme

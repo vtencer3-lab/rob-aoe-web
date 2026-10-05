@@ -60,7 +60,9 @@ it("steam hráč žádnou značku platformy nemá", () => {
 
 it("řekne, s kým se sdílí civilizace", () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} />);
-  expect(screen.getByText(/sdílíš/)).toHaveTextContent("Pepa_CZ");
+  expect(screen.getByText(/sdílíš/)).toHaveTextContent("Civilizaci sdílíš s Pepa_CZ — musíte mít oba stejnou barvu.");
+  // Spoluhráč ve větě nese čtvereček společné barvy.
+  expect(screen.getByText(/sdílíš/).querySelector(".jmeno-s-barvou .swatch")).toHaveClass("barva-1");
 });
 
 it("v 1v1 o sdílení civilizace nemluví", () => {
@@ -125,6 +127,14 @@ it("kliknutí na připojení se ohlásí serveru", async () => {
   render(<KartaHrace zapas={zapas} ja="ja" onPripojit={onPripojit} onHledatLobby={nehledat} />);
   screen.getByRole("link", { name: /připojit/i }).click();
   expect(onPripojit).toHaveBeenCalledWith(1);
+});
+
+// Místo pro mód akce (Diplomacie sem dá kartu role): co App předá, karta
+// vykreslí mezi kontrolou lobby a stranami zápasu.
+it("doplněk módu se vykreslí na kartě", () => {
+  render(<KartaHrace zapas={zapas} ja="ja" onPripojit={vi.fn()} onHledatLobby={nehledat} doplnek={<p>KARTA ROLE</p>} />);
+  expect(screen.getByText("KARTA ROLE")).toBeTruthy();
+  expect(screen.getByText("KARTA ROLE").compareDocumentPosition(screen.getByTestId("strany-zapasu"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 });
 
 // Druhý Steam účet bez hodnocené hry alias nemá. Bez fallbacku na platformaJmeno

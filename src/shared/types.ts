@@ -1,4 +1,10 @@
+import type { DiploData } from "./diplomacie/typy.js";
+import type { NastaveniLobby } from "./lobbyKontrola.js";
 import type { ZebricekRadek } from "./zebricky.js";
+
+/** Mód akce (migrace 030). Klasický večer, nebo scénář Diplomacie. */
+export type RezimId = "klasicky" | "diplomacie";
+export const REZIMY_AKCE: readonly RezimId[] = ["klasicky", "diplomacie"];
 
 /** Osm barev hráčů přesně v pořadí, v jakém je nabízí hra. */
 export type Barva = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
@@ -106,6 +112,12 @@ export interface AkceView {
   nastaveniLobby?: Record<string, unknown>;
   /** Snímek nastavení uložený tlačítkem „Uložit nastavení lobby“; null = nic. */
   ulozeneNastaveniLobby?: Record<string, unknown> | null;
+  /**
+   * Výchozí nastavení podle módu akce (co nasadí „Reset nastavení“ a proti
+   * čemu panel pozná, že je nastavení výchozí); chybí ve starších snímcích
+   * = základ jádra.
+   */
+  vychoziNastaveniLobby?: Partial<NastaveniLobby>;
   /** Rozpracovaná sestava zápasu, sdílená všemi adminy; pořadí = sloty. */
   skladani?: SestavaVstup[];
   /**
@@ -118,6 +130,8 @@ export interface AkceView {
    * mimo adminy se zaslepuje (realtime/redakce.ts).
    */
   pristiHeslo?: string;
+  /** Mód akce; chybí ve starších snímcích = klasický. */
+  rezim?: RezimId;
 }
 
 /**
@@ -145,10 +159,12 @@ export interface UcastnikView {
 }
 
 /**
- * Kdo vyhrál: tým (1 až 4), nebo jeden hráč, když hrál sám za sebe („–“).
+ * Kdo vyhrál: tým (1 až 4), jeden hráč, když hrál sám za sebe („–“), nebo
+ * seznam hráčů, když aliance vznikla až ve hře (Diplomacie, FFA) a strana ze
+ * sestavy ji neumí pojmenovat — neprázdný, bez duplicit, v pořadí slotů.
  * Strany zápasu vznikají ze sestavy, viz strany.ts.
  */
-export type Vitez = { tym: Tym } | { hracId: string };
+export type Vitez = { tym: Tym } | { hracId: string } | { hraci: string[] };
 
 /** Lobby ještě stojí (sedí se v ní), nebo už hra běží. Null = nevíme. */
 export type FazeLobby = "lobby" | "hraje_se";
@@ -193,7 +209,7 @@ export interface ZpravaView {
 }
 
 /**
- * Kousek hlasu admina (push-to-talk): jde streamem jako událost `hlas`,
+ * Kousek hlasu (push-to-talk admina, nebo koho pustí mód — GM Diplomacie): jde streamem jako událost `hlas`,
  * mimo stav. `sezeni` odděluje jednotlivá mluvení, `poradi` drží pořadí
  * kousků, `konec` uzavírá sezení. `prijemci` = účastníci zápasu (server podle
  * nich rozhoduje, komu kousek pošle; admini ho dostanou vždy).
@@ -202,6 +218,8 @@ export interface HlasUdalost {
   zapasId: number;
   kdo: string;
   jmeno: string;
+  /** Mluví admin? Chybí = ano (starší server). „Ztlumit ostatní adminy“ se týká jen jich. */
+  jeAdmin?: boolean;
   sezeni: string;
   poradi: number;
   konec: boolean;
@@ -209,6 +227,11 @@ export interface HlasUdalost {
   data: string;
   /** MIME nahrávky, třeba `audio/webm;codecs=opus`. */
   mime?: string;
+  /**
+   * Zesílení mluvčího v procentech (100–400), chybí = 100. Nahrávka je
+   * nezesílená; zesiluje až přehrávač posluchače (web/src/hlas.ts).
+   */
+  zesileni?: number;
   prijemci: string[];
 }
 
@@ -218,6 +241,11 @@ export interface AkceStavPayload {
   zapasy: ZapasView[];
   /** Lhůta aktivity v minutách (2–120), globální nastavení webu (migrace 024); chybí ve starších snímcích = 15. */
   lhutaAktivityMinut?: number;
+  /**
+   * Data módu akce (spec §4.2). Tajná — `redigujProDivaka` je pro každého
+   * diváka zaslepí přes `rezim.rediguj`, i pro admina.
+   */
+  rezim?: { id: "diplomacie"; data: DiploData };
 }
 
 /**

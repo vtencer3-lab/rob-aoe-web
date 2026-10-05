@@ -25,9 +25,10 @@ import { najdiLobby } from "../../matches/hledaniLobby.js";
 import { nastavFaziLobby } from "../../realtime/fazeLobby.js";
 import { MATCH_STATES, PrechodChyba, type MatchState } from "../../matches/stateMachine.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
-import { zkontrolujSestavu } from "../../shared/sestava.js";
+import { rezimAkce, rezimAkceId, rezimZapasu } from "../../rezimy/index.js";
+import { zkontrolujSestavuRezimu } from "../../shared/rezimy.js";
 import { stejnyVitez, strany } from "../../shared/strany.js";
-import { BARVY, TYMY, type Barva, type HledaniLobbyVysledek, type SestavaVstup, type Tym, type Vitez } from "../../shared/types.js";
+import { BARVY, TYMY, type Barva, type HledaniLobbyVysledek, type RezimId, type SestavaVstup, type Tym, type Vitez } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 import { prectiNastaveniLobby } from "./kontrolaLobby.js";
 
@@ -36,10 +37,10 @@ const MAX_DELKA_NAZVU_LOBBY = 40;
 
 /**
  * Tělo požadavku na zápas: pole řádků {hracId, tym, barva} v pořadí slotů.
- * Tvar se kontroluje tady, pravidla sestavy (počty, barvy, týmy) ve sdílené
- * zkontrolujSestavu, kterou používá i režie.
+ * Tvar se kontroluje tady, pravidla sestavy (počty, barvy, týmy, a podle
+ * módu akce) ve sdílené zkontrolujSestavuRezimu, kterou používá i režie.
  */
-function prectiSestavu(telo: unknown): SestavaVstup[] {
+function prectiSestavu(telo: unknown, rezim: RezimId): SestavaVstup[] {
   const sestava = (telo as { sestava?: unknown }).sestava;
   if (!Array.isArray(sestava)) throw new HttpError(400, "Chybí sestava zápasu.");
   const vysledek: SestavaVstup[] = [];
@@ -52,25 +53,40 @@ function prectiSestavu(telo: unknown): SestavaVstup[] {
     if (civ !== undefined && civ !== null && typeof civ !== "number") throw new HttpError(400, "Civilizace musí být číslo, nebo prázdná.");
     vysledek.push({ hracId, tym: tym as Tym, barva: barva as Barva, civ: typeof civ === "number" ? civ : null });
   }
-  const chyba = zkontrolujSestavu(vysledek);
+  const chyba = zkontrolujSestavuRezimu(rezim, vysledek);
   if (chyba) throw new HttpError(400, chyba);
   return vysledek;
 }
 
-/** Vítěz z těla: {tym: 1..4} nebo {hracId}. Musí odpovídat některé straně zápasu. */
+/**
+ * Vítěz z těla: {tym: 1..4} nebo {hracId} musí odpovídat některé straně
+ * zápasu; {hraci: [...]} je aliance vzniklá až ve hře — každý musí být
+ * účastník, nikdo dvakrát, aspoň jeden.
+ */
 function prectiViteze(telo: unknown, ucastnici: Parameters<typeof strany>[0]): Vitez {
   const vitez = (telo as { vitez?: unknown }).vitez;
   let kandidat: Vitez | null = null;
   if (typeof vitez === "object" && vitez !== null) {
-    const v = vitez as { tym?: unknown; hracId?: unknown };
+    const v = vitez as { tym?: unknown; hracId?: unknown; hraci?: unknown };
     if (typeof v.tym === "number" && TYMY.includes(v.tym as Tym) && v.tym !== 0) kandidat = { tym: v.tym as Tym };
     else if (typeof v.hracId === "string" && v.hracId !== "") kandidat = { hracId: v.hracId };
+    else if (Array.isArray(v.hraci)) return prectiVitezneHrace(v.hraci, ucastnici);
   }
-  if (!kandidat) throw new HttpError(400, "Vítěz je tým (1 až 4), nebo hráč bez týmu.");
+  if (!kandidat) throw new HttpError(400, "Vítěz je tým (1 až 4), hráč bez týmu, nebo seznam hráčů.");
   if (!strany(ucastnici).some((s) => stejnyVitez(s.vitez, kandidat))) {
     throw new HttpError(400, "Takovou stranu zápas nemá.");
   }
   return kandidat;
+}
+
+/** Ukládá se v pořadí slotů, ať je zápis téže aliance vždycky stejný bez ohledu na pořadí v těle. */
+function prectiVitezneHrace(hraci: unknown[], ucastnici: Parameters<typeof strany>[0]): Vitez {
+  const platni = hraci.every((h): h is string => typeof h === "string" && ucastnici.some((u) => u.hracId === h));
+  if (hraci.length === 0 || !platni || new Set(hraci).size !== hraci.length) {
+    throw new HttpError(400, "Vítězové musí být hráči zápasu.");
+  }
+  const vybrani = new Set(hraci);
+  return { hraci: [...ucastnici].sort((a, b) => a.poradi - b.poradi).filter((u) => vybrani.has(u.hracId)).map((u) => u.hracId) };
 }
 
 const CHYBA_ODKAZU: Record<LobbyUriError, string> = {
@@ -120,7 +136,7 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   app.post("/api/akce/:id/zapas", async (request) => {
     await requireAdmin(request);
     const akceId = requireId(request);
-    const sestava = prectiSestavu(request.body);
+    const sestava = prectiSestavu(request.body, await rezimAkceId(akceId));
     try {
       const zapas = await createZapas(akceId, sestava);
       // Rozpracovaná sestava je hotová — vyprázdnit ji všem adminům naráz.
@@ -298,7 +314,10 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
     const zapasId = requireId(request);
     const { zapas } = await nactiNeboSelzi(zapasId);
     if (zapas.stav !== "bezi") throw new HttpError(409, `Zápas je ve stavu „${zapas.stav}“, sestava se už nemění.`);
-    const sestava = prectiSestavu(request.body);
+    const rezim = await rezimZapasu(zapasId);
+    const sestava = prectiSestavu(request.body, rezim);
+    const proc = await rezimAkce(rezim).predZmenouSestavy(zapasId);
+    if (proc) throw new HttpError(409, proc);
     try {
       await nahradSestavu(zapasId, sestava);
     } catch (err) {
@@ -306,6 +325,7 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
       if (err instanceof SestavaChyba) throw new HttpError(400, err.message);
       throw err;
     }
+    await rezimAkce(rezim).poZmeneSestavy(zapasId, sestava);
     await broadcastAkce();
     return { ok: true };
   });

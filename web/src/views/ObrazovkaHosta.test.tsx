@@ -33,6 +33,23 @@ const zaklad: ZapasView = {
   ],
 };
 
+// Dvě místa pro mód akce: doplněk kroku „Zakládáš!“ před Spustit hru a oknem Create Lobby
+// (Diplomacie tam dá stažení scénáře — host ho potřebuje dřív, než lobby
+// zakládá) a doplněk karty před stranami zápasu.
+it("doplňky módu se vykreslí v kroku zakládání před oknem lobby a před stranami", () => {
+  render(
+    <ObrazovkaHosta zapas={zaklad} ja="ja" onHledatLobby={nehledat} onKontrolaLobby={nekontroluj} doplnek={<p>KARTA ROLE</p>} doplnekKroku={<p>STÁHNOUT SCÉNÁŘ</p>} />,
+  );
+  const krok = screen.getByText("STÁHNOUT SCÉNÁŘ");
+  expect(screen.getByTestId("krok-lobby")).toContainElement(krok);
+  expect(krok.compareDocumentPosition(screen.getByTestId("okno-create-lobby"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  // Stažení scénáře je nad „Spustit hru“ (uživatel 3. 10. 2026): nejdřív scénář, pak hra.
+  expect(krok.compareDocumentPosition(screen.getByTestId("spustit-hru"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  const karta = screen.getByText("KARTA ROLE");
+  expect(screen.getByTestId("krok-lobby")).not.toContainElement(karta);
+  expect(karta.compareDocumentPosition(screen.getByTestId("strany-zapasu"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+});
+
 it("nabídne kopírování názvu lobby i hesla", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });

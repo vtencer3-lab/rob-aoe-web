@@ -22,7 +22,9 @@ import {
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
-import { BARVY, TYMY, type Barva, type SestavaVstup, type Tym } from "../../shared/types.js";
+import { rezimAkce, rezimAkceId, vychoziNastaveniAkce } from "../../rezimy/index.js";
+import { VYCHOZI_NASTAVENI } from "../../shared/lobbyKontrola.js";
+import { BARVY, REZIMY_AKCE, TYMY, type Barva, type RezimId, type SestavaVstup, type Tym } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 import { prectiNastaveniLobby } from "./kontrolaLobby.js";
 
@@ -56,12 +58,20 @@ export function registerEventRoutes(app: FastifyInstance): void {
 
   app.post("/api/akce", async (request) => {
     await requireAdmin(request);
-    const { nazev } = request.body as { nazev?: unknown };
+    const { nazev, rezim } = request.body as { nazev?: unknown; rezim?: unknown };
     if (typeof nazev !== "string" || nazev.trim() === "") {
       throw new HttpError(400, "Akce musí mít název.");
     }
+    if (rezim !== undefined && !REZIMY_AKCE.includes(rezim as RezimId)) {
+      throw new HttpError(400, "Neznámý mód akce.");
+    }
     try {
-      const akce = await createAkce(nazev.trim());
+      const rezimId = (rezim as RezimId | undefined) ?? "klasicky";
+      const akce = await createAkce(nazev.trim(), rezimId);
+      // Mód s vlastním výchozím nastavením si ho rovnou uloží; klasický
+      // večer vrací null a akce zůstává s prázdným JSON jako dosud.
+      const vychozi = await rezimAkce(rezimId).vychoziNastaveniLobby(VYCHOZI_NASTAVENI);
+      if (vychozi !== null) await setNastaveniLobby(akce.id, vychozi);
       await broadcastAkce();
       return { akce };
     } catch (err) {
@@ -99,6 +109,17 @@ export function registerEventRoutes(app: FastifyInstance): void {
     await requireAdmin(request);
     const akceId = requireId(request);
     const akce = await setNastaveniLobby(akceId, prectiNastaveniLobby(request.body));
+    await broadcastAkce();
+    return { akce };
+  });
+
+  // „Reset nastavení“: výchozí hodnoty podle módu akce (Diplomacie: scénář,
+  // Custom Scenario, Lock Teams vypnuto…), ne klasický základ natvrdo —
+  // ten by u Diplomacie rozbil kontrolu lobby. Co je výchozí, ví server.
+  app.post("/api/akce/:id/nastaveni-lobby/vychozi", async (request) => {
+    await requireAdmin(request);
+    const akceId = requireId(request);
+    const akce = await setNastaveniLobby(akceId, await vychoziNastaveniAkce(await rezimAkceId(akceId)));
     await broadcastAkce();
     return { akce };
   });

@@ -1,4 +1,5 @@
 import { CIVILIZACE } from "./civilizace.js";
+import { zamichejJinak, zJednotkove } from "./michani.js";
 import { strany } from "./strany.js";
 import { BARVY, TYMY, type SestavaVstup } from "./types.js";
 
@@ -44,4 +45,19 @@ export function zkontrolujSestavu(sestava: SestavaVstup[]): string | null {
   const pocetStran = strany(sestava.map((s, poradi) => ({ ...s, poradi }))).length;
   if (pocetStran < 2) return "Všichni jsou v jednom týmu — proti komu by hráli?";
   return null;
+}
+
+/**
+ * Náhodně přeskupí barvy, které sestava právě používá: každá použitá barva
+ * se přemapuje na jinou použitou, takže množina barev zůstává a hráči, kteří
+ * barvu sdíleli (Coop Kings, tým se společnou barvou), ji sdílejí dál —
+ * pravidla `zkontrolujSestavu` o stejné barvě tím zůstanou splněná. Pořadí,
+ * týmy ani civilizace se nemění. Náhoda má tvar `Math.random` a vstřikuje
+ * se kvůli testům.
+ */
+export function zamichejBarvy(sestava: SestavaVstup[], nahoda: () => number = Math.random): SestavaVstup[] {
+  const pouzite = [...new Set(sestava.map((s) => s.barva))];
+  const nove = zamichejJinak(pouzite, zJednotkove(nahoda));
+  const kam = new Map(pouzite.map((b, i) => [b, nove[i]!]));
+  return sestava.map((s) => ({ ...s, barva: kam.get(s.barva)! }));
 }

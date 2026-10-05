@@ -16,10 +16,14 @@ export class SestavaChyba extends Error {}
  * AI hostem být nemůže: lobby zakládá někdo, kdo sedí u hry. Vybírá se proto
  * jen mezi lidmi, a když by v sestavě nebyl ani jeden (samé AI sestava
  * nepustí, ale kód na to nespoléhá), zůstane host na prvním slotu.
+ *
+ * `pevnyHost` určuje mód (háček `hostSestavy`, Diplomacie: GM) — platí,
+ * jen když sedí v sestavě a není AI; jinak vybírá jádro jako vždy.
  */
 export function sestavSedadla(
   sestava: SestavaVstup[],
   odehranoHer: ReadonlyMap<string, number | null>,
+  pevnyHost: string | null = null,
 ): Seat[] {
   const chyba = zkontrolujSestavu(sestava);
   if (chyba) throw new SestavaChyba(chyba);
@@ -31,6 +35,8 @@ export function sestavSedadla(
     const nejvic = odehranoHer.get(sestava[hostIndex]!.hracId) ?? 0;
     if (her > nejvic) hostIndex = i;
   }
+  const pevny = lide.find((i) => sestava[i]!.hracId === pevnyHost);
+  if (pevny !== undefined) hostIndex = pevny;
 
   return sestava.map((s, poradi) => ({
     hracId: s.hracId,

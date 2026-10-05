@@ -37,6 +37,9 @@ it("ukáže pořadí, formát a kdo proti komu", () => {
   expect(radek).toHaveTextContent("1v1");
   expect(radek).toHaveTextContent("běží");
   expect(radek).toHaveTextContent("Trokner vs TibbarZmr");
+  // Každé jméno nese čtvereček barvy hráče v zápase.
+  expect(screen.getByText("Trokner").querySelector(".swatch")).toHaveClass("barva-1");
+  expect(screen.getByText("TibbarZmr").querySelector(".swatch")).toHaveClass("barva-2");
 });
 
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
@@ -91,6 +94,35 @@ it("divákovi mimo zápas nic osobního neříká", () => {
   const radek = screen.getByTestId("verejny-zapas");
   expect(radek).not.toHaveTextContent(/vyhrál jsi/i);
   expect(radek).not.toHaveTextContent(/prohrál jsi/i);
+});
+
+// Aliance vzniklé až ve hře: vítězů je víc a hráč se pozná podle seznamu,
+// ne podle strany ze sestavy (v lobby hrál každý sám za sebe).
+it("u výsledku s víc vítězi to řekne každému z nich i poraženým", () => {
+  const solo = (hracId: string, alias: string, barva: 1 | 2 | 3): UcastnikView => ({ ...u(hracId, alias, 1), tym: 0, barva });
+  const ffa: ZapasView = {
+    ...zaslepeny,
+    stav: "dohrano",
+    ucastnici: [solo("a", "Trokner", 1), solo("b", "TibbarZmr", 2), solo("c", "Pepa", 3)],
+    vitez: { hraci: ["a", "c"] },
+  };
+  const { rerender } = render(<VerejnyZapas zapas={ffa} ja="c" />);
+  expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("vyhráli Trokner a Pepa");
+  // Vítěz je jmenován dvakrát — ve větě o výsledku a ve stranách — pokaždé s barvou.
+  expect(screen.getAllByText("Pepa").map((j) => j.querySelector(".swatch")!.className)).toEqual(["swatch barva-3", "swatch barva-3"]);
+  expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("Vyhrál jsi");
+  rerender(<VerejnyZapas zapas={ffa} ja="b" />);
+  expect(screen.getByTestId("verejny-zapas")).toHaveTextContent("Prohrál jsi");
+  rerender(<VerejnyZapas zapas={ffa} ja="divak" />);
+  expect(screen.getByTestId("verejny-zapas")).not.toHaveTextContent(/hrál jsi/i);
+});
+
+// Místo pro mód akce pod stranami (Diplomacie sem dá veřejný stav zápasu).
+it("doplněk módu se vykreslí pod stranami", () => {
+  render(<VerejnyZapas zapas={zaslepeny} doplnek={<span>ROLE ROZESLÁNY</span>} />);
+  const radek = screen.getByTestId("verejny-zapas");
+  expect(radek).toHaveTextContent("ROLE ROZESLÁNY");
+  expect(radek.querySelector(".strany")!.compareDocumentPosition(screen.getByText("ROLE ROZESLÁNY"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 });
 
 it("u běžícího zápasu se nikomu nic nepředpovídá", () => {

@@ -26,7 +26,7 @@ const zapas: ZapasView = {
 const prihlaseni = [hrac("a", "Adam"), hrac("b", "Bára"), hrac("c", "Cyril")];
 
 function otevri(prepis: Partial<Parameters<typeof EditaceZapasu>[0]> = {}) {
-  const props = { zapas, prihlaseni, onNastaveni: vi.fn(), onNazev: vi.fn(), onSestava: vi.fn(), onZavrit: vi.fn(), ...prepis };
+  const props = { zapas, prihlaseni, rezim: "klasicky" as const, onNastaveni: vi.fn(), onNazev: vi.fn(), onSestava: vi.fn(), onZavrit: vi.fn(), ...prepis };
   render(<EditaceZapasu {...props} />);
   return props;
 }

@@ -20,7 +20,7 @@ znovu nebo dodělat nový kus ve stejném rukopisu.
 |---|---|
 | **Barvy** | vytažené z loga Brohemians nástrojem `nastroje/grafika/paleta.py`, ne odhadnuté od oka |
 | **Písmo** | Cinzel (OFL, hostujeme si ho sami) na nadpisy, Georgia na text |
-| **Pozadí, rám, praporec, ozdoba, textury** | vygenerované lokálně (Flux.2-dev), viz §4 |
+| **Pozadí, rám, praporec, ozdoba, textury; znaky rolí, rub karty a rám minimapy Diplomacie** | vygenerované lokálně (Flux.2-dev), viz §4 |
 | **Erby civilizací, ikony map, díly okna Create Lobby, znak Bohemians** | přímo z instalace hry, viz `CONTRIBUTING.md` → „Data ze hry“ |
 | **Tlačítka, pole, zaškrtávátka, přepínače, tabulky** | kreslené v CSS, žádné obrázky |
 
@@ -124,6 +124,8 @@ Paleta je v `web/src/styl.css` v bloku `:root`. Vytažená z loga:
 | `--pergamen` | `#f2e0b0` | světlé plochy |
 | `--drevo` / `--drevo-tmave` | `#241610` / `#160d08` | výplň panelů |
 | `--chyba` / `--varovani` / `--ok` | `#e2695c` / `#e0c46a` / `#a8c47c` | významové barvy, ztlumené do teplé palety |
+| `--kov-tmavy-1…3` / `--kov-tmavy-najeti-1…3` | `#4a2a1c` `#2c1710` `#200f0a` / `#5e3724` `#3a1e14` `#2a1410` | ražený kov běžných tlačítek shora dolů, v klidu a pod kurzorem |
+| `--kov-zlaty-1…3` / `--kov-zlaty-najeti-1…3` | `#e2c47c` `#c99a35` `#9d7420` / `#e8cd88` `#d2a53e` `#a67c22` | totéž pro zlatá tlačítka hlavní akce |
 
 Osm barev hráčů (`--b1`…`--b8`) zůstalo beze změny **schválně**: musí sedět
 s barvami ve hře, jinak hráč nepozná, že je „modrý“. Jsou to jediné syté
@@ -233,6 +235,82 @@ koruny) přepracovat v GPT Image; výsledek je `_grafika/final/namesti_2560.png`
 **editace hotového obrázku se dělá modelem na cílenou editaci (GPT Image přes
 Codex), ne skládáním kusů ručně**; lokální generování slouží na nové obrázky.
 
+### Pohyb (2. 10. 2026)
+
+Kliknutí nemá jen „bliknout“: co se na stránce změní, to se prolne, dojede
+nebo otočí. Časy a křivka jsou proměnné v `:root` (`web/src/styl.css`) a bere
+je odtamtud CSS i skript (`web/src/pohyb.ts`), takže se ladí na jednom místě:
+
+| Proměnná | Hodnota | Na co |
+|---|---|---|
+| `--prechod-rychly` | 140 ms | najetí, stisk, zaškrtnutí, rozbalovací seznam |
+| `--prechod` | 220 ms | vznik obsahu, otevření a zavření okna, přepínač |
+| `--prechod-skladani` | 280 ms | rozbalení a sbalení sekce, karty zápasu a chatu, otočení šipky |
+| `--prechod-karta` | 700 ms | otočení tajné karty (obě půlky dohromady), rozdání karty role |
+| `--krivka` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | rychlý rozjezd, měkký dojezd |
+
+Schválně krátké: při streamu má být vidět, že se něco stalo, ne čekat, až to
+dojede. Běžný pohyb se drží v 120–300 ms, jen karta smí do půl vteřiny.
+
+Co se jak hýbe:
+
+- **Tajná karta** (`Zakryti.tsx`): otočení kolem svislé osy ve dvou půlkách —
+  viditelná strana se natočí na hranu, teprve pak React vymění obsah a nová
+  strana se dotočí; výška jede s druhou půlkou. Tajný obsah se tak vykreslí
+  až ve chvíli, kdy je karta hranou k divákovi, a při zakrývání zmizí z DOM
+  v půlce pohybu. Karta role při rozeslání „dopadne na stůl“.
+  Zakrytá karta je tlačítkem sama, nápis nad ní nemá: najetí a fokus ji
+  nadzvednou (`translate`/`scale`, `--prechod-skladani`) a stín pod ní se
+  prohloubí; stisk ji zamáčkne. Záři ani světlo přes pečeť nemá — uživatel
+  je 2. 10. 2026 zamítl („hnusnej glow“) a zároveň chtěl pomalejší pohyb.
+  Při `prefers-reduced-motion` zůstane jen hlubší stín.
+- **Sbalovací sekce, karta zápasu, chat**: výška plynule oběma směry
+  (`useSbalovani`, chat mřížkou `1fr → 0fr`), šipka se otáčí. Šipku
+  `<details>` kreslí CSS ve stejné šířce jako značka prohlížeče (1,06 em).
+- **Okna** (všechna stojí na `.prelobby-stin`): stín se prolne, okno lehce
+  doroste. Zavření CSS samo neumí — React okno odebere z DOM naráz — tak ho
+  `sledujZaviraniOken` vrátí jako neživou kulisu, CSS přehraje zavření
+  a časovač ji odklidí. Jednotlivá okna o tom nevědí.
+- **Tlačítka**: přechod (gradient) se prolínat neumí, proto kov tlačítek
+  jede přes tři registrované barvy `--kov-1` až `--kov-3` (`@property`);
+  klidové i najeté barvy jsou v paletě `--kov-…`. Stisk tlačítko zamáčkne
+  o pixel. Přepínač má zlatou drážku jako vlastní vrstvu s průhledností.
+- **Vznik obsahu**: karta zápasu, sekce karty, hláška, zpráva v chatu, stavy
+  pultu GM — animace při vzniku prvku (`@keyframes vznik`, jen začátek, končí
+  se v tom, co prvku patří). Fajfka kroku, odznaky a znak role dosednou jako
+  razítko.
+
+Pravidla pro další pohyb:
+
+- **Čas vždycky z proměnné**, nikdy číslem. `prefers-reduced-motion: reduce`
+  proměnné nuluje — tím se vypne CSS i skript najednou.
+- **Co umí CSS, dělá CSS.** Skript jen tam, kde to nejde: výška na `auto`,
+  dvoufázové otočení, dojezd prvku, který React už odebral, a nové řádky
+  v seznamu, který React přeskládává (`usePribyli` — animace při vzniku by se
+  tam pustila i přesunutým řádkům).
+- **Hýbe se `translate`, `scale`, `rotate` a průhlednost**, ne `transform`
+  (ten bývá obsazený usazením prvku) ani rozměry — kromě sbalování se
+  rozvržení pohybem nemění.
+- **Žádná logika nečeká jen na událost animace.** Konec jistí časovač
+  (`animuj` v `pohyb.ts`): záložka na pozadí `finish` nepošle a testovací DOM
+  animace vůbec neprovádí — tam se všechno přepíná naráz.
+- Prvek s vlastní animací, která se zapíná třídou (`.blika` u zprávy), musí
+  mít `vznik` v seznamu animací na prvním místě v obou stavech; jinak ho
+  prohlížeč po sundání třídy pustí znovu.
+
+Vědomě bez pohybu: rozbalený `<select>` a `window.confirm` (kreslí prohlížeč),
+tažení řádků (má vlastní FLIP), zmizení řádku, zprávy nebo karty (dojezd by
+znamenal držet odebraný prvek v každém seznamu zvlášť — dostala ho jen okna
+a sbalování), okno Create Lobby (obraz ze hry) a stávající informační animace
+(toast, záblesk změny, tečky čekání), které běží i při omezeném pohybu,
+protože nesou zprávu, ne ozdobu.
+
+**Vzorník pohybu** je `web/nahled/pohyb.html` (mimo build, `npm --prefix web
+run dev`): karta role, pult GM se všemi stavy, sbalovací sekce, okno,
+tlačítka, přepínače, chat, karta zápasu a stažení scénáře bez serveru. Na
+něm se přechody měří v headless Chrome (vypočtené `transition-duration`,
+`getAnimations()`, emulace `prefers-reduced-motion`).
+
 ---
 
 ## 4. Vygenerované assety
@@ -255,6 +333,51 @@ ComfyUI a stažení vah).
 
 Všechno generováno **bez LoRA** (`lora: 0.0`), 24 kroků, guidance 4,0.
 Dohromady zabírají necelých 600 kB.
+
+### Mód Diplomacie (1. 10. 2026, větev `diplo`)
+
+Znaky rolí, rub tajné karty a rám minimapy — ComfyUI (Flux.2-dev, stejné
+parametry jako výš), zadání a motivy v `nastroje/grafika/zadani/diplomacie.md`,
+prompty v `zadani/diplomacie.json`. Všechno ve `web/src/assets/diplomacie/`,
+dohromady 165,7 kB. Rendery leží vedle repa v `../_grafika/navrhy/diplomacie`.
+Codex (GPT Image) ani Scenario nebyly potřeba — vybrané varianty jsou čisté
+z první dávky. Přesné příkazy (ověřeno, že dávají shodu do pixelu):
+
+```bash
+python nastroje/grafika/davka.py nastroje/grafika/zadani/diplomacie.json -o ../_grafika/navrhy/diplomacie
+# znaky: alfa záplavou s prahem 12 (pozadí je L ≤ 3; práh 40 i 70 žral samet
+# koruny a dřevo pochodně), usazení na čtverec a 208 px — každý znak má jiný
+# poměr stran a CSS ho kreslí 104×104, bez --ctverec by se zdeformoval
+python nastroje/grafika/klic.py ../_grafika/navrhy/diplomacie/role-kat_00.png -o vyber/role-kat.png --prah 12
+python nastroje/grafika/export.py vyber/role-kat.png -o web/src/assets/diplomacie/role-kat.webp -q 86 --sirka 208 --ctverec
+# rub karty
+python nastroje/grafika/klic.py ../_grafika/navrhy/diplomacie/rub-karty_00.png -o vyber/rub-karty.png --prah 12
+python nastroje/grafika/export.py vyber/rub-karty.png -o web/src/assets/diplomacie/rub-karty.webp -q 82 --sirka 600
+# rám minimapy: devítidíl, výsledek 320×320 s řezem 112
+python nastroje/grafika/devitidil.py ../_grafika/navrhy/diplomacie/ram-mapy_00.png -o vyber/ram-mapy.png --roh 112 --pas 96 --prah 20 --vyhlad 0.85
+python nastroje/grafika/export.py vyber/ram-mapy.png -o web/src/assets/diplomacie/ram-mapy.webp -q 90
+```
+
+| Soubor | Předloha | Seed | Rozměr generování | Výstup |
+|---|---|---|---|---|
+| `role-nastupce.webp` | `role-nastupce` var. 01 | 422259639657672192 | 1024×1024 | 208×208 |
+| `role-garda.webp` | `role-garda` var. 01 | 1961912996385478678 | 1024×1024 | 208×208 |
+| `role-najezdnik.webp` | `role-najezdnik2` var. 00 (4. 10. 2026: louč mezi dvěma sekerami, širší než samotná louč — líp čitelná zmenšená; vybral uživatel), pozadí přes Scenario (`scenario_bg.py` → `klic.py --alfa-ze-vstupu`) | 727059449898112161 | 1024×1024 | 208×208 |
+| `role-sasek.webp` | `role-sasek` var. 00 | 3043748249855321627 | 1024×1024 | 208×208 |
+| `role-zoldak.webp` | `role-zoldak` var. 01 | 3616151696795561981 | 1024×1024 | 208×208 |
+| `role-kat.webp` | role Popravčí (dřív Kat, soubor podle id `kat`): `role-popravci` var. 03 (4. 10. 2026: červená kápě popravčího; vybral uživatel), pozadí přes Scenario | 8097900961104008609 | 1024×1024 | 208×208 |
+| `role-gm.webp` | `role-gm` var. 02 bez rukojeti (4. 10. 2026: rukojeť odstranil GPT Image přes Codex, `codex exec -i`; zdroj `../_grafika/navrhy/diplomacie/role-gm_02-bez-rukojeti.png`), pozadí přes Scenario | — | 1254×1254 | 208×208 |
+| `plameny.webm` | 2D simulace hoření (rychlost, teplota, palivo, kouř; blackbody barvy, jiskry s motion blur) v JS, Codex 4. 10. 2026 (4. verze na míru karty s mapou: rozhoření a dohoření uvnitř záběru; první malovaná verze zamítnuta) — `node nastroje/grafika/plameny.mjs`, výstupy píše vedle skriptu; čelo ohně musí držet `baseline(t)` (web podle něj posouvá masku karty, `celoOhne`). Codex kódoval téměř bezeztrátově (22 MB), na web překódováno `ffmpeg … -c:v libvpx-vp9 -pix_fmt yuva420p -b:v 0 -crf 30 -auto-alt-ref 0 -metadata:s:v:0 alpha_mode=1` | v generátoru | 1440×1440, 30 fps, 2,4 s | VP9 s alfou, 2,4 MB |
+| `ikonka-<role>.webp`, `ikonka-relikvie.webp` | zmenšené znaky rolí a relikvie (4. 10. 2026), `python nastroje/grafika/export.py web/src/assets/diplomacie/role-kat.webp -o …/ikonka-kat.webp -q 90 --sirka 56 --ctverec` | — | 208×208 / 90×95 | 56×56, CSS 28×28 (ikonky v textech, `TextSIkonami`) |
+| `prohra.webp` | `prohra` var. 03 (3. 10. 2026, obrazovka prohry) | 680650941923940174 | 1024×1024 | 208×208 |
+| `rub-karty.webp` | `rub-karty` var. 03 | 7973333685969451956 | 1152×768 | 600×362 |
+| `ram-mapy.webp` | `ram-mapy` var. 00, `devitidil.py --roh 112 --pas 96 --prah 20` | 2975078811603106970 | 1024×1024 | 320×320 (řez 112) |
+
+**4. 10. 2026 — pozadí přes Scenario.** Znaky rolí, GM, prohra a rub karty mají pozadí odstraněné přes Scenario (`scenario_bg.py` → `klic.py --alfa-ze-vstupu` → `export.py` se stejnými parametry jako výš), ne vlastní záplavou s prahem 12 — ta nechávala tmavý lem a žrala jemné hrany. Rub karty tím vyšel 600×365 (dřív 600×362). Ikonky 56×56 (`ikonka-*.webp`) jsou zmenšené z nových 208px znaků.
+
+Seedy vybraných variant jsou zapsané i v `diplomacie.json` (`seed`), takže
+nový běh dávky dá jako `_00` přesně to, co je na webu — čísla variant
+v tabulce platí pro původní nesemínkovaný běh (1. 10. 2026).
 
 ### Jak vygenerovat znovu
 
@@ -511,3 +634,5 @@ Ověřené šířky: 1280, 1440, 1600 a 1920 px bez vodorovného přetečení.
   reliéf ražené destičky.
 - Nová barva → nejdřív se koukni, jestli ji nemá paleta. Napevno zapsaná
   barva v pravidle je chyba, ne zkratka.
+- Nový pohyb → čas z proměnných `--prechod…`, viz „Pohyb“ v §3. Napevno
+  zapsaná délka přechodu obejde `prefers-reduced-motion`.

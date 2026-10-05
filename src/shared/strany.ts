@@ -43,7 +43,24 @@ export function strany<T extends ClenStrany>(ucastnici: T[]): Array<{ vitez: Vit
 export function stejnyVitez(a: Vitez | null, b: Vitez | null): boolean {
   if (a === null || b === null) return a === b;
   if ("tym" in a) return "tym" in b && a.tym === b.tym;
-  return "hracId" in b && a.hracId === b.hracId;
+  if ("hracId" in a) return "hracId" in b && a.hracId === b.hracId;
+  // Seznam hráčů je množina: na pořadí zápisu nezáleží.
+  if (!("hraci" in b)) return false;
+  const mnozina = new Set(a.hraci);
+  return mnozina.size === new Set(b.hraci).size && b.hraci.every((h) => mnozina.has(h));
+}
+
+/**
+ * Jediné místo, které říká, jestli konkrétní hráč vyhrál: u týmu je v tom
+ * týmu, u jednoho hráče je to on, u seznamu je v seznamu. Bez výsledku
+ * nevyhrál nikdo.
+ */
+export function vyhralHrac(ucastnici: ClenStrany[], vitez: Vitez | null, hracId: string): boolean {
+  if (vitez === null) return false;
+  if ("hraci" in vitez) return vitez.hraci.includes(hracId);
+  if ("hracId" in vitez) return vitez.hracId === hracId;
+  const u = ucastnici.find((x) => x.hracId === hracId);
+  return u !== undefined && u.tym === vitez.tym;
 }
 
 /** Ke které straně hráč patří; null, když v zápase nehraje. */
@@ -53,18 +70,29 @@ export function stranaHrace(ucastnici: ClenStrany[], hracId: string): Vitez | nu
   return u.tym === 0 ? { hracId } : { tym: u.tym };
 }
 
+/** Jméno ve větě a barva, která k němu patří; null, když jedna barva není (tým s víc barvami, neznámé id). */
+export interface Jmenovany {
+  jmeno: string;
+  barva: Barva | null;
+}
+
 /**
  * Jak stranu pojmenovat: jeden hráč jménem, tým barvou, pokud ji sdílí celý
  * („modrý tým“), jinak číslem („tým 2“). Barvy ve hře vidí každý, čísla týmů
- * ne — proto barva první.
+ * ne — proto barva první. S názvem jde i barva, pokud ji strana má jednu:
+ * web ji kreslí jako čtvereček před jménem.
  */
-export function nazevStrany(strana: Strana): string {
+function pojmenujStranu(strana: Strana): Jmenovany {
   const [prvni] = strana.clenove;
-  if (!prvni) return "?";
-  if (strana.clenove.length === 1) return jmenoClena(prvni);
+  if (!prvni) return { jmeno: "?", barva: null };
+  if (strana.clenove.length === 1) return { jmeno: jmenoClena(prvni), barva: prvni.barva };
   const barvy = new Set(strana.clenove.map((c) => c.barva));
-  if (barvy.size === 1) return `${PRIDAVNE[prvni.barva]} tým`;
-  return "tym" in strana.vitez ? `tým ${strana.vitez.tym}` : jmenoClena(prvni);
+  if (barvy.size === 1) return { jmeno: `${PRIDAVNE[prvni.barva]} tým`, barva: prvni.barva };
+  return { jmeno: "tym" in strana.vitez ? `tým ${strana.vitez.tym}` : jmenoClena(prvni), barva: null };
+}
+
+export function nazevStrany(strana: Strana): string {
+  return pojmenujStranu(strana).jmeno;
 }
 
 const PRIDAVNE: Record<Barva, string> = {
@@ -90,12 +118,53 @@ export function titulekViteze(strana: Strana): string {
   return `${zena ? "Vyhrála" : "Vyhrál"} ${nazevStrany(strana)}`;
 }
 
-/** Totéž do věty: „dohráno — vyhrál modrý tým“. */
-export function vitezVeVete(ucastnici: ClenStrany[], vitez: Vitez): string {
+/** Věta o vítězi po částech: sloveso a jmenovaní s barvou, v pořadí, v jakém se čtou. */
+export interface VetaOViteze {
+  sloveso: string;
+  jmenovani: Jmenovany[];
+}
+
+/**
+ * Věta o vítězi rozložená na části — text z ní skládá `vitezVeVete`, web ke
+ * jménům přidává čtvereček barvy. Jedno místo, ať se slovosled, rod slovesa
+ * a pořadí jmen nerozejdou mezi textem a stránkou.
+ */
+export function vetaOViteze(ucastnici: ClenStrany[], vitez: Vitez): VetaOViteze {
+  if ("hraci" in vitez) return vetaOVitezich(ucastnici, vitez.hraci);
   const strana = strany(ucastnici).find((s) => stejnyVitez(s.vitez, vitez));
-  if (!strana) return "vyhrál " + ("tym" in vitez ? `tým ${vitez.tym}` : vitez.hracId);
-  const titulek = titulekViteze(strana);
-  return titulek.charAt(0).toLowerCase() + titulek.slice(1);
+  if (!strana) return { sloveso: "vyhrál", jmenovani: [{ jmeno: "tym" in vitez ? `tým ${vitez.tym}` : vitez.hracId, barva: null }] };
+  const [prvni] = strana.clenove;
+  // Stejné pravidlo rodu jako titulekViteze: ženský jen pro stranu o jedné AI.
+  const zena = strana.clenove.length === 1 && prvni !== undefined && jeAi(prvni.hracId);
+  return { sloveso: zena ? "vyhrála" : "vyhrál", jmenovani: [pojmenujStranu(strana)] };
+}
+
+/**
+ * Jména v pořadí slotů, ne v pořadí zápisu. Kdo v sestavě není (nemělo by se
+ * stát), zůstane jako ID, ať věta nikoho nezamlčí. Jeden hráč „vyhrál“ (AI
+ * „vyhrála“ jako v titulekViteze), víc jich „vyhráli“.
+ */
+function vetaOVitezich(ucastnici: ClenStrany[], hraci: string[]): VetaOViteze {
+  const podleSlotu = [...ucastnici].sort((a, b) => a.poradi - b.poradi).filter((u) => hraci.includes(u.hracId));
+  const neznami = hraci.filter((h) => !podleSlotu.some((u) => u.hracId === h));
+  const jmenovani: Jmenovany[] = [...podleSlotu.map((u) => ({ jmeno: jmenoClena(u), barva: u.barva })), ...neznami.map((id) => ({ jmeno: id, barva: null }))];
+  if (jmenovani.length <= 1) {
+    const [jediny] = hraci;
+    return { sloveso: jediny !== undefined && jeAi(jediny) ? "vyhrála" : "vyhrál", jmenovani: jmenovani.length === 1 ? jmenovani : [{ jmeno: "?", barva: null }] };
+  }
+  return { sloveso: "vyhráli", jmenovani };
+}
+
+/** Oddělovač před i-tým jménem výčtu „X, Y a Z“; před prvním nic. */
+export function spojkaVyctu(i: number, pocet: number): string {
+  if (i === 0) return "";
+  return i === pocet - 1 ? " a " : ", ";
+}
+
+/** Totéž do věty: „dohráno — vyhrál modrý tým“; u aliance „vyhráli X, Y a Z“. */
+export function vitezVeVete(ucastnici: ClenStrany[], vitez: Vitez): string {
+  const { sloveso, jmenovani } = vetaOViteze(ucastnici, vitez);
+  return `${sloveso} ${jmenovani.map((j, i) => spojkaVyctu(i, jmenovani.length) + j.jmeno).join("")}`;
 }
 
 /** Hráči, kteří mají stejnou barvu jako daný hráč — ve hře sdílejí civilizaci (Coop Kings). */
