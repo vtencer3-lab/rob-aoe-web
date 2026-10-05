@@ -750,7 +750,8 @@ export function App() {
               zapas={zapasKUprave}
               prihlaseni={stav.prihlaseni}
               rezim={rezimAkce}
-              scenar={scenarPanelu}
+              scenar={rk.nastaveniScenare?.(stav, zapasKUprave) ?? undefined}
+              vyberScenare={(onVybrano) => rk.vyberScenare?.({ zapas: zapasKUprave, stav, ja: me?.hracId ?? null, hlidej, onVybrano })}
               onNastaveni={(n) => hlidej(() => api.nastaveniZapasu(zapasKUprave.id, n))}
               onNazev={(nazev) => hlidej(() => api.nazevLobbyZapasu(zapasKUprave.id, nazev))}
               onSestava={(sestava) => hlidej(() => api.sestavaZapasu(zapasKUprave.id, sestava))}

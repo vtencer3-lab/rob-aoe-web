@@ -8,6 +8,7 @@ import { SpravaScenare } from "./SpravaScenare.js";
 import { PultGm } from "./PultGm.js";
 import { StazeniScenare } from "./StazeniScenare.js";
 import { VerejnyRadek } from "./VerejnyRadek.js";
+import { VyberScenare } from "./VyberScenare.js";
 
 /** Diplomacie na obrazovkách jádra (spec §4.2): GM dostane pult, ostatní kartu role, host stažení scénáře. */
 export const diplomacieKlient: RezimKlienta = {
@@ -41,5 +42,15 @@ export const diplomacieKlient: RezimKlienta = {
   smiMluvitDoZapasu: ({ zapas, stav, ja }) => zapas.stav === "bezi" && Boolean(stav.rezim && ja) && diploZapasu(stav.rezim!.data, zapas.id)?.gmHracId === ja,
   // Verze rozebrané před úkolem 22 podmínky vítězství nemají — pak null
   // a panel napíše „podle scénáře“.
-  nastaveniScenare: (stav) => (stav.rezim?.id === "diplomacie" ? { vitezstvi: stav.rezim.data.aktivni?.rozbor?.vitezstvi?.popis ?? null } : null),
+  // V úpravě zápasu verze, kterou ten zápas hraje, jinak aktivní.
+  nastaveniScenare: (stav, zapas) => {
+    if (stav.rezim?.id !== "diplomacie") return null;
+    const data = stav.rezim.data;
+    const verze = zapas ? (data.verze[diploZapasu(data, zapas.id)?.scenarId ?? -1] ?? data.aktivni) : data.aktivni;
+    return { vitezstvi: verze?.rozbor?.vitezstvi?.popis ?? null };
+  },
+  vyberScenare: ({ zapas, stav, hlidej, onVybrano }) => {
+    const d = stav.rezim?.id === "diplomacie" ? diploZapasu(stav.rezim.data, zapas.id) : undefined;
+    return d ? <VyberScenare zapas={zapas} diplo={d} hlidej={hlidej} onVybrano={onVybrano} /> : null;
+  },
 };

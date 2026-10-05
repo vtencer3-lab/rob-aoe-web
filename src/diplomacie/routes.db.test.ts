@@ -1,14 +1,14 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
 import { signUp } from "../db/events.js";
 import { closePool, getPool } from "../db/pool.js";
-import { setZapasStav } from "../db/matches.js";
+import { getZapas, setZapasStav } from "../db/matches.js";
 import { upsertPlayer } from "../db/players.js";
 import { buildServer } from "../http/server.js";
 import { hlasHub } from "../realtime/hlas.js";
 import { KANAL_AKCE } from "../realtime/hub.js";
 import type { HlasUdalost } from "../shared/types.js";
-import { getDiploZapas, pridejDoplatky, pridejPripominky, setNastupce } from "./db.js";
-import { ROB, klient, zapasOsmi } from "./testPomocnici.js";
+import { getDiploZapas, getVerze, pridejDoplatky, pridejPripominky, setNastupce, ulozVerziScenare } from "./db.js";
+import { ROB, VERZE, klient, zapasOsmi } from "./testPomocnici.js";
 
 const app = buildServer();
 
@@ -17,7 +17,7 @@ const HRACI = ["h1", "h2", "h3", "h4", "h5", "h6", "h8"];
 const post = (url: string, sid: string, payload?: object) => app.inject({ method: "POST", url, cookies: { sid }, ...(payload ? { payload } : {}) });
 
 beforeEach(async () => {
-  await getPool().query("TRUNCATE player, akce CASCADE");
+  await getPool().query("TRUNCATE player, akce, diplo_scenar CASCADE");
 });
 
 afterAll(async () => {
@@ -284,4 +284,30 @@ it("osobní klíč mostu: cizí klíč 401, ne-GM 403, GM pošle soubor sondy", 
   expect((await posli(klicGm)).statusCode).toBe(401);
   expect((await app.inject({ method: "DELETE", url: "/api/diplo/most/klic", cookies: { sid: gm } })).statusCode).toBe(200);
   expect((await posli(novy)).statusCode).toBe(401);
+});
+
+it("verze scénáře zápasu: vybírá admin v přípravě, přepíše i nastavení lobby zápasu", async () => {
+  const prvni = await ulozVerziScenare({ ...VERZE, sha256: "s1" });
+  const druha = await ulozVerziScenare({ ...VERZE, sha256: "s2" });
+  const bezRozboru = await ulozVerziScenare({ ...VERZE, sha256: "s3", rozbor: null, chybaRozboru: "x" });
+  const { zapas } = await zapasOsmi("diplomacie");
+  const u = `/api/diplo/zapas/${zapas.id}/scenar`;
+  const admin = await klient(ROB, true);
+  expect((await post(u, await klient("h7", false), { scenarId: prvni.id })).statusCode).toBe(403);
+  expect((await post(u, admin, { scenarId: 999999 })).statusCode).toBe(404);
+  expect((await post(u, admin, { scenarId: bezRozboru.id })).statusCode).toBe(409);
+
+  const vyber = await post(u, admin, { scenarId: prvni.id });
+  expect(vyber.statusCode).toBe(200);
+  const jmeno = (await getVerze(prvni.id))!.jmenoHry;
+  expect(vyber.json().nastaveni.scenar).toBe(jmeno);
+  expect((await getDiploZapas(zapas.id))?.scenarId).toBe(prvni.id);
+  const z = await getZapas(zapas.id);
+  expect(z?.zapas.nastaveni).toMatchObject({ scenar: jmeno, rezim: expect.anything() });
+  expect(z?.zapas.nastaveni["scenarStarsi"]).toContain((await getVerze(druha.id))!.jmenoHry);
+
+  // Po rozdání rolí už verze stojí.
+  await getPool().query("UPDATE diplo_zapas SET stav = 'losovano' WHERE zapas_id = $1", [zapas.id]);
+  expect((await post(u, admin, { scenarId: druha.id })).statusCode).toBe(409);
+  expect((await getDiploZapas(zapas.id))?.scenarId).toBe(prvni.id);
 });

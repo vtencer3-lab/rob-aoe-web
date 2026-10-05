@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import type { NastaveniLobby } from "../../../src/shared/lobbyKontrola.js";
 import type { AkceStavPayload, Barva, RezimId, ZapasView } from "../../../src/shared/types.js";
 import { diplomacieKlient } from "../diplomacie/index.js";
 
@@ -24,7 +25,14 @@ export interface RezimKlienta {
    * Řádek „Scénář“ v panelu Nastavení lobby (Custom Scenario): podmínky
    * vítězství z rozboru aktivní verze. Null = mód k tomu nemá co říct.
    */
-  nastaveniScenare?(stav: AkceStavPayload): { vitezstvi: string | null } | null;
+  nastaveniScenare?(stav: AkceStavPayload, zapas?: ZapasView): { vitezstvi: string | null } | null;
+  /**
+   * Výběr verze scénáře do řádku „Scénář“ v úpravě zápasu (Diplomacie:
+   * uživatel 5. 10. 2026). Mód změnu uloží sám a `onVybrano` vrátí, co
+   * z verze patří do nastavení lobby zápasu — okno úpravy si to vezme do
+   * návrhu, ať ho při dalším propsání nepřepíše starým jménem. Null = jen text.
+   */
+  vyberScenare?(p: KontextZapasu & { onVybrano: (nastaveni: Partial<NastaveniLobby>) => void }): ReactNode;
   /**
    * Smí divák mluvit (push-to-talk) do tohohle zápasu ze své karty, i když
    * není admin? Jen nabídka tlačítka — právo hlídá server stejnojmenným

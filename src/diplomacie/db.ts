@@ -422,6 +422,11 @@ export async function setNastupce(zapasId: number, hracId: string): Promise<void
   await getPool().query("UPDATE diplo_zapas SET nastupce_hrac_id = $2, upraveno_v = now() WHERE zapas_id = $1", [zapasId, hracId]);
 }
 
+/** Verze scénáře, kterou zápas hraje (admin ji vybere v úpravě zápasu, uživatel 5. 10. 2026). */
+export async function setScenarZapasu(zapasId: number, scenarId: number): Promise<void> {
+  await getPool().query("UPDATE diplo_zapas SET scenar_id = $2, upraveno_v = now() WHERE zapas_id = $1", [zapasId, scenarId]);
+}
+
 /** Po změně sestavy: Nástupce, který mezi hráči zápasu už není, se vynuluje (jinak zůstane, jak je). */
 export async function zrusNastupceMimoSestavu(zapasId: number, hraci: string[]): Promise<void> {
   await getPool().query(
