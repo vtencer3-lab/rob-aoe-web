@@ -19,6 +19,7 @@ import {
   getMinimapuVerze,
   getSouborVerze,
   getVerze,
+  listDiploZapasy,
   listVerzi,
   najdiVerziPodleSha,
   ulozSondu,
@@ -287,6 +288,25 @@ async function promitniDoAkce(): Promise<void> {
   await setNastaveniLobby(akce.id, { ...(akce.nastaveniLobby as Partial<NastaveniLobby>), ...(await nastaveniZAktivniVerze()) });
 }
 
+/**
+ * Jméno scénáře pro hru nese verzi sondy (`…_v<VERZE_SONDY>`): po nasazení
+ * nové sondy (6. 10. 2026: v9 → v10) by kontrola lobby čekala staré jméno.
+ * Po startu se proto znovu propíše do nastavení akce i do zápasů, které
+ * mají vlastní nastavení — každý podle verze, kterou hraje. Opakovat nevadí.
+ */
+export async function obnovJmenaScenaru(): Promise<void> {
+  await promitniDoAkce();
+  const akce = await getAktivniAkce();
+  if (!akce || akce.rezim !== "diplomacie") return;
+  const vsechny = await listVerzi();
+  for (const d of await listDiploZapasy(akce.id)) {
+    const verze = vsechny.find((v) => v.id === d.scenarId);
+    const zaznam = await getZapas(d.zapasId);
+    if (!verze || !zaznam || Object.keys(zaznam.zapas.nastaveni).length === 0) continue;
+    await setNastaveniZapasu(d.zapasId, { ...zaznam.zapas.nastaveni, ...nastaveniScenare(verze, vsechny) });
+  }
+}
+
 const duplicita = (id: number) => new HttpError(409, `Tahle verze už je nahraná (č. ${id}).`);
 
 function posliSoubor(reply: FastifyReply, soubor: { jmenoSouboru: string; data: Buffer }): FastifyReply {
@@ -453,6 +473,9 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
   // Jen na nasazeném webu; testy a vývoj Python s knihovnami mít nemusí.
   if (config.jeProdukce) {
     app.addHook("onReady", async () => {
+      void obnovJmenaScenaru()
+        .then(() => broadcastAkce())
+        .catch((e: unknown) => app.log.error(e, "propsání jména scénáře do lobby selhalo"));
       void prebalZastaraleSondy(deps).catch((e: unknown) => app.log.error(e, "přebalení zastaralých sond selhalo"));
     });
   }

@@ -42,7 +42,7 @@ function telo(bezCile: number[], cas = 100, navic: { hodnoty?: Record<number, nu
   return {
     v: 1,
     odesilatel: navic.odesilatel ?? "h7",
-    scenar: navic.scenar ?? "ROB_DIPLO_1_v9.aoe2scenario",
+    scenar: navic.scenar ?? "ROB_DIPLO_1_v10.aoe2scenario",
     cas,
     sloty: [7, 2, 3, 4, 5, 6, 1, 8],
     hraci: [1, 2, 3, 4, 5, 6, 7, 8].map((cislo) => ({ cislo, jmeno: `ve hře ${cislo}`, barva: "<BLUE>", relikvie: cislo === 7 ? 2 : 0, zije: cislo !== 3 })),
@@ -255,7 +255,7 @@ it("jiný scénář ve hře, než zápas hraje: data s varováním, Nástupce se
   await klient("autor", false);
   await ulozVerziScenare({ ...VERZE, sonda: { cile: [], oznaceno: 0, chyba: null }, dataSonda: Buffer.from("y") });
   const { zapas } = await zapasOsmi("diplomacie");
-  const varovani = "Hra hlásí scénář „Jiny.aoe2scenario“, zápas ale hraje „ROB_DIPLO_1_v9.aoe2scenario“ — Nástupce se podle ní nenastavuje.";
+  const varovani = "Hra hlásí scénář „Jiny.aoe2scenario“, zápas ale hraje „ROB_DIPLO_1_v10.aoe2scenario“ — Nástupce se podle ní nenastavuje.";
 
   const jiny = await potvrd([4], 100, { scenar: "Jiny.aoe2scenario" });
   expect(jiny.statusCode).toBe(200);
@@ -331,7 +331,7 @@ describe("snímky od diváka", () => {
     const jiny = await posli(telo([4], 110, { odesilatel: "76561198000000099", scenar: "Jiny.aoe2scenario" }));
     expect(jiny.statusCode).toBe(404);
     expect(jiny.json().chyba).toBe(
-      "76561198000000099 není GM běžícího zápasu Diplomacie a hra hlásí scénář „Jiny.aoe2scenario“, zápas ale hraje „ROB_DIPLO_1_v9.aoe2scenario“ — data diváka nejde přiřadit.",
+      "76561198000000099 není GM běžícího zápasu Diplomacie a hra hlásí scénář „Jiny.aoe2scenario“, zápas ale hraje „ROB_DIPLO_1_v10.aoe2scenario“ — data diváka nejde přiřadit.",
     );
   });
 

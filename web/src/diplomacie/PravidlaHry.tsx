@@ -53,7 +53,7 @@ export function ObsahPravidel({ verze }: { verze: ScenarVerze | null }) {
               <h4>Primární cíle</h4>
               <ul>
                 <li>
-                  <TextSIkonami text="Hráč vyhrává, když drží 7 relikvií 15 herních minut." />
+                  <TextSIkonami text="Hráč vyhrává, když drží 7 relikvií 15 herních minut v kuse — při ztrátě se odpočet vynuluje." />
                 </li>
                 <li>Hráč prohrává, když zemře jeho král.</li>
               </ul>

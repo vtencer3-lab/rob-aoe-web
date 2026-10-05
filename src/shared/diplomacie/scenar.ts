@@ -27,9 +27,9 @@ export function jmenoScenareProHru(poradi: number): string {
  * jejího kódu; test v sonda.test.ts to hlídá přes otisk `REVIZE_SONDY`.
  * 9 = formát souboru 8 + počitadlo držení 7 relikvií (proměnné 240–247).
  */
-export const VERZE_SONDY = 9;
+export const VERZE_SONDY = 10;
 /** Otisk sonda.xs (`revizeSondy`), ke kterému patří `VERZE_SONDY`. */
-export const REVIZE_SONDY = "923c7f4a7ea8";
+export const REVIZE_SONDY = "b7c9e3fb4a47";
 
 /** Co rozbor scénáře (src/diplomacie/rozbor.py) vrací; spec §5.2. */
 export interface RozborScenare {

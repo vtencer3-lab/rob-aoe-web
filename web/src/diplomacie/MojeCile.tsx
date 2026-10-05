@@ -20,8 +20,8 @@ export function MojeCile({ hra, role, ucastnici }: { hra: MojeHra | undefined; r
     );
   }
   const relikvie = hra.relikvie ?? 0;
-  // Odpočet běží, jen dokud má hráč 7 relikvií; při ztrátě se zastaví
-  // (hra ho nuluje, sonda ne) — do té doby je řádek ztmavený.
+  // Odpočet běží, jen dokud má hráč 7 relikvií; při ztrátě se vynuluje
+  // (pravidla od 6. 10. 2026, stejně jako ve hře) — do té doby je řádek ztmavený.
   const bezi = relikvie >= RELIKVII_K_VITEZSTVI;
   return (
     <div className="moje-cile" data-testid="moje-cile">

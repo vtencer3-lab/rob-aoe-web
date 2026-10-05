@@ -8,6 +8,7 @@ import { hlasHub } from "../realtime/hlas.js";
 import { KANAL_AKCE } from "../realtime/hub.js";
 import type { HlasUdalost } from "../shared/types.js";
 import { getDiploZapas, getVerze, pridejDoplatky, pridejPripominky, setNastupce, ulozVerziScenare } from "./db.js";
+import { obnovJmenaScenaru } from "./routes.js";
 import { ROB, VERZE, klient, zapasOsmi } from "./testPomocnici.js";
 
 const app = buildServer();
@@ -337,4 +338,21 @@ it("GM upravuje zápas; předáním šedé práva přejdou na nového GM", async
   expect((await getDiploZapas(zapas.id))!.gmHracId).toBe("h1");
   expect((await put(gm, "nastaveni", { populace: 200 })).statusCode).toBe(403);
   expect((await put(hrac, "nastaveni", { populace: 200 })).statusCode).toBe(200);
+});
+
+// Nová sonda = nové jméno scénáře (…_v10): po startu se propíše do akce i do zápasů.
+it("po startu se jméno scénáře s novou verzí sondy propíše do nastavení akce i zápasu", async () => {
+  await upsertPlayer("autor", false);
+  const prvni = await ulozVerziScenare({ ...VERZE, sha256: "j1" });
+  await getPool().query("UPDATE diplo_scenar SET aktivni = true WHERE id = $1", [prvni.id]);
+  const { akce, zapas } = await zapasOsmi("diplomacie");
+  await setNastaveniLobby(akce.id, { rezim: 99, scenar: "ROB_DIPLO_1_v9.aoe2scenario" });
+  await getPool().query("UPDATE zapas SET nastaveni = $2::jsonb WHERE id = $1", [zapas.id, JSON.stringify({ rezim: 99, scenar: "ROB_DIPLO_1_v9.aoe2scenario" })]);
+  await getPool().query("UPDATE diplo_zapas SET scenar_id = $2 WHERE zapas_id = $1", [zapas.id, prvni.id]);
+  await obnovJmenaScenaru();
+  const jmeno = (await getVerze(prvni.id))!.jmenoHry;
+  expect(jmeno).toMatch(/_v\d+\.aoe2scenario$/);
+  expect((await getZapas(zapas.id))?.zapas.nastaveni["scenar"]).toBe(jmeno);
+  const { rows } = await getPool().query("SELECT nastaveni_lobby FROM akce WHERE id = $1", [akce.id]);
+  expect(rows[0].nastaveni_lobby.scenar).toBe(jmeno);
 });
