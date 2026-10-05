@@ -39,7 +39,11 @@ export const vidiHrac = (druh: DruhSchopnosti): boolean => jeZadost(druh) || dru
 /** Kdo smí o schopnost žádat (podle role, kterou má teď — Šašek po proměně v Gardu už ne). */
 export const ROLE_ZADOSTI: Record<DruhZadosti, Role> = { sabotaz: "najezdnik", informace: "sasek", doplatek: "zoldak" };
 
-/** Pravidla: Sabotáž 1× za hru a na jednoho hráče nejvýš jedna, Šašek 3 informace. */
+/**
+ * Pravidla: Sabotáž 1× za hru, Šašek 3 informace. Omezení „na jednoho
+ * hráče nejvýš jedna Sabotáž“ padlo 6. 10. 2026 — oba Nájezdníci smí
+ * zasáhnout téhož hráče, každý svou.
+ */
 export const MAX_SABOTAZI = 1;
 export const MAX_INFORMACI = 3;
 /** Rozdíl, který GM doplácí Žoldákovi za prodanou relikvii (8000 místo 4000). */
@@ -58,8 +62,7 @@ export function zbyva(schopnosti: readonly Schopnost[], hracId: string, druh: Dr
 
 /**
  * Proč hráč teď schopnost použít nemůže (česká věta pro 409 a kartu), nebo
- * null. `hraci` = hráči zápasu bez GM. Cizí Sabotáž na stejný cíl vidí jen
- * server (hráč má jen své řádky), karta ji zjistí až z odpovědi.
+ * null. `hraci` = hráči zápasu bez GM.
  */
 export function procNelze(d: Pick<DiploZapas, "stav" | "role">, schopnosti: readonly Schopnost[], hraci: readonly string[], hracId: string, druh: DruhZadosti, cilHracId: string | null): string | null {
   if (d.stav !== "rozeslano") return "Schopnosti jdou použít až po rozeslání rolí.";
@@ -69,7 +72,6 @@ export function procNelze(d: Pick<DiploZapas, "stav" | "role">, schopnosti: read
   if (zbyva(schopnosti, hracId, druh) === 0) return druh === "sabotaz" ? "Sabotáž už jsi použil." : "Všechny tři informace už jsi vyčerpal.";
   if (druh === "sabotaz") {
     if (cilHracId === null || !hraci.includes(cilHracId) || cilHracId === hracId) return "Sabotáž míří na jiného hráče zápasu.";
-    if (schopnosti.some((s) => s.druh === "sabotaz" && s.cilHracId === cilHracId && plati(s))) return "Na tohohle hráče už Sabotáž míří — na jednoho hráče nejvýš jedna.";
   } else if (cilHracId !== null) return "Tahle schopnost cíl nemá.";
   return null;
 }

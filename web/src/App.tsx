@@ -30,7 +30,6 @@ import { HistorieZapasu, Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { Skladani } from "./views/Skladani.js";
 import { SpravaAkce } from "./views/SpravaAkce.js";
-import { SpravaScenare } from "./diplomacie/SpravaScenare.js";
 import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
@@ -153,6 +152,9 @@ export function App() {
   // Admin nebo autor scénáře Diplomacie (spec §5.1): server to říká vedle
   // řádku hráče, protože práva autora na řádku vidět nejsou.
   const [smiNahratScenar, setSmiNahratScenar] = useState(false);
+  // Mód zvolený ve formuláři založení akce: bez běžící akce podle něj
+  // ukáže svou správu (Diplomacie: scénář; uživatel 5. 10. 2026).
+  const [zakladanyRezim, setZakladanyRezim] = useState<RezimId>("klasicky");
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
@@ -429,8 +431,10 @@ export function App() {
   }
 
   /** Doplněk módu pro jedno místo v jádru; bez snímku stavu není co doplňovat. */
+  // Úprava zápasu mimo režii: komu ji dá mód (GM Diplomacie svého zápasu).
+  const smiUpravit = (zapas: ZapasView) => Boolean(stav && me && rk.smiUpravitZapas?.({ zapas, stav, ja: me.hracId, hlidej }));
   const doplnekModu = (misto: "kartaHrace" | "krokHosta" | "verejnyZapas", zapas: ZapasView, ja: string | null) =>
-    stav ? rk[misto]?.({ zapas, stav, ja, hlidej }) : null;
+    stav ? rk[misto]?.({ zapas, stav, ja, hlidej, ...(smiUpravit(zapas) ? { onUpravitZapas: () => setUpravovany(zapas.id) } : {}) }) : null;
 
   // Push-to-talk ve vlastní kartě zápasu: jen komu ho dá mód (GM Diplomacie).
   // Admin mluví z režie (rezieObsluha.onHlas), karta hráče ho jinak nemá.
@@ -674,6 +678,7 @@ export function App() {
           akce={akce}
           stitek={rk.stitek?.() ?? null}
           onZalozit={(nazev, rezim) => void hlidej(() => api.vytvoritAkce(nazev, rezim))}
+          onVolbaDiplomacie={(zapnuto) => setZakladanyRezim(zapnuto ? "diplomacie" : "klasicky")}
           onNastaveniLobby={(n) => {
             if (!akce) return;
             const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
@@ -730,23 +735,25 @@ export function App() {
         </SpravaAkce>
       ) : null}
 
-      {/* Správa scénáře Diplomacie nepatří k jedné akci: Jin (autor, ne admin)
-          nahrává novou verzi, když se mu to hodí, i když žádná akce neběží
-          (spec §5.3). Proto stojí pod panelem akce samostatně, ne přes mód.
-          V pohledu uživatele se admin dívá jako hráč — správa je nástroj;
-          autorovi bez režie ji ale uložený přepínač (localStorage je jeden
-          pro /aoe i /aoe/diplo) brát nesmí, přepnout zpět by ho neměl jak. */}
-      {me && smiNahratScenar && !(me.jeAdmin && pohledUzivatele) ? <SpravaScenare hlidej={hlidej} /> : null}
+      {/* Správa podkladů módu (Diplomacie: scénář) stojí pod panelem akce
+          samostatně a dodává ji mód háčkem `sprava` — pro mód běžící akce,
+          bez akce pro mód zvolený ve formuláři založení (uživatel 5. 10. 2026).
+          Kdo ji vidí, rozhoduje mód (Diplomacie: admin, autor, GM běžícího
+          zápasu). V pohledu uživatele se admin dívá jako hráč; autorovi bez
+          režie ji uložený přepínač (localStorage je jeden pro /aoe i
+          /aoe/diplo) brát nesmí. */}
+      {me && !(me.jeAdmin && pohledUzivatele) ? rezimKlienta(akce ? rezimAkce : zakladanyRezim).sprava?.({ stav: stav ?? null, ja: me.hracId, smiSpravovat: smiNahratScenar, hlidej }) : null}
 
       {akce ? (
         <>
           {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.hracId} doplnek={(zapas) => doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} /> : null}
-          {admin && stav && zapasKUprave ? (
+          {stav && zapasKUprave && (admin || smiUpravit(zapasKUprave)) ? (
             <EditaceZapasu
               zapas={zapasKUprave}
               prihlaseni={stav.prihlaseni}
               rezim={rezimAkce}
-              scenar={scenarPanelu}
+              scenar={rk.nastaveniScenare?.(stav, zapasKUprave) ?? undefined}
+              vyberScenare={(onVybrano) => rk.vyberScenare?.({ zapas: zapasKUprave, stav, ja: me?.hracId ?? null, hlidej, onVybrano })}
               onNastaveni={(n) => hlidej(() => api.nastaveniZapasu(zapasKUprave.id, n))}
               onNazev={(nazev) => hlidej(() => api.nazevLobbyZapasu(zapasKUprave.id, nazev))}
               onSestava={(sestava) => hlidej(() => api.sestavaZapasu(zapasKUprave.id, sestava))}

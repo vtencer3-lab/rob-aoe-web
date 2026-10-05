@@ -400,3 +400,18 @@ it("GM vidí čekající Sabotáž s cílem a potvrdí ji; připomínku Kata odk
   fireEvent.click(screen.getByRole("button", { name: "Garda padla" }));
   expect(diploApi.gardaPadla).toHaveBeenCalledWith(zapas.id);
 });
+
+// Uživatel 6. 10. 2026: u použité Sabotáže čtvereček s barvou a číslem cíle.
+it("použitá Sabotáž ukáže v tabulce GM čtvereček cíle", () => {
+  const role = [
+    { hracId: "h2", role: "najezdnik" as const, cilHracId: null },
+    { hracId: "h3", role: "sasek" as const, cilHracId: null },
+  ];
+  const data = gmData("rozeslano", role, "h1");
+  const schopnosti = [{ id: 5, hracId: "h2", druh: "sabotaz" as const, cilHracId: "h3", stav: "potvrzeno" as const, vytvoreno: "2026-10-03T20:00:00.000Z" }];
+  render(<PultGm zapas={zapas} data={{ ...data, zapasy: data.zapasy.map((z) => ({ ...z, schopnosti })) }} hlidej={spust} />);
+  fireEvent.click(screen.getByRole("button", { name: "Pult GM — klikni pro odkrytí" }));
+  const stav = screen.getAllByTestId("schopnost-gm")[0]!;
+  expect(stav).toHaveTextContent("Sabotáž použita");
+  expect(stav.querySelector(".swatch")?.getAttribute("data-cislo")).toBe(String(zapas.ucastnici.find((u) => u.hracId === "h3")!.barva));
+});

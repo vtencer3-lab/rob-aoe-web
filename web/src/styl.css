@@ -88,6 +88,8 @@
   --varovani: #e0c46a;
   --ok: #a8c47c;
   --ok-svetle: #bcd694;
+  /* Kontrolka živého spojení (most Streamer.bot): sytá zelená, ať je vidět na první pohled. */
+  --kontrolka-zive: #45d84a;
 
   --pozadi: #150d07;
   --text: #f0e2c0;
@@ -162,8 +164,12 @@ html.obs body::before { content: none; }
 .overlay-karty { margin: 0.6rem 0; }
 /* Most přes Streamer.bot v pultu GM (MostStreamerbot.tsx). */
 .most-streamerbot { margin-top: 0.8rem; text-align: left; }
+.most-streamerbot .kontrolka-mostu { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.8rem; font-size: 0.85em; font-weight: normal; color: var(--tlumene); }
+.most-streamerbot .kontrolka-mostu .tecka { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: currentColor; }
+.most-streamerbot .kontrolka-mostu.zive { color: var(--kontrolka-zive); }
+.most-streamerbot .kontrolka-mostu.zive .tecka { box-shadow: 0 0 0.5rem var(--kontrolka-zive); }
+.most-streamerbot .kontrolka-mostu.mlci { color: var(--chyba); }
 .most-streamerbot .most-tlacitka { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.most-streamerbot .postup-streamerbot { margin: 0.4rem 0; padding-left: 1.4rem; font-size: 0.92rem; }
 .obs-overlay.obs-tabulka { margin: 0; }
 .obs-tabulka .tabulka-roli { max-width: none; margin: 0; }
 .volba-pozadi { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
@@ -1908,6 +1914,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .oznameni-gm .oznameni-tlacitka { display: flex; gap: 0.4rem; }
 .tabulka-roli .schopnost-gm { font-size: 0.8rem; color: var(--tlumene); white-space: nowrap; }
 .tabulka-roli .schopnost-gm.pouzita { color: var(--zlato); }
+/* Čtvereček cíle Sabotáže na středu řádku textu, ne na účaří (uživatel 6. 10. 2026). */
+.tabulka-roli .schopnost-gm > .swatch { vertical-align: middle; position: relative; top: -0.1em; }
 .tabulka-roli .drive-role { font-size: 0.85rem; color: var(--tlumene); }
 /* Prohra role (Žoldák bez pouta, Garda bez Nástupce): velký blok nad kartou. */
 /* Přes celou sekci Diplomacie, okolí ztmavené; okno drží u horního okraje
@@ -2152,7 +2160,12 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
    zlaté tlačítko jako „Spustit hru“ (šířku sdílí s `.hostovi .cta` výš),
    pod ním instrukce na střed. Cesta ke složce je dlouhá a na telefonu se
    musí zalomit — i uprostřed složky, mezery v ní nejsou. */
-.stazeni-scenare { margin-top: 1rem; text-align: center; }
+.stazeni-scenare { margin-top: 1rem; text-align: center; position: relative; }
+/* Úprava zápasu pro GM: jen ikona vpravo v úrovni „Stáhnout scénář“; na úzkém displeji pod tlačítka. */
+.stazeni-scenare .gm-uprava { position: absolute; top: 0; right: 0; margin: 0; }
+@media (max-width: 40rem) {
+  .stazeni-scenare .gm-uprava { position: static; display: block; margin: 0 0 0.5rem auto; }
+}
 .stazeni-scenare p { margin: 0.5rem 0; }
 .stazeni-scenare button.kopirovatelne { max-width: 100%; }
 .stazeni-scenare button.kopirovatelne strong { overflow-wrap: anywhere; text-align: left; }

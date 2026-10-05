@@ -99,4 +99,7 @@ export const diplomacie: RezimAkce = {
   // GM „svolává všechny“ (uživatel 2. 10. 2026): mluví do svého zápasu jako
   // admin z režie, i když admin není.
   smiMluvitDoZapasu: smiGmMluvit,
+  // GM upravuje konfiguraci svého zápasu (uživatel 5. 10. 2026). GM je
+  // hráč na šedé: když šedou v sestavě dá jinému, práva přejdou na něj.
+  smiUpravitZapas: smiGmMluvit,
 };

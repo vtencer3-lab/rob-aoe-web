@@ -2,8 +2,9 @@ import { createHash, randomInt } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { jeUnikatniKonflikt } from "../db/chyby.js";
 import { getAktivniAkce, setNastaveniLobby } from "../db/events.js";
-import { getZapas } from "../db/matches.js";
+import { getZapas, setNastaveniZapasu } from "../db/matches.js";
 import { HttpError, requireId, requireUser } from "../http/guards.js";
+import { requireUpravce } from "../http/routes/matches.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { config } from "../config.js";
 import { souhrnSondy, type SondaScenare } from "../shared/diplomacie/hra.js";
@@ -18,12 +19,14 @@ import {
   getMinimapuVerze,
   getSouborVerze,
   getVerze,
+  listDiploZapasy,
   listVerzi,
   najdiVerziPodleSha,
   ulozSondu,
   setMapaZapasu,
   verzeSeZastaralouSondou,
   setNastupce,
+  setScenarZapasu,
   setStavDiplo,
   smazVerzi,
   ulozRole,
@@ -41,7 +44,7 @@ import { PING_TRVA_MS, pridejPing } from "./pingy.js";
 import { registerObsRoutes } from "./obs.js";
 import { registerMostKlicRoutes } from "./mostKlic.js";
 import { jeGm, smiNahratScenar } from "./opravneni.js";
-import { nastaveniZAktivniVerze } from "./rezim.js";
+import { nastaveniScenare, nastaveniZAktivniVerze } from "./rezim.js";
 import { jeHlavickaScenare, type rozeberScenar } from "./rozbor.js";
 import { revizeSondy, sondaSChybou, type pribalSondu } from "./sonda.js";
 
@@ -87,6 +90,31 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
 
   // Přepínače pod mapou pultu: krále a relikvie z běžící hry ukázat, nebo ne
   // (platí i pro overlaye do OBS). Smí jen GM zápasu, v každém stavu.
+  // Na které verzi scénáře zápas pojede (uživatel 5. 10. 2026): admin ji
+  // (nebo GM zápasu) vybere v úpravě zápasu z rozebraných verzí. Jen v přípravě — po rozdání
+  // rolí už web počítá pravidla k otisknuté verzi. S verzí se přepíše
+  // i nastavení lobby zápasu, ať kontrola lobby hlídá tu správnou.
+  app.post("/api/diplo/zapas/:id/scenar", async (request) => {
+    const zapasId = requireId(request);
+    await requireUpravce(request, zapasId);
+    const diplo = await getDiploZapas(zapasId);
+    if (!diplo) throw new HttpError(404, "Tohle není zápas Diplomacie.");
+    if (diplo.stav !== "priprava") throw new HttpError(409, "Role už jsou rozdané — verzi scénáře jde změnit jen v přípravě.");
+    const scenarId = (request.body as { scenarId?: unknown } | null)?.scenarId;
+    const verze = typeof scenarId === "number" ? await getVerze(scenarId) : null;
+    if (!verze) throw new HttpError(404, "Taková verze není.");
+    if (verze.rozbor === null) throw new HttpError(409, "Verze bez rozboru se hrát nedá.");
+    const zaznam = await getZapas(zapasId);
+    if (!zaznam || zaznam.zapas.stav === "zruseny") throw new HttpError(409, "Zrušený zápas se neupravuje.");
+    const scenar = nastaveniScenare(verze, await listVerzi());
+    await setScenarZapasu(zapasId, verze.id);
+    // Zápas bez vlastního nastavení se řídí nastavením akce (kontrolaLobby.ts) — z něj se vyjde.
+    const zaklad = Object.keys(zaznam.zapas.nastaveni).length > 0 ? zaznam.zapas.nastaveni : ((await getAktivniAkce())?.nastaveniLobby ?? {});
+    await setNastaveniZapasu(zapasId, { ...(zaklad as Record<string, unknown>), ...scenar });
+    await broadcastAkce();
+    return { ok: true, nastaveni: scenar };
+  });
+
   app.post("/api/diplo/zapas/:id/mapa", async (request) => {
     const { diplo } = await requireGm(request);
     const telo = (request.body ?? {}) as { kralove?: unknown; relikvie?: unknown };
@@ -238,7 +266,7 @@ const MAX_DELKA_POZNAMKY = 500;
 
 async function requireAutorScenare(request: FastifyRequest): Promise<string> {
   const hracId = await requireUser(request);
-  if (!(await smiNahratScenar(hracId))) throw new HttpError(403, "Scénář smí nahrávat jen admin nebo autor scénáře.");
+  if (!(await smiNahratScenar(hracId))) throw new HttpError(403, "Scénář smí nahrávat jen admin, autor scénáře nebo GM běžícího zápasu Diplomacie.");
   return hracId;
 }
 
@@ -258,6 +286,25 @@ async function promitniDoAkce(): Promise<void> {
   const akce = await getAktivniAkce();
   if (!akce || akce.rezim !== "diplomacie") return;
   await setNastaveniLobby(akce.id, { ...(akce.nastaveniLobby as Partial<NastaveniLobby>), ...(await nastaveniZAktivniVerze()) });
+}
+
+/**
+ * Jméno scénáře pro hru nese verzi sondy (`…_v<VERZE_SONDY>`): po nasazení
+ * nové sondy (6. 10. 2026: v9 → v10) by kontrola lobby čekala staré jméno.
+ * Po startu se proto znovu propíše do nastavení akce i do zápasů, které
+ * mají vlastní nastavení — každý podle verze, kterou hraje. Opakovat nevadí.
+ */
+export async function obnovJmenaScenaru(): Promise<void> {
+  await promitniDoAkce();
+  const akce = await getAktivniAkce();
+  if (!akce || akce.rezim !== "diplomacie") return;
+  const vsechny = await listVerzi();
+  for (const d of await listDiploZapasy(akce.id)) {
+    const verze = vsechny.find((v) => v.id === d.scenarId);
+    const zaznam = await getZapas(d.zapasId);
+    if (!verze || !zaznam || Object.keys(zaznam.zapas.nastaveni).length === 0) continue;
+    await setNastaveniZapasu(d.zapasId, { ...zaznam.zapas.nastaveni, ...nastaveniScenare(verze, vsechny) });
+  }
 }
 
 const duplicita = (id: number) => new HttpError(409, `Tahle verze už je nahraná (č. ${id}).`);
@@ -426,6 +473,9 @@ function registerScenarRoutes(app: FastifyInstance, deps: DiploDeps): void {
   // Jen na nasazeném webu; testy a vývoj Python s knihovnami mít nemusí.
   if (config.jeProdukce) {
     app.addHook("onReady", async () => {
+      void obnovJmenaScenaru()
+        .then(() => broadcastAkce())
+        .catch((e: unknown) => app.log.error(e, "propsání jména scénáře do lobby selhalo"));
       void prebalZastaraleSondy(deps).catch((e: unknown) => app.log.error(e, "přebalení zastaralých sond selhalo"));
     });
   }

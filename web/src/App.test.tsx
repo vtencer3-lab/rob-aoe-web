@@ -117,16 +117,30 @@ it("nehostující účastník vidí kartu hráče, ne obrazovku hosta", async ()
   expect(screen.queryByTestId("spustit-hru")).not.toBeInTheDocument();
 });
 
-// Správa scénáře Diplomacie patří autorovi (Jin není admin) a nezávisí na
-// běžící akci (spec §5.3): příznak jde z /api/me vedle řádku hráče.
-it("autor scénáře vidí správu scénáře i bez akce", async () => {
+// Správa scénáře Diplomacie patří autorovi (Jin není admin; příznak jde
+// z /api/me), ale ukáže se jen v módu Diplomacie (uživatel 5. 10. 2026).
+it("autor vidí správu scénáře jen při akci Diplomacie", async () => {
   vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "jin", alias: "Jin", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: true });
   nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+  const { unmount } = render(<App />);
+  expect(await screen.findByText("Právě neběží žádná akce.")).toBeInTheDocument();
+  expect(screen.queryByText("Scénář Diplomacie")).not.toBeInTheDocument();
+  unmount();
 
+  nastavStav({ akce: { id: 1, nazev: "Diplo", stav: "bezi", skladani: [], rezim: "diplomacie" }, prihlaseni: [], zapasy: [] });
   render(<App />);
-
   expect(await screen.findByText("Scénář Diplomacie")).toBeInTheDocument();
-  expect(screen.getByText("Právě neběží žádná akce.")).toBeInTheDocument();
+});
+
+it("admin bez akce vidí správu scénáře, až když zapne Diplomacii pro novou akci", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "rob", alias: "Rob", platformaJmeno: null, jeAdmin: true }, smiNahratScenar: true });
+  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+  render(<App />);
+  const prepinac = await screen.findByTestId("prepinac-diplomacie");
+  expect(screen.queryByText("Scénář Diplomacie")).not.toBeInTheDocument();
+  fireEvent.click(prepinac.querySelector("[role=switch]") ?? prepinac);
+  expect(await screen.findByText("Scénář Diplomacie")).toBeInTheDocument();
 });
 
 // „Pohled uživatele“ schovává správu jen adminovi; localStorage je jeden pro
@@ -135,7 +149,7 @@ it("autor scénáře vidí správu scénáře i bez akce", async () => {
 it("autor bez režie vidí správu i s uloženým pohledem uživatele", async () => {
   localStorage.setItem("rezie.pohled-uzivatele", "1");
   vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "jin", alias: "Jin", platformaJmeno: null, jeAdmin: false }, smiNahratScenar: true });
-  nastavStav({ akce: null, prihlaseni: [], zapasy: [] });
+  nastavStav({ akce: { id: 1, nazev: "Diplo", stav: "bezi", skladani: [], rezim: "diplomacie" }, prihlaseni: [], zapasy: [] });
 
   render(<App />);
 
@@ -369,7 +383,7 @@ it("hráči po zapsání výsledku zápas nezmizí", async () => {
 it("admin si přepne na pohled uživatele a adminské části zmizí", async () => {
   const { fireEvent } = await import("@testing-library/react");
   vi.mocked(api.me).mockResolvedValue({ hrac: { hracId: "rob", alias: "Rob", platformaJmeno: null, jeAdmin: true }, smiNahratScenar: true });
-  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [] }, prihlaseni: [], zapasy: [] });
+  nastavStav({ akce: { id: 1, nazev: "Akce 1", stav: "bezi", skladani: [], rezim: "diplomacie" }, prihlaseni: [], zapasy: [] });
 
   render(<App />);
 

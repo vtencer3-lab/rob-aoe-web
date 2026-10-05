@@ -1,14 +1,15 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
-import { signUp } from "../db/events.js";
+import { setNastaveniLobby, signUp } from "../db/events.js";
 import { closePool, getPool } from "../db/pool.js";
-import { setZapasStav } from "../db/matches.js";
+import { getZapas, setZapasStav } from "../db/matches.js";
 import { upsertPlayer } from "../db/players.js";
 import { buildServer } from "../http/server.js";
 import { hlasHub } from "../realtime/hlas.js";
 import { KANAL_AKCE } from "../realtime/hub.js";
 import type { HlasUdalost } from "../shared/types.js";
-import { getDiploZapas, pridejDoplatky, pridejPripominky, setNastupce } from "./db.js";
-import { ROB, klient, zapasOsmi } from "./testPomocnici.js";
+import { getDiploZapas, getVerze, pridejDoplatky, pridejPripominky, setNastupce, ulozVerziScenare } from "./db.js";
+import { obnovJmenaScenaru } from "./routes.js";
+import { ROB, VERZE, klient, zapasOsmi } from "./testPomocnici.js";
 
 const app = buildServer();
 
@@ -17,7 +18,7 @@ const HRACI = ["h1", "h2", "h3", "h4", "h5", "h6", "h8"];
 const post = (url: string, sid: string, payload?: object) => app.inject({ method: "POST", url, cookies: { sid }, ...(payload ? { payload } : {}) });
 
 beforeEach(async () => {
-  await getPool().query("TRUNCATE player, akce CASCADE");
+  await getPool().query("TRUNCATE player, akce, diplo_scenar CASCADE");
 });
 
 afterAll(async () => {
@@ -279,9 +280,79 @@ it("osobní klíč mostu: cizí klíč 401, ne-GM 403, GM pošle soubor sondy", 
   expect(ok.statusCode).toBe(200);
   expect(ok.json()).toMatchObject({ ok: true, zdroj: "gm" });
   expect((await app.inject({ method: "GET", url: "/api/diplo/most/klic", cookies: { sid: gm } })).json().klic.naposledy).not.toBeNull();
+  // Tep bez hry (zelená kontrolka): projde s jakýmkoli platným klíčem, i ne-GM.
+  const tep = (klic: string) => app.inject({ method: "POST", url: "/api/diplo/most/tep", headers: { authorization: `Bearer ${klic}` }, payload: {} });
+  expect((await tep("spatny")).statusCode).toBe(401);
+  expect((await tep(klicHrace)).statusCode).toBe(200);
+  const stavHrace = (await app.inject({ method: "GET", url: "/api/diplo/most/klic", cookies: { sid: hrac } })).json().klic;
+  expect(stavHrace.predS).toBeGreaterThanOrEqual(0);
+  expect(stavHrace.predS).toBeLessThan(5);
   // Nový klíč starý zneplatní, zrušený neplatí vůbec.
   const novy = (await post("/api/diplo/most/klic", gm)).json().klic as string;
   expect((await posli(klicGm)).statusCode).toBe(401);
   expect((await app.inject({ method: "DELETE", url: "/api/diplo/most/klic", cookies: { sid: gm } })).statusCode).toBe(200);
   expect((await posli(novy)).statusCode).toBe(401);
+});
+
+it("verze scénáře zápasu: vybírá admin nebo GM v přípravě, přepíše i nastavení lobby zápasu", async () => {
+  await upsertPlayer("autor", false);
+  const prvni = await ulozVerziScenare({ ...VERZE, sha256: "s1" });
+  const druha = await ulozVerziScenare({ ...VERZE, sha256: "s2" });
+  const bezRozboru = await ulozVerziScenare({ ...VERZE, sha256: "s3", rozbor: null, chybaRozboru: "x" });
+  const { akce, zapas } = await zapasOsmi("diplomacie");
+  // Zápas bez vlastního nastavení vychází z nastavení akce.
+  await setNastaveniLobby(akce.id, { rezim: 99, populace: 200 });
+  const u = `/api/diplo/zapas/${zapas.id}/scenar`;
+  const admin = await klient(ROB, true);
+  expect((await post(u, await klient("h1", false), { scenarId: prvni.id })).statusCode).toBe(403);
+  expect((await post(u, admin, { scenarId: 999999 })).statusCode).toBe(404);
+  expect((await post(u, admin, { scenarId: bezRozboru.id })).statusCode).toBe(409);
+
+  const vyber = await post(u, admin, { scenarId: prvni.id });
+  expect(vyber.statusCode).toBe(200);
+  const jmeno = (await getVerze(prvni.id))!.jmenoHry;
+  expect(vyber.json().nastaveni.scenar).toBe(jmeno);
+  expect((await getDiploZapas(zapas.id))?.scenarId).toBe(prvni.id);
+  const z = await getZapas(zapas.id);
+  expect(z?.zapas.nastaveni).toMatchObject({ scenar: jmeno, rezim: 99, populace: 200 });
+  expect(z?.zapas.nastaveni["scenarStarsi"]).toContain((await getVerze(druha.id))!.jmenoHry);
+
+  // Po rozdání rolí už verze stojí.
+  await getPool().query("UPDATE diplo_zapas SET stav = 'losovano' WHERE zapas_id = $1", [zapas.id]);
+  expect((await post(u, admin, { scenarId: druha.id })).statusCode).toBe(409);
+  expect((await getDiploZapas(zapas.id))?.scenarId).toBe(prvni.id);
+});
+
+// Uživatel 5. 10. 2026: GM upravuje konfiguraci zápasu jako admin; když
+// v sestavě dá šedou jinému, po uložení práva ztratí a má je nový GM.
+it("GM upravuje zápas; předáním šedé práva přejdou na nového GM", async () => {
+  const { zapas, sestava } = await zapasOsmi("diplomacie");
+  const gm = await klient("h7", false);
+  const hrac = await klient("h1", false);
+  const put = (sid: string, co: string, payload: object) => app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/${co}`, cookies: { sid }, payload });
+  expect((await put(hrac, "nastaveni", { populace: 150 })).statusCode).toBe(403);
+  expect((await put(gm, "nastaveni", { populace: 150 })).statusCode).toBe(200);
+  expect((await put(gm, "nazev-lobby", { nazevLobby: "GM lobby" })).statusCode).toBe(200);
+  const predano = sestava.map((s) => (s.hracId === "h1" ? { ...s, hracId: "h7" } : s.hracId === "h7" ? { ...s, hracId: "h1" } : s));
+  expect((await put(gm, "sestava", { sestava: predano })).statusCode).toBe(200);
+  expect((await getDiploZapas(zapas.id))!.gmHracId).toBe("h1");
+  expect((await put(gm, "nastaveni", { populace: 200 })).statusCode).toBe(403);
+  expect((await put(hrac, "nastaveni", { populace: 200 })).statusCode).toBe(200);
+});
+
+// Nová sonda = nové jméno scénáře (…_v10): po startu se propíše do akce i do zápasů.
+it("po startu se jméno scénáře s novou verzí sondy propíše do nastavení akce i zápasu", async () => {
+  await upsertPlayer("autor", false);
+  const prvni = await ulozVerziScenare({ ...VERZE, sha256: "j1" });
+  await getPool().query("UPDATE diplo_scenar SET aktivni = true WHERE id = $1", [prvni.id]);
+  const { akce, zapas } = await zapasOsmi("diplomacie");
+  await setNastaveniLobby(akce.id, { rezim: 99, scenar: "ROB_DIPLO_1_v9.aoe2scenario" });
+  await getPool().query("UPDATE zapas SET nastaveni = $2::jsonb WHERE id = $1", [zapas.id, JSON.stringify({ rezim: 99, scenar: "ROB_DIPLO_1_v9.aoe2scenario" })]);
+  await getPool().query("UPDATE diplo_zapas SET scenar_id = $2 WHERE zapas_id = $1", [zapas.id, prvni.id]);
+  await obnovJmenaScenaru();
+  const jmeno = (await getVerze(prvni.id))!.jmenoHry;
+  expect(jmeno).toMatch(/_v\d+\.aoe2scenario$/);
+  expect((await getZapas(zapas.id))?.zapas.nastaveni["scenar"]).toBe(jmeno);
+  const { rows } = await getPool().query("SELECT nastaveni_lobby FROM akce WHERE id = $1", [akce.id]);
+  expect(rows[0].nastaveni_lobby.scenar).toBe(jmeno);
 });

@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { doplnNastaveni, type NastaveniLobby as Nastaveni } from "../../../src/shared/lobbyKontrola.js";
 import { zkontrolujSestavuRezimu } from "../../../src/shared/rezimy.js";
 import type { PlayerView, RezimId, SestavaVstup, ZapasView } from "../../../src/shared/types.js";
@@ -22,6 +22,11 @@ interface Props {
   onZavrit: () => void;
   /** Custom Scenario: podmínky vítězství z rozboru scénáře (dodá mód). */
   scenar?: { vitezstvi: string | null };
+  /**
+   * Výběr verze scénáře do řádku „Scénář“ (háček módu). Mód změnu uloží
+   * sám; `onVybrano` vrátí pole nastavení, která se tím změnila.
+   */
+  vyberScenare?: (onVybrano: (n: Partial<Nastaveni>) => void) => ReactNode;
 }
 
 /** Jak dlouho po poslední změně se platný návrh propíše, dokud je okno otevřené. */
@@ -62,7 +67,7 @@ function stejne(a: unknown, b: unknown): boolean {
  * návrh okno nepustí — chybné řádky zčervenají — a křížek se napřed zeptá,
  * jestli zahodit všechno z téhle seance: pak se vrátí stav z otevření okna.
  */
-export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, onSestava, onZavrit, scenar }: Props) {
+export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, onSestava, onZavrit, scenar, vyberScenare }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
   const [ptaSeNaZahozeni, setPtaSeNaZahozeni] = useState(false);
   const [chyby, setChyby] = useState<{ sestava: string | null; hraci: string[] } | null>(null);
@@ -142,6 +147,8 @@ export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, 
   };
 
   const nastaveni = navrh.nastaveni;
+  // Uloženou verzi vezme i návrh, ať ji další propsání nepřepíše starým jménem.
+  const volba = vyberScenare?.((n) => setNavrh((v) => ({ ...v, nastaveni: { ...v.nastaveni, ...n } })));
 
   return createPortal(
     <div
@@ -185,7 +192,7 @@ export function EditaceZapasu({ zapas, prihlaseni, rezim, onNastaveni, onNazev, 
             <button type="button" className="prelobby-tlacitko" onClick={() => setPreLobbyVidet(true)}>
               Pre-Lobby Nastavení
             </button>
-            <NastaveniLobby zive={nastaveni as unknown as Record<string, unknown>} ulozene={null} onZmena={(n) => setNavrh((v) => ({ ...v, nastaveni: n }))} onUlozit={() => {}} onReset={() => {}} bezResetu scenar={scenar} />
+            <NastaveniLobby zive={nastaveni as unknown as Record<string, unknown>} ulozene={null} onZmena={(n) => setNavrh((v) => ({ ...v, nastaveni: n }))} onUlozit={() => {}} onReset={() => {}} bezResetu scenar={scenar ? { ...scenar, volba } : undefined} />
           </div>
         </div>
       </div>

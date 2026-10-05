@@ -1,82 +1,111 @@
 import { useEffect, useState } from "react";
 import type { Hlidej } from "../rezimy/index.js";
 import { cesta } from "../cesty.js";
-import { Kopirovatelne } from "../views/Kopirovatelne.js";
 import { Skladaci } from "../views/Skladaci.js";
-import { diploApi } from "./api.js";
-import { akceStreamerbotu } from "./streamerbot.js";
+import { TEP_MOSTU_S } from "../../../src/shared/diplomacie/hra.js";
+import { diploApi, type StavKliceMostu } from "./api.js";
+import { importStreamerbotu } from "./streamerbot.js";
 
 /** Kdy klíč vznikl a kdy jím naposledy přišla data — krátce česky. */
 const kdy = (iso: string) => new Date(iso).toLocaleString("cs-CZ", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
 
+/** Jméno staženého souboru — Streamer.bot ho vezme v okně Import (přetažením). */
+export const SOUBOR_AKCE = "AoE-Diplomacie-most.txt";
+
 /**
  * Osobní most ke hře přes Streamer.bot v pultu GM (uživatel 5. 10. 2026):
- * GM si vygeneruje klíč a stáhne akci, která jeho Streamer.botem posílá
- * soubor sondy rovnou na web. Klíč se ukáže jen jednou (web drží otisk);
- * nový klíč starý zneplatní. Sbalené — nastavuje se jednou.
+ * jedno tlačítko stáhne hotový import akce s novým osobním klíčem uvnitř,
+ * GM ho jen naimportuje a Streamer.bot pak posílá soubor sondy rovnou na
+ * web. Web drží jen otisk klíče; každé stažení vydá nový klíč a starý
+ * zneplatní. Sbalené — nastavuje se jednou.
  */
+/** Spojení je živé, když se akce ozvala do dvou tepů a kousku (výpadek jednoho tepu nevadí). */
+const ZIVE_S = TEP_MOSTU_S * 2 + 5;
+/** Jak často se pult ptá na stav spojení. */
+const DOTAZ_MS = 10_000;
+
+type Spojeni = "zive" | "ceka" | "mlci";
+
+/** Stav spojení pro indikátor: zelená = akce se ozývá, šedá = ještě se neozvala, červená = zmlkla. */
+export function spojeni(stav: StavKliceMostu): Spojeni {
+  if (stav.predS === null) return "ceka";
+  return stav.predS <= ZIVE_S ? "zive" : "mlci";
+}
+
+const POPIS_SPOJENI: Record<Spojeni, string> = {
+  zive: "Spojení funguje",
+  ceka: "Čeká na první spojení — naimportuj akci do Streamer.botu",
+  mlci: "Streamer.bot se neozývá",
+};
+
 export function MostStreamerbot({ hlidej }: { hlidej: Hlidej }) {
   const [otevreno, setOtevreno] = useState(false);
-  const [stav, setStav] = useState<{ vytvoren: string; naposledy: string | null } | null | undefined>(undefined);
-  const [novy, setNovy] = useState<string | null>(null);
+  const [stav, setStav] = useState<StavKliceMostu | null | undefined>(undefined);
+  const [stazeno, setStazeno] = useState(false);
+  // Stav spojení se dotazuje pořád (i sbalené ukazuje tečku v hlavičce),
+  // chyby dotazu jsou tiché — indikátor jen zůstane, jak byl.
   useEffect(() => {
-    if (otevreno && stav === undefined) void hlidej(async () => setStav((await diploApi.stavKliceMostu()).klic));
-  }, [otevreno]);
+    let platne = true;
+    const nacti = () =>
+      Promise.resolve()
+        .then(() => diploApi.stavKliceMostu())
+        .then((r) => platne && setStav(r.klic))
+        .catch(() => {});
+    void nacti();
+    const casovac = setInterval(nacti, DOTAZ_MS);
+    return () => {
+      platne = false;
+      clearInterval(casovac);
+    };
+  }, []);
   const url = `${window.location.origin}${cesta("/api/diplo/hra-soubor")}`;
-  const vytvor = () =>
+  const stahni = () =>
     void hlidej(async () => {
       const { klic } = await diploApi.novyKlicMostu();
-      setNovy(klic);
+      const odkaz = document.createElement("a");
+      odkaz.href = URL.createObjectURL(new Blob([await importStreamerbotu(url, klic)], { type: "text/plain" }));
+      odkaz.download = SOUBOR_AKCE;
+      odkaz.click();
+      setTimeout(() => URL.revokeObjectURL(odkaz.href), 1000);
+      setStazeno(true);
       setStav((await diploApi.stavKliceMostu()).klic);
     });
   const zrus = () =>
     void hlidej(async () => {
       await diploApi.zrusKlicMostu();
-      setNovy(null);
+      setStazeno(false);
       setStav(null);
     });
-  const stahni = () => {
-    if (!novy) return;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([akceStreamerbotu(url, novy)], { type: "text/plain;charset=utf-8" }));
-    a.download = "aoe-diplomacie-streamerbot.cs";
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
   return (
-    <Skladaci className="most-streamerbot" testId="most-streamerbot" hlava="Data ze hry přes Streamer.bot" otevreno={otevreno} onPrepnout={setOtevreno}>
+    <Skladaci className="most-streamerbot" testId="most-streamerbot" hlava={
+        <>
+          Data ze hry přes Streamer.bot
+          {stav ? (
+            <span className={`kontrolka-mostu ${spojeni(stav)}`} data-testid="kontrolka-mostu" title={POPIS_SPOJENI[spojeni(stav)]}>
+              <span className="tecka" aria-hidden="true" />
+              {POPIS_SPOJENI[spojeni(stav)]}
+            </span>
+          ) : null}
+        </>
+      } otevreno={otevreno} onPrepnout={setOtevreno}>
       {otevreno ? (
         <div className="most-obsah">
           <p className="ceka">
             Tvůj Streamer.bot pošle data z běžící hry (krále, relikvie, cíle, Nástupce) rovnou sem. Web je přijme, jen když jsi GM běžícího zápasu Diplomacie.
           </p>
-          {stav === undefined ? null : stav ? (
+          {stav ? (
             <p data-testid="stav-klice">
-              Klíč vytvořen {kdy(stav.vytvoren)} · {stav.naposledy ? `data naposledy ${kdy(stav.naposledy)}` : "zatím žádná data"}
+              Akce stažena {kdy(stav.vytvoren)} · {stav.naposledy ? `naposledy se ozvala ${kdy(stav.naposledy)}` : "zatím se neozvala"}
             </p>
-          ) : (
-            <p data-testid="stav-klice">Klíč zatím nemáš.</p>
-          )}
-          {novy ? (
-            <>
-              <p className="varovani">Klíč se ukazuje jen teď. Stáhni si akci (klíč je v ní) a nikomu ho neposílej.</p>
-              <Kopirovatelne hodnota={novy} popis="klíč mostu" testId="novy-klic" />
-              <p>
-                <button type="button" className="primarni" onClick={stahni}>
-                  Stáhnout akci pro Streamer.bot
-                </button>
-              </p>
-              <ol className="postup-streamerbot">
-                <li>Streamer.bot → Actions → pravým tlačítkem Add → pojmenuj třeba „AoE Diplomacie“.</li>
-                <li>Do akce přidej sub-akci Core → C# → Execute C# Code, vlož celý stažený soubor, Compile a Save.</li>
-                <li>Settings → Timed Actions → Add, interval 1 s, Enabled; pak ho akci přiřaď jako trigger (Core → Timed Actions).</li>
-                <li>Za hry se tu nahoře v pultu objeví „ze hry (GM) před … s“. Chyby píše Streamer.bot do svého logu.</li>
-              </ol>
-            </>
           ) : null}
+          <p className="ceka">
+            Ve Streamer.botu nahoře <strong>Import</strong> → přetáhni do okna stažený soubor → <strong>Import</strong>. Hotovo: akce „AoE Diplomacie — most“ běží sama a do půl minuty tu naskočí zelené „Spojení funguje“ (i bez hry). Soubor
+            obsahuje tvůj osobní klíč — nikomu ho neposílej.
+          </p>
+          {stazeno && stav ? <p className="varovani">Staženo. Dřív stažená akce přestala platit — naimportuj tuhle.</p> : null}
           <p className="most-tlacitka">
-            <button type="button" onClick={vytvor}>
-              {stav ? "Vytvořit nový klíč (starý přestane platit)" : "Vytvořit klíč"}
+            <button type="button" className="primarni" onClick={stahni} data-testid="stahnout-akci">
+              Stáhnout akci do Streamer.bot
             </button>
             {stav ? (
               <button type="button" onClick={zrus}>

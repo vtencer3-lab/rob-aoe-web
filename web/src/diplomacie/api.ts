@@ -1,6 +1,14 @@
 import type { SouhrnSondy } from "../../../src/shared/diplomacie/hra.js";
 import type { DruhZadosti } from "../../../src/shared/diplomacie/schopnosti.js";
 import type { Role, ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
+import type { NastaveniLobby } from "../../../src/shared/lobbyKontrola.js";
+
+/** Stav osobního klíče mostu (server: StavKliceMostu v src/diplomacie/db.ts). */
+export interface StavKliceMostu {
+  vytvoren: string;
+  naposledy: string | null;
+  predS: number | null;
+}
 import { json } from "../api.js";
 import { cesta } from "../cesty.js";
 
@@ -18,8 +26,13 @@ export const diploApi = {
   mapa: (zapasId: number, zmena: { kralove?: boolean; relikvie?: boolean }) => post(`/api/diplo/zapas/${zapasId}/mapa`, zmena),
   ping: (zapasId: number, x: number, y: number, komu: string[] | null) => post(`/api/diplo/zapas/${zapasId}/ping`, { x, y, komu }),
   los: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/los`),
+  /** Admin: verze scénáře zápasu. Vrátí, co z ní patří do nastavení lobby zápasu. */
+  scenarZapasu: (zapasId: number, scenarId: number) =>
+    fetch(cesta(`/api/diplo/zapas/${zapasId}/scenar`), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ scenarId }) }).then((r) =>
+      json<{ ok: true; nastaveni: Pick<NastaveniLobby, "scenar" | "scenarStarsi" | "velikost"> }>(r),
+    ),
   /** Osobní klíč mostu ke hře (Streamer.bot): stav, nový klíč (vrátí se jen teď), zrušení. */
-  stavKliceMostu: () => fetch(cesta("/api/diplo/most/klic")).then((r) => json<{ klic: { vytvoren: string; naposledy: string | null } | null }>(r)),
+  stavKliceMostu: () => fetch(cesta("/api/diplo/most/klic")).then((r) => json<{ klic: StavKliceMostu | null }>(r)),
   novyKlicMostu: () => fetch(cesta("/api/diplo/most/klic"), { method: "POST" }).then((r) => json<{ klic: string }>(r)),
   zrusKlicMostu: () => fetch(cesta("/api/diplo/most/klic"), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   /** Podpis pro osobní overlay karty do OBS (jen přihlášený hráč sám pro sebe). */

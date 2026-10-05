@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AI_OBTIZNOSTI,
   doplnNastaveni,
@@ -53,7 +53,7 @@ interface Props {
    * Custom Scenario: podmínky vítězství z rozboru aktivní verze scénáře
    * (dodá mód přes App.tsx). Bez nich řádek „Scénář“ říká „podle scénáře“.
    */
-  scenar?: { vitezstvi: string | null };
+  scenar?: { vitezstvi: string | null; volba?: ReactNode };
 }
 
 /**
@@ -176,12 +176,13 @@ function Zaskrtavatko({ klic, popis, hodnota, jedno, vypnuto = false, onZmena }:
  * mapu i velikost určuje scénář, podmínky vítězství taky. Místo tří voleb
  * jeden řádek ke čtení (uživatel 1. 10. 2026: schovat, ne zašedit).
  */
-function RadekScenare({ jmeno, velikost, vitezstvi }: { jmeno: string | null; velikost: number | null; vitezstvi: string | null }) {
+function RadekScenare({ jmeno, velikost, vitezstvi, volba }: { jmeno: string | null; velikost: number | null; vitezstvi: string | null; volba?: ReactNode }) {
   return (
     <div className="radek" data-klic="scenar">
       <span>Scénář:</span>
       <span className="scenar-info" data-testid="nastaveni-scenar">
-        <span className="jmeno">{jmeno === null ? "scénář zatím nikdo nenahrál" : jmeno.replace(/\.aoe2scenario$/i, "")}</span>
+        {/* Výběr verze dodá mód (úprava zápasu), jinak jméno ke čtení. */}
+        {volba ?? <span className="jmeno">{jmeno === null ? "scénář zatím nikdo nenahrál" : jmeno.replace(/\.aoe2scenario$/i, "")}</span>}
         {" · "}
         {velikost === null ? "?" : (VELIKOSTI[velikost] ?? `${velikost} dílců`)}
         {" · Victory: "}
@@ -291,7 +292,7 @@ export function NastaveniLobby({ zive, ulozene, onZmena, onUlozit, onReset, vych
           onZmena={(v) => zmen({ ...n, ...(v === null ? {} : (NASTAVENI_REZIMU[v] ?? {})), rezim: v })}
         />
         {scenarovy ? (
-          <RadekScenare jmeno={n.scenar} velikost={n.velikost} vitezstvi={scenar?.vitezstvi ?? null} />
+          <RadekScenare jmeno={n.scenar} velikost={n.velikost} vitezstvi={scenar?.vitezstvi ?? null} volba={scenar?.volba} />
         ) : (
           <>
             {/* Vypadá jako rozbalovací seznam, ale otevírá okno s minimapami —

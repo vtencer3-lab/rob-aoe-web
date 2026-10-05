@@ -1,11 +1,13 @@
 import { config } from "../config.js";
 import { getPlayer } from "../db/players.js";
 import type { DiploZapas } from "../shared/diplomacie/typy.js";
-import { getDiploZapas, ktereZapasyBezi } from "./db.js";
+import { beziciZapasyDiplo, getDiploZapas, ktereZapasyBezi } from "./db.js";
 
 /**
- * Kdo smí nahrávat a aktivovat verze scénáře (spec §5.1): admin webu nebo
- * autor ze seznamu AUTORI_SCENARE. Jin tak nahrává sám, i když není admin.
+ * Kdo smí nahrávat a aktivovat verze scénáře (spec §5.1): admin webu, autor
+ * ze seznamu AUTORI_SCENARE (Jin nahrává sám, i když není admin) a od
+ * 5. 10. 2026 i GM běžícího zápasu Diplomacie (uživatel: „sekce by měla být
+ * dostupná pro GMko“).
  *
  * Vlastní modul schválně: potřebuje to `/api/me` v auth/routes.ts, a kdyby
  * tohle bydlelo v diplomacie/routes.ts, vznikl by cyklus auth/routes →
@@ -14,7 +16,8 @@ import { getDiploZapas, ktereZapasyBezi } from "./db.js";
 export async function smiNahratScenar(hracId: string | null): Promise<boolean> {
   if (hracId === null) return false;
   if (config.autoriScenare.includes(hracId)) return true;
-  return (await getPlayer(hracId))?.jeAdmin ?? false;
+  if ((await getPlayer(hracId))?.jeAdmin) return true;
+  return (await beziciZapasyDiplo()).some((z) => z.gmHracId === hracId);
 }
 
 /**

@@ -28,9 +28,9 @@
 // v klasteru je dal objekt 285 gaii, jen garrisonovana v budove: dostane
 // barvu majitele budovy (xsGetGarrisonedInUnitId + xsGetUnitOwner).
 // Promenne 240-247 sonda nepise ze scenare, ale sama: kolik hernich sekund
-// mel hrac 1-8 (cislo ve hre, 240 = hrac 1) aspon 7 relikvii. Pri ztrate
-// se jen zastavi, nenuluje - odpocet hry se nuluje, web ukazuje tenhle
-// (uzivatel 3. 10. 2026). Scenar promenne 240+ nepouziva.
+// mel hrac 1-8 (cislo ve hre, 240 = hrac 1) aspon 7 relikvii v kuse. Pri
+// ztrate se nuluje stejne jako odpocet hry (pravidla od 6. 10. 2026; do te
+// doby se jen zastavil). Scenar promenne 240+ nepouziva.
 // Kod je schvalne ciste ASCII (validator xs-check cte UTF-8).
 // Pole pro id kralu se pouziva znovu (treti parametr), ne nove kazdou sekundu.
 int sondaKralove = -1;
@@ -66,6 +66,8 @@ void sondaZapis() {
   for (r = 1; < 9) {
     if (xsPlayerAttribute(r, 7) >= 7.0) {
       xsArraySetInt(sondaDrzeni, r, xsArrayGetInt(sondaDrzeni, r) + dt);
+    } else {
+      xsArraySetInt(sondaDrzeni, r, 0);
     }
   }
   xsCreateFile(false);

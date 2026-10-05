@@ -13,8 +13,9 @@ export const PROMENNA_CILE = 200;
 export const POCET_PROMENNYCH = 256;
 /**
  * Proměnná 239 + číslo hráče ve hře (240–247) nenese proměnnou scénáře, ale
- * počitadlo sondy: kolik herních sekund měl hráč aspoň 7 relikvií. Při
- * ztrátě se jen zastaví (sonda.xs); starší sonda tu má 0.
+ * počitadlo sondy: kolik herních sekund drží hráč aspoň 7 relikvií v kuse.
+ * Při ztrátě se vynuluje (sonda.xs v10, 6. 10. 2026; v9 se jen zastavila);
+ * starší sonda tu má 0.
  */
 export const PROMENNA_DRZENI = 239;
 /** Primární cíl všech: tolik relikvií udržet tak dlouho (scénář, triggery „general relic win“). */
@@ -415,3 +416,9 @@ export function popisStari(sekund: number, zdroj?: ZdrojHry): string {
   if (s < HRA_MLCI_PO_S) return `ze hry${odkud} před ${s} s`;
   return s < 120 ? `hra mlčí ${s} s` : `hra mlčí ${Math.floor(s / 60)} min`;
 }
+
+/**
+ * Po kolika sekundách se akce Streamer.botu bez běžící hry ozve tepem
+ * (`POST /api/diplo/most/tep`); pult GM podle toho svítí zeleně.
+ */
+export const TEP_MOSTU_S = 20;

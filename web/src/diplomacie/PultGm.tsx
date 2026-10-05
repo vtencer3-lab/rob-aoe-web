@@ -291,7 +291,7 @@ export function TabulkaRoli({
                   <>
                     <strong>{NAZEV_ROLE[r.role]}</strong>
                     {r.puvodniRole ? <span className="drive-role"> (dříve {NAZEV_ROLE[r.puvodniRole]})</span> : null}{" "}
-                    <StavSchopnostiGm d={d} r={r} />
+                    <StavSchopnostiGm d={d} r={r} zapas={zapas} />
                   </>
                 ) : (
                   <select aria-label={`Role: ${jmeno(r.hracId)}`} value={r.role} disabled={upravy.pracuje} onChange={(e) => upravy.zmen(r.hracId, { role: e.target.value as Role })}>

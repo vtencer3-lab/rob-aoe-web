@@ -8,6 +8,8 @@ import { Prepinac } from "./Prepinac.js";
 interface Props {
   akce: AkceView | null;
   onZalozit: (nazev: string, rezim: RezimId) => void;
+  /** Přepínač Diplomacie ve formuláři založení — App podle něj ukáže správu scénáře. */
+  onVolbaDiplomacie?: (zapnuto: boolean) => void;
   /** Živá změna nastavení lobby (každé kliknutí). */
   onNastaveniLobby: (nastaveni: Nastaveni) => void;
   /** „Uložit preset lobby“: snímek na serveru. */
@@ -31,9 +33,9 @@ interface Props {
  * vybraní hráči (sestava), vpravo Game Settings. Tlačítka debug módu stojí
  * nahoře u tabulky přihlášených — týkají se toho, kdo je v seznamu.
  */
-export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaveni, onResetNastaveni, children, zvyraznitNastaveni, onNoveHeslo, scenar, stitek }: Props) {
+export function SpravaAkce({ akce, onZalozit, onVolbaDiplomacie, onNastaveniLobby, onUlozitNastaveni, onResetNastaveni, children, zvyraznitNastaveni, onNoveHeslo, scenar, stitek }: Props) {
   const [preLobbyVidet, setPreLobbyVidet] = useState(false);
-  if (!akce) return <ZalozeniAkce onZalozit={onZalozit} />;
+  if (!akce) return <ZalozeniAkce onZalozit={onZalozit} onVolbaDiplomacie={onVolbaDiplomacie} />;
 
   return (
     <section className="sprava-akce">
@@ -75,7 +77,7 @@ export function SpravaAkce({ akce, onZalozit, onNastaveniLobby, onUlozitNastaven
   );
 }
 
-function ZalozeniAkce({ onZalozit }: Pick<Props, "onZalozit">) {
+function ZalozeniAkce({ onZalozit, onVolbaDiplomacie }: Pick<Props, "onZalozit" | "onVolbaDiplomacie">) {
   const [nazev, setNazev] = useState("");
   // Mód se volí jen při založení: Diplomacie mění výchozí nastavení lobby
   // a pravidla sestavy, přepínat ji uprostřed večera nedává smysl.
@@ -91,7 +93,13 @@ function ZalozeniAkce({ onZalozit }: Pick<Props, "onZalozit">) {
         setNazev("");
       }}
     >
-      <Prepinac popisek="Diplomacie" vlevo="" vpravo="Diplomacie" zapnuto={diplomacie} onZmena={setDiplomacie} testId="prepinac-diplomacie" />
+      <Prepinac popisek="Diplomacie" vlevo="" vpravo="Diplomacie" zapnuto={diplomacie}
+        onZmena={(v) => {
+          setDiplomacie(v);
+          onVolbaDiplomacie?.(v);
+        }}
+        testId="prepinac-diplomacie"
+      />
       <label>
         Název akce{" "}
         <input

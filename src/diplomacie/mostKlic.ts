@@ -28,7 +28,20 @@ function klicZHlavicky(request: FastifyRequest): string {
   return typeof h === "string" && h.startsWith("Bearer ") ? h.slice("Bearer ".length).trim() : "";
 }
 
+/** Před čtením těla: bez platného klíče 401 dřív, než se cokoli načte. Platný klíč zapíše čas spojení. */
+async function overKlic(request: FastifyRequest): Promise<void> {
+  const klic = klicZHlavicky(request);
+  const hracId = klic === "" ? null : await hracPodleKliceMostu(otiskKlice(klic));
+  if (!hracId) throw new HttpError(401, "Chybí nebo nesedí osobní klíč mostu — stáhni si akci znovu na webu.");
+  (request as FastifyRequest & { hracMostu?: string }).hracMostu = hracId;
+}
+
 export function registerMostKlicRoutes(app: FastifyInstance): void {
+  // Tep (uživatel 5. 10. 2026: „zelený indikátor, že je spojení funkční“):
+  // akce se ozve i bez běžící hry (TEP_MOSTU_S), platný klíč zapíše čas
+  // spojení a pult GM podle něj svítí zeleně. Nic dalšího tep nedělá.
+  app.post("/api/diplo/most/tep", { bodyLimit: 1024, onRequest: overKlic }, async () => ({ ok: true }));
+
   app.get("/api/diplo/most/klic", async (request) => {
     const hracId = await requireUser(request);
     return { klic: await stavKliceMostu(hracId) };
@@ -52,13 +65,7 @@ export function registerMostKlicRoutes(app: FastifyInstance): void {
     "/api/diplo/hra-soubor",
     {
       bodyLimit: MAX_TELO,
-      // Před čtením těla: bez platného klíče 401 dřív, než se cokoli načte.
-      onRequest: async (request) => {
-        const klic = klicZHlavicky(request);
-        const hracId = klic === "" ? null : await hracPodleKliceMostu(otiskKlice(klic));
-        if (!hracId) throw new HttpError(401, "Chybí nebo nesedí osobní klíč mostu — vygeneruj si nový na webu.");
-        (request as FastifyRequest & { hracMostu?: string }).hracMostu = hracId;
-      },
+      onRequest: overKlic,
     },
     async (request) => {
       const hracId = (request as FastifyRequest & { hracMostu?: string }).hracMostu!;

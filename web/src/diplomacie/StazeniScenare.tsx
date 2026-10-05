@@ -26,11 +26,26 @@ export function cestaKeScenarum(hracId: string): string {
  * (2. 10. 2026) uživatel 3. 10. zrušil jako neintuitivní: dialog se
  * otevíral v Dokumentech a předvolit cestu prohlížeč nedovolí.
  */
-export function StazeniScenare({ verze, ja }: { verze: ScenarVerze | null; ja: string }) {
+export function StazeniScenare({ verze, ja, onUpravit }: { verze: ScenarVerze | null; ja: string; onUpravit?: () => void }) {
   const [stazeno, setStazeno] = useState(false);
-  if (!verze) return <p className="ceka stred">Scénář zatím nikdo nenahrál.</p>;
+  // GM upravuje zápas (sestava, nastavení lobby, verze scénáře) — předá-li
+  // v sestavě šedou jinému, práva po uložení přejdou na něj.
+  // Jen ikona jako ozubené kolečko v režii, vpravo v úrovni tlačítek (uživatel 6. 10. 2026).
+  const uprava = onUpravit ? (
+    <button type="button" className="upravit-zapas gm-uprava" data-testid="gm-upravit-zapas" title="Upravit zápas" aria-label="Upravit zápas" onClick={onUpravit}>
+      ⚙
+    </button>
+  ) : null;
+  if (!verze)
+    return (
+      <div className="stazeni-scenare">
+        {uprava}
+        <p className="ceka stred">Scénář zatím nikdo nenahrál.</p>
+      </div>
+    );
   return (
     <div className="stazeni-scenare">
+      {uprava}
       <a className="cta" href={diploApi.souborUrl(verze.id)} download={verze.jmenoHry} onClick={() => setStazeno(true)}>
         Stáhnout scénář
       </a>
