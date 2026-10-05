@@ -286,7 +286,7 @@ it("osobní klíč mostu: cizí klíč 401, ne-GM 403, GM pošle soubor sondy", 
   expect((await posli(novy)).statusCode).toBe(401);
 });
 
-it("verze scénáře zápasu: vybírá admin v přípravě, přepíše i nastavení lobby zápasu", async () => {
+it("verze scénáře zápasu: vybírá admin nebo GM v přípravě, přepíše i nastavení lobby zápasu", async () => {
   await upsertPlayer("autor", false);
   const prvni = await ulozVerziScenare({ ...VERZE, sha256: "s1" });
   const druha = await ulozVerziScenare({ ...VERZE, sha256: "s2" });
@@ -296,7 +296,7 @@ it("verze scénáře zápasu: vybírá admin v přípravě, přepíše i nastave
   await setNastaveniLobby(akce.id, { rezim: 99, populace: 200 });
   const u = `/api/diplo/zapas/${zapas.id}/scenar`;
   const admin = await klient(ROB, true);
-  expect((await post(u, await klient("h7", false), { scenarId: prvni.id })).statusCode).toBe(403);
+  expect((await post(u, await klient("h1", false), { scenarId: prvni.id })).statusCode).toBe(403);
   expect((await post(u, admin, { scenarId: 999999 })).statusCode).toBe(404);
   expect((await post(u, admin, { scenarId: bezRozboru.id })).statusCode).toBe(409);
 
