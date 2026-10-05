@@ -1914,6 +1914,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .oznameni-gm .oznameni-tlacitka { display: flex; gap: 0.4rem; }
 .tabulka-roli .schopnost-gm { font-size: 0.8rem; color: var(--tlumene); white-space: nowrap; }
 .tabulka-roli .schopnost-gm.pouzita { color: var(--zlato); }
+/* Čtvereček cíle Sabotáže na středu řádku textu, ne na účaří (uživatel 6. 10. 2026). */
+.tabulka-roli .schopnost-gm > .swatch { vertical-align: middle; position: relative; top: -0.1em; }
 .tabulka-roli .drive-role { font-size: 0.85rem; color: var(--tlumene); }
 /* Prohra role (Žoldák bez pouta, Garda bez Nástupce): velký blok nad kartou. */
 /* Přes celou sekci Diplomacie, okolí ztmavené; okno drží u horního okraje
