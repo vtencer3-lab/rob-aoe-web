@@ -287,6 +287,7 @@ it("osobní klíč mostu: cizí klíč 401, ne-GM 403, GM pošle soubor sondy", 
 });
 
 it("verze scénáře zápasu: vybírá admin v přípravě, přepíše i nastavení lobby zápasu", async () => {
+  await upsertPlayer("autor", false);
   const prvni = await ulozVerziScenare({ ...VERZE, sha256: "s1" });
   const druha = await ulozVerziScenare({ ...VERZE, sha256: "s2" });
   const bezRozboru = await ulozVerziScenare({ ...VERZE, sha256: "s3", rozbor: null, chybaRozboru: "x" });
