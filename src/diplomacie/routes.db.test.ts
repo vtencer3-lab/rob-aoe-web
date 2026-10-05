@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
-import { signUp } from "../db/events.js";
+import { setNastaveniLobby, signUp } from "../db/events.js";
 import { closePool, getPool } from "../db/pool.js";
 import { getZapas, setZapasStav } from "../db/matches.js";
 import { upsertPlayer } from "../db/players.js";
@@ -291,7 +291,9 @@ it("verze scénáře zápasu: vybírá admin v přípravě, přepíše i nastave
   const prvni = await ulozVerziScenare({ ...VERZE, sha256: "s1" });
   const druha = await ulozVerziScenare({ ...VERZE, sha256: "s2" });
   const bezRozboru = await ulozVerziScenare({ ...VERZE, sha256: "s3", rozbor: null, chybaRozboru: "x" });
-  const { zapas } = await zapasOsmi("diplomacie");
+  const { akce, zapas } = await zapasOsmi("diplomacie");
+  // Zápas bez vlastního nastavení vychází z nastavení akce.
+  await setNastaveniLobby(akce.id, { rezim: 99, populace: 200 });
   const u = `/api/diplo/zapas/${zapas.id}/scenar`;
   const admin = await klient(ROB, true);
   expect((await post(u, await klient("h7", false), { scenarId: prvni.id })).statusCode).toBe(403);
@@ -304,7 +306,7 @@ it("verze scénáře zápasu: vybírá admin v přípravě, přepíše i nastave
   expect(vyber.json().nastaveni.scenar).toBe(jmeno);
   expect((await getDiploZapas(zapas.id))?.scenarId).toBe(prvni.id);
   const z = await getZapas(zapas.id);
-  expect(z?.zapas.nastaveni).toMatchObject({ scenar: jmeno, rezim: expect.anything() });
+  expect(z?.zapas.nastaveni).toMatchObject({ scenar: jmeno, rezim: 99, populace: 200 });
   expect(z?.zapas.nastaveni["scenarStarsi"]).toContain((await getVerze(druha.id))!.jmenoHry);
 
   // Po rozdání rolí už verze stojí.
