@@ -153,6 +153,9 @@ export function App() {
   // Admin nebo autor scénáře Diplomacie (spec §5.1): server to říká vedle
   // řádku hráče, protože práva autora na řádku vidět nejsou.
   const [smiNahratScenar, setSmiNahratScenar] = useState(false);
+  // Správa scénáře Diplomacie jen v módu Diplomacie (uživatel 5. 10. 2026):
+  // při běžící akci Diplomacie, nebo když admin zakládá akci se zapnutou Diplomacií.
+  const [zakladaDiplomacii, setZakladaDiplomacii] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
@@ -674,6 +677,7 @@ export function App() {
           akce={akce}
           stitek={rk.stitek?.() ?? null}
           onZalozit={(nazev, rezim) => void hlidej(() => api.vytvoritAkce(nazev, rezim))}
+          onVolbaDiplomacie={setZakladaDiplomacii}
           onNastaveniLobby={(n) => {
             if (!akce) return;
             const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
@@ -730,13 +734,14 @@ export function App() {
         </SpravaAkce>
       ) : null}
 
-      {/* Správa scénáře Diplomacie nepatří k jedné akci: Jin (autor, ne admin)
-          nahrává novou verzi, když se mu to hodí, i když žádná akce neběží
-          (spec §5.3). Proto stojí pod panelem akce samostatně, ne přes mód.
-          V pohledu uživatele se admin dívá jako hráč — správa je nástroj;
-          autorovi bez režie ji ale uložený přepínač (localStorage je jeden
-          pro /aoe i /aoe/diplo) brát nesmí, přepnout zpět by ho neměl jak. */}
-      {me && smiNahratScenar && !(me.jeAdmin && pohledUzivatele) ? <SpravaScenare hlidej={hlidej} /> : null}
+      {/* Správa scénáře Diplomacie stojí pod panelem akce samostatně (verze
+          nepatří k jedné akci), ale ukáže se jen v módu Diplomacie (uživatel
+          5. 10. 2026): při běžící akci Diplomacie, nebo když admin zakládá
+          akci se zapnutým přepínačem Diplomacie. Autor (Jin, ne admin) ji tak
+          vidí jen při akci Diplomacie. V pohledu uživatele se admin dívá jako
+          hráč — správa je nástroj; autorovi bez režie ji ale uložený přepínač
+          (localStorage je jeden pro /aoe i /aoe/diplo) brát nesmí. */}
+      {me && smiNahratScenar && !(me.jeAdmin && pohledUzivatele) && (rezimAkce === "diplomacie" || (!akce && zakladaDiplomacii)) ? <SpravaScenare hlidej={hlidej} /> : null}
 
       {akce ? (
         <>
