@@ -11,6 +11,7 @@ import { Potvrzeni } from "../views/Potvrzeni.js";
 import { Prepinac } from "../views/Prepinac.js";
 import { jmenoHrace, jmenoVZapasu, mujUcastnik } from "../zapas.js";
 import { diploApi } from "./api.js";
+import { MostStreamerbot } from "./MostStreamerbot.js";
 import { OznameniGm, StavSchopnostiGm } from "./Schopnosti.js";
 import { NastupceZeHry, RadekHry, StariHry } from "./HraZive.js";
 import { diploZapasu, RubKarty, useZvukPingu, verzeZapasu, vztahyRole } from "./KartaRole.js";
@@ -186,6 +187,7 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
             )}
           </div>
         </div>
+        <MostStreamerbot hlidej={hlidej} />
         <PravidlaHry verze={verze} />
       </Zakryti>
       {ptaSeNaZpet ? (

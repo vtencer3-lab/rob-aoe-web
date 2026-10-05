@@ -261,3 +261,27 @@ it("doplatky Žoldákovi a připomínky ze hry se nezdvojí", async () => {
   expect(s.filter((x) => x.druh === "doplatek")).toHaveLength(3);
   expect(s.filter((x) => x.druh === "kat_odmena")).toHaveLength(1);
 });
+
+// Osobní most přes Streamer.bot (uživatel 5. 10. 2026): klíč si vygeneruje
+// kdokoli, data se přijmou jen od GM běžícího zápasu Diplomacie.
+it("osobní klíč mostu: cizí klíč 401, ne-GM 403, GM pošle soubor sondy", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const soubor = (await readFile(new URL("./fixtures/ROB_DIPLO_3.xsdat", import.meta.url))).toString("base64");
+  await zapasOsmi("diplomacie");
+  const gm = await klient("h7", false);
+  const hrac = await klient("h1", false);
+  const klicGm = (await post("/api/diplo/most/klic", gm)).json().klic as string;
+  const klicHrace = (await post("/api/diplo/most/klic", hrac)).json().klic as string;
+  const posli = (klic: string) => app.inject({ method: "POST", url: "/api/diplo/hra-soubor", headers: { authorization: `Bearer ${klic}` }, payload: { jmeno: "ROB_DIPLO_3.xsdat", soubor } });
+  expect((await posli("spatny")).statusCode).toBe(401);
+  expect((await posli(klicHrace)).statusCode).toBe(403);
+  const ok = await posli(klicGm);
+  expect(ok.statusCode).toBe(200);
+  expect(ok.json()).toMatchObject({ ok: true, zdroj: "gm" });
+  expect((await app.inject({ method: "GET", url: "/api/diplo/most/klic", cookies: { sid: gm } })).json().klic.naposledy).not.toBeNull();
+  // Nový klíč starý zneplatní, zrušený neplatí vůbec.
+  const novy = (await post("/api/diplo/most/klic", gm)).json().klic as string;
+  expect((await posli(klicGm)).statusCode).toBe(401);
+  expect((await app.inject({ method: "DELETE", url: "/api/diplo/most/klic", cookies: { sid: gm } })).statusCode).toBe(200);
+  expect((await posli(novy)).statusCode).toBe(401);
+});

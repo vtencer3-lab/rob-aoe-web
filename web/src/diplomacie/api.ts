@@ -18,6 +18,10 @@ export const diploApi = {
   mapa: (zapasId: number, zmena: { kralove?: boolean; relikvie?: boolean }) => post(`/api/diplo/zapas/${zapasId}/mapa`, zmena),
   ping: (zapasId: number, x: number, y: number, komu: string[] | null) => post(`/api/diplo/zapas/${zapasId}/ping`, { x, y, komu }),
   los: (zapasId: number) => post(`/api/diplo/zapas/${zapasId}/los`),
+  /** Osobní klíč mostu ke hře (Streamer.bot): stav, nový klíč (vrátí se jen teď), zrušení. */
+  stavKliceMostu: () => fetch(cesta("/api/diplo/most/klic")).then((r) => json<{ klic: { vytvoren: string; naposledy: string | null } | null }>(r)),
+  novyKlicMostu: () => fetch(cesta("/api/diplo/most/klic"), { method: "POST" }).then((r) => json<{ klic: string }>(r)),
+  zrusKlicMostu: () => fetch(cesta("/api/diplo/most/klic"), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   /** Podpis pro osobní overlay karty do OBS (jen přihlášený hráč sám pro sebe). */
   mujOverlay: () => fetch(cesta("/api/diplo/obs/muj-odkaz")).then((r) => json<{ hrac: string; klic: string }>(r)),
   /** Hráč žádá o schopnost své role (Sabotáž s cílem, informace, doplatek). */

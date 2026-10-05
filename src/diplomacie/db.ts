@@ -536,3 +536,36 @@ export async function promenaVidena(zapasId: number, hracId: string): Promise<bo
   const { rowCount } = await getPool().query("UPDATE diplo_role SET promena_videna = true WHERE zapas_id = $1 AND hrac_id = $2 AND puvodni_role IS NOT NULL AND NOT promena_videna", [zapasId, hracId]);
   return (rowCount ?? 0) > 0;
 }
+
+// --- osobní klíč mostu ke hře (migrace 042) ---
+
+export interface StavKliceMostu {
+  vytvoren: string;
+  /** Kdy klíčem naposledy přišla data; null = zatím nikdy. */
+  naposledy: string | null;
+}
+
+/** Nový klíč hráče (otisk); starý tím přestane platit. */
+export async function nastavKlicMostu(hracId: string, otisk: string): Promise<void> {
+  await getPool().query(
+    `INSERT INTO diplo_most_klic (hrac_id, otisk) VALUES ($1, $2)
+       ON CONFLICT (hrac_id) DO UPDATE SET otisk = EXCLUDED.otisk, vytvoren_v = now(), naposledy_v = NULL`,
+    [hracId, otisk],
+  );
+}
+
+export async function zrusKlicMostu(hracId: string): Promise<void> {
+  await getPool().query("DELETE FROM diplo_most_klic WHERE hrac_id = $1", [hracId]);
+}
+
+export async function stavKliceMostu(hracId: string): Promise<StavKliceMostu | null> {
+  const { rows } = await getPool().query<{ vytvoren_v: Date; naposledy_v: Date | null }>("SELECT vytvoren_v, naposledy_v FROM diplo_most_klic WHERE hrac_id = $1", [hracId]);
+  const r = rows[0];
+  return r ? { vytvoren: r.vytvoren_v.toISOString(), naposledy: r.naposledy_v?.toISOString() ?? null } : null;
+}
+
+/** Komu klíč patří (podle otisku); zároveň zapíše, že jím právě přišla data. */
+export async function hracPodleKliceMostu(otisk: string): Promise<string | null> {
+  const { rows } = await getPool().query<{ hrac_id: string }>("UPDATE diplo_most_klic SET naposledy_v = now() WHERE otisk = $1 RETURNING hrac_id", [otisk]);
+  return rows[0]?.hrac_id ?? null;
+}
