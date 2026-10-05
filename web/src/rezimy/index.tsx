@@ -42,6 +42,13 @@ export interface RezimKlienta {
    */
   nahledZapasu?(p: KontextZapasu): ReactNode;
   /**
+   * Správa podkladů módu pod panelem akce (Diplomacie: verze scénáře).
+   * Volá se pro mód běžící akce, nebo pro mód zvolený ve formuláři založení
+   * akce. `smiSpravovat` = server dovolil (/api/me); mód může přidat vlastní
+   * důvod (GM běžícího zápasu). Null = nic.
+   */
+  sprava?(p: { stav: AkceStavPayload | null; ja: string; smiSpravovat: boolean; hlidej: Hlidej }): ReactNode;
+  /**
    * Samostatné stránky módu podle cesty bez základu webu (Diplomacie:
    * overlaye do OBS „/obs/mapa“, „/obs/tabulka“). Nezávisí na otevřené
    * akci — browser source načítá adresu napřímo.

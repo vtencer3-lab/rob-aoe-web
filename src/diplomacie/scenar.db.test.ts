@@ -396,3 +396,13 @@ it("smazání verze ji vyřadí ze starších jmen kontroly lobby běžící akc
   expect((await smaz(jin, v1)).statusCode).toBe(200);
   expect((await getAktivniAkce())!.nastaveniLobby).toMatchObject({ scenar: "ROB_DIPLO_2_v9.aoe2scenario", scenarStarsi: [] });
 });
+
+// GM běžícího zápasu Diplomacie smí scénář spravovat (uživatel 5. 10. 2026);
+// hráč téhož zápasu ne, a GM dohraného zápasu už taky ne.
+it("GM běžícího zápasu Diplomacie smí nahrát scénář, hráč ne", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  expect((await nahraj(await klient("h1", false), LLC)).statusCode).toBe(403);
+  expect((await nahraj(await klient("h7", false), LLC)).statusCode).toBe(200);
+  await setZapasStav(zapas.id, "dohrano");
+  expect((await nahraj(await klient("h7", false), LLC, "jina.aoe2scenario")).statusCode).toBe(403);
+});

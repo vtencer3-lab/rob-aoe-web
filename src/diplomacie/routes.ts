@@ -238,7 +238,7 @@ const MAX_DELKA_POZNAMKY = 500;
 
 async function requireAutorScenare(request: FastifyRequest): Promise<string> {
   const hracId = await requireUser(request);
-  if (!(await smiNahratScenar(hracId))) throw new HttpError(403, "Scénář smí nahrávat jen admin nebo autor scénáře.");
+  if (!(await smiNahratScenar(hracId))) throw new HttpError(403, "Scénář smí nahrávat jen admin, autor scénáře nebo GM běžícího zápasu Diplomacie.");
   return hracId;
 }
 

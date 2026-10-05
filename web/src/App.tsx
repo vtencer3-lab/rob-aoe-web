@@ -30,7 +30,6 @@ import { HistorieZapasu, Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { Skladani } from "./views/Skladani.js";
 import { SpravaAkce } from "./views/SpravaAkce.js";
-import { SpravaScenare } from "./diplomacie/SpravaScenare.js";
 import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
@@ -153,9 +152,9 @@ export function App() {
   // Admin nebo autor scénáře Diplomacie (spec §5.1): server to říká vedle
   // řádku hráče, protože práva autora na řádku vidět nejsou.
   const [smiNahratScenar, setSmiNahratScenar] = useState(false);
-  // Správa scénáře Diplomacie jen v módu Diplomacie (uživatel 5. 10. 2026):
-  // při běžící akci Diplomacie, nebo když admin zakládá akci se zapnutou Diplomacií.
-  const [zakladaDiplomacii, setZakladaDiplomacii] = useState(false);
+  // Mód zvolený ve formuláři založení akce: bez běžící akce podle něj
+  // ukáže svou správu (Diplomacie: scénář; uživatel 5. 10. 2026).
+  const [zakladanyRezim, setZakladanyRezim] = useState<RezimId>("klasicky");
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
@@ -677,7 +676,7 @@ export function App() {
           akce={akce}
           stitek={rk.stitek?.() ?? null}
           onZalozit={(nazev, rezim) => void hlidej(() => api.vytvoritAkce(nazev, rezim))}
-          onVolbaDiplomacie={setZakladaDiplomacii}
+          onVolbaDiplomacie={(zapnuto) => setZakladanyRezim(zapnuto ? "diplomacie" : "klasicky")}
           onNastaveniLobby={(n) => {
             if (!akce) return;
             const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
@@ -734,14 +733,14 @@ export function App() {
         </SpravaAkce>
       ) : null}
 
-      {/* Správa scénáře Diplomacie stojí pod panelem akce samostatně (verze
-          nepatří k jedné akci), ale ukáže se jen v módu Diplomacie (uživatel
-          5. 10. 2026): při běžící akci Diplomacie, nebo když admin zakládá
-          akci se zapnutým přepínačem Diplomacie. Autor (Jin, ne admin) ji tak
-          vidí jen při akci Diplomacie. V pohledu uživatele se admin dívá jako
-          hráč — správa je nástroj; autorovi bez režie ji ale uložený přepínač
-          (localStorage je jeden pro /aoe i /aoe/diplo) brát nesmí. */}
-      {me && smiNahratScenar && !(me.jeAdmin && pohledUzivatele) && (rezimAkce === "diplomacie" || (!akce && zakladaDiplomacii)) ? <SpravaScenare hlidej={hlidej} /> : null}
+      {/* Správa podkladů módu (Diplomacie: scénář) stojí pod panelem akce
+          samostatně a dodává ji mód háčkem `sprava` — pro mód běžící akce,
+          bez akce pro mód zvolený ve formuláři založení (uživatel 5. 10. 2026).
+          Kdo ji vidí, rozhoduje mód (Diplomacie: admin, autor, GM běžícího
+          zápasu). V pohledu uživatele se admin dívá jako hráč; autorovi bez
+          režie ji uložený přepínač (localStorage je jeden pro /aoe i
+          /aoe/diplo) brát nesmí. */}
+      {me && !(me.jeAdmin && pohledUzivatele) ? rezimKlienta(akce ? rezimAkce : zakladanyRezim).sprava?.({ stav: stav ?? null, ja: me.hracId, smiSpravovat: smiNahratScenar, hlidej }) : null}
 
       {akce ? (
         <>
