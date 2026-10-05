@@ -15,16 +15,17 @@ export const diplomacieKlient: RezimKlienta = {
   stitek: () => "Diplomacie",
   // Overlaye do OBS (uživatel 3. 10. 2026): `…/obs/mapa?klic=…`, `…/obs/tabulka?klic=…`.
   stranky: { "/obs/mapa": () => <ObsMapa />, "/obs/tabulka": () => <ObsTabulka />, "/obs/karta": () => <ObsKarta /> },
-  kartaHrace: ({ zapas, stav, ja, hlidej, onUpravitZapas }) => {
+  kartaHrace: ({ zapas, stav, ja, hlidej }) => {
     if (!stav.rezim || !ja) return null;
     const d = diploZapasu(stav.rezim.data, zapas.id);
-    return d?.gmHracId === ja ? <PultGm zapas={zapas} data={stav.rezim.data} hlidej={hlidej} onUpravit={onUpravitZapas} /> : <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} hlidej={hlidej} />;
+    return d?.gmHracId === ja ? <PultGm zapas={zapas} data={stav.rezim.data} hlidej={hlidej} /> : <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} hlidej={hlidej} />;
   },
   // Verze, kterou zápas hraje (otisknutá při založení), ne nutně ta aktivní:
   // host musí mít v lobby přesně tu, ke které web počítá pravidla.
-  krokHosta: ({ zapas, stav, ja }) => {
+  // GM (host) má vedle i úpravu zápasu (uživatel 5. 10. 2026: nahoře u tlačítek).
+  krokHosta: ({ zapas, stav, ja, onUpravitZapas }) => {
     if (!stav.rezim || !ja) return null;
-    return <StazeniScenare verze={verzeZapasu(stav.rezim.data, diploZapasu(stav.rezim.data, zapas.id), zapas)} ja={ja} />;
+    return <StazeniScenare verze={verzeZapasu(stav.rezim.data, diploZapasu(stav.rezim.data, zapas.id), zapas)} ja={ja} onUpravit={onUpravitZapas} />;
   },
   verejnyZapas: ({ zapas, stav }) => (stav.rezim ? <VerejnyRadek zapas={zapas} data={stav.rezim.data} /> : null),
   popisSlotu: (barva) => (barva === GM_BARVA ? "GM" : null),

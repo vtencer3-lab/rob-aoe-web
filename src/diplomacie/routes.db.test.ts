@@ -279,6 +279,13 @@ it("osobní klíč mostu: cizí klíč 401, ne-GM 403, GM pošle soubor sondy", 
   expect(ok.statusCode).toBe(200);
   expect(ok.json()).toMatchObject({ ok: true, zdroj: "gm" });
   expect((await app.inject({ method: "GET", url: "/api/diplo/most/klic", cookies: { sid: gm } })).json().klic.naposledy).not.toBeNull();
+  // Tep bez hry (zelená kontrolka): projde s jakýmkoli platným klíčem, i ne-GM.
+  const tep = (klic: string) => app.inject({ method: "POST", url: "/api/diplo/most/tep", headers: { authorization: `Bearer ${klic}` }, payload: {} });
+  expect((await tep("spatny")).statusCode).toBe(401);
+  expect((await tep(klicHrace)).statusCode).toBe(200);
+  const stavHrace = (await app.inject({ method: "GET", url: "/api/diplo/most/klic", cookies: { sid: hrac } })).json().klic;
+  expect(stavHrace.predS).toBeGreaterThanOrEqual(0);
+  expect(stavHrace.predS).toBeLessThan(5);
   // Nový klíč starý zneplatní, zrušený neplatí vůbec.
   const novy = (await post("/api/diplo/most/klic", gm)).json().klic as string;
   expect((await posli(klicGm)).statusCode).toBe(401);

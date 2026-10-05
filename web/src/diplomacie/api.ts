@@ -2,6 +2,13 @@ import type { SouhrnSondy } from "../../../src/shared/diplomacie/hra.js";
 import type { DruhZadosti } from "../../../src/shared/diplomacie/schopnosti.js";
 import type { Role, ScenarVerze } from "../../../src/shared/diplomacie/typy.js";
 import type { NastaveniLobby } from "../../../src/shared/lobbyKontrola.js";
+
+/** Stav osobního klíče mostu (server: StavKliceMostu v src/diplomacie/db.ts). */
+export interface StavKliceMostu {
+  vytvoren: string;
+  naposledy: string | null;
+  predS: number | null;
+}
 import { json } from "../api.js";
 import { cesta } from "../cesty.js";
 
@@ -25,7 +32,7 @@ export const diploApi = {
       json<{ ok: true; nastaveni: Pick<NastaveniLobby, "scenar" | "scenarStarsi" | "velikost"> }>(r),
     ),
   /** Osobní klíč mostu ke hře (Streamer.bot): stav, nový klíč (vrátí se jen teď), zrušení. */
-  stavKliceMostu: () => fetch(cesta("/api/diplo/most/klic")).then((r) => json<{ klic: { vytvoren: string; naposledy: string | null } | null }>(r)),
+  stavKliceMostu: () => fetch(cesta("/api/diplo/most/klic")).then((r) => json<{ klic: StavKliceMostu | null }>(r)),
   novyKlicMostu: () => fetch(cesta("/api/diplo/most/klic"), { method: "POST" }).then((r) => json<{ klic: string }>(r)),
   zrusKlicMostu: () => fetch(cesta("/api/diplo/most/klic"), { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
   /** Podpis pro osobní overlay karty do OBS (jen přihlášený hráč sám pro sebe). */

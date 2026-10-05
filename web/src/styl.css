@@ -88,6 +88,8 @@
   --varovani: #e0c46a;
   --ok: #a8c47c;
   --ok-svetle: #bcd694;
+  /* Kontrolka živého spojení (most Streamer.bot): sytá zelená, ať je vidět na první pohled. */
+  --kontrolka-zive: #45d84a;
 
   --pozadi: #150d07;
   --text: #f0e2c0;
@@ -162,6 +164,11 @@ html.obs body::before { content: none; }
 .overlay-karty { margin: 0.6rem 0; }
 /* Most přes Streamer.bot v pultu GM (MostStreamerbot.tsx). */
 .most-streamerbot { margin-top: 0.8rem; text-align: left; }
+.most-streamerbot .kontrolka-mostu { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.8rem; font-size: 0.85em; font-weight: normal; color: var(--tlumene); }
+.most-streamerbot .kontrolka-mostu .tecka { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: currentColor; }
+.most-streamerbot .kontrolka-mostu.zive { color: var(--kontrolka-zive); }
+.most-streamerbot .kontrolka-mostu.zive .tecka { box-shadow: 0 0 0.5rem var(--kontrolka-zive); }
+.most-streamerbot .kontrolka-mostu.mlci { color: var(--chyba); }
 .most-streamerbot .most-tlacitka { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .obs-overlay.obs-tabulka { margin: 0; }
 .obs-tabulka .tabulka-roli { max-width: none; margin: 0; }
@@ -1639,7 +1646,7 @@ details[open]:not([data-zavira]) > summary::before { rotate: 90deg; }
 .sekce-krok .zahlavi-sekce { justify-content: center; position: relative; }
 .sekce-krok .zahlavi-sekce .fajfka { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .sekce-krok .hostovi { justify-content: center; }
-.sekce-krok .hostovi .cta, .stazeni-scenare .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
+.sekce-krok .hostovi .cta, .stazeni-scenare .cta, .sekce-krok .gm-uprava { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .sekce-kontrola .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 /* Verdikt kontroly lobby nahoře v panelu (uživatel 17. 9. 2026): červená,
    dokud něco nesedí, zelená, jakmile sedí všechno — nikdy obojí a nikdy dole

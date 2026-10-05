@@ -20,4 +20,6 @@ it("import má hlavičku SBAE, akci s kódem a klíčem, časovač 1 s a trigger
   expect(kod).toContain('const string Klic = "KLIC123";');
   expect(kod).toContain('const string Url = "https://jouki.cz/aoe/api/diplo/hra-soubor";');
   expect(kod).toContain("public class CPHInline");
+  // Tep bez hry (zelená kontrolka v pultu GM) jde vedle souboru sondy.
+  expect(kod).toContain('const string UrlTepu = "https://jouki.cz/aoe/api/diplo/most/tep";');
 });

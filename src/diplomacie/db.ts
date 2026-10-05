@@ -546,8 +546,10 @@ export async function promenaVidena(zapasId: number, hracId: string): Promise<bo
 
 export interface StavKliceMostu {
   vytvoren: string;
-  /** Kdy klíčem naposledy přišla data; null = zatím nikdy. */
+  /** Kdy se klíčem naposledy ozval Streamer.bot (data nebo tep); null = zatím nikdy. */
   naposledy: string | null;
+  /** Kolik sekund od toho uběhlo podle hodin serveru — indikátor spojení nezávisí na hodinách prohlížeče. */
+  predS: number | null;
 }
 
 /** Nový klíč hráče (otisk); starý tím přestane platit. */
@@ -564,12 +566,15 @@ export async function zrusKlicMostu(hracId: string): Promise<void> {
 }
 
 export async function stavKliceMostu(hracId: string): Promise<StavKliceMostu | null> {
-  const { rows } = await getPool().query<{ vytvoren_v: Date; naposledy_v: Date | null }>("SELECT vytvoren_v, naposledy_v FROM diplo_most_klic WHERE hrac_id = $1", [hracId]);
+  const { rows } = await getPool().query<{ vytvoren_v: Date; naposledy_v: Date | null; pred_s: number | null }>(
+    "SELECT vytvoren_v, naposledy_v, floor(extract(epoch FROM now() - naposledy_v))::int AS pred_s FROM diplo_most_klic WHERE hrac_id = $1",
+    [hracId],
+  );
   const r = rows[0];
-  return r ? { vytvoren: r.vytvoren_v.toISOString(), naposledy: r.naposledy_v?.toISOString() ?? null } : null;
+  return r ? { vytvoren: r.vytvoren_v.toISOString(), naposledy: r.naposledy_v?.toISOString() ?? null, predS: r.pred_s } : null;
 }
 
-/** Komu klíč patří (podle otisku); zároveň zapíše, že jím právě přišla data. */
+/** Komu klíč patří (podle otisku); zároveň zapíše, že se jím Streamer.bot právě ozval. */
 export async function hracPodleKliceMostu(otisk: string): Promise<string | null> {
   const { rows } = await getPool().query<{ hrac_id: string }>("UPDATE diplo_most_klic SET naposledy_v = now() WHERE otisk = $1 RETURNING hrac_id", [otisk]);
   return rows[0]?.hrac_id ?? null;

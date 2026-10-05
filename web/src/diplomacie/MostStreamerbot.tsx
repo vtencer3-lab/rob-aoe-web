@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import type { Hlidej } from "../rezimy/index.js";
 import { cesta } from "../cesty.js";
 import { Skladaci } from "../views/Skladaci.js";
-import { diploApi } from "./api.js";
+import { TEP_MOSTU_S } from "../../../src/shared/diplomacie/hra.js";
+import { diploApi, type StavKliceMostu } from "./api.js";
 import { importStreamerbotu } from "./streamerbot.js";
 
 /** Kdy klíč vznikl a kdy jím naposledy přišla data — krátce česky. */
@@ -18,13 +19,45 @@ export const SOUBOR_AKCE = "AoE-Diplomacie-most.txt";
  * web. Web drží jen otisk klíče; každé stažení vydá nový klíč a starý
  * zneplatní. Sbalené — nastavuje se jednou.
  */
+/** Spojení je živé, když se akce ozvala do dvou tepů a kousku (výpadek jednoho tepu nevadí). */
+const ZIVE_S = TEP_MOSTU_S * 2 + 5;
+/** Jak často se pult ptá na stav spojení. */
+const DOTAZ_MS = 10_000;
+
+type Spojeni = "zive" | "ceka" | "mlci";
+
+/** Stav spojení pro indikátor: zelená = akce se ozývá, šedá = ještě se neozvala, červená = zmlkla. */
+export function spojeni(stav: StavKliceMostu): Spojeni {
+  if (stav.predS === null) return "ceka";
+  return stav.predS <= ZIVE_S ? "zive" : "mlci";
+}
+
+const POPIS_SPOJENI: Record<Spojeni, string> = {
+  zive: "Spojení funguje",
+  ceka: "Čeká na první spojení — naimportuj akci do Streamer.botu",
+  mlci: "Streamer.bot se neozývá",
+};
+
 export function MostStreamerbot({ hlidej }: { hlidej: Hlidej }) {
   const [otevreno, setOtevreno] = useState(false);
-  const [stav, setStav] = useState<{ vytvoren: string; naposledy: string | null } | null | undefined>(undefined);
+  const [stav, setStav] = useState<StavKliceMostu | null | undefined>(undefined);
   const [stazeno, setStazeno] = useState(false);
+  // Stav spojení se dotazuje pořád (i sbalené ukazuje tečku v hlavičce),
+  // chyby dotazu jsou tiché — indikátor jen zůstane, jak byl.
   useEffect(() => {
-    if (otevreno && stav === undefined) void hlidej(async () => setStav((await diploApi.stavKliceMostu()).klic));
-  }, [otevreno]);
+    let platne = true;
+    const nacti = () =>
+      Promise.resolve()
+        .then(() => diploApi.stavKliceMostu())
+        .then((r) => platne && setStav(r.klic))
+        .catch(() => {});
+    void nacti();
+    const casovac = setInterval(nacti, DOTAZ_MS);
+    return () => {
+      platne = false;
+      clearInterval(casovac);
+    };
+  }, []);
   const url = `${window.location.origin}${cesta("/api/diplo/hra-soubor")}`;
   const stahni = () =>
     void hlidej(async () => {
@@ -44,7 +77,17 @@ export function MostStreamerbot({ hlidej }: { hlidej: Hlidej }) {
       setStav(null);
     });
   return (
-    <Skladaci className="most-streamerbot" testId="most-streamerbot" hlava="Data ze hry přes Streamer.bot" otevreno={otevreno} onPrepnout={setOtevreno}>
+    <Skladaci className="most-streamerbot" testId="most-streamerbot" hlava={
+        <>
+          Data ze hry přes Streamer.bot
+          {stav ? (
+            <span className={`kontrolka-mostu ${spojeni(stav)}`} data-testid="kontrolka-mostu" title={POPIS_SPOJENI[spojeni(stav)]}>
+              <span className="tecka" aria-hidden="true" />
+              {POPIS_SPOJENI[spojeni(stav)]}
+            </span>
+          ) : null}
+        </>
+      } otevreno={otevreno} onPrepnout={setOtevreno}>
       {otevreno ? (
         <div className="most-obsah">
           <p className="ceka">
@@ -52,11 +95,11 @@ export function MostStreamerbot({ hlidej }: { hlidej: Hlidej }) {
           </p>
           {stav ? (
             <p data-testid="stav-klice">
-              Akce stažena {kdy(stav.vytvoren)} · {stav.naposledy ? `data naposledy ${kdy(stav.naposledy)}` : "zatím žádná data"}
+              Akce stažena {kdy(stav.vytvoren)} · {stav.naposledy ? `naposledy se ozvala ${kdy(stav.naposledy)}` : "zatím se neozvala"}
             </p>
           ) : null}
           <p className="ceka">
-            Ve Streamer.botu nahoře <strong>Import</strong> → přetáhni do okna stažený soubor → <strong>Import</strong>. Hotovo: akce „AoE Diplomacie — most“ běží sama. Soubor
+            Ve Streamer.botu nahoře <strong>Import</strong> → přetáhni do okna stažený soubor → <strong>Import</strong>. Hotovo: akce „AoE Diplomacie — most“ běží sama a do půl minuty tu naskočí zelené „Spojení funguje“ (i bez hry). Soubor
             obsahuje tvůj osobní klíč — nikomu ho neposílej.
           </p>
           {stazeno && stav ? <p className="varovani">Staženo. Dřív stažená akce přestala platit — naimportuj tuhle.</p> : null}

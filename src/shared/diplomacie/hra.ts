@@ -415,3 +415,9 @@ export function popisStari(sekund: number, zdroj?: ZdrojHry): string {
   if (s < HRA_MLCI_PO_S) return `ze hry${odkud} před ${s} s`;
   return s < 120 ? `hra mlčí ${s} s` : `hra mlčí ${Math.floor(s / 60)} min`;
 }
+
+/**
+ * Po kolika sekundách se akce Streamer.botu bez běžící hry ozve tepem
+ * (`POST /api/diplo/most/tep`); pult GM podle toho svítí zeleně.
+ */
+export const TEP_MOSTU_S = 20;
