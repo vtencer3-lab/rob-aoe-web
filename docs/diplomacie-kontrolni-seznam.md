@@ -56,7 +56,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 
 | # | Pravidlo | Hlídá |
 |---|---|---|
-| 4.1 | **Nájezdník — Sabotáž:** 1× za hru, hráč vybere cíl; na jednoho hráče nejvýš jedna (i od druhého Nájezdníka); zamítnutá se nepočítá | S schopnosti.test „Sabotáž …“, DB routes „schopnosti …“, W „Nájezdník vybere cíl …“ |
+| 4.1 | **Nájezdník — Sabotáž:** 1× za hru, hráč vybere cíl; oba Nájezdníci smí na téhož hráče (od 6. 10. 2026, dřív nejvýš jedna na hráče); zamítnutá se nepočítá; v tabulce pultu GM „Sabotáž použita“ + čtvereček cíle | S schopnosti.test „Sabotáž …“, DB routes „schopnosti …“, W „Nájezdník vybere cíl …“, W PultGm „použitá Sabotáž ukáže … čtvereček cíle“ |
 | 4.2 | **Šašek — 3 informace:** jen tlačítko, odpověď ústně; jedna žádost naráz | S „Šašek 3 informace …“, W |
 | 4.3 | **Žoldák — doplatek 4000:** s daty ze hry ho web hlásí GM sám za každý prodej (scénář dá 4000, GM doplatí 4000); tlačítko jen bez mostu | DB „doplatky … se nezdvojí“, W „Žoldákovi padlo pouto …“ (bez tlačítka) |
 | 4.4 | **Popravčí (dřív Kat, id `kat`) — 2000 zlata** za každého padlého (Popravčí žije a nepadl on sám): připomínka GM | S „za padlého připomínka Katovi …“, DB |

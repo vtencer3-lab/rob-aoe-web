@@ -26,10 +26,11 @@ describe("kdo smí co", () => {
     expect(procNelze(D, [], HRACI, "z", "doplatek", null)).toBeNull();
   });
 
-  it("Sabotáž 1× za hru, na jednoho hráče nejvýš jedna; zamítnutá se nepočítá", () => {
+  it("Sabotáž 1× za hru, oba Nájezdníci smí na téhož hráče; zamítnutá se nepočítá", () => {
     expect(procNelze(D, [s("j1", "sabotaz", "potvrzeno", "k")], HRACI, "j1", "sabotaz", "n")).toMatch(/už jsi použil/);
     expect(procNelze(D, [s("j1", "sabotaz", "zamitnuto", "k")], HRACI, "j1", "sabotaz", "k")).toBeNull();
-    expect(procNelze(D, [s("j1", "sabotaz", "ceka", "k")], HRACI, "j2", "sabotaz", "k")).toMatch(/nejvýš jedna/);
+    // Od 6. 10. 2026: druhý Nájezdník smí na stejný cíl.
+    expect(procNelze(D, [s("j1", "sabotaz", "ceka", "k")], HRACI, "j2", "sabotaz", "k")).toBeNull();
     expect(procNelze(D, [], HRACI, "j1", "sabotaz", "j1")).toMatch(/jiného hráče/);
     expect(procNelze(D, [], HRACI, "j1", "sabotaz", null)).toMatch(/jiného hráče/);
   });

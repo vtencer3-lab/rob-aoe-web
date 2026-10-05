@@ -6,7 +6,7 @@ import type { ZapasView } from "../../../src/shared/types.js";
 import chatUrl from "../assets/chat.mp3";
 import type { Hlidej } from "../rezimy/index.js";
 import { hlasitostChatu, prehraj } from "../zvuk.js";
-import { JmenoUcastnika } from "../views/JmenoSBarvou.js";
+import { JmenoUcastnika, ZnakBarvy } from "../views/JmenoSBarvou.js";
 import { Rozbalovaci } from "../views/Rozbalovaci.js";
 import { diploApi } from "./api.js";
 
@@ -211,13 +211,21 @@ export function OznameniGm({ zapas, d, akce, pracuje }: { zapas: ZapasView; d: D
 }
 
 /** Drobný stav schopnosti v řádku tabulky GM: Sabotáž nepoužita/použita, informace 1/3, doplatky. */
-export function StavSchopnostiGm({ d, r }: { d: DiploZapas; r: RoleHrace }) {
+export function StavSchopnostiGm({ d, r, zapas }: { d: DiploZapas; r: RoleHrace; zapas: Pick<ZapasView, "ucastnici"> }) {
   const moje = (d.schopnosti ?? []).filter((s) => s.hracId === r.hracId);
   if (r.role === "najezdnik") {
-    const pouzita = moje.some((s) => s.druh === "sabotaz" && s.stav === "potvrzeno");
+    const pouzita = moje.find((s) => s.druh === "sabotaz" && s.stav === "potvrzeno");
+    // Na koho Sabotáž dopadla — čtvereček s barvou a číslem (uživatel 6. 10. 2026).
+    const barvaCile = pouzita?.cilHracId ? zapas.ucastnici.find((u) => u.hracId === pouzita.cilHracId)?.barva : undefined;
     return (
-      <span key={String(pouzita)} className={pouzita ? "schopnost-gm pouzita" : "schopnost-gm"} data-testid="schopnost-gm">
+      <span key={String(Boolean(pouzita))} className={pouzita ? "schopnost-gm pouzita" : "schopnost-gm"} data-testid="schopnost-gm">
         Sabotáž {pouzita ? "použita" : "nepoužita"}
+        {barvaCile ? (
+          <>
+            {" "}
+            <ZnakBarvy barva={barvaCile} />
+          </>
+        ) : null}
       </span>
     );
   }
