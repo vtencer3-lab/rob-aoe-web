@@ -1646,7 +1646,7 @@ details[open]:not([data-zavira]) > summary::before { rotate: 90deg; }
 .sekce-krok .zahlavi-sekce { justify-content: center; position: relative; }
 .sekce-krok .zahlavi-sekce .fajfka { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .sekce-krok .hostovi { justify-content: center; }
-.sekce-krok .hostovi .cta, .stazeni-scenare .cta, .sekce-krok .gm-uprava { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
+.sekce-krok .hostovi .cta, .stazeni-scenare .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .sekce-kontrola .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 /* Verdikt kontroly lobby nahoře v panelu (uživatel 17. 9. 2026): červená,
    dokud něco nesedí, zelená, jakmile sedí všechno — nikdy obojí a nikdy dole
@@ -2158,7 +2158,12 @@ button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem;
    zlaté tlačítko jako „Spustit hru“ (šířku sdílí s `.hostovi .cta` výš),
    pod ním instrukce na střed. Cesta ke složce je dlouhá a na telefonu se
    musí zalomit — i uprostřed složky, mezery v ní nejsou. */
-.stazeni-scenare { margin-top: 1rem; text-align: center; }
+.stazeni-scenare { margin-top: 1rem; text-align: center; position: relative; }
+/* Úprava zápasu pro GM: jen ikona vpravo v úrovni „Stáhnout scénář“; na úzkém displeji pod tlačítka. */
+.stazeni-scenare .gm-uprava { position: absolute; top: 0; right: 0; margin: 0; }
+@media (max-width: 40rem) {
+  .stazeni-scenare .gm-uprava { position: static; display: block; margin: 0 0 0.5rem auto; }
+}
 .stazeni-scenare p { margin: 0.5rem 0; }
 .stazeni-scenare button.kopirovatelne { max-width: 100%; }
 .stazeni-scenare button.kopirovatelne strong { overflow-wrap: anywhere; text-align: left; }

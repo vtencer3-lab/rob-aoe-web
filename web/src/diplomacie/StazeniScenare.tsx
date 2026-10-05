@@ -30,25 +30,25 @@ export function StazeniScenare({ verze, ja, onUpravit }: { verze: ScenarVerze | 
   const [stazeno, setStazeno] = useState(false);
   // GM upravuje zápas (sestava, nastavení lobby, verze scénáře) — předá-li
   // v sestavě šedou jinému, práva po uložení přejdou na něj.
+  // Jen ikona jako ozubené kolečko v režii, vpravo v úrovni tlačítek (uživatel 6. 10. 2026).
   const uprava = onUpravit ? (
-    <p>
-      <button type="button" className="cta gm-uprava" data-testid="gm-upravit-zapas" onClick={onUpravit}>
-        ⚙ Upravit zápas
-      </button>
-    </p>
+    <button type="button" className="upravit-zapas gm-uprava" data-testid="gm-upravit-zapas" title="Upravit zápas" aria-label="Upravit zápas" onClick={onUpravit}>
+      ⚙
+    </button>
   ) : null;
-  if (!verze) return (
-    <>
-      {uprava}
-      <p className="ceka stred">Scénář zatím nikdo nenahrál.</p>
-    </>
-  );
+  if (!verze)
+    return (
+      <div className="stazeni-scenare">
+        {uprava}
+        <p className="ceka stred">Scénář zatím nikdo nenahrál.</p>
+      </div>
+    );
   return (
     <div className="stazeni-scenare">
+      {uprava}
       <a className="cta" href={diploApi.souborUrl(verze.id)} download={verze.jmenoHry} onClick={() => setStazeno(true)}>
         Stáhnout scénář
       </a>
-      {uprava}
       {stazeno ? (
         <>
           <p>Ulož scénář do:</p>
