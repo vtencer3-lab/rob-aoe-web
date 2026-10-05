@@ -82,6 +82,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 | 5.7 | Stránka akce: sekce „Pravidla hry“ pro každého (háček `sekceAkce`) — velká mapa aktivní verze, pod ní kartičky po třech; odkaz na dokument pravidel (`ODKAZ_PRAVIDEL` v `PravidlaAkce.tsx`) až bude kopie jen ke čtení | W PravidlaAkce.test |
 | 5.8 | Osobní overlay karty pro streamery `…/obs/karta?hrac=&klic=` — klíč = HMAC id hráče tajemstvím `OBS_KLIC` (odkaz si hráč vygeneruje na kartě, „Overlay karty do OBS“); data redigovaná jako pro hráče, jen z jeho běžícího zápasu, do rozeslání prázdné | obs.test „routa GET /api/diplo/obs/hrac“ |
 | 5.9 | **Verze scénáře zápasu:** admin ji vybere v úpravě zápasu (řádek „Scénář“, háček `vyberScenare`) z rozebraných verzí; jen v přípravě (pak 409). Route `POST /api/diplo/zapas/:id/scenar` přepíše `diplo_zapas.scenar_id` i nastavení lobby zápasu (`scenar`, `scenarStarsi`, `velikost`) — kontrola lobby, stažení scénáře hostem i snímky hry se řídí verzí zápasu | DB routes „verze scénáře zápasu…“, W VyberScenare.test |
+| 5.10 | **GM upravuje zápas** jako admin (⚙ v hlavičce pultu GM → okno úpravy: sestava, nastavení lobby, jméno, verze scénáře) — háček `smiUpravitZapas` = GM běžícího zápasu; právo se ověřuje při každém požadavku, takže předáním šedé v sestavě přejde na nového GM. Sestavu jde měnit jen do rozdání rolí (`predZmenouSestavy`) | DB routes „GM upravuje zápas…“ |
 | 5.4 | Overlaye OBS `/obs/mapa`, `/obs/tabulka` s `OBS_KLIC` | ruční |
 
 ## 6. Známé meze (vědomě)

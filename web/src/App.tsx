@@ -431,8 +431,10 @@ export function App() {
   }
 
   /** Doplněk módu pro jedno místo v jádru; bez snímku stavu není co doplňovat. */
+  // Úprava zápasu mimo režii: komu ji dá mód (GM Diplomacie svého zápasu).
+  const smiUpravit = (zapas: ZapasView) => Boolean(stav && me && rk.smiUpravitZapas?.({ zapas, stav, ja: me.hracId, hlidej }));
   const doplnekModu = (misto: "kartaHrace" | "krokHosta" | "verejnyZapas", zapas: ZapasView, ja: string | null) =>
-    stav ? rk[misto]?.({ zapas, stav, ja, hlidej }) : null;
+    stav ? rk[misto]?.({ zapas, stav, ja, hlidej, ...(smiUpravit(zapas) ? { onUpravitZapas: () => setUpravovany(zapas.id) } : {}) }) : null;
 
   // Push-to-talk ve vlastní kartě zápasu: jen komu ho dá mód (GM Diplomacie).
   // Admin mluví z režie (rezieObsluha.onHlas), karta hráče ho jinak nemá.
@@ -745,7 +747,7 @@ export function App() {
       {akce ? (
         <>
           {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.hracId} doplnek={(zapas) => doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} /> : null}
-          {admin && stav && zapasKUprave ? (
+          {stav && zapasKUprave && (admin || smiUpravit(zapasKUprave)) ? (
             <EditaceZapasu
               zapas={zapasKUprave}
               prihlaseni={stav.prihlaseni}

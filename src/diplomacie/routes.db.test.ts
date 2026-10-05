@@ -314,3 +314,20 @@ it("verze scénáře zápasu: vybírá admin v přípravě, přepíše i nastave
   expect((await post(u, admin, { scenarId: druha.id })).statusCode).toBe(409);
   expect((await getDiploZapas(zapas.id))?.scenarId).toBe(prvni.id);
 });
+
+// Uživatel 5. 10. 2026: GM upravuje konfiguraci zápasu jako admin; když
+// v sestavě dá šedou jinému, po uložení práva ztratí a má je nový GM.
+it("GM upravuje zápas; předáním šedé práva přejdou na nového GM", async () => {
+  const { zapas, sestava } = await zapasOsmi("diplomacie");
+  const gm = await klient("h7", false);
+  const hrac = await klient("h1", false);
+  const put = (sid: string, co: string, payload: object) => app.inject({ method: "PUT", url: `/api/zapas/${zapas.id}/${co}`, cookies: { sid }, payload });
+  expect((await put(hrac, "nastaveni", { populace: 150 })).statusCode).toBe(403);
+  expect((await put(gm, "nastaveni", { populace: 150 })).statusCode).toBe(200);
+  expect((await put(gm, "nazev-lobby", { nazevLobby: "GM lobby" })).statusCode).toBe(200);
+  const predano = sestava.map((s) => (s.hracId === "h1" ? { ...s, hracId: "h7" } : s.hracId === "h7" ? { ...s, hracId: "h1" } : s));
+  expect((await put(gm, "sestava", { sestava: predano })).statusCode).toBe(200);
+  expect((await getDiploZapas(zapas.id))!.gmHracId).toBe("h1");
+  expect((await put(gm, "nastaveni", { populace: 200 })).statusCode).toBe(403);
+  expect((await put(hrac, "nastaveni", { populace: 200 })).statusCode).toBe(200);
+});

@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { parseJoinUri, type LobbyUriError } from "../../aoe/lobbyUri.js";
 import { MAX_DELKA_ZPRAVY, pridejZpravu, smazZpravu, upravZpravu } from "../../db/chat.js";
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
@@ -31,6 +31,17 @@ import { stejnyVitez, strany } from "../../shared/strany.js";
 import { BARVY, TYMY, type Barva, type HledaniLobbyVysledek, type RezimId, type SestavaVstup, type Tym, type Vitez } from "../../shared/types.js";
 import { HttpError, requireAdmin, requireId, requireUser } from "../guards.js";
 import { prectiNastaveniLobby } from "./kontrolaLobby.js";
+
+/**
+ * Úpravu zápasu (ozubené kolečko) smí admin, a koho pustí mód akce
+ * (háček `smiUpravitZapas` — GM Diplomacie svého běžícího zápasu).
+ */
+export async function requireUpravce(request: FastifyRequest, zapasId: number): Promise<string> {
+  const hracId = await requireUser(request);
+  if ((await getPlayer(hracId))?.jeAdmin) return hracId;
+  if (await rezimAkce(await rezimZapasu(zapasId)).smiUpravitZapas(zapasId, hracId)) return hracId;
+  throw new HttpError(403, "Zápas smí upravit jen Rob nebo GM zápasu.");
+}
 
 /** Nejdelší jméno lobby, které hra vezme. */
 const MAX_DELKA_NAZVU_LOBBY = 40;
@@ -287,8 +298,8 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   // tohohle zápasu, jeho jméno a jeho sestava. Změny přijdou všem přes SSE;
   // hostovi se propíšou do okna Create Lobby, kontrola lobby je hlídá.
   app.put("/api/zapas/:id/nastaveni", async (request) => {
-    await requireAdmin(request);
     const zapasId = requireId(request);
+    await requireUpravce(request, zapasId);
     const { zapas } = await nactiNeboSelzi(zapasId);
     if (zapas.stav === "zruseny") throw new HttpError(409, "Zrušený zápas se neupravuje.");
     await setNastaveniZapasu(zapasId, prectiNastaveniLobby(request.body));
@@ -297,8 +308,8 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   });
 
   app.put("/api/zapas/:id/nazev-lobby", async (request) => {
-    await requireAdmin(request);
     const zapasId = requireId(request);
+    await requireUpravce(request, zapasId);
     const { zapas } = await nactiNeboSelzi(zapasId);
     if (zapas.stav === "zruseny") throw new HttpError(409, "Zrušený zápas se neupravuje.");
     const nazev = String((request.body as { nazevLobby?: unknown })?.nazevLobby ?? "").trim();
@@ -310,8 +321,8 @@ export function registerMatchRoutes(app: FastifyInstance, deps: MatchDeps): void
   });
 
   app.put("/api/zapas/:id/sestava", async (request) => {
-    await requireAdmin(request);
     const zapasId = requireId(request);
+    await requireUpravce(request, zapasId);
     const { zapas } = await nactiNeboSelzi(zapasId);
     if (zapas.stav !== "bezi") throw new HttpError(409, `Zápas je ve stavu „${zapas.stav}“, sestava se už nemění.`);
     const rezim = await rezimZapasu(zapasId);

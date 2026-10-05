@@ -23,7 +23,7 @@ import { ZNAK_ROLE } from "./znaky.js";
 const POPIS_STAVU = { priprava: "Příprava", losovano: "Losováno", rozeslano: "Rozesláno" } as const;
 
 /** Pult GM (spec §8.1). Nic si nedrží lokálně — všechno je ve stavu ze serveru. */
-export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploData; hlidej: Hlidej }) {
+export function PultGm({ zapas, data, hlidej, onUpravit }: { zapas: ZapasView; data: DiploData; hlidej: Hlidej; onUpravit?: () => void }) {
   const [pracuje, setPracuje] = useState(false);
   const [ptaSeNaZpet, setPtaSeNaZpet] = useState(false);
   // Hráč pod kurzorem (řádek tabulky nebo start na mapě): mapa ukáže jeho
@@ -73,6 +73,13 @@ export function PultGm({ zapas, data, hlidej }: { zapas: ZapasView; data: DiploD
         <img className="znak-role" src={ZNAK_ROLE.gm} alt="GM" width={26} height={26} />
         <h3>Pult GM</h3>
         <span className="stav-diplo" key={d.stav}>{POPIS_STAVU[d.stav]}</span>
+        {/* GM upravuje konfiguraci zápasu jako admin (uživatel 5. 10. 2026);
+            předá-li v sestavě šedou jinému, práva po uložení přejdou na něj. */}
+        {onUpravit ? (
+          <button type="button" className="upravit-zapas" data-testid="gm-upravit-zapas" title="Upravit zápas (sestava, nastavení lobby, verze scénáře)" aria-label="Upravit zápas" onClick={onUpravit}>
+            ⚙
+          </button>
+        ) : null}
       </header>
       <Zakryti popisek="Pult GM — klikni pro odkrytí" rub={<RubKarty />} pamet={`diplo-pult-${zapas.id}`}>
         {/* Na širokém displeji mapa vlevo a pult vpravo (uživatel 3. 10. 2026),

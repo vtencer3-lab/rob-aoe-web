@@ -38,6 +38,12 @@ export interface RezimAkce {
    */
   smiMluvitDoZapasu(zapasId: number, hracId: string): Promise<boolean>;
   /**
+   * Smí tenhle hráč upravit zápas (nastavení lobby, jméno, sestavu) jako
+   * admin? Admina se jádro neptá. Právo se ptá při každém požadavku, takže
+   * kdo ho sestavou předá (Diplomacie: šedou jinému), tím o něj přijde.
+   */
+  smiUpravitZapas(zapasId: number, hracId: string): Promise<boolean>;
+  /**
    * Kdo má být hostem lobby, rozhoduje-li o tom mód (Diplomacie: GM na
    * šedé). Null = vybere jádro (nejvíc odehraných her, `sestavSedadla`).
    */
@@ -53,6 +59,7 @@ const klasicky: RezimAkce = {
   doplnStav: async () => undefined,
   rediguj: (rezim) => rezim,
   smiMluvitDoZapasu: async () => false,
+  smiUpravitZapas: async () => false,
   hostSestavy: () => null,
 };
 

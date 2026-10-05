@@ -3,7 +3,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { jeUnikatniKonflikt } from "../db/chyby.js";
 import { getAktivniAkce, setNastaveniLobby } from "../db/events.js";
 import { getZapas, setNastaveniZapasu } from "../db/matches.js";
-import { HttpError, requireAdmin, requireId, requireUser } from "../http/guards.js";
+import { HttpError, requireId, requireUser } from "../http/guards.js";
+import { requireUpravce } from "../http/routes/matches.js";
 import { broadcastAkce } from "../realtime/akceStav.js";
 import { config } from "../config.js";
 import { souhrnSondy, type SondaScenare } from "../shared/diplomacie/hra.js";
@@ -89,12 +90,12 @@ export function registerDiplomacieRoutes(app: FastifyInstance, deps: DiploDeps):
   // Přepínače pod mapou pultu: krále a relikvie z běžící hry ukázat, nebo ne
   // (platí i pro overlaye do OBS). Smí jen GM zápasu, v každém stavu.
   // Na které verzi scénáře zápas pojede (uživatel 5. 10. 2026): admin ji
-  // vybere v úpravě zápasu z rozebraných verzí. Jen v přípravě — po rozdání
+  // (nebo GM zápasu) vybere v úpravě zápasu z rozebraných verzí. Jen v přípravě — po rozdání
   // rolí už web počítá pravidla k otisknuté verzi. S verzí se přepíše
   // i nastavení lobby zápasu, ať kontrola lobby hlídá tu správnou.
   app.post("/api/diplo/zapas/:id/scenar", async (request) => {
-    await requireAdmin(request);
     const zapasId = requireId(request);
+    await requireUpravce(request, zapasId);
     const diplo = await getDiploZapas(zapasId);
     if (!diplo) throw new HttpError(404, "Tohle není zápas Diplomacie.");
     if (diplo.stav !== "priprava") throw new HttpError(409, "Role už jsou rozdané — verzi scénáře jde změnit jen v přípravě.");

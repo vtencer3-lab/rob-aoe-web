@@ -11,6 +11,8 @@ export interface KontextZapasu {
   stav: AkceStavPayload;
   ja: string | null;
   hlidej: Hlidej;
+  /** Otevře úpravu zápasu (ozubené kolečko) — jádro ji dá, jen když to mód dovolí (`smiUpravitZapas`). */
+  onUpravitZapas?: () => void;
 }
 
 /** Co mód přidá do obrazovek jádra (spec §4.1 H9). Klasický večer nic. */
@@ -39,6 +41,11 @@ export interface RezimKlienta {
    * háčkem (`RezimAkce.smiMluvitDoZapasu`).
    */
   smiMluvitDoZapasu?(p: KontextZapasu): boolean;
+  /**
+   * Smí divák upravit zápas jako admin (Diplomacie: GM svého běžícího
+   * zápasu)? Jen nabídka okna — právo hlídá server stejnojmenným háčkem.
+   */
+  smiUpravitZapas?(p: KontextZapasu): boolean;
   /**
    * Sekce módu na stránce akce pod zápasy — pro každého, i bez přihlášení
    * (Diplomacie: pravidla hry s mapou, uživatel 4. 10. 2026).

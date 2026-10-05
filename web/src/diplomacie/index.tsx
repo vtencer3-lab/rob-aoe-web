@@ -15,10 +15,10 @@ export const diplomacieKlient: RezimKlienta = {
   stitek: () => "Diplomacie",
   // Overlaye do OBS (uživatel 3. 10. 2026): `…/obs/mapa?klic=…`, `…/obs/tabulka?klic=…`.
   stranky: { "/obs/mapa": () => <ObsMapa />, "/obs/tabulka": () => <ObsTabulka />, "/obs/karta": () => <ObsKarta /> },
-  kartaHrace: ({ zapas, stav, ja, hlidej }) => {
+  kartaHrace: ({ zapas, stav, ja, hlidej, onUpravitZapas }) => {
     if (!stav.rezim || !ja) return null;
     const d = diploZapasu(stav.rezim.data, zapas.id);
-    return d?.gmHracId === ja ? <PultGm zapas={zapas} data={stav.rezim.data} hlidej={hlidej} /> : <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} hlidej={hlidej} />;
+    return d?.gmHracId === ja ? <PultGm zapas={zapas} data={stav.rezim.data} hlidej={hlidej} onUpravit={onUpravitZapas} /> : <KartaRole zapas={zapas} data={stav.rezim.data} ja={ja} hlidej={hlidej} />;
   },
   // Verze, kterou zápas hraje (otisknutá při založení), ne nutně ta aktivní:
   // host musí mít v lobby přesně tu, ke které web počítá pravidla.
@@ -39,6 +39,8 @@ export const diplomacieKlient: RezimKlienta = {
   sekceAkce: (stav) => (stav.rezim?.id === "diplomacie" ? <PravidlaAkce data={stav.rezim.data} /> : null),
   // GM „svolává všechny“ (uživatel 2. 10. 2026): push-to-talk v chatu své
   // karty — jen dokud zápas běží, stejně jako háček na serveru.
+  // GM upravuje svůj zápas (uživatel 5. 10. 2026) — za stejných podmínek jako mluví.
+  smiUpravitZapas: (p) => diplomacieKlient.smiMluvitDoZapasu!(p),
   smiMluvitDoZapasu: ({ zapas, stav, ja }) => zapas.stav === "bezi" && Boolean(stav.rezim && ja) && diploZapasu(stav.rezim!.data, zapas.id)?.gmHracId === ja,
   // Verze rozebrané před úkolem 22 podmínky vítězství nemají — pak null
   // a panel napíše „podle scénáře“.
