@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AI_OBTIZNOSTI, doplnNastaveni, type PoznatekLobby as _PL, type PreLobbyZeHry, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type PoznatekLobby } from "./lobbyKontrola.js";
+import { AI_OBTIZNOSTI, doplnNastaveni, type PoznatekLobby as _PL, type PreLobbyZeHry, lobbyVPoradku, ODKRYTI_MAPY, REZIM_EMPIRE_WARS, REZIMY, SUROVINY, velikostProHrace, VELIKOSTI, VITEZSTVI, VYCHOZI_NASTAVENI, zkontrolujLobby, type NastaveniZeHry, type PoznatekLobby } from "./lobbyKontrola.js";
 import { nazevMapy } from "./mapy.js";
 import type { Barva, Tym } from "./types.js";
 
@@ -24,6 +24,11 @@ function lobby(cast: Partial<PoznatekLobby> = {}): PoznatekLobby {
     nastaveni: podleOcekavani,
     ...cast,
   };
+}
+
+/** Lobby se stejnou sestavou, jen s nastavením přepsaným o `n`. */
+function lobbySNastavenim(n: Partial<NastaveniZeHry>): PoznatekLobby {
+  return lobby({ nastaveni: { ...podleOcekavani, ...n } });
 }
 
 const sestava = [u(HOST, 1, 1, "Trokner"), u(JA, 0, 2, "Jouki")];
@@ -240,7 +245,8 @@ describe("REZIMY", () => {
     expect(REZIMY[0]).toBe("Random Map");
     expect(REZIMY[1]).toBe("Regicide");
     expect(REZIMY[2]).toBe("Death Match");
-    expect(REZIMY[3]).toBe("Scenario");
+    // Hra té položce říká „Custom Scenario“ (snímek lobby 1. 10. 2026).
+    expect(REZIMY[3]).toBe("Custom Scenario");
     expect(REZIMY[5]).toBe("King of the Hill");
     expect(REZIMY[6]).toBe("Wonder Race");
     expect(REZIMY[7]).toBe("Defend the Wonder");
@@ -280,6 +286,12 @@ describe("číselníky nastavení", () => {
     expect(VITEZSTVI[7]).toBe("Time Limit");
     expect(VITEZSTVI[8]).toBe("Score");
     expect(VITEZSTVI[11]).toBe("Last Man Standing");
+  });
+
+  // Scénářové lobby posílají v options[81] vždycky 0 (živá sonda 12 lobby,
+  // 1. 10. 2026): Victory v nich hra nenabízí, určuje ho scénář.
+  it("vítězství 0 je „podle scénáře“", () => {
+    expect(VITEZSTVI[0]).toBe("Podle scénáře");
   });
 
   it("suroviny znají i Random", () => {
@@ -433,5 +445,73 @@ describe("závažnost pre-lobby", () => {
   it("Private lobby je chyba", () => {
     const k = zkontrolujLobby(sestava, doplnNastaveni(null), lobby({ preLobby: pre({ viditelnost: 0 }) }));
     expect(k.find((x) => x.klic === "viditelnost")).toMatchObject({ stav: "spatne" });
+  });
+});
+
+// Game Mode Scenario (options[5] = 3): mapa z lobby je jen zbytek po
+// předchozí volbě, takže se u scénáře nekontroluje — jméno souboru scénáře
+// (options[38]) nahradí roli mapy a jiná verze téhož scénáře dostane vlastní
+// hlášku (seznam nese každou neaktivní verzi, i novější — proto „jiná“).
+describe("scénář", () => {
+  const ocekavane = { ...VYCHOZI_NASTAVENI, rezim: 3, mapaId: 10875, scenar: "Diplomacie LLC v2.aoe2scenario", scenarStarsi: ["Diplomacie LLC v1.aoe2scenario"] };
+  const radek = (scenar: string | null | undefined) =>
+    zkontrolujLobby(sestava, ocekavane, lobbySNastavenim({ rezim: 3, mapaId: 10901, scenar })).find((k) => k.klic === "scenar");
+
+  it("shoda je zelená", () => {
+    expect(radek("Diplomacie LLC v2.aoe2scenario")).toMatchObject({ stav: "ok", sekce: "hlavni", text: "Scénář: Diplomacie LLC v2.aoe2scenario" });
+  });
+  it("jiná verze téhož scénáře je červená a řekne to", () => {
+    expect(radek("Diplomacie LLC v1.aoe2scenario")).toMatchObject({ stav: "spatne", text: "Scénář: v lobby je jiná verze Diplomacie LLC v1.aoe2scenario, má být Diplomacie LLC v2.aoe2scenario" });
+  });
+  it("jiný soubor je červený", () => {
+    expect(radek("Jiny.aoe2scenario")).toMatchObject({ stav: "spatne", text: "Scénář: v lobby je Jiny.aoe2scenario, má být Diplomacie LLC v2.aoe2scenario" });
+  });
+  it("chybějící jméno je červené", () => {
+    expect(radek(null)).toMatchObject({ stav: "spatne", text: "Scénář: hra neposlala jméno scénáře, má být Diplomacie LLC v2.aoe2scenario" });
+  });
+  it("u scénáře se mapa nekontroluje", () => {
+    const k = zkontrolujLobby(sestava, ocekavane, lobbySNastavenim({ rezim: 3, mapaId: 10901, scenar: "Diplomacie LLC v2.aoe2scenario" }));
+    expect(k.find((r) => r.klic === "mapa")).toBeUndefined();
+  });
+  it("bez očekávaného scénáře řádek není", () => {
+    const k = zkontrolujLobby(sestava, { ...VYCHOZI_NASTAVENI }, lobbySNastavenim({ scenar: "X.aoe2scenario" }));
+    expect(k.find((r) => r.klic === "scenar")).toBeUndefined();
+  });
+
+  // V Custom Scenario hra v lobby Map Size nenabízí — options[8] nese
+  // skutečnou velikost ze scénáře (sonda 1. 10. 2026) — ne vždy: 2. 10. 2026
+  // hlásila lobby s LLC (220 dílců) „Tiny (2)“. Velikost určuje scénář,
+  // hostitel ji nezmění, takže řádek je vždy jen informace: velikost
+  // z rozboru, a když rozbor není, to, co hlásí lobby.
+  it("velikost ve scénářové lobby je jen informace podle rozboru, nikdy křížek", () => {
+    const seScenarem = { ...ocekavane, velikost: 220 };
+    const k = zkontrolujLobby(sestava, seScenarem, lobbySNastavenim({ rezim: 3, velikost: 120, scenar: ocekavane.scenar }));
+    expect(k.find((r) => r.klic === "velikost")).toMatchObject({ stav: "jedno", sekce: "hlavni", text: "Velikost: Large (8) (určuje scénář)" });
+    expect(lobbyVPoradku(k)).toBe(true);
+  });
+  it("bez velikosti z rozboru se velikost jen vypíše", () => {
+    const k = zkontrolujLobby(sestava, { ...ocekavane, velikost: null }, lobbySNastavenim({ rezim: 3, velikost: 240, scenar: ocekavane.scenar }));
+    expect(k.find((r) => r.klic === "velikost")).toMatchObject({ stav: "jedno", sekce: "hlavni", text: "Velikost: Giant (určuje scénář)" });
+    expect(lobbyVPoradku(k)).toBe(true);
+  });
+  // Victory hra ve scénářové lobby nenabízí a v options[81] posílá 0 —
+  // očekávaná hodnota je tu bezpředmětná a nikdy nesmí být křížek.
+  it("Victory určuje scénář, ať je očekávané cokoliv", () => {
+    const k = zkontrolujLobby(sestava, { ...ocekavane, vitezstvi: 1 }, lobbySNastavenim({ rezim: 3, vitezstvi: 0, scenar: ocekavane.scenar }));
+    expect(k.find((r) => r.klic === "vitezstvi")).toMatchObject({ stav: "jedno", sekce: "hlavni", text: "Victory: určuje scénář" });
+    expect(lobbyVPoradku(k)).toBe(true);
+  });
+  // Team Positions dává scénář, v lobby se nastavit nedá (uživatel 3. 10. 2026).
+  it("Team Positions ve scénáři je jen informace, mimo scénář se porovnává", () => {
+    const k = zkontrolujLobby(sestava, { ...ocekavane, teamPositions: false }, lobbySNastavenim({ rezim: 3, teamPositions: true, scenar: ocekavane.scenar }));
+    expect(k.find((r) => r.klic === "teamPositions")).toMatchObject({ stav: "jedno", text: "Team Positions: zapnuto (určuje scénář)" });
+    expect(lobbyVPoradku(k)).toBe(true);
+    const mimo = zkontrolujLobby(sestava, { ...ocekavane, rezim: 0, teamPositions: false }, lobbySNastavenim({ rezim: 0, teamPositions: true }));
+    expect(mimo.find((r) => r.klic === "teamPositions")).toMatchObject({ stav: "spatne" });
+  });
+  it("mimo scénář zůstává velikost podle počtu hráčů a Victory se porovnává", () => {
+    const k = zkontrolujLobby(sestava, { ...VYCHOZI_NASTAVENI, velikost: null, vitezstvi: 1 }, lobbySNastavenim({ velikost: 220, vitezstvi: 0 }));
+    expect(k.find((r) => r.klic === "velikost")).toMatchObject({ stav: "spatne", text: "Velikost: Large (8), má být Tiny (2)" });
+    expect(k.find((r) => r.klic === "vitezstvi")).toMatchObject({ stav: "spatne", text: "Victory: Podle scénáře, má být Conquest" });
   });
 });

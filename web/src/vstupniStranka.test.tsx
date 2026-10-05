@@ -52,3 +52,16 @@ it("neznámá cesta vede na hlavní aplikaci, ne na právní stránku", () => {
   expect(vstupniStranka("/").type).toBe(App);
   expect(vstupniStranka("/neco-jineho").type).toBe(App);
 });
+
+// Overlaye Diplomacie do OBS jsou samostatné stránky módu (háček `stranky`),
+// ne hlavní aplikace: žádná přihlašovací obrazovka, jen průhledná stránka.
+it("/obs/mapa a /obs/tabulka jsou stránky módu, ne hlavní aplikace", () => {
+  vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+  for (const cesta of ["/obs/mapa", "/obs/tabulka/"]) {
+    const { container, unmount } = render(vstupniStranka(cesta));
+    expect(container.textContent).toBe("");
+    expect(document.documentElement).toHaveClass("obs");
+    unmount();
+    expect(document.documentElement).not.toHaveClass("obs");
+  }
+});

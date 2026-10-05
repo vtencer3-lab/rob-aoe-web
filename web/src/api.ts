@@ -1,5 +1,5 @@
 import type { KontrolaLobbyVysledek, NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
-import type { AkceStavPayload, HledaniLobbyVysledek, SestavaVstup, Vitez } from "../../src/shared/types.js";
+import type { AkceStavPayload, HledaniLobbyVysledek, RezimId, SestavaVstup, Vitez } from "../../src/shared/types.js";
 import { cesta } from "./cesty.js";
 
 export interface Me {
@@ -12,9 +12,12 @@ export interface Me {
    * neposílá a Steam cesta je ta, která tu byla vždycky.
    */
   maMicrosoft?: boolean;
+  /** Admin nebo autor scénáře Diplomacie (AUTORI_SCENARE). */
+  smiNahratScenar?: boolean;
 }
 
-async function json<T>(res: Response): Promise<T> {
+/** Odpověď serveru jako JSON; chybový stav se stane výjimkou s jeho hláškou. Sdílí ho i `diplomacie/api.ts`. */
+export async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const telo = (await res.json().catch(() => ({ chyba: "Neznámá chyba." }))) as { chyba?: string };
     throw new Error(telo.chyba ?? `Server odpověděl ${res.status}.`);
@@ -35,11 +38,11 @@ export const api = {
   odebratZkusebni: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/zkusebni-hraci`), { method: "DELETE" }).then((r) => json<{ odebrano: number }>(r)),
   akce: () => fetch(cesta("/api/akce")).then((r) => json<AkceStavPayload>(r)),
-  vytvoritAkce: (nazev: string) =>
+  vytvoritAkce: (nazev: string, rezim: RezimId = "klasicky") =>
     fetch(cesta("/api/akce"), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ nazev }),
+      body: JSON.stringify({ nazev, rezim }),
     }).then((r) => json<{ akce: { id: number } }>(r)),
   akceStav: (akceId: number, stav: string) =>
     fetch(cesta(`/api/akce/${akceId}/stav`), {
@@ -103,7 +106,7 @@ export const api = {
   /** Sada 7TV emotů Robova kanálu (server ji hodinu drží). */
   emoty: () => fetch(cesta("/api/emoty")).then((r) => json<{ emoty: { jmeno: string; url: string; siroky: boolean; nulovaSirka: boolean }[] }>(r)),
   /** Push-to-talk admina: jeden kousek nahrávky (nebo značka konce) pro účastníky zápasu. */
-  hlas: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string }) =>
+  hlas: (zapasId: number, telo: { sezeni: string; poradi: number; konec?: boolean; data?: string; mime?: string; zesileni?: number }) =>
     fetch(cesta(`/api/zapas/${zapasId}/hlas`), {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -117,6 +120,9 @@ export const api = {
     fetch(cesta(`/api/akce/${akceId}/pristi-heslo`), { method: "POST" }).then((r) => json<{ ok: true }>(r)),
   ulozitNastaveniLobby: (akceId: number) =>
     fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby/ulozit`), { method: "POST" }).then((r) => json<{ akce: { id: number } }>(r)),
+  /** „Reset nastavení“: výchozí hodnoty podle módu akce zná server. */
+  resetNastaveniLobby: (akceId: number) =>
+    fetch(cesta(`/api/akce/${akceId}/nastaveni-lobby/vychozi`), { method: "POST" }).then((r) => json<{ akce: { id: number } }>(r)),
   skladani: (akceId: number, sestava: SestavaVstup[]) =>
     fetch(cesta(`/api/akce/${akceId}/skladani`), {
       method: "PUT",

@@ -70,6 +70,21 @@ it("záložní řádek s názvem, heslem a číslem lobby v režii není", () =>
   expect(screen.queryByText("k7rm2xq9")).not.toBeInTheDocument();
 });
 
+// Mód akce (Diplomacie) ukáže adminovi stav zápasu pod hlavičkou karty —
+// v režii i v historii. Karta sama mód nezná: bez doplňku nekreslí nic navíc.
+it("doplněk módu se kreslí pod hlavičkou v režii i v historii, bez něj nic navíc", () => {
+  const doplnek = (z: ZapasView) => <span>MÓD #{z.poradi}</span>;
+  const rezie = render(<Rezie stav={stav} obsluha={props} doplnek={doplnek} />);
+  expect(screen.getByText("MÓD #7")).toBeInTheDocument();
+  expect(screen.getByText("MÓD #7").compareDocumentPosition(screen.getByTestId("zapas-hlavicka"))).toBe(Node.DOCUMENT_POSITION_PRECEDING);
+  rezie.unmount();
+  const historie = render(<HistorieZapasu stav={{ ...stav, zapasy: [{ ...zapas, stav: "dohrano" }] }} doplnek={doplnek} />);
+  expect(screen.getByText("MÓD #7")).toBeInTheDocument();
+  historie.unmount();
+  render(<Rezie stav={stav} obsluha={props} />);
+  expect(document.querySelector(".doplnek-modu")).toBeNull();
+});
+
 it("bez čísla lobby spectate vůbec nenabízí", () => {
   const bez = { ...stav, zapasy: [{ ...zapas, lobbyId: null, spectatorUri: null }] };
   render(<Rezie stav={bez} obsluha={props} />);
@@ -153,6 +168,8 @@ const zruseny: AkceStavPayload = {
 it("u dohraného zápasu řekne, kdo vyhrál", () => {
   render(<HistorieZapasu stav={dohrany} obsluha={props} />);
   expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhrál modrý tým");
+  // Tým se sdílenou barvou ji ve větě nese jako čtvereček.
+  expect(screen.getByText("modrý tým").querySelector(".swatch")).toHaveClass("barva-1");
 });
 
 // Spectate, nápověda pro zamrzlou lobby i Zrušit patří běžícímu zápasu. Po
@@ -326,6 +343,76 @@ it("dokud se nic nedohrálo, historie se nevykreslí vůbec", () => {
   const { container } = render(<HistorieZapasu stav={stav} obsluha={props} />);
   expect(container).toBeEmptyDOMElement();
   expect(screen.queryByRole("heading", { name: /historie zápasů/i })).not.toBeInTheDocument();
+});
+
+// Aliance v Diplomacii i ve FFA vznikají až ve hře: u zápasu s víc než dvěma
+// stranami jde zaškrtat, kdo všechno vyhrál. Ve 2v2 to nemá smysl — tam jsou
+// strany dvě a vítěz je jedna z nich.
+const ffa: ZapasView = {
+  ...zapas,
+  ucastnici: [
+    { hracId: "a", alias: "TenceR", platformaJmeno: null, tym: 0, barva: 1, civ: null, jeHost: true, poradi: 0, kliknulPripojit: null },
+    { hracId: "b", alias: "Pepa_CZ", platformaJmeno: null, tym: 0, barva: 2, civ: null, jeHost: false, poradi: 1, kliknulPripojit: null },
+    { hracId: "c", alias: "Marek", platformaJmeno: null, tym: 0, barva: 3, civ: null, jeHost: false, poradi: 2, kliknulPripojit: null },
+  ],
+};
+
+it("u zápasu se třemi stranami jde zaškrtat víc vítězů a uložit je v pořadí slotů", () => {
+  const onVysledek = vi.fn();
+  render(<Rezie stav={{ ...stav, zapasy: [ffa] }} obsluha={{ ...props, onVysledek }} />);
+  fireEvent.click(screen.getByRole("button", { name: /víc vítězů/i }));
+
+  const ulozit = screen.getByRole("button", { name: /uložit vítěze/i });
+  expect(ulozit).toBeDisabled();
+  // U každého jména je čtvereček barvy hráče (sdílená komponenta JmenoSBarvou).
+  expect(screen.getByRole("checkbox", { name: /marek/i }).closest("label")!.querySelector(".swatch")).toHaveClass("barva-3");
+  fireEvent.click(screen.getByRole("checkbox", { name: /marek/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /tencer/i }));
+  expect(ulozit).toBeEnabled();
+  fireEvent.click(ulozit);
+
+  expect(onVysledek).toHaveBeenCalledWith(1, { hraci: ["a", "c"] });
+  // Po uložení se zaškrtávátka schovají a tlačítka stran jsou zpátky.
+  expect(screen.queryByRole("button", { name: /uložit vítěze/i })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /vyhrál marek/i })).toBeInTheDocument();
+});
+
+it("z výběru víc vítězů se dá couvnout, aniž se něco zapíše", () => {
+  const onVysledek = vi.fn();
+  render(<Rezie stav={{ ...stav, zapasy: [ffa] }} obsluha={{ ...props, onVysledek }} />);
+  fireEvent.click(screen.getByRole("button", { name: /víc vítězů/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /marek/i }));
+  fireEvent.click(screen.getByRole("button", { name: /zpět/i }));
+  expect(onVysledek).not.toHaveBeenCalled();
+  expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+});
+
+it("ve 2v2 volba víc vítězů není", () => {
+  render(<Rezie stav={stav} obsluha={props} />);
+  expect(screen.queryByRole("button", { name: /víc vítězů/i })).not.toBeInTheDocument();
+});
+
+it("i dohraný zápas se třemi stranami jde přepsat na víc vítězů", () => {
+  const onVysledek = vi.fn();
+  const dohranyFfa: AkceStavPayload = { ...stav, zapasy: [{ ...ffa, stav: "dohrano", vitez: { hracId: "b" } }] };
+  render(<HistorieZapasu stav={dohranyFfa} obsluha={{ ...props, onVysledek }} />);
+  fireEvent.click(screen.getByRole("button", { name: /změnit výsledek/i }));
+  fireEvent.click(screen.getByRole("button", { name: /víc vítězů/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /pepa_cz/i }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /marek/i }));
+  fireEvent.click(screen.getByRole("button", { name: /uložit vítěze/i }));
+  expect(onVysledek).toHaveBeenCalledWith(1, { hraci: ["b", "c"] });
+  expect(screen.getByRole("button", { name: /změnit výsledek/i })).toBeInTheDocument();
+});
+
+it("uložený výsledek s víc vítězi má větu v hlavičce a odznak u každého z nich", () => {
+  const dohranyFfa: AkceStavPayload = { ...stav, zapasy: [{ ...ffa, stav: "dohrano", vitez: { hraci: ["a", "c"] } }] };
+  render(<HistorieZapasu stav={dohranyFfa} obsluha={props} />);
+  expect(screen.getByTestId("zapas-hlavicka")).toHaveTextContent("dohráno — vyhráli TenceR a Marek");
+  expect([...screen.getByTestId("zapas-hlavicka").querySelectorAll(".swatch")].map((s) => s.className)).toEqual(["swatch barva-1", "swatch barva-3"]);
+  const odznaky = screen.getAllByTestId("odznak-vitez");
+  expect(odznaky.map((o) => o.closest("li")?.textContent)).toEqual([expect.stringContaining("TenceR"), expect.stringContaining("Marek")]);
+  expect(odznaky.some((o) => o.closest("li")?.textContent?.includes("Pepa_CZ"))).toBe(false);
 });
 
 // Ozubené kolečko u běžícího zápasu otevře úpravu; u dohraného není.

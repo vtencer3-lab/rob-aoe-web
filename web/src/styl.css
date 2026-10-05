@@ -36,6 +36,15 @@
   font-display: swap;
 }
 
+/* Zastávky přechodu, kterým se kreslí ražený kov tlačítek. Přechod
+   (`linear-gradient`) se sám prolínat neumí — mezi klidem a najetím
+   přeskakuje a tlačítko „blikne“. Barva ano, ale jen když prohlížeč ví, že
+   vlastnost barvou je; proto jsou zastávky registrované. Tlačítko si do nich
+   bere barvy z palety (`--kov-…` v `:root`) a přechází mezi nimi. */
+@property --kov-1 { syntax: "<color>"; inherits: false; initial-value: transparent; }
+@property --kov-2 { syntax: "<color>"; inherits: false; initial-value: transparent; }
+@property --kov-3 { syntax: "<color>"; inherits: false; initial-value: transparent; }
+
 /* Barvy jsou vytažené přímo z loga Brohemians (nástroj `nastroje/grafika/paleta.py`),
    ne odhadnuté. Proto do stránky logo zapadne, místo aby na ní leželo. */
 :root {
@@ -58,6 +67,20 @@
   /* Dřevo panelu: základ, na kterém drží zlaté linky rámu. */
   --drevo: #241610;
   --drevo-tmave: #160d08;
+  /* Ražený kov tlačítek shora dolů (světlá hrana, plocha, stín), v klidu
+     a pod kurzorem: tmavý pro běžná tlačítka, zlatý pro hlavní akci. */
+  --kov-tmavy-1: #4a2a1c;
+  --kov-tmavy-2: #2c1710;
+  --kov-tmavy-3: #200f0a;
+  --kov-tmavy-najeti-1: #5e3724;
+  --kov-tmavy-najeti-2: #3a1e14;
+  --kov-tmavy-najeti-3: #2a1410;
+  --kov-zlaty-1: #e2c47c;
+  --kov-zlaty-2: #c99a35;
+  --kov-zlaty-3: #9d7420;
+  --kov-zlaty-najeti-1: #e8cd88;
+  --kov-zlaty-najeti-2: #d2a53e;
+  --kov-zlaty-najeti-3: #a67c22;
 
   /* Významové barvy. Zelená a červená jsou ztlumené do teplé palety —
      signální odstíny z původního návrhu tu působily jako semafor. */
@@ -82,6 +105,27 @@
   --b7: #8d8d8d;
   --b8: #e67e22;
   color-scheme: dark;
+
+  /* Pohyb (docs/grafika.md „Pohyb“). Všechny přechody a animace berou čas
+     i křivku odsud — a čte je i skript (`pohyb.ts`), takže se ladí na jednom
+     místě. Krátké schválně: při streamu má být vidět, že se něco stalo, ne
+     čekat, až to dojede. */
+  --prechod-rychly: 140ms;   /* najetí, stisk, zaškrtnutí */
+  --prechod: 220ms;          /* vznik obsahu, okna, přepínače */
+  --prechod-skladani: 280ms; /* rozbalení a sbalení sekce */
+  --prechod-karta: 700ms;    /* otočení tajné karty, obě půlky dohromady (2. 10. 2026 zpomaleno z 460 ms — uživateli bylo moc rychlé) */
+  --krivka: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Kdo si nepřeje pohyb, dostane všechno naráz: nulová délka vypne přechody
+   i animace, které z proměnných berou čas, a `pohyb.ts` podle ní pohyb ze
+   skriptu vůbec nepustí. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --prechod-rychly: 0ms;
+    --prechod: 0ms;
+    --prechod-skladani: 0ms;
+    --prechod-karta: 0ms;
+  }
 }
 
 /* Malované pozadí je připnuté k oknu (fixed), takže při rolování stojí a
@@ -101,6 +145,27 @@ html.pozadi-nove {
   background-image: url(./assets/ui/pozadi-nove.webp);
 }
 /* Volba pozadí v záhlaví (debug): tři tlačítka, zvolené zlatě. */
+/* Overlaye do OBS (`/obs/mapa`, `/obs/tabulka`, Obs.tsx): průhledná stránka
+   bez scény a viněty — browser source ukáže jen mapu nebo tabulku. Mapa
+   vyplní menší stranu okna zdroje, tabulka má tmavý podklad kvůli čitelnosti
+   nad hrou. Velikost se ladí velikostí zdroje v OBS. */
+html.obs, html.obs.pozadi-puvodni, html.obs.pozadi-nove { background: transparent; }
+html.obs body::before { content: none; }
+.obs-overlay { max-width: none; margin: 0; padding: 0; }
+.obs-mapa .mapa-scenare.velka { --ram: 0px; width: min(100vw, 100vh); margin: 0; border: 0; border-image: none; }
+/* Tabulka v OBS na stejné dřevěné desce s rámem jako panely webu (uživatel
+   4. 10. 2026) — čitelná na jakémkoli pozadí vysílání. Rám a výplň z
+   pravidla panelů výš; tady jen písmo a žádný vnější okraj. */
+.obs-tabulka { font-size: 1.15rem; }
+/* Osobní karta hráče v OBS: deska s rámem, rozvržení jako na webu (mapa vlevo, cíle vpravo). */
+.obs-overlay.obs-karta { margin: 0; max-width: none; }
+.overlay-karty { margin: 0.6rem 0; }
+/* Most přes Streamer.bot v pultu GM (MostStreamerbot.tsx). */
+.most-streamerbot { margin-top: 0.8rem; text-align: left; }
+.most-streamerbot .most-tlacitka { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.most-streamerbot .postup-streamerbot { margin: 0.4rem 0; padding-left: 1.4rem; font-size: 0.92rem; }
+.obs-overlay.obs-tabulka { margin: 0; }
+.obs-tabulka .tabulka-roli { max-width: none; margin: 0; }
 .volba-pozadi { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
 .volba-pozadi > span { color: var(--tlumene); margin-right: 0.2rem; }
 .volba-pozadi > button { padding: 0.15rem 0.6rem; font-size: 0.75rem; }
@@ -160,7 +225,7 @@ header .logo {
      má zůstat vidět, že látka někde začíná. */
   margin: -0.5rem -60px 0 0;
   filter: drop-shadow(6px 8px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 22px rgba(0, 0, 0, 0.45));
-  transition: filter 0.2s;
+  transition: filter var(--prechod) ease;
 }
 header .logo img { display: block; width: 100%; height: auto; }
 /* Pod kurzorem štít o kousek prosvětlí — jinak by na něm nešlo poznat, že
@@ -327,7 +392,10 @@ header h1 {
    ostatní. Obojí má nahoře světlou hranu a dole stín, jako ražený kov. */
 a.tlacitko, button.tlacitko, .cta, button.vytvorit, button.plus {
   display: inline-block;
-  background: linear-gradient(#e2c47c, #c99a35 45%, #9d7420);
+  --kov-1: var(--kov-zlaty-1);
+  --kov-2: var(--kov-zlaty-2);
+  --kov-3: var(--kov-zlaty-3);
+  background: linear-gradient(var(--kov-1), var(--kov-2) 45%, var(--kov-3));
   color: #23150a;
   font-family: "Cinzel", Georgia, serif;
   font-weight: 800;
@@ -343,14 +411,24 @@ a.tlacitko, button.tlacitko, .cta, button.vytvorit, button.plus {
     0 2px 4px rgba(0, 0, 0, 0.55);
 }
 /* Specifičtější než `button:hover:enabled` níž — jinak by zlaté tlačítko při
-   najetí zhnědlo do barvy běžných tlačítek. */
-a.tlacitko:hover, .cta:hover,
-button.tlacitko:hover:enabled,
+   najetí zhnědlo do barvy běžných tlačítek. Holé `.cta:hover` stačí odkazu,
+   tlačítku ne: `<button class="cta">` (pult GM, „Rozeslat role“) mělo proti
+   obecnému pravidlu o třídu míň, takže pod kurzorem dostalo hnědé pozadí
+   běžného tlačítka a k němu tmavý nápis zlatého — vypadalo jako zakázané
+   (uživatel 2. 10. 2026). Proto je tu i `button.cta:hover:enabled`. A holé
+   `.cta:hover` se nesmí chytit zamčeného tlačítka ani odkazu
+   s `aria-disabled` — šedé zamčené pod kurzorem zezlátlo („Stáhnout
+   scénář“ ve správě scénáře, „Losovat“ v pultu GM). */
+a.tlacitko:hover, .cta:hover:not(:disabled):not([aria-disabled="true"]),
+button.tlacitko:hover:enabled, button.cta:hover:enabled,
 button.vytvorit:hover:enabled, button.plus:hover:enabled {
   /* Barva textu musí být řečená i tady: obecné pravidlo pro odkazy pod
      kurzorem je zesvětluje, a zlaté tlačítko je odkaz — nápis pak zbělal. */
   color: #23150a;
-  background: linear-gradient(#e8cd88, #d2a53e 45%, #a67c22);
+  --kov-1: var(--kov-zlaty-najeti-1);
+  --kov-2: var(--kov-zlaty-najeti-2);
+  --kov-3: var(--kov-zlaty-najeti-3);
+  background: linear-gradient(var(--kov-1), var(--kov-2) 45%, var(--kov-3));
   box-shadow:
     inset 0 1px 0 rgba(255, 245, 215, 0.8),
     inset 0 -2px 5px rgba(90, 50, 8, 0.5),
@@ -358,7 +436,10 @@ button.vytvorit:hover:enabled, button.plus:hover:enabled {
     0 2px 4px rgba(0, 0, 0, 0.55);
   filter: none;
 }
-.cta[aria-disabled="true"] {
+.cta[aria-disabled="true"], button.cta:disabled {
+  /* Zamčené zlaté tlačítko je šedé, ne jen průhlednější zlaté: to vypadalo
+     pořád jako hlavní akce. */
+  opacity: 1;
   background: linear-gradient(#3a2f22, #241c14);
   color: #7a6b52;
   border-color: #4a3a24;
@@ -384,7 +465,10 @@ a.tlacitko, button.tlacitko, .cta:not(.spectate) {
 }
 
 button:not(:where(.bez-vzhledu)) {
-  background: linear-gradient(#4a2a1c, #2c1710 60%, #200f0a);
+  --kov-1: var(--kov-tmavy-1);
+  --kov-2: var(--kov-tmavy-2);
+  --kov-3: var(--kov-tmavy-3);
+  background: linear-gradient(var(--kov-1), var(--kov-2) 60%, var(--kov-3));
   color: var(--zlato-svetle);
   border: 1px solid var(--zlato-tmave);
   border-radius: 3px;
@@ -400,10 +484,30 @@ button:not(:where(.bez-vzhledu)) {
     0 1px 2px rgba(0, 0, 0, 0.5);
 }
 button:hover:enabled:not(:where(.bez-vzhledu)) {
-  background: linear-gradient(#5e3724, #3a1e14 60%, #2a1410);
+  --kov-1: var(--kov-tmavy-najeti-1);
+  --kov-2: var(--kov-tmavy-najeti-2);
+  --kov-3: var(--kov-tmavy-najeti-3);
+  background: linear-gradient(var(--kov-1), var(--kov-2) 60%, var(--kov-3));
   border-color: var(--zlato);
 }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Pohyb tlačítek: najetí se prolne (kov přes registrované zastávky výš,
+   rámeček, záře, barva nápisu), zamčení a odemčení taky (průhlednost) a
+   stisk tlačítko lehce zamáčkne. Stisk jde přes `translate`/`scale`, ne
+   `transform`: ten některá tlačítka používají k usazení (křížek lišty,
+   záložka) a stisk by jim ho přepsal. */
+button:not(:where(.bez-vzhledu)), a.tlacitko, .cta {
+  transition:
+    --kov-1 var(--prechod-rychly) ease, --kov-2 var(--prechod-rychly) ease, --kov-3 var(--prechod-rychly) ease,
+    background-color var(--prechod-rychly) ease, border-color var(--prechod-rychly) ease, color var(--prechod-rychly) ease,
+    box-shadow var(--prechod-rychly) ease, opacity var(--prechod-rychly) ease, filter var(--prechod-rychly) ease,
+    translate var(--prechod-rychly) var(--krivka), scale var(--prechod-rychly) var(--krivka);
+}
+button:active:enabled:not(:where(.bez-vzhledu)), a.tlacitko:active, .cta:active:not([aria-disabled="true"]) { translate: 0 1px; scale: 0.98; }
+/* Tlačítka, která vypadají jako text (kopírování, jméno, řazení, odpověď
+   v chatu, položka našeptávače), se nezmenšují — u dlouhé cesty by se pod
+   prstem posunul celý řádek; stačí jim sednutí o pixel. */
+button.kopirovatelne:active:enabled, button.jmeno:active:enabled, button.razeni:active:enabled, button.odpoved-na:active:enabled, button.polozka:active:enabled { scale: none; }
 button:focus-visible, a.tlacitko:focus-visible, .cta:focus-visible {
   outline: 2px solid var(--zlato);
   outline-offset: 2px;
@@ -490,7 +594,7 @@ main > .prazdno::after {
 /* Rám panelu je devítidílný obrázek (`nastroje/grafika/devitidil.py`): rohy
    se nekreslí znovu, strany se opakují. Výplň drží `background-clip:
    padding-box`, aby tmavé dřevo nevykukovalo zpod průhledných rohů rámu. */
-.karta, .zapas, .host, .sprava-akce, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka {
+.karta, .zapas, .host, .sprava-akce, .sprava-scenare, .zalozeni-akce, .panel-prihlaseni, .pravni-stranka, .pravidla-akce, .obs-tabulka, .nahled-hracu, .obs-karta {
   border: 34px solid transparent;
   border-image: url(./assets/ui/ram.webp) 250 / 34px / 0 repeat;
   border-radius: 0;
@@ -570,21 +674,54 @@ main > .prazdno::after {
 .karta.barva-7 .hero, .host.barva-7 .hero { background: var(--b7); }
 .karta.barva-8 .hero, .host.barva-8 .hero { background: var(--b8); }
 
-.swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; }
-.barva-1 .swatch { background: var(--b1); }
-.barva-2 .swatch { background: var(--b2); }
-.barva-3 .swatch { background: var(--b3); }
-.barva-4 .swatch { background: var(--b4); }
-.barva-5 .swatch { background: var(--b5); }
-.barva-6 .swatch { background: var(--b6); }
-.barva-7 .swatch { background: var(--b7); }
-.barva-8 .swatch { background: var(--b8); }
+/* Čtvereček barvy hráče (`ZnakBarvy` v JmenoSBarvou.tsx). Barvu nese sám
+   (`.swatch.barva-N`), ne předek: karta hráče je `.karta.barva-N` a selektor
+   `.barva-N .swatch` by v ní přebarvil všechny čtverečky na barvu karty
+   (GM sedí na šedé — tabulka rolí kvůli tomu měla vlastní, těžší pravidla).
+   Velikost v em, ať sedí k písmu věty i nadpisu; tmavý obrys a zlatá linka
+   ho drží čitelný na tmavém dřevě i u tmavých barev. */
+.swatch { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 1.2em; height: 1.2em; border-radius: 2px; border: 1px solid var(--obrys); box-shadow: 0 0 0 1px color-mix(in srgb, var(--zlato) 40%, transparent); vertical-align: -0.25em; }
+/* Číslo barvy uvnitř (`data-cislo`, uživatel 3. 10. 2026): jako „pN“ ve hře.
+   Písmo Cinzel, ne Georgia: ta má minuskové číslice (3, 4, 5, 7, 9 klesají
+   pod účaří) a pětka ve čtverečku seděla níž než ostatní.
+   Světlé barvy (žlutá, oranžová) tmavé číslo bez stínu, jako na dlaždicích. */
+.swatch[data-cislo]::before { content: attr(data-cislo); font: 800 0.74em/1 "Cinzel", Georgia, serif; font-variant-numeric: lining-nums; color: #fff; text-shadow: 0 1px 1px var(--obrys); }
+.swatch.barva-4[data-cislo]::before, .swatch.barva-8[data-cislo]::before { color: var(--obrys); text-shadow: none; }
+.swatch.barva-1 { background: var(--b1); }
+.swatch.barva-2 { background: var(--b2); }
+.swatch.barva-3 { background: var(--b3); }
+.swatch.barva-4 { background: var(--b4); }
+.swatch.barva-5 { background: var(--b5); }
+.swatch.barva-6 { background: var(--b6); }
+.swatch.barva-7 { background: var(--b7); }
+.swatch.barva-8 { background: var(--b8); }
+/* Jméno se čtverečkem barvy (`JmenoSBarvou`): čtvereček stojí v levém
+   odsazení jména, ne jako samostatný prvek řádku — mezi odsazením a prvním
+   písmenem se řádek zalomit nemůže, takže čtvereček nikdy nezůstane sám na
+   konci řádku, a dlouhé jméno se přitom dál smí zalomit. Svisle sedí na
+   střed verzálek (v em, drží se písma). */
+.jmeno-s-barvou { position: relative; padding-left: 1.5em; }
+.jmeno-s-barvou > .swatch { position: absolute; left: 0.05em; top: 0.02em; }
 
 .zrcadlo { list-style: none; padding: 0; }
 .zrcadlo li { padding: 0.4rem 0; border-bottom: 1px solid rgba(216, 168, 58, 0.14); }
 .zaloha { color: var(--tlumene); font-size: 0.85rem; margin-top: 0.6rem; }
 .stavovy-radek { color: var(--tlumene); font-size: 0.85rem; margin: 0.3rem 0; }
 .rezie .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+
+/* Víc vítězů (aliance vzniklé až ve hře): zaškrtávátka u jmen místo tlačítek
+   stran. Zabere celý řádek ovládání; rám i výplň jen z palety. */
+.rezie .vic-vitezu {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 0.8rem 0.7rem;
+  border: 1px solid var(--zlato-tmave);
+  background: color-mix(in srgb, var(--zlato) 6%, transparent);
+}
+.rezie .vic-vitezu legend { padding: 0 0.4rem; color: var(--zlato-svetle); font-size: 0.85rem; }
+.rezie .vic-vitezu .vitezove { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+.rezie .vic-vitezu label { display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; }
 
 /* Nadpisy, které stojí přímo na malovaném pozadí (název akce, historie
    zápasů), drží jednu velikost — stejnou jako titulek zápasu pod nimi. Uvnitř
@@ -666,12 +803,12 @@ h2.nadpis-akce::after {
 /* Odstavec má vlastní spodní okraj, takže by se s tlačítkem srovnal
    krabicí, ne textem — a tlačítko by sedělo níž. */
 .skladani .hlavicka-sestavy .zaloha { margin: 0; }
-.skladani .pridat-ai { padding: 0.15rem 0.7rem; font-size: 0.8rem; }
+.skladani .pridat-ai, .skladani .zamichat-barvy { padding: 0.15rem 0.7rem; font-size: 0.8rem; }
 /* Pre-Lobby: okno „Create Lobby“ jako ve hře. Zakládání lobby je krok mimo
    běžné nastavování, tak stojí v modálním okně — okolí ztmavne a kliknutí
    vedle (nebo Escape) ho zavře. */
 .hlavicka-akce .prelobby-tlacitko { margin-left: auto; }
-.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); transition: background 280ms ease; }
+.prelobby-stin { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: rgba(4, 2, 1, 0.88); backdrop-filter: blur(3px); transition: background var(--prechod-skladani) ease; }
 .prelobby-okno {
   width: min(34rem, 100%);
   max-height: calc(100vh - 4rem);
@@ -684,6 +821,21 @@ h2.nadpis-akce::after {
     url(./assets/ui/drevo.webp) center / 380px repeat;
   background-origin: border-box;
 }
+/* Otevření a zavření okna: stín se prolne a okno přitom lehce doroste
+   (zavření obráceně). Otevření je animace při vzniku prvku. Zavření CSS samo
+   neumí — React okno z DOM odebere naráz — tak ho `sledujZaviraniOken`
+   (pohyb.ts) vrátí jako neživou kulisu s třídou `zavira`, nechá doběhnout
+   tuhle animaci a odklidí. Uvnitř kulisy se nic dalšího nehýbe: vrácením do
+   DOM by se animace vzniku jejích prvků pustily znovu. */
+.prelobby-stin { animation: stin-vznik var(--prechod) ease; }
+.prelobby-stin > * { animation: okno-vznik var(--prechod) var(--krivka); }
+@keyframes stin-vznik { from { opacity: 0; } }
+@keyframes okno-vznik { from { opacity: 0; scale: 0.96; translate: 0 0.4rem; } }
+.prelobby-stin.zavira { animation: stin-zanik var(--prechod) ease forwards; pointer-events: none; }
+.prelobby-stin.zavira > * { animation: okno-zanik var(--prechod) ease forwards; }
+.prelobby-stin.zavira > * * { animation: none !important; transition: none !important; }
+@keyframes stin-zanik { to { opacity: 0; } }
+@keyframes okno-zanik { to { opacity: 0; scale: 0.96; } }
 /* Nadpis nese pod sebou ozdobný oddělovač, takže je vyšší než sám text.
    Křížek se proto zarovnává k hornímu okraji — jinak by klesl pod nadpis. */
 .prelobby-okno .hlavicka-akce { margin-bottom: 0.8rem; align-items: flex-start; }
@@ -791,7 +943,7 @@ h2.nadpis-akce::after {
    kuželu od pozadí desky — soft light by neměl s čím míchat a spadl by na
    obyčejnou bílou placku. */
 .prihlaseni-volby a img {
-  transition: filter 280ms ease, transform 120ms ease;
+  transition: filter var(--prechod-skladani) ease, transform var(--prechod-rychly) ease;
 }
 .prihlaseni-volby:hover a img, .prihlaseni-volby:focus-within a img {
   filter: brightness(0.34) saturate(0.5);
@@ -818,7 +970,7 @@ h2.nadpis-akce::after {
   background: radial-gradient(circle, rgba(255, 255, 255, 0.33), rgba(255, 255, 255, 0.12) 45%, transparent 72%);
   mix-blend-mode: soft-light;
   opacity: 0;
-  transition: opacity 280ms ease;
+  transition: opacity var(--prechod-skladani) ease;
   /* Záře nesmí brát kliknutí ani hover, jinak by si erb bral pozornost sám. */
   pointer-events: none;
 }
@@ -833,14 +985,14 @@ h2.nadpis-akce::after {
 /* Couvne i okolí, ne jen druhý erb — jinak reflektor svítí do rozsvícené
    místnosti. Nadpis se ztlumí, deska dostane stín od krajů dovnitř. */
 .prihlaseni-okno h1 {
-  transition: filter 280ms ease;
+  transition: filter var(--prechod-skladani) ease;
 }
 .prihlaseni-okno:has(.prihlaseni-volby a:hover) h1,
 .prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) h1 {
   filter: brightness(0.5);
 }
 .prihlaseni-okno {
-  transition: box-shadow 280ms ease;
+  transition: box-shadow var(--prechod-skladani) ease;
 }
 .prihlaseni-okno:has(.prihlaseni-volby a:hover),
 .prihlaseni-okno:has(.prihlaseni-volby a:focus-visible) {
@@ -872,6 +1024,32 @@ h2.nadpis-akce::after {
 }
 .skladani .radek .odebrat { grid-column: 8; }
 .skladani .radek:active { cursor: grabbing; }
+/* Štítek slotu od módu akce (Diplomacie: „GM“ na šedé) leží přes spodní
+   hranu tlačítka barvy, ne vedle něj: vložený jako další položka mřížky by
+   posunul všechny sloupce o jeden. Proto dostane spolu s tlačítkem barvy
+   pevný řádek i sloupec (grid-area) — obě položky se umístí ještě před
+   automatickým rozmístěním a smějí se překrývat. Jen sloupec by nestačil:
+   auto-placement by štítek odsunul do nového řádku a stáhl tam i zbytek
+   řádku. Platí jen pro editovatelné řádky Skládání (.vybrany) — řádky jen ke
+   čtení (StranyZapasu, Rezie) mají barvu v prvním sloupci a nesmí se hnout.
+   Klik štítkem prochází na tlačítko pod ním. */
+.skladani .radek.vybrany > .volba-barva,
+.skladani .radek.vybrany > .popis-slotu { grid-area: 1 / 2; }
+.skladani .radek .popis-slotu {
+  justify-self: center;
+  align-self: center;
+  transform: translateY(0.95rem);
+  pointer-events: none;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+  border-radius: 2px;
+  color: var(--obrys);
+  background: var(--zlato-svetle);
+  border: 1px solid var(--zlato-stin);
+}
 .skladani .uchyt { color: rgba(216, 168, 58, 0.45); font-size: 0.9rem; letter-spacing: -0.2em; width: 1rem; }
 .skladani .nevybrani { margin-top: 0.8rem; opacity: 0.5; }
 .skladani .nevybrani:not(:empty)::before { content: "Nevybraní"; display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tlumene); padding: 0.2rem 0.2rem; }
@@ -940,6 +1118,7 @@ input, select {
   padding: 0.4rem 0.6rem;
   font-family: Georgia, "Times New Roman", serif;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(216, 168, 58, 0.12);
+  transition: border-color var(--prechod-rychly) ease, box-shadow var(--prechod-rychly) ease;
 }
 input:focus, select:focus { outline: none; border-color: var(--zlato); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.65), 0 0 0 2px rgba(216, 168, 58, 0.35); }
 /* Rozbalený seznam vykresluje prohlížeč mimo stránku, takže dědí jen barvy
@@ -966,6 +1145,7 @@ select { color-scheme: dark; accent-color: var(--zlato-tmave); }
   display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.45rem 0.3rem;
   background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 220, 150, 0.18); border-radius: 4px;
   color: var(--text); font: inherit; font-size: 0.85rem; cursor: pointer; text-shadow: none;
+  transition: background-color var(--prechod-rychly) ease, border-color var(--prechod-rychly) ease, box-shadow var(--prechod-rychly) ease, translate var(--prechod-rychly) var(--krivka), scale var(--prechod-rychly) var(--krivka);
 }
 .vyber-mapy .mapa:hover, .vyber-mapy .mapa:focus-visible { border-color: var(--zlato); background: rgba(80, 55, 20, 0.45); }
 .vyber-mapy .mapa.aktivni { border-color: var(--zlato); box-shadow: 0 0 0 2px var(--zlato-tmave) inset; background: rgba(120, 85, 30, 0.45); }
@@ -1014,14 +1194,16 @@ input[type="checkbox"], input[type="radio"] {
   border-radius: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
   cursor: pointer;
+  transition: border-color var(--prechod-rychly) ease, scale var(--prechod-rychly) var(--krivka);
 }
+input[type="checkbox"]:active:enabled, input[type="radio"]:active:enabled { scale: 0.9; }
 input[type="radio"] { border-radius: 50%; }
 input[type="checkbox"]::before {
   content: "";
   width: 0.62rem;
   height: 0.62rem;
   transform: scale(0);
-  transition: transform 0.08s ease-out;
+  transition: transform var(--prechod-rychly) var(--krivka);
   background: linear-gradient(#f6e3a6, var(--zlato));
   clip-path: polygon(14% 44%, 0 60%, 40% 100%, 100% 22%, 86% 8%, 38% 70%);
 }
@@ -1039,7 +1221,7 @@ input[type="radio"]::before {
   height: 0.5rem;
   border-radius: 50%;
   transform: scale(0);
-  transition: transform 0.08s ease-out;
+  transition: transform var(--prechod-rychly) var(--krivka);
   background: radial-gradient(circle at 35% 30%, #fdf0c4, var(--zlato));
 }
 input[type="radio"]:checked::before { transform: scale(1); }
@@ -1057,6 +1239,9 @@ input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
 /* Panel akce jako herní lobby: název vlevo, Ukončit vpravo, pod tím vlevo
    hráči (sestava) a vpravo Game Settings. */
 .hlavicka-akce { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
+/* Štítek módu Diplomacie v záhlaví akce — malý rámeček ve zlaté, ne další
+   nadpis: akce je pořád „Nastavení Lobby“, jen s jiným pravidlem sestavy. */
+.stitek-rezimu { font-family: "Cinzel", Georgia, serif; font-size: 0.75rem; color: var(--zlato); border: 1px solid var(--zlato-tmave); border-radius: 3px; padding: 0.15rem 0.5rem; }
 
 .sprava-akce .ovladani.ladeni { margin: 0 0 0.6rem; }
 .lobby-rozlozeni { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: stretch; }
@@ -1130,7 +1315,7 @@ button.kopirovatelne {
 }
 button.kopirovatelne:hover { background: rgba(216, 168, 58, 0.16); }
 button.kopirovatelne strong { color: var(--text); }
-.ikona-kopie { color: var(--tlumene); flex: none; }
+.ikona-kopie { color: var(--tlumene); flex: none; transition: color var(--prechod-rychly) ease; }
 button.kopirovatelne:hover .ikona-kopie { color: var(--akcent); }
 .toast {
   position: absolute;
@@ -1359,11 +1544,30 @@ button.odebrat:hover { color: var(--chyba); }
    zarovnání vypadalo varování odsazené jinak než zbytek seznamu. */
 .kontroly .znak { display: inline-block; width: 1.2rem; text-align: center; }
 .varovani { color: var(--varovani); }
+/* Šipka sbalovací sekce (Skladaci.tsx). Vlastní místo značky prohlížeče:
+   ta mezi ▶ a ▼ přeskakuje, tahle se otáčí spolu s tělem sekce. Při
+   zavírání nese `<details>` ještě `open` (tělo napřed sjede), proto šipku
+   vrací už `data-zavira`. Šířka i s mezerou je 1,06 em — tolik zabírala
+   značka prohlížeče, text hlavičky se nehne. */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before {
+  content: "";
+  display: inline-block;
+  width: 0.56em;
+  height: 0.62em;
+  margin-right: 0.5em;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  vertical-align: 0.07em;
+  transition: rotate var(--prechod-skladani) var(--krivka);
+}
+details[open]:not([data-zavira]) > summary::before { rotate: 90deg; }
 .dalsi-nastaveni { margin-top: 0.6rem; }
 .dalsi-nastaveni summary { cursor: pointer; color: var(--tlumene); }
 .dalsi-nastaveni summary .zaloha { margin: 0; }
 .dalsi-nastaveni .kontroly { font-size: 0.9rem; }
-/* Tělo sbalovací sekce; výšku mu animuje Skladaci (Web Animations). Vnořené
+/* Tělo sbalovací sekce; výšku mu animuje Skladaci (`useSbalovani`). Vnořené
    sekce v „Nastavení hry“ se odsadí, ať je vidět, co patří pod co. */
 .dalsi-nastaveni .skladaci-telo > .dalsi-nastaveni { margin-left: 1rem; }
 .dalsi-nastaveni .mrizka { margin-top: 0.5rem; }
@@ -1377,21 +1581,28 @@ button.odebrat:hover { color: var(--chyba); }
 .nastaveni-lobby select, .nastaveni-lobby input[type="number"] { color: var(--text); }
 
 /* Vyber civilizace s erbem (48 px) jako ve hre: tlacitko + vlastni seznam. */
-.vyber-civ { position: relative; }
-.vyber-civ-tlacitko { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; font-size: 1rem; font-family: "Cinzel", Georgia, serif; }
-.vyber-civ-tlacitko > span:first-of-type { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.vyber-civ-tlacitko .sipka { margin-left: auto; color: var(--tlumene); }
+/* Rozbalovací výběr s obrázky (`Rozbalovaci`): civilizace s erbem, hráč se
+   čtverečkem barvy. Vzhled konkrétního výběru nese třída obalu. */
+.rozbalovaci { position: relative; }
+.rozbalovaci-tlacitko { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 0.5rem; padding: 0.25rem 0.6rem 0.25rem 0.35rem; font-size: 1rem; font-family: "Cinzel", Georgia, serif; }
+.rozbalovaci-tlacitko > span:first-of-type { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rozbalovaci-tlacitko .sipka { margin-left: auto; color: var(--tlumene); }
 .vyber-civ .erb { height: 48px; width: auto; flex: none; }
-.vyber-civ-seznam {
+.rozbalovaci-seznam {
   position: absolute; z-index: 20; top: calc(100% + 4px); left: 0;
   /* Stejně široký jako tlačítko nad ním (sloupec 16,5 rem). */
   width: 100%; box-sizing: border-box; max-height: 26rem; overflow-y: auto;
   margin: 0; padding: 0.3rem; list-style: none;
   background: linear-gradient(rgba(34, 20, 14, 0.98), rgba(20, 12, 8, 0.99)); border: 1px solid var(--zlato-tmave); border-radius: 2px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
 }
-.vyber-civ-seznam li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 1.05rem; }
-.vyber-civ-seznam li:hover { background: rgba(216, 168, 58, 0.16); }
-.vyber-civ-seznam li.vybrana { background: linear-gradient(#e2c47c, #c99a35); color: #23150a; }
+/* Rozbalovací seznamy (civilizace, našeptávač chatu) se rozvinou od svého
+   tlačítka, místo aby naskočily. */
+.rozbalovaci-seznam { transform-origin: top; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
+.chat .naseptavac { transform-origin: bottom; animation: seznam-vznik var(--prechod-rychly) var(--krivka); }
+@keyframes seznam-vznik { from { opacity: 0; scale: 1 0.92; } }
+.rozbalovaci-seznam li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 1.05rem; transition: background-color var(--prechod-rychly) ease; }
+.rozbalovaci-seznam li:hover { background: rgba(216, 168, 58, 0.16); }
+.rozbalovaci-seznam li.vybrana { background: linear-gradient(#e2c47c, #c99a35); color: #23150a; }
 
 /* Nastaveni lobby jako herni panel Game Settings: popisek vlevo, ovladani
    vpravo, pod tim Team Settings a Advanced Settings vedle sebe. */
@@ -1411,6 +1622,10 @@ button.odebrat:hover { color: var(--chyba); }
 .nastaveni-lobby .sloupce legend { font-weight: 700; font-size: 1rem; margin-bottom: 0.3rem; }
 .nastaveni-lobby .sloupce label.zaskrtavaci { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; padding: 0.1rem 0; }
 .nastaveni-lobby .jedno-znak { margin: 0; font-weight: 700; }
+/* Custom Scenario: místo Location, Map Size a Victory jeden řádek ke čtení
+   — obyčejný text v barvě hodnot, ne tlumený popisek jako levý sloupec. */
+.nastaveni-lobby .radek > .scenar-info { color: var(--text); font-size: 0.9rem; text-align: left; line-height: 1.35; }
+.nastaveni-lobby .scenar-info .jmeno { font-weight: 700; }
 .nastaveni-lobby .sloupce label.zaskrtavaci.vypnute { opacity: 0.45; }
 /* Panel zarovnaný doprava, jako je herní panel u pravého okraje. */
 .nastaveni-lobby { margin-left: auto; width: fit-content; max-width: 100%; }
@@ -1425,7 +1640,7 @@ button.odebrat:hover { color: var(--chyba); }
 .sekce-krok .zahlavi-sekce { justify-content: center; position: relative; }
 .sekce-krok .zahlavi-sekce .fajfka { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .sekce-krok .hostovi { justify-content: center; }
-.sekce-krok .hostovi .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
+.sekce-krok .hostovi .cta, .stazeni-scenare .cta { width: min(100%, 22rem); text-align: center; font-size: 1.1rem; padding: 0.6rem 1rem; box-sizing: border-box; }
 .sekce-kontrola .ovladani { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
 /* Verdikt kontroly lobby nahoře v panelu (uživatel 17. 9. 2026): červená,
    dokud něco nesedí, zelená, jakmile sedí všechno — nikdy obojí a nikdy dole
@@ -1450,11 +1665,18 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    klávesnici a čtečky, vidět je drážka s knoflíkem. */
 .prepinac { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.8rem; color: var(--tlumene); user-select: none; }
 .prepinac input { position: absolute; opacity: 0; width: 0; height: 0; }
-.prepinac .drazka { position: relative; box-sizing: border-box; width: 1.7rem; height: 0.95rem; border-radius: 1rem; background: linear-gradient(#150d08, #2a1a12); border: 1px solid var(--zlato-tmave); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8); transition: background 0.15s; flex: none; }
+.prepinac .drazka { position: relative; box-sizing: border-box; width: 1.7rem; height: 0.95rem; border-radius: 1rem; background: linear-gradient(#150d08, #2a1a12); border: 1px solid var(--zlato-tmave); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8); transition: border-color var(--prechod) ease; flex: none; }
+/* Zlatá drážka zapnutého přepínače leží nad tmavou jako vlastní vrstva a
+   prolíná se průhledností: přechod (gradient) pozadí by mezi tmavou a zlatou
+   přeskočil. Knoflík je v pořadí prvků až za ní, takže jede nad ní. */
+.prepinac .drazka::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(var(--kov-zlaty-1), var(--kov-zlaty-2)); opacity: 0; transition: opacity var(--prechod) ease; }
+.prepinac.zapnuto .drazka::before { opacity: 1; }
 /* Knoflík svisle přesně uprostřed drážky (výška drážky bez rámečku), ne o
    tloušťku rámečku výš. */
-.prepinac .knoflik { position: absolute; top: 50%; transform: translateY(-50%); left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left 0.15s; }
-.prepinac.zapnuto .drazka { background: linear-gradient(#e2c47c, #c99a35); border-color: var(--zlato); }
+.prepinac .knoflik { position: absolute; top: 50%; transform: translateY(-50%); left: 2px; width: calc(0.95rem - 6px); height: calc(0.95rem - 6px); border-radius: 50%; background: #e8e0d0; transition: left var(--prechod) var(--krivka), background-color var(--prechod) ease, scale var(--prechod-rychly) var(--krivka); }
+.prepinac:active .knoflik { scale: 0.85; }
+.prepinac.zapnuto .drazka { border-color: var(--zlato); }
+.prepinac > span { transition: color var(--prechod) ease; }
 .prepinac.zapnuto .knoflik { left: calc(100% - 0.95rem + 4px); background: #241d10; }
 /* Oba popisky stejně těžké — jen barva říká, která poloha platí; tučný text
    na jedné straně dělal přepínač opticky nakřivo. */
@@ -1464,6 +1686,508 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 /* Karta hráče: krok „Připojuješ se!“ uprostřed, animované tečky, strany
    zápasu vedle sebe s VS. */
 .stred { text-align: center; }
+/* Zakrytý tajný obsah (Diplomacie, Zakryti.tsx): zakrytá karta je tlačítkem
+   sama (rub v `.zakryti-karta`); bez rubu jedno velké tlačítko jako u kroků
+   karty. Odkryté má tlačítko „Zakrýt“ menší, ať nepřebíjí to, co je pod ním. */
+.zakryti { margin: 0.8rem 0; text-align: center; }
+.zakryti-tlacitko { width: min(100%, 22rem); font-size: 1.05rem; padding: 0.6rem 1rem; box-sizing: border-box; }
+.zakryti.odkryto .zakryti-tlacitko { width: auto; font-size: 0.9rem; padding: 0.35rem 0.8rem; margin-bottom: 0.5rem; }
+/* Rub zakryté karty (`RubKarty` v KartaRole.tsx); stín přes drop-shadow,
+   protože karta má průhledné rohy. */
+.zakryti .rub-karty {
+  display: block; width: 100%; height: auto;
+  filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--obrys) 70%, transparent));
+  transition: filter var(--prechod-rychly) ease;
+}
+/* Karta jako tlačítko (uživatel 2. 10. 2026): najetí ji nadzvedne a stín
+   pod ní se prohloubí, jako by se zvedla ze stolu; stisk ji zamáčkne. Bez
+   záře a světla přes pečeť — uživatel: „ten glow je hnusnej“. Pohyb je
+   pomalejší než u běžných tlačítek (`--prechod-skladani`), karta je velká
+   a rychlé cuknutí působilo lacině. Posun přes `translate`/`scale` jako
+   u ostatních tlačítek — `transform` patří otáčení líce. Rádius obrysu
+   kopíruje zaoblené rohy obrázku. */
+.zakryti .zakryti-karta {
+  display: block; position: relative; box-sizing: border-box;
+  width: min(100%, 22rem); margin: 0.6rem auto 0;
+  border-radius: 4% / 6.6%; cursor: pointer;
+  transition: translate var(--prechod-skladani) var(--krivka), scale var(--prechod-skladani) var(--krivka);
+}
+.zakryti .zakryti-karta .rub-karty { transition: filter var(--prechod-skladani) ease; }
+.zakryti .zakryti-karta:hover, .zakryti .zakryti-karta:focus-visible { translate: 0 -5px; scale: 1.015; }
+.zakryti .zakryti-karta:hover .rub-karty, .zakryti .zakryti-karta:focus-visible .rub-karty {
+  filter: drop-shadow(0 12px 14px color-mix(in srgb, var(--obrys) 80%, transparent));
+}
+.zakryti .zakryti-karta:active { translate: 0 1px; scale: 0.99; }
+.zakryti .zakryti-karta:focus-visible { outline: 2px solid var(--zlato); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .zakryti .zakryti-karta:hover, .zakryti .zakryti-karta:focus-visible, .zakryti .zakryti-karta:active { translate: none; scale: none; }
+}
+/* Líc karty: obal toho, co je zrovna vidět (rub, nebo tajný obsah). Otáčí
+   ho a jeho výšku přejíždí Zakryti.tsx (Web Animations, čas z
+   `--prechod-karta`). `flow-root` drží okraje obsahu uvnitř obalu — jinak by
+   se při ořezu během otáčení přestaly slévat s okolím a karta by na konci
+   poskočila. Poslední prvek proto spodní okraj nemá: dřív splýval se spodním
+   okrajem `.zakryti`, teď by se k němu přičetl. */
+.zakryti-lic { display: flow-root; }
+.zakryti-lic > :last-child { margin-bottom: 0; }
+/* Minimapa scénáře (Diplomacie, MapaScenare.tsx): obrázek ze serveru a nad
+   ním starty z rozboru v procentech, takže sedí při každé šířce. Rám je na
+   figure, ne na obrázku — absolutní značky se počítají od vnitřku rámu,
+   a ten je přesně obrázek. Šířky obou velikostí a průměr značky jsou
+   proměnné komponenty, ať je karta hráče i pult GM mění na jednom místě.
+   Rám je devítidílný zlatý obrázek jako u desek (`.karta`), jen tenčí:
+   řez 112 je v pixelech předlohy (320×320 z `devitidil.py --roh 112 --pas
+   96`), na obrazovce `--ram` — malá mapa 14 rem unese 12 px, velká 16 px;
+   víc by z rohových ozdob udělalo nárožníky těžší než mapa sama.
+   Velká mapa je jedna pro kartu role i pult GM (uživatel 2. 10. 2026):
+   stejně široká jako karta role — 34 rem obsahu `.role` + 2× 1 rem
+   odsazení + 2× 1 px rámu (figure je border-box, `.role` content-box).
+   Na telefonu vyplní šířku sekce. */
+.mapa-scenare { --mapa-mala: 14rem; --mapa-velka: calc(34rem + 2rem + 2px); --znacka: 0.9rem; --ram: 12px; --koruna: 1.5rem; container-type: inline-size; position: relative; box-sizing: border-box; width: min(100%, var(--mapa-mala)); margin: 0.6rem auto; border: var(--ram) solid transparent; border-image: url(./assets/diplomacie/ram-mapy.webp) 112 / var(--ram) / 0 repeat; border-radius: 0; }
+.mapa-scenare.velka { --znacka: 1.15rem; --ram: 16px; --koruna: 2.1rem; width: min(100%, var(--mapa-velka)); }
+.mapa-scenare.velka .popisek { font-size: 0.9rem; }
+.mapa-scenare > img { display: block; width: 100%; height: auto; }
+.mapa-scenare .start { position: absolute; width: var(--znacka); height: var(--znacka); box-sizing: border-box; border-radius: 50%; border: 2px solid var(--obrys); box-shadow: 0 0 0 1px var(--zlato-svetle), 0 1px 4px color-mix(in srgb, var(--obrys) 70%, transparent); transform: translate(-50%, -50%); }
+.mapa-scenare .start.barva-1 { background: var(--b1); }
+.mapa-scenare .start.barva-2 { background: var(--b2); }
+.mapa-scenare .start.barva-3 { background: var(--b3); }
+.mapa-scenare .start.barva-4 { background: var(--b4); }
+.mapa-scenare .start.barva-5 { background: var(--b5); }
+.mapa-scenare .start.barva-6 { background: var(--b6); }
+.mapa-scenare .start.barva-7 { background: var(--b7); }
+.mapa-scenare .start.barva-8 { background: var(--b8); }
+/* Popisek pod značkou: jméno hráče u GM, „Tady začínáš“ a hráči podle role
+   u hráče. Má vlastní bublinu (`title`: celé jméno a čím hráč je), proto
+   myš přijímá. Stojí na ose značky; jen když by tak vyčníval z mapy (na
+   LLC leží p3 a p5 ~12–20 % od kraje a delší jméno tam na telefonu lezlo
+   přes rám panelu), posune se dovnitř přesně o tolik, kolik je potřeba:
+   posun je `clamp` mezi levým a pravým krajem mapy, `--x` (poloha startu
+   0–1) dává značce MapaScenare.tsx a `cqw` je procento šířky obrázku
+   (figure je kontejner). Do 2. 10. 2026 se krajní popisek kotvil celý
+   k vnitřní straně značky (třídy `kraj-*`) — to ho odsouvalo víc, než bylo
+   nutné, a dva krajní popisky se na telefonu potkávaly uprostřed mapy.
+   Spodní p8 zůstává pod značkou (vejde se; nad ní by narazil do p6); strop
+   šířky s výpustkou je pojistka pro extrémní jména — celá jsou na dlaždici
+   a v tabulce, a nese je i bublina popisku. */
+.mapa-scenare .popisek { position: absolute; top: 100%; left: 50%; transform: translateX(clamp(calc(var(--x, 0.5) * -100cqw + 2px), -50%, calc((1 - var(--x, 0.5)) * 100cqw - 100% - 2px))); margin-top: 0.2rem; padding: 0.05rem 0.4rem; border-radius: 2px; background: color-mix(in srgb, var(--obrys) 80%, transparent); color: var(--text); font-size: 0.72rem; line-height: 1.3; white-space: nowrap; max-width: min(9rem, 100cqw - 4px); overflow: hidden; text-overflow: ellipsis; }
+/* Vlastní mapa (obrázek ze hry, `minimapaVlastni` v MapaScenare.tsx):
+   kosočtverce hráčů už v obrázku jsou, značka je proto neviditelná a má
+   velikost kosočtverce — v procentech mapy (v obrázku LLC je 40 px z 1254),
+   ať se popisek se jménem drží těsně pod jeho spodní špičkou při každé
+   šířce. */
+.mapa-scenare.vlastni { --kosoctverec: 3.2%; }
+.mapa-scenare.vlastni .start { width: var(--kosoctverec); height: var(--kosoctverec); background: transparent; border-color: transparent; box-shadow: none; }
+.mapa-scenare.vlastni .popisek { margin-top: 0.1rem; }
+/* Druhy popisků (třídy `druh-*` na značce, MapaScenare.tsx): čím je hráč
+   pro toho, kdo se dívá. Barvy jen z palety. Pořadí pravidel je pořadí
+   přednosti, když jeden start nese víc druhů: vlastní start a Nástupce
+   ustoupí vztahu z role (oběť, pouto, spojenec) — koruna nad značkou
+   zůstává vždy, takže „oběť je Nástupce“ je koruna a červené jméno.
+   - Nástupce císaře: zlatý štítek kapitálkou s kosočtverci po stranách
+     (kapitálka je širší, proto vyšší strop šířky) a nad značkou koruna
+     (znak role); u vlastní mapy sedí koruna nad horní špičkou kosočtverce
+     a nezakrývá ho.
+   - spojenec (další Nájezdník): zeleně, barva „v pořádku“.
+   - pokrevní pouto Žoldáka: světlé zlato ve dvojitém zlatém rámečku.
+   - oběť Kata: červeně, barva chyby.
+   Značka s druhem leží nad obyčejnými, ať korunu a zvýrazněné jméno
+   nepřekryje popisek souseda. */
+.mapa-scenare .start[class*=" druh-"] { z-index: 1; }
+.mapa-scenare .koruna { position: absolute; bottom: 100%; left: 50%; width: var(--koruna); height: var(--koruna); margin-bottom: 3px; transform: translateX(-50%); filter: drop-shadow(0 1px 2px var(--obrys)) drop-shadow(0 0 4px color-mix(in srgb, var(--zlato) 55%, transparent)); pointer-events: none; }
+.mapa-scenare .druh-nastupce .popisek { background: linear-gradient(var(--kov-zlaty-1), var(--kov-zlaty-2) 55%, var(--kov-zlaty-3)); color: var(--obrys); border: 1px solid var(--zlato-stin); font-family: "Cinzel", Georgia, serif; font-weight: 800; letter-spacing: 0.03em; max-width: min(13rem, 100cqw - 4px); box-shadow: 0 0 0 1px var(--zlato-svetle), 0 0 8px color-mix(in srgb, var(--zlato) 60%, transparent); }
+.mapa-scenare .druh-nastupce .popisek::before, .mapa-scenare .druh-nastupce .popisek::after { content: ""; display: inline-block; width: 0.34em; height: 0.34em; margin: 0 0.4em 0 0; vertical-align: 0.18em; background: currentColor; rotate: 45deg; }
+.mapa-scenare .druh-nastupce .popisek::after { margin: 0 0 0 0.4em; }
+.mapa-scenare .druh-spojenec .popisek, .mapa-scenare .druh-pouto .popisek, .mapa-scenare .druh-obet .popisek { background: color-mix(in srgb, var(--obrys) 88%, transparent); font-family: inherit; font-weight: 700; letter-spacing: normal; max-width: min(9rem, 100cqw - 4px); box-shadow: none; }
+.mapa-scenare .druh-spojenec .popisek::before, .mapa-scenare .druh-spojenec .popisek::after,
+.mapa-scenare .druh-pouto .popisek::before, .mapa-scenare .druh-pouto .popisek::after,
+.mapa-scenare .druh-obet .popisek::before, .mapa-scenare .druh-obet .popisek::after { content: none; }
+.mapa-scenare .druh-spojenec .popisek { color: var(--ok-svetle); border: 1px solid var(--ok); }
+.mapa-scenare .druh-pouto .popisek { color: var(--zlato-svetle); border: 3px double var(--zlato); }
+.mapa-scenare .druh-obet .popisek { color: var(--chyba); border: 1px solid var(--chyba); }
+/* Král z běžící hry (♚ v barvě hráče, tmavý obrys) — GM všechny, hráč svého.
+   Přesouvá se plynule, jak chodí snímky (každou herní sekundu). */
+.mapa-scenare .kral { position: absolute; transform: translate(-50%, -50%); font-size: calc(var(--znacka) * 1.5); line-height: 1; pointer-events: none; text-shadow: -1px -1px 0 var(--obrys), 1px -1px 0 var(--obrys), -1px 1px 0 var(--obrys), 1px 1px 0 var(--obrys), 0 0 4px var(--obrys); transition: left 0.9s linear, top 0.9s linear; z-index: 2; }
+/* Relikvie z běžící hry (jen GM a overlay): obrázek relikvie velikosti
+   značky startu, pod králi. Bez plynulého přesunu: relikvie nemají stálé
+   pořadí a ikony by se při změně rozjížděly po mapě (uživatel 3. 10. 2026). */
+.mapa-scenare .relikvie-na-mape { position: absolute; transform: translate(-50%, -50%); height: calc(var(--znacka) * 1.4); width: auto; pointer-events: none; filter: drop-shadow(0 0 2px var(--obrys)) drop-shadow(0 1px 1px var(--obrys)); z-index: 1; }
+/* Ping GM: pulzující kruh (zlatý pro všechny, v barvě hráče pro jednoho).
+   Střed vlastností `translate`, ne `transform`: pulz mění `scale` a ten by
+   s `transform` zvětšoval i posun — kruh rostl z rohu mimo místo kliknutí.
+   Mapa pultu jde kliknutím pingnout — kurzor zaměřovač. */
+.mapa-scenare.klikaci { cursor: crosshair; }
+.mapa-scenare .ping { position: absolute; width: calc(var(--znacka) * 2.6); height: calc(var(--znacka) * 2.6); translate: -50% -50%; border-radius: 50%; border: 3px solid var(--zlato-svetle); box-shadow: 0 0 0 2px var(--obrys), 0 0 12px 3px color-mix(in srgb, var(--zlato) 70%, transparent); pointer-events: none; z-index: 3; animation: ping-pulz 1s ease-out infinite; }
+.mapa-scenare .ping.barva-1 { border-color: var(--b1); }
+.mapa-scenare .ping.barva-2 { border-color: var(--b2); }
+.mapa-scenare .ping.barva-3 { border-color: var(--b3); }
+.mapa-scenare .ping.barva-4 { border-color: var(--b4); }
+.mapa-scenare .ping.barva-5 { border-color: var(--b5); }
+.mapa-scenare .ping.barva-6 { border-color: var(--b6); }
+.mapa-scenare .ping.barva-7 { border-color: var(--b7); }
+.mapa-scenare .ping.barva-8 { border-color: var(--b8); }
+@keyframes ping-pulz { 0% { scale: 0.4; opacity: 1; } 100% { scale: 1.4; opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .mapa-scenare .ping { animation: none; } }
+.pult-gm .ping-pro { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin: 0.4rem 0; font-size: 0.9rem; }
+.pult-gm .ping-vypinac.zapnuto { border-color: var(--zlato); color: var(--zlato-svetle); box-shadow: 0 0 0 1px var(--zlato), 0 0 8px color-mix(in srgb, var(--zlato) 50%, transparent); }
+/* Adresáti ve dvou sloupcích (uživatel 3. 10. 2026): vlevo Všem a hráči 1–3,
+   vpravo 4–8 — plní se po sloupcích, tlačítka na celou šířku kvůli jménům. */
+.pult-gm .ping-adresati { display: grid; grid-auto-flow: column; grid-template-rows: repeat(4, auto); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.3rem 0.5rem; width: min(100%, 28rem); transition: opacity var(--prechod) ease; }
+.pult-gm .ping-adresati .adresat { justify-content: flex-start; text-align: left; overflow: hidden; }
+.pult-gm .ping-adresati.vypnuto { opacity: 0.4; }
+.pult-gm .ping-adresati .adresat { padding: 0.25rem 0.6rem; font-family: inherit; font-size: 0.9rem; border: 2px solid var(--zlato-stin); }
+/* Vybraný adresát musí být vidět na první pohled (uživatel 3. 10. 2026):
+   plné zlato jako hlavní tlačítko, tmavé tučné písmo, světlý rámeček. */
+.pult-gm .ping-adresati .adresat.vybrany { background: linear-gradient(var(--kov-zlaty-1), var(--kov-zlaty-2) 55%, var(--kov-zlaty-3)); color: var(--obrys); font-weight: 700; text-shadow: none; border-color: var(--zlato-svetle); box-shadow: 0 0 0 1px var(--zlato), 0 0 10px color-mix(in srgb, var(--zlato) 55%, transparent); }
+/* Relikvie, kterou někdo nese nebo má v klášteře: obrys v barvě hráče. */
+.mapa-scenare .relikvie-na-mape.barva-1 { filter: drop-shadow(0 0 1px var(--b1)) drop-shadow(0 0 2px var(--b1)) drop-shadow(0 0 3px var(--b1)); }
+.mapa-scenare .relikvie-na-mape.barva-2 { filter: drop-shadow(0 0 1px var(--b2)) drop-shadow(0 0 2px var(--b2)) drop-shadow(0 0 3px var(--b2)); }
+.mapa-scenare .relikvie-na-mape.barva-3 { filter: drop-shadow(0 0 1px var(--b3)) drop-shadow(0 0 2px var(--b3)) drop-shadow(0 0 3px var(--b3)); }
+.mapa-scenare .relikvie-na-mape.barva-4 { filter: drop-shadow(0 0 1px var(--b4)) drop-shadow(0 0 2px var(--b4)) drop-shadow(0 0 3px var(--b4)); }
+.mapa-scenare .relikvie-na-mape.barva-5 { filter: drop-shadow(0 0 1px var(--b5)) drop-shadow(0 0 2px var(--b5)) drop-shadow(0 0 3px var(--b5)); }
+.mapa-scenare .relikvie-na-mape.barva-6 { filter: drop-shadow(0 0 1px var(--b6)) drop-shadow(0 0 2px var(--b6)) drop-shadow(0 0 3px var(--b6)); }
+.mapa-scenare .relikvie-na-mape.barva-7 { filter: drop-shadow(0 0 1px var(--b7)) drop-shadow(0 0 2px var(--b7)) drop-shadow(0 0 3px var(--b7)); }
+.mapa-scenare .relikvie-na-mape.barva-8 { filter: drop-shadow(0 0 1px var(--b8)) drop-shadow(0 0 2px var(--b8)) drop-shadow(0 0 3px var(--b8)); }
+.mapa-scenare .kral.barva-1 { color: var(--b1); }
+.mapa-scenare .kral.barva-2 { color: var(--b2); }
+.mapa-scenare .kral.barva-3 { color: var(--b3); }
+.mapa-scenare .kral.barva-4 { color: var(--b4); }
+.mapa-scenare .kral.barva-5 { color: var(--b5); }
+.mapa-scenare .kral.barva-6 { color: var(--b6); }
+.mapa-scenare .kral.barva-7 { color: var(--b7); }
+.mapa-scenare .kral.barva-8 { color: var(--b8); }
+/* Pult GM: hráč pod kurzorem (start na mapě nebo řádek tabulky) — zlatý
+   rámeček popisku a světlejší řádek; jeho vztahy nesou druhy výš. */
+.mapa-scenare .start.najeto .popisek { box-shadow: 0 0 0 2px var(--zlato), 0 0 10px 2px color-mix(in srgb, var(--zlato) 55%, transparent); }
+.tabulka-roli tr.najeto > *, .tabulka-roli tr.najeto + tr.radek-hry > * { background: color-mix(in srgb, var(--zlato) 8%, transparent); }
+/* Karta role (Diplomacie, KartaRole.tsx): sekce pod kontrolou lobby se
+   záhlavím jako u kroků. Odkrytý obsah je jedna „karta v ruce“: název role
+   kapitálkou, cíl tučně, pod ním výhody a nevýhody; tajná jména (oběť, pakt,
+   druhý Nájezdník) tučně, ať je hráč najde na první pohled. Zakryti centruje,
+   text karty se čte zleva. Znak role (spec §8.3, `znaky.ts`) sedí nad názvem
+   jako klenot na hrací kartě, 104 px jako erby civilizací (obrázek je 208 px
+   pro 2×); stín ho zvedne z tmavé desky. */
+.karta-role .role { max-width: 34rem; margin: 0 auto; padding: 0.6rem 1rem 0.8rem; text-align: left; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
+.karta-role .role .znak-role { display: block; width: 104px; height: 104px; margin: 0.3rem auto 0; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--obrys) 75%, transparent)); }
+.karta-role .role h4 { margin: 0.2rem 0 0.5rem; font-size: 1.4rem; text-align: center; }
+.karta-role .role h5 { margin: 0.7rem 0 0.2rem; font-size: 0.95rem; color: var(--zlato); }
+.karta-role .role p { margin: 0.3rem 0; }
+/* Neutrální fakt o roli (Nástupce je veřejně znám) — tlumeně, kurzívou; není výhoda ani nevýhoda. */
+.karta-role .role p.informace-role { color: var(--tlumene); font-style: italic; }
+.karta-role .role .cil { font-weight: 700; }
+.karta-role .role ul { margin: 0; padding-left: 1.2rem; }
+/* Cíle hráče vedle mapy (MojeCile): primární cíl, odpočet držení 7 relikvií
+   (ztlumený, dokud neběží), sekundární cíl a stav sledovaných hráčů. */
+.moje-cile { max-width: 34rem; margin: 0.6rem auto; padding: 0.4rem 1rem 0.6rem; text-align: left; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
+.moje-cile h5 { margin: 0.6rem 0 0.2rem; font-size: 0.95rem; color: var(--zlato); }
+.moje-cile p { margin: 0.25rem 0; }
+.moje-cile .radek-cile { display: flex; align-items: center; flex-wrap: wrap; gap: 0 0.35rem; }
+.moje-cile .radek-cile.ztlumeny { opacity: 0.45; }
+.moje-cile .znak-relikvie { height: 28px; width: auto; }
+.moje-cile .padl { color: var(--chyba); }
+/* Schopnosti role pod cíli (Schopnosti.tsx). */
+.moje-schopnosti { max-width: 34rem; margin: 0.6rem auto; padding: 0.4rem 1rem 0.7rem; text-align: left; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); }
+.moje-schopnosti h5 { margin: 0.5rem 0 0.3rem; font-size: 0.95rem; color: var(--zlato); }
+.moje-schopnosti p { margin: 0.25rem 0 0.5rem; }
+.odhalene-role ul { margin: 0; padding: 0; list-style: none; }
+.odhalene-role li { display: flex; align-items: center; gap: 0.3rem; margin: 0.2rem 0; }
+.odhalene-role .znak-role { width: 1.6rem; height: 1.6rem; }
+.moje-schopnosti .schopnost-ovladani { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+/* Animace nových částí karty a pultu (uživatel 3. 10. 2026: „všude do
+   nových částí animace“). Délky jdou z tokenů, takže při omezení pohybu
+   (--prechod: 0ms) samy zmizí. Hodnoty s `key` podle obsahu (počet
+   relikvií, stav žádosti, „padl“) se při změně vymění a dosednou razítkem. */
+.moje-cile, .moje-schopnosti, .prodej-relikvii, .odhalene-role li, .moje-schopnosti .stav-zadosti { animation: vznik var(--prechod) var(--krivka); }
+.moje-cile .radek-cile { transition: opacity var(--prechod) ease; }
+.moje-cile .nova-hodnota, .tabulka-roli .schopnost-gm { display: inline-block; animation: razitko var(--prechod) var(--krivka); }
+.prodej-relikvii { animation: vznik var(--prechod) var(--krivka), zmena-blik 1.6s ease-out; }
+.oznameni-gm .oznameni button { transition: transform var(--prechod) var(--krivka); }
+.oznameni-gm .oznameni button:hover:enabled { transform: translateY(-1px); }
+/* Pult GM: čekající žádosti a připomínky nad tabulkou rolí; stav schopnosti v řádku. */
+.oznameni-gm { list-style: none; margin: 0.6rem 0; padding: 0; display: grid; gap: 0.4rem; }
+.oznameni-gm .oznameni { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.8rem; padding: 0.45rem 0.7rem; border: 1px solid var(--zlato); border-radius: 3px; background: color-mix(in srgb, var(--zlato) 10%, transparent); animation: vznik var(--prechod) var(--krivka); }
+.oznameni-gm .oznameni-tlacitka { display: flex; gap: 0.4rem; }
+.tabulka-roli .schopnost-gm { font-size: 0.8rem; color: var(--tlumene); white-space: nowrap; }
+.tabulka-roli .schopnost-gm.pouzita { color: var(--zlato); }
+.tabulka-roli .drive-role { font-size: 0.85rem; color: var(--tlumene); }
+/* Prohra role (Žoldák bez pouta, Garda bez Nástupce): velký blok nad kartou. */
+/* Přes celou sekci Diplomacie, okolí ztmavené; okno drží u horního okraje
+   obrazovky, i když je sekce vyšší než okno. */
+.karta-role { position: relative; }
+.prohra-zastena { position: absolute; inset: 0; z-index: 20; padding: 3rem 1rem 1rem; background: color-mix(in srgb, var(--obrys) 72%, transparent); animation: prolnuti var(--prechod) ease; }
+.prohra-zastena .prohra-role { position: sticky; top: 3rem; box-shadow: 0 10px 40px color-mix(in srgb, var(--obrys) 80%, transparent); }
+.prohra-role button { margin-top: 0.6rem; }
+.prohra-role { max-width: 34rem; margin: 0 auto; padding: 1rem 1rem 1.2rem; text-align: center; border: 2px solid var(--chyba); border-radius: 3px; background: color-mix(in srgb, var(--chyba) 14%, var(--drevo-tmave)); animation: karta-rozdana var(--prechod-karta) var(--krivka); }
+.prohra-role .znak-prohry { display: block; width: 140px; height: 140px; margin: 0 auto 0.3rem; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--obrys) 75%, transparent)); }
+.prohra-role h4 { margin: 0.2rem 0 0.4rem; font-size: 1.8rem; color: var(--chyba); }
+.prohra-role p { margin: 0.3rem 0; }
+.prohra-role .vyzva { font-weight: 700; font-size: 1.15rem; }
+/* Šašek po pádu Gardy: karta ztmavne, přes ni velké tlačítko; po kliknutí
+   shoří zdola nahoru (maska posouvá `--hori`) a ukáže se karta Gardy. */
+/* Dědí se: JS ji nastavuje na obalu karty, maska a záře ji čtou v dětech. */
+@property --hori { syntax: "<percentage>"; inherits: true; initial-value: 0%; }
+/* Hoří celá karta i s mapou a cíli — šíře jako líc karty. */
+.karta-promena { position: relative; margin: 0.8rem auto; }
+/* Ztmavnutí karty Šaška se při objevení plynule rozjede (jednorázová animace
+   filtru — trvalá by se trhala, viz hoření). */
+.karta-promena .karta-promena-obsah { filter: brightness(0.35) grayscale(0.6); pointer-events: none; animation: ztmavnuti 1.2s var(--krivka); }
+@keyframes ztmavnuti { from { filter: none; } }
+/* Vystředění přes `transform`, ne `translate`: stisk tlačítka (globální
+   :active) nastavuje `translate` a tlačítko pak odskočilo na bok. */
+.karta-promena .promena-vyzva { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: max-content; max-width: 90%; text-align: center; }
+/* Poznámka na vlastním tmavém podkladu — přes ztlumený text karty se špatně četla (uživatel 4. 10. 2026). */
+.karta-promena .promena-poznamka { margin: 0; padding: 0.45rem 1rem; font-size: 1.05rem; font-weight: 700; color: var(--zlato-svetle); background: color-mix(in srgb, var(--drevo-tmave) 94%, transparent); border: 1px solid var(--zlato-tmave); border-radius: 3px; box-shadow: 0 4px 18px color-mix(in srgb, var(--obrys) 80%, transparent); animation: vznik var(--prechod) var(--krivka); }
+.karta-promena .promena-tlacitko { font-size: 1.3rem; padding: 0.9rem 1.6rem; animation: zare-rozdat 2s ease-in-out infinite; }
+/* Hoří: maska posouvaná z JS podle času videa (`--hori` = čelo ohně od
+   spodu, `celoOhne`); pod čelem je ve videu ~4 % výšky spálený pás, karta
+   pod ním zmizí. Filtr je pevný — animovaný se trhal. */
+.karta-promena.hori .karta-promena-obsah {
+  /* Karta mizí až kousek nad čelem (plameny to místo kryjí) — rezerva na
+     nepravidelnou hranu ohně, ať pod spálenou hranou nikdy neprosvítá text. */
+  -webkit-mask-image: linear-gradient(to top, transparent calc(var(--hori) + 1%), black calc(var(--hori) + 6%));
+  mask-image: linear-gradient(to top, transparent calc(var(--hori) + 1%), black calc(var(--hori) + 6%));
+  filter: brightness(0.55) sepia(0.5);
+}
+/* Hořící karta nemá rám ani pozadí panelu (uživatel 4. 10. 2026: „proč je
+   furt kolem toho okna ten border“) — hoří obsah, ne obdélník. */
+.karta-promena.hori .role { border-color: transparent; background: transparent; transition: border-color var(--prechod) ease, background-color var(--prechod) ease; }
+.karta-promena.hori .karta-promena-obsah { animation: bledne 2.4s ease-in forwards; }
+@keyframes bledne { from { opacity: 1; } to { opacity: 0.55; } }
+/* Video plamenů na míru karty (1440×1440, uživatel 4. 10. 2026) přesně
+   přes celou kartu; oheň se v něm rozhoří i dohoří uvnitř záběru, nic
+   nevyjíždí ven. Roztažené (fill), ať čelo sedí s maskou i u jiného poměru
+   stran; boky se jemně vytrácí. Do kliknutí skryté, ale načtené. */
+.karta-promena .plameny { position: absolute; top: 0; bottom: 0; left: -6%; right: -6%; width: 112%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; visibility: hidden;
+  /* O 6 % širší na každou stranu a vytrácí se jen v tomhle přesahu: okraje
+     karty zůstanou zakryté, konec ohně je měkký (uživatel 4. 10. 2026). */
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5.4%, black 94.6%, transparent); mask-image: linear-gradient(to right, transparent, black 5.4%, black 94.6%, transparent); }
+/* U horního okraje oheň nemá kam růst a ve videu se slisuje — místo toho
+   se vypaří: zprůhlední, rozmaže a stoupne (uživatel 4. 10. 2026). */
+.karta-promena.vyparuje .plameny { opacity: 0; filter: blur(6px); translate: 0 -4%; transition: opacity 0.45s ease-in, filter 0.45s ease-in, translate 0.45s ease-out; }
+.karta-promena.hori .plameny { visibility: visible; animation: nastup-ohne 0.35s ease-out; }
+/* Oheň se nezjeví bliknutím, ale rozhoří (uživatel 4. 10. 2026). */
+@keyframes nastup-ohne { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .karta-promena .promena-tlacitko, .karta-promena .karta-promena-obsah { animation: none; }
+  .karta-promena.hori .karta-promena-obsah { animation: none; opacity: 0; }
+  .karta-promena .plameny { display: none; }
+}
+@media (min-width: 72rem) {
+  .karta-role .karta-vedle { display: grid; grid-template-columns: minmax(0, calc(36rem + 2px)) minmax(0, 1fr); gap: 0 1.5rem; align-items: start; }
+  .karta-role .karta-vedle .mapa-scenare { margin: 0.6rem 0; }
+  .karta-role .karta-vedle .moje-cile { margin: 0.6rem 0; max-width: none; }
+}
+.karta-role .role li { margin: 0.15rem 0; }
+/* Na telefonu má mapa necelou polovinu šířky a sousední starty (na LLC p6
+   a p8 dole) jsou od sebe 40 px: menší popisky, značka i koruna a zlatý
+   štítek Nástupce bez kapitálky a kosočtverců — jinak by koruna jednoho
+   seděla v popisku druhého. Malý popisek drží i krajní start vlastní mapy
+   (popisek na ose kosočtverce) uvnitř mapy. */
+@media (max-width: 40rem) {
+  .mapa-scenare.velka { --znacka: 0.9rem; }
+  .mapa-scenare.velka .popisek { font-size: 0.72rem; }
+  .mapa-scenare, .mapa-scenare.velka { --koruna: 1rem; }
+  .mapa-scenare .druh-nastupce .popisek { font-family: inherit; letter-spacing: normal; }
+  .mapa-scenare .druh-nastupce .popisek::before, .mapa-scenare .druh-nastupce .popisek::after { content: none; }
+}
+/* Pult GM (Diplomacie, PultGm.tsx): sekce jako karta role, stav zápasu
+   vpravo v záhlaví na místě fajfky kroků. Dlaždice Nástupce mají celou
+   plochu v barvě hráče jako tlačítka výsledku: GM čte ve hře „p3 ma: …“
+   a hledá zelenou, ne jméno. Vybraná dlaždice dostane zlatý rám. Tabulka
+   rolí se čte zleva, roletky vyplní buňku. Souhrn složení přebírá barvu
+   z .varovani, ale ne jeho kurzor s otazníkem — není to nápověda. */
+.pult-gm .stav-diplo { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: var(--tlumene); font-family: "Cinzel", Georgia, serif; }
+/* Znak GM (žezlo) před nadpisem pultu, menší než znaky v tabulce (patří
+   k nadpisu, ne do řádku); záhlaví centruje, tak se mezera zmenší, ať znak
+   a nadpis drží spolu. */
+.pult-gm .zahlavi-sekce { gap: 0.4rem; }
+.pult-gm .zahlavi-sekce .znak-role { width: 1.6rem; height: 1.6rem; margin-bottom: 0.3rem; }
+.pult-gm .zakryti-lic > p, .pult-gm .pult-strana > p { max-width: 34rem; margin: 0.6rem auto; }
+/* Mapa vlevo, pult vpravo (uživatel 3. 10. 2026: „takhle vedle sebe pro
+   GMko“) — jen když se vedle velké mapy vejde i tabulka rolí; jinak pod
+   sebou jako dřív. Pravý sloupec pak zabírá celou zbylou šířku. */
+@media (min-width: 72rem) {
+  .pult-gm .pult-vedle { display: grid; grid-template-columns: minmax(0, calc(36rem + 2px)) minmax(0, 1fr); gap: 0 1.5rem; align-items: start; }
+  .pult-gm .pult-vedle .mapa-scenare { margin: 0.6rem 0; }
+  .pult-gm .pult-strana > p, .pult-gm .pult-strana > .tabulka-roli, .pult-gm .pult-strana > .dlazdice-nastupce, .pult-gm .pult-strana > .souhrn { max-width: none; }
+}
+.dlazdice-nastupce { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem; max-width: 34rem; margin: 0.6rem auto 0.8rem; }
+button.dlazdice { position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; padding: 0.55rem 0.6rem; color: var(--text); font-family: Georgia, "Times New Roman", serif; font-weight: 400; line-height: 1.2; text-shadow: 0 1px 2px color-mix(in srgb, var(--obrys) 60%, transparent); }
+button.dlazdice .barva { font-family: "Cinzel", Georgia, serif; font-weight: 800; font-size: 1.05rem; text-transform: capitalize; }
+button.dlazdice strong { font-weight: 700; overflow-wrap: anywhere; }
+button.dlazdice.barva-1 { background: var(--b1); border-color: var(--b1); }
+button.dlazdice.barva-2 { background: var(--b2); border-color: var(--b2); }
+button.dlazdice.barva-3 { background: var(--b3); border-color: var(--b3); }
+button.dlazdice.barva-4 { background: var(--b4); border-color: var(--b4); }
+button.dlazdice.barva-5 { background: var(--b5); border-color: var(--b5); }
+button.dlazdice.barva-6 { background: var(--b6); border-color: var(--b6); }
+button.dlazdice.barva-7 { background: var(--b7); border-color: var(--b7); }
+button.dlazdice.barva-8 { background: var(--b8); border-color: var(--b8); }
+/* Světlé barvy (žlutá, oranžová) mají tmavé písmo bez stínu — jako u výsledků. */
+button.dlazdice.barva-4, button.dlazdice.barva-8 { color: var(--obrys); text-shadow: none; }
+/* Dlaždice si pod kurzorem drží barvu hráče (obecný hover tlačítek na ni
+   nedosáhne), tak se aspoň rozsvítí; zlatý rám výběru se prolne. */
+button.dlazdice:hover:enabled { filter: brightness(1.12); }
+button.dlazdice.vybrana { border: 2px solid var(--zlato-svetle); box-shadow: 0 0 0 2px var(--zlato), 0 2px 6px color-mix(in srgb, var(--obrys) 70%, transparent); }
+/* Předvýběr hry (most ke hře): koruna nad číslem a zlatá záře kolem dlaždice;
+   s ručním výběrem se záře sčítá s rámečkem výběru. */
+button.dlazdice.ze-hry { box-shadow: 0 0 12px 3px color-mix(in srgb, var(--zlato) 60%, transparent); }
+button.dlazdice.ze-hry.vybrana { box-shadow: 0 0 0 2px var(--zlato), 0 0 14px 4px color-mix(in srgb, var(--zlato) 60%, transparent); }
+button.dlazdice .znak-role { width: 2rem; height: 2rem; filter: drop-shadow(0 1px 2px var(--obrys)); }
+/* Zvolený Nástupce: koruna nakloněná přes pravý horní roh dlaždice. */
+button.dlazdice .koruna-roh { position: absolute; top: -0.85rem; right: -0.7rem; width: 2rem; height: 2rem; rotate: 20deg; pointer-events: none; filter: drop-shadow(0 1px 2px var(--obrys)); animation: razitko var(--prechod) var(--krivka); }
+/* Otázka nad dlaždicemi: ikona 64 px zmenšená na 32 (ostrá i při zoomu). */
+.pult-gm .kdo-nastupce { display: flex; align-items: center; justify-content: center; gap: 0.35rem; flex-wrap: wrap; font-family: "Cinzel", Georgia, serif; font-weight: 700; font-size: 1.1rem; }
+.pult-gm .kdo-nastupce .znak-role { width: 2rem; height: 2rem; }
+/* Znak role v tabulce má 36 px (`--znak`): při 26 px byly úzké znaky —
+   pochodeň Nájezdníka, sekera Kata, žezlo Nástupce — nečitelné (uživatel
+   1. 10. 2026). Řádek dostane výšku podle znaku a buňky o něco víc vzduchu. */
+.tabulka-roli { --znak: 2.25rem; width: 100%; max-width: 34rem; margin: 0.6rem auto; border-collapse: collapse; text-align: left; }
+.tabulka-roli th, .tabulka-roli td { padding: 0.35rem 0.4rem; border-bottom: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); vertical-align: middle; }
+.tabulka-roli th { font-weight: 700; white-space: nowrap; }
+/* Znak role mezi jménem a roletkou (`td.znak`): GM přelétne sloupec znaků
+   rychleji než sloupec roletek. Buňka je jen na šířku znaku. */
+.tabulka-roli td.znak { width: 1px; padding-right: 0; }
+.tabulka-roli .znak-role { display: block; width: var(--znak); height: var(--znak); }
+/* Telefon: jméno se smí zalomit (i dlouhé bez mezer) a sloupce si rozdělí
+   šířku karty pevně — automatické rozložení by tabulku natáhlo na šířku
+   nejdelšího jména a nejdelší položky roletky a karta by přetekla. */
+@media (max-width: 40rem) {
+  .tabulka-roli { table-layout: fixed; }
+  .tabulka-roli th, .tabulka-roli td { overflow-wrap: anywhere; }
+  .tabulka-roli th { white-space: normal; width: 30%; }
+  .tabulka-roli td.znak { width: var(--znak); }
+}
+/* Čtvereček barvy před jménem (`JmenoSBarvou`): GM si řádek spojí s dlaždicí
+   a s „pN“ ze hry i u dvou AI se stejným jménem. */
+.tabulka-roli td select { width: 100%; box-sizing: border-box; }
+/* Výběr cíle (Kat, Žoldák): vlastní rozbalovací seznam se čtverečkem barvy
+   u každého hráče (`Rozbalovaci`, uživatel 3. 10. 2026). */
+.vyber-hrace .rozbalovaci-tlacitko { font-family: inherit; font-size: 0.95rem; padding: 0.3rem 0.6rem; }
+.vyber-hrace .rozbalovaci-seznam li { font-size: 0.95rem; }
+.tabulka-roli td > span { color: var(--tlumene); font-size: 0.9rem; }
+/* Data z běžící hry (HraZive.tsx): stáří dat a věta o Nástupci jsou drobné
+   poznámky pod mapou. Cíl hráče s postupem je vlastní řádek tabulky pod jeho
+   řádkem — linka mezi hráči se proto přesouvá až pod něj. */
+.pult-gm .pult-strana > p.stari-hry { margin: 0.3rem auto; font-size: 0.85rem; color: var(--tlumene); }
+.pult-gm .nastupce-ze-hry strong { color: var(--zlato-svetle); }
+/* Varování k datům ze hry je věta pro GM, ne nápověda — bez kurzoru s otazníkem. */
+.pult-gm .zakryti > p.varovani, .pult-gm .pult-strana > p.varovani { font-size: 0.9rem; cursor: auto; }
+.tabulka-roli tr:has(+ tr.radek-hry) > * { border-bottom: 0; padding-bottom: 0.1rem; }
+.tabulka-roli tr.radek-hry td { padding-top: 0; color: var(--tlumene); font-size: 0.85rem; }
+/* Vyřazený hráč: přeškrtnuté jméno, řádek i řádek ze hry ztlumené. */
+.tabulka-roli tr.vyrazen > *, .tabulka-roli tr.vyrazen + tr.radek-hry > * { opacity: 0.45; }
+.tabulka-roli tr.vyrazen > th .jmeno-s-barvou { text-decoration: line-through; text-decoration-thickness: 2px; }
+/* Hodnoty (postup cíle, počet relikvií) tučně a světleji než popis. */
+.tabulka-roli tr.radek-hry strong { color: var(--text); }
+/* Relikvie: obrázek 28 px vysoký (poměr stran zdroje 90×95), číslo hned za ním. */
+/* Cíl a relikvie ve dvou pevných sloupcích: relikvie všech hráčů pod sebou. */
+.tabulka-roli tr.radek-hry .radek-hry-obsah { display: grid; grid-template-columns: minmax(0, 15rem) auto; align-items: center; column-gap: 0.8rem; }
+.tabulka-roli tr.radek-hry .relikvie { display: inline-flex; align-items: center; gap: 0.2rem; }
+.tabulka-roli tr.radek-hry .relikvie img { height: 28px; width: auto; }
+.pult-gm .souhrn { margin: 0.5rem auto; max-width: 34rem; font-weight: 700; cursor: auto; }
+.pult-gm .ovladani { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 0.6rem; }
+/* „Rozeslat role“ je hlavní akce pultu: zřetelně větší než „Přelosovat“
+   a „Zpět na výběr Nástupce“ vedle něj, ať ji GM při streamu netrefuje
+   omylem a nehledá. */
+.pult-gm .ovladani .cta { font-size: 1.15rem; padding: 0.75rem 1.6rem; }
+/* Druhá řada pultu: Zpět u levého kraje, Rozeslat role u pravého; po
+   rozeslání zbude jen Zpět a stojí uprostřed. */
+.pult-gm .ovladani.krajni { justify-content: space-between; }
+/* Souhrn složení uprostřed řádku, Přelosovat u pravého kraje: krajní sloupce
+   stejně široké, ať text zůstane na středu i s tlačítkem vedle. */
+/* Přepínače pod mapou pultu (krále, relikvie z běžící hry). */
+.pult-gm .nastaveni-mapy { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1.5rem; margin: 0.4rem 0 0.6rem; }
+.pult-gm .souhrn-radek { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.pult-gm .souhrn-radek > .souhrn { grid-column: 2; margin: 0; }
+.pult-gm .souhrn-radek > button { grid-column: 3; justify-self: end; }
+@media (max-width: 40rem) {
+  .pult-gm .souhrn-radek { grid-template-columns: 1fr; justify-items: center; }
+  .pult-gm .souhrn-radek > .souhrn, .pult-gm .souhrn-radek > button { grid-column: 1; justify-self: center; }
+}
+.pult-gm .ovladani.krajni:has(> :only-child) { justify-content: center; }
+/* Nástupce je zvolený → další krok GM je rozdat role: tlačítko jemně dýchá
+   zlatou (uživatel 3. 10. 2026: „aby to tlačítko trochu glowovalo“, pak
+   „mělo by pulsovat glowem, ne až když hoveruju“). */
+.pult-gm button.rozdat-role:enabled { animation: zare-rozdat 2s ease-in-out infinite; }
+/* Kovové stíny zlatého tlačítka (`.cta`) zůstávají, přidává se jen zlatá
+   záře kolem. Přes filter (drop-shadow) byla na zlatém tlačítku skoro
+   neviditelná — uživatel ji poznal až pod kurzorem. */
+@keyframes zare-rozdat {
+  0%, 100% { box-shadow: inset 0 1px 0 rgba(255, 245, 215, 0.75), inset 0 -2px 5px rgba(90, 50, 8, 0.55), 0 2px 4px rgba(0, 0, 0, 0.55), 0 0 0 0 transparent; }
+  50% { box-shadow: inset 0 1px 0 rgba(255, 245, 215, 0.75), inset 0 -2px 5px rgba(90, 50, 8, 0.55), 0 2px 4px rgba(0, 0, 0, 0.55), 0 0 18px 5px color-mix(in srgb, var(--zlato) 70%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .pult-gm button.rozdat-role:enabled { animation: none; } }
+/* Pravidla hry (PravidlaHry.tsx): sbalovací tahák jako sekce kontroly lobby
+   (Skladaci), ale nadpis ve zlaté kapitálce — je to kapitola, ne detail. */
+.pravidla-hry { margin-top: 0.8rem; text-align: left; }
+.pravidla-hry summary { cursor: pointer; color: var(--zlato); font-family: "Cinzel", Georgia, serif; }
+.pravidla-hry h4 { margin: 0.8rem 0 0.2rem; font-size: 1rem; }
+.pravidla-hry h5 { margin: 0.5rem 0 0.1rem; font-size: 0.95rem; color: var(--zlato); }
+.pravidla-hry p, .pravidla-hry ul { margin: 0.2rem 0; font-size: 0.92rem; }
+.pravidla-hry ul { padding-left: 1.2rem; }
+/* Pravidla hry (stránka akce i správa scénáře): velká mapa nahoře, kartičky po třech pod ní. */
+.prehled-pravidel .pravidla-hry { margin-top: 0.4rem; }
+@media (min-width: 60rem) { .prehled-pravidel .pravidla-mrizka { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Pravidla v kartičkách (uživatel 4. 10. 2026), stejný panel jako cíle u mapy. */
+.pravidla-mrizka { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 0.7rem; margin: 0.6rem 0; }
+.pravidla-karta { padding: 0.4rem 0.9rem 0.6rem; border: 1px solid var(--zlato-tmave); border-radius: 3px; background: color-mix(in srgb, var(--drevo-tmave) 70%, transparent); animation: vznik var(--prechod) var(--krivka); }
+.pravidla-karta h4 { margin: 0.3rem 0 0.3rem; color: var(--zlato); }
+.pravidla-hry .pravidla-nadpis { margin: 1rem 0 0.2rem; }
+.pravidla-role header { display: flex; gap: 0.6rem; align-items: center; margin: 0.2rem 0 0.3rem; }
+.pravidla-role .znak-role { width: 48px; height: 48px; flex: none; filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--obrys) 75%, transparent)); }
+.pravidla-role h5 { margin: 0; font-size: 1.05rem; }
+.pravidla-role h6 { margin: 0.5rem 0 0.1rem; font-size: 0.85rem; color: var(--zlato); }
+.pravidla-role li.cil { font-weight: 700; }
+.pravidla-role li.informace-role { color: var(--tlumene); font-style: italic; }
+/* Ikonky rolí a relikvií v textech pravidel a karty (TextSIkonami). */
+.s-ikonou { white-space: nowrap; }
+/* Čtvereček GM v textu: střed na střed písma (výchozí -0.25em ho v řádku stáhl níž). */
+.s-ikonou .swatch { margin-right: 0.2em; vertical-align: middle; position: relative; top: -0.08em; }
+.ikonka-textu { width: 28px; height: 28px; vertical-align: -8px; margin-right: 0.12em; object-fit: contain; filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--obrys) 70%, transparent)); }
+/* Role po třech na řádek (uživatel 4. 10. 2026), na užším displeji méně. */
+@media (min-width: 60rem) { .pravidla-hry .role-mrizka { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Veřejný řádek Diplomacie pod stranami zápasu (VerejnyRadek.tsx). */
+.diplo-radek { color: var(--zlato-svetle); font-size: 0.9rem; }
+/* Stažení scénáře pro hosta (StazeniScenare.tsx) na konci kroku „Zakládáš!“:
+   zlaté tlačítko jako „Spustit hru“ (šířku sdílí s `.hostovi .cta` výš),
+   pod ním instrukce na střed. Cesta ke složce je dlouhá a na telefonu se
+   musí zalomit — i uprostřed složky, mezery v ní nejsou. */
+.stazeni-scenare { margin-top: 1rem; text-align: center; }
+.stazeni-scenare p { margin: 0.5rem 0; }
+.stazeni-scenare button.kopirovatelne { max-width: 100%; }
+.stazeni-scenare button.kopirovatelne strong { overflow-wrap: anywhere; text-align: left; }
+/* Správa scénáře (SpravaScenare.tsx): panel s rámem jako panel akce (rám
+   dává společné pravidlo výš), sbalený jen na zlatý nadpis; i bez běžící
+   akce. Formulář v jednom řádku, upozornění a výsledek pod ním přes celou
+   šířku. Náhled: minimapa vlevo, cíle vedle ní. Seznam verzí bez odrážek,
+   aktivní verze světlejší; varování tu není nápověda, tak bez kurzoru
+   s otazníkem z obecného `.varovani`. */
+.sprava-scenare summary { cursor: pointer; color: var(--zlato); font-family: "Cinzel", Georgia, serif; font-size: 1.15rem; font-weight: 700; }
+.sprava-scenare form { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin: 0.7rem 0; }
+/* Pole souboru má vlastní šířku přes 300 px a na telefonu by vyjelo z rámu:
+   popisek s polem je pružný a pole smí být užší, než samo chce. */
+.sprava-scenare form label { display: flex; flex: 1 1 16rem; min-width: 0; align-items: center; gap: 0.4rem; }
+.sprava-scenare form input { flex: 1 1 8rem; min-width: 0; }
+.sprava-scenare form .varovani, .sprava-scenare form .vysledek { flex-basis: 100%; margin: 0; }
+.sprava-scenare .varovani { cursor: auto; margin-left: 0; }
+.verze-scenare { list-style: none; margin: 0.6rem 0 0; padding: 0; }
+.verze-scenare li { padding: 0.3rem 0; border-top: 1px solid color-mix(in srgb, var(--zlato) 30%, transparent); color: var(--tlumene); }
+.verze-scenare li.aktivni { color: var(--text); }
+.verze-scenare li strong { color: var(--zlato-svetle); }
+.verze-scenare li .popis button { margin-left: 0.5rem; padding: 0.2rem 0.6rem; font-size: 0.85rem; }
+/* Tlačítka verze pod popisem: originál, automatizace, scénář (zlaté, dokud
+   není sonda, zamčené), převzetí minimapy, smazání. */
+.verze-scenare li .ovladani { display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; margin-top: 0.3rem; }
+.verze-scenare li .ovladani button { padding: 0.25rem 0.7rem; font-size: 0.85rem; }
+.verze-scenare .jmeno-hry { color: var(--tlumene); }
+/* Proč server smazání odmítl — přímo pod řádkem, ať je to vidět u tlačítka. */
+.verze-scenare .chyba-smazani {
+  margin: 0.35rem 0 0; padding: 0.3rem 0.6rem; color: var(--chyba); font-size: 0.9rem;
+  border-left: 3px solid var(--cervena-varovani); background: color-mix(in srgb, var(--cervena-varovani) 12%, transparent);
+}
+/* Bublina „Přibalit automatizace“ zalomená a od levého kraje tlačítka — na
+   telefonu by jednořádková vyjela z obrazovky. */
+.verze-scenare .napoveda::after { left: 0; right: auto; white-space: normal; max-width: min(18rem, 80vw); }
 .karta .ceka { margin: 0.4rem 0; }
 .karta .heslo { margin-top: 0.8rem; font-size: 1.05rem; }
 .karta .hledani-lobby .ovladani { justify-content: center; }
@@ -1483,13 +2207,31 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
 .vs-rozlozeni > .skladani.jen-ke-cteni { flex: 1 1 0; min-width: 0; }
 .vs-rozlozeni .vs { flex: none; font-size: 2.2rem; font-weight: 800; color: var(--akcent); letter-spacing: 0.05em; }
 @media (max-width: 40rem) { .vs-rozlozeni { flex-wrap: wrap; } }
+/* FFA s víc než dvěma stranami (např. 1v1v1v1v1v1v1v1 — každý hráč sám za
+   sebe) se do jednoho řádku nevejde, i na širokém displeji — proto mřížka
+   místo flexu. Vždy dva sloupce plněné shora dolů (uživatel 2. 10. 2026):
+   vlevo první polovina stran, vpravo druhá — u osmi hráčů 1–4 a 5–8, jako
+   sloty v lobby hry. Dřívější `auto-fill` dalo na širokém monitoru tři
+   sloupce (3+3+2) a civilizace se v nich krátily na „L…“. Počet řádků
+   (`--radku-stran` = ⌈stran / 2⌉) dodává StranyZapasu.tsx; `minmax(0, 1fr)`
+   nenechá dlouhé jméno roztáhnout sloupec přes půlku karty. Na telefonu
+   jeden sloupec v pořadí slotů. Uvnitř strany musí vyhrát jméno nad
+   civilizací, ne naopak: `minmax(7rem, max-content)` u jména ho nechá
+   vyrůst na celý text už v kroku mřížky „Maximize Tracks“, civilizace
+   (`minmax(0, 1fr)`) dostane až to, co zbyde. „VS“ se u víc stran vůbec
+   nekreslí (komponenta) — u FFA by nic neoddělovalo. Dva týmy (1v1, 2v2,
+   4v4) tuhle třídu nedostanou a zůstanou beze změny — všechna pravidla níž
+   platí jen pod `.mnoho-stran`. */
+.vs-rozlozeni.mnoho-stran { display: grid; grid-auto-flow: column; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--radku-stran, 4), auto); }
+@media (max-width: 40rem) { .vs-rozlozeni.mnoho-stran { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; } }
+.vs-rozlozeni.mnoho-stran .skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem minmax(7rem, max-content) auto minmax(0, 1fr); }
 .skladani.jen-ke-cteni { border: none; padding: 0; margin: 0; }
 .skladani.jen-ke-cteni .sestava { grid-template-columns: 2.1rem 2.1rem minmax(0, 1fr) auto minmax(9rem, 17rem); column-gap: 0.5rem; }
 .skladani.jen-ke-cteni .jmeno { max-width: none; }
 .skladani.jen-ke-cteni .radek { cursor: default; }
 .skladani.jen-ke-cteni .radek.ja .jmeno { font-weight: 700; color: var(--akcent); }
-.skladani.jen-ke-cteni .vyber-civ-tlacitko:disabled { opacity: 0.6; cursor: default; }
-.skladani.jen-ke-cteni .vyber-civ-tlacitko .sipka { visibility: hidden; }
+.skladani.jen-ke-cteni .vyber-civ .rozbalovaci-tlacitko:disabled { opacity: 0.6; cursor: default; }
+.skladani.jen-ke-cteni .vyber-civ .rozbalovaci-tlacitko .sipka { visibility: hidden; }
 
 /* Řazení tabulky přihlášených v režii: hlavička je tlačítko, šipka říká směr. */
 .seznam > thead > tr > th button.razeni { background: none; border: none; box-shadow: none; padding: 0; margin: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; }
@@ -1505,7 +2247,8 @@ button.kopirovatelne.jen-ikona .ikona-kopie { color: var(--akcent); width: 16px;
    — je to informace „asi tu není“, ne škrtnutí. Ztmavnutí se prolne, přejezd
    na nové místo obstará FLIP v komponentě (jen `transform` se tu nepřechází,
    ať si ho animace řídí sama). */
-.seznam > tbody > tr { opacity: 1; transition: opacity 340ms ease; }
+.seznam > tbody > tr { opacity: 1; transition: opacity 340ms ease, background-color var(--prechod-rychly) ease; }
+.seznam > tbody > tr > td { transition: background-color var(--prechod-rychly) ease; }
 @media (prefers-reduced-motion: reduce) {
   .seznam > tbody > tr { transition: none; }
 }
@@ -1547,7 +2290,7 @@ h2 .nazev-akce-text {
   margin-left: -0.65rem;
   border: 1px solid transparent;
   border-radius: 2px;
-  transition: border-color 0.18s, color 0.18s;
+  transition: border-color var(--prechod-rychly), color var(--prechod-rychly);
 }
 h2 button.nazev-akce-tlacitko:hover .nazev-akce-text,
 h2 button.nazev-akce-tlacitko:focus-visible .nazev-akce-text {
@@ -1564,7 +2307,7 @@ h2 .tuzka-napovedy {
   vertical-align: 0.22em;
   color: var(--zlato);
   opacity: 0;
-  transition: opacity 0.18s;
+  transition: opacity var(--prechod-rychly);
   text-shadow: 0 0 12px rgba(216, 168, 58, 0.6);
 }
 h2 button.nazev-akce-tlacitko:hover .tuzka-napovedy,
@@ -1754,6 +2497,7 @@ h2 input.nazev-akce-pole {
 .staty-hrace th:not(:first-child), .staty-hrace td:not(:first-child) { text-align: center; }
 .staty-hrace td { padding: 0.15rem 0.5rem; font-size: 1rem; color: var(--text); border-bottom: 1px solid rgba(216, 168, 58, 0.16); }
 .staty-hrace tbody tr:nth-child(even) { background: rgba(216, 168, 58, 0.045); }
+.staty-hrace tbody tr { transition: background-color var(--prechod-rychly) ease; }
 .staty-hrace tbody tr:hover { background: rgba(216, 168, 58, 0.10); }
 .staty-hrace tr.tymovy td:first-child { font-size: 0.9rem; padding-left: 0.6rem; }
 .staty-hrace .zaloha { margin: 0.4rem 0 0; font-family: system-ui, sans-serif; }
@@ -1786,7 +2530,7 @@ h2 input.nazev-akce-pole {
    hover ho jen lehce zezlátne. */
 /* Odsazení musí stát až za `all: unset` z `bez-vzhledu`, ten smaže i okraje.
    Mezi pomlčkou a jménem jinak nezbyla mezera — tlačítko se lepilo na ni. */
-h1 button.jmeno-roba { margin-left: 10px; transition: color 0.2s; }
+h1 button.jmeno-roba { margin-left: 10px; transition: color var(--prechod) ease, text-shadow var(--prechod) ease; }
 h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
   color: var(--zlato);
   background: none;
@@ -1798,7 +2542,10 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 /* Čtverečky barvy a týmu se neoznačují jako text (na kartě hráče jsou to
    jen span). Tlačítka ve skládání se při stisku zamáčknou: zkosení se
    obrátí a čtvereček trochu zmenší. */
-.skladani .volba { user-select: none; -webkit-user-select: none; transition: transform 0.08s ease, box-shadow 0.08s ease; }
+/* Vlastní stisk (níž) místo obecného sednutí tlačítek; barva se při změně
+   slotu nebo míchání barev přelije, místo aby přeskočila. */
+.skladani .volba { user-select: none; -webkit-user-select: none; transition: transform var(--prechod-rychly) ease, box-shadow var(--prechod-rychly) ease, background-color var(--prechod) ease, border-color var(--prechod-rychly) ease, color var(--prechod) ease; }
+.skladani button.volba:active:enabled, .skladani button.odebrat:active:enabled, button.plus:active:enabled, button.zvonek:active:enabled { translate: none; scale: none; }
 .skladani button.volba:active {
   transform: scale(0.92) translateY(1px);
   box-shadow:
@@ -1806,7 +2553,8 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
     inset 2px 2px 0 rgba(0, 0, 0, 0.5),
     inset 0 0 0 3px rgba(212, 175, 95, 0.55);
 }
-.skladani button.odebrat, button.plus { transition: transform 0.08s ease; }
+.skladani button.odebrat { transition: transform var(--prechod-rychly) ease, color var(--prechod-rychly) ease, border-color var(--prechod-rychly) ease, --kov-1 var(--prechod-rychly) ease, --kov-2 var(--prechod-rychly) ease, --kov-3 var(--prechod-rychly) ease; }
+button.plus { transition: transform var(--prechod-rychly) ease, box-shadow var(--prechod-rychly) ease, opacity var(--prechod-rychly) ease, filter var(--prechod-rychly) ease, --kov-1 var(--prechod-rychly) ease, --kov-2 var(--prechod-rychly) ease, --kov-3 var(--prechod-rychly) ease; }
 .skladani button.odebrat:active, button.plus:active { transform: scale(0.9); }
 
 /* Účastníci zápasu v režii: čtverečky, jméno, ELO, stav a vpravo odznak
@@ -1817,6 +2565,8 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 .zapas .skladani.jen-ke-cteni .sestava.sestava-zapasu { grid-template-columns: 2.1rem 2.1rem max-content 4.4rem 1fr auto; margin: 0.4rem 0; }
 .zapas .titulek-zapasu { margin: 0 0 0.5rem; font-size: 1.8rem; }
 .zapas .titulek-zapasu small { font-size: 1rem; font-weight: 400; color: var(--tlumene); }
+/* Řádek módu pod hlavičkou karty (Diplomacie: stav zápasu). */
+.zapas .doplnek-modu { margin: -0.2rem 0 0.6rem; }
 .zapas .skladani.jen-ke-cteni .sestava-zapasu .radek { padding: 0.35rem 0.2rem; }
 .zapas .sestava-zapasu .stav-ucastnika { color: var(--tlumene); }
 .zapas .sestava-zapasu .radek > button, .zapas .sestava-zapasu .radek > .odznak-host { justify-self: end; margin: 0; white-space: nowrap; }
@@ -1848,7 +2598,8 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
    toho, jestli křížek zrovna je — pruh to řeší sám. */
 .zapas .ovladani-karty { position: absolute; top: 0.7rem; right: 0.7rem; display: flex; align-items: center; gap: 0.2rem; }
 .zapas button.zavrit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 1.2rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
-.zapas button.sbalit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 0.95rem; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.sbalit-zapas { width: 1.9rem; height: 1.9rem; padding: 0; font-size: 0; line-height: 1; color: var(--tlumene); background: none; border: 1px solid transparent; box-shadow: none; }
+.zapas button.sbalit-zapas::before { font-size: 0.95rem; }
 .zapas button.sbalit-zapas:hover:enabled { color: var(--akcent); border-color: var(--zlato-tmave); background: none; }
 .zapas button.zavrit-zapas:hover { color: var(--chyba); border-color: var(--zlato-tmave); }
 
@@ -1873,7 +2624,7 @@ h1 button.jmeno-roba:hover, h1 button.jmeno-roba:focus-visible {
 
 ::selection { background: rgba(216, 168, 58, 0.4); color: #fff6e0; }
 
-a { color: var(--zlato); }
+a { color: var(--zlato); transition: color var(--prechod-rychly) ease; }
 a:hover { color: var(--zlato-svetle); }
 
 /* Popisky nastavení a drobné texty patří ke kapitálce, ne k textu odstavce —
@@ -2033,9 +2784,21 @@ a:hover { color: var(--zlato-svetle); }
    v barvě jeho slotu, admin ve své barvě a se září, ať je v proudu vidět. */
 .chat { margin-top: 1rem; border-top: 1px solid rgba(255, 220, 150, 0.18); padding-top: 0.6rem; }
 .chat .chat-nadpis { display: flex; width: 100%; box-sizing: border-box; align-items: center; justify-content: center; gap: 0.4rem; margin: 0 0 0.4rem; padding: 0.2rem 0; cursor: pointer; user-select: none; font-family: "Cinzel", Georgia, "Times New Roman", serif; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.02em; font-variant: small-caps; color: var(--zlato-svetle); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75), 0 0 14px rgba(216, 168, 58, 0.18); }
+.chat .chat-titulek { transition: color var(--prechod-rychly) ease; }
 .chat .chat-nadpis:hover .chat-titulek { color: var(--zlato); }
 .chat .chat-nadpis:focus-visible { outline: 1px solid var(--zlato-tmave); outline-offset: 2px; }
-.chat .chat-nadpis .sipka { font-size: 0.8rem; width: 0.9rem; }
+/* Šipka hlavičky chatu a rohového tlačítka karty zápasu: komponenta píše
+   ▾ nebo ▸ jako text, mezi nimi se přeskakuje. Text se proto schová
+   (nulové písmo, čtečky ho nečtou — je `aria-hidden`, resp. tlačítko má
+   `aria-label`) a kreslí se jedna šipka, která se podle stavu otáčí. */
+.chat .chat-nadpis .sipka { font-size: 0; width: 0.9rem; }
+.chat .chat-nadpis .sipka::before, .zapas button.sbalit-zapas::before {
+  content: "▾";
+  display: inline-block;
+  transition: rotate var(--prechod-skladani) var(--krivka);
+}
+.chat .chat-nadpis .sipka::before { font-size: 0.8rem; }
+.chat.sbaleny .chat-nadpis .sipka::before, .zapas button.sbalit-zapas[aria-expanded="false"]::before { rotate: -90deg; }
 .chat .chat-nadpis small { font-family: Georgia, serif; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--tlumene); }
 /* Push-to-talk admina vpravo v hlavičce chatu: hlavička je flex se středem,
    nástroje se přilepí doprava absolutně, ať nadpis zůstane na středu. */
@@ -2049,7 +2812,8 @@ a:hover { color: var(--zlato-svetle); }
 @keyframes ptt-pulz { 50% { opacity: 0.35; box-shadow: 0 0 2px 0 rgba(229, 57, 53, 0.5); } }
 /* Popisky obou tlačítek jsou vlastní bublina bez prodlevy (ne title), o kus větším písmem (uživatel 13. 9. 2026). */
 .push-to-talk .napoveda::after { font-size: 0.9rem; white-space: normal; width: max-content; max-width: 18rem; text-align: center; }
-.push-to-talk .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Text jen pro čtečky (push-to-talk, „(pN)“ u stejně pojmenovaných hráčů). */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .push-to-talk .ztlumit { width: 2.1rem; height: 2.1rem; padding: 0; font-size: 0.95rem; line-height: 1; }
 .push-to-talk .ikona { width: 1.35rem; height: 1.35rem; color: var(--zlato); display: block; margin: auto; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.7)); }
 .push-to-talk .ptt, .push-to-talk .ztlumit { display: inline-flex; align-items: center; justify-content: center; }
@@ -2057,8 +2821,16 @@ a:hover { color: var(--zlato-svetle); }
 .push-to-talk .ztlumit.zapnuto { border-color: var(--akcent); color: var(--akcent); }
 .push-to-talk .chyba { font-size: 0.75rem; }
 @media (prefers-reduced-motion: reduce) { .push-to-talk .ptt .nahrava { animation: none; } }
+/* Štítek „kdo právě mluví“: hlas hraje celé stránce, tak je připnutý k oknu —
+   vlevo dole, mimo toasty a kartu statistik (ty jsou vpravo). Na klik nereaguje,
+   ať nepřekáží tomu, co je pod ním. */
+.mluvi-ted { position: fixed; left: 1rem; bottom: 1rem; z-index: 60; display: flex; flex-direction: column; gap: 0.4rem; max-width: calc(100vw - 2rem); pointer-events: none; }
+.mluvi-ted .mluvci { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.8rem 0.4rem 0.6rem; background: var(--drevo-tmave); border: 1px solid var(--zlato); border-radius: 2px; color: var(--text); box-shadow: 0 0 0 1px var(--obrys), 0 8px 20px var(--obrys); animation: toast-nahoru 0.2s ease-out; overflow-wrap: anywhere; }
+.mluvi-ted .ikona { width: 1.35rem; height: 1.35rem; flex: none; color: var(--zlato); }
+.mluvi-ted strong { color: var(--zlato-svetle); }
+@media (prefers-reduced-motion: reduce) { .mluvi-ted .mluvci { animation: none; } }
 /* Sbalení: mřížka 1fr → 0fr, rychlé a bez poskoku. */
-.chat .chat-telo { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease; opacity: 1; }
+.chat .chat-telo { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--prechod-skladani) var(--krivka), opacity var(--prechod) ease; opacity: 1; }
 .chat.sbaleny .chat-telo { grid-template-rows: 0fr; opacity: 0; pointer-events: none; }
 .chat .chat-vnitrek { min-height: 0; overflow: hidden; }
 body.bez-scrollu { overflow: hidden; }
@@ -2124,14 +2896,17 @@ body.bez-scrollu { overflow: hidden; }
 .chat .zpravy li .akce { display: inline-flex; align-items: center; gap: 0.3rem; }
 .chat .smazat-zpravu, .chat .odpovedet { padding: 0 0.4rem; line-height: 1; font-size: 0.9rem; opacity: 0.55; }
 .chat .smazat-zpravu:hover, .chat .odpovedet:hover { opacity: 1; }
-.chat .odpovedet { opacity: 0; transition: opacity 0.12s; }
+.chat .odpovedet { opacity: 0; transition: opacity var(--prechod-rychly); }
 .chat .zpravy li:hover .odpovedet, .chat .odpovedet:focus-visible { opacity: 0.7; }
 /* Náhled původní zprávy nad odpovědí: jeden řádek, tlumený, klik skočí na původní. */
 .chat .odpoved-na { grid-column: 2 / -1; justify-self: start; display: block; max-width: 100%; margin: 0 0 0.05rem; padding: 0 0.3rem; background: none; border: 0; border-left: 2px solid rgba(216, 168, 58, 0.45); border-radius: 0; box-shadow: none; text-align: left; font: inherit; font-size: 0.78rem; color: var(--tlumene); opacity: 0.8; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chat .odpoved-na:hover { opacity: 1; color: var(--text); }
 .chat .odpoved-na b { color: var(--zlato); font-weight: 700; margin-right: 0.3rem; }
 .chat .odpoved-na:hover { background: none; box-shadow: none; }
-.chat .zpravy li.blika { animation: zprava-blik 2s ease-out; }
+/* `vznik` zůstává v seznamu animací na prvním místě (viz „Vznik obsahu“
+   na konci souboru): kdyby tu chyběl, prohlížeč by ho po sundání třídy
+   `blika` bral jako novou animaci a zpráva by se objevila podruhé. */
+.chat .zpravy li.zprava.blika { animation: vznik var(--prechod) var(--krivka), zprava-blik 2s ease-out; }
 @keyframes zprava-blik { 0% { background: rgba(216, 168, 58, 0.35); box-shadow: inset 0 0 0 1px rgba(216, 168, 58, 0.5); } 100% { background: transparent; box-shadow: none; } }
 /* Pruh „Odpověď pro …“ nad polem a našeptávač nad ním; obal drží pozici. */
 .chat .psani-obal { position: relative; }
@@ -2167,11 +2942,11 @@ body.bez-scrollu { overflow: hidden; }
    th výš ji zarovnávalo doprava. */
 .seznam th.jsem-tu-bunka { text-align: center; }
 .super-zvonek { width: 2.1rem; }
-.zvonek { display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; padding: 0; margin: 0; line-height: 1; font-size: 1rem; vertical-align: middle; transition: transform 0.08s ease; }
+.zvonek { display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; padding: 0; margin: 0; line-height: 1; font-size: 1rem; vertical-align: middle; }
 .zvonek:active { transform: scale(0.86); }
 .zvonek:not(:disabled):active { animation: zvon-kyv 0.35s ease; }
-.zvonek { transition: transform 0.08s ease, opacity 0.6s ease, filter 0.6s ease; }
-.zvonek.chladne, .zvonek:disabled { opacity: 0.4; filter: grayscale(0.7); cursor: default; transition: transform 0.08s ease, opacity 0s, filter 0s; }
+.zvonek { transition: transform var(--prechod-rychly) ease, opacity 0.6s ease, filter 0.6s ease, --kov-1 var(--prechod-rychly) ease, --kov-2 var(--prechod-rychly) ease, --kov-3 var(--prechod-rychly) ease, border-color var(--prechod-rychly) ease; }
+.zvonek.chladne, .zvonek:disabled { opacity: 0.4; filter: grayscale(0.7); cursor: default; transition: transform var(--prechod-rychly) ease, opacity 0s, filter 0s; }
 /* Super zvonek v hlavičce tabulky: dva zvonky, větší vzadu, menší vpředu se
    stínem (uživatel 13. 9. 2026). Svolá všechny, u kterých je zvonek. */
 .super-zvonek .dva-zvonky { position: relative; display: inline-block; width: 1.5rem; height: 1.3rem; }
@@ -2220,7 +2995,7 @@ body.bez-scrollu { overflow: hidden; }
   background: linear-gradient(rgba(30, 17, 12, 0.99), rgba(12, 7, 4, 0.99));
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 220, 150, 0.14);
   color: var(--text); font-family: Georgia, serif; font-size: 0.78rem; font-weight: 400; letter-spacing: 0; line-height: 1.2;
-  white-space: nowrap; text-align: left; text-shadow: none; opacity: 0; pointer-events: none; transition: opacity 0.1s;
+  white-space: nowrap; text-align: left; text-shadow: none; opacity: 0; pointer-events: none; transition: opacity var(--prechod-rychly);
 }
 .napoveda-vlastni .bublina hr { border: 0; border-top: 1px solid rgba(255, 220, 150, 0.22); margin: 0.05rem 0; }
 .napoveda-vlastni:hover .bublina, .napoveda-vlastni:focus-visible .bublina { opacity: 1; }
@@ -2281,3 +3056,58 @@ body.bez-scrollu { overflow: hidden; }
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ------------------------------------------------------------------ *
+ * Vznik obsahu (docs/grafika.md „Pohyb“): co na stránku přibude —
+ * karta zápasu, sekce karty, hláška, zpráva v chatu, stav pultu GM —
+ * nenaskočí, ale prolne se a o kousek dojede. Je to animace při vzniku
+ * prvku, takže ji CSS zvládne samo a komponenty o ní nevědí. Klíčový
+ * snímek má jen začátek: končí se v tom, co prvku patří (zašedlá karta
+ * dohraného zápasu zůstane zašedlá). Hýbe se jen `translate` a
+ * průhlednost, nikdy rozměr — rolování chatu ani stránky se nezmění.
+ *
+ * Kde React prvky přeskládává (řádky sestavy při tažení), by se animace
+ * při vzniku pouštěla i přesunutým; tam nové prvky značí skript třídou
+ * `pribyl` (`usePribyli` v pohyb.ts).
+ * ------------------------------------------------------------------ */
+@keyframes vznik { from { opacity: 0; translate: 0 0.4rem; } }
+/* Desky: karta zápasu a hráče, obrazovka hosta, veřejný řádek, panely režie. */
+.zapas, .karta, .host, .verejny-zapas, .sprava-akce, .zalozeni-akce, .sprava-scenare,
+/* Části karty, které přibývají s postupem zápasu: kroky, kontrola lobby,
+   tlačítko na připojení, heslo, verdikt kontroly. */
+.sekce-krok, .sekce-kontrola, .sekce-krok .hostovi, .karta .heslo, .verdikt-lobby,
+/* Hlášky: chyba nahoře na stránce a u pole, ztráta spojení, výsledek nahrání scénáře. */
+main > .chyba, main > .spojeni, .chyba-pole, p.vysledek, .hledani-lobby .potvrzeno, .hledani-lobby .chyba,
+/* Chat, karta statistik pod kurzorem, správa scénáře. */
+.chat .zpravy li.zprava, .chat .odpoved-lista, .staty-hrace, .prehled-pravidel, .verze-scenare li,
+/* Diplomacie: věta o Nástupci a čekání na kartě role, stavy pultu GM
+   (příprava → losováno → rozesláno) a to, co se v tabulce po rozeslání
+   promění z roletky v text. Popisek stavu v záhlaví pultu má v PultGm.tsx
+   `key` podle stavu — nový stav je tím nový prvek a prolne se. */
+.karta-role > .stred, .dlazdice-nastupce, .tabulka-roli, .pult-gm .souhrn, .pult-gm .ovladani, .pult-gm .stav-diplo,
+.tabulka-roli td > strong, .tabulka-roli td > span, .stazeni-scenare,
+/* Cesta ke složce scénářů se po stažení prolne. */
+.stazeni-scenare button.kopirovatelne {
+  animation: vznik var(--prechod) var(--krivka);
+}
+/* Nový řádek sestavy (třídu dává `usePribyli`); když ho zároveň rozsvítí
+   historie kroků (`.zmena`), poběží obojí. */
+.skladani .radek.pribyl { animation: vznik var(--prechod) var(--krivka); }
+.skladani .radek.pribyl.zmena { animation: vznik var(--prechod) var(--krivka), zmena-blik 1.6s ease-out; }
+/* Rozdání karty role: karta rubem nahoru dopadne na stůl — přiletí shora,
+   lehce natočená, a srovná se. Jen na kartě hráče; pult GM kartu drží od
+   začátku. */
+.karta-role .zakryti { animation: karta-rozdana var(--prechod-karta) var(--krivka); }
+@keyframes karta-rozdana { from { opacity: 0; translate: 0 -1.2rem; rotate: -3deg; scale: 0.92; } }
+/* Razítko: fajfka hotového kroku, odznaky vítěze a hosta a znak role
+   v tabulce GM. Znak má v PultGm.tsx `key` podle role, takže po přelosování
+   nebo ruční změně dosedne jen u řádků, kde se role opravdu změnila. */
+.zahlavi-sekce .fajfka, .odznak-vitez, .odznak-host, .tabulka-roli .znak-role { animation: razitko var(--prechod) var(--krivka); }
+/* Mapa scénáře: značka s popiskem se prolne (jen průhlednost — polohu drží
+   `transform`, posun by ji rozhodil) a koruna Nástupce dosedne jako razítko,
+   když ho GM zvolí. Časy ze sdílených proměnných, takže při
+   `prefers-reduced-motion` je obojí hned. */
+.mapa-scenare .start { animation: prolnuti var(--prechod) ease; }
+.mapa-scenare .koruna { animation: razitko var(--prechod) var(--krivka); }
+@keyframes prolnuti { from { opacity: 0; } }
+@keyframes razitko { from { opacity: 0; scale: 1.5; } }

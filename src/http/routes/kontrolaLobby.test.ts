@@ -16,6 +16,12 @@ describe("prectiNastaveniLobby", () => {
     expect(prectiNastaveniLobby({ vitezstvi: 5, populace: 200 })).toEqual({ populace: 200 });
   });
 
+  // Nulu posílají jen scénářové lobby (VITEZSTVI ji zná kvůli výpisu);
+  // v herní nabídce není, takže ji jako očekávání nejde uložit.
+  it("„podle scénáře“ (0) jako očekávané vítězství nepustí", () => {
+    expect(prectiNastaveniLobby({ vitezstvi: 0, populace: 200 })).toEqual({ populace: 200 });
+  });
+
   it("populaci a příměří bere jen z herní nabídky", () => {
     expect(prectiNastaveniLobby({ populace: 225 })).toEqual({ populace: 225 });
     expect(prectiNastaveniLobby({ populace: 210, primeri: 90 })).toEqual({ primeri: 90 });
@@ -82,5 +88,18 @@ describe("pre-lobby v nastavení", () => {
     expect(prectiNastaveniLobby({ zpozdeniDivaku: 7, populace: 200 })).toEqual({ populace: 200 });
     expect(prectiNastaveniLobby({ server: "marsnorth", populace: 200 })).toEqual({ populace: 200 });
     expect(prectiNastaveniLobby({ dataMod: "vlastní mod", populace: 200 })).toEqual({ populace: 200 });
+  });
+});
+
+// Jméno scénáře hra posílá bez cesty, s příponou .aoe2scenario — co nesedí
+// tomuhle tvaru, by server nemohl uložit a kontrola lobby by ho nenašla.
+describe("scénář v nastavení", () => {
+  it("prectiNastaveniLobby propustí platné jméno scénáře a seznam starších", () => {
+    expect(prectiNastaveniLobby({ scenar: "A b.aoe2scenario", scenarStarsi: ["x.aoe2scenario"] })).toEqual({ scenar: "A b.aoe2scenario", scenarStarsi: ["x.aoe2scenario"] });
+    expect(prectiNastaveniLobby({ scenar: null, rychlost: 2 })).toEqual({ scenar: null, rychlost: 2 });
+  });
+  it("prectiNastaveniLobby zahodí jméno s cestou nebo bez přípony", () => {
+    expect(() => prectiNastaveniLobby({ scenar: "../x.aoe2scenario" })).toThrow();
+    expect(() => prectiNastaveniLobby({ scenar: "x.txt" })).toThrow();
   });
 });

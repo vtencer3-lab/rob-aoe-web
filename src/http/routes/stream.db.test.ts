@@ -6,6 +6,10 @@ import { sestavaCoop, sestavaKazdyProtiKazdemu } from "../../matches/sestavyProT
 import { closePool, getPool } from "../../db/pool.js";
 import { savePlayerStats, upsertPlayer } from "../../db/players.js";
 import { createSession } from "../../db/sessions.js";
+import { setNastupce, ulozRole } from "../../diplomacie/db.js";
+import { pametHer, zapomenHry } from "../../diplomacie/hraPamet.js";
+import { ROB, klient, zapasOsmi } from "../../diplomacie/testPomocnici.js";
+import { losujRole } from "../../shared/diplomacie/los.js";
 import { broadcastAkce } from "../../realtime/akceStav.js";
 import { hub, KANAL_AKCE } from "../../realtime/hub.js";
 import type { AkceStavPayload } from "../../shared/types.js";
@@ -408,6 +412,59 @@ it("účastník ve streamu heslo i odkaz na připojení dostane, Rob k tomu div�
   robCtrl.abort();
 
   await app.close();
+});
+
+// Totéž, co pro GET /api/akce hlídá rezim.db.test.ts, ale na drátě SSE —
+// stream nese 100 % živého provozu a Rob při něm streamuje. Admin, který
+// není GM, dostane větev rezim.data bez rolí (spec §7), Nástupce po
+// rozeslání ano.
+it("admin, který není GM, nedostane cizí role Diplomacie ani ve streamu", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  await setNastupce(zapas.id, "h1");
+  await ulozRole(zapas.id, losujRole(["h1", "h2", "h3", "h4", "h5", "h6", "h8"], "h1", () => 0), "rozeslano");
+  const robSid = await klient(ROB, true);
+
+  const app = buildServer();
+  await app.ready();
+  const ctrl = new AbortController();
+  const res = await app.inject({ method: "GET", url: "/api/stream", payloadAsStream: true, signal: ctrl.signal, cookies: { sid: robSid } });
+  const payload = await prvniPayload(res.stream());
+  expect(payload.rezim?.data.zapasy[0]).toMatchObject({ zapasId: zapas.id, stav: "rozeslano", nastupceHracId: "h1", role: [] });
+  ctrl.abort();
+  await app.close();
+});
+
+// Data z běžící hry (kdo má jaký sekundární cíl, koho hra určila za
+// Nástupce) prozrazují totéž co role: ve streamu je smí dostat jen GM
+// zápasu — admin, který GM není, ne, a to ani v přípravě.
+it("data ze hry jdou streamem jen GM zápasu, adminovi-ne-GM ne", async () => {
+  const { zapas } = await zapasOsmi("diplomacie");
+  const hra = { cas: 95, prijato: new Date().toISOString(), rozdano: true, nastupceHracId: "h4", hraci: [{ hracId: "h4", cil: null, relikvie: 0, zije: true }] };
+  pametHer.set(zapas.id, { hra, kandidat: { hracId: "h4", odCasu: 91 }, rozeslanoMs: Date.now(), posledniOdGmMs: Date.now() });
+  const app = buildServer();
+  await app.ready();
+  try {
+    const stav = async (sid: string) => {
+      const ctrl = new AbortController();
+      const res = await app.inject({ method: "GET", url: "/api/stream", payloadAsStream: true, signal: ctrl.signal, cookies: { sid } });
+      const payload = await prvniPayload(res.stream());
+      ctrl.abort();
+      return { zapas: payload.rezim!.data.zapasy[0]!, text: JSON.stringify(payload) };
+    };
+    const gm = await stav(await klient("h7", false));
+    expect(gm.zapas.hra).toEqual(hra);
+    for (const sid of [await klient(ROB, true), await klient("h4", false)]) {
+      const cizi = await stav(sid);
+      expect(cizi.zapas.zapasId).toBe(zapas.id);
+      expect("hra" in cizi.zapas).toBe(false);
+      // Hráč h4 dostane jen vlastní postup (`mojeHra`), výpis hráčů ze hry nikdo jiný než GM.
+      expect(JSON.stringify(cizi.zapas)).not.toContain('"hraci"');
+      expect(JSON.stringify(cizi.zapas)).not.toContain("nastupceHracId\":\"h4\",\"hraci");
+    }
+  } finally {
+    zapomenHry();
+    await app.close();
+  }
 });
 
 // Přesně to, co se stalo naživo: stránka otevřená během první akce zůstala

@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type CSSProperties } from "react";
 import { strany } from "../../../src/shared/strany.js";
 import { BARVA_NAZEV, type UcastnikView } from "../../../src/shared/types.js";
 import { jmenoHrace, popisTymu } from "../zapas.js";
@@ -6,16 +6,27 @@ import { VyberCivilizace } from "./VyberCivilizace.js";
 
 /**
  * Strany zápasu vedle sebe, každá jako řádky ze skládání (barva, tým, jméno,
- * civilizace), jen ke čtení. Mezi stranami velké VS. Vlastní řádek je
- * zvýrazněný.
+ * civilizace), jen ke čtení. Vlastní řádek je zvýrazněný. U dvou stran velké
+ * VS mezi nimi; u víc stran (FFA) se VS nekreslí vůbec — u osmi samostatných
+ * hráčů by nic neoddělovalo a jen by viselo na kraji zalomeného řádku.
+ * Víc stran jde do dvou sloupců plněných shora dolů: vlevo první polovina,
+ * vpravo druhá (u osmi hráčů 1–4 a 5–8, jako sloty v lobby hry).
  */
 export function StranyZapasu({ ucastnici, ja }: { ucastnici: UcastnikView[]; ja: string }) {
   const seznam = strany(ucastnici);
+  // FFA (každý sám za sebe, třeba 1v1v1v1v1v1v1v1) má víc stran než klasické
+  // dva týmy — do jednoho řádku se nevejdou, proto se při víc než dvou
+  // stranách přidá třída pro mřížku (CSS: .vs-rozlozeni.mnoho-stran) a
+  // nekreslí se „VS“ (u FFA nic neodděluje, jen by přebývalo).
+  const mnohoStran = seznam.length > 2;
+  // Počet řádků mřížky musí říct komponenta: CSS samo neumí „polovina
+  // potomků“, a bez něj by sloupcové plnění nasázelo všechny strany pod sebe.
+  const styl = mnohoStran ? ({ "--radku-stran": Math.ceil(seznam.length / 2) } as CSSProperties) : undefined;
   return (
-    <div className="vs-rozlozeni">
+    <div className={mnohoStran ? "vs-rozlozeni mnoho-stran" : "vs-rozlozeni"} style={styl}>
       {seznam.map((strana, i) => (
         <Fragment key={i}>
-          {i > 0 ? (
+          {i > 0 && !mnohoStran ? (
             <div className="vs" aria-label="proti">
               VS
             </div>

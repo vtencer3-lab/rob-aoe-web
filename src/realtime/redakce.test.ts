@@ -157,6 +157,35 @@ it("název příští lobby zůstane všem", () => {
   expect(redigujProDivaka(stav, { hracId: null, jeAdmin: false }).akce).toMatchObject({ pristiNazevLobby: "ROB-03" });
 });
 
+// Tajemství módu (role Diplomacie) se zaslepují i adminovi, který není GM —
+// admin nemá u módu výjimku (spec §7, constraints.md).
+it("větev módu se zaslepuje i adminovi", () => {
+  const payload = {
+    akce: null,
+    prihlaseni: [],
+    zapasy: [],
+    rezim: {
+      id: "diplomacie" as const,
+      data: {
+        aktivni: null,
+        verze: {},
+        zapasy: [
+          {
+            zapasId: 1,
+            gmHracId: "gm",
+            stav: "rozeslano" as const,
+            nastupceHracId: "n",
+            scenarId: null,
+            role: [{ hracId: "k", role: "kat" as const, cilHracId: "x" }],
+          },
+        ],
+      },
+    },
+  };
+  expect(redigujProDivaka(payload, { hracId: "admin", jeAdmin: true }).rezim?.data.zapasy[0]?.role).toEqual([]);
+  expect(redigujProDivaka(payload, { hracId: "gm", jeAdmin: false }).rezim?.data.zapasy[0]?.role).toHaveLength(1);
+});
+
 // Chat je pro lidi v zápase a adminy. Cizí divák nesmí dostat ani jednu
 // zprávu — heslo se v chatu klidně objeví.
 describe("redakce chatu", () => {

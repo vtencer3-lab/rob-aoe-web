@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dalsiVerze, duvodOdmitnuti, napis, rozeber, verzePoMergi } from "./verze.js";
+import { dalsiVerze, duvodOdmitnuti, napis, POKUSNE_VETVE, rozeber, verzePoMergi } from "./verze.js";
 
 describe("rozeber", () => {
   it("pozná obyčejnou i pokusnou verzi", () => {
@@ -83,5 +83,11 @@ describe("duvodOdmitnuti", () => {
     expect(duvodOdmitnuti("0.16.4-18.11", "patch", "experimental")).toBeNull();
     expect(duvodOdmitnuti("0.17.1", "patch", "dev")).toBeNull();
     expect(duvodOdmitnuti("0.16.4-18.11", "patch", null)).toBeNull();
+  });
+
+  it("diplo je pokusná větev stejně jako experimental", () => {
+    expect(POKUSNE_VETVE).toEqual(["experimental", "diplo"]);
+    expect(duvodOdmitnuti("1.13.10-13.10", "patch", "diplo")).toBeNull();
+    expect(duvodOdmitnuti("1.13.10-13.10", "patch", "dev")).toMatch(/pokusná verze/);
   });
 });

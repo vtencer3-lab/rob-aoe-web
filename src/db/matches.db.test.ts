@@ -248,7 +248,7 @@ it("účastník nese platformaJmeno, aby se dal pojmenovat i bez aliasu ze žeb�
 
 it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
   await savePlayerStats(HRACI[0]!, { alias: "A", platformaJmeno: "A", elo1v1: 1234, eloNejvyssi: 1300, odehranoHer: 10, chyba: null });
-  await setNastaveniLobby(akceId, { location: "Arabia", population: 200 });
+  await setNastaveniLobby(akceId, { mapaId: 10875, populace: 200 });
 
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
 
@@ -256,7 +256,7 @@ it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
     "SELECT nastaveni FROM zapas WHERE id = $1",
     [zapas.id],
   );
-  expect(rows[0]?.nastaveni).toMatchObject({ location: "Arabia", population: 200 });
+  expect(rows[0]?.nastaveni).toMatchObject({ mapaId: 10875, populace: 200 });
 
   const { rows: ucastnici } = await getPool().query<{ hrac_id: string; elo_pri_zapasu: number | null }>(
     "SELECT hrac_id, elo_pri_zapasu FROM ucastnik WHERE zapas_id = $1 ORDER BY hrac_id",
@@ -270,16 +270,16 @@ it("zápas si obtiskne nastavení lobby a ELO hráčů", async () => {
 // Otisk je snímek, ne odkaz: pozdější změna nastavení akce se do už založeného
 // zápasu nesmí promítnout.
 it("pozdější změna nastavení akce zápasem nehne", async () => {
-  await setNastaveniLobby(akceId, { location: "Arabia" });
+  await setNastaveniLobby(akceId, { mapaId: 10875 });
   const zapas = await createZapas(akceId, sestavaKazdyProtiKazdemu(HRACI.slice(0, 2)));
 
-  await setNastaveniLobby(akceId, { location: "Black Forest" });
+  await setNastaveniLobby(akceId, { mapaId: 10901 });
 
   const { rows } = await getPool().query<{ nastaveni: Record<string, unknown> }>(
     "SELECT nastaveni FROM zapas WHERE id = $1",
     [zapas.id],
   );
-  expect(rows[0]?.nastaveni).toMatchObject({ location: "Arabia" });
+  expect(rows[0]?.nastaveni).toMatchObject({ mapaId: 10875 });
 });
 
 // AI do akce nikdo nepřihlašuje — sedí rovnou v sestavě. Kontrola „kdo se

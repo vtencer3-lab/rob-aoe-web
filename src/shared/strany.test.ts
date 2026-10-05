@@ -7,7 +7,9 @@ import {
   stranaHrace,
   strany,
   titulekViteze,
+  vetaOViteze,
   vitezVeVete,
+  vyhralHrac,
   type ClenStrany,
 } from "./strany.js";
 import type { Barva, Tym } from "./types.js";
@@ -64,6 +66,59 @@ describe("stejnyVitez a stranaHrace", () => {
     expect(stranaHrace(u, "a")).toEqual({ tym: 1 });
     expect(stranaHrace(u, "s")).toEqual({ hracId: "s" });
     expect(stranaHrace(u, "z")).toBeNull();
+  });
+});
+
+// Aliance v Diplomacii i ve FFA vznikají až ve hře: v lobby hraje každý sám
+// za sebe, ale vyhrát můžou dva nebo tři naráz. Třetí tvar vítěze je proto
+// seznam hráčů, ne strana ze sestavy.
+describe("vítěz s víc hráči", () => {
+  const ffa = [c("a", 0, 1, 0, "Garda"), c("b", 0, 2, 1, "Nastupce"), c("d", 0, 3, 2, "Zoldak"), c("ai:1", 0, 4, 3, "AI")];
+  const tymovy = [c("a", 1, 1, 0), c("b", 1, 1, 1), c("x", 2, 2, 2), c("s", 0, 3, 3)];
+
+  it("stejnyVitez porovnává množinu hráčů bez ohledu na pořadí", () => {
+    expect(stejnyVitez({ hraci: ["a", "b"] }, { hraci: ["b", "a"] })).toBe(true);
+    expect(stejnyVitez({ hraci: ["a", "b"] }, { hraci: ["a", "d"] })).toBe(false);
+    expect(stejnyVitez({ hraci: ["a", "b"] }, { hraci: ["a"] })).toBe(false);
+    expect(stejnyVitez({ hraci: ["a"] }, { hracId: "a" })).toBe(false);
+    expect(stejnyVitez({ hracId: "a" }, { hraci: ["a"] })).toBe(false);
+    expect(stejnyVitez({ tym: 1 }, { hraci: ["a"] })).toBe(false);
+  });
+
+  it("vyhralHrac zná všechny tři tvary a bez výsledku nevyhrál nikdo", () => {
+    expect(vyhralHrac(tymovy, { tym: 1 }, "b")).toBe(true);
+    expect(vyhralHrac(tymovy, { tym: 1 }, "x")).toBe(false);
+    expect(vyhralHrac(tymovy, { tym: 1 }, "cizi")).toBe(false);
+    expect(vyhralHrac(tymovy, { hracId: "s" }, "s")).toBe(true);
+    expect(vyhralHrac(tymovy, { hracId: "s" }, "a")).toBe(false);
+    expect(vyhralHrac(ffa, { hraci: ["a", "d"] }, "d")).toBe(true);
+    expect(vyhralHrac(ffa, { hraci: ["a", "d"] }, "b")).toBe(false);
+    expect(vyhralHrac(ffa, null, "a")).toBe(false);
+  });
+
+  it("věta: jeden vyhrál, víc vyhráli, jména v pořadí slotů", () => {
+    expect(vitezVeVete(ffa, { hraci: ["b"] })).toBe("vyhrál Nastupce");
+    expect(vitezVeVete(ffa, { hraci: ["ai:1"] })).toBe("vyhrála AI");
+    expect(vitezVeVete(ffa, { hraci: ["d", "a"] })).toBe("vyhráli Garda a Zoldak");
+    expect(vitezVeVete(ffa, { hraci: ["d", "b", "a"] })).toBe("vyhráli Garda, Nastupce a Zoldak");
+    expect(vitezVeVete(ffa, { hraci: ["zzz"] })).toBe("vyhrál zzz");
+  });
+
+  // Web ke jménům ve větě kreslí čtvereček barvy: části věty nesou barvu
+  // hráče, u týmu jen když ji sdílí celý; neznámé id a tým s víc barvami ne.
+  it("části věty nesou barvu jmenovaného", () => {
+    expect(vetaOViteze(ffa, { hraci: ["d", "a"] })).toEqual({
+      sloveso: "vyhráli",
+      jmenovani: [
+        { jmeno: "Garda", barva: 1 },
+        { jmeno: "Zoldak", barva: 3 },
+      ],
+    });
+    expect(vetaOViteze(ffa, { hraci: ["zzz"] })).toEqual({ sloveso: "vyhrál", jmenovani: [{ jmeno: "zzz", barva: null }] });
+    expect(vetaOViteze(ffa, { hracId: "b" })).toEqual({ sloveso: "vyhrál", jmenovani: [{ jmeno: "Nastupce", barva: 2 }] });
+    const tymy = [c("a", 1, 1, 0), c("b", 1, 1, 1), c("x", 2, 2, 2), c("y", 2, 3, 3)];
+    expect(vetaOViteze(tymy, { tym: 1 })).toEqual({ sloveso: "vyhrál", jmenovani: [{ jmeno: "modrý tým", barva: 1 }] });
+    expect(vetaOViteze(tymy, { tym: 2 })).toEqual({ sloveso: "vyhrál", jmenovani: [{ jmeno: "tým 2", barva: null }] });
   });
 });
 

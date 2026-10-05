@@ -1,15 +1,17 @@
 import { cisloTauntu } from "../../src/shared/taunty.js";
 import { hlasitostAdmina as nactiHlasitostAdmina, spustPrehravacHlasu, zesileniMikrofonu as nactiZesileniMikrofonu } from "./hlas.js";
 import { jeDulezita } from "../../src/shared/cenzura.js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { api, type Me } from "./api.js";
 import { cesta } from "./cesty.js";
 import { doplnNastaveni, type NastaveniLobby } from "../../src/shared/lobbyKontrola.js";
 import { VERZE } from "../../src/shared/verze.js";
-import type { Vitez, ZapasView } from "../../src/shared/types.js";
+import type { RezimId, Vitez, ZapasView } from "../../src/shared/types.js";
 import { popisZmenyNastaveni, popisZmenySestavy, type Zaznam } from "./historie.js";
 import { Toasty, type Toast } from "./views/Toasty.js";
 import { useAkceStav } from "./useAkceStav.js";
+import { rezimKlienta } from "./rezimy/index.js";
+import { MluviTed } from "./views/MluviTed.js";
 import { useSkladani } from "./skladani.js";
 import { useZmenaVysky } from "./vyska.js";
 import { jeVeHre, jmenoHrace, mojeZapasy, mujUcastnik, verejneZapasy } from "./zapas.js";
@@ -28,6 +30,7 @@ import { HistorieZapasu, Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { Skladani } from "./views/Skladani.js";
 import { SpravaAkce } from "./views/SpravaAkce.js";
+import { SpravaScenare } from "./diplomacie/SpravaScenare.js";
 import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
@@ -147,6 +150,9 @@ export function App() {
   // proměnné nemá, takže tam okno s volbou nedává smysl — a druhý erb by vedl
   // na syrový JSON. Dokud /api/me neodpoví, chová se web jako dřív.
   const [maMicrosoft, setMaMicrosoft] = useState(false);
+  // Admin nebo autor scénáře Diplomacie (spec §5.1): server to říká vedle
+  // řádku hráče, protože práva autora na řádku vidět nejsou.
+  const [smiNahratScenar, setSmiNahratScenar] = useState(false);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
@@ -160,6 +166,13 @@ export function App() {
 
   const akce = stav?.akce ?? null;
   const admin = Boolean(me?.jeAdmin) && !pohledUzivatele;
+  // Mód akce (starší snímek bez `rezim` = klasický) a co přidá na obrazovky
+  // jádra (H9): kartu, krok hosta, veřejný řádek, štítek. Klasický večer nic.
+  const rezimAkce: RezimId = akce?.rezim ?? "klasicky";
+  const rk = rezimKlienta(rezimAkce);
+  // Řádek „Scénář“ v Nastavení lobby (Custom Scenario): podmínky vítězství
+  // z rozboru. Klasický večer háček nemá a panel zůstává, jak je.
+  const scenarPanelu = stav ? (rk.nastaveniScenare?.(stav) ?? undefined) : undefined;
 
   // Zvon z radnice (odvolání poplachu, „zpět do práce“) jako ve hře: hráčům
   // zazvoní, když host potvrdí založení jejich lobby — je čas se připojit;
@@ -262,6 +275,7 @@ export function App() {
           },
         }
       : undefined,
+    rezimAkce,
   );
   // useSkladani se volá dřív, než jsou definované pomocné funkce níž — refy to překlenou.
   const jmenoPodleIdRef = useRef<(hracId: string) => string>((id) => id);
@@ -271,6 +285,7 @@ export function App() {
     void api.me().then((odpoved) => {
       setMe(odpoved.hrac);
       setMaMicrosoft(odpoved.maMicrosoft === true);
+      setSmiNahratScenar(odpoved.smiNahratScenar === true);
     });
     void api
       .nastaveni()
@@ -413,6 +428,15 @@ export function App() {
     }
   }
 
+  /** Doplněk módu pro jedno místo v jádru; bez snímku stavu není co doplňovat. */
+  const doplnekModu = (misto: "kartaHrace" | "krokHosta" | "verejnyZapas", zapas: ZapasView, ja: string | null) =>
+    stav ? rk[misto]?.({ zapas, stav, ja, hlidej }) : null;
+
+  // Push-to-talk ve vlastní kartě zápasu: jen komu ho dá mód (GM Diplomacie).
+  // Admin mluví z režie (rezieObsluha.onHlas), karta hráče ho jinak nemá.
+  const hlasDoZapasu = (zapas: ZapasView) =>
+    stav && me && rk.smiMluvitDoZapasu?.({ zapas, stav, ja: me.hracId, hlidej }) ? (telo: Parameters<typeof api.hlas>[1]) => api.hlas(zapas.id, telo) : undefined;
+
   // Tytéž ovládací prvky obsluhují běžící zápasy i historii, proto se předává
   // jeden balík dvěma sekcím místo dvou opsaných seznamů.
   const rezieObsluha = {
@@ -426,7 +450,7 @@ export function App() {
     onSmazatZpravu: (zapasId: number, zpravaId: number) => hlidej(() => api.smazatZpravu(zapasId, zpravaId)),
     onUpravitZpravu: (zapasId: number, zpravaId: number, text: string) => hlidej(() => api.upravitZpravu(zapasId, zpravaId, text)),
     onUpravit: (zapasId: number) => setUpravovany(zapasId),
-    // Push-to-talk jen v režii (uživatel 13. 9. 2026), karta hráče ho nemá.
+    // Push-to-talk admina jen v režii (uživatel 13. 9. 2026); kartu hráče řeší hlasDoZapasu.
     onHlas: (zapasId: number, telo: Parameters<typeof api.hlas>[1]) => api.hlas(zapasId, telo),
     ladeni: admin && ladeni,
   };
@@ -648,7 +672,8 @@ export function App() {
       {admin ? (
         <SpravaAkce
           akce={akce}
-          onZalozit={(nazev) => void hlidej(() => api.vytvoritAkce(nazev))}
+          stitek={rk.stitek?.() ?? null}
+          onZalozit={(nazev, rezim) => void hlidej(() => api.vytvoritAkce(nazev, rezim))}
           onNastaveniLobby={(n) => {
             if (!akce) return;
             const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
@@ -657,8 +682,18 @@ export function App() {
             void hlidej(() => api.nastaveniLobby(akce.id, n));
           }}
           zvyraznitNastaveni={zvyrazneni?.druh === "nastaveni" ? zvyrazneni : null}
+          scenar={scenarPanelu}
           onUlozitNastaveni={() => {
             if (akce) void hlidej(() => api.ulozitNastaveniLobby(akce.id));
+          }}
+          onResetNastaveni={() => {
+            if (!akce) return;
+            // Reset je změna jako každá jiná: do historie, ať jde vzít zpět.
+            const pred = doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>);
+            const po = doplnNastaveni(akce.vychoziNastaveniLobby);
+            const { text, cil } = popisZmenyNastaveni(pred, po);
+            if (cil) zaznamenej({ druh: "nastaveni", pred, po, text, cil });
+            void hlidej(() => api.resetNastaveniLobby(akce.id));
           }}
           onNoveHeslo={() => {
             if (!akce) return;
@@ -677,6 +712,8 @@ export function App() {
                   setNovyZapas(zapas.id);
                 })
               }
+              rezim={rezimAkce}
+              popisSlotu={rk.popisSlotu}
               sadaCivilizaci={doplnNastaveni(akce.nastaveniLobby as Partial<NastaveniLobby>).sadaCivilizaci}
               zvyraznit={zvyrazneni?.druh === "skladani" ? zvyrazneni : null}
               onPrvniAi={() => {
@@ -693,13 +730,23 @@ export function App() {
         </SpravaAkce>
       ) : null}
 
+      {/* Správa scénáře Diplomacie nepatří k jedné akci: Jin (autor, ne admin)
+          nahrává novou verzi, když se mu to hodí, i když žádná akce neběží
+          (spec §5.3). Proto stojí pod panelem akce samostatně, ne přes mód.
+          V pohledu uživatele se admin dívá jako hráč — správa je nástroj;
+          autorovi bez režie ji ale uložený přepínač (localStorage je jeden
+          pro /aoe i /aoe/diplo) brát nesmí, přepnout zpět by ho neměl jak. */}
+      {me && smiNahratScenar && !(me.jeAdmin && pohledUzivatele) ? <SpravaScenare hlidej={hlidej} /> : null}
+
       {akce ? (
         <>
-          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.hracId} /> : null}
+          {admin && stav ? <Rezie stav={stav} obsluha={rezieObsluha} ja={me?.hracId} doplnek={(zapas) => doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} /> : null}
           {admin && stav && zapasKUprave ? (
             <EditaceZapasu
               zapas={zapasKUprave}
               prihlaseni={stav.prihlaseni}
+              rezim={rezimAkce}
+              scenar={scenarPanelu}
               onNastaveni={(n) => hlidej(() => api.nastaveniZapasu(zapasKUprave.id, n))}
               onNazev={(nazev) => hlidej(() => api.nazevLobbyZapasu(zapasKUprave.id, nazev))}
               onSestava={(sestava) => hlidej(() => api.sestavaZapasu(zapasKUprave.id, sestava))}
@@ -716,7 +763,9 @@ export function App() {
                     nastaveniLobby={zapas.nastaveni && Object.keys(zapas.nastaveni).length > 0 ? zapas.nastaveni : akce.nastaveniLobby}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
+                    doplnek={doplnekModu("kartaHrace", zapas, me.hracId)}
+                    doplnekKroku={doplnekModu("krokHosta", zapas, me.hracId)}
+                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} onHlas={hlasDoZapasu(zapas)} />}
                   />
                 ) : (
                   <KartaHrace
@@ -726,7 +775,8 @@ export function App() {
                     onPripojit={(id) => void hlidej(() => api.pripojeni(id))}
                     onHledatLobby={(id) => api.hledatLobby(id)}
                     onKontrolaLobby={(id) => api.kontrolaLobby(id)}
-                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} />}
+                    doplnek={doplnekModu("kartaHrace", zapas, me.hracId)}
+                    chat={<Chat zapas={zapas} ja={me.hracId} onOdeslat={(text, odpovedNa) => hlidej(() => api.zprava(zapas.id, text, odpovedNa))} onUpravit={(id, text) => hlidej(() => api.upravitZpravu(zapas.id, id, text))} ladeni={admin && ladeni} jaAdmin={me.jeAdmin} onHlas={hlasDoZapasu(zapas)} />}
                   />
                 ),
               )
@@ -744,11 +794,24 @@ export function App() {
             ? null
             : verejneZapasy(stav?.zapasy ?? [], me?.hracId ?? null)
                 .filter(jeVeHre)
-                .map((zapas) => <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.hracId ?? null} />)}
+                .map((zapas) => (
+                  <VerejnyZapas key={zapas.id} zapas={zapas} ja={me?.hracId ?? null} doplnek={doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} />
+                ))}
+          {/* Náhled do cizích zápasů pro jmenované (DIPLO_NAHLED, Diplomacie):
+              server takový zápas pošle celý jen jim a jen tam, kde nehrají. */}
+          {stav && me
+            ? stav.zapasy
+                .filter(jeVeHre)
+                .map((zapas) => <Fragment key={`nahled-${zapas.id}`}>{rk.nahledZapasu?.({ zapas, stav, ja: me.hracId, hlidej })}</Fragment>)
+            : null}
           {/* Historie až pod aktivní zápas a pod vlastní kartu: rozehraný zápas
               má zůstat nahoře, dohrané jsou k nahlédnutí. Hráči vidí tytéž
               karty jako Rob, jen bez obsluhy — číst, ne zasahovat. */}
-          {stav ? <HistorieZapasu stav={stav} obsluha={admin ? rezieObsluha : undefined} /> : null}
+          {stav ? <HistorieZapasu stav={stav} obsluha={admin ? rezieObsluha : undefined} doplnek={(zapas) => doplnekModu("verejnyZapas", zapas, me?.hracId ?? null)} /> : null}
+          {/* Sekce módu pro hráče a diváky (Diplomacie: pravidla hry s mapou) — až
+              pod zápasy. Admin ji v režii nevidí, pravidla má jinde (uživatel
+              4. 10. 2026); v pohledu uživatele ano. */}
+          {stav && !admin ? rk.sekceAkce?.(stav) : null}
         </>
       ) : (
         <p className="prazdno">Právě neběží žádná akce.</p>
@@ -784,6 +847,7 @@ export function App() {
         />
       ) : null}
       {prihlaseniVidet ? <PrihlaseniOkno onZavrit={() => setPrihlaseniVidet(false)} /> : null}
+      <MluviTed zapasy={stav?.zapasy ?? []} popisSlotu={rk.popisSlotu} />
       <ZkusebniLista jaHracId={me?.hracId ?? null} />
       {admin ? <Toasty toasty={toasty} onZavrit={zavriToast} /> : null}
       {/* Verze v patičce: po nasazení se jedním pohledem pozná, jestli

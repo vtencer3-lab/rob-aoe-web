@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { blikni } from "../historie.js";
 import { jeAi } from "../../../src/shared/aiHraci.js";
-import { MAX_HRACU, zkontrolujSestavu } from "../../../src/shared/sestava.js";
+import { zkontrolujSestavuRezimu } from "../../../src/shared/rezimy.js";
+import { MAX_HRACU } from "../../../src/shared/sestava.js";
 import { popisFormatu } from "../../../src/shared/strany.js";
-import { BARVA_NAZEV, BARVY, TYMY, type PlayerView, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
+import { BARVA_NAZEV, BARVY, TYMY, type Barva, type PlayerView, type RezimId, type SestavaVstup, type Tym } from "../../../src/shared/types.js";
 import type { VybranyHrac } from "../skladani.js";
 import type { Skladani as StavSkladani } from "../skladani.js";
+import { usePribyli } from "../pohyb.js";
 import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
 import { VyberCivilizace } from "./VyberCivilizace.js";
@@ -13,6 +15,8 @@ import { VyberCivilizace } from "./VyberCivilizace.js";
 interface Props {
   skladani: StavSkladani;
   onVytvoritZapas: (sestava: SestavaVstup[]) => void;
+  /** Mód akce — rozhoduje, jaká pravidla sestavy navíc k jádru platí (shared/rezimy.ts). */
+  rezim: RezimId;
   /** Civilization Set z nastavení akce — omezuje nabídku civilizací. */
   sadaCivilizaci: number | null;
   /** Řádek (hracId) ke zvýraznění po změně / zpět / znovu; `cas` odliší opakování. */
@@ -24,6 +28,8 @@ interface Props {
   onPrvniAi?: () => void;
   /** Bez tlačítka „Vytvořit zápas“ — při úpravě zápasu se sestava propisuje sama (hook `odesli`). */
   bezTlacitka?: boolean;
+  /** Štítek slotu podle barvy od módu akce (Diplomacie: šedá = „GM“); null = bez štítku. */
+  popisSlotu?: (barva: Barva) => string | null;
 }
 
 /** Další hodnota v kruhu: levé tlačítko dopředu, pravé zpátky. */
@@ -58,9 +64,16 @@ export function eloTymu(vybrani: VybranyHrac[]): Array<{ tym: Tym; soucet: numbe
  * tabulce přihlášených nad tím, odkud se berou tlačítkem „+“. Pořadí tady je
  * pořadí slotů v lobby a dá se přetahovat. Formát se odvodí, nevybírá se.
  */
-export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit, onPrvniAi, bezTlacitka }: Props) {
+export function Skladani({ skladani, onVytvoritZapas, rezim, sadaCivilizaci, zvyraznit, onPrvniAi, bezTlacitka, popisSlotu }: Props) {
   const tahani = useTahani(skladani.presun);
   const seznam = useRef<HTMLUListElement>(null);
+  // Hráč přidaný do sestavy se v ní objeví prolnutím (řádky se přetahují,
+  // proto nové značí skript, ne animace při vzniku prvku).
+  usePribyli(
+    seznam,
+    skladani.vybrani.map(({ vstup }) => vstup.hracId),
+    "data-tah-id",
+  );
   useEffect(() => {
     if (zvyraznit?.cil) blikni(seznam.current?.querySelector(`[data-tah-id="${zvyraznit.cil}"]`));
   }, [zvyraznit]);
@@ -76,7 +89,7 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
     return () => window.removeEventListener(KONEC_TAHU, srovnej);
   }, [skladani.vybrani]);
   const vstupy = skladani.vybrani.map((v) => v.vstup);
-  const chyba = zkontrolujSestavu(vstupy);
+  const chyba = zkontrolujSestavuRezimu(rezim, vstupy);
   const format = popisFormatu(vstupy.map((v, poradi) => ({ ...v, poradi })));
 
   return (
@@ -99,11 +112,24 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
         >
           + AI
         </button>
+        {/* Pravidla míchání dává mód akce (hook → shared/rezimy.ts): klasicky
+            se prohodí použité barvy mezi stranami, v Diplomacii zůstane GM
+            na šedé. Pořadí, týmy ani civilizace se nemění. */}
+        <button
+          type="button"
+          className="zamichat-barvy"
+          disabled={vstupy.length < 2}
+          title={vstupy.length < 2 ? "Míchat je co až od dvou hráčů" : "Náhodně přeskupí barvy mezi vybranými hráči"}
+          onClick={() => skladani.zamichejBarvy()}
+        >
+          Zamíchat barvy
+        </button>
       </div>
 
       <ul className="sestava" data-testid="vybrani" ref={seznam}>
         {skladani.vybrani.map(({ vstup: v, hrac }) => {
           const jmeno = hrac.alias ?? hrac.platformaJmeno ?? hrac.hracId;
+          const stitek = popisSlotu?.(v.barva) ?? null;
           return (
             <li key={v.hracId} className={`radek vybrany barva-${v.barva}`} {...tahani("vybrani", v.hracId)}>
               <span className="uchyt" aria-hidden="true">
@@ -122,6 +148,8 @@ export function Skladani({ skladani, onVytvoritZapas, sadaCivilizaci, zvyraznit,
               >
                 {v.barva}
               </button>
+              {/* Štítek sedí v buňce barvy (CSS), ať neposune ostatní sloupce. */}
+              {stitek !== null ? <span className="popis-slotu">{stitek}</span> : null}
               <button
                 type="button"
                 className="volba volba-tym"

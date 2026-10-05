@@ -3,7 +3,8 @@ import { Hub } from "./hub.js";
 import type { HlasUdalost } from "../shared/types.js";
 
 /**
- * Hlas admina (push-to-talk, uživatel 13. 9. 2026): admin drží tlačítko,
+ * Hlas do zápasu (push-to-talk admina, uživatel 13. 9. 2026; od 2. 10. 2026
+ * i GM Diplomacie přes háček módu): mluvčí drží tlačítko,
  * prohlížeč nahrává MediaRecorderem po čtvrtvteřinových kouscích (Opus ve
  * WebM) a každý kousek pošle POSTem; server ho tady rozešle stejným SSE
  * streamem jako stav, jen jako událost `hlas`. Posluchači kousky lepí do

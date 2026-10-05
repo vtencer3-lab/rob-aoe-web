@@ -1,13 +1,14 @@
 import type { Kontrola } from "../shared/lobbyKontrola.js";
 import type { PoolClient } from "pg";
 import { generatePassword, lobbyName, sestavSedadla } from "../matches/composition.js";
+import { rezimAkce } from "../rezimy/index.js";
 import { jeAi, JMENO_AI } from "../shared/aiHraci.js";
 import {
   assertTransition,
   PrechodChyba,
   type MatchState,
 } from "../matches/stateMachine.js";
-import type { Barva, Seat, SestavaVstup, Tym, Vitez } from "../shared/types.js";
+import type { Barva, RezimId, Seat, SestavaVstup, Tym, Vitez } from "../shared/types.js";
 import { getPool, withTransaction } from "./pool.js";
 import type { Platforma } from "./players.js";
 
@@ -50,11 +51,14 @@ export interface UcastnikRow {
 }
 
 /**
- * Vítěz v databázi je text: „tym:2“ nebo „hrac:<hrac_id>“. Sloupec pro
- * číslo týmu nestačí od chvíle, kdy hráč bez týmu hraje sám za sebe.
+ * Vítěz v databázi je text: „tym:2“, „hrac:<hrac_id>“, nebo „hraci:“ + JSON
+ * pole ID. Sloupec pro číslo týmu nestačí od chvíle, kdy hráč bez týmu hraje
+ * sám za sebe; seznam je JSON, protože hracId může mít dvojtečku (xbox:<xuid>).
  */
 export function vitezDoTextu(vitez: Vitez): string {
-  return "tym" in vitez ? `tym:${vitez.tym}` : `hrac:${vitez.hracId}`;
+  if ("tym" in vitez) return `tym:${vitez.tym}`;
+  if ("hracId" in vitez) return `hrac:${vitez.hracId}`;
+  return `hraci:${JSON.stringify(vitez.hraci)}`;
 }
 
 export function vitezZTextu(text: string | null): Vitez | null {
@@ -63,7 +67,22 @@ export function vitezZTextu(text: string | null): Vitez | null {
   if (tym) return { tym: Number(tym[1]) as Tym };
   const hrac = /^hrac:(.+)$/.exec(text);
   if (hrac) return { hracId: hrac[1]! };
+  const hraci = /^hraci:(.+)$/.exec(text);
+  if (hraci) return hraciZJsonu(hraci[1]!);
   return null;
+}
+
+/** Nesmysl ve sloupci (rozbitý JSON, prázdné pole, ne-řetězce) je null jako u ostatních tvarů. */
+function hraciZJsonu(json: string): Vitez | null {
+  let hodnota: unknown;
+  try {
+    hodnota = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(hodnota) || hodnota.length === 0) return null;
+  if (!hodnota.every((h): h is string => typeof h === "string" && h !== "")) return null;
+  return { hraci: hodnota };
 }
 
 const SLOUPCE_ZAPASU = "id, akce_id, poradi, stav, nazev_lobby, heslo, lobby_id, vitez, zavreny_v, nastaveni";
@@ -125,7 +144,10 @@ async function pripravSedadla(client: PoolClient, akceId: number, sestava: Sesta
       throw new UcastnikOdhlasenChyba(`Hráč ${hracId} už není přihlášený do akce.`);
     }
   }
-  return { seats: sestavSedadla(sestava, odehrano), elo };
+  // Host podle módu (Diplomacie: GM), jinak podle odehraných her.
+  const { rows: rezimRows } = await client.query<{ rezim: RezimId }>("SELECT rezim FROM akce WHERE id = $1", [akceId]);
+  const pevnyHost = rezimAkce(rezimRows[0]?.rezim ?? "klasicky").hostSestavy(sestava);
+  return { seats: sestavSedadla(sestava, odehrano, pevnyHost), elo, pevnyHost };
 }
 
 async function vlozSedadla(client: PoolClient, zapasId: number, seats: Seat[], elo: ReadonlyMap<string, number | null>): Promise<void> {
@@ -175,6 +197,10 @@ export async function createZapas(akceId: number, sestava: SestavaVstup[]): Prom
     );
     const zapas = mapujZapas(rows[0] as Record<string, unknown>);
     await vlozSedadla(client, zapas.id, seats, elo);
+    // Háček módu v téže transakci: Diplomacie si založí svůj záznam, a když
+    // selže, zápas nevznikne poloviční (spec §4.1 H6).
+    const { rows: rezimRows } = await client.query<{ rezim: RezimId }>("SELECT rezim FROM akce WHERE id = $1", [akceId]);
+    await rezimAkce(rezimRows[0]?.rezim ?? "klasicky").poVytvoreniZapasu(client, zapas.id, seats);
     return zapas;
   });
 }
@@ -194,8 +220,9 @@ export async function nahradSestavu(zapasId: number, sestava: SestavaVstup[]): P
     const { rows: hostRows } = await client.query<{ hrac_id: string }>("SELECT hrac_id FROM ucastnik WHERE zapas_id = $1 AND je_host", [zapasId]);
     const dosavadniHost = hostRows[0]?.hrac_id ?? null;
 
-    const { seats, elo } = await pripravSedadla(client, radek.akce_id, sestava);
-    const hostZustava = dosavadniHost !== null && seats.some((s) => s.hracId === dosavadniHost);
+    const { seats, elo, pevnyHost } = await pripravSedadla(client, radek.akce_id, sestava);
+    // Hosta určeného módem (GM Diplomacie) nepřebije ani dosavadní host.
+    const hostZustava = dosavadniHost !== null && seats.some((s) => s.hracId === dosavadniHost) && (pevnyHost === null || !seats.some((s) => s.hracId === pevnyHost) || pevnyHost === dosavadniHost);
     const nova = hostZustava ? seats.map((s) => ({ ...s, jeHost: s.hracId === dosavadniHost })) : seats;
 
     await client.query("DELETE FROM ucastnik WHERE zapas_id = $1", [zapasId]);

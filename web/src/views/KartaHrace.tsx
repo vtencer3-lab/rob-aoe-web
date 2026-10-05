@@ -1,8 +1,9 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, type ReactNode } from "react";
 import type { KontrolaLobbyVysledek } from "../../../src/shared/lobbyKontrola.js";
 import { BARVA_NAZEV, type HledaniLobbyVysledek, type ZapasView } from "../../../src/shared/types.js";
 import { jmenoHrace, mujUcastnik, popisTymu, sdiliCivilizaci } from "../zapas.js";
 import { HledaniLobby } from "./HledaniLobby.js";
+import { JmenoSBarvou } from "./JmenoSBarvou.js";
 import { KontrolaLobby } from "./KontrolaLobby.js";
 import { StranyZapasu } from "./StranyZapasu.js";
 
@@ -15,6 +16,8 @@ interface Props {
   onHledatLobby: (zapasId: number) => Promise<HledaniLobbyVysledek>;
   /** Kontrola lobby jako u hosta; bez ní se sekce nevykreslí (starší volající). */
   onKontrolaLobby?: (zapasId: number) => Promise<KontrolaLobbyVysledek>;
+  /** Doplněk módu akce (např. karta role Diplomacie), pod kontrolou lobby. */
+  doplnek?: ReactNode;
 }
 
 /**
@@ -25,7 +28,7 @@ interface Props {
  * vidí, co host ještě nemá nastavené — uživatel 13. 9. 2026) a strany zápasu
  * vedle sebe jako v lobby, s velkým VS mezi nimi.
  */
-export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, onKontrolaLobby, chat }: Props) {
+export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, onKontrolaLobby, chat, doplnek }: Props) {
   const muj = mujUcastnik(zapas, ja);
   if (!muj) return null;
   // Civilizaci sdílí, kdo má stejnou barvu (Coop Kings) — ne kdo je ve stejném týmu.
@@ -62,7 +65,16 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, onKontrolaLob
       </div>
       {parta.length > 0 ? (
         <p className="stred">
-          Civilizaci sdílíš s <strong>{parta.map(jmenoHrace).join(", ")}</strong> — musíte mít oba stejnou barvu.
+          Civilizaci sdílíš s{" "}
+          <strong>
+            {parta.map((u, i) => (
+              <Fragment key={u.hracId}>
+                {i > 0 ? ", " : null}
+                <JmenoSBarvou barva={u.barva}>{jmenoHrace(u)}</JmenoSBarvou>
+              </Fragment>
+            ))}
+          </strong>{" "}
+          — musíte mít oba stejnou barvu.
         </p>
       ) : null}
 
@@ -111,6 +123,7 @@ export function KartaHrace({ zapas, ja, onPripojit, onHledatLobby, onKontrolaLob
       {zapas.lobbyId && onKontrolaLobby ? (
         <KontrolaLobby zapasId={zapas.id} onKontrola={onKontrolaLobby} automaticky={zapas.fazeLobby === "lobby"} />
       ) : null}
+      {doplnek}
 
       <section className="sekce-krok" data-testid="strany-zapasu">
         <StranyZapasu ucastnici={zapas.ucastnici} ja={ja} />

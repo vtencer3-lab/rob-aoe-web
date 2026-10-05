@@ -16,4 +16,7 @@ if (typeof URL.createObjectURL !== "function") {
 // co v jednom souboru volají render() víckrát, pak najdou duplicitní prvky.
 afterEach(() => {
   cleanup();
+  // Pult GM si pamatuje odkrytí v sessionStorage (Zakryti `pamet`); jinak by
+  // odkrytý pult z jednoho testu zůstal odkrytý v dalším.
+  sessionStorage.clear();
 });

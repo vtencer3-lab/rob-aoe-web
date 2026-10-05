@@ -35,6 +35,17 @@ export interface NastaveniLobby {
   sadaCivilizaci: number | null;
   /** Game Mode (options[5]): 0 Random Map, 2 Deathmatch, 3 Scenario. */
   rezim: number | null;
+  /**
+   * Soubor scénáře (options[38]) — kontroluje se jen při Game Mode Scenario.
+   * Null = je to jedno. Hra posílá jen jméno, ne obsah (spec Diplomacie §2.2).
+   */
+  scenar: string | null;
+  /**
+   * Jména ostatních verzí téhož scénáře (neaktivní — starší i novější);
+   * lobby s nimi dostane větu „jiná verze“. Jméno pole zůstává kvůli
+   * uloženým nastavením.
+   */
+  scenarStarsi: string[] | null;
   /** AI Difficulty (options[61]): 3 Standard, 1 Hard. */
   aiObtiznost: number | null;
   /** Resources (options[37]): 0 Standard, 3 High. */
@@ -90,6 +101,8 @@ export const VYCHOZI_NASTAVENI: NastaveniLobby = {
   cheaty: false,
   sadaCivilizaci: 1,
   rezim: 0,
+  scenar: null,
+  scenarStarsi: null,
   // Bez AI v lobby na obtížnosti nezáleží.
   aiObtiznost: null,
   suroviny: 0,
@@ -146,7 +159,13 @@ export const VELIKOSTI: Record<number, string> = {
  * `docs/analyza-automaticke-hledani-lobby.md` §6.
  */
 export const RYCHLOSTI: Record<number, string> = { 0: "Slow", 1: "Casual", 2: "Normal", 3: "Fast" };
+/**
+ * Victory (options[81]). Nula není v herní nabídce: posílají ji scénářové
+ * lobby (Custom Scenario), kde hra Victory nenabízí vůbec a podmínky
+ * vítězství nese scénář — živá sonda 12 lobby 1. 10. 2026, všechny 0.
+ */
 export const VITEZSTVI: Record<number, string> = {
+  0: "Podle scénáře",
   1: "Conquest",
   7: "Time Limit",
   8: "Score",
@@ -179,7 +198,8 @@ export const REZIMY: Record<number, string> = {
   0: "Random Map",
   1: "Regicide",
   2: "Death Match",
-  3: "Scenario",
+  // Hra té položce říká „Custom Scenario“ (snímek lobby 1. 10. 2026).
+  3: "Custom Scenario",
   5: "King of the Hill",
   6: "Wonder Race",
   7: "Defend the Wonder",
@@ -195,6 +215,24 @@ export const REZIMY: Record<number, string> = {
  * Settings. Hra obojí spojuje: v tomhle režimu je Empire Wars daný a
  * zaškrtávátko `empireWars` (options[89]) je odškrtnuté a nepřístupné.
  */
+/** Game Mode Custom Scenario (options[5]); u něj mapa (options[10]) jen zbyla z předchozí volby. */
+export const REZIM_SCENARIO = 3;
+
+/**
+ * Co v Custom Scenario určuje scénář, ne lobby: hra v ní Location, Map Size
+ * ani Victory nenabízí (snímek lobby 1. 10. 2026). Panel nastavení tyhle
+ * volby schová a historie změn o nich mlčí; uložené hodnoty zůstávají, ať
+ * se po přepnutí zpět na jiný režim vrátí, co bylo. Team Positions taky:
+ * rozmístění týmů dává scénář, v lobby se nastavit nedá (uživatel 3. 10.
+ * 2026 — kontrola na něj zbytečně „řvala“).
+ */
+export const URCUJE_SCENAR: ReadonlyArray<keyof NastaveniLobby> = ["mapaId", "velikost", "vitezstvi", "teamPositions"];
+
+/** Jméno souboru scénáře, jak ho hra ukazuje: bez cesty, s příponou, rozumně dlouhé. */
+export function jePlatneJmenoScenare(jmeno: string): boolean {
+  return jmeno.length <= 100 && /\.aoe2scenario$/i.test(jmeno) && !/[\\/]/.test(jmeno) && jmeno.trim() === jmeno && jmeno.length > ".aoe2scenario".length;
+}
+
 export const REZIM_EMPIRE_WARS = 13;
 
 /** Regicide jako režim; zaškrtávátko `regicide` (options[91]) u něj platí totéž. */
@@ -390,6 +428,7 @@ export interface NastaveniZeHry {
   cheaty: boolean | null;
   sadaCivilizaci?: number | null;
   rezim?: number | null;
+  scenar?: string | null;
   aiObtiznost?: number | null;
   suroviny?: number | null;
   odkrytiMapy?: number | null;
@@ -598,16 +637,42 @@ export function zkontrolujLobby(
     hlavni("nastaveni", false, "Nastavení hry se nepodařilo přečíst");
     return k;
   }
-  if (ocekavane.mapaId !== null) {
+  const scenarovy = ocekavane.rezim === REZIM_SCENARIO;
+  if (ocekavane.mapaId !== null && !scenarovy) {
     const ok = n.mapaId === ocekavane.mapaId;
     hlavni("mapa", ok, ok ? `Mapa: ${nazevMapy(n.mapaId)}` : `Mapa: ${nazevMapy(n.mapaId)}, má být ${nazevMapy(ocekavane.mapaId)}`);
   }
-  const velikost = ocekavane.velikost ?? velikostProHrace(new Set(ucastnici.map((u) => u.barva)).size);
+  if (scenarovy && ocekavane.scenar !== null) {
+    const ma = ocekavane.scenar;
+    const ve = n.scenar ?? null;
+    let text: string;
+    if (ve === ma) text = `Scénář: ${ma}`;
+    else if (ve === null) text = `Scénář: hra neposlala jméno scénáře, má být ${ma}`;
+    else if (ocekavane.scenarStarsi?.includes(ve)) text = `Scénář: v lobby je jiná verze ${ve}, má být ${ma}`;
+    else text = `Scénář: v lobby je ${ve}, má být ${ma}`;
+    hlavni("scenar", ve === ma, text);
+  }
+  // Scénářová lobby: Map Size hra nenabízí, velikost určuje scénář a hostitel
+  // ji nemá jak změnit — řádek je jen informace, nikdy chyba. Hodnota
+  // v options[8] navíc nemusí být skutečná velikost scénáře (2. 10. 2026
+  // hlásila lobby se scénářem LLC 220 dílců „Tiny (2)“), takže ji ani
+  // neporovnáváme s velikostí z rozboru.
   const jmVelikost = (v: number | null) => (v === null ? "?" : (VELIKOSTI[v] ?? `${v} dílců`));
-  hlavni("velikost", n.velikost === velikost, n.velikost === velikost ? `Velikost: ${jmVelikost(n.velikost)}` : `Velikost: ${jmVelikost(n.velikost)}, má být ${jmVelikost(velikost)}`);
+  const urcujeScenar = (klic: string, text: string): void => {
+    k.push({ klic, stav: "jedno", text, sekce: "hlavni" });
+  };
+  if (scenarovy) {
+    urcujeScenar("velikost", `Velikost: ${jmVelikost(ocekavane.velikost ?? n.velikost)} (určuje scénář)`);
+  } else {
+    const velikost = ocekavane.velikost ?? velikostProHrace(new Set(ucastnici.map((u) => u.barva)).size);
+    hlavni("velikost", n.velikost === velikost, n.velikost === velikost ? `Velikost: ${jmVelikost(n.velikost)}` : `Velikost: ${jmVelikost(n.velikost)}, má být ${jmVelikost(velikost)}`);
+  }
   hlavni("rychlost", n.rychlost === ocekavane.rychlost, n.rychlost === ocekavane.rychlost ? `Rychlost: ${jm(RYCHLOSTI)(n.rychlost)}` : `Rychlost: ${jm(RYCHLOSTI)(n.rychlost)}, má být ${jm(RYCHLOSTI)(ocekavane.rychlost)}`);
   hlavni("populace", n.populace === ocekavane.populace, n.populace === ocekavane.populace ? `Populace: ${n.populace}` : `Populace: ${n.populace ?? "?"}, má být ${ocekavane.populace}`);
-  hlavni("vitezstvi", n.vitezstvi === ocekavane.vitezstvi, n.vitezstvi === ocekavane.vitezstvi ? `Victory: ${jm(VITEZSTVI)(n.vitezstvi)}` : `Victory: ${jm(VITEZSTVI)(n.vitezstvi)}, má být ${jm(VITEZSTVI)(ocekavane.vitezstvi)}`);
+  // Victory ve scénářové lobby hra nenabízí (posílá 0) — očekávaná hodnota
+  // je tu bezpředmětná a červený řádek by Robovi jen bránil ve hře.
+  if (scenarovy) urcujeScenar("vitezstvi", "Victory: určuje scénář");
+  else hlavni("vitezstvi", n.vitezstvi === ocekavane.vitezstvi, n.vitezstvi === ocekavane.vitezstvi ? `Victory: ${jm(VITEZSTVI)(n.vitezstvi)}` : `Victory: ${jm(VITEZSTVI)(n.vitezstvi)}, má být ${jm(VITEZSTVI)(ocekavane.vitezstvi)}`);
   hlavni("cheaty", n.cheaty === ocekavane.cheaty, n.cheaty === ocekavane.cheaty ? (n.cheaty ? "Cheaty povolené" : "Cheaty vypnuté") : n.cheaty ? "Cheaty jsou povolené, mají být vypnuté" : "Cheaty jsou vypnuté, mají být povolené");
 
   // --- Další nastavení: stejný tvar, jiná sekce. Očekávané null = „je to
@@ -634,6 +699,10 @@ export function zkontrolujLobby(
     const ve = n[klic];
     const ma = ocekavane[klic];
     const zap = (v: boolean | null | undefined) => (v === null || v === undefined ? "?" : v ? "zapnuto" : "vypnuto");
+    if (scenarovy && URCUJE_SCENAR.includes(klic)) {
+      k.push({ klic, stav: "jedno", text: `${popis}: ${zap(ve)} (určuje scénář)`, sekce: "dalsi" });
+      continue;
+    }
     const stav: StavKontroly = ma === null ? "jedno" : ve === ma ? "ok" : "spatne";
     k.push({ klic, stav, text: stav === "spatne" ? `${popis}: ${zap(ve)}, má být ${zap(ma)}` : `${popis}: ${zap(ve)}`, sekce: "dalsi" });
   }

@@ -4,10 +4,12 @@ import {
   KONECNE_VEKY,
   ODKRYTI_MAPY,
   POCATECNI_VEKY,
+  REZIM_SCENARIO,
   REZIMY,
   RYCHLOSTI,
   SADY_CIVILIZACI,
   SUROVINY,
+  URCUJE_SCENAR,
   VELIKOSTI,
   VITEZSTVI,
   type NastaveniLobby,
@@ -48,6 +50,11 @@ export function popisZmenySestavy(pred: SestavaVstup[], po: SestavaVstup[], jmen
   if (odebrani.length > 0 && po.length === 0) return { text: "Sestava vyprázdněna", cil: null };
   if (pridani.length > 0 || odebrani.length > 0) return { text: "Sestava změněna", cil: null };
 
+  // Víc barev naráz mění jen „Zamíchat barvy“ — kliknutí na čtvereček mění
+  // jednu. Věta o prvním hráči by z míchání udělala změnu jedné barvy.
+  const zmenenychBarev = pred.filter((a) => po.find((x) => x.hracId === a.hracId)!.barva !== a.barva).length;
+  if (zmenenychBarev > 1) return { text: "Barvy zamíchány", cil: null };
+
   for (const a of pred) {
     const b = po.find((x) => x.hracId === a.hracId)!;
     if (a.barva !== b.barva) return { text: `${jmeno(a.hracId)}: barva ${BARVA_NAZEV[a.barva]} → ${BARVA_NAZEV[b.barva]}`, cil: a.hracId };
@@ -73,6 +80,10 @@ const POPISKY: Record<keyof NastaveniLobby, string> = {
   cheaty: "Allow Cheats",
   sadaCivilizaci: "Civilization Set",
   rezim: "Game Mode",
+  // Scénář v panelu nejde vybírat — nastavuje ho mód Diplomacie ze serveru
+  // (aktivní verze) a panel ho jen ukazuje; věta tu je pro úplnost tabulky.
+  scenar: "Scenario File",
+  scenarStarsi: "Scenario File (older versions)",
   aiObtiznost: "AI Difficulty",
   suroviny: "Resources",
   odkrytiMapy: "Reveal Map",
@@ -127,7 +138,10 @@ function hodnota(klic: keyof NastaveniLobby, v: unknown): string {
 
 /** Věta o změně nastavení lobby (první změněný klíč) a klíč ke zvýraznění. */
 export function popisZmenyNastaveni(pred: NastaveniLobby, po: NastaveniLobby): { text: string; cil: string | null } {
-  const zmenene = (Object.keys(POPISKY) as Array<keyof NastaveniLobby>).filter((k) => (pred[k] ?? null) !== (po[k] ?? null));
+  // V Custom Scenario mapu, velikost a Victory určuje scénář a panel je
+  // neukazuje — věta o nich by mířila na řádek, který v panelu není.
+  const skryte: ReadonlyArray<keyof NastaveniLobby> = po.rezim === REZIM_SCENARIO ? URCUJE_SCENAR : [];
+  const zmenene = (Object.keys(POPISKY) as Array<keyof NastaveniLobby>).filter((k) => !skryte.includes(k) && (pred[k] ?? null) !== (po[k] ?? null));
   if (zmenene.length === 0) return { text: "Nastavení beze změny", cil: null };
   const k = zmenene[0]!;
   const dalsi = zmenene.length > 1 ? ` (+${zmenene.length - 1} dalších)` : "";

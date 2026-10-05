@@ -11,6 +11,7 @@ import { formatElo, formatHodiny, formatOdehrano } from "../format.js";
 import type { Skladani } from "../skladani.js";
 import { jmenoPodKurzorem, KONEC_TAHU, tahneSe, useTahani, animovanyPosunY } from "../tahani.js";
 import { StatistikyHrace } from "./StatistikyHrace.js";
+import { useTed } from "../useTed.js";
 import steamZnak from "../assets/ui/platforma-steam.webp";
 import xboxZnak from "../assets/ui/platforma-xbox.webp";
 
@@ -110,14 +111,7 @@ export function podleAktivity(hraci: PlayerView[], ted: number): PlayerView[] {
  * doběhne na nulu dřív než tyhle hodiny. Do té doby se řádek tvářil jako
  * aktivní a v místě značky nebylo nic.
  */
-function useTed(): number {
-  const [ted, setTed] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setTed(Date.now()), 5_000);
-    return () => clearInterval(id);
-  }, []);
-  return ted;
-}
+const TIK_SEZNAMU_MS = 5_000;
 
 /** Doba přejezdu řádku na nové místo. Delší už působí, že tabulka zlobí. */
 const PRESUN_MS = 340;
@@ -302,7 +296,7 @@ export function SeznamPrihlasenych({ prihlaseni, skladani, vZapase, ja, admin = 
   }, [prihlaseni]);
   // Řazení je jen pro režii; hráči vidí pořadí přihlášení. Usnulí jdou na
   // konec za všech okolností — i za seřazeného seznamu.
-  const ted = useTed();
+  const ted = useTed(TIK_SEZNAMU_MS);
   const radky = podleAktivity(skladani ? serad(skladani.nevybrani, razeni) : prihlaseni, ted);
   usePresouvani(tabulka, radky.map((h) => h.hracId).join(","));
 

@@ -9,6 +9,9 @@ import { registerAuthRoutes, type AuthDeps } from "../auth/routes.js";
 import { verifyWithSteam } from "../auth/steamOpenId.js";
 import { config } from "../config.js";
 import { getPlayer, savePlayerStats, type PlayerStatsUpdate } from "../db/players.js";
+import { registerDiplomacieRoutes, type DiploDeps } from "../diplomacie/routes.js";
+import { rozeberScenar } from "../diplomacie/rozbor.js";
+import { pribalSondu } from "../diplomacie/sonda.js";
 import { vymenKodZaToken } from "../external/microsoftToken.js";
 import {
   nactiGamerpic,
@@ -32,7 +35,7 @@ import { registerHlasRoutes } from "./routes/hlas.js";
 import { registerEmotyRoutes } from "./routes/emoty.js";
 import { VERZE } from "../shared/verze.js";
 
-export type ServerDeps = AuthDeps & MatchDeps & MicrosoftDeps;
+export type ServerDeps = AuthDeps & MatchDeps & MicrosoftDeps & DiploDeps;
 
 export interface DoplnkyPoPrihlaseni {
   gamerpic: (identita: XboxIdentita) => Promise<string | null>;
@@ -118,6 +121,8 @@ function vychoziDeps(): ServerDeps {
       vlastnictvi: (identita) => nactiVlastnictvi(identita),
       zebricek: (gamertag) => fetchPersonalStatPodleAliasu(gamertag),
     }),
+    rozeberScenar: (soubor, volby) => rozeberScenar(soubor, volby),
+    pribalSondu: (soubor, volby) => pribalSondu(soubor, volby),
   };
 }
 
@@ -151,6 +156,7 @@ export function buildServer(castDeps: Partial<ServerDeps> = {}): FastifyInstance
   registerKontrolaLobbyRoutes(app, deps);
   registerHlasRoutes(app);
   registerEmotyRoutes(app);
+  registerDiplomacieRoutes(app, deps);
   // Zkušební dveře se za produkčního nastavení vůbec nezaregistrují. Druhý
   // zámek (adresa na https) sedí uvnitř nich — jeden zámek na tohle nestačí.
   if (config.devPristup) registerDevRoutes(app);
@@ -160,7 +166,16 @@ export function buildServer(castDeps: Partial<ServerDeps> = {}): FastifyInstance
   // navíc jedna úroveň ".." oproti tomu, co by čekal zrcadlený src → dist.
   const webDist = join(import.meta.dirname, "..", "..", "..", "web", "dist");
   if (existsSync(webDist)) {
-    app.register(fastifyStatic, { root: webDist });
+    app.register(fastifyStatic, {
+      root: webDist,
+      // Soubory z `assets/` mají otisk obsahu ve jméně (Vite), nikdy se nemění:
+      // cache napořád. S výchozím `max-age=0` se prohlížeč u každého obrázku
+      // znovu ptal serveru a rám mapy či znaky rolí naskakovaly pozdě (uživatel
+      // 3. 10. 2026). index.html dál bez cache — nese odkazy na nové otisky.
+      setHeaders: (odpoved, cesta) => {
+        if (/[\\/]assets[\\/]/.test(cesta)) odpoved.header("cache-control", "public, max-age=31536000, immutable");
+      },
+    });
     app.setNotFoundHandler((request, reply) => {
       if (request.url.startsWith("/api/")) return reply.code(404).send({ chyba: "Neznámá cesta." });
       return reply.sendFile("index.html");

@@ -1,4 +1,4 @@
-# Přehled prací a záměrů (stav k 17. 9. 2026, main 1.13.9, dev 1.13.9)
+# Přehled prací a záměrů (stav k 1. 10. 2026, main 1.13.10, dev 1.13.10, diplo 1.13.10-21.x)
 
 Tenhle dokument je pro **další session** — člověka nebo agenta, který má na
 práci navázat bez přístupu k předchozí konverzaci. Nepopisuje, jak web
@@ -25,21 +25,23 @@ Když v něm něco nesouhlasí s kódem, platí kód a tenhle dokument se má op
 | Pracovní postup dev → main, verzování, Coolify, migrace | `docs/nasazeni-jouki-cz.md` |
 | Klíče seznamu lobby Worlds Edge, co je ověřené a co odhadnuté | `docs/analyza-automaticke-hledani-lobby.md` §6 |
 | Původní návrh a plán (3. 9.) a zjednodušení stavů (5. 9.) | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
+| Mód Diplomacie (větev `diplo`): návrh, plán, co se během provádění změnilo | §3.60; spec `docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`, plán `docs/superpowers/plans/2026-10-01-diplomacie-zaklad-a-role.md`, ledger `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/progress.md` (mimo git) |
 | Zvyky autora, lokální prostředí, pravidla pro agenty | `CLAUDE.md` |
 | **Záměry, rozhodnutí, rozdělané věci, historie verzí** | **tenhle dokument** |
 
 ---
 
-## 1. Stav k 17. 9. 2026
+## 1. Stav k 3. 10. 2026
 
 | | |
 |---|---|
-| `origin/main` | **1.13.9**, nasazeno na <https://jouki.cz/aoe> (PR #20, 17. 9. 2026 — velký release z 1.7.2, 63 commitů, migrace 027–029); stav před ním nese značku `v1.7.2`, starší `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
-| `origin/dev` | 1.13.9, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
+| `origin/main` | **1.13.10**, nasazeno na <https://jouki.cz/aoe> (PR #21, 1. 10. 2026 — DLC The Viking Sagas, §3.59; stav před ním nese značku `v1.13.9`). Předchozí velký release PR #20 (1.13.9, 17. 9. 2026 — Microsoft přihlášení, 63 commitů, migrace 027–029); starší značky `v1.7.2`, `v1.7.0`, `v1.1.4`, `v1.1.2`, `v1.1.1`, `v1.0.0`, `v0.28.3` |
+| `origin/dev` | 1.13.10, nasazeno na <https://jouki.cz/aoe/dev>; proti `main` **nic** — obě větve stejné |
+| `origin/diplo` | **1.13.10-41.27** (1.–4. 10. 2026; 41.1–41.27 hoření karty Šaška videem, pravidla v kartičkách s ikonkami, Kat → Popravčí, nové znaky přes Scenario — §6; 38.0–41.0 cíle hráče u mapy, schopnosti rolí, proměna Šaška, prohra — §3.60 „Cíle hráče, schopnosti rolí, události hry“; 31.0–37.4 králové, relikvie, ping, overlaye OBS — §3.60 „Králové, relikvie, ping, overlaye“; 30.0 prefix `ROB_` a značka sondy, 29.4–29.7 rychlejší most a pult vedle mapy; 29.3 chyby nahrání ve správě scénáře; most přes Židolištu §3.60 „Most přes Židolištu a herní PC“; po dávce úprav rozhraní 22.2–22.10 most ke hře 23.0, hlas pro GM 25.0, mapa se vztahy 25.1, opravná vlna po kontrole dávky 26.0–26.5, drobnosti karty role 26.6–26.8, divák jako zdroj dat ze hry 27.0 — sonda píše na každém počítači, rozhodnutí uživatele; §3.60, „Divák jako zdroj dat ze hry“ — dědění vlastní minimapy 28.0 — §3.60, „Vlastní minimapa se dědí“ — a **správa scénáře 29.0**: jméno pro hru `JIN_DIPLO_<N>`, mazání verzí, tlačítka v řádku, 29.1 jména pro hru v nastavení lobby otevřené akce, 29.2 mazání verzí hraných jen dohranými zápasy, důvod odmítnutí u řádku a bez pole „Co je nového“; §3.60, „Správa scénáře: jméno pro hru, mazání, tlačítka“), nasazeno na <https://jouki.cz/aoe/diplo> nad databází `rob_aoe_diplo` — **mód Diplomacie (§3.60)**, podprojekty 0 a 1 hotové, migrace 030–034. **Do `dev` nemergnuto**; merge přijde po odladění s Jinem (spec §1.1 bod 5) a **před ním přejít na token mostu pro každého GM zvlášť** (§3.60). Čeká: Jinovo `hrac_id` do `AUTORI_SCENARE` po jeho prvním přihlášení (`docs/nasazeni-jouki-cz.md` §3.6) |
 | Přihlášení Microsoft účtem | §3.57, na ostré **živé od 17. 9. 2026**. `MS_CLIENT_ID`/`MS_CLIENT_SECRET` má ostrá i vývojová aplikace (táž registrace v Azure), pokusná ne — tam se erb neukazuje. Provozní podrobnosti (registrace, návratové adresy, past s právy) v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.1–3.6.4 |
 | `origin/experimental` | 1.7.0-7.0, `dev` 1.7.0 do něj mergnutý 14. 9. 2026 odpoledne (konflikt jen ve verzi, vyřešen ve prospěch devu + `npm run verze -- experiment`), nasazeno na <https://jouki.cz/aoe/experimental> — proti devu jen **pokus s praporcem místo barevného pruhu** (§3.33: dva obrázky + CSS). Nemergnuto s devem od 14. 9., mezitím dev odjel až na 1.10.7 |
-| Migrace | 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
-| Testy | backend hermetické 370, frontend 347 — zelené (17. 9. 2026, `npm --prefix web exec tsc -- -b --force` bez chyb, `npm run build` EXIT=0). Databázové 191 na devu přes `/root/aoe-deploy/test-db.sh` na VPS (lokálně Postgres neběží). Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
+| Migrace | `main`/`dev` 001–029, poslední `029_hra_hrana_v.sql` (015 nikdy nevznikla); `diplo` navíc 030–038 (`030_rezim_akce.sql` … `038_diplomacie_zobrazeni_mapy.sql`, §3.60). Aplikují se samy při startu kontejneru (`CMD` v `Dockerfile`). Na ostré databázi doběhly 17. 9. 2026 při releasu 1.13.9 — kontejner startuje až po nich, takže jeho naběhnutí je důkaz, že prošly |
+| Testy | `diplo` 3. 10. 2026 (1.13.10-29.2): backend hermetické 532 (52 souborů; 13 testů rozboru, sondy a mostu se bez Pythonu přeskočí, s `PYTHON=python` projdou), frontend 537 (54 souborů), databázové 252 (18 souborů, na VPS po nasazení 29.2), `npx tsc --noEmit` a `npm run build` EXIT=0. Databázové přes `/root/aoe-deploy/test-db.sh diplo` na VPS (lokálně Postgres neběží). `dev`/`main` 17. 9. 2026: backend 370, frontend 347, databázové 191. Účty použité k ověřování: 76561198147631465 (RobDiesALot), 76561198014710095 (Trokner / „Tonner“, vlastník repa) |
 | Admini | `ADMIN_STEAM_ID` je **jediný zdroj pravdy**, ne sloupec `je_admin` — přihlášení ho přepisuje. 17. 9. 2026 srovnáno s databází a doplněno o `xbox:` položku; do té doby měly obě aplikace v proměnné jediné Steam ID, zatímco DB vedla tři adminy (Rob a Trokner by o práva přišli při svém dalším přihlášení). Rozbor v [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2 |
 | `ZKUSEBNI_HRACI` | od 9. 9. 2026 **i na ostré** aplikaci (dřív jen dev) — na přání uživatele, ať jdou zkušební hráči a přetáčení času použít i na jouki.cz/aoe |
 | Zkušební data | 9. 9. 2026 večer smazaná ze všech tří databází (ostrá 1 zápas, dev 8, experimental 2, k tomu přihlášky a řádky hráčů); záloha dotčených řádků v CSV je u uživatele v `Downloads\zaloha-zkusebni\`, ne v repu |
@@ -80,7 +82,7 @@ jen kontroluje vzhled v prohlížeči.
 ```bash
 # 1. změna kódu + testy (viz níže „Poučení“ — velké úpravy přes python skript ve scratchpadu)
 npx tsc --noEmit                              # backend typy
-npm --prefix web exec tsc -- -b --force       # frontend typy (tsc --noEmit je NEKONTROLUJE)
+(cd web && npx tsc -b --force)       # frontend typy (tsc --noEmit je NEKONTROLUJE)
 npm test                                      # hermetické
 npm --prefix web test -- --run                # frontend
 # 2. verze — patch pro opravu/vzhled, minor pro novou funkci nebo migraci
@@ -565,8 +567,10 @@ Rohová tlačítka (sbalit, zavřít) jsou v jednom pruhu `.ovladani-karty`, aby
 se neumisťovala podle toho, jestli křížek zrovna je.
 
 **Vítěz** dohraného zápasu má zlatý odznak vedle jména a teplejší řádek.
-Rozhoduje `jeVitez()` ve `web/src/zapas.ts` — výsledek je buď tým, nebo jeden
-hráč, podle toho, jak ho Rob zapsal.
+Rozhoduje `vyhralHrac()` ve `src/shared/strany.ts` (frontend ji bere přes
+`web/src/zapas.ts`) — výsledek má od 1. 10. 2026 (§3.60, úkol 20) tři tvary:
+tým (`{ tym }`), jeden hráč (`{ hracId }`), nebo víc hráčů naráz
+(`{ hraci }`, aliance vzniklé až ve hře), podle toho, jak ho Rob zapsal.
 
 **Tlačítka nad tabulkou** jdou zleva od nejméně vážného: přetočení času (debug),
 vlastní přihláška, „Ukončit akci“. To poslední se sem přestěhovalo ze záhlaví
@@ -1517,7 +1521,7 @@ nahraje tři vteřiny týmž řetězcem jako push-to-talk a hned je přehraje
 (`nahrajZkousku`), ať jde zesílení nastavit bez druhého člověka.
 
 **Prohlížeč:** `hlas.ts` (přehrávač `spustPrehravacHlasu`, nahrávání
-`vytvorNahravani`, zesílení `zesilProud`), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
+`vytvorNahravani`, zesílení `zesilPrehravani` — od 2. 10. 2026 až při přehrávání, viz níž), `views/PushToTalk.tsx` (držet myší nebo mezerníkem,
 puštění kdekoli / ztráta fokusu okna nahrávání zastaví, mikrofon se po
 puštění uvolní, ať v kartě nesvítí), `Chat` prop `onHlas`, `App` přehrávač
 zapíná po přihlášení. Od 1.4.1 je tlačítko **jen v režii** (`Obsluha.onHlas`,
@@ -1527,6 +1531,54 @@ obou tlačítek jsou od 1.4.2 vlastní bublina `.napoveda` bez prodlevy
 (0,9 rem), ne `title`. `useAkceStav` událost `hlas` jen přeposílá na okno
 (`aoe:hlas`). Testy: `realtime/hlas.test.ts`, route v `matches.db.test.ts`.
 Neověřeno živě se dvěma lidmi — první ostrá zkouška bude na akci.
+
+**Praskání (2. 10. 2026, uživatel: „naše komunikace přes mikrofon momentálně
+praská“).** Změřeno v headless Chrome sinusovkou z falešného mikrofonu přes
+skutečný kód nahrávání i přehrávání (postup a čísla:
+`docs/know-how/push-to-talk.md`). Dvě příčiny, obě u posluchače:
+
+1. **Hrálo se hned s prvním kouskem.** Ten nese ~240 ms zvuku, další dorazí
+   až za 300 ms (Chrome kóduje Opus po 60 ms, „250ms“ kousek má ve
+   skutečnosti 300 ms). Zásoba došla, prohlížeč přehrávání na ~0,35 s
+   zastavil: useknutí, ticho, naskočení v prvním slově skoro každé promluvy,
+   i na dokonalé síti (5 ze 6 promluv; po opravě 0). Teď se čeká na 450 ms
+   zásoby (`ZASOBA_MS`) nebo značku konce, po zádrhelu se zásoba sbírá
+   znovu celá, ztracený kousek se po půl vteřině přeskočí (`SourceBuffer`
+   v režimu `sequence`, dřív zbytek promluvy mlčel) a sezení bez značky
+   konce se po 5 s uzavře samo. Zpoždění ústa → ucho ~0,6 s (dřív 0,3 s
+   před zádrhelem a 0,67 s po něm).
+2. **Zesílení mikrofonu se dělalo v nahrávce.** Nahrávka vedená přes Web
+   Audio (`MediaStreamDestination`) dostává od Chrome časové značky rámců
+   střídavě po 59 a 61 ms místo 60 (rámec 2880 vzorků, blok Web Audia 128)
+   a `MediaSource` každý druhý rámec o milisekundu ořízne — asi osm lupnutí
+   za vteřinu po celou dobu řeči (336 skoků za 50 s sinusovky při 200 %,
+   při 100 % žádný). Zkouška mikrofonu v nastavení to neukázala, protože
+   hraje obyčejný blob, ne `MediaSource`. Teď se nahrává vždy přímo
+   z mikrofonu, zesílení jde jako údaj `zesileni` u kousku
+   (`HlasUdalost`, server jen hlídá strop 400 %) a zesiluje **přehrávač
+   posluchače** (`zesilPrehravani`: prvek → zisk → měkké omezení → výstup).
+   Omezení je do kolena přímka, takže „150 %“ je opravdu 1,5× (stará křivka
+   `tanh` násobila už tichý signál 1,74× a nad plný rozsah řezala natvrdo).
+
+Navíc: kousek, který neprošel sítí, se pošle ještě jednou a odmítnutý
+(403, 413) se mluvčímu ohlásí u tlačítka, místo aby tiše zmizel.
+
+**Hlas pro GM (2. 10. 2026, uživatel: GM potřebuje „svolávat všechny“).**
+Mluvit do zápasu smí admin a ten, koho pustí mód: serverový háček
+`RezimAkce.smiMluvitDoZapasu(zapasId, hracId)` (Diplomacie: hráč na šedé,
+`smiGmMluvit` v `src/diplomacie/opravneni.ts` — tatáž podmínka jako u rout
+GM a od 26.3 navíc jen do zápasu, který běží v otevřené akci) a klientský `RezimKlienta.smiMluvitDoZapasu(kontext)`, podle kterého
+`App` dá chatu vlastní karty (hráče i hosta) `onHlas`. Klientský háček je
+jen nabídka tlačítka, právo hlídá server. Slyší stejný okruh jako u admina
+(účastníci zápasu a admini); `HlasUdalost.jeAdmin` říká, jestli mluví
+admin, ať „ztlumit ostatní adminy“ neumlčí GM. GM má jen mikrofon, bez
+tlačítka ztlumení adminů (`PushToTalk` prop `ztlumeniAdminu`).
+
+**Kdo mluví.** Dokud se promluva přehrává, visí vlevo dole štítek
+`views/MluviTed.tsx` (připnutý k oknu — hlas hraje celé stránce): jméno
+mluvčího, před ním titul slotu z háčku `popisSlotu` — „GM Pepa“ — a u toho,
+kdo v zápase sedí, čtvereček jeho barvy (`JmenoSBarvou`). Seznam drží
+`hlas.ts` (`kdoMluvi`, `naZmenuMluvcich`). Nasazeno jako 1.13.10-25.0.
 
 ### 3.51 Chat se posouvá jen na obrazovce (1.4.0, 13. 9. 2026)
 
@@ -1775,6 +1827,720 @@ ne ranked pravidla, takže se to nepromítá. Neověřeno naživo: zda Worlds
 Edge seznam lobby vydává nové civ id 60–62 ve slotech stejně jako ostatní
 (očekává se, id je z téže řady).
 
+### 3.60 Mód Diplomacie (větev `diplo`, 1.13.10-13.10 → 1.13.10-27.0, 1.–2. 10. 2026)
+
+**Záměr.** Jin (autor scénáře) připravil pro komunitní večery custom scénář
+*Diplomacie – Ať žije císař* (`LLC.aoe2scenario`, DE 1.59): 7 hráčů a
+1 GameMaster, skryté role, rada králů, relikvie. Do té doby si GM po startu
+hry role losoval v Jinově samostatném nástroji (Google Apps Script) a
+obcházel hráče ve voice roomkách. Cíl celého módu: **web je jediné místo,
+kde se Diplomacie připraví, odehraje a vyhodnotí.** Hotové jsou podprojekty
+0 a 1 — nasazení větve, základ módu, scénář jako součást webu, rozdání rolí,
+tajné karty, pult GM a grafika. Podprojekty 2 (deník GM, vyhodnocení a
+odhalení rolí), 3 (Rada králů) a 4 (hlas) dostanou vlastní spec.
+
+Spec: `docs/superpowers/specs/2026-10-01-diplomacie-zaklad-a-role-design.md`
+(§12 shrnuje, co se během provádění změnilo); plán:
+`docs/superpowers/plans/2026-10-01-diplomacie-zaklad-a-role.md` (na konci
+úkoly 18–22 přidané během provádění); ledger s každým úkolem, rozhodnutím a
+odloženým nálezem: `.superpowers/sdd/2026-10-01-diplomacie-zaklad-a-role/progress.md`
+(mimo git, u autora).
+
+**Jak to je.**
+
+- **Mód akce.** `akce.rezim` (`klasicky` | `diplomacie`, migrace
+  `030_rezim_akce.sql`), přepínač „Diplomacie“ vedle názvu při zakládání
+  akce, `POST /api/akce` s `rezim` (neznámá hodnota 400). Registr módů
+  `src/rezimy/index.ts` (rozhraní `RezimAkce`: `vychoziNastaveniLobby`
+  — `null` = mód vlastní výchozí hodnoty nemá —, `predZmenouSestavy`,
+  `poZmeneSestavy`, `poVytvoreniZapasu`, `doplnStav`, `rediguj`; klasický
+  večer je prázdná implementace; `vychoziNastaveniAkce()` = hodnoty módu,
+  nebo základ jádra), sdílená synchronní pravidla
+  `src/shared/rezimy.ts` (`zkontrolujSestavuRezimu`, `vychoziTymRezimu` —
+  volá je server i `Skladani.tsx`), na klientovi `web/src/rezimy/index.tsx`
+  (`RezimKlienta`: `stitek`, `kartaHrace`, `krokHosta`, `verejnyZapas`,
+  `popisSlotu`, `nastaveniScenare`, `smiMluvitDoZapasu`). **Modul módu žije vedle jádra a jádro
+  ho zná jen přes háčky** — odebrat mód = smazat `src/diplomacie/`,
+  `src/shared/diplomacie/`, `web/src/diplomacie/`, řádek v obou registrech
+  a `registerDiplomacieRoutes` v `server.ts`; háčky H1–H13 níž jsou obecné
+  a zůstávají (s módem odejdou jen jeho hodnoty: `"diplomacie"` v `RezimId`
+  a CHECK migrace 030, větve v `src/shared/rezimy.ts`, `smiNahratScenar`
+  v `/api/me` a `config.autoriScenare`/`python`, `SpravaScenare` v `App.tsx`,
+  Python v Dockerfile).
+- **Háčky v jádru** (spec §4.1; jediné změny stávajícího kódu kvůli módu):
+
+  | # | kde | co |
+  |---|---|---|
+  | H1 | `database/030_rezim_akce.sql` | sloupec `akce.rezim` s CHECK |
+  | H2 | `src/db/events.ts`, `src/http/routes/events.ts` | `createAkce(nazev, rezim)`, `POST /api/akce` přijme `rezim` |
+  | H3 | `src/rezimy/index.ts` | registr módů a rozhraní `RezimAkce` |
+  | H4 | `src/http/routes/events.ts`, `src/realtime/akceStav.ts` | výchozí nastavení lobby nové akce z módu (`vychoziNastaveniLobby`); „Reset nastavení“ (`POST /api/akce/:id/nastaveni-lobby/vychozi`) nasadí `vychoziNastaveniAkce()` a snímek nese `akce.vychoziNastaveniLobby`, proti němuž panel pozná „Nastavení je výchozí“ |
+  | H5 | `src/shared/rezimy.ts`; `prectiSestavu` a `PUT /api/zapas/:id/sestava` v `src/http/routes/matches.ts`; `Skladani.tsx`, `EditaceZapasu.tsx`, `skladani.ts` | po kontrole jádra ještě kontrola módu; před úpravou sestavy `predZmenouSestavy` (→ 409), po ní `poZmeneSestavy` (Diplomacie: Nástupce mimo novou sestavu se vynuluje); výchozí tým nového hráče z módu |
+  | H6 | `createZapas` v `src/db/matches.ts` | v téže transakci `poVytvoreniZapasu` |
+  | H7 | `src/realtime/akceStav.ts`, `src/realtime/redakce.ts` | větev `rezim: { id, data }` ve stavu pro prohlížeče; `redigujProDivaka` volá `rezim.rediguj` **vždy, i pro admina** |
+  | H8 | `web/src/views/SpravaAkce.tsx` | přepínač „Diplomacie“ při zakládání akce; štítek u názvu z háčku `stitek` |
+  | H9 | `KartaHrace.tsx`, `ObrazovkaHosta.tsx`, `VerejnyZapas.tsx`, `Rezie.tsx` (režie i historie), `Skladani.tsx`, `NastaveniLobby.tsx`; plní je `App.tsx` přes `rezimKlienta(akce.rezim)` | místa pro vložené komponenty módu (karta role / pult GM, krok hosta před oknem Create Lobby, veřejný řádek — týž i pod hlavičkou karty v režii, popisek slotu „GM“, řádek „Scénář“) |
+  | H10 | `src/http/server.ts` | `registerDiplomacieRoutes(app, deps)` |
+  | H11 | `src/auth/routes.ts` (`GET /api/me` → `smiNahratScenar`), `src/config.ts` (`autoriScenare`, `python`) | kdo smí nahrávat scénář; interpret pro rozbor |
+  | H12 | `Dockerfile` | `python3` a `py3-pillow` z apk, virtuální prostředí `/opt/rozbor` s AoE2ScenarioParser podle `src/diplomacie/requirements.txt` |
+  | H13 | `src/http/routes/hlas.ts`; `App.tsx` (chat vlastní karty zápasu) | kdo kromě admina smí mluvit do zápasu: `RezimAkce.smiMluvitDoZapasu` na serveru, `RezimKlienta.smiMluvitDoZapasu` pro nabídku tlačítka (Diplomacie: GM); viz §3.50 |
+
+- **Modul Diplomacie.** `src/diplomacie/` — `db.ts` (dotazy nad
+  `diplo_*`), `rezim.ts` (implementace `RezimAkce`), `routes.ts`
+  (`/api/diplo/...`), `opravneni.ts` (`smiNahratScenar` ve vlastním modulu,
+  aby nevznikl cyklus importů auth ↔ routes ↔ guards), `rozbor.ts` +
+  `rozbor.py` (rozbor scénáře v podprocesu Pythonu, limit 60 s) +
+  `barvy_terenu.json` (id terénu → barva minimapy, vytažené z dat hry
+  nástrojem `nastroje/diplomacie/barvy_terenu.py`) + `requirements.txt`
+  (AoE2ScenarioParser 0.9.2), `fixtures/LLC.aoe2scenario` (kopie scénáře
+  pro testy — Jin souhlasil se zveřejněním). `src/shared/diplomacie/` —
+  `typy.ts`, `role.ts` (texty rolí), `los.ts` (čistý los a úpravy),
+  `sestava.ts` (pravidla sestavy, `GM_BARVA = 7`), `scenar.ts`
+  (`RozborScenare` a `prectiRozbor`), `viditelnost.ts` (`redigujDiplo`),
+  `fixtures.ts`. `web/src/diplomacie/` — `Zakryti`, `MapaScenare`,
+  `KartaRole`, `PravidlaHry`, `VerejnyRadek`, `PultGm`, `SpravaScenare`,
+  `StazeniScenare`, `index.tsx` (klient módu), `znaky.ts`, `api.ts`,
+  `fixtury.ts`; obrázky `web/src/assets/diplomacie/` (znaky sedmi rolí, rub
+  karty, rám minimapy — `docs/grafika.md`, „Mód Diplomacie“).
+- **Data** (`031_diplomacie.sql`): `diplo_scenar` (verze scénáře — jméno
+  souboru, SHA-256 unikátní, soubor jako `bytea`, `rozbor` JSONB,
+  `chyba_rozboru`, minimapa webp, kdo a kdy nahrál, poznámka, `aktivni` —
+  nejvýš jedna a jen s rozborem), `diplo_zapas` (stav `priprava` →
+  `losovano` → `rozeslano`, Nástupce, otisknutá `scenar_id`), `diplo_role`
+  (role, cíl Kata / pakt Žoldáka; sloupec `upraveno_po_rozeslani` od
+  2. 10. 2026 nikdo nečte ani nezapisuje — viz „Dávka úprav 2. 10. 2026“
+  níž —, v tabulce zůstal bez migrace). **GM se
+  neukládá:** je to vždy účastník na šedé (barva 7), `db.ts` ho dopočítá ze
+  sestavy. Smazání zápasu („Odebrat úplně“, konec akce bez výsledku) smaže
+  diplo data kaskádou; zrušený zápas si je nechá, dokud není odebrán —
+  jde ho vrátit do hry.
+- **Průběh večera.** Admin zapne přepínač Diplomacie a založí akci → mód
+  nastaví lobby: Game Mode Custom Scenario, scénář = jméno souboru aktivní
+  verze, velikost mapy z rozboru, populace 200, Lock Teams a Shared
+  Exploration vypnuto, cheaty vypnuto, diváci povoleni, 8 hráčů. Skládání:
+  přesně 8 hráčů, 8 různých barev, na šedé člověk (GM), všichni tým „–“
+  (nový hráč ho dostane sám), civilizace nepředepsané; AI dovolena mimo
+  šedou. Vytvořením zápasu vznikne `diplo_zapas` s otiskem aktivní verze.
+  Host má v kroku „Zakládáš!“ tlačítko **Stáhnout scénář** (verze zápasu,
+  ne nutně ta aktivní), cestu
+  `%USERPROFILE%\Games\Age of Empires 2 DE\<ID>\resources\_common\scenario\`
+  s jeho vlastním Steam ID nebo XUID (větu o volbě Custom Scenario krok od
+  2. 10. 2026 nemá — ukazuje to okno Create Lobby hned pod ním); kontrola
+  lobby hlídá řádek „Scénář“. V Chromu a Edge je od 1.13.10-24.0 hlavní
+  tlačítko **Uložit scénář do hry** (File System Access API,
+  `web/src/diplomacie/slozkaHry.ts`): host jednou vybere složku scénářů, web
+  do ní soubor zapíše a úchyt složky si pamatuje v IndexedDB — prohlížeč
+  nedovolí otevřít Průzkumníka ani zvolit výchozí cestu, jen si pamatuje
+  naposledy vybranou složku, proto zůstává řádek s cestou ke zkopírování
+  a obyčejné stažení jako druhá možnost (a jediná ve Firefoxu, Safari a na
+  telefonu). **Od 1.13.10-30.8 (3. 10. 2026) zrušeno** — uživatel: „přijde
+  mi to neintuitivní“ (dialog se otevíral v Dokumentech). Krok hosta je
+  teď: „Stáhnout scénář“ → po kliknutí „Ulož scénář do:“ s cestou →
+  „Spustit hru“; `slozkaHry.ts` smazán. Po startu hry rozdá
+  sekundární cíle hra sama; GM v pultu klikne na hráče, který cíl nedostal
+  (**Nástupce císaře**), **Rozdat role** (Šašek, Garda, 2× Nájezdník,
+  Žoldák, Kat; oběť Kata a pakt Žoldáka losem z `node:crypto`), případně
+  upraví roletkami (složení se hlídá, ale neblokuje), **Rozeslat role** —
+  hráčům zazvoní zvon a objeví se zakrytá karta (klik odkryje, další klik
+  zakryje, po obnovení stránky je zase zakrytá). Po rozeslání se role už
+  nemění: tabulka pultu je jen text a server úpravu odmítne (409) — změna
+  pravidla z 2. 10. 2026 proti spec §6.2, do té doby šla role upravit
+  s potvrzením a hráč viděl „GM upravil tvou roli.“ Dál
+  v pultu: Přelosovat, Zpět na výběr Nástupce, Zkopírovat přehled (text pro
+  Discord), pravidla jako tahák. Pod kartou vidí všichni v zápase jméno
+  Nástupce a rozbalovací pravidla hry s čísly z rozboru verze, kterou zápas
+  hraje.
+- **Viditelnost** (`src/shared/diplomacie/viditelnost.ts`, volá
+  `rezim.rediguj`): GM zápasu vidí všechno; hráč po rozeslání svou roli a
+  své tajné údaje (Nájezdníci se vidí navzájem); **kdokoli jiný — včetně
+  admina, diváka a nepřihlášeného — jen stav a po rozeslání jméno
+  Nástupce.** Tajná data jsou jen ve větvi `rezim.data`, nikde jinde.
+- **Scénář jako součást webu.** Správa scénáře (`SpravaScenare`, pod
+  panelem akce, i bez běžící akce) pro adminy a autory (`AUTORI_SCENARE`):
+  nahrání (`POST /api/diplo/scenar`, tělo `application/octet-stream` do
+  5 MB, jméno v `X-Jmeno-Souboru`, poznámka v `X-Poznamka` — od 29.2 ji UI neposílá, routa ji bere dál kvůli zpětné kompatibilitě; jméno musí
+  končit `.aoe2scenario`, soubor musí začínat hlavičkou scénáře, stejný
+  obsah podruhé → 409), rozbor Pythonem (sloty a kdo je GM, sekundární cíle
+  s čísly z triggerů, suroviny, limity jednotek, starty barev, velikost
+  mapy, podmínky vítězství z `GlobalVictory`, minimapa webp podle
+  `barvy_terenu.json`, varování); **při neúspěchu se verze uloží s chybou a
+  nejde aktivovat**; první úspěšná verze se aktivuje sama, další tlačítkem
+  „Nastavit jako aktivní“; aktivace přepíše `scenar`, `scenarStarsi` a
+  `velikost` v nastavení běžící akce Diplomacie. Čtení a stažení je veřejné
+  (`GET /api/diplo/scenar`, `…/:id/soubor`, `…/aktivni/soubor`,
+  `…/:id/minimapa.webp`). Rozehraný zápas hraje dál svou otisknutou verzi.
+- **Jádro navíc umí scénářové lobby** (ne jen pro Diplomacii):
+  `options[38]` = soubor scénáře, řádek „Scénář“ v kontrole (shoda / jiná
+  verze téhož scénáře / jiný soubor / hra jméno neposlala), u Custom Scenario se mapa
+  nekontroluje, velikost se porovnává s velikostí ze scénáře a Victory je
+  jen informativní; panel Nastavení lobby mapu, velikost a Victory schová a
+  ukáže jeden řádek „Scénář“ (jméno, velikost, podmínky vítězství z
+  rozboru).
+- **Verze a nasazení:** větev `diplo` z `dev` 1.13.10, verze `1.13.10-13.10`
+  → `1.13.10-21.16` (`POKUSNE_VETVE` ve `scripts/verze.ts`); Coolify
+  `aoe-web-diplo` (`0kh5tb4uqgkyeuy77sy32mng`), DB `rob_aoe_diplo`, hlídač
+  větví i GitHub Action znají `diplo`; proměnné `AUTORI_SCENARE` a `PYTHON`
+  — `docs/nasazeni-jouki-cz.md` §3.6.
+
+**Rozhodnutí.**
+
+- **Admin, který není GM, nevidí nic.** Rob streamuje; role by byly ve
+  vysílání. Vědomá výjimka z pravidla „admin vidí všechno“:
+  `redigujProDivaka` volá `rezim.rediguj` i pro admina a `redigujDiplo`
+  žádnou výjimku pro admina nemá. Admin-ne-GM dostane na
+  `/api/diplo/zapas/:id/*` 403.
+- **GM = kdo sedí na šedé.** Neukládá se; výměna GM je změna sestavy
+  v přípravě. Jakmile jsou role rozdané, změna sestavy vrátí 409 „Role už
+  jsou rozdané — nejdřív Zpět na výběr Nástupce.“ (háček
+  `predZmenouSestavy`, ne podmínka v routě).
+- **Verze scénáře v databázi, rozbor v Pythonu.** Jin scénář ještě mění,
+  proto nežije v repu, ale v DB s historií (záloha) a nahrává se přes web;
+  AoE2ScenarioParser existuje jen v Pythonu, proto `rozbor.py` v podprocesu
+  s limitem 60 s a výstup ověřený `prectiRozbor`. Kopie v repu jen jako
+  testovací fixtura. Nová verze se neaktivuje sama (kromě úplně první), ať
+  Jin může nahrát rozpracovanou verzi jako zálohu.
+- **Nástupce web nelosuje** — sekundární cíle rozdá hra (Chance 13 %
+  v triggerech) a GM ho odklikne podle chatu hry („pN ma: …“).
+- **AI v sestavě dovolena** (uživatel: „to omezení že se diplomacie hraje
+  bez AI vím, ale nedělej to mandatory“), jen na šedé musí být člověk —
+  pult GM nikdo jiný neobslouží. AI dostane roli jako každý jiný a GM si ji
+  přečte v pultu (úkol 21).
+- **Lock Teams a Shared Exploration vypnuto** (potvrzeno uživatelem
+  1. 10. 2026) — diplomacie se mění během hry.
+- **Výsledek s víc vítězi** `{ hraci: string[] }` (úkol 20): aliance
+  vznikají až ve hře, vyhrát může Garda s Nástupcem nebo oba Nájezdníci.
+  Je to jádro, ne mód — hodí se i pro klasický FFA. V režii u zápasu s víc
+  než dvěma stranami volba „Víc vítězů…“. Zápis zůstává adminovi; právo GM
+  a předvyplnění podle rolí je podprojekt 2.
+- **Mapu, velikost a Victory určuje scénář** (úkol 22): hra je v Custom
+  Scenario v lobby nenabízí. `REZIMY[3]` se jmenuje „Custom Scenario“ jako
+  ve hře, `VITEZSTVI[0]` „Podle scénáře“, panel tři prvky **schová** (ne
+  zašedí — rozhodl uživatel), rozbor čte `GlobalVictory.mode` (LLC: vlastní
+  podmínky přes triggery).
+- **Potvrzení v pultu GM přes `Potvrzeni.tsx`**, ne `window.confirm` —
+  spec říká „potvrdit dialogem“ a repo svůj dialog má.
+- **Více stran v kartě zápasu jako mřížka bez „VS“** (úkol 18): u FFA
+  s osmi stranami se VS mezi každou dvojicí nevešlo a nic neoddělovalo;
+  1v1, 2v2 a 4v4 beze změny. Od 2. 10. 2026 vždy dva sloupce plněné shora
+  dolů (1–4 | 5–8), na telefonu jeden.
+- Zamítnuto / odloženo (§5): scénář na míru zápasu, most ke hře (XS skript
+  nebo záznam hry).
+
+**Doplněno během provádění** (úkoly 18–22, zadal uživatel 1. 10. 2026 podle
+snímků z `/aoe/diplo`; znění v plánu, oddíl „Úkoly přidané během provádění“):
+
+| úkol | co |
+|---|---|
+| 18 | `StranyZapasu` pro víc než dvě strany: mřížka `.vs-rozlozeni.mnoho-stran` bez VS; jména mají přednost před sloupcem civilizace (jádro, i klasické večery) |
+| 19 | nový hráč v sestavě Diplomacie dostane tým „–“ (`vychoziTymRezimu`), klasicky dál střídavě 1, 2 |
+| 20 | výsledek zápasu s víc vítězi `{ hraci }`, `vyhralHrac()` jako jediné místo pro „vyhrál tenhle hráč?“, volba „Víc vítězů…“ v režii |
+| 21 | AI v sestavě Diplomacie dovolena, jen GM na šedé musí být člověk |
+| 22 | scénářová lobby: velikost ze scénáře, Victory informativně, panel schová mapu / velikost / Victory a ukáže řádek „Scénář“; rozbor čte podmínky vítězství; `REZIMY[3]` „Custom Scenario“, `VITEZSTVI[0]` „Podle scénáře“ |
+
+**Závěrečná recenze a opravná vlna (1. 10. 2026).** Recenze celé větve
+(c3c9870..f557fa1) skončila „With fixes“: žádný Critical, 5 Important,
+10 Minor — tajná data drží jedinou hranici bez výjimky pro admina a
+klasický mód zůstal netknutý. Opravná vlna (1.13.10-21.9 → 21.16) vzala
+všechny Important a většinu Minor: parser `application/octet-stream` jen
+u routy nahrání s autorizací před čtením těla a stropem poznámky 500 znaků,
+Nástupce po změně sestavy (`poZmeneSestavy`, 409 u losu, obrana v pultu),
+stav Diplomacie zápasu v kartě režie, „Custom Scenario“ v pokynu hosta a
+krok se stažením před oknem Create Lobby, reset nastavení podle módu
+(`POST …/nastaveni-lobby/vychozi`, nalezeno živě: reset v akci Diplomacie
+posílal klasický základ a kontrola lobby pak vyčítala správnou lobby),
+podmínky módu v jádru nahrazené háčky (`vychoziNastaveniLobby` → `null`,
+`stitek`), DRY (`ROLE_VOLITELNE`, `nastaveniZAktivniVerze`, `seznamId`),
+testy SSE redakce pro admina-ne-GM, 403 ×5 a `PUT role` pro Nástupce.
+Rozbor v produkčním kontejneru ověřen 1. 10. 2026 (`docker exec …
+rozbor.py` < LLC: ok, 4 s, minimapa webp ~23 kB; Pillow 12.2.0,
+Python 3.14, AoE2ScenarioParser 0.9.2). **Skutečné nahrání přes web**
+(kontrolor, 1. 10. 2026): `LLC.aoe2scenario` přes správu scénáře na
+`/aoe/diplo` → `POST /api/diplo/scenar` 200, verze 1 aktivní, rozbor 8 slotů /
+6 cílů / 7 startů / velikost 220 / vítězství „vlastní“, varování `[]`,
+`minimapa.webp` 200 `image/webp` 23 066 B, nastavení akce propsáno. Dodatky
+po re-recenzi (verdikt „S výhradou“, jen Minor): znaky v tabulce GM 36 px
+s pevným rozložením na telefonu (`55fff91`), Reset srovnává pole
+`scenarStarsi` po prvcích (`0e4e266`), minimapa ověřena proti hře, řádek
+v kartě režie jmenuje Nástupce až po rozeslání (admin bývá i GM a jemu
+server nezaslepuje), správa scénáře se v „pohledu uživatele“ schová jen
+adminovi. Odloženo do podprojektu 2: `scenarStarsi` v historii kroků (`!==`),
+Reset po nahrání neaktivované verze.
+
+**Dávka úprav rozhraní 2. 10. 2026** (1.13.10-22.2 → 22.10; připomínky
+uživatele po revizi `/aoe/diplo`, zadání `.superpowers/sdd/2026-10-02-davka-1/`
+mimo git). Co platí teď:
+
+| verze | co a proč |
+|---|---|
+| -22.2 | **Strany FFA ve dvou sloupcích po sloupcích** (`StranyZapasu`, `.vs-rozlozeni.mnoho-stran`): vlevo první polovina stran, vpravo druhá; počet řádků dává komponenta proměnnou `--radku-stran`. `auto-fill` dávalo na širokém monitoru 3+3+2 a civilizace se krátily na „L…“. |
+| -22.3 | Krok hosta bez věty o Create Lobby (totéž ukazuje okno pod ním); zakrytá karta má popisek jen „Tvá tajná role“, co kliknutí udělá, říká `title` (`Zakryti` má volitelnou `napoveda`; pult GM beze změny). |
+| -22.4 | **Mapa na kartě role stejně široká jako karta** (578 px místo 224; na telefonu šířka sekce) — pravidlo `.karta-role .mapa-scenare` přepisuje proměnné komponenty, vlastní minimapa (`.vlastni`) drží popisek pod kosočtvercem. |
+| -22.5 | **Barva u každého jména účastníka** — `web/src/views/JmenoSBarvou.tsx` (`ZnakBarvy`, `JmenoSBarvou`, `JmenoUcastnika`, `VycetUcastniku`, `VitezVeVete`). Čtvereček nese barvu sám (`.swatch.barva-N`), ne přes předka: karta hráče je `.karta.barva-N` a předek by čtverečky přebarvil. Stojí v levém odsazení jména (absolutně), takže se od jména nezalomí. Kde: karta role (Nástupce, oběť, pouto, další Nájezdníci), pult GM (jména řádků, „zná:“, čtvereček vybraného cíle vedle roletky), `VerejnyRadek`, věta o vítězi v hlavičce zápasu (režie, historie, veřejný řádek), strany ve `VerejnyZapas`, věta o sdílené civilizaci v `KartaHrace`, `VyberVitezu`. Věta o vítězi se skládá z částí `vetaOViteze` v `src/shared/strany.ts` (text i stránka z jednoho zdroje). `Potvrzeni` bere otázku jako uzel. Vědomě bez čtverečku: řádky sestavy (mají vlastní čtvereček s číslem), dlaždice Nástupce a tlačítka výsledku (celé v barvě), položky roletek, text do schránky, `window.confirm` u změny hosta, autor v chatu (barvu má jako barvu písma). |
+| -22.6 | **Sabotáž** místo „ekonomické sankce“ Nájezdníků: jedna za hru na Nájezdníka, na jednoho hráče nejvýš jedna, 2000 zlata GM. Sankce Rady králů u Nástupce je jiné pravidlo. |
+| -22.7 | Zlaté `<button class="cta">` pod kurzorem hnědlo s tmavým nápisem: pravidlo zlatého hoveru znalo `.cta` jen jako holou třídu (stačí odkazu) a obecné `button:hover:enabled` ho o prvek přebilo. Přidáno `button.cta:hover:enabled`; „Rozeslat role“ je větší než sousedé (207 × 47 px proti 30 px výšky). |
+| -22.8 | **„Zamíchat barvy“** ve skládání sestavy (i v úpravě zápasu), od dvou hráčů. Pravidla dává mód přes `zamichejBarvyRezimu` v `src/shared/rezimy.ts`: klasicky se permutují použité barvy (kdo barvu sdílí, sdílí ji dál), v Diplomacii zůstává GM na šedé a ostatní si rozdělí barvy bez šedé. Výsledek se vždy liší od dosavadního rozdání; Fisher–Yates je sdílený v `src/shared/michani.ts` (používá ho i los rolí). Toast kroku: „Barvy zamíchány“. |
+| -22.9 | **Po rozeslání se role nemění** (změna pravidla proti spec §6.2, spec §12): tabulka pultu je ve stavu `rozeslano` jen text (znak a název role; „oběť:“, „pokrevní pouto:“, „zná:“ se jménem a barvou), `PUT role` vrací 409 „Role jsou rozeslané — změnit je jde jen přes Zpět na výběr Nástupce.“ Zanikl potvrzovací dialog změny role, `potvrzeno` u role, hláška „GM upravil tvou roli“ a příznak `upravenoPoRozeslani`; sloupec `diplo_role.upraveno_po_rozeslani` v DB zůstal bez migrace, nečte se ani nezapisuje. Zvon při rozeslání zůstává. |
+| -22.10 | **Jednotný sloh pravidel rolí** (`POPIS_ROLE`): cíl začíná „Vyhrává, když …“, výhody a nevýhody krátké věty ve 3. osobě, znění od uživatele; pravidla se nemění. Stejně primární cíle v taháku a popisky na kartě („Oběť:“). Sloh hlídá test v `role.test.ts`. |
+| -25.1 | **Mapa na kartě role ukazuje i hráče, ke kterým má hráč vztah** (uživatel 2. 10. 2026): vedle „Tady začínáš“ další Nájezdníky (zeleně), oběť Kata (červeně), pokrevní pouto Žoldáka (zlatý dvojitý rámeček) a u všech Nástupce císaře — koruna (znak role) nad značkou a zlatý štítek; na vlastním startu Nástupce sedí koruna nad „Tady začínáš“, hráč se dvěma vztahy nese obojí. Jen z dat, která hráč po redakci už má — na server se nesahalo. `MapaScenare` bere jediný vstup `popisky` (barva → text + druhy `ja` / `spojenec` / `obet` / `pouto` / `nastupce`) místo dřívějších `starty` / `jmena`; pult GM a správa scénáře si je skládají přes `popiskyStartu`, karta role přes `popiskyRole`. Pult GM má korunu na zvoleném Nástupci. Pod mapou karty byla legenda (od 26.4 na přání uživatele pryč); popisky mají bublinu (`title`). Popisek drží osu značky a do mapy se posouvá jen o tolik, kolik je nutné (`clamp` s `cqw`, figure je kontejner) — nahradilo třídy `kraj-*`. Na telefonu menší značka a koruna a štítek Nástupce bez kapitálky. |
+
+Měřeno v headless Chrome na 1280 a 390 px (náhledová stránka mimo repo):
+bez přetečení stránky; na 390 px zůstává známá slabina jádra — tlačítko
+civilizace v řádku strany se smrskne na ~17 px (bylo tak i před dávkou).
+
+**Pohyb rozhraní (2. 10. 2026, 1.13.10-23.1 → 23.4).** Uživatel: „dodej
+úplně všude tomu UI animace, aby klikání na věci nemělo pouhé bliknutí.“
+Otočení tajné karty, plynulé sbalování, otevírání a zavírání oken, prolnutí
+najetí a stisk tlačítek, přepínače a vznik nového obsahu — v celém webu, ne
+jen v módu. Co se jak hýbe, časy v `:root`, pravidla pro další pohyb a co
+je vědomě bez něj, popisuje [`docs/grafika.md`](grafika.md) §3 „Pohyb“;
+skriptem řízený pohyb je v `web/src/pohyb.ts`, vzorník k měření
+`web/nahled/pohyb.html`. Past: `Zakryti` má nově obal `.zakryti-lic` —
+pravidla psaná na `.zakryti > …` se musí psát na `.zakryti-lic > …`.
+
+**Co zůstává otevřené** (menší nálezy z revizí, každý v ledgeru s místem
+v kódu; nic z toho neblokuje hru):
+
+- *Souběh a atomičnost (podprojekt 2, až se routy znovu otevřou):*
+  přechody stavů v `routes.ts` i kontrola sestavy po losu čtou stav mimo
+  transakci (dvojklik Přelosovat / Rozeslat, úprava sestavy během losu);
+  `promitniDoAkce` je read-merge-write; `chybaPravidla` chytá každou
+  `Error` (zavést `ChybaPravidla`).
+- *Docker:* `requirements.txt` pinuje jen `AoE2ScenarioParser`, jeho
+  závislosti a `py3-pillow` z apk plavou — `pip freeze` z funkčního
+  kontejneru při příští změně obrazu (nejde ověřit lokálně).
+- *Jen vývoj:* `smazZkusebniHrace` spadne na FK `diplo_scenar.nahral_hrac_id`,
+  když zkušební hráč nahrál verzi.
+- *Úklid kódu:* `stranaHrace` už v produkci nikdo nevolá; `URCUJE_SCENAR`
+  čte jen `historie.ts`.
+- *Mezery v testech:* 404 pro neznámého hráče v `PUT role`, varianty
+  `GlobalVictory.mode` 0–3, pozice značek v `MapaScenare`, jiná aktivní
+  verze než verze zápasu.
+- *UI:* dialog potvrzení se nezavře, když stav mezitím změní SSE; dvojitá
+  otázka v režii při editaci výsledku; popisky startů u okrajů minimapy;
+  historie kroků srovnává `scenarStarsi` přes `!==` (po resetu v Diplomacii
+  nesmyslný toast, undo funguje); po nahrání neaktivované verze se Reset
+  rozsvítí (`scenarStarsi` ve výchozích se změnilo, živé ne); v jádru
+  dvoustranný layout na telefonech na výšku přetéká a dlouhá jména u 4v4
+  se zkracují.
+- *Dokumentace a repo:* příklad v `docs/grafika.md` používá složku
+  `vyber/`, kterou recept nezakládá; `nastroje/grafika/__pycache__` je
+  trackované; `scenarStarsi` s neplatnou položkou se tiše zahodí místo 400.
+- *Provoz:* Jinovo `hrac_id` do `AUTORI_SCENARE` (Coolify: PATCH envs +
+  `/deploy`, ne `/restart`); ostrá zkouška s Jinem (jak host hlásí jméno
+  staženého souboru, spec §2.5); při mergi do `dev`
+  `npm run verze -- z-experimentu <verze diplo>`.
+
+**Vlastní minimapa ze hry (2. 10. 2026, 1.13.10-22.0).** Uživatel dodal
+obrázek minimapy LLC přímo ze hry (kosočtverec v čtverci, stejná geometrie
+jako terénní render z rozboru, kosočtverce hráčů už v něm jsou) a chce ho
+místo renderu, „dokud neřekne jinak“. Zatím **bez nahrávání v UI**: obrázek
+je u verze 1 na `/aoe/diplo` zapsaný ručně (`UPDATE diplo_scenar SET
+minimapa = …, minimapa_vlastni = true WHERE id = 1`; převod PNG → WebP
+1024 px přes Pillow). Co se kvůli tomu změnilo v kódu (migrace 032):
+`diplo_scenar.minimapa_otisk` (16 hex znaků SHA-256 obsahu, počítá
+databáze při vložení) jde jako `?v=<otisk>` do adresy obrázku, protože
+route posílá roční cache `immutable` — bez toho prohlížeče po výměně
+obrázku držely starý; `diplo_scenar.minimapa_vlastni` → `MapaScenare`
+dostane třídu `vlastni` a značky startů jsou jen jména bez kolečka
+(rozhodnutí uživatele). Jména mají sedět pod kosočtverci **z obrázku**, ne
+na mediánu jednotek z rozboru (ten je o 1–3 % vedle): u verze 1 jsou proto
+`rozbor.starty` nahrazené středy kosočtverců nalezenými v obrázku podle
+barev hráčů (Pillow, shluky syté barvy ~40 px; zelená je v obrázku
+(4, 172, 3), ne čistá). Nahrání vlastního obrázku k verzi ve správě
+scénáře (a „vrátit vygenerovanou“ = znovu rozbor) je odložená funkce, až
+o ni uživatel řekne; při ní se starty z nahraného obrázku detekují stejně.
+
+**Vlastní minimapa se dědí (2. 10. 2026, 1.13.10-28.0).** Verze 2
+(LLC_2.aoe2scenario, táž mapa) dostala po nahrání zase vygenerovaný render
+a uživatel se ozval: „včera jsem říkal, že ta minimapa má být na tvrdo“.
+Obrázek, otisk, příznak a starty se jí zkopírovaly ručně v DB; od 28.0 to
+dělá nahrání samo. `ulozVerziScenare` (src/diplomacie/db.ts) v téže
+transakci jako INSERT najde poslední dřívější verzi s
+`minimapa_vlastni = true` a čistou funkcí `procNelzePrevzitMinimapu`
+(src/shared/diplomacie/minimapa.ts) porovná mapy: stejná `velikostMapy`,
+stejná množina barev startů a každý start nového rozboru nejvýš
+`TOLERANCE_STARTU` = 0,05 (vzdušnou čarou, souřadnice 0–1) od startu téže
+barvy ve zdroji. Zdroj má `rozbor.starty` už přepsané pozicemi z obrázku,
+porovnává se tedy s nimi — skutečný rozbor LLC je od nich nejdál ~0,036
+(modrá), proto 0,05. Když sedí, nová verze převezme `minimapa`,
+`minimapa_otisk`, `minimapa_vlastni = true` a `rozbor.starty` zdroje;
+jinak si nechá render a odpověď nahrání nese `vlastniMinimapa: { zdrojId,
+prevzata }`, ze které správa scénáře k výsledku připíše „Vlastní minimapa
+převzata z verze N.“ nebo „Vlastní minimapa nepřevzata — mapa se změnila.“
+Nečitelná verze (bez rozboru) se o převzetí nepokouší. „Přibalit sondu“
+mění jen sondu, minimapy se nedotkne (DB test). **Ruční převzetí:** ve
+správě scénáře má verze s rozborem bez vlastní minimapy tlačítko „Převzít
+vlastní minimapu z verze N“ (N = poslední dřívější verze s obrázkem, jinak
+nejnovější pozdější) → `POST /api/diplo/scenar/:id/minimapa-z/:zdrojId`
+(autor nebo admin, `prevezmiMinimapuZ`), stejná kontrola mapy, při jiné
+mapě 409 s větou „Vlastní minimapu z verze N nejde převzít — mapa se
+změnila. …“. **Jak to přebít:** vrátit verzi render jde zatím jen ručně v
+DB (`UPDATE diplo_scenar SET minimapa_vlastni = false, minimapa = <render>,
+rozbor = <rozbor s původními starty>` — render i starty dá znovu rozbor
+`src/diplomacie/rozbor.py` nad souborem verze); aby další nahrání
+nedědilo, stačí, když žádná dřívější verze nemá `minimapa_vlastni = true`.
+Úplně jinou mapu kontrola pozná sama (velikost, barvy nebo posun startů).
+
+**Správa scénáře: jméno pro hru, mazání, tlačítka (2. 10. 2026,
+1.13.10-29.0).** Zadání uživatele (velikost (2)–(3)): verze jde smazat,
+nejnovější nahoře, zjednodušený řádek a jednotné jméno pro hru.
+- **Jméno pro hru `JIN_DIPLO_<N>.aoe2scenario`** — `jmenoScenareProHru`
+  (src/shared/diplomacie/scenar.ts), N = `diplo_scenar.poradi` (migrace
+  035: vlastní sekvence, přiřazuje se při vložení, po smazání se číslo
+  nepoužije znovu, dnešní verze 1 a 2 dostaly 1 a 2 podle id). Stav nese
+  `ScenarVerze.jmenoHry`. Podle něj se porovnává všechno: kontrola lobby
+  (`nastaveniScenare` → `scenar`, `scenarStarsi` = jména pro hru
+  ostatních verzí), stažení pro hosta a „Uložit scénář do hry“
+  (`StazeniScenare`, `slozkaHry.ts` dostává jméno od volajícího), hledání
+  zápasu pro most (`beziciZapasyDiplo`, `getSonduVerze` → `stejnyScenar`;
+  soubor `.xsdat` se jmenuje podle staženého scénáře). Stažení kopie pro hru
+  jde pod tímto jménem vždy, i bez sondy; originál (`?original=1`) pod
+  jménem od autora. Přibalení sondy jméno nepotřebuje (XS čte jméno
+  souboru až ve hře). Upozornění na stejné jméno při nahrání odpadlo —
+  jména pro hru jsou jedinečná. **Past:** host, který má uloženou kopii pod
+  jménem originálu z doby před 29.0, ji musí stáhnout znovu (kontrola lobby
+  hlásí jiný soubor). Nastavení lobby akce otevřené před nasazením
+  (i uložené nastavení) přepsala na jména pro hru migrace 036 (29.1).
+- **Mazání** `DELETE /api/diplo/scenar/:id` (autor nebo admin,
+  `smazVerzi`): aktivní verzi odmítne 409 „Aktivní verzi nejde smazat —
+  nejdřív nastav jinou jako aktivní.“, verzi, kterou hraje **běžící**
+  zápas otevřené akce (`z.stav = 'bezi'`, `a.stav <> 'konec'` — stejná
+  definice jako `beziciZapasyDiplo`), 409 „JIN_DIPLO_N.aoe2scenario hraje
+  běžící zápas #P — smazat ji půjde, až bude dohraný nebo zrušený.“ (P =
+  `zapas.poradi`, jak ho ukazuje UI). Dohrané (`dohrano`) a zrušené
+  (`zruseny`) zápasy a zápasy uzavřených akcí mazání neblokují (29.2,
+  uživatel 2. 10. 2026: verze ze zkoušek držely staré testovací zápasy):
+  v téže transakci dostanou `scenar_id = NULL`. `verzeZapasu` pak
+  zápasu, který neběží a otisk nemá, nedá žádnou verzi — karta role
+  i pult GM se vykreslí bez mapy a pravidel, ne s mapou aktivní verze
+  (běžící zápas bez otisku dál hraje aktivní). Po smazání se přepočítá
+  nastavení lobby běžící akce (smazaná zmizí ze `scenarStarsi`). V UI přes
+  `Potvrzeni` „Smazat verzi …? Nejde vrátit.“. **Odmítnutí je vidět
+  u řádku** (29.2): do 29.1 šla věta serveru přes `hlidej` do obecné
+  chyby App, která sedí nad panelem akce — správa scénáře je pod ním,
+  uživatel ji neviděl a hlásil „mazání nefunguje“. Teď `SpravaScenare`
+  chybu smazání chytí sama a ukáže ji pod řádkem verze
+  (`.chyba-smazani`, `role="alert"`) až do další akce ve správě.
+- **Řádek verze** (`SpravaScenare`): jméno originálu jako text (ne odkaz)
+  a vedle tlumeně jméno pro hru, kdo, kdy, „aktivní“ / „Nastavit
+  jako aktivní“, chyba rozboru a sondy jako krátká věta; pod tím tlačítka
+  „Stáhnout originál“ (`Potvrzeni`: „Tahle verze nebude automaticky
+  posílat průběh hry na stránku. Opravdu stáhnout?“), „Přibalit
+  automatizace“ (dřív „Přibalit sondu“; vlastní bublina `.napoveda` „Do
+  scénáře se přibalí skripty na sledování statistik ze hry.“; zlaté `.cta`,
+  dokud verze nemá dnešní sondu — chybí, selhala, nebo je zastaralá),
+  „Stáhnout scénář“ (zlaté `.cta`, `disabled` bez dnešní sondy), případně
+  „Převzít vlastní minimapu z verze N“ a „Smazat“. Text „sonda: ano
+  (zastaralá)“ a odkaz „originál“ zmizely. Seznam je řazený nejnovější
+  nahoře (server `ORDER BY id DESC`, UI třídí ještě samo). Pole „Co je
+  nového“ uživatel zrušil (29.2): formulář ho nemá a řádek poznámku
+  neukazuje; sloupec `poznamka` zůstává.
+- **Zamčené zlaté tlačítko:** holé `.cta:hover` se chytalo i zamčeného
+  `<button class="cta" disabled>` a pod kurzorem ho rozzářilo zlatě; teď
+  `.cta:hover:not(:disabled):not([aria-disabled="true"])` a zamčené
+  `button.cta:disabled` má šedý vzhled jako `.cta[aria-disabled="true"]`
+  (platí i pro „Losovat“ v pultu GM a „Uložit scénář do hry“ během
+  ukládání).
+
+**Ověřeno proti hře (1. 10. 2026):** orientace minimapy a pozice startů —
+uživatel porovnal minimapu webu s minimapou LLC ve hře: „minimapa i pozice
+hráčů sedí“ (otočení o 45° v `rozbor.py` a medián pozic jednotek jako start
+tedy odpovídají). Dřív to byl otevřený bod rulingu 4 z úkolu 12.
+
+**Most ke hře — první kus: automatický Nástupce (2. 10. 2026,
+1.13.10-23.0).** První kus podprojektu 2: data
+z běžící hry → web → pult GM. Uživatel: „jsme schopni zaintegrovat to
+přiřazování nástupce císaře, aby bylo automatický, tak to testovně
+naimplementuj na můj PC“. Podrobný popis formátů a rozhodnutí je
+v [`analyza-most-ke-hre.md`](analyza-most-ke-hre.md), oddíl „Implementováno
+2. 10. 2026“; tady jen mapa:
+
+- **Sonda** `src/diplomacie/sonda.xs` (formát 3: převod slot → hráč, 8 hráčů,
+  diplomacie, 256 proměnných triggerů) a přibalení `src/diplomacie/sonda.py`
+  + `sonda.ts`; společný spouštěč kroků Pythonu `krokPythonu.ts` (používá ho
+  i `rozbor.ts`). Web sondu přibalí při nahrání verze do kopie
+  (`diplo_scenar.data_sonda`, výpis cílů v `diplo_scenar.sonda`, migrace
+  033); **stažení vrací kopii se sondou pod stejným jménem**, originál jen
+  autorovi a adminovi přes `?original=1`; verzi nahrané dřív ji dopočítá
+  `POST /api/diplo/scenar/:id/sonda` („Přibalit sondu“ ve správě scénáře,
+  u verze „sonda: ano / ne“).
+- **Příjem** `POST /api/diplo/hra` (`src/diplomacie/hra.ts`, registruje se
+  jen s `MOST_TOKEN`), paměť posledního snímku `hraPamet.ts`, odvození
+  v `src/shared/diplomacie/hra.ts` (`vyhodnotHru`: Nástupce = jediný hráč
+  bez cíle; `popisCile`, `popisStari`).
+- **Nástupce automaticky:** v `priprava` ho server nastaví sám; ruční volbu
+  GM nepřepíše, dokud hra neurčí někoho jiného; po rozdání rolí už nic.
+  Od 26.0 drží poslední odpověď hry databáze (`diplo_zapas.nastupce_ze_hry`,
+  migrace 034), takže ruční volbu nepřepíše ani restart serveru; dál viz
+  „Kontrola dávky 2. 10. 2026 a opravná vlna“.
+- **Viditelnost:** `rezim.data.zapasy[i].hra` vidí jen GM zápasu,
+  `redigujDiplo` ji maže i adminovi (cíle prozrazují totéž co role).
+- **Pult GM:** `web/src/diplomacie/HraZive.tsx` — věta „Nástupce určila
+  hra: X“, řádek s cílem a postupem pod každým hráčem v tabulce rolí, stáří
+  dat. Bez dat ze hry se pult chová jako dřív.
+- **Most** `nastroje/diplomacie/most.py` na PC GM (token `MOST_TOKEN` /
+  `~/.aoe-most-token`).
+- **Háčky:** žádný nový — vše je v modulu módu; do H10 (registrace rout)
+  a H11 (`config.mostToken`) přibyly jen hodnoty módu, H12 (Dockerfile)
+  beze změny (`sonda.py` a `sonda.xs` kopíruje `scripts/copy-migrations.ts`
+  vedle `rozbor.py`).
+- **Co čeká:** ostrá zkouška ve hře (scénář stažený z webu, most spuštěný
+  u GM). Krok sondy v produkčním kontejneru ověřil kontrolor 2. 10. 2026
+  (`docker exec -i <kontejner> /opt/rozbor/bin/python /app/dist/src/diplomacie/sonda.py < LLC.aoe2scenario`:
+  `"ok": true`, 42 označených triggerů, 5 s). `MOST_TOKEN` nastavuje kontrolor
+  v Coolify (`docs/nasazeni-jouki-cz.md` §3.6).
+
+**Kontrola dávky 2. 10. 2026 a opravná vlna** (1.13.10-26.0 → 26.5).
+Nezávislá kontrola mostu ke hře, hlasu a mapy (`cc39cab`) našla F1–F7
+a šest drobností; opraveno:
+
+- **F1** Koho hra určila naposledy, je sloupec `diplo_zapas.nastupce_ze_hry`
+  (migrace 034), ne paměť procesu — první snímek po restartu serveru už
+  ruční volbu GM nepřepíše.
+- **F2** Hlásí-li most jiný scénář, než zápas hraje, data se v pultu ukážou
+  s varováním, ale Nástupce se podle nich nenastaví ani neodvolá.
+- **F3** Cíle se rozdávají postupně (při 6/7 vypadá sedmý jako Nástupce):
+  odpovědi hry se věří, až ji dva po sobě jdoucí snímky aspoň 4 herní
+  sekundy od sebe řeknou stejně (`posunKandidata`, `STALOST_NASTUPCE_S`).
+  Vezme-li ji hra zpět a Nástupce v přípravě je pořád ten od hry, vynuluje
+  se obojí; ruční volba GM zůstává.
+- **F4** Oba zápisy jsou jeden podmíněný `UPDATE … WHERE zapas_id = $1 AND
+  stav = 'priprava'` (souběžný los GM vyhraje) a stav se rozesílá, jen když
+  se řádek změnil.
+- **Paměť snímků** (`hraPamet.ts`): snímky zápasů, které už neběží, se
+  zahazují; snímek se starším herním časem se ignoruje, pokles o víc než
+  30 s je nová hra (kandidát se sbírá znovu).
+- **F6** Soubor sondy vzniká jen na počítači GM (`if (xsUnsyncGetLocalPlayerId()
+  == xsGetWorldPlayerId(7)) { … }` kolem zápisu; xs-check prošel) — do té
+  doby nesl tajné cíle všech u každého hráče. Ke kopii se ukládá otisk
+  `sonda.xs` (`diplo_scenar.sonda.revize`); starší kopie ukáže správa jako
+  „sonda: ano (zastaralá)“ s tlačítkem „Přibalit sondu“. Krok navíc varuje,
+  když počet označených triggerů není násobek počtu hráčů bez GM (věta ve
+  správě vedle „sonda: ano“). Podrobně `analyza-most-ke-hre.md`.
+- **F7** Konec promluvy uklidí přehrávač: `pause`, odpojení uzlů Web Audia,
+  `revokeObjectURL`, `removeAttribute("src")`; `#dotahni` ruší časovač
+  přeskoku. Totéž u zkoušky mikrofonu v nastavení.
+- **Drobnosti (26.3):** GM mluví (push-to-talk) jen do zápasu, který běží
+  v otevřené akci — háček na serveru i tlačítko; Kat/Žoldák bez cíle má po
+  rozeslání „—“ místo roletky; nepovedený zápis do složky hry volá `abort()`
+  na rozepsaný proud; limit kroku Pythonu pod vteřinu se hlásí v ms.
+- **Mapa (26.4–26.5, uživatel):** legenda pod mapou karty role je pryč
+  (bubliny `title` u popisků zůstaly); mapa pultu GM má stejnou velikost
+  jako mapa karty role — obě jsou `velka`, šířka z jedné proměnné
+  `--mapa-velka` (34 rem + odsazení + rám). Změřeno v headless Chrome:
+  578 / 546 px (figure / obrázek) u obou na 1280 px, 254,8 / 222,8 px na
+  390 px, žádný popisek ani koruna nevyčnívá ani s dlouhými jmény.
+- **Ověřeno v kontejneru:** krok sondy v produkčním obrazu (kontrolor,
+  2. 10. 2026: ok, 42 označených triggerů, 5 s).
+
+**Divák jako zdroj dat ze hry (2. 10. 2026, 1.13.10-27.0).** Zkouška
+s divákem ukázala, že sonda běží i u diváka a že `xsUnsyncGetLocalPlayerId()`
+u něj vrací hráče, na kterého se právě dívá (1 → 2 → 7 → 8 při přepínání) —
+XS diváka od hráče nerozezná, takže podmínka F6 „jen GM“ držet nejde. Rob
+bude v zápasech Diplomacie GM (šedá), nebo jen divák, a data se mají sbírat
+v obou případech. **Rozhodnutí uživatele:** soubor sondy se píše na každém
+počítači, bez šifrování — „komunitní hra s přáteli, co nemají zájem
+podvádět“. **Důsledek:** kterýkoli hráč si může ze své složky
+`<id>\profile\` přečíst tajné cíle všech (tedy i kdo je Nástupce).
+
+- `sonda.xs` bez podmínky, formát 3 beze změny (formát 4 s místním hráčem
+  nevznikl — u diváka by jen opakoval sledovaného hráče). Revize sondy se
+  změnila: všechny dřív přibalené kopie jsou „sonda: ano (zastaralá)“.
+- `POST /api/diplo/hra`: tělo nese `odesilatel` (starší `gm` se bere dál).
+  Zápas: (a) odesílatel sedí na šedé běžícího zápasu → zdroj „gm“; jinak
+  (b) **jediný** běžící zápas Diplomacie otevřené akce, jehož otištěný
+  scénář má jméno, které hlásí hra → zdroj „divak“; jinak 404 s větou podle
+  důvodu. Čisté funkce `vyberZapasSnimku`, `procBezZapasu`, `divakUstupuje`
+  v `src/shared/diplomacie/hra.ts`, dotaz `beziciZapasyDiplo` v `db.ts`.
+- **Přednost GM:** snímek diváka se nepoužije, přišel-li od GM téhož zápasu
+  snímek před méně než 20 s (čas serveru); odpověď `pouzito: false`. Po
+  přepnutí zdroje se herní časy neporovnávají a Nástupce se potvrzuje znovu.
+  Pravidla automatického Nástupce platí pro oba zdroje.
+- Data od diváka jsou opožděná o zpoždění pro diváky; pult GM u stáří dat
+  píše zdroj: „ze hry (GM) před 3 s“ / „ze hry (divák) před 3 s“
+  (`HraZapasu.zdroj`, `popisStari`).
+- `most.py`: posílá `odesilatel` (jméno složky nebo `--odesilatel`, `--gm`
+  zůstal jako alias) a u každého odeslání vypíše zdroj z odpovědi. Rob ho
+  může pustit na herním PC jako GM i jako divák; na streamu se dvěma PC musí
+  běžet na tom, kde běží hra.
+- Neověřeno: odeslání z PC diváka proti živému webu.
+
+**Most přes Židolištu a herní PC (3. 10. 2026, stav k 1.13.10-29.3).**
+Rob streamuje ze dvou PC; hra a její `profile\*.xsdat` jsou jen na
+**herním PC**, proto tam běží druhý Streamer.bot. Řeší ho session
+projektu RobJewsALot (Židolišta), složka `RobJewsALot/Streamer.bot - GAME PC/`
+(README + `AoE_Diplomacie_Most.cs`; commity 4545dac, 7388d91, 6ec0399).
+
+- **Hotovo a ověřené server → web:** SB na herním PC každé 2 s pošle
+  změněný `.xsdat` (base64, ≤ 64 kB, ne starší 30 s) na
+  `POST https://api-zidolista.jouki.cz/sb-api/aoe/xsdat` (Bearer token
+  `GamePC` z nastavení workspace rob). Server Židolišty ho dekóduje
+  (`server/src/lib/aoeDiplo.ts`) a přepošle na `POST /api/diplo/hra`
+  (env `AOE_DIPLO_URL`, `AOE_MOST_TOKEN`; diagnostika `GET /sb-api/aoe/status`).
+  `AOE_MOST_TOKEN` v Coolify aplikace zidolista-server nastavil Claude
+  (hodnota = `MOST_TOKEN` diplo, nikdy nevypisovat). Zkouška skončila 404
+  jen proto, že běžely dva zápasy se stejným scénářem (divák nejde přiřadit).
+- **Zadáno Židolištině session (čeká na jejich hotovo):** místo HTTP
+  POSTů **trvalé WebSocket spojení herního PC jako obecný agent** — přání
+  uživatele „co nejobecnější, co nejuniverzálněji“: vlastní role `gamepc`
+  (žádné alerty ani chat jako stream PC), obálka `{typ, id, data}`, server
+  agentovi posílá konfiguraci (co hlídat — `watch`/`read`/`list`/`status`),
+  AoE je jen jedna konfigurace na serveru, agent smí číst jen povolené
+  kořeny, víc agentů najednou, HTTP zůstává jako záloha.
+- **Výhled: „naschvály“ pro Roba** (odměny diváků typu krátké vypnutí
+  periferie nebo monitoru — Rob to kdysi zmiňoval). Bezpečný model zadaný
+  Židolišti: agent provede jen **pojmenované akce povolené lokálně** na
+  herním PC (server nemůže poslat libovolný příkaz), meze délky a četnosti,
+  **samovrácení na agentovi** (i při výpadku spojení), panic klávesová
+  zkratka, volba „jen mimo hru“, log každé akce.
+- **Agent dodán (3. 10. 2026, RobJewsALot 14f82b9 + fe94711):**
+  `wss://api-zidolista.jouki.cz/ws/agent?token=<SB token>`, obálka
+  `{type, id?, data?}`; server → agent `hello`, `agent.config {roots, watches}`,
+  `agent.status`, `fs.list`, `fs.read` (po ≤ 512 kB), `action.run`; agent →
+  server `agent.hello`, `watch.changed`, `heartbeat`; HTTP záloha
+  `POST /sb-api/agent/event`. AoE = sledování `aoe.xsdat` (kořen `aoe`,
+  maska `*\profile\*.xsdat`) a zpracování na serveru — v SB nic o AoE.
+  SB akce `Agent_Odeslat.cs`, `Agent_Zpravy.cs`, `Agent_Sledovani.cs`
+  (starý `AoE_Diplomacie_Most.cs` smazán), postup v jejich README.
+  Naschvály zatím jen model (lokální allowlist `AGENT_Actions`, panic
+  `AGENT_Panic`, odpovědi `not_enabled`/`panic`/`not_implemented`).
+  Ověřeno simulovaným agentem až po odpověď webu 404 (neběžel zápas);
+  skutečný Streamer.bot ještě neběžel.
+- **Další krok:** otestovat z PC uživatele
+  proti `/aoe/diplo` s `JIN_DIPLO_2.aoe2scenario` (případně znovu „Přibalit
+  automatizace“) a **jediným** běžícím zápasem — automatický Nástupce přes
+  celou cestu hra → SB → Židolišta → web.
+
+**Ověřeno a doladěno 3. 10. 2026 (1.13.10-29.4 → 30.0).**
+
+- Celá cesta hra → agent (WS) → Židolišta → web ověřená živě z PC
+  uživatele: odpověď 200 `zdroj: gm`, Nástupce nastaven ze hry (`ai:7`).
+- Zpoždění: sonda píše **každou herní sekundu** (dřív 2 s), web rozesílá
+  každý snímek (rozestup 0,8 s, dřív 5 s), Židolišta posílá každý platný
+  snímek i při změně jen času, mezera 1 s s dosláním (ne zahozením).
+- **Jména a poznávací značka (30.0):** všechny naše scénáře mají prefix
+  `ROB_` — kopie pro hru `ROB_DIPLO_<N>.aoe2scenario` (dřív `JIN_DIPLO_<N>`,
+  migrace 037 přepíše nastavení lobby otevřené akce). Agent hlídá jen
+  `*\profile\ROB_*.xsdat`. Soubor sondy má **formát 5**: první int32 je
+  značka `0x44424F52` (bajty „ROBD“), pak verze 5, pak totéž co formát 3.
+  XS bere nejvýš 9ciferný literál, proto `xsWriteInt(114519637 * 10)`.
+  `xsdat.py` a `most.py` čtou 5 i starší 3.
+- Pult GM: na širokém displeji (≥ 72rem) mapa vlevo, pult vpravo; „Rozdat
+  role“ jemně pulzuje, jakmile je Nástupce zvolený.
+- Stará aktivní verze (LLC_2) smazaná na přání uživatele, nahraje ji znovu.
+- **Králové na mapě (31.0):** sonda formát 6 zapisuje za hráči `8× (float x, float y)` — poloha prvního krále (objekt 434, `xsGetPlayerUnitIds` + `xsGetUnitPosition`) v dílcích, bez krále −1. Most i Židolišta posílají `hraci[].kral` (`{x,y}`/null), web ho nese v `HraZapasu.hraci[].kral`; `naMinimapu` (minimapa.ts) převádí dílce na kosočtverec minimapy jako `otoc` v rozbor.py. GM vidí na mapě pultu krále všech (♚ v barvě hráče), hráč na kartě jen svého (`DiploZapas.mujKral`, plní redakce). Neověřeno ve hře: pořadí os X/Y z `xsGetUnitPosition` proti `unit.x/y` scénáře.
+
+**Králové, relikvie, ping, overlaye (3. 10. 2026, 1.13.10-31.0 → 37.3).**
+
+- **Sonda formát 8** (`sonda.xs`, `xsdat.py`, dekodér Židolišty umí 5–8):
+  za hráči `8× (float x, y)` první král (objekt 434), pak `int počet` +
+  `počet× (float x, y, float hráč)` relikvií. Volné relikvie = objekt 285
+  gaii (mimo 8 dílců od tržiště GM, slot 7); relikvie uložená v klášteře je
+  dál 285, ale garrisonovaná → hráč = majitel budovy. **Zvednutá relikvie
+  zaniká** a nese ji jednotka **třídy 943** (mnich s relikvií 286,
+  misionář s relikvií 2557) — ověřeno diagnostikou ve hře; mnich bez
+  relikvie je třída 918 a `xsGetUnitAttributeHeld(-1)` vrací 100 (víra), proto
+  „drží něco“ jako kritérium nefunguje (bralo farmy, ovce, volné mnichy).
+  XS bere nejvýš 9ciferný literál; sonda musí být čisté ASCII.
+- **Web jen s hotovými sondami:** po startu serveru se zastaralé sondy
+  přebalí samy (`prebalZastaraleSondy`, jen `config.jeProdukce`), před
+  stažením kopie taky (`zajistiAktualniSondu`); tlačítko „Přibalit
+  automatizace“ zrušeno. Pozor na souběh dvou kontejnerů při nasazení —
+  starý může přebalit později a přepsat (34.8/34.9); stažení to napraví.
+- **Mapa GM:** králové všech (♚ v barvě), relikvie s obrysem v barvě nosiče
+  (bez plynulého přesunu — nemají stálé pořadí), přepínače „Zobrazit krále /
+  relikvie“ (`diplo_zapas.mapa_kralove/mapa_relikvie`, migrace 038, platí i
+  pro overlaye). Hráč vidí jen svého krále (`DiploZapas.mujKral`).
+- **Ping GM:** tlačítko „Ping“ (vypínač), adresáti ve dvou sloupcích (víc
+  najednou, nic = všem), klik do mapy → `POST /api/diplo/zapas/:id/ping`
+  `{x,y,komu: string[]|null}`, paměť `pingy.ts` (10 s), redakce pustí hráči
+  jen společné a jeho; cinkne zvuk chatu (`useZvukPingu`) hráči i GM.
+- **Overlaye OBS:** `/aoe/diplo/obs/mapa?klic=…`, `/obs/tabulka?klic=…`
+  (env `OBS_KLIC`, klíč na VPS `/root/aoe-deploy/.obs-klic`, odkazy u
+  uživatele `Desktopoe-obs-odkazy.txt`); stránky módu přes háček
+  `RezimKlienta.stranky`; data `GET /api/diplo/obs` = pohled GM.
+- **Ostatní:** GM automaticky hostem (háček `hostSestavy`), Team Positions
+  ve scénáři jen informace, čísla v barevných čtverečcích (`data-cislo`,
+  Cinzel), vlastní rozbalovací výběr `Rozbalovaci` (civilizace i cíl Kata/
+  Žoldáka), relikvie obrázkem (`relikvie.webp`), vyřazení = přeškrtnuté jméno,
+  hashované `/assets/` cachované napořád (server.ts).
+- **Typy frontendu (opraveno i v CLAUDE.md/CONTRIBUTING):** `npm --prefix web exec tsc -- -b`
+  kontroluje backend; frontend jen `cd web && npx tsc -b --force`.
+
+**Cíle hráče, schopnosti rolí, události hry (3. 10. 2026, 1.13.10-38.0 → 40.0).**
+- **Cíle vedle mapy na kartě** (`MojeCile.tsx`): primární cíl `N/7` relikvií
+  a odpočet `mm:ss / 15:00` (ztlumený, dokud hráč nemá 7), sekundární cíl
+  s postupem, stav hráčů, na kterých výhra role závisí (oběť Kata, pouto
+  Žoldáka, Nástupce u Gardy a Nájezdníka). Data: `DiploZapas.mojeHra`, redakce
+  je hráči vybere ze své `hra` (viditelnost.ts, `koho`). GM má odpočet
+  u relikvií v řádku tabulky.
+- **Odpočet 7 relikvií počítá sonda**, ne hra: scénář (triggery „general
+  relic win“ / „relic lost“) odpočet při ztrátě nuluje, uživatel chce jen
+  zastavit. Sonda (dál formát 8) píše do proměnných 240–247 (239 + číslo hráče
+  ve hře) sekundy se 7+ relikviemi — rozložení souboru se nezměnilo, dekodér
+  Židolišty nepotřeboval úpravu. Scénář proměnné 240+ nepoužívá.
+- **Schopnosti** (`schopnosti.ts`, migrace 039, tabulka `diplo_schopnost`):
+  Nájezdník Sabotáž 1× s cílem (na jednoho hráče nejvýš jedna), Šašek 3×
+  tajná informace (odpověď ústně), Žoldák doplatek 4000 za prodanou relikvii.
+  Hráč žádá z karty (`POST …/schopnost`), GM v pultu potvrdí/zamítne
+  (`POST …/schopnost/:sid`), nová žádost cinkne. Hráč vidí jen své řádky.
+- **Události z dat hry** (`udalostiHry`, po rozeslání v `prijmiSnimek`):
+  připomínky GM Katovi 2000 zlata za padlého, Šaškovi
+  prodej relikvií po smrti Nástupce (ne, když jemu samotnému běží odpočet);
+  doplatky Žoldákovi z počitadla prodejů scénáře (proměnná cíle „prodej 5
+  relikvií“ jeho slotu, migrace 040 `poradi`). Každá jen jednou (unikátní
+  indexy).
+- **Šašek → Garda:** pád původní Gardy (ze hry, nebo tlačítko GM „Garda
+  padla“) přepíše roli na `garda` s `puvodni_role = 'sasek'`, čekající
+  informace propadnou. Karta Šaška ztmavne, zazní zvon, po kliknutí na
+  „Královská garda padla“ shoří a ukáže se Garda (`promena_videna`).
+- **Nástupce prodává 1 relikvii po smrti Šaška** (`nastupce_prodej`,
+  migrace 041), opět jen bez vlastního odpočtu. `poradi` drží počitadlo
+  prodejů ve chvíli smrti; povinné prodeje (i Šaškův) se odškrtnou samy, až
+  je hra ukáže splněné (`splnenePripominky`: Nástupce prodal víc, Šašek má 0
+  relikvií). Počitadlo prodejů je proměnná scénáře (`promennaProdeju`),
+  sonda ji posílá mezi proměnnými — úprava sondy nebyla potřeba.
+- **Garda vidí role padlých sama** (`odhaleneRole` v redakci, jen role bez
+  cíle) — výhoda „dozví se roli každého, kdo zemře“ bez GM.
+- **Prohra:** Žoldákovi po pádu pouta a Gardě po pádu Nástupce se nad kartou
+  ukáže „Prohráváš — rezignuj ve hře“ se znakem `prohra.webp` (Flux.2-dev,
+  zadání `prohra` v `diplomacie.json`).
+- **Známá mez:** připomínka prodeje Šaška se vyhodnocuje každým snímkem —
+  když Šaškovi při smrti Nástupce běžel odpočet a později ho ztratil,
+  připomínka vznikne až tehdy.
+
+**Vědomě ponecháno:** most má jeden globální token (`MOST_TOKEN`) — kdo ho
+má, může v kterémkoli běžícím zápase Diplomacie nastavit Nástupce (jen
+v `priprava`), když uvede `hracId` jeho GM — a od 27.0 i bez něj jako
+„divák“, běží-li jediný zápas. Pro zkušební provoz na PC
+uživatele to stačí; **před mergem do `dev` přejít na token pro každého GM
+zvlášť** (a rozmyslet, jak ho dostane divák). Soubor sondy od 27.0 vzniká
+u všech záměrně (výš, „Divák jako zdroj dat ze hry“). Na 390 px přetéká stránka o ~17 px kvůli
+záhlaví jádra (jméno přihlášeného, „Přihlášení hráči“) — bylo tak i před
+vlnou, s mapou to nesouvisí.
+
+**Pasti.**
+
+- **CSS pro `.skladani .radek` platí i pro řádky jen ke čtení**
+  (`StranyZapasu`, režie): `grid-column: 2` u výběru barvy rozhodil hosta a
+  civilizaci na nový řádek — uživatel to viděl živě na `/aoe/diplo`
+  (úkol 11). Nová pravidla pro editor sestavy omezit na
+  `.skladani:not(.jen-ke-cteni)`, nebo je zkontrolovat v obou.
+- **Rozbor lokálně potřebuje Python s knihovnami:**
+  `pip install -r src/diplomacie/requirements.txt` (a Pillow) a
+  `PYTHON=python` v `.env`; test `rozbor.test.ts` se bez nich **přeskočí
+  s hláškou**, neselže — `npm test` je zelený i bez Pythonu, takže rozbor
+  je potřeba pouštět zvlášť: `PYTHON=python npx vitest run src/diplomacie/rozbor.test.ts`.
+- **Hra posílá jen jméno scénáře, ne obsah.** Nová verze pod stejným jménem
+  = kontrola lobby nepozná, že host má starou kopii. Správa při shodě jména
+  s existující verzí upozorní („Doporučuju jiné jméno…“), ale neblokuje —
+  verze pojmenovávat s číslem.
+- **Zkušební dveře jsou na https zavřené**, karty očima jednotlivých hráčů
+  se ověřují jen lokálně (`DEV_PRISTUP=true`, `npm run dev`).
+- `npx tsc --noEmit` web nekontroluje (platí pořád); po zásahu do
+  `src/shared/types.ts` (tvar `Vitez`, `AkceStavPayload.rezim`) doběhnout
+  celý `npm run build`.
+
 ## 4. Externí API — co je ověřené a co ne
 
 Worlds Edge (backend hry) není zdokumentovaný. Ověřené naživo 7. 9. 2026:
@@ -1844,13 +2610,22 @@ odhad:
 
 | Klíč | Chybějící hodnota | Jak často (ze vzorku 89 lobby) | Jak to zjistit |
 |---|---|---|---|
-| `vitezstvi` (`options[81]`, tabulka `VITEZSTVI`) | `0` | 16× — skoro pětina, není okrajový případ | Ve hře v Game Settings postupně vyzkoušet zbylé položky nabídky Victory (ne jen Conquest/Standard, které už tabulka zná) a podívat se, co která pošle v `options[81]`; kontrola lobby u neznámé hodnoty vypíše přímo číslo místo jména |
+| `vitezstvi` (`options[81]`, tabulka `VITEZSTVI`) | `0` | 16× — skoro pětina, není okrajový případ | **Vyřešeno 1. 10. 2026 (§3.60, úkol 22):** `0` posílají lobby v režimu Custom Scenario — hra tam Victory v lobby vůbec nenabízí, podmínky určuje scénář. Živá sonda 12 scénářových lobby: `options[81]` vždy `0`, `options[8]` skutečná velikost mapy ze scénáře. Tabulka má `0: "Podle scénáře"` a kontrola lobby u scénáře ukazuje Victory jen informativně. Zda `0` chodí i mimo scénářový režim, se neměřilo |
 | `rezim` (`options[5]`, tabulka `REZIMY`) | `15` | 2–3× | Ve hře postupně projet zbylé položky Game Mode (nabídka jich má víc, než kolik jich `REZIMY` zná) a sledovat `options[5]`; kontrola lobby zase u neznámé hodnoty vypíše číslo |
 | `preLobby.lobbyTyp` (`matchtype_id`, tabulka `LOBBY_TYPY`) | `61` | 2× | Založit lobby s jinou volbou Lobby Type, než jsou dnešní tři (Unranked, Ranked 1v1 DM, Ranked Team DM), a podívat se na `matchtype_id` v inzerátu |
 
 Postup na příště je stejný jako u Game Speed: přepnout ve hře, podívat se,
 co pošle živé `findAdvertisements` (nebo co kontrola lobby vypíše jako
 neznámé číslo), a teprve pak dopsat jméno do tabulky.
+
+**Doplněno 1. 10. 2026 (scénářové lobby, pro mód Diplomacie — §3.60).**
+
+| Co | Stav |
+|---|---|
+| `options[38]` = jméno souboru scénáře (`X.aoe2scenario`, bez cesty) u lobby v režimu Custom Scenario (`options[5] = 3`) | ověřeno naživo: 10 z 55 lobby (ráno) a 12 scénářových lobby (večer) ho měly všechny; `mapname` je u všech „my map“, `options[10]` u scénářů jen zbytek z nastavení před přepnutím |
+| `options[8]` u scénářové lobby = skutečná velikost mapy ze scénáře (120/200/220/240) | ověřeno na týchž 12 lobby — hra Map Size v lobby nenabízí, posílá tu ze souboru |
+| `options[81]` u scénářové lobby = `0` | ověřeno na týchž 12 lobby (Victory v lobby není, určuje ho scénář) |
+| jak jméno v `options[38]` hlásí host, který si scénář stáhl z webu | **neověřeno** — ověří první ostrá zkouška s Jinem (spec §2.5) |
 
 ---
 
@@ -1971,14 +2746,81 @@ vždy, má Spies), který čte soubor a posílá ho webu:
   více hráčů, kam se soubor ukládá a zda se skript přenáší se scénářem.
 - **Průběžný záznam hry (`.aoe2record`, knihovna `mgz`)** — bez zásahu do
   scénáře; jen příkazy hráčů: chat, rezignace, pauzy, herní čas, tributy
-  (platba 2k za sankci Nájezdníků). Stav hry (smrt krále, relikvie) ne.
+  (platba 2k za Sabotáž Nájezdníků). Stav hry (smrt krále, relikvie) ne.
 
 Rozhodnuto 1. 10. 2026: zatím ne, jen zapsat. Ruční ovládání GM zůstává
 v každém případě jako záloha.
 
-## 6. Historie verzí (7.–17. 9. 2026)
+**Doplněno 1. 10. 2026 večer (výzkum pro Židolištu).** Session projektu
+Židolišta (most Streamer.bot na PC GM, umí číst soubory ze zvolených složek
+a hlídat je) požádala o zjištění, co hra zapisuje za běhu. Výsledek je v
+[`analyza-most-ke-hre.md`](analyza-most-ke-hre.md) (zdroje značené
+D/O/I/?). Odpovědi na dřívější „Neověřeno“: XS soubor leží v
+`<id>\profile\<jméno scénáře>.xsdat` (pro LLC `profile\LLC.xsdat`, strop 1 MB),
+vzniká **u každého hráče** (zapisovat jen veřejné věci, nebo zápis podmínit
+lokálním hráčem 7 — neověřeno), a kód v efektu *Script Call* se přenáší se
+scénářem i divákům (samostatný `.xs` ne). `.aoe2record` se píše průběžně, ale
+rozepsaný neparsuje a nese jen příkazy hráčů; autosave jen v SP; logy
+nepoužitelné. Jediný živý zdroj stavu je tedy XS kód v LLC (musí přidat Jin).
+Návrh Židolišty: `xsWriteInt(seq) · xsWriteString(json) · xsWriteInt(seq)`,
+watcher s throttle 2 s, odeslání `POST …/hra` s `Bearer <MOST_TOKEN>`;
+identita hráče = číslo slotu/barva, GM určit přes `gm: "<steamid>"` v těle.
+**Endpoint na webu zatím není** — vznikne až se specem podprojektu 2
+(deník GM / vyhodnocení); do té doby Židolišta nic neodesílá.
 
-Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
+**Doplněno 2. 10. 2026 v noci (sonda na živé hře, rozhodnutí).** Na běžící
+hře uživatele se ověřilo obojí: (1) záznam `.aoe2record` jde číst za běhu
+vlastní čtečkou `nastroje/diplomacie/zaznam.py` — chat, rezignace, změny
+postoje v panelu Diplomacie i tributy s herním časem (uživatel je ve hře
+udělal a všechny jsou v záznamu); stav hry (relikvie) v něm není. (2) XS
+sonda přibalená do kopie scénáře (`nastroje/diplomacie/sonda.py`, jeden
+trigger Script Call, Jinovy triggery netknuté) ve hře píše každé 2 s
+`profile\<scénář>.xsdat` s relikviemi, kdo žije a maticí diplomacie —
+relikvie sebraná mnichem se objevila hned. **Rozhodnutí uživatele:** sondu
+nebude dodávat autor scénáře; **web ji při nahrání každé verze scénáře
+Diplomacie přibalí sám** do kopie, kterou host stahuje (originál autora
+zůstane), aby to fungovalo pro jakýkoli scénář. To je první úkol
+podprojektu 2 spolu s endpointem pro Židolištu; formát souboru a čtečku má
+`nastroje/diplomacie/xsdat.py`.
+
+**Past objevená ve 3 ráno:** XS čísluje hráče **podle pořadí v lobby, ne
+podle slotů scénáře** — uživatel hrál šedého (scénářový hráč 7) z prvního
+místa v lobby a sonda ho vedla jako 1, modrého AI (scénářový 1) jako 7.
+Proto sonda ve formátu 2 zapisuje ke každému číslu jméno
+(`xsGetPlayerName`) a barvu (`xsGetPlayerColorTag`); web i most přiřazují
+hodnoty **podle barvy/jména, nikdy podle čísla**. Totéž platí pro čísla
+hráčů v záznamu `.aoe2record` (jsou to lobby sloty). Odchod hráče ze hry
+sonda zachytí (`xsGetPlayerInGame` → 0).
+
+*Čeká na zítřek (2. 10. 2026):* spustit novou hru s `LLC-sonda` (verze 2
+formátu je v herní složce) a ověřit, že u čísel sedí jména a barvy; pak
+ověřit sondu ve hře pro víc hráčů (soubor vzniká u každého, Script Call se
+přenáší se scénářem); pak spec podprojektu 2 (web přibalí sondu při
+nahrání verze, endpoint `…/hra` pro Židolištu, deník GM a vyhodnocení).
+
+**Doplněno 2. 10. 2026 (první kus mostu implementován).** Ve verzi
+1.13.10-23.0 je hotová zkušební integrace: web přibaluje sondu formátu 3
+do stahované kopie scénáře, přijímá snímky hry na `POST /api/diplo/hra`
+(`Bearer MOST_TOKEN`), v přípravě sám nastaví Nástupce císaře a GM vidí
+postup sekundárních cílů; data posílá `nastroje/diplomacie/most.py` z PC
+GM. Mapa v §3.60 („Most ke hře — první kus“), formáty
+v [`analyza-most-ke-hre.md`](analyza-most-ke-hre.md). **Další krok:**
+propojení s WebSocket mostem v Židolišti (stejná routa a tělo — Židolišta
+jen nahradí `most.py`), pak deník GM a vyhodnocení. Zbývá ověřit ve hře:
+zápis přidělených cílů do proměnných 201–208 (označení cílů dosud ve hře
+neběželo) a hru pro víc hráčů.
+
+**Doplněno 3. 10. 2026.** Zápis cílů i automatický Nástupce ověřené živě
+(zápas 8), divák jako zdroj dat hotový (27.0). Most přes Židolištu funguje
+po HTTP; čeká se na obecného WebSocket agenta herního PC a model
+„naschválů“ ze session Židolišty — §3.60, „Most přes Židolištu a herní PC“.
+Pak živý test celé cesty, deník GM a vyhodnocení (podprojekt 2), místnosti
+na volání 1:1 s odposlechem GM (bod 12 dávky, samostatný podprojekt).
+
+## 6. Historie verzí (7. 9. – 1. 10. 2026)
+
+Jedna řádka = jeden commit do `dev`; tučně releasy do `main`; větev `diplo`
+má jeden souhrnný řádek (verze `1.13.10-A.B`).
 
 | Verze | Kdy | Co (a proč) |
 |---|---|---|
@@ -2107,6 +2949,23 @@ Jedna řádka = jeden commit do `dev`; tučně releasy do `main`.
 | 1.4.3 | 23:20 | Poplach svolání vždy naplno bez ohledu na Master Volume, (i) u popisku (§3.45) |
 | 1.4.4 | 23:40 | Bubliny u mikrofonu/ztlumení zalamují a jsou na střed, bublina (i) na střed nad ikonou |
 | 1.4.5 | 23:55 | Mikrofon a reproduktor jako zlaté SVG ikony 1,35 rem místo emoji (§3.50) |
+| 1.13.10-13.10 … 1.13.10-21.8 | 1. 10. (větev `diplo`) | **Mód Diplomacie, podprojekty 0 a 1 (§3.60)** — 31 commitů, nemergnuto do `dev`: nasazení `/aoe/diplo` a verzování (-13.10), kontrola souboru scénáře v lobby (-14.0), mód akce a migrace 030 (-15.0), pravidla rolí, rozbor Pythonem, viditelnost (-15.1 … -15.3), tabulky `diplo_*` migrace 031 (-16.0), háčky v jádru (-17.0), strany pro FFA a tým „–“ (-17.1 … -17.4), víc vítězů (-18.0), AI mimo šedou (-18.1), routy GM (-19.0), verze scénáře a `AUTORI_SCENARE` (-20.0), místa módu v obrazovkách a zakrytí (-20.1, -20.2), scénář určuje mapu / velikost / Victory (-21.0), minimapa (-21.1), karta role (-21.2, -21.3), pult GM (-21.4, -21.5), správa a stažení scénáře (-21.6), grafika rolí, rubu a rámu (-21.7, -21.8) |
+| 1.13.10-22.2 … 1.13.10-22.10 | 2. 10. (větev `diplo`) | **Dávka úprav rozhraní po revizi uživatele (§3.60)** — strany FFA ve dvou sloupcích (-22.2), kratší krok hosta a popisek zakryté karty (-22.3), velká mapa na kartě role (-22.4), barva u každého jména účastníka — `JmenoSBarvou` (-22.5), Sabotáž Nájezdníků (-22.6), hover zlatého tlačítka a větší „Rozeslat role“ (-22.7), „Zamíchat barvy“ ve skládání (-22.8), po rozeslání se role nemění (-22.9), jednotný sloh pravidel rolí (-22.10) |
+| 1.13.10-23.0 | 2. 10. (větev `diplo`) | **Most ke hře — první kus (§3.60)** — web přibaluje XS sondu formátu 3 do stahované kopie scénáře (migrace 033, „Přibalit sondu“ ve správě scénáře, originál přes `?original=1`), přijímá data z běžící hry na `POST /api/diplo/hra` (`MOST_TOKEN`), v přípravě sám nastaví Nástupce císaře a GM vidí postup sekundárních cílů; zkušební most `nastroje/diplomacie/most.py` |
+| 1.13.10-25.0 | 2. 10. (větev `diplo`) | **Hlas: konec praskání a push-to-talk pro GM (§3.50)** — přehrávač čeká na 450 ms zásoby (dřív se skoro každá promluva na třetinu vteřiny zasekla), zesílení mikrofonu se přesunulo z nahrávky do přehrávání (nahrávka přes Web Audio měla časové značky rámců 59/61 ms a `MediaSource` ji ořezával osmkrát za vteřinu), ztracený kousek se přeskočí; GM Diplomacie mluví do svého zápasu (háček H13 `smiMluvitDoZapasu`), štítek „GM … mluví“ |
+| 1.13.10-25.1 | 2. 10. (větev `diplo`) | **Mapa na kartě role se vztahy (§3.60)** — další Nájezdníci, oběť Kata, pokrevní pouto Žoldáka a Nástupce císaře s korunou přímo na mapě, legenda pod ní, koruna i na mapě pultu GM; `MapaScenare` s jedním vstupem `popisky` |
+| 1.13.10-26.0 … 1.13.10-26.5 | 2. 10. (větev `diplo`) | **Opravná vlna po kontrole dávky (§3.60)** — automatický Nástupce přežije restart, souběh i postupné rozdávání cílů (migrace 034, -26.0), soubor sondy jen u GM a „sonda: ano (zastaralá)“ (-26.1), úklid přehrávače hlasu (-26.2), drobnosti (GM mluví jen do běžícího zápasu, „—“ u chybějícího cíle, `abort()` zápisu, -26.3), legenda pod mapou pryč (-26.4), mapa pultu GM stejně velká jako na kartě role (-26.5) |
+| 1.13.10-27.0 | 2. 10. (větev `diplo`) | **Divák jako zdroj dat ze hry (§3.60)** — sonda píše soubor na každém počítači (hráči i diváci, bez šifrování, rozhodnutí uživatele), `POST /api/diplo/hra` bere `odesilatel` a snímek diváka přiřadí jedinému běžícímu zápasu se stejným scénářem, data GM mají přednost (20 s), pult píše „ze hry (GM/divák) před N s“, `most.py --odesilatel` |
+| 1.13.10-28.0 | 2. 10. (větev `diplo`) | **Vlastní minimapa se dědí (§3.60)** — nová verze téže mapy převezme obrázek ze hry od poslední verze, která ho má (kontrola velikosti, barev a startů do 0,05); jinak věta „Vlastní minimapa nepřevzata — mapa se změnila.“ a tlačítko „Převzít vlastní minimapu z verze N“ |
+| 1.13.10-29.0 | 2. 10. (větev `diplo`) | **Správa scénáře: jméno pro hru, mazání, tlačítka (§3.60)** — kopie pro hru jako `JIN_DIPLO_<N>.aoe2scenario` (migrace 035) a podle toho jména kontrola lobby, uložení do hry i most; mazání verze (ne aktivní, ne hrané); řádek s tlačítky Stáhnout originál / Přibalit automatizace / Stáhnout scénář; zamčené zlaté tlačítko už pod kurzorem nezezlátne |
+| 1.13.10-29.1 | 2. 10. (větev `diplo`) | **Jména pro hru v nastavení lobby otevřené akce (§3.60)** — migrace 036 přepíše `scenar`/`scenarStarsi` neskončených akcí Diplomacie (i uložené nastavení) na `JIN_DIPLO_<N>`; akce otevřená před 29.0 by jinak hostovi se staženou kopií hlásila jiný soubor |
+| 1.13.10-29.2 | 3. 10. (větev `diplo`) | **Mazání verzí scénáře povolenější a srozumitelnější (§3.60)** — verzi hranou jen dohranými, zrušenými nebo uzavřenými zápasy jde smazat (zápasy dostanou `scenar_id = NULL` a ukážou se bez mapy), běžící zápas otevřené akce ji drží; důvod odmítnutí přímo pod řádkem verze; pole „Co je nového“ pryč |
+| 1.13.10-29.3 | 3. 10. (větev `diplo`) | **Chyby nahrání a dalších akcí přímo ve správě scénáře (§3.60)** — odmítnutí (např. „Tahle verze už je nahraná“) se ukáže pod formulářem nebo řádkem verze, ne v obecné chybě nahoře nad panelem |
+| 1.13.10-29.4 … 1.13.10-30.0 | 3. 10. (větev `diplo`) | **Most přes agenta herního PC doladěn (§3.60)** — glow „Rozdat role“ (-29.4), rozesílání po 1,5 s (-29.5), sonda každou herní sekundu (-29.6), pult GM vedle mapy (-29.7), prefix `ROB_` u jmen pro hru a značka „ROBD“ ve formátu 5 sondy, migrace 037 (-30.0) |
+| 1.13.10-30.1 … 1.13.10-31.0 | 3. 10. (větev `diplo`) | **Ladění pultu GM a králové na mapě (§3.60)** — GM automaticky hostem (-30.1), Team Positions ve scénáři jen informace (-30.2), otázka „Kdo je Nástupcem císaře?“ a předvýběr hry (-30.3), čísla v barevných čtverečcích a koruna zvoleného (-30.4), Nástupce smí svolávat rady (-30.5), veřejnost Nástupce jako informace (-30.6), stažení scénáře před Spustit hru, tlačítko „Uložit scénář do hry“ zrušeno (-30.7/-30.8), bez problikávání a s viditelným glow (-30.9), tlačítka pultu (-30.10/-30.12/-30.13), vztahy při najetí (-30.11), poloha králů ze hry — sonda formát 6 (-31.0) |
+| 1.13.10-41.1 … 1.13.10-41.27 | 3.–4. 10. (větev `diplo`) | **Ladění vzhledu Diplomacie** — prohra jako okno přes sekci, pult i karta si pamatují odkrytí v záložce, animace nových částí; hoření karty Šaška: video plamenů (Codex, 2D simulace hoření, 4. verze na míru 1440×1440 s rozhořením a dohořením v záběru), maska karty podle vykresleného snímku (`requestVideoFrameCallback`, `celoOhne`), vypaření u horního okraje; pravidla v kartičkách (role po třech, celý popis v bodech), ikonky rolí/relikvií a čtvereček GM v textech (`TextSIkonami`, 56→28 px); **Kat přejmenován na Popravčí** (id `kat` zůstává), nové znaky Popravčího (kápě) a Nájezdníka (louč + sekery), všechny znaky, prohra a rub karty vyříznuté přes Scenario. Kontrolní seznam: `docs/diplomacie-kontrolni-seznam.md` |
+| 1.13.10-38.0 … 1.13.10-41.0 | 3. 10. (větev `diplo`) | **Cíle hráče, schopnosti, události hry (§3.60)** — prodej Nástupce po smrti Šaška a samo-odškrtnutí prodejů, migrace 041 (-41.0), cíle a odpočet 7 relikvií vedle mapy, odpočet v sondě (-38.0), schopnosti s potvrzením GM, připomínky ze hry, proměna Šaška v Gardu, migrace 039 (-39.0), doplatky Žoldákovi ze hry, obrazovka prohry, migrace 040 (-40.0) |
+| 1.13.10-32.0 … 1.13.10-37.4 | 3. 10. (větev `diplo`) | **Overlaye, relikvie, ping (§3.60 „Králové, relikvie, ping, overlaye“)** — overlaye OBS `/obs/mapa` a `/obs/tabulka` s `OBS_KLIC` (-32.0), relikvie obrázkem a tučné hodnoty (-32.2…-32.5), vlastní rozbalovací výběr (-32.7), relikvie na mapě — sonda formát 7 (-33.0), přepínače mapy, migrace 038 (-34.0), cache `/assets/` (-34.1), sledování nesených relikvií a automatické přebalení sond (-34.2…-34.9), nosič relikvie — formát 8 (-35.0), ping GM (-36.0…-37.3: víc adresátů, vypínač, zvuk), nosič = třída 943 (-37.0), relikvie v jednom sloupci tabulky (-37.4) |
 | **1.13.10** | **1. 10.** | **Release do `main` (PR #21, značka `v1.13.9`)** — DLC The Viking Sagas: civilizace Saxons, Varangians, Danes s erby, mapa Arabian Desert s náhledem, obnovené náhledy Arabia a Steppe (§3.59) |
 | **1.13.9** | **17. 9. 03:43** | **Release do `main` (PR #20): Microsoft přihlášení živé i na ostré** — kontakt na smazání účtu i v podmínkách, z jedné konstanty pro obě právní stránky |
 | 1.13.8 | 17. 9. 03:43 | Fajfka ze záhlaví kontroly lobby pryč — po přesunu verdiktu říkala totéž o dva řádky výš |
@@ -2188,7 +3047,7 @@ i když je to jen odstup nebo barva.
   [`docs/nasazeni-jouki-cz.md`](nasazeni-jouki-cz.md) §3.6.2.
 - **Frontend typy se kontrolují zvlášť.** 0.14.0 se pushnul s chybou
   v cleanupu efektu (vracel string), `vite build` se nespustil a dev
-  zůstal na staré verzi. Vždy `npm --prefix web exec tsc -- -b --force`
+  zůstal na staré verzi. Vždy `(cd web && npx tsc -b --force)`
   a celý `npm run build` před pushem.
 - **Velké úpravy souborů dělat python skriptem ve scratchpadu**, ne bash
   heredocem s kódem — heredocy s určitým obsahem padaly na „unexpected

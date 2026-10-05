@@ -6,7 +6,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const zaklad = { onZalozit: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn() };
+const zaklad = { onZalozit: vi.fn(), onNastaveniLobby: vi.fn(), onUlozitNastaveni: vi.fn(), onResetNastaveni: vi.fn() };
 
 // Dokud tahle obrazovka neexistovala, POST /api/akce neměl na webu žádného
 // volajícího: Rob se přihlásil, uviděl „Právě neběží žádná akce.“ a víc se
@@ -18,7 +18,32 @@ it("bez akce nabídne založení a pošle název", () => {
   fireEvent.change(screen.getByLabelText(/Název akce/), { target: { value: "  Čtvrtek  " } });
   fireEvent.click(screen.getByRole("button", { name: "Založit akci" }));
 
-  expect(onZalozit).toHaveBeenCalledWith("Čtvrtek");
+  expect(onZalozit).toHaveBeenCalledWith("Čtvrtek", "klasicky");
+});
+
+it("přepínač Diplomacie pošle mód s názvem", () => {
+  const onZalozit = vi.fn();
+  render(<SpravaAkce {...zaklad} akce={null} onZalozit={onZalozit} />);
+  fireEvent.change(screen.getByLabelText(/Název akce/), { target: { value: "Diplo večer" } });
+  fireEvent.click(screen.getByRole("switch", { name: "Diplomacie" }));
+  fireEvent.click(screen.getByRole("button", { name: "Založit akci" }));
+  expect(onZalozit).toHaveBeenCalledWith("Diplo večer", "diplomacie");
+});
+
+it("bez přepínače je akce klasická", () => {
+  const onZalozit = vi.fn();
+  render(<SpravaAkce {...zaklad} akce={null} onZalozit={onZalozit} />);
+  fireEvent.change(screen.getByLabelText(/Název akce/), { target: { value: "Čtvrtek" } });
+  fireEvent.click(screen.getByRole("button", { name: "Založit akci" }));
+  expect(onZalozit).toHaveBeenCalledWith("Čtvrtek", "klasicky");
+});
+
+// Štítek dodává mód (háček `stitek` v rezimy/index.tsx), panel sám mód nezná.
+it("běžící akce má v záhlaví štítek módu, když ho mód dodá", () => {
+  const { rerender } = render(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "D", stav: "bezi", rezim: "diplomacie" }} stitek="Diplomacie" />);
+  expect(screen.getByText("Diplomacie", { selector: ".stitek-rezimu" })).toBeTruthy();
+  rerender(<SpravaAkce {...zaklad} akce={{ id: 1, nazev: "D", stav: "bezi" }} />);
+  expect(document.querySelector(".stitek-rezimu")).toBeNull();
 });
 
 it("prázdný název neodešle", () => {

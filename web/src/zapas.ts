@@ -1,6 +1,6 @@
 import type { UcastnikView, ZapasView } from "../../src/shared/types.js";
 
-export { sdiliCivilizaci, popisFormatu, strany, titulekViteze, vitezVeVete } from "../../src/shared/strany.js";
+export { sdiliCivilizaci, popisFormatu, strany, titulekViteze, vitezVeVete, vyhralHrac } from "../../src/shared/strany.js";
 
 /**
  * Jméno, které se hráči ukáže. Alias je herní přezdívka ze žebříčku Worlds
@@ -10,6 +10,19 @@ export { sdiliCivilizaci, popisFormatu, strany, titulekViteze, vitezVeVete } fro
  */
 export function jmenoHrace(u: Pick<UcastnikView, "hracId" | "alias" | "platformaJmeno">): string {
   return u.alias ?? u.platformaJmeno ?? u.hracId;
+}
+
+/**
+ * Jméno hráče tam, kde se o něm mluví mezi ostatními v zápase (tabulka rolí,
+ * oběť Kata, přehled pro Discord). AI mají všechny jméno „AI“ jako ve hře
+ * (shared/aiHraci.ts), takže je rozliší barva: „AI (p3)“, „AI (p5)“. Člověk
+ * s jedinečným jménem přívěsek nedostane; neznámé id se vrátí tak, jak je.
+ */
+export function jmenoVZapasu(ucastnici: readonly Pick<UcastnikView, "hracId" | "alias" | "platformaJmeno" | "barva">[], hracId: string): string {
+  const u = ucastnici.find((x) => x.hracId === hracId);
+  if (!u) return hracId;
+  const jmeno = jmenoHrace(u);
+  return ucastnici.some((x) => x.hracId !== hracId && jmenoHrace(x) === jmeno) ? `${jmeno} (p${u.barva})` : jmeno;
 }
 
 export function mujUcastnik(zapas: ZapasView, hracId: string): UcastnikView | null {
@@ -47,15 +60,6 @@ export function mojeZapasy(zapasy: ZapasView[], hracId: string): ZapasView[] {
 export function verejneZapasy(zapasy: ZapasView[], hracId: string | null): ZapasView[] {
   const naKarte = new Set(hracId === null ? [] : mojeZapasy(zapasy, hracId).map((z) => z.id));
   return zapasy.filter((z) => z.stav !== "zruseny" && !z.zavreny && !naKarte.has(z.id));
-}
-
-/**
- * Vyhrál tenhle hráč? U dohraného zápasu buď vyhrál celý tým, nebo jeden
- * konkrétní hráč — podle toho, jak Rob výsledek zapsal.
- */
-export function jeVitez(zapas: Pick<ZapasView, "vitez">, u: Pick<UcastnikView, "hracId" | "tym">): boolean {
-  if (!zapas.vitez) return false;
-  return "tym" in zapas.vitez ? u.tym === zapas.vitez.tym : u.hracId === zapas.vitez.hracId;
 }
 
 /** „tým 2“, nebo „bez týmu“ pro hráče, který hraje sám za sebe. */
