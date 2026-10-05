@@ -13,7 +13,7 @@ it("každá role má název a cíl", () => {
 // Sankce Rady králů u Nástupce je jiné pravidlo a jmenuje se dál stejně.
 it("Nájezdník má Sabotáž jednou za hru, o ekonomické sankci už nemluví", () => {
   expect(POPIS_ROLE.najezdnik.vyhody).toContain(
-    "Jednou za hru může provést Sabotáž proti kterémukoli hráči (na jednoho hráče nejvýš jedna; stojí 2000 zlata zaplacených GM).",
+    "Jednou za hru může provést Sabotáž proti kterémukoli hráči (stojí 2000 zlata zaplacených GM).",
   );
   expect(POPIS_ROLE.najezdnik.vyhody.join(" ")).not.toMatch(/sankc/i);
   expect(POPIS_ROLE.nastupce.vyhody).toContain("Nelze na něj uvalit sankci Rady králů.");

@@ -55,7 +55,7 @@ export const POPIS_ROLE: Record<Role, PopisRole> = {
     cil: "Vyhrává, když je Nástupce císaře poražen a Nájezdník splní primární nebo sekundární cíl. Vyhrává i tehdy, když vyhraje druhý Nájezdník (i po vlastním vyřazení).",
     vyhody: [
       "Zná druhého Nájezdníka od začátku hry.",
-      "Jednou za hru může provést Sabotáž proti kterémukoli hráči (na jednoho hráče nejvýš jedna; stojí 2000 zlata zaplacených GM).",
+      "Jednou za hru může provést Sabotáž proti kterémukoli hráči (stojí 2000 zlata zaplacených GM).",
     ],
     nevyhody: [],
   },
@@ -69,6 +69,7 @@ export const POPIS_ROLE: Record<Role, PopisRole> = {
   },
   zoldak: {
     cil: "Vyhrává, když splní primární nebo sekundární cíl (pak vyhrává samostatně), nebo když vyhraje hráč, se kterým má pokrevní pouto. Když tento hráč prohraje, prohrává i Žoldák.",
+    informace: ["Může vyhrát i posmrtně, pokud vyhraje hráč, se kterým má pokrevní pouto."],
     vyhody: ["Za prodej relikvie dostává dvojnásobek zlata (8000; rozdíl doplácí GM)."],
     nevyhody: [],
   },
