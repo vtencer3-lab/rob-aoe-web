@@ -202,3 +202,25 @@ it("existujeAdmin pozná prázdnou tabulku, neadmina i admina", async () => {
   await upsertPlayer("76561198000000009", true);
   expect(await existujeAdmin()).toBe(true);
 });
+
+// Uživatel 9. 10. 2026: Jin je adminem jen při otevřené akci Diplomacie (ADMINI_MODU).
+it("admin módu platí jen při otevřené akci toho módu", async () => {
+  const { createAkce, setAkceStav } = await import("./events.js");
+  await getPool().query("TRUNCATE akce CASCADE");
+  const puvodni = process.env["ADMINI_MODU"];
+  process.env["ADMINI_MODU"] = "diplomacie:jin";
+  try {
+    await upsertPlayer("jin", null);
+    expect((await getPlayer("jin"))?.jeAdmin).toBe(false);
+    const klasicka = await createAkce("Večer", "klasicky");
+    expect((await getPlayer("jin"))?.jeAdmin).toBe(false);
+    await setAkceStav(klasicka.id, "konec");
+    const diplo = await createAkce("Diplomacie", "diplomacie");
+    expect((await getPlayer("jin"))?.jeAdmin).toBe(true);
+    await setAkceStav(diplo.id, "konec");
+    expect((await getPlayer("jin"))?.jeAdmin).toBe(false);
+  } finally {
+    if (puvodni === undefined) delete process.env["ADMINI_MODU"];
+    else process.env["ADMINI_MODU"] = puvodni;
+  }
+});
