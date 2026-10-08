@@ -152,6 +152,18 @@ export const config = {
       .map((s) => s.trim())
       .filter(Boolean);
   },
+  /**
+   * Admin jen v určitém módu akce (uživatel 9. 10. 2026: Jin je adminem,
+   * když je otevřená akce Diplomacie, jinak ne). Dvojice `mód:hráčské id`
+   * oddělené čárkou, např. `diplomacie:76561197972227900`. Prázdné = nikdo.
+   * Trvalý admin je dál sloupec `player.je_admin`.
+   */
+  get adminiModu(): string[] {
+    return (process.env["ADMINI_MODU"] ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => /^[a-z]+:.+$/.test(s));
+  },
   get jeProdukce(): boolean {
     return this.baseUrl.startsWith("https://");
   },

@@ -39,6 +39,7 @@ Zkratky testů: **S** = `src/shared/diplomacie/*.test.ts`, **DB** =
 | 2.4 | Garda vidí role padlých hráčů sama (`odhaleneRole`, jen role bez cíle) | S viditelnost.test „Garda vidí role padlých“ |
 | 2.5 | Žádosti o schopnosti: hráč jen své; povinný prodej vidí ten, koho se týká | S viditelnost (vidiHrac), W KartaRole |
 | 2.6 | Pingy: GM všechny, hráč jen pro všechny a pro sebe | S viditelnost.test „ping …“ |
+| 2.9 | **Admin jen v Diplomacii:** `ADMINI_MODU` (env, dvojice `mód:id`, teď `diplomacie:76561197972227900` = Jin) dělá z hráče admina jen dokud je otevřená akce toho módu (`getPlayer`); s koncem akce práva zmizí. Tajná data módu ani tak nevidí — redakce Diplomacie admina nepouští | DB players „admin módu platí jen při otevřené akci …“ |
 | 2.8 | **Náhled zápasu (moderování):** kdo je v `DIPLO_NAHLED` (env, teď Jouki a Tonner), dostane ke každému zápasu navíc celý zápas ve větvi `nahled` — **i když v něm hraje**; jeho vlastní karta zůstává redigovaná. Panel „Náhled zápasu #N (moderování)“ pod zápasy je sbalený a obsah vykreslí až po rozbalení; výběr hráče (karta redigovaná za něj) nebo GM (pult) — jen ke čtení | S viditelnost.test „náhled zápasu pro jmenované“, W NahledHracu.test |
 | 2.7 | Před rozesláním nikdo kromě GM role nevidí | S viditelnost.test „před rozesláním …“ |
 

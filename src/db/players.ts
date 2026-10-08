@@ -1,3 +1,4 @@
+import { config } from "../config.js";
 import type { Vlastnictvi } from "../shared/types.js";
 import type { ZebricekRadek } from "../shared/zebricky.js";
 import { getPool } from "./pool.js";
@@ -247,11 +248,17 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
   );
 }
 
+/**
+ * Jeden hráč i s právy. Admin je i ten, koho `ADMINI_MODU` jmenuje pro mód
+ * právě otevřené akce (config.adminiModu) — všechna práva admina se ptají
+ * tudy, takže dočasný admin platí všude naráz a s koncem akce zase zmizí.
+ */
 export async function getPlayer(hracId: string): Promise<PlayerRow | null> {
-  const { rows } = await getPool().query<DbRow>(
-    `SELECT ${SLOUPCE} FROM player WHERE hrac_id = $1`,
-    [hracId],
+  const sloupce = SLOUPCE.replace(
+    "je_admin",
+    "(je_admin OR EXISTS (SELECT 1 FROM akce a WHERE a.stav <> 'konec' AND (a.rezim || ':' || player.hrac_id) = ANY($2::text[]))) AS je_admin",
   );
+  const { rows } = await getPool().query<DbRow>(`SELECT ${sloupce} FROM player WHERE hrac_id = $1`, [hracId, config.adminiModu]);
   return rows[0] ? mapuj(rows[0]) : null;
 }
 
