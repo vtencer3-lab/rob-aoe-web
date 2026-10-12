@@ -153,12 +153,14 @@ export const config = {
       .filter(Boolean);
   },
   /**
-   * Admin jen v určitém módu akce (uživatel 9. 10. 2026: Jin je adminem,
-   * když je otevřená akce Diplomacie, jinak ne). Dvojice `mód:hráčské id`
-   * oddělené čárkou, např. `diplomacie:76561197972227900`. Prázdné = nikdo.
-   * Trvalý admin je dál sloupec `player.je_admin`.
+   * Zakladatelé akcí jednoho módu (uživatel 12. 10. 2026, dřív „admin jen
+   * při otevřené akci módu“): smí založit akci jen toho módu a ukončit jen
+   * akci, kterou sám založil — adminem se tím nestává. Dvojice
+   * `mód:hráčské id` oddělené čárkou, např. `diplomacie:76561197972227900`
+   * (Jin). Prázdné = nikdo. Proměnná si nechala původní jméno, ať se nemusí
+   * měnit nasazení.
    */
-  get adminiModu(): string[] {
+  get zakladateleModu(): string[] {
     return (process.env["ADMINI_MODU"] ?? "")
       .split(",")
       .map((s) => s.trim())

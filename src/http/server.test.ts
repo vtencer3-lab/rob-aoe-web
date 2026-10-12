@@ -17,7 +17,7 @@ describe("/api/me — příznak Microsoft cesty", () => {
     const app = buildServer();
     const res = await app.inject({ method: "GET", url: "/api/me" });
     // Nepřihlášený nikdy nenahrává scénář — příznak je v odpovědi, ale falešný.
-    expect(res.json()).toEqual({ hrac: null, maMicrosoft: false, smiNahratScenar: false });
+    expect(res.json()).toEqual({ hrac: null, maMicrosoft: false, smiNahratScenar: false, rezimyKZalozeni: [] });
     await app.close();
   });
 
@@ -26,7 +26,7 @@ describe("/api/me — příznak Microsoft cesty", () => {
     vi.stubEnv("MS_CLIENT_SECRET", "test-client-secret");
     const app = buildServer();
     const res = await app.inject({ method: "GET", url: "/api/me" });
-    expect(res.json()).toEqual({ hrac: null, maMicrosoft: true, smiNahratScenar: false });
+    expect(res.json()).toEqual({ hrac: null, maMicrosoft: true, smiNahratScenar: false, rezimyKZalozeni: [] });
     await app.close();
   });
 });

@@ -105,6 +105,7 @@ export async function buildAkceStav(): Promise<AkceStavPayload> {
       pristiNazevLobby: lobbyName(zapasy.length + 1),
       pristiHeslo: akce.pristiHeslo ?? "",
       rezim: akce.rezim,
+      zakladatel: akce.zakladatel,
     },
     lhutaAktivityMinut,
     // Lhůta aktivity patří k přihlášce, ne k hráči: mimo akci nemá smysl.

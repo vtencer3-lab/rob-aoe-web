@@ -77,7 +77,11 @@ export function SpravaAkce({ akce, onZalozit, onVolbaDiplomacie, onNastaveniLobb
   );
 }
 
-function ZalozeniAkce({ onZalozit, onVolbaDiplomacie }: Pick<Props, "onZalozit" | "onVolbaDiplomacie">) {
+/**
+ * Formulář založení akce. `jenRezim` = zakladatel módu (Jin smí zakládat jen
+ * Diplomacii): přepínač zmizí a akce se založí v tom módu.
+ */
+export function ZalozeniAkce({ onZalozit, onVolbaDiplomacie, jenRezim }: Pick<Props, "onZalozit" | "onVolbaDiplomacie"> & { jenRezim?: RezimId }) {
   const [nazev, setNazev] = useState("");
   // Mód se volí jen při založení: Diplomacie mění výchozí nastavení lobby
   // a pravidla sestavy, přepínat ji uprostřed večera nedává smysl.
@@ -89,17 +93,19 @@ function ZalozeniAkce({ onZalozit, onVolbaDiplomacie }: Pick<Props, "onZalozit" 
       onSubmit={(e) => {
         e.preventDefault();
         if (nazev.trim() === "") return;
-        onZalozit(nazev.trim(), diplomacie ? "diplomacie" : "klasicky");
+        onZalozit(nazev.trim(), jenRezim ?? (diplomacie ? "diplomacie" : "klasicky"));
         setNazev("");
       }}
     >
-      <Prepinac popisek="Diplomacie" vlevo="" vpravo="Diplomacie" zapnuto={diplomacie}
-        onZmena={(v) => {
-          setDiplomacie(v);
-          onVolbaDiplomacie?.(v);
-        }}
-        testId="prepinac-diplomacie"
-      />
+      {jenRezim ? null : (
+        <Prepinac popisek="Diplomacie" vlevo="" vpravo="Diplomacie" zapnuto={diplomacie}
+          onZmena={(v) => {
+            setDiplomacie(v);
+            onVolbaDiplomacie?.(v);
+          }}
+          testId="prepinac-diplomacie"
+        />
+      )}
       <label>
         Název akce{" "}
         <input

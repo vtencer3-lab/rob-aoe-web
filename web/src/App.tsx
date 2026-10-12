@@ -29,7 +29,7 @@ import { NazevAkce } from "./views/NazevAkce.js";
 import { HistorieZapasu, Rezie } from "./views/Rezie.js";
 import { SeznamPrihlasenych } from "./views/SeznamPrihlasenych.js";
 import { Skladani } from "./views/Skladani.js";
-import { SpravaAkce } from "./views/SpravaAkce.js";
+import { SpravaAkce, ZalozeniAkce } from "./views/SpravaAkce.js";
 import { VerejnyZapas } from "./views/VerejnyZapas.js";
 import { ZkusebniLista } from "./views/ZkusebniLista.js";
 /** Easter egg: klik na Robovo jméno v záhlaví přehraje crashout. */
@@ -155,6 +155,9 @@ export function App() {
   // Mód zvolený ve formuláři založení akce: bez běžící akce podle něj
   // ukáže svou správu (Diplomacie: scénář; uživatel 5. 10. 2026).
   const [zakladanyRezim, setZakladanyRezim] = useState<RezimId>("klasicky");
+  // Zakladatel módu, který není admin (Jin: jen Diplomacie): bez běžící akce
+  // dostane formulář založení zamčený na ten mód.
+  const [jenRezimZalozeni, setJenRezimZalozeni] = useState<RezimId | null>(null);
   const [hlasitostZvuku, setHlasitostZvuku] = useState(nactiHlasitost);
   const [hlasitostChatu, setHlasitostChatu] = useState(nactiHlasitostChatu);
   const [zesileniMik, setZesileniMik] = useState(nactiZesileniMikrofonu);
@@ -288,6 +291,11 @@ export function App() {
       setMe(odpoved.hrac);
       setMaMicrosoft(odpoved.maMicrosoft === true);
       setSmiNahratScenar(odpoved.smiNahratScenar === true);
+      const rezimy = odpoved.hrac?.jeAdmin ? [] : (odpoved.rezimyKZalozeni ?? []);
+      if (rezimy[0]) {
+        setJenRezimZalozeni(rezimy[0]);
+        setZakladanyRezim(rezimy[0]);
+      }
     });
     void api
       .nastaveni()
@@ -576,7 +584,8 @@ export function App() {
                 admin ? (novy) => void hlidej(() => api.prejmenovatAkci(akce.id, novy)) : undefined
               }
             />
-            {admin && akce ? (
+            {/* Zakladatel módu (Jin) ukončí jen akci, kterou sám založil. */}
+            {admin || (me && akce.zakladatel === me.hracId) ? (
               <button
                 onClick={() => {
                   // Nevratné: po „konec“ akce zmizí všem naráz ze streamu,
@@ -733,6 +742,8 @@ export function App() {
             />
           ) : null}
         </SpravaAkce>
+      ) : !akce && jenRezimZalozeni ? (
+        <ZalozeniAkce jenRezim={jenRezimZalozeni} onZalozit={(nazev, rezim) => void hlidej(() => api.vytvoritAkce(nazev, rezim))} />
       ) : null}
 
       {/* Správa podkladů módu (Diplomacie: scénář) stojí pod panelem akce
