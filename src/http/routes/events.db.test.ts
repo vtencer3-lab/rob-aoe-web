@@ -102,6 +102,43 @@ it("Rob smí založit akci a ta rovnou běží", async () => {
   await app.close();
 });
 
+// Uživatel 12. 10. 2026: zakladatel módu (ADMINI_MODU, Jin) smí založit jen
+// akci svého módu a ukončit jen tu, kterou sám založil; adminem není.
+it("zakladatel módu založí a ukončí jen svou akci toho módu", async () => {
+  const puvodni = process.env["ADMINI_MODU"];
+  process.env["ADMINI_MODU"] = `diplomacie:${HRAC}`;
+  try {
+    const { sid } = await prihlasenyKlient(HRAC, false);
+    const app = buildServer();
+    const zaloz = (rezim: string) =>
+      app.inject({ method: "POST", url: "/api/akce", cookies: { sid }, payload: { nazev: "Diplo", rezim } });
+
+    expect((await zaloz("klasicky")).statusCode).toBe(403);
+    const diplo = await zaloz("diplomacie");
+    expect(diplo.statusCode).toBe(200);
+    expect(diplo.json().akce.zakladatel).toBe(HRAC);
+    const me = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
+    expect(me.json().hrac.jeAdmin).toBe(false);
+    expect(me.json().rezimyKZalozeni).toEqual(["diplomacie"]);
+    // Jiná práva admina nedostal ani při otevřené akci Diplomacie.
+    const prejmenovani = await app.inject({
+      method: "POST", url: `/api/akce/${diplo.json().akce.id}/nazev`, cookies: { sid }, payload: { nazev: "X" },
+    });
+    expect(prejmenovani.statusCode).toBe(403);
+    const ukonci = (id: number) =>
+      app.inject({ method: "POST", url: `/api/akce/${id}/stav`, cookies: { sid }, payload: { stav: "konec" } });
+    expect((await ukonci(diplo.json().akce.id)).statusCode).toBe(200);
+
+    // Cizí akci Diplomacie (založil ji admin) ukončit nesmí.
+    const cizi = await createAkce("Robova Diplo", "diplomacie", null);
+    expect((await ukonci(cizi.id)).statusCode).toBe(403);
+    await app.close();
+  } finally {
+    if (puvodni === undefined) delete process.env["ADMINI_MODU"];
+    else process.env["ADMINI_MODU"] = puvodni;
+  }
+});
+
 it("Rob smí akci ukončit", async () => {
   const { sid } = await prihlasenyKlient(ROB, true);
   const akce = await createAkce("Coop Kings");

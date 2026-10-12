@@ -14,6 +14,8 @@ export interface Me {
   maMicrosoft?: boolean;
   /** Admin nebo autor scénáře Diplomacie (AUTORI_SCENARE). */
   smiNahratScenar?: boolean;
+  /** Módy, ve kterých smí založit akci (admin všechny, zakladatel módu jen svůj). */
+  rezimyKZalozeni?: RezimId[];
 }
 
 /** Odpověď serveru jako JSON; chybový stav se stane výjimkou s jeho hláškou. Sdílí ho i `diplomacie/api.ts`. */

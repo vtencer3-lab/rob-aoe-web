@@ -22,6 +22,8 @@ export interface AkceRow {
   pristiHeslo: string | null;
   /** Mód akce (migrace 030): klasický večer, nebo scénář Diplomacie. */
   rezim: RezimId;
+  /** Kdo akci založil (migrace 043); null u starších akcí. */
+  zakladatel: string | null;
 }
 
 interface AkceDbRow {
@@ -33,9 +35,10 @@ interface AkceDbRow {
   skladani: SestavaVstup[] | null;
   pristi_heslo: string | null;
   rezim: RezimId;
+  zakladatel: string | null;
 }
 
-const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani, pristi_heslo, rezim";
+const SLOUPCE_AKCE = "id, nazev, stav, nastaveni_lobby, ulozene_nastaveni_lobby, skladani, pristi_heslo, rezim, zakladatel";
 
 function mapujAkci(r: AkceDbRow): AkceRow {
   return {
@@ -47,6 +50,7 @@ function mapujAkci(r: AkceDbRow): AkceRow {
     skladani: Array.isArray(r.skladani) ? r.skladani : [],
     pristiHeslo: r.pristi_heslo,
     rezim: r.rezim,
+    zakladatel: r.zakladatel,
   };
 }
 
@@ -117,14 +121,19 @@ export async function pripravPristiHeslo(akceId: number, nahod = false): Promise
   return beze[0] ? mapujAkci(beze[0]) : null;
 }
 
-export async function createAkce(nazev: string, rezim: RezimId = "klasicky"): Promise<AkceRow> {
+export async function createAkce(nazev: string, rezim: RezimId = "klasicky", zakladatel: string | null = null): Promise<AkceRow> {
   // Heslo večera vzniká rovnou s akcí — okno Pre-Lobby ho ukazuje k opsání
   // do hry a nemá čekat, až si o něj někdo řekne.
   const { rows } = await getPool().query<AkceDbRow>(
-    `INSERT INTO akce (nazev, pristi_heslo, rezim) VALUES ($1, $2, $3) RETURNING ${SLOUPCE_AKCE}`,
-    [nazev, generatePassword(), rezim],
+    `INSERT INTO akce (nazev, pristi_heslo, rezim, zakladatel) VALUES ($1, $2, $3, $4) RETURNING ${SLOUPCE_AKCE}`,
+    [nazev, generatePassword(), rezim, zakladatel],
   );
   return mapujAkci(rows[0]!);
+}
+
+export async function getAkce(akceId: number): Promise<AkceRow | null> {
+  const { rows } = await getPool().query<AkceDbRow>(`SELECT ${SLOUPCE_AKCE} FROM akce WHERE id = $1`, [akceId]);
+  return rows[0] ? mapujAkci(rows[0]) : null;
 }
 
 export async function getAktivniAkce(): Promise<AkceRow | null> {

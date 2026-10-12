@@ -4,6 +4,7 @@ import { existujeAdmin, getPlayer, upsertPlayer } from "../db/players.js";
 import { createSession, deleteSession, getSessionUser } from "../db/sessions.js";
 import { SESSION_TTL_MS } from "../db/sessions.js";
 import { smiNahratScenar } from "../diplomacie/opravneni.js";
+import { rezimyKZalozeni } from "./pravaAkce.js";
 import { odhlasZAkce } from "../realtime/pritomnost.js";
 import {
   buildAuthUrl,
@@ -145,12 +146,15 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
    *
    * Stejně tak `smiNahratScenar` (spec §5.1): frontend podle něj ukáže správu
    * scénáře Diplomacie — práva autora nejsou vidět na řádku hráče.
+   * A `rezimyKZalozeni`: módy, ve kterých smí založit akci (zakladatel
+   * módu, např. Jin pro Diplomacii, admin není).
    */
   app.get("/api/me", async (request) => {
     const maMicrosoft = config.maMicrosoft;
     const hracId = await currentUser(request);
-    if (!hracId) return { hrac: null, maMicrosoft, smiNahratScenar: false };
+    if (!hracId) return { hrac: null, maMicrosoft, smiNahratScenar: false, rezimyKZalozeni: [] };
     const smiNahrat = await smiNahratScenar(hracId);
+    const rezimy = await rezimyKZalozeni(hracId);
     // Úplně první přihlášení: řádek hráče v tu chvíli existuje, ale je prázdný,
     // protože stahování statistik běží mimo přihlašovací cestu. Kdybychom
     // odpověděli hned, v záhlaví by svítilo Steam ID, dokud si člověk stránku
@@ -162,7 +166,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         deps.obnovStaty(hracId).catch(() => {}),
         new Promise((hotovo) => setTimeout(hotovo, CEKANI_NA_JMENO_MS)),
       ]);
-      return { hrac: (await getPlayer(hracId)) ?? cerstvy, maMicrosoft, smiNahratScenar: smiNahrat };
+      return { hrac: (await getPlayer(hracId)) ?? cerstvy, maMicrosoft, smiNahratScenar: smiNahrat, rezimyKZalozeni: rezimy };
     }
     // Statistiky se dřív obnovovaly jen při přihlášení, a sezení drží měsíc:
     // kdo se nepřihlásil znovu, měl v tabulce data z prvního dne. Načtení
@@ -171,6 +175,6 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     void Promise.resolve()
       .then(() => deps.obnovStaty(hracId))
       .catch(() => {});
-    return { hrac: await getPlayer(hracId), maMicrosoft, smiNahratScenar: smiNahrat };
+    return { hrac: await getPlayer(hracId), maMicrosoft, smiNahratScenar: smiNahrat, rezimyKZalozeni: rezimy };
   });
 }

@@ -2,6 +2,7 @@ import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT } from "../../shared/aktivita.js";
 import type { FastifyInstance } from "fastify";
 import {
   createAkce,
+  getAkce,
   getAktivniAkce,
   obnovAktivitu,
   prejmenujAkci,
@@ -19,7 +20,9 @@ import {
   withdraw,
   type AkceStav,
 } from "../../db/events.js";
+import { rezimyKZalozeni } from "../../auth/pravaAkce.js";
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
+import { getPlayer } from "../../db/players.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import { rezimAkce, rezimAkceId, vychoziNastaveniAkce } from "../../rezimy/index.js";
@@ -57,7 +60,7 @@ export function registerEventRoutes(app: FastifyInstance): void {
   });
 
   app.post("/api/akce", async (request) => {
-    await requireAdmin(request);
+    const hracId = await requireUser(request);
     const { nazev, rezim } = request.body as { nazev?: unknown; rezim?: unknown };
     if (typeof nazev !== "string" || nazev.trim() === "") {
       throw new HttpError(400, "Akce musí mít název.");
@@ -65,9 +68,13 @@ export function registerEventRoutes(app: FastifyInstance): void {
     if (rezim !== undefined && !REZIMY_AKCE.includes(rezim as RezimId)) {
       throw new HttpError(400, "Neznámý mód akce.");
     }
+    const rezimId = (rezim as RezimId | undefined) ?? "klasicky";
+    // Admin založí cokoli, zakladatel módu (Jin) jen akci svého módu.
+    if (!(await rezimyKZalozeni(hracId)).includes(rezimId)) {
+      throw new HttpError(403, "Tenhle druh akce zakládat nesmíš.");
+    }
     try {
-      const rezimId = (rezim as RezimId | undefined) ?? "klasicky";
-      const akce = await createAkce(nazev.trim(), rezimId);
+      const akce = await createAkce(nazev.trim(), rezimId, hracId);
       // Mód s vlastním výchozím nastavením si ho rovnou uloží; klasický
       // večer vrací null a akce zůstává s prázdným JSON jako dosud.
       const vychozi = await rezimAkce(rezimId).vychoziNastaveniLobby(VYCHOZI_NASTAVENI);
@@ -89,12 +96,18 @@ export function registerEventRoutes(app: FastifyInstance): void {
   });
 
   app.post("/api/akce/:id/stav", async (request) => {
-    await requireAdmin(request);
+    const hracId = await requireUser(request);
     const akceId = requireId(request);
+    // Admin smí vše; zakladatel módu (Jin) jen ukončit akci, kterou sám založil.
+    const jenUkoncit = !(await getPlayer(hracId))?.jeAdmin;
+    if (jenUkoncit && (await getAkce(akceId))?.zakladatel !== hracId) {
+      throw new HttpError(403, "Tohle smí jen Rob.");
+    }
     const { stav } = request.body as { stav?: unknown };
     if (typeof stav !== "string" || !STAVY.includes(stav as AkceStav)) {
       throw new HttpError(400, "Neznámý stav akce.");
     }
+    if (jenUkoncit && stav !== "konec") throw new HttpError(403, "Svou akci smíš jen ukončit.");
     const akce = await setAkceStav(akceId, stav as AkceStav);
     // Ukončená akce bez dohraného zápasu s vítězem nemá co říct — pryč s ní,
     // včetně přihlášek, zápasů a chatu (db/events.smazAkciBezVysledku).
