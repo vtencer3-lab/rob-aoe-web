@@ -147,7 +147,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
    * Stejně tak `smiNahratScenar` (spec §5.1): frontend podle něj ukáže správu
    * scénáře Diplomacie — práva autora nejsou vidět na řádku hráče.
    * A `rezimyKZalozeni`: módy, ve kterých smí založit akci (zakladatel
-   * módu, např. Jin pro Diplomacii, admin není).
+   * módu, např. Jin pro Diplomacii; adminem je jen po dobu své akce).
    */
   app.get("/api/me", async (request) => {
     const maMicrosoft = config.maMicrosoft;

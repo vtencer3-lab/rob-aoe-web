@@ -131,11 +131,6 @@ export async function createAkce(nazev: string, rezim: RezimId = "klasicky", zak
   return mapujAkci(rows[0]!);
 }
 
-export async function getAkce(akceId: number): Promise<AkceRow | null> {
-  const { rows } = await getPool().query<AkceDbRow>(`SELECT ${SLOUPCE_AKCE} FROM akce WHERE id = $1`, [akceId]);
-  return rows[0] ? mapujAkci(rows[0]) : null;
-}
-
 export async function getAktivniAkce(): Promise<AkceRow | null> {
   const { rows } = await getPool().query<AkceDbRow>(
     `SELECT ${SLOUPCE_AKCE} FROM akce WHERE stav <> 'konec' ORDER BY id DESC LIMIT 1`,

@@ -247,9 +247,19 @@ export async function savePlayerStats(hracId: string, staty: PlayerStatsUpdate):
   );
 }
 
+/**
+ * Jeden hráč i s právy. Admin je i zakladatel právě otevřené akce
+ * (`akce.zakladatel`, uživatel 17. 10. 2026: Jin si založí Diplomacii a má
+ * ji celou spravovat, včetně založení hry) — všechna práva admina se ptají
+ * tudy, takže platí všude naráz a s koncem akce zase zmizí.
+ */
 export async function getPlayer(hracId: string): Promise<PlayerRow | null> {
+  const sloupce = SLOUPCE.replace(
+    "je_admin",
+    "(je_admin OR EXISTS (SELECT 1 FROM akce a WHERE a.stav <> 'konec' AND a.zakladatel = player.hrac_id)) AS je_admin",
+  );
   const { rows } = await getPool().query<DbRow>(
-    `SELECT ${SLOUPCE} FROM player WHERE hrac_id = $1`,
+    `SELECT ${sloupce} FROM player WHERE hrac_id = $1`,
     [hracId],
   );
   return rows[0] ? mapuj(rows[0]) : null;
