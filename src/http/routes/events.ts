@@ -2,7 +2,6 @@ import { LHUTA_MAX_MINUT, LHUTA_MIN_MINUT } from "../../shared/aktivita.js";
 import type { FastifyInstance } from "fastify";
 import {
   createAkce,
-  getAkce,
   getAktivniAkce,
   obnovAktivitu,
   prejmenujAkci,
@@ -22,7 +21,6 @@ import {
 } from "../../db/events.js";
 import { rezimyKZalozeni } from "../../auth/pravaAkce.js";
 import { jeUnikatniKonflikt } from "../../db/chyby.js";
-import { getPlayer } from "../../db/players.js";
 import { broadcastAkce, buildAkceStav } from "../../realtime/akceStav.js";
 import { redigujProDivaka, zjistiDivaka } from "../../realtime/redakce.js";
 import { rezimAkce, rezimAkceId, vychoziNastaveniAkce } from "../../rezimy/index.js";
@@ -96,18 +94,13 @@ export function registerEventRoutes(app: FastifyInstance): void {
   });
 
   app.post("/api/akce/:id/stav", async (request) => {
-    const hracId = await requireUser(request);
+    // Zakladatel otevřené akce (Jin) je po dobu akce adminem (db/players.getPlayer).
+    await requireAdmin(request);
     const akceId = requireId(request);
-    // Admin smí vše; zakladatel módu (Jin) jen ukončit akci, kterou sám založil.
-    const jenUkoncit = !(await getPlayer(hracId))?.jeAdmin;
-    if (jenUkoncit && (await getAkce(akceId))?.zakladatel !== hracId) {
-      throw new HttpError(403, "Tohle smí jen Rob.");
-    }
     const { stav } = request.body as { stav?: unknown };
     if (typeof stav !== "string" || !STAVY.includes(stav as AkceStav)) {
       throw new HttpError(400, "Neznámý stav akce.");
     }
-    if (jenUkoncit && stav !== "konec") throw new HttpError(403, "Svou akci smíš jen ukončit.");
     const akce = await setAkceStav(akceId, stav as AkceStav);
     // Ukončená akce bez dohraného zápasu s vítězem nemá co říct — pryč s ní,
     // včetně přihlášek, zápasů a chatu (db/events.smazAkciBezVysledku).

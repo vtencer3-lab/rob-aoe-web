@@ -132,7 +132,7 @@ export interface AkceView {
   pristiHeslo?: string;
   /** Mód akce; chybí ve starších snímcích = klasický. */
   rezim?: RezimId;
-  /** Kdo akci založil; zakladatel módu (ne admin) smí ukončit jen svou. */
+  /** Kdo akci založil; zakladatel módu (Jin) je po dobu své akce adminem. */
   zakladatel?: string | null;
 }
 

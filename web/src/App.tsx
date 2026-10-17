@@ -286,22 +286,38 @@ export function App() {
   const jmenoPodleIdRef = useRef<(hracId: string) => string>((id) => id);
   const zaznamenejRef = useRef<(z: Zaznam) => void>(() => {});
 
+  const nactiMe = useCallback(
+    () =>
+      api.me().then((odpoved) => {
+        setMe(odpoved.hrac);
+        setMaMicrosoft(odpoved.maMicrosoft === true);
+        setSmiNahratScenar(odpoved.smiNahratScenar === true);
+        const rezimy = odpoved.hrac?.jeAdmin ? [] : (odpoved.rezimyKZalozeni ?? []);
+        if (rezimy[0]) {
+          setJenRezimZalozeni(rezimy[0]);
+          setZakladanyRezim(rezimy[0]);
+        }
+      }),
+    [],
+  );
+
+  // Zakladatel akce (Jin) je adminem jen po dobu své akce: když jeho akce
+  // vznikne nebo skončí, práva z /api/me se načtou znovu.
+  const zakladatelAkce = akce?.zakladatel ?? null;
+  const predchoziZakladatel = useRef<string | null>(null);
   useEffect(() => {
-    void api.me().then((odpoved) => {
-      setMe(odpoved.hrac);
-      setMaMicrosoft(odpoved.maMicrosoft === true);
-      setSmiNahratScenar(odpoved.smiNahratScenar === true);
-      const rezimy = odpoved.hrac?.jeAdmin ? [] : (odpoved.rezimyKZalozeni ?? []);
-      if (rezimy[0]) {
-        setJenRezimZalozeni(rezimy[0]);
-        setZakladanyRezim(rezimy[0]);
-      }
-    });
+    const predchozi = predchoziZakladatel.current;
+    predchoziZakladatel.current = zakladatelAkce;
+    if (me && predchozi !== zakladatelAkce && (predchozi === me.hracId || zakladatelAkce === me.hracId)) void nactiMe();
+  }, [zakladatelAkce, me, nactiMe]);
+
+  useEffect(() => {
+    void nactiMe();
     void api
       .nastaveni()
       .then((n) => setZkusebniHraci(n.zkusebniHraci))
       .catch(() => {});
-  }, []);
+  }, [nactiMe]);
 
   const jsemPrihlaseny = Boolean(me && stav?.prihlaseni.some((h) => h.hracId === me.hracId));
   const jmenoPodleId = (hracId: string) => {
@@ -584,8 +600,7 @@ export function App() {
                 admin ? (novy) => void hlidej(() => api.prejmenovatAkci(akce.id, novy)) : undefined
               }
             />
-            {/* Zakladatel módu (Jin) ukončí jen akci, kterou sám založil. */}
-            {admin || (me && akce.zakladatel === me.hracId) ? (
+            {admin ? (
               <button
                 onClick={() => {
                   // Nevratné: po „konec“ akce zmizí všem naráz ze streamu,

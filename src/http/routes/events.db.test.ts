@@ -102,9 +102,9 @@ it("Rob smí založit akci a ta rovnou běží", async () => {
   await app.close();
 });
 
-// Uživatel 12. 10. 2026: zakladatel módu (ADMINI_MODU, Jin) smí založit jen
-// akci svého módu a ukončit jen tu, kterou sám založil; adminem není.
-it("zakladatel módu založí a ukončí jen svou akci toho módu", async () => {
+// Uživatel 17. 10. 2026: zakladatel módu (ADMINI_MODU, Jin) smí založit jen
+// akci svého módu a po dobu té akce je jejím adminem (založí i hru).
+it("zakladatel módu je adminem jen po dobu své akce", async () => {
   const puvodni = process.env["ADMINI_MODU"];
   process.env["ADMINI_MODU"] = `diplomacie:${HRAC}`;
   try {
@@ -117,17 +117,20 @@ it("zakladatel módu založí a ukončí jen svou akci toho módu", async () => 
     const diplo = await zaloz("diplomacie");
     expect(diplo.statusCode).toBe(200);
     expect(diplo.json().akce.zakladatel).toBe(HRAC);
-    const me = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
-    expect(me.json().hrac.jeAdmin).toBe(false);
-    expect(me.json().rezimyKZalozeni).toEqual(["diplomacie"]);
-    // Jiná práva admina nedostal ani při otevřené akci Diplomacie.
+    const jeAdmin = async () =>
+      (await app.inject({ method: "GET", url: "/api/me", cookies: { sid } })).json().hrac.jeAdmin;
+    expect(await jeAdmin()).toBe(true);
+    // Svou akci spravuje jako admin, třeba ji přejmenuje.
     const prejmenovani = await app.inject({
       method: "POST", url: `/api/akce/${diplo.json().akce.id}/nazev`, cookies: { sid }, payload: { nazev: "X" },
     });
-    expect(prejmenovani.statusCode).toBe(403);
+    expect(prejmenovani.statusCode).toBe(200);
     const ukonci = (id: number) =>
       app.inject({ method: "POST", url: `/api/akce/${id}/stav`, cookies: { sid }, payload: { stav: "konec" } });
     expect((await ukonci(diplo.json().akce.id)).statusCode).toBe(200);
+    expect(await jeAdmin()).toBe(false);
+    const me = await app.inject({ method: "GET", url: "/api/me", cookies: { sid } });
+    expect(me.json().rezimyKZalozeni).toEqual(["diplomacie"]);
 
     // Cizí akci Diplomacie (založil ji admin) ukončit nesmí.
     const cizi = await createAkce("Robova Diplo", "diplomacie", null);

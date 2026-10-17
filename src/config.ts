@@ -153,9 +153,10 @@ export const config = {
       .filter(Boolean);
   },
   /**
-   * Zakladatelé akcí jednoho módu (uživatel 12. 10. 2026, dřív „admin jen
-   * při otevřené akci módu“): smí založit akci jen toho módu a ukončit jen
-   * akci, kterou sám založil — adminem se tím nestává. Dvojice
+   * Zakladatelé akcí jednoho módu: smí založit akci jen toho módu a po
+   * dobu akce, kterou sám založil, je adminem (uživatel 17. 10. 2026: Jin
+   * si Diplomacii celou řídí, i zakládání her; db/players.getPlayer). Mimo
+   * svou akci nic nespravuje. Dvojice
    * `mód:hráčské id` oddělené čárkou, např. `diplomacie:76561197972227900`
    * (Jin). Prázdné = nikdo. Proměnná si nechala původní jméno, ať se nemusí
    * měnit nasazení.
